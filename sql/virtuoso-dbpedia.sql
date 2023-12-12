@@ -469,7 +469,30 @@ SELECT birthdate FROM person1 WHERE person = 'foo';
   ', 
   log_sparql 'true');
 
-SELECT birthdate FROM person2 WHERE person = 'foo'; 
+SELECT birthdate FROM person2 WHERE person = 'foo';
+
+
+/*
+ * SPARQL contains has no explicit WHERE clause.
+ */
+ CREATE FOREIGN TABLE person3 (
+  person text OPTIONS (variable '?person'),
+  birthdate text OPTIONS (variable '?birthdate')
+) SERVER dbpedia OPTIONS 
+  (sparql '
+    PREFIX dbp: <http://dbpedia.org/property/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+    SELECT *
+    { 
+      ?person a dbo:Politician;
+        dbo:birthDate ?birthdate
+    } 
+  ', 
+  log_sparql 'true');
+
+SELECT birthdate FROM person3 
+WHERE person <> '' 
+LIMIT 5;
 
 /* ################### Pushdown Check ################### */
 

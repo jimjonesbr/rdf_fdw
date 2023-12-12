@@ -49,8 +49,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?film ?name ?released ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -87,8 +86,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -120,8 +118,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -164,8 +161,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -208,8 +204,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -251,8 +246,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -299,8 +293,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -343,8 +336,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -385,8 +377,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -422,8 +413,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -492,8 +482,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT DISTINCT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -542,8 +531,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -583,8 +571,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -631,8 +618,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -673,8 +659,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -716,8 +701,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -759,8 +743,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -801,8 +784,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -841,8 +823,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -881,8 +862,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -921,8 +901,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
@@ -1108,7 +1087,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     PREFIX dbr:  <http://dbpedia.org/resource/>
     
 SELECT ?name ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
- WHERE {
+{
       ?uri dbo:type dbr:Public_university ;
         dbp:name ?name;
         geo:lat ?lat; 
@@ -1151,7 +1130,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     PREFIX dbr:  <http://dbpedia.org/resource/>
     
 SELECT ?uri ?name ?lon ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
- WHERE {
+{
       ?uri dbo:type dbr:Public_university ;
         dbp:name ?name;
         geo:lat ?lat; 
@@ -1185,7 +1164,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     PREFIX dbr:  <http://dbpedia.org/resource/>
     
 SELECT ?uri ?name ?lon ?lat 
- WHERE {
+{
       ?uri dbo:type dbr:Public_university ;
         dbp:name ?name;
         geo:lat ?lat; 
@@ -1259,7 +1238,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     ORDER BY DESC(?birthdate)
   ', 
   log_sparql 'true');
-SELECT birthdate FROM person2 WHERE person = 'foo'; 
+SELECT birthdate FROM person2 WHERE person = 'foo';
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1277,6 +1256,49 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
  birthdate 
 -----------
 (0 rows)
+
+/*
+ * SPARQL contains has no explicit WHERE clause.
+ */
+ CREATE FOREIGN TABLE person3 (
+  person text OPTIONS (variable '?person'),
+  birthdate text OPTIONS (variable '?birthdate')
+) SERVER dbpedia OPTIONS 
+  (sparql '
+    PREFIX dbp: <http://dbpedia.org/property/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+    SELECT *
+    { 
+      ?person a dbo:Politician;
+        dbo:birthDate ?birthdate
+    } 
+  ', 
+  log_sparql 'true');
+SELECT birthdate FROM person3 
+WHERE person <> '' 
+LIMIT 5;
+NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+    PREFIX dbp: <http://dbpedia.org/property/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+    
+SELECT ?person ?birthdate 
+{ 
+      ?person a dbo:Politician;
+        dbo:birthDate ?birthdate
+     FILTER(STR(?person) != "")
+}
+LIMIT 5
+
+ birthdate  
+------------
+ 1969-06-19
+ 1788-07-14
+ 1962-12-17
+ 1976-03-30
+ 1987-06-30
+(5 rows)
 
 /* ################### Pushdown Check ################### */
 /*
@@ -1330,8 +1352,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
     
 SELECT DISTINCT ?name ?released ?runtime 
- WHERE
-    {
+{
       ?film a dbo:Film ;
             rdfs:comment ?abstract ;
             dbp:name ?name ;
@@ -1364,8 +1385,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
     
     
 SELECT DISTINCT ?personname ?birthdate ?partyname ?country 
- WHERE
-      {
+{
         ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;

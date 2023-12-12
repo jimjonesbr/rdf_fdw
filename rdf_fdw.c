@@ -1369,9 +1369,11 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	List *columnlist = baserel->reltarget->exprs;
 	List *conditions = baserel->baserestrictinfo;
 	int select_position;
-	int where_position;
+	int where_position = -1;
+	int where_size = -1;
 	char *limit;
 	char *orderby;
+	char *filters;
 	
 	initStringInfo(&state->sparql);	
 	initStringInfo(&prefixes);
@@ -1411,24 +1413,26 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	select_position = LocateToken(state->raw_sparql, "\n> ", "SELECT"," *?\n", NULL);
 	appendStringInfo(&prefixes,"%s",pnstrdup(state->raw_sparql, select_position + 1));
 
-	where_position = LocateToken(state->raw_sparql, " \n*", "WHERE"," \n{", NULL);
+	for (int i = 0; state->raw_sparql[i] != '\0'; i++)
+	{
+		if (state->raw_sparql[i] == '{' && where_position == -1)
+			where_position = i;
 
-	for (int i = strlen(state->raw_sparql) - 1; i >= where_position; i--) {		
-			
-		if (state->raw_sparql[i] == '}') 
-		{
-			char *sparql_conditions = deparseWhereConditions(state, baserel);
-			char *sparql_where = palloc0(strlen(state->raw_sparql));
-			strncpy(sparql_where, state->raw_sparql + where_position, i - where_position);
+		if (state->raw_sparql[i] == '}')
+			where_size = i - where_position;
+	}
 
-			if(sparql_conditions)
-				appendStringInfo(&where,"%s%s}",pstrdup(sparql_where),pstrdup(sparql_conditions));
-			else
-				appendStringInfo(&where,"%s}",pstrdup(sparql_where));
+	filters = deparseWhereConditions(state, baserel);
 
-			break;
-		}
-
+	if(filters) 
+	{
+		char *sparql_where = (char *) palloc0(where_size+1);
+		strncpy(sparql_where, state->raw_sparql + where_position, where_size);
+		appendStringInfo(&where,"%s%s}",pstrdup(sparql_where),pstrdup(filters));
+	} 
+	else
+	{
+		appendStringInfo(&where,"%s}",pstrdup(filters));
 	}
 	
 	/* 

@@ -43,7 +43,7 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
   PREFIX schema: <http://schema.org/>
   
 SELECT DISTINCT ?name ?lon ?lat 
- WHERE {
+{
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
     foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
@@ -81,7 +81,7 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
   PREFIX schema: <http://schema.org/>
   
 SELECT ?place ?name ?lon ?lat 
- WHERE {
+{
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
     foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
@@ -183,7 +183,7 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
   PREFIX schema: <http://schema.org/>
   
 SELECT ?name ?lon ?lat 
- WHERE {
+{
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
     foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
