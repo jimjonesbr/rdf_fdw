@@ -1,22 +1,20 @@
 ---------------------------------------------
 # PostgreSQL Foreign Data Wrapper for RDF Triplestores
 
-The `rdf_fdw` provides PostgreSQL Foreign-data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
+The `rdf_fdw` provides PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
 
 > [!WARNING]  
-> THIS SOFTWARE IS STILL UNTER DEVELOPMENT AND IS NOT MEANT FOR PRODUCTION USE
+> **THIS SOFTWARE IS STILL UNDER DEVELOPMENT AND IS NOT MEANT FOR PRODUCTION USE**
 
 ## Index
 
-- [PostgreSQL Foreign Data Wrapper for RDF Triplestores](#postgresql-foreign-data-wrapper-for-rdf-triplestores)
-  - [Index](#index)
-  - [Requirements](#requirements)
-  - [Build and Install](#build-and-install)
-  - [Update](#update)
-  - [Usage](#usage)
-    - [CREATE SERVER](#create-server)
-    - [CREATE FOREIGN TABLE](#create-foreign-table)
-  - [Pushdown](#pushdown)
+- [Requirements](#requirements)
+- [Build and Install](#build-and-install)
+- [Update](#update)
+- [Usage](#usage)
+  - [CREATE SERVER](#create-server)
+  - [CREATE FOREIGN TABLE](#create-foreign-table)
+- [Pushdown](#pushdown)
   - [LIMIT](#limit)
   - [ORDER BY](#order-by)
   - [DISTINCT](#distinct)
@@ -24,8 +22,8 @@ The `rdf_fdw` provides PostgreSQL Foreign-data Wrapper to easily access RDF Trip
     - [Supported Data Types and Operators](#supported-data-types-and-operators)
     - [IN and ANY constructs](#in-and-any-constructs)
   - [Pushdown Examples](#pushdown-examples)
-  - [Examples](#examples)
-  - [Deploy with Docker](#deploy-with-docker)
+- [Examples](#examples)
+- [Deploy with Docker](#deploy-with-docker)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
 
@@ -42,7 +40,7 @@ $ cd rdf_fdw
 $ make
 ```
 
-After compilation, just run `make install` to install the `rdf_fdw` Foreign Data Wrapper:
+After compilation, just run `make install` to install the Foreign Data Wrapper:
 
 ```bash
 $ make install
@@ -83,7 +81,7 @@ ALTER EXTENSION rdf_fdw UPDATE TO '1.1';
 
 ## [Usage](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#usage)
 
-To use the RDF Foreign-data Wrapper you must first create a `SERVER` to connect to a SPARQL Endpoint. After that, you can create tables by using `CREATE FOREIGN TABLE`.
+To use the `rdf_fdw` you must first create a `SERVER` to connect to a SPARQL endpoint. After that, you have to create the `FOREIGN TABLE`s, which will contain the SPARQL instructions of what to retrieve from the endpoint.
 
 ### [CREATE SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_server)
 
@@ -112,7 +110,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `connect_retry`         | optional            | Number of attempts to retry a request in case of failure (default `3` times).
 | `request_redirect`         | optional            | Enables URL redirect issued by the server (default `false`).
 | `request_max_redirect`         | optional            | Limit of how many times the URL redirection may occur. If that many redirections have been followed, the next redirect will cause an error. Not setting this parameter or setting it to `0` will allow an infinite number of redirects.
-
+| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`
 
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
@@ -166,12 +164,44 @@ SERVER dbpedia OPTIONS (
 '); 
 ```
 
+### [ALTER TABLE and ALTER SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#alter-table-and-alter-server)
+
+All options and parameters set to a `FOREIGN TABLE` or `SERVER` can be changed, dropped, and new ones can be added using the [`ALTER FOREIGN TABLE`](https://www.postgresql.org/docs/current/sql-alterforeigntable.html) and [`ALTER SERVER`](https://www.postgresql.org/docs/current/sql-alterserver.html) commands.
+
+
+Adding options
+
+```sql
+ALTER FOREIGN TABLE film OPTIONS (ADD enable_pushdown 'false',
+                                  ADD log_sparql 'true');
+
+ALTER SERVER dbpedia OPTIONS (ADD enable_pushdown 'false');
+```
+
+Changing previously configured options
+
+```sql
+ALTER FOREIGN TABLE film OPTIONS (SET enable_pushdown 'false');
+
+ALTER SERVER dbpedia OPTIONS (SET enable_pushdown 'true');
+```
+
+Dropping options
+
+```sql
+ALTER FOREIGN TABLE film OPTIONS (DROP enable_pushdown,
+                                  DROP log_sparql);
+
+ALTER SERVER dbpedia OPTIONS (DROP enable_pushdown);
+```
+
+
 
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
  
-A *pushdown* is the ability to translate SQL queries in such a way that operations are performed in the data source rather than in PostgreSQL, e.g. sorting, filtering or aggregation. This feature can significantly reduce the number of records retrieved from the data source. For instance, a SQL `LIMIT` not pushed down means that the target system will perform a full scan in the data source, retrieve everything, return it to PostgreSQL via network, and then PostgreSQL will only locally discard the unnecessary data, which depending on the total number of records can be extremely inefficient. The `rdf_fdw` tries to translate SQL into SPARQL queries, which due to their conceptual differences is not always an easy task, so it is often worth considering to keep SQL queries involving foreign tables as simple as possible, or just to stick to the features, data types and operators described in this section. 
+A *pushdown* is the ability to translate SQL queries in such a way that operations are performed in the data source rather than in PostgreSQL, e.g. sorting, formatting, filtering. This feature can significantly reduce the number of records retrieved from the data source. For instance, a SQL `LIMIT` not pushed down means that the target system will perform a full scan in the data source, prepare everything for data transfer, return it to PostgreSQL via network, and then PostgreSQL will only locally discard the unnecessary data, which depending on the total number of records can be extremely inefficient. The `rdf_fdw` tries to translate SQL into SPARQL queries, which due to their conceptual differences is not always an easy task, so it is often worth considering to keep SQL queries involving foreign tables as simple as possible - or just to stick to the features, data types and operators described in this section. 
 
-## LIMIT
+### LIMIT
 
 `LIMIT` clauses are pushed down if the SQL query does not contain aggregates and all conditions in the `WHERE` clause can be pushed translated to SPARQL.
  
@@ -184,7 +214,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 | `OFFSET x ROWS FETCH FIRST y ROW ONLY` | `OFFSET y LIMIT x` |
  
 
-## ORDER BY
+### ORDER BY
 
 `ORDER BY` can be pushed down if the data types can be translated into SPARQL.
 
@@ -194,16 +224,16 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 | `ORDER BY x DESC` |`ORDER BY DESC(x)` |
 
 
-## DISTINCT
+### DISTINCT
 
-`DISTINCT` is pushed down to the SPARQL SELECT statement just like in SQL. There is no equivalent for `DISTINCT ON()`, so it cannot be pushed down.
+`DISTINCT` is pushed down to the SPARQL SELECT statement just like in SQL. There is no equivalent for `DISTINCT ON`, so it cannot be pushed down.
 
-## WHERE
+### WHERE
 
 The `rdf_fdw` will attempt to translate RDF literals to the data type of the mapped column, and this can be quite tricky! RDF literals can be pretty much everything, as often they have no explicit data type declarations, e.g. `"wwu"` and `"wwu"^^xsd:string` are equivalent. The contents of literals are often also not validated by the RDF triplestores, but PostgreSQL will validate them in query time. So, if a retrieved literal cannot be translated to declared column data type, the query will be interrupted. SQL `WHERE` conditions are translated into SPARQL `FILTER` expressions, as long as the involved columns data types and operators are supported.
 
 
-### Supported Data Types and Operators
+#### Supported Data Types and Operators
 
 | Data type                                                  | Supported operator                    |
 |------------------------------------------------------------|---------------------------------------|
@@ -211,11 +241,11 @@ The `rdf_fdw` will attempt to translate RDF literals to the data type of the map
 | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
 | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
 
-### IN and ANY constructs
+#### IN and ANY constructs
 
 SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation).
 
-## Pushdown Examples
+### Pushdown Examples
 
 | SQL                                                   | SPARQL |
 |-------------------------------------------------------|--------|
@@ -229,7 +259,6 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 | `country IN ('Germany','France','Portugal')`          |  `FILTER(STR(?country) IN ("Germany", "France", "Portugal"))`      |
 | `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(STR(?country) NOT IN ("Germany", "France", "Portugal"))`      |
 | `country = ANY(ARRAY['Germany','France','Portugal'])` |  `FILTER(STR(?country) IN ("Germany", "France", "Portugal"))`      |
-
 
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
