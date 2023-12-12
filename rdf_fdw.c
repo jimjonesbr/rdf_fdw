@@ -45,9 +45,6 @@
 #include <funcapi.h>
 #include "lib/stringinfo.h"
 #include <utils/lsyscache.h>
-//#include "nodes/nodes.h"
-//#include "nodes/pathnodes.h"
-//#include "nodes/primnodes.h"
 #include "utils/datetime.h"
 #include "utils/timestamp.h"
 #include "utils/formatting.h"
@@ -69,10 +66,6 @@
 #include "optimizer/optimizer.h"
 #include "access/heapam.h"
 #endif
-
-//#include "utils/datetime.h"
-// #include <rasqal/rasqal.h>
-// #include <raptor2.h>
 #include "utils/date.h"
 
 
@@ -144,7 +137,7 @@ typedef struct RDFfdwState
 	long requestMaxRedirect; /* Limit of how many times the URL redirection (jump) may occur. */
 	long connectTimeout;
 	long maxretries;
-	xmlDocPtr xmldoc;	  	 /* Result of an OAI request. */	
+	xmlDocPtr xmldoc;	
 	Oid foreigntableid;
 	List *records;
 	struct RDFfdwTable *rdfTable;
@@ -251,7 +244,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
-static int LoadSystemVariables(struct RDFfdwState *state);
+static void LoadSystemVariables(struct RDFfdwState *state);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateToken(char * sparql, char *start_chars, char *element, char *end_chars);
 static void CreateSPARQL(RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
@@ -525,10 +518,6 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 		
 	elog(DEBUG2,"%s called",__func__);
 
-	// if(state->rowcount == 0) {
-	// 	LoadRDFData(state);
-	// }
-
 	ExecClearTuple(slot);	
 
 	if (state->numcols == 0)
@@ -649,11 +638,7 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	/* is it a "content-type" entry? "*/
 	if (strncasecmp(contents, sparqlxml, 13) == 0)
 	{
-		/*
-		 * if the content-type isn't "text/xml" or "application/xml"
-		 * return 0 (fail), as other content-types aren't supported
-		 * in the OAI 2.0 Standard.
-		 */
+
 		if (strncasecmp(contents, sparqlxml, strlen(sparqlxml)) != 0 &&
 			strncasecmp(contents, sparqlxmlutf8, strlen(sparqlxmlutf8)) != 0)
 		{
@@ -701,7 +686,7 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 	return NULL;
 }
 
-static int LoadSystemVariables(struct RDFfdwState *state) {
+static void LoadSystemVariables(struct RDFfdwState *state) {
 
 	ForeignTable *ft = GetForeignTable(state->foreigntableid);
 	ForeignServer *server = GetForeignServer(ft->serverid);
@@ -862,7 +847,6 @@ static int LoadSystemVariables(struct RDFfdwState *state) {
 					
 	}
 
-	return REQUEST_SUCCESS; // <<<<<<<<??????????
 }
 
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
@@ -1454,13 +1438,9 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	else
 		appendStringInfo(&state->sparql,"%s\nSELECT %s\n%s",prefixes.data, select.data, where.data);
 
-
-
-
-
 	/*
-	* if the SQL query contains an ORDER BY, we try to push it down.
-	*/
+	 * if the SQL query contains an ORDER BY, we try to push it down.
+	 */
 	orderby = deparseOrderBy(state, root, baserel);
 	if (orderby)
 	{
@@ -1468,35 +1448,18 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 		appendStringInfo(&state->sparql, "\nORDER BY%s", pstrdup(orderby));
 	}
 
+	/*
+	 * Pushing down LIMIT (OFFSET) to the SPARQL query if the SQL query contains them.
+	 * If the SPARQL query set in the CREATE TABLE statement already contains a LIMIT,
+	 * this won't be pushed.
+	 */
+	limit = deparseLimit(state, root, baserel);
 
-	//TODO: REINSERT LIMIT IF THE SPARQL ALREADY CONTAINS A LIMIT! IT IS NOW BEING LOST IN THE PARSER!!
-	//PERHAPS DIRECTLY IN THE FUNCTION deparseLImit. It can return the same LIMIT expression in case 
-	//IT FINDS ONE!
-	//THE SAME GOES FOR OFFSET, ORDER BY AND HAVING
-
-	// if (LocateToken(state->raw_sparql, " \n}", "LIMIT", " \n(") == RDF_TOKEN_NOT_FOUND)
-	// {
-		/*
-		 * Pushing down LIMIT (OFFSET) to the SPARQL query if the SQL query contains them. 
-		 * If the SPARQL query set in the CREATE TABLE statement already contains a LIMIT, 
-		 * this won't be pushed.
-		 */
-		limit = deparseLimit(state, root, baserel);
-
-		if (limit)
-		{
-			elog(DEBUG1, "  %s: pushing down LIMIT clause > '%s'", __func__, limit);
-			appendStringInfo(&state->sparql, "\n%s", limit);
-		}
-
-	// }
-	// else
-	// {
-
-
-	// }
-
-		
+	if (limit)
+	{
+		elog(DEBUG1, "  %s: pushing down LIMIT clause > '%s'", __func__, limit);
+		appendStringInfo(&state->sparql, "\n%s", limit);
+	}
 }
 
 /*
@@ -1668,19 +1631,16 @@ static char *datumToString(Datum datum, Oid type)
 		case DATEOID:
 			str = deparseDate(datum);
 			initStringInfo(&result);
-			//appendStringInfo(&result, "(CAST ('%s' AS DATE))", str);
 			appendStringInfo(&result, "%s", str);
 			break;
 		case TIMESTAMPOID:
 			str = deparseTimestamp(datum, false);
 			initStringInfo(&result);
-			//appendStringInfo(&result, "(CAST ('%s' AS TIMESTAMP))", str);
 			appendStringInfo(&result, "%s", str);
 			break;
 		case TIMESTAMPTZOID:
 			str = deparseTimestamp(datum, true);
 			initStringInfo(&result);
-			//appendStringInfo(&result, "(CAST ('%s' AS TIMESTAMP WITH TIME ZONE))", str);
 			break;
 		default:
 			return NULL;
@@ -1836,7 +1796,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	Oid leftargtype, rightargtype, schema;
 	int index;
 	StringInfoData alias;
-	//regproc typoutput;
 	ArrayExpr *array;
 	ArrayCoerceExpr *arraycoerce;
 	Expr *rightexpr;
@@ -2013,15 +1972,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
 		ReleaseSysCache(tuple);
 
-		/* get the type's output function */
-		// tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(leftargtype));
-		// if (!HeapTupleIsValid(tuple))
-		// {
-		// 	elog(ERROR, "cache lookup failed for type %u", leftargtype);
-		// }
-		// typoutput = ((Form_pg_type)GETSTRUCT(tuple))->typoutput;
-		// ReleaseSysCache(tuple);
-
 		/* ignore operators in other than the pg_catalog schema */
 		if (schema != PG_CATALOG_NAMESPACE)
 			return NULL;
@@ -2039,8 +1989,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		initStringInfo(&result);
 		sparqlvar = (GetRDFColumn(state, left))->sparqlvar;
-		// StringInfoData in_notin;
-		// initStringInfo(&in_notin);
 
 		if (strcmp(opername, "=") == 0)
 			if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID))
@@ -2064,7 +2012,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		/* the second (=last) argument can be Const, ArrayExpr or ArrayCoerceExpr */
 		rightexpr = (Expr *)llast(arrayoper->args);
 
-		//elog(WARNING,"%s: rightexpr->type > %u",__func__, rightexpr->type);
 		switch (rightexpr->type)
 		{
 		case T_Const:
@@ -2114,7 +2061,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 
 					/* append the argument */
-					//appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", c);
 					first_arg = false;
 
 				}
@@ -2180,7 +2126,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		
 		break;
 	default:
-		// break;
 		elog(DEBUG1, "  %s: expression not supported > %u", __func__, expr->type);
 		return NULL;
 	}
@@ -2200,20 +2145,6 @@ static char *deparseWhereConditions(struct RDFfdwState *state, RelOptInfo *baser
 
 	elog(DEBUG1,"%s called",__func__);
 
-	// /* don't push down WHERE clause if the 'enable_pushdown' is set to false */
-	// if(!state->enablePushdown)
-	// {
-	// 	elog(DEBUG1, "	%s: SQL WHERE clause ignored > 'enable_pushdown' is set to false.",__func__);
-	// 	return NULL;
-	// }
-
-	// /* don't try to push down WHERE clause if the SPARQL query cannot be fully parsed */
-	// if(!state->is_sparql_parsable)
-	// {
-	// 	elog(DEBUG1, "	%s: SQL WHERE clause ignored > raw SPARQL query cannot be fully parsed.",__func__);
-	// 	return NULL;
-	// }
-	
 	initStringInfo(&where_clause);
 	foreach(cell, conditions)
 	{		
@@ -2251,20 +2182,6 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 	char *delim = " ";
 
 	elog(DEBUG1, "%s called",__func__);
-
-	// /* don't push down ORDER BY clause if the 'enable_pushdown' is set to false */
-	// if(!state->enablePushdown)
-	// {
-	// 	elog(DEBUG1, "	%s: SQL ORDER BY ignored > 'enable_pushdown is set to false.",__func__);
-	// 	return NULL;
-	// }
-
-	// /* don't try to push down ORDER BY clause if the SPARQL query cannot be fully parsed */
-	// if(!state->is_sparql_parsable)
-	// {
-	// 	elog(DEBUG1, "	%s: SQL ORDER BY clause ignored > raw SPARQL query cannot be fully parsed.",__func__);
-	// 	return NULL;
-	// }		
 
 	initStringInfo(&orderedquery);
 
@@ -2360,17 +2277,6 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 			break;
 		}
 	}
-
-	/* set ORDER BY clause and remember pushed down path keys */
-	//if (usable_pathkeys != NIL)
-	//{
-	//	elog(WARNING,"usable_pathkeys != NIL");
-		//state->order_clause = orderedquery.data;
-		//state->usable_pathkeys = usable_pathkeys;
-	//}
-
-	
-	
 
 	if (root->query_pathkeys != NIL && usable_pathkeys != NIL)
 		return orderedquery.data;
