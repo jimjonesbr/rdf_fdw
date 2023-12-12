@@ -14,6 +14,7 @@ The `rdf_fdw` provides PostgreSQL Foreign Data Wrapper to easily access RDF Trip
 - [Usage](#usage)
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
+  - [ALTER TABLE and ALTER SERVER](#alter-table-and-alter-server)
 - [Pushdown](#pushdown)
   - [LIMIT](#limit)
   - [ORDER BY](#order-by)
@@ -312,8 +313,8 @@ SELECT name, birthdate, party
 FROM politicians
 WHERE 
   country IN ('Germany','France') AND 
-  birthdate > '1995-12-31' 
-  AND party <> ''
+  birthdate > '1995-12-31' AND
+  party <> ''
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 
