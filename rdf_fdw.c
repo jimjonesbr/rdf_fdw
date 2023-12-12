@@ -246,9 +246,10 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
 static void LoadSystemVariables(struct RDFfdwState *state);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
-static int LocateToken(char * sparql, char *start_chars, char *element, char *end_chars);
+static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count);
 static void CreateSPARQL(RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
+static bool IsSPARQLParsable(char *raw_sparql);
 static char *deparseDate(Datum datum);
 static char *deparseTimestamp(Datum datum, bool hasTimezone);
 static char *deparseLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
@@ -257,7 +258,6 @@ static char *datumToString(Datum datum, Oid type);
 static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *deparseOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 
-static bool IsSPARQLParsable(char *raw_sparql);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -1341,11 +1341,21 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 
 static bool IsSPARQLParsable(char *raw_sparql) {
 	
-	return LocateToken(raw_sparql, " \n}", "GROUP BY"," \n?") == RDF_TOKEN_NOT_FOUND &&
-	       LocateToken(raw_sparql, " \n}", "ORDER BY"," \n?DA") == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(raw_sparql, " \n}", "LIMIT"," \n") == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(raw_sparql, " \n}", "UNION"," \n{") == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(raw_sparql, " \n", "HAVING"," \n(") == RDF_TOKEN_NOT_FOUND;
+	int times_occurred = 0;
+	
+	/* 
+	 * SPARQL Queries containing SUB SELECTS are not supported.
+	 */
+	LocateToken(raw_sparql, "{\n> ", "SELECT"," *?\n", &times_occurred);
+	
+	elog(DEBUG1,"%s: SPARQL contains '%d' SELECT clauses.",__func__, times_occurred);
+
+	return LocateToken(raw_sparql, " \n}", "GROUP BY"," \n?", NULL) == RDF_TOKEN_NOT_FOUND &&
+	       LocateToken(raw_sparql, " \n}", "ORDER BY"," \n?DA", NULL) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(raw_sparql, " \n}", "LIMIT"," \n", NULL) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(raw_sparql, " \n}", "UNION"," \n{", NULL) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(raw_sparql, " \n", "HAVING"," \n(", NULL) == RDF_TOKEN_NOT_FOUND &&
+		   times_occurred == 1;
 
 }
 
@@ -1398,10 +1408,10 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 
 
 	/* Separating PREFIX entries from the SPARQL query */
-	select_position = LocateToken(state->raw_sparql, "\n> ", "SELECT"," *?\n");
+	select_position = LocateToken(state->raw_sparql, "\n> ", "SELECT"," *?\n", NULL);
 	appendStringInfo(&prefixes,"%s",pnstrdup(state->raw_sparql, select_position + 1));
 
-	where_position = LocateToken(state->raw_sparql, " \n*", "WHERE"," \n{");
+	where_position = LocateToken(state->raw_sparql, " \n*", "WHERE"," \n{", NULL);
 
 	for (int i = strlen(state->raw_sparql) - 1; i >= where_position; i--) {		
 			
@@ -1425,13 +1435,13 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	 * if the raw SPARQL query contains a DISTINCT, this must be added into the 
 	 * new SELECT clause 
 	 */
-	if (LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?") != RDF_TOKEN_NOT_FOUND)
+	if (LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);		
 	/* 
 	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does, 
 	 * this must be added into the new SELECT clause 
 	 */
-	else if (LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?") == RDF_TOKEN_NOT_FOUND && 
+	else if (LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) == RDF_TOKEN_NOT_FOUND && 
 	        root->parse->distinctClause != NULL && 
 			!root->parse->hasDistinctOn)
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);
@@ -1466,7 +1476,7 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
  * This function locates a given 'token' within a 'str'. The tokens must be wrapped
  * with one of the characters given in 'start_chars' and 'end_chars'
  */
-static int LocateToken(char *str, char *start_chars, char *token, char *end_chars) 
+static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count) 
 {
 	int  token_position = RDF_TOKEN_NOT_FOUND;
 
@@ -1474,9 +1484,6 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 
 	for (int i = 0; i < strlen(start_chars); i++)
 	{
-
-		if(token_position!=RDF_TOKEN_NOT_FOUND)
-			break;
 
 		for (int j = 0; j < strlen(end_chars); j++)
 		{
@@ -1490,10 +1497,17 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 			
 			if (el != NULL)
 			{
-				token_position = el - str;
-				elog(DEBUG1,"  %s: %s located at position %d",__func__, token, token_position);
-				break;
 
+				if(token_position == RDF_TOKEN_NOT_FOUND)
+				{
+					token_position = el - str;
+					elog(DEBUG1,"  %s: '%s' located at position %d",__func__, token, token_position);
+					
+				} 
+
+				if(count)
+					(*count)++;
+								
 			}
 
 		}
