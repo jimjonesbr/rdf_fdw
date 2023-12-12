@@ -2257,7 +2257,7 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 			else
 				appendStringInfo(&orderedquery, " DESC (%s)", (GetRDFColumn(state,sort_clause))->sparqlvar);
 
-			delim = ", ";
+			//delim = ", ";
 
 		}
 		else
