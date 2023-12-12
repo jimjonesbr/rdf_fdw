@@ -4,7 +4,7 @@
 The `rdf_fdw` provides PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
 
 > [!WARNING]  
-> **THIS SOFTWARE IS STILL UNDER DEVELOPMENT AND IS NOT MEANT FOR PRODUCTION USE**
+> **THIS SOFTWARE IS UNDER CURRENT DEVELOPMENT AND IS STILL NOT MEANT FOR PRODUCTION USE**
 
 ## Index
 
@@ -431,6 +431,98 @@ LIMIT 10
  Berlin University of the Arts      | 01010000000100004065A72A40000000602C414A40
  Berlin School of Economics and Law | 0101000000FEFFFF3FF1AC2A40000000A01D3E4A40
  Free University of Berlin          | 0101000000FFFFFFBFC3942A40000000C0FD394A40
+(10 rows)
+```
+3. Create a `SERVER` and `FOREIGN TABLE` to query the [Getty Thesaurus](http://vocab.getty.edu/sparql) SPARQL endpoint [Non-Italians Who Worked in Italy](http://vocab.getty.edu/queries?toc=&query=SELECT+*+WHERE+%7B%3Fs+a+%3Fo%7D+LIMIT+1&implicit=true&equivalent=false#Non-Italians_Who_Worked_in_Italy):
+
+Find non-Italians who worked in Italy and lived during a given time range
+
+* Having event that took place in tgn:1000080 Italy or any of its descendants
+* Birth date between 1250 and 1780
+* Just for variety, we look for artists as descendants of facets ulan:500000003 "Corporate bodies" or ulan:500000002 "Persons, Artists", rather than having type "artist" as we did in previous queries. In the previous query we used values{..} but we here use filter(in(..)).
+* Not having nationality aat:300111198 Italian or any of its descendants
+
+````sql
+CREATE FOREIGN TABLE getty_non_italians (
+  uri text   OPTIONS (variable '?x'),
+  name text  OPTIONS (variable '?name'),
+  bio text   OPTIONS (variable '?bio'),
+  birth int  OPTIONS (variable '?birth')
+)
+SERVER getty OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
+  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+  PREFIX gvp: <http://vocab.getty.edu/ontology#>
+  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+  PREFIX schema: <http://schema.org/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+   SELECT ?x ?name ?bio ?birth {
+  {SELECT DISTINCT ?x
+    {?x foaf:focus/bio:event/(schema:location|(schema:location/gvp:broaderExtended)) tgn:1000080-place}}
+ 	 ?x gvp:prefLabelGVP/xl:literalForm ?name;
+	    foaf:focus/gvp:biographyPreferred [
+	    schema:description ?bio;
+       	gvp:estStart ?birth].
+
+  FILTER ("1250"^^xsd:gYear <= ?birth && ?birth <= "1780"^^xsd:gYear)
+  FILTER EXISTS {?x gvp:broaderExtended ?facet.
+  FILTER(?facet in (ulan:500000003, ulan:500000002))}
+  FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
+  '); 
+```
+
+In the following SQL query we can observe that: 
+
+* the executed SPARQL query was logged.
+* All conditions were applied locally, since `rdf_fdw` currently does not support sub selects.
+
+```
+SELECT name, bio, birth
+FROM getty_non_italians
+WHERE bio ~~* '%artist%'
+ORDER BY birth 
+LIMIT 10;
+
+NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
+
+
+  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
+  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+  PREFIX gvp: <http://vocab.getty.edu/ontology#>
+  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+  PREFIX schema: <http://schema.org/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+   SELECT ?x ?name ?bio ?birth {
+  {SELECT DISTINCT ?x
+    {?x foaf:focus/bio:event/(schema:location|(schema:location/gvp:broaderExtended)) tgn:1000080-place}}
+         ?x gvp:prefLabelGVP/xl:literalForm ?name;
+            foaf:focus/gvp:biographyPreferred [
+            schema:description ?bio;
+        gvp:estStart ?birth].
+
+  FILTER ("1250"^^xsd:gYear <= ?birth && ?birth <= "1780"^^xsd:gYear)
+  FILTER EXISTS {?x gvp:broaderExtended ?facet.
+  FILTER(?facet in (ulan:500000003, ulan:500000002))}
+  FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
+  
+  
+
+                name                 |                                  bio                                  | birth 
+-------------------------------------+-----------------------------------------------------------------------+-------
+ Juán de España                      | Spanish artist and goldsmith, active 1455                             |  1415
+ Coecke van Aelst, Pieter, the elder | Flemish artist, architect, and author, 1502-1550                      |  1502
+ Worst, Jan                          | Dutch artist, active ca. 1645-1655                                    |  1605
+ Mander, Karel van, III              | Dutch portraitist and decorative artist, 1608-1670, active in Denmark |  1608
+ Ulft, Jacob van der                 | Dutch artist, 1627-1689                                               |  1627
+ Fiammingo, Giacomo                  | Flemish artist, fl. 1655                                              |  1635
+ Marotte, Charles                    | French artist, fl. ca.1719-1743                                       |  1699
+ Troll, Johann Heinrich              | Swiss artist, 1756-1824                                               |  1756
+ Beys, G.                            | French artist, fl. ca.1786-1800                                       |  1766
+ Vaucher, Gabriel Constant           | Swiss artist, 1768-1814                                               |  1768
 (10 rows)
 ```
 
