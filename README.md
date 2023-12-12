@@ -442,7 +442,7 @@ Find non-Italians who worked in Italy and lived during a given time range
 * Just for variety, we look for artists as descendants of facets ulan:500000003 "Corporate bodies" or ulan:500000002 "Persons, Artists", rather than having type "artist" as we did in previous queries. In the previous query we used values{..} but we here use filter(in(..)).
 * Not having nationality aat:300111198 Italian or any of its descendants
 
-````sql
+```sql
 CREATE FOREIGN TABLE getty_non_italians (
   uri text   OPTIONS (variable '?x'),
   name text  OPTIONS (variable '?name'),
@@ -479,7 +479,7 @@ In the following SQL query we can observe that:
 * the executed SPARQL query was logged.
 * All conditions were applied locally, since `rdf_fdw` currently does not support sub selects.
 
-```
+```sql
 SELECT name, bio, birth
 FROM getty_non_italians
 WHERE bio ~~* '%artist%'
@@ -508,7 +508,7 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
   FILTER EXISTS {?x gvp:broaderExtended ?facet.
   FILTER(?facet in (ulan:500000003, ulan:500000002))}
   FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
-  
+
   
 
                 name                 |                                  bio                                  | birth 
