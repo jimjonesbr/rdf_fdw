@@ -1,0 +1,4 @@
+comment = 'Foreign-data wrapper for RDF Triplestores'
+default_version = '1.0'
+module_pathname = '$libdir/rdf_fdw'
+relocatable = true
