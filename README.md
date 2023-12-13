@@ -477,7 +477,7 @@ SERVER getty OPTIONS (
 In the following SQL query we can observe that: 
 
 * the executed SPARQL query was logged.
-* All conditions were applied locally, since `rdf_fdw` currently does not support sub selects.
+* All conditions were applied locally (`rdf_fdw` currently does not support sub selects).
 
 ```sql
 SELECT name, bio, birth
@@ -525,6 +525,110 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
  Vaucher, Gabriel Constant           | Swiss artist, 1768-1814                                               |  1768
 (10 rows)
 ```
+
+4. Create a `SERVER` and `FOREIGN TABLE` to query the [BBC Programmes and Music](http://vocab.getty.edu/sparql) SPARQL endpoint (authors and their work)
+
+```sql
+CREATE SERVER bbc
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint 'https://lod.openlinksw.com/sparql',
+  format 'application/sparql-results+xml'
+);
+
+
+CREATE FOREIGN TABLE artists (
+  id text          OPTIONS (variable '?person'),
+  name text        OPTIONS (variable '?name'),
+  itemid text      OPTIONS (variable '?created'),
+  title text       OPTIONS (variable '?title'),
+  description text OPTIONS (variable '?description')
+)
+SERVER bbc OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
+  PREFIX dcterms: <http://purl.org/dc/terms/>
+  PREFIX bibo: <http://purl.org/ontology/bibo/>
+
+  SELECT ?person ?name ?created ?title ?description 
+  WHERE 
+  {
+    ?person a foaf:Person ;
+      foaf:name ?name ;
+      blterms:hasCreated ?created .
+    ?created a bibo:Book ;
+      dcterms:title ?title ;
+    dcterms:description ?description
+} 
+'); 
+```
+
+In the following SQL query we can observe that: 
+
+* the executed SPARQL query was logged.
+* the SPARQL `SELECT` clause was reduced to the columns used in the SQL query
+* `DISTINCT` and `WHERE` and clauses were pushed down.
+* an `ORDER BY` was automatically pushded down due the use of `DISTINCT`
+
+```sql
+SELECT DISTINCT title, description 
+FROM artists
+WHERE name = 'John Lennon';
+
+NOTICE:  SPARQL query sent to 'https://lod.openlinksw.com/sparql':
+
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX bibo: <http://purl.org/ontology/bibo/>
+
+
+SELECT DISTINCT ?name ?title ?description 
+{
+  ?person a foaf:Person ;
+    foaf:name ?name ;
+    blterms:hasCreated ?created .
+  ?created a bibo:Book ;
+    dcterms:title ?title ;
+  dcterms:description ?description
+ FILTER(STR(?name) = "John Lennon")
+}
+ORDER BY  ASC (?title)  ASC (?description)
+
+                            title                             |                                                                      description                                                                      
+--------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sometime in New York City                                    | Limited ed. of 3500 copies.
+ All you need is love                                         | Originally published: 2019.
+ The John Lennon letters                                      | Originally published: London: Weidenfeld &amp; Nicolson, 2012.
+ Imagine John Yoko                                            | In slip case housed in box (37 x 29 x 8 cm).
+ Imagine                                                      | Originally published: 2017.
+ More Beatles hits arranged for ukulele                       | Words and music by John Lennon and Paul McCartney except Something, words and music by George Harrison.
+ The Lennon play : In his own write the Lennon play           | 'Adapted from John Lennon's best-selling books "In his own write" and "A Spaniard in the works".' - Book jacket.
+ More Beatles hits arranged for ukulele                       | Publishers no.: NO91245.
+ The John Lennon letters                                      | Originally published: 2012.
+ Imagine John Yoko                                            | Includes numbered officially stamped giclée print in clothbound portfolio case.
+ Last interview : all we are saying, John Lennon and Yoko Ono | Previous ed.: published as The Playboy interviews with John Lennon and Yoko Ono. New York: Playboy Press, 1981; Sevenoaks: New English Library, 1982.
+ John Lennon : drawings, performances, films                  | Published in conjunction with the exhibition "The art of John Lennon: drawings, performances, films", Kunsthalle Bremen, 21 May to 13 August 1995.
+ John Lennon in his own write                                 | Originally published in Great Britain in1964 by Johnathan Cape.
+ Sometime in New York City                                    | In box.
+ Imagine John Yoko                                            | "This edition is limited to 2,000 copies worldwide, numbered 1-2,000, plus 10 copies retained by the artist, inscribed i-x"--Container.
+ Last interview : all we are saying, John Lennon and Yoko Ono | This ed. originally published: London: Sidgwick &amp; Jackson, 2000.
+ Imagine John Yoko                                            | Includes index.
+ Sometime in New York City                                    | Includes index.
+ A Spaniard in the works                                      | Originally published: Great Britain : Johnathan Cape, 1965.
+ All you need is love                                         | Board book.
+ The Playboy interviews with John Lennon and Yoko Ono         | Originally published: New York : Playboy Press, c1981.
+ Skywriting by word of mouth                                  | Originally published: New York: HarperCollins; London: Jonathan Cape, 1986.
+ John Lennon in his own write ; and a Spaniard in the works   | Originally published: 1964.
+ John Lennon in his own write ; and a Spaniard in the works   | Originally published: 1965.
+ Lennon on Lennon : conversations with John Lennon            | "This edition published by arrangement with Chicago Review Press"--Title page verso.
+(25 rows)
+
+```
+
+
 
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
