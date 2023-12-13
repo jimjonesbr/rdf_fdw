@@ -4,7 +4,7 @@
 The `rdf_fdw` provides PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
 
 > [!WARNING]  
-> **THIS SOFTWARE IS UNDER CURRENT DEVELOPMENT AND IS STILL NOT MEANT FOR PRODUCTION USE**
+> **THIS SOFTWARE IS CURRENTLY UNDER DEVELOPMENT AND IS STILL NOT READY FOR PRODUCTION USE**
 
 ## Index
 
