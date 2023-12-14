@@ -552,37 +552,6 @@ static void rdfEndForeignScan(ForeignScanState *node)
 {
 }
 
-/*
-static TupleTableSlot *rdfExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot)
-{
-	ereport(
-		ERROR, (
-		   errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
-		   errmsg("Operation not supported."),
-		   errhint("rdf_fdw does not support UPDATE queries")));
-	return NULL;
-}
-
-static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot)
-{
-	ereport(
-		ERROR, (
-			errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
-			errmsg("Operation not supported."),
-			errhint("rdf_fdw does not support INSERT queries.")));
-	return NULL;
-}
-
-static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot)
-{
-	ereport(
-		ERROR, (
-			errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
-			errmsg("Operation not supported."),
-			errhint("rdf_fdw does not support DELETE queries.")));
-	return NULL;
-}
-*/
 static int CheckURL(char *url)
 {
 
@@ -635,7 +604,9 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	char *sparqlxml = "content-type: application/sparql-results+xml";
 	char *sparqlxmlutf8 = "content-type: application/sparql-results+xml; charset=utf-8";
 
-	/* is it a "content-type" entry? "*/
+	Assert(contents);
+
+	/* is it a "content-type" entry? "*/	
 	if (strncasecmp(contents, sparqlxml, 13) == 0)
 	{
 
@@ -1037,6 +1008,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			elog(DEBUG2, "  %s: http response code = %ld", __func__, response_code);
 			elog(DEBUG2, "  %s: http response size = %ld", __func__, chunk.size);
 			elog(DEBUG2, "  %s: http response header = \n%s", __func__, chunk_header.memory);
+
 		}
 
 	}
@@ -1045,6 +1017,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	pfree(chunk_header.memory);
 	curl_easy_cleanup(curl);
 	curl_global_cleanup();
+
+	/*
+	 * We thrown an error in case the SPARQL endpoint returns an empty XML doc
+	 */
+	if(!state->xmldoc)
+		return REQUEST_FAIL;
 
 	return REQUEST_SUCCESS;
 }
@@ -1064,8 +1042,9 @@ static void LoadRDFData(RDFfdwState *state)
 	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
 		elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
 
+	elog(DEBUG2, "  %s: loading 'xmlroot'",__func__);
 	xmlroot = xmlDocGetRootElement(state->xmldoc);
-
+	
 	for (results = xmlroot->children; results != NULL; results = results->next)
 	{
 
@@ -1482,7 +1461,8 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
  */
 static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count) 
 {
-	int  token_position = RDF_TOKEN_NOT_FOUND;
+	int token_position = RDF_TOKEN_NOT_FOUND;
+	int nquotes;
 
 	elog(DEBUG1,"%s called",__func__);
 
@@ -1501,21 +1481,17 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 			
 			if (el != NULL)
 			{
-
 				if(token_position == RDF_TOKEN_NOT_FOUND)
 				{
 					token_position = el - str;
-					elog(DEBUG1,"  %s: '%s' located at position %d",__func__, token, token_position);
-					
+					elog(DEBUG1,"  %s: '%s' located at position %d",__func__, token, token_position);					
 				} 
 
 				if(count)
 					(*count)++;
 								
 			}
-
-		}
-		
+		}		
 	}
 
 	return token_position;
@@ -1753,9 +1729,8 @@ static char *deparseLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptIn
 	}
 		
 	/*
-	 * disables LIMIT push down if any WHERE conidition cannot be
-	 * be pushed down, otherwise you'll be scratching your head forever
-	 * wondering why some data are missing from the result set.
+	 * disables LIMIT push down if any WHERE conidition cannot be be pushed down, otherwise you'll 
+	 * be scratching your head forever wondering why some data are missing from the result set.
 	 */
 	if (state->local_conds != NIL)
 	{
@@ -2077,7 +2052,6 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 						appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", c);
 
-
 					/* append the argument */
 					first_arg = false;
 
@@ -2304,7 +2278,5 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 		return NULL;
 	}
 
-		
-
-	
+			
 }
