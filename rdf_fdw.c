@@ -1351,7 +1351,6 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	int where_position = -1;
 	int where_size = -1;
 	char *limit;
-	char *orderby;
 	char *filters;
 	
 	initStringInfo(&state->sparql);	
@@ -1417,14 +1416,19 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	/* 
 	 * if the raw SPARQL query contains a DISTINCT, this must be added into the 
 	 * new SELECT clause 
-	 */
-	if (LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
+	 */	
+	if (state->is_sparql_parsable == true && 		
+		LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
+	{
+		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT > pushing down DISTINCT", __func__);
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);		
+	}
 	/* 
 	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does, 
 	 * this must be added into the new SELECT clause 
 	 */
-	else if (LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) == RDF_TOKEN_NOT_FOUND && 
+	else if (state->is_sparql_parsable &&  
+			LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) == RDF_TOKEN_NOT_FOUND && 
 	        root->parse->distinctClause != NULL && 
 			!root->parse->hasDistinctOn)
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);
@@ -1434,11 +1438,15 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	/*
 	 * if the SQL query contains an ORDER BY, we try to push it down.
 	 */
-	orderby = deparseOrderBy(state, root, baserel);
-	if (orderby)
-	{
-		elog(DEBUG1, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, orderby);
-		appendStringInfo(&state->sparql, "\nORDER BY%s", pstrdup(orderby));
+	if(state->is_sparql_parsable) {
+
+		char *orderby = deparseOrderBy(state, root, baserel);
+
+		if (orderby)
+		{
+			elog(DEBUG1, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, orderby);
+			appendStringInfo(&state->sparql, "\nORDER BY%s", pstrdup(orderby));
+		}
 	}
 
 	/*
@@ -1457,12 +1465,13 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 
 /*
  * This function locates a given 'token' within a 'str'. The tokens must be wrapped
- * with one of the characters given in 'start_chars' and 'end_chars'
+ * with one of the characters given in 'start_chars' and 'end_chars'. The parameter'
+ * '*count' stores the total number of occurrences of the searched token - if not 
+ * needed, set it to NULL.
  */
 static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count) 
 {
 	int token_position = RDF_TOKEN_NOT_FOUND;
-	int nquotes;
 
 	elog(DEBUG1,"%s called",__func__);
 
@@ -1483,12 +1492,31 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 			{
 				if(token_position == RDF_TOKEN_NOT_FOUND)
 				{
-					token_position = el - str;
-					elog(DEBUG1,"  %s: '%s' located at position %d",__func__, token, token_position);					
-				} 
+
+					int nquotes = 0;
+
+					for (int i = 0; i <= (el - str); i++) {
+						if (str[i] == '\"') 
+							nquotes++;
+					}	
+
+					/*
+					 * If the token is located inside an open double quote it is a literal and should
+					 * considered as a token.					 
+					 */
+					if (nquotes % 2 != 1)
+					{
+						token_position = el - str;
+						elog(DEBUG1,"  %s: '%s' located at position %d",__func__, token, token_position);
+
+					}
+
+				
+				
+				}
 
 				if(count)
-					(*count)++;
+					(*count)++; 
 								
 			}
 		}		
