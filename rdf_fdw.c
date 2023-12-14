@@ -505,6 +505,8 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 
 	if (eflags & EXEC_FLAG_EXPLAIN_ONLY)
 		return;
+
+	xmlInitParser();
 	
 	LoadRDFData(state);
 
@@ -537,6 +539,11 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 	} 
 	else 
 	{
+	   /*
+		* No further records to be retrieved. Let's clean up the XML parser before ending the query.
+		*/	
+		xmlFreeDoc(state->xmldoc);
+		xmlCleanupParser();
 		elog(DEBUG2,"  %s: no rows left (%d/%d)",__func__,state->rowcount , state->pagesize);
 	}
 
