@@ -494,9 +494,8 @@ SELECT birthdate FROM person3
 WHERE person <> '' 
 LIMIT 5;
 
-/* ################### Pushdown Check ################### */
 
-/*
+/* ===================== Pushdown Check =====================
  * Tests the result set for filter applied localy and remotely. 
  * The result sets must be identical.
  */
@@ -580,4 +579,114 @@ LIMIT 10;
 
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
-SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters
+SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters;
+
+
+/* ===================== Keywords Tests =====================
+ * Literals containing SPARQL keywords won't be treated by the
+ * parser as SPARQL clauses
+
+ * Test SPARQL containing LIMIT keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_limit (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:Cacilhas_Lighthouse dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " limit "))
+  }
+'); 
+
+SELECT name
+FROM dbpedia_limit
+LIMIT 2;
+
+
+/*
+ * Test SPARQL containing ORDER BY keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_orderby (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:List_of_flag_names dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " order by "))
+  }
+'); 
+
+SELECT name
+FROM dbpedia_orderby
+ORDER BY name DESC
+LIMIT 2;
+
+/*
+ * Test SPARQL containing DISTINCT keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_distinct (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:Cadillac_Eldorado dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " distinct "))
+  }
+'); 
+
+SELECT DISTINCT name
+FROM dbpedia_distinct
+LIMIT 1;
+
+/*
+ * Test SPARQL containing GROUP BY keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_groupby (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:Only_for_Love dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " group by "))
+  }
+'); 
+
+SELECT name
+FROM dbpedia_groupby
+LIMIT 1;

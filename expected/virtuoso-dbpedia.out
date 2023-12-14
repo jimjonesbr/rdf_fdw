@@ -1300,8 +1300,7 @@ LIMIT 5
  1987-06-30
 (5 rows)
 
-/* ################### Pushdown Check ################### */
-/*
+/* ===================== Pushdown Check =====================
  * Tests the result set for filter applied localy and remotely. 
  * The result sets must be identical.
  */
@@ -1472,8 +1471,195 @@ SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilte
 ------+----------+---------
 (0 rows)
 
-SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters
+SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters;
  name | birthdate | party | country 
 ------+-----------+-------+---------
 (0 rows)
+
+/* ===================== Keywords Tests =====================
+ * Literals containing SPARQL keywords won't be treated by the
+ * parser as SPARQL clauses
+
+ * Test SPARQL containing LIMIT keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_limit (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:Cacilhas_Lighthouse dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " limit "))
+  }
+'); 
+SELECT name
+FROM dbpedia_limit
+LIMIT 2;
+NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  
+SELECT ?name 
+{
+    dbr:Cacilhas_Lighthouse dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " limit "))
+  }
+LIMIT 2
+
+        name         
+---------------------
+ ''Farol de Cacilhas
+ Cacilhas Lighthouse
+(2 rows)
+
+/*
+ * Test SPARQL containing ORDER BY keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_orderby (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:List_of_flag_names dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " order by "))
+  }
+'); 
+SELECT name
+FROM dbpedia_orderby
+ORDER BY name DESC
+LIMIT 2;
+NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  
+SELECT ?name 
+{
+    dbr:List_of_flag_names dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " order by "))
+  }
+ORDER BY  DESC (?name)
+LIMIT 2
+
+        name         
+---------------------
+ Jefferson Seal Flag
+ Five Coloured Flag
+(2 rows)
+
+/*
+ * Test SPARQL containing DISTINCT keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_distinct (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:Cadillac_Eldorado dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " distinct "))
+  }
+'); 
+SELECT DISTINCT name
+FROM dbpedia_distinct
+LIMIT 1;
+NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  
+SELECT DISTINCT ?name 
+{
+    dbr:Cadillac_Eldorado dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " distinct "))
+  }
+ORDER BY  ASC (?name)
+
+ name 
+------
+ 1957
+(1 row)
+
+/*
+ * Test SPARQL containing GROUP BY keyword in a literal
+ */
+CREATE FOREIGN TABLE dbpedia_groupby (
+  name text        OPTIONS (variable '?name'),
+  description text OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  SELECT *
+  {
+    dbr:Only_for_Love dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " group by "))
+  }
+'); 
+SELECT name
+FROM dbpedia_groupby
+LIMIT 1;
+NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+
+  
+SELECT ?name 
+{
+    dbr:Only_for_Love dbo:abstract ?abstract ;
+      dbp:name ?name
+    FILTER(REGEX(STR(?abstract), " group by "))
+  }
+LIMIT 1
+
+     name      
+---------------
+ Only for Love
+(1 row)
 

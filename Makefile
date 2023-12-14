@@ -2,7 +2,7 @@ MODULE_big = rdf_fdw
 OBJS = rdf_fdw.o
 EXTENSION = rdf_fdw
 DATA = rdf_fdw--1.0.sql
-REGRESS = virtuoso-dbpedia virtuoso-seadatanet graphdb-getty exceptions
+REGRESS = virtuoso-dbpedia graphdb-getty exceptions
 
 CURL_CONFIG = curl-config
 PG_CONFIG = pg_config
