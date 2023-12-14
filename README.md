@@ -443,6 +443,13 @@ Find non-Italians who worked in Italy and lived during a given time range
 * Not having nationality aat:300111198 Italian or any of its descendants
 
 ```sql
+CREATE SERVER getty
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint 'http://vocab.getty.edu/sparql.xml',
+  format 'application/sparql-results+xml'
+);
+
 CREATE FOREIGN TABLE getty_non_italians (
   uri text   OPTIONS (variable '?x'),
   name text  OPTIONS (variable '?name'),
