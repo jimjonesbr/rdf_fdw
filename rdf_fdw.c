@@ -1436,14 +1436,24 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	}
 	
 	/* 
-	 * if the raw SPARQL query contains a DISTINCT, this must be added into the 
+	 * if the raw SPARQL query contains a DISTINCT modifier, this must be added into the 
 	 * new SELECT clause 
 	 */	
 	if (state->is_sparql_parsable == true && 		
 		LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
 	{
-		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT > pushing down DISTINCT", __func__);
+		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);		
+	} 
+	/* 
+	 * if the raw SPARQL query contains a REDUCED modifier, this must be added into the 
+	 * new SELECT clause 
+	 */	
+	else if (state->is_sparql_parsable == true && 		
+		LocateToken(state->raw_sparql, " \n", "REDUCED"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
+	{
+		elog(DEBUG1, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
+		appendStringInfo(&state->sparql,"%s\nSELECT REDUCED %s\n%s",prefixes.data, select.data, where.data);		
 	}
 	/* 
 	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does, 
