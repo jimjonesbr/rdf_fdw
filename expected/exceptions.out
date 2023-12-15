@@ -28,7 +28,7 @@ OPTIONS (
   enable_pushdown 'foo'
 );
 ERROR:  invalid enable_pushdown: 'foo'
-HINT:  only boolean ('true' or 'false') values are expected
+HINT:  this parameter expects boolean values ('true' or 'false')
 CREATE SERVER testserver
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
@@ -87,7 +87,7 @@ CREATE FOREIGN TABLE table_error5 (
   (sparql 'SELECT * WHERE {?s ?p ?o}',
   log_sparql 'foo');
 ERROR:  invalid log_sparql: 'foo'
-HINT:  only boolean ('true' or 'false') values are expected
+HINT:  this parameter expects boolean values ('true' or 'false')
 /* INSERT, UPDATE and DELETE not supported */
 CREATE SERVER testserver2
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -111,3 +111,50 @@ EXPLAIN SELECT * FROM t1;
  Foreign Scan on t1  (cost=1.00..1001.00 rows=1000 width=32)
 (1 row)
 
+/* invalid SPARQL - missing closing curly braces (\n)*/
+CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql '
+  SELECT ?s {?s ?p ?o '); 
+SELECT * FROM t2;
+ERROR:  unable to parse SPARQL WHERE clause:
+
+  SELECT ?s {?s ?p ?o 
+HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
+/* invalid SPARQL - missing closing curly braces */
+CREATE FOREIGN TABLE t3 (s text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o'); 
+SELECT * FROM t3;
+ERROR:  unable to parse SPARQL WHERE clause:
+SELECT ?s {?s ?p ?o
+HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
+/* invalid SPARQL - missing closing curly braces (\t) */
+CREATE FOREIGN TABLE t4 (s text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql '  SELECT ?s {?s ?p ?o'); 
+SELECT * FROM t4;
+ERROR:  unable to parse SPARQL WHERE clause:
+  SELECT ?s {?s ?p ?o
+HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
+/* invalid SPARQL - missing opening curly braces (\n)*/
+CREATE FOREIGN TABLE t5 (s text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql '
+  SELECT ?s ?s ?p ?o}'); 
+SELECT * FROM t5;
+ERROR:  unable to parse SPARQL WHERE clause:
+
+  SELECT ?s ?s ?p ?o}
+HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
+/* empty WHERE clause */
+CREATE FOREIGN TABLE t6 (s text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {}'); 
+SELECT * FROM t6;
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  ExecuteSPARQL => (22) The requested URL returned error: 400 
+
+/* missing SELECT  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}'); 
+SELECT * FROM t7;
+ERROR:  unable to parse SPARQL SELECT clause:
+?s {?s ?p ?o}.
