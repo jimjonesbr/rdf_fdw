@@ -1663,3 +1663,50 @@ LIMIT 1
  Only for Love
 (1 row)
 
+/*
+ * Test SPARQL containing a REDUCED modifier
+ */
+CREATE FOREIGN TABLE musical_artists (
+  uri text   OPTIONS (variable '?uri'),
+  name text  OPTIONS (variable '?name')  
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+  SELECT REDUCED ?uri ?name {
+    ?uri a dbo:MusicalArtist;
+      dbp:name ?name
+  }
+'); 
+SELECT name
+FROM musical_artists
+LIMIT 10;
+NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+  
+SELECT REDUCED ?name 
+{
+    ?uri a dbo:MusicalArtist;
+      dbp:name ?name
+  }
+LIMIT 10
+
+      name      
+----------------
+ Cab Calloway
+ Cab Kaye
+ Cabum
+ Caca Handika
+ Cachao
+ Cacho Castaña
+ Cachorro López
+ CACTUS
+ Tuccho
+ Cadalack Ron
+(10 rows)
+
