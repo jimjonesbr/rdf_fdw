@@ -690,3 +690,26 @@ SERVER dbpedia OPTIONS (
 SELECT name
 FROM dbpedia_groupby
 LIMIT 1;
+
+
+/*
+ * Test SPARQL containing a REDUCED modifier
+ */
+CREATE FOREIGN TABLE musical_artists (
+  uri text   OPTIONS (variable '?uri'),
+  name text  OPTIONS (variable '?name')  
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbp: <http://dbpedia.org/property/>
+  PREFIX dbo: <http://dbpedia.org/ontology/>
+  SELECT REDUCED ?uri ?name {
+    ?uri a dbo:MusicalArtist;
+      dbp:name ?name
+  }
+'); 
+
+SELECT name
+FROM musical_artists
+LIMIT 10;
