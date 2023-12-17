@@ -118,24 +118,30 @@ PG_MODULE_MAGIC;
 
 typedef struct RDFfdwState
 {
-	int numcols;			 /* Total number of columns in the foreign table. */
+	int numcols;			 		/* Total number of columns in the foreign table. */
 	int rowcount;
 	int pagesize;
 	int sparql_select_index;
-	char *endpoint;
+	char *sparql_prefixes;
+	char *sparql_select;
+	char *sparql_where;
+	char *sparql_filter;
+	char *sparql_orderby;
+	char *sparql_limit;
 	char *raw_sparql;
+	char *endpoint;
 	char *format;
-	char *proxy;			 /* Proxy for HTTP requests, if necessary. */
-	char *proxyType;		 /* Proxy protocol (HTTPS, HTTP). */
-	char *proxyUser;		 /* User name for proxy authentication. */
-	char *proxyUserPassword; /* Password for proxy authentication. */
+	char *proxy;			 		/* Proxy for HTTP requests, if necessary. */
+	char *proxyType;		 		/* Proxy protocol (HTTPS, HTTP). */
+	char *proxyUser;		 		/* User name for proxy authentication. */
+	char *proxyUserPassword; 		/* Password for proxy authentication. */
 	char *token;
 	char *customParams;
-	bool requestRedirect;	 /* Enables or disables URL redirecting. */
+	bool requestRedirect;	 		/* Enables or disables URL redirecting. */
 	bool enablePushdown;
 	bool is_sparql_parsable;
 	bool log_sparql;
-	long requestMaxRedirect; /* Limit of how many times the URL redirection (jump) may occur. */
+	long requestMaxRedirect; 		/* Limit of how many times the URL redirection (jump) may occur. */
 	long connectTimeout;
 	long maxretries;
 	xmlDocPtr xmldoc;	
@@ -143,8 +149,8 @@ typedef struct RDFfdwState
 	List *records;
 	struct RDFfdwTable *rdfTable;
 	StringInfoData sparql;
-	List *remote_conds;  /* can be pushed down to remote server */
-	List *local_conds;   /* cannot be pushed down to remote server */
+	List *remote_conds;  			/* can be pushed down to remote server */
+	List *local_conds;   			/* cannot be pushed down to remote server */
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -245,10 +251,10 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
-static void LoadSystemVariables(struct RDFfdwState *state);
+static void InitSystem(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count);
-static void CreateSPARQL(RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
+static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static char *deparseDate(Datum datum);
@@ -379,10 +385,33 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 
 
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_SPARQL) == 0)
-				{				
+				{
 
-					// TODO: Check if a given SPARQL query is valid (syntax only)
-				
+					char *sparql = defGetString(def);
+					int where_position = -1;
+					int where_size = -1;
+
+					for (int i = 0; sparql[i] != '\0'; i++)
+					{
+						if (sparql[i] == '{' && where_position == -1)
+							where_position = i;
+
+						if (sparql[i] == '}')
+							where_size = i - where_position;
+					}
+
+					/* report ERROR if the SPARQL does not contain the opening and closing braces {} */
+					if (where_size == -1 || where_position == -1)
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("unable to parse SPARQL WHERE clause:\n%s", sparql),
+								 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'")));
+
+					/* report ERROR if the SPARQL query does not contain a SELECT */
+					 if(LocateToken(sparql, "{\n\t> ", "SELECT"," *?\n\t", NULL) == RDF_TOKEN_NOT_FOUND )
+						ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							errmsg("unable to parse SPARQL SELECT clause:\n%s.", sparql)));
 				}
 
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_LOG_SPARQL) == 0)
@@ -393,7 +422,6 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, log_sparql),
 								 errhint("this parameter expects boolean values ('true' or 'false')")));
-
 				}
 				
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_VARIABLE) == 0)
@@ -465,7 +493,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	
 	state->foreigntableid = opts->foreigntableid;
 
-	LoadSystemVariables(state);
+	InitSystem(state, baserel, root);
 
 	if(!state->enablePushdown) 
 	{
@@ -481,7 +509,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	}
 	else 
 	{
-		CreateSPARQL(state, baserel, root);
+		CreateSPARQL(state, root);
 	}
 	
 
@@ -665,11 +693,16 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 	return NULL;
 }
 
-static void LoadSystemVariables(struct RDFfdwState *state) {
+static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root) {
 
 	ForeignTable *ft = GetForeignTable(state->foreigntableid);
-	ForeignServer *server = GetForeignServer(ft->serverid);
+	ForeignServer *server = GetForeignServer(ft->serverid);	
+	List *columnlist = baserel->reltarget->exprs;
+	List *conditions = baserel->baserestrictinfo;
 	ListCell *cell;
+	int where_position = -1;
+	int where_size = -1;
+	StringInfoData select;
 
 #if PG_VERSION_NUM < 130000
 	Relation rel = heap_open(ft->relid, NoLock);
@@ -683,6 +716,9 @@ static void LoadSystemVariables(struct RDFfdwState *state) {
 	state->log_sparql = false;
 	state->numcols = rel->rd_att->natts;
 
+	/* 
+	 *Loading FOREIGN TABLE strucuture (columns and their OPTION values)
+	 */
 	state->rdfTable = (struct RDFfdwTable *) palloc0(sizeof(struct RDFfdwTable));
 	state->rdfTable->cols = (struct RDFfdwColumn **) palloc0(sizeof(struct RDFfdwColumn*) * state->numcols);
 
@@ -731,8 +767,7 @@ static void LoadSystemVariables(struct RDFfdwState *state) {
 		}
 
 		/* 
-		 * The parser will set it to true if the column is used in the 
-		 * SQL query.
+		 * The parser will set it to true if the column is used in the SQL query.
 		 */
 		state->rdfTable->cols[i]->used = false; 
 	}
@@ -743,7 +778,7 @@ static void LoadSystemVariables(struct RDFfdwState *state) {
 	table_close(rel, NoLock);
 #endif
 
-	/* Foreign Server OPTIONS */
+	/* Loading Foreign Server OPTIONS */
 	foreach (cell, server->options)
 	{
 		DefElem *def = lfirst_node(DefElem, cell);
@@ -804,7 +839,7 @@ static void LoadSystemVariables(struct RDFfdwState *state) {
 	}
 
 
-	/* Foreign Table OPTIONS */
+	/* Loading Foreign Table OPTIONS */
 	foreach (cell, ft->options)
 	{
 		DefElem *def = lfirst_node(DefElem, cell);
@@ -826,6 +861,69 @@ static void LoadSystemVariables(struct RDFfdwState *state) {
 					
 	}
 
+	/* 
+	 * Marking columns used in the SQL query for SPARQL pushdown 
+	 */
+	elog(DEBUG1, "%s: looking for columns in the SELECT entry list",__func__);
+	foreach(cell, columnlist)
+		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
+
+	elog(DEBUG1, "%s: looking for columns used in WHERE conditions",__func__);
+	foreach(cell, conditions)
+		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
+
+	/* 
+	 * Loading SPARQL prefixes from raw_sparql 
+	 */
+	state->sparql_prefixes = pnstrdup(state->raw_sparql, state->sparql_select_index + 1);
+
+	/* 
+	 * We create the SPARQL SELECT clause according to the columns used in the 
+	 * SQL SELECT. Functions calls and expressions are only pushed down if explicitly 
+	 * declared in the 'expression' column OPTION.
+	 */
+	initStringInfo(&select);
+	for (int i = 0; i < state->numcols; i++)
+	{
+		if(state->rdfTable->cols[i]->used && !state->rdfTable->cols[i]->expression)
+			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->sparqlvar));
+		else if(state->rdfTable->cols[i]->used && state->rdfTable->cols[i]->expression)
+			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->expression));
+	}
+
+	state->sparql_select = pstrdup(select.data);
+
+	/* 
+	 * Deparsing SPARQL WHERE clause  
+	 *   'where_position = i + 1' to remove the surrounging curly braces {} as we are 
+	 *   interested only in WHERE clause's containing triples
+	 */
+	for (int i = 0; state->raw_sparql[i] != '\0'; i++)
+	{
+		if (state->raw_sparql[i] == '{' && where_position == -1)
+			where_position = i + 1;
+
+		if (state->raw_sparql[i] == '}')
+			where_size = i - where_position;
+	}	
+	state->sparql_where = pnstrdup(state->raw_sparql + where_position, where_size);
+
+	/* 
+	 * Try to deparse SQL WHERE conditions to create SPARQL FILTER expressions 
+	 */
+	state->sparql_filter = deparseWhereConditions(state, baserel);
+
+	/*
+	 * Try to deparse ORDER BY and convert it to SPARQL
+	 */
+	state->sparql_orderby = deparseOrderBy(state, root, baserel);
+
+	/*
+	 * Try to deparse SQL LIMIT and convert it to SPARQL
+	 */
+	state->sparql_limit = deparseLimit(state, root, baserel);
+
+	
 }
 
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
@@ -1338,7 +1436,9 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 	 */
 	state->sparql_select_index = LocateToken(state->raw_sparql, "{\n\t> ", "SELECT"," *?\n\t", &token_count);
 
-	/* if the SPARQL query has no SELECT clause, there is no point to keep going */
+	/* 
+	 * we abort the whole thing in case the SPARQL query has no SELECT clause 
+	 */
 	if(token_count == 0)
 		ereport(ERROR,
 			(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
@@ -1357,83 +1457,20 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 
 }
 
-static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root)
+static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 {
 	
-	StringInfoData prefixes;
-	StringInfoData select;
-	StringInfoData where;
-	ListCell *cell;
-	List *columnlist = baserel->reltarget->exprs;
-	List *conditions = baserel->baserestrictinfo;
-	int where_position = -1;
-	int where_size = -1;
-	char *limit;
-	char *filters;
-	
+	StringInfoData where_graph;
+
 	initStringInfo(&state->sparql);	
-	initStringInfo(&prefixes);
-	initStringInfo(&select);
-	initStringInfo(&where);
+	initStringInfo(&where_graph);
 
 	elog(DEBUG1, "%s called",__func__);
 
-	elog(DEBUG1, "%s: looking for columns in the SELECT entry list",__func__);
-	foreach(cell, columnlist)
-	{	
-		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
-	}
-
-	elog(DEBUG1, "%s: looking for columns used in WHERE conditions",__func__);
-	foreach(cell, conditions)
-	{
-		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
-	}
-
-	/* 
-	 * We create the SPARQL SELECT clause according to the columns used in the 
-	 * SQL SELECT. Functions calls and expressions are only pushed down if explicitly 
-	 * declared in the 'expression' column OPTION.
-	 */
-	for (int i = 0; i < state->numcols; i++)
-	{
-		if(state->rdfTable->cols[i]->used && !state->rdfTable->cols[i]->expression)
-			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->sparqlvar));
-		else if(state->rdfTable->cols[i]->used && state->rdfTable->cols[i]->expression)
-			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->expression));
-	}
-
-
-	/* Separating PREFIX entries from the SPARQL query */
-	appendStringInfo(&prefixes,"%s",pnstrdup(state->raw_sparql, state->sparql_select_index + 1));
-
-	for (int i = 0; state->raw_sparql[i] != '\0'; i++)
-	{
-		if (state->raw_sparql[i] == '{' && where_position == -1)
-			where_position = i;
-
-		if (state->raw_sparql[i] == '}')
-			where_size = i - where_position;
-	}
-
-	if(where_size == -1 || where_position == -1)
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-					errmsg("unable to parse SPARQL WHERE clause:\n%s",state->raw_sparql),
-					errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'")));
-	
-	filters = deparseWhereConditions(state, baserel);
-
-	if(filters) 
-	{
-		char *sparql_where = (char *) palloc0(where_size+1);
-		strncpy(sparql_where, state->raw_sparql + where_position, where_size);
-		appendStringInfo(&where,"%s%s}",pstrdup(sparql_where),pstrdup(filters));
-	} 
+	if(state->sparql_filter) 
+		appendStringInfo(&where_graph,"{%s%s}",pstrdup(state->sparql_where),pstrdup(state->sparql_filter));
 	else
-	{
-		appendStringInfo(&where,"%s}",pstrdup(filters));
-	}
+		appendStringInfo(&where_graph,"{%s}",pstrdup(state->sparql_where));
 	
 	/* 
 	 * if the raw SPARQL query contains a DISTINCT modifier, this must be added into the 
@@ -1443,7 +1480,7 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 		LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
 	{
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
-		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);		
+		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);		
 	} 
 	/* 
 	 * if the raw SPARQL query contains a REDUCED modifier, this must be added into the 
@@ -1453,7 +1490,7 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 		LocateToken(state->raw_sparql, " \n", "REDUCED"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
 	{
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
-		appendStringInfo(&state->sparql,"%s\nSELECT REDUCED %s\n%s",prefixes.data, select.data, where.data);		
+		appendStringInfo(&state->sparql,"%s\nSELECT REDUCED %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);		
 	}
 	/* 
 	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does, 
@@ -1463,22 +1500,16 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 			LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) == RDF_TOKEN_NOT_FOUND && 
 	        root->parse->distinctClause != NULL && 
 			!root->parse->hasDistinctOn)
-		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",prefixes.data, select.data, where.data);
+		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);
 	else
-		appendStringInfo(&state->sparql,"%s\nSELECT %s\n%s",prefixes.data, select.data, where.data);
+		appendStringInfo(&state->sparql,"%s\nSELECT %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);
 
 	/*
 	 * if the SQL query contains an ORDER BY, we try to push it down.
 	 */
-	if(state->is_sparql_parsable) {
-
-		char *orderby = deparseOrderBy(state, root, baserel);
-
-		if (orderby)
-		{
-			elog(DEBUG1, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, orderby);
-			appendStringInfo(&state->sparql, "\nORDER BY%s", pstrdup(orderby));
-		}
+	if(state->is_sparql_parsable && state->sparql_orderby) {
+		elog(DEBUG1, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, state->sparql_orderby);
+		appendStringInfo(&state->sparql, "\nORDER BY%s", pstrdup(state->sparql_orderby));
 	}
 
 	/*
@@ -1486,20 +1517,19 @@ static void CreateSPARQL(RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *r
 	 * If the SPARQL query set in the CREATE TABLE statement already contains a LIMIT,
 	 * this won't be pushed.
 	 */
-	limit = deparseLimit(state, root, baserel);
-
-	if (limit)
+	if (state->sparql_limit)
 	{
-		elog(DEBUG1, "  %s: pushing down LIMIT clause > '%s'", __func__, limit);
-		appendStringInfo(&state->sparql, "\n%s", limit);
+		elog(DEBUG1, "  %s: pushing down LIMIT clause > '%s'", __func__, state->sparql_limit);
+		appendStringInfo(&state->sparql, "\n%s", state->sparql_limit);
 	}
 }
 
 /*
- * This function locates a given 'token' within a 'str'. The tokens must be wrapped
- * with one of the characters given in 'start_chars' and 'end_chars'. The parameter'
- * '*count' stores the total number of occurrences of the searched token - if not 
- * needed, set it to NULL.
+ * LocateToken
+ * 	This function locates a given 'token' within a 'str'. The tokens must be wrapped
+ * 	with one of the characters given in 'start_chars' and 'end_chars'. The parameter'
+ * 	'*count' stores the total number of occurrences of the searched token - if not 
+ * 	needed, set it to NULL.
  */
 static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count) 
 {
@@ -1507,7 +1537,7 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 
 	elog(DEBUG1,"%s called",__func__);
 
-	/* In case the SPARQL has nothing prior to the SELECT clause*/
+	/* In case the SPARQL has nothing prior to the SELECT clause */
 	if(strcasecmp(token,"SELECT") == 0 && strncasecmp(str,"SELECT",6) == 0)
 	{
 		token_position = 0;
@@ -1536,8 +1566,8 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 
 					int nquotes = 0;
 
-					for (int i = 0; i <= (el - str); i++) {
-						if (str[i] == '\"') 
+					for (int k = 0; k <= (el - str); k++) {
+						if (str[k] == '\"') 
 							nquotes++;
 					}	
 
