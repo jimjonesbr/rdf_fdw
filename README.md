@@ -227,7 +227,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 
 ### DISTINCT
 
-`DISTINCT` is pushed down to the SPARQL SELECT statement just like in SQL. There is no equivalent for `DISTINCT ON`, so it cannot be pushed down.
+`DISTINCT` is pushed down to the SPARQL SELECT statement just like in SQL. In case that the configured SPARQL query already contains a `DISTINCT` or a `REDUCED` modifier, the SQL `DISTINCT` won't be pushed down. There is no equivalent for `DISTINCT ON`, so it cannot be pushed down either.
 
 ### WHERE
 
