@@ -106,33 +106,23 @@ DELETE FROM t1;
 /* EXPLAIN isn't supported*/
 EXPLAIN SELECT * FROM t1;
 
-
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
   SELECT ?s {?s ?p ?o '); 
 
-SELECT * FROM t2;
-
 /* invalid SPARQL - missing closing curly braces */
 CREATE FOREIGN TABLE t3 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o'); 
-
-SELECT * FROM t3;
 
 /* invalid SPARQL - missing closing curly braces (\t) */
 CREATE FOREIGN TABLE t4 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '  SELECT ?s {?s ?p ?o'); 
 
-SELECT * FROM t4;
-
-
 /* invalid SPARQL - missing opening curly braces (\n)*/
 CREATE FOREIGN TABLE t5 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
   SELECT ?s ?s ?p ?o}'); 
-
-SELECT * FROM t5;
 
 /* empty WHERE clause */
 CREATE FOREIGN TABLE t6 (s text OPTIONS (variable '?s')
@@ -142,6 +132,4 @@ SELECT * FROM t6;
 
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}'); 
-
-SELECT * FROM t7;
+) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');

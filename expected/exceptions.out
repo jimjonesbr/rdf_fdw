@@ -115,7 +115,6 @@ EXPLAIN SELECT * FROM t1;
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
   SELECT ?s {?s ?p ?o '); 
-SELECT * FROM t2;
 ERROR:  unable to parse SPARQL WHERE clause:
 
   SELECT ?s {?s ?p ?o 
@@ -123,14 +122,12 @@ HINT:  The WHERE clause expects at least one triple pattern wrapped by curly bra
 /* invalid SPARQL - missing closing curly braces */
 CREATE FOREIGN TABLE t3 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o'); 
-SELECT * FROM t3;
 ERROR:  unable to parse SPARQL WHERE clause:
 SELECT ?s {?s ?p ?o
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
 /* invalid SPARQL - missing closing curly braces (\t) */
 CREATE FOREIGN TABLE t4 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '  SELECT ?s {?s ?p ?o'); 
-SELECT * FROM t4;
 ERROR:  unable to parse SPARQL WHERE clause:
   SELECT ?s {?s ?p ?o
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
@@ -138,7 +135,6 @@ HINT:  The WHERE clause expects at least one triple pattern wrapped by curly bra
 CREATE FOREIGN TABLE t5 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
   SELECT ?s ?s ?p ?o}'); 
-SELECT * FROM t5;
 ERROR:  unable to parse SPARQL WHERE clause:
 
   SELECT ?s ?s ?p ?o}
@@ -154,7 +150,6 @@ ERROR:  ExecuteSPARQL => (22) The requested URL returned error: 400
 
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}'); 
-SELECT * FROM t7;
+) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');
 ERROR:  unable to parse SPARQL SELECT clause:
 ?s {?s ?p ?o}.
