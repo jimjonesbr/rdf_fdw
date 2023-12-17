@@ -57,3 +57,4 @@ regression.out
 regression.diffs
 
 local-tests/
+.vscode/
