@@ -143,10 +143,10 @@ HINT:  The WHERE clause expects at least one triple pattern wrapped by curly bra
 CREATE FOREIGN TABLE t6 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {}'); 
 SELECT * FROM t6;
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
-ERROR:  ExecuteSPARQL => (22) The requested URL returned error: 400 
+ s 
+---
+ 
+(1 row)
 
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')

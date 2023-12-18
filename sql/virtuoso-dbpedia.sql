@@ -713,3 +713,59 @@ SERVER dbpedia OPTIONS (
 SELECT name
 FROM musical_artists
 LIMIT 10;
+
+
+
+/*
+ * Test SPARQL containing multiple FROM clauses
+ */
+CREATE FOREIGN TABLE generic_rdf_table (
+  uri text   OPTIONS (variable '?s'),
+  name text  OPTIONS (variable '?o')  
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  SELECT *
+  FROM <http://dbpedia.org>
+  FROM <http://foo.bar>
+  FROM <http://xyz.int>
+  FROM <http://abc.def>
+  WHERE {
+    ?s rdfs:label ?o .    
+    FILTER (LANG(?o)="de" ) 
+  }
+'); 
+
+SELECT name
+FROM generic_rdf_table
+WHERE uri = 'http://dbpedia.org/resource/Isle_of_Man'
+LIMIT 10;
+
+
+/*
+ * Test SPARQL containing a FROM clause
+ */
+CREATE FOREIGN TABLE generic_rdf_table2 (
+  uri text   OPTIONS (variable '?s'),
+  name text  OPTIONS (variable '?o')  
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  SELECT *
+  FROM <http://dbpedia.org>
+  WHERE {
+    ?s rdfs:label ?o .    
+    FILTER (LANG(?o)="pl" ) 
+  }
+'); 
+
+SELECT name
+FROM generic_rdf_table2
+WHERE uri = 'http://dbpedia.org/resource/Brazil'
+LIMIT 10;
