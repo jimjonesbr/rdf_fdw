@@ -121,9 +121,10 @@ typedef struct RDFfdwState
 	int numcols;			 		/* Total number of columns in the foreign table. */
 	int rowcount;
 	int pagesize;
-	int sparql_select_index;
 	char *sparql_prefixes;
 	char *sparql_select;
+	char *sparql_from;
+	char *sparql_from_named;
 	char *sparql_where;
 	char *sparql_filter;
 	char *sparql_orderby;
@@ -253,7 +254,7 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
 static void InitSystem(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
-static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count);
+static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
@@ -408,7 +409,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'")));
 
 					/* report ERROR if the SPARQL query does not contain a SELECT */
-					 if(LocateToken(sparql, "{\n\t> ", "SELECT"," *?\n\t", NULL) == RDF_TOKEN_NOT_FOUND )
+					 if(LocateToken(sparql, " {\n\t>", "SELECT"," *?\n\t", NULL, 0) == RDF_TOKEN_NOT_FOUND)
 						ereport(ERROR,
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							errmsg("unable to parse SPARQL SELECT clause:\n%s.", sparql)));
@@ -702,6 +703,7 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	ListCell *cell;
 	int where_position = -1;
 	int where_size = -1;
+	int sparql_select_index = -1;
 	StringInfoData select;
 
 #if PG_VERSION_NUM < 130000
@@ -839,7 +841,9 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	}
 
 
-	/* Loading Foreign Table OPTIONS */
+	/* 
+	 * Loading Foreign Table OPTIONS 
+	 */
 	foreach (cell, ft->options)
 	{
 		DefElem *def = lfirst_node(DefElem, cell);
@@ -873,9 +877,12 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
 	/* 
-	 * Loading SPARQL prefixes from raw_sparql 
+	 * Try to deparse SPARQL PREFIX clauses from raw_sparql 
 	 */
-	state->sparql_prefixes = pnstrdup(state->raw_sparql, state->sparql_select_index + 1);
+	sparql_select_index = LocateToken(state->raw_sparql, "{\n\t> ", "SELECT"," *?\n\t", NULL, 0);
+	
+	if(sparql_select_index != RDF_TOKEN_NOT_FOUND)
+		state->sparql_prefixes = pnstrdup(state->raw_sparql, sparql_select_index + 1);
 
 	/* 
 	 * We create the SPARQL SELECT clause according to the columns used in the 
@@ -909,20 +916,69 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	state->sparql_where = pnstrdup(state->raw_sparql + where_position, where_size);
 
 	/* 
-	 * Try to deparse SQL WHERE conditions to create SPARQL FILTER expressions 
+	 * Try to deparse SQL WHERE conditions, if any, to create SPARQL FILTER expressions 
 	 */
 	state->sparql_filter = deparseWhereConditions(state, baserel);
 
 	/*
-	 * Try to deparse ORDER BY and convert it to SPARQL
+	 * Try to deparse SQL ORDER BY, if any, and convert it to SPARQL
 	 */
 	state->sparql_orderby = deparseOrderBy(state, root, baserel);
 
 	/*
-	 * Try to deparse SQL LIMIT and convert it to SPARQL
+	 * Try to deparse SQL LIMIT, if any, and convert it to SPARQL
 	 */
 	state->sparql_limit = deparseLimit(state, root, baserel);
 
+	/*
+	 * Try to deparse SPARQL FROM clause, if any
+	 */
+	int nfrom = 0;
+	LocateToken(state->raw_sparql, ">)\n\t ", "FROM"," <\n\t", &nfrom, 0);
+	int start_pos = 0;
+	
+	if(start_pos != RDF_TOKEN_NOT_FOUND) 
+	{		
+
+		StringInfoData from;
+		initStringInfo(&from);
+
+		if(nfrom > 0)
+		{
+			for (int i = 1; i <= nfrom; i++)
+			{
+				StringInfoData from_entry;
+				initStringInfo(&from_entry);
+
+				start_pos = LocateToken(state->raw_sparql, ")\n\t ", "FROM"," <\n\t", NULL, start_pos);
+
+				if(start_pos == RDF_TOKEN_NOT_FOUND)
+					break;
+
+				start_pos = start_pos + 5;
+
+				while (state->raw_sparql[start_pos] == ' ') {
+					start_pos++;
+				}
+
+				while (state->raw_sparql[start_pos] != ' ' && 
+				       state->raw_sparql[start_pos] != '\n' && 
+					   state->raw_sparql[start_pos] != '\t' && 
+					   state->raw_sparql[start_pos] != '\0') 
+				{
+					appendStringInfo(&from_entry,"%c",state->raw_sparql[start_pos]);
+					start_pos++;					
+				}
+				
+				appendStringInfo(&from,"FROM %s\n",from_entry.data);
+				
+			}
+		}
+
+		state->sparql_from = from.data;
+
+	}
+	
 	
 }
 
@@ -1018,7 +1074,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if (state->proxy)
 		{
-
 			elog(DEBUG1, "  %s: proxy URL > '%s'", __func__, state->proxy);
 
 			curl_easy_setopt(curl, CURLOPT_PROXY, state->proxy);
@@ -1426,33 +1481,32 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 	}
 }
 
+/*
+ * IsSPARQLParsable
+ * 	Checks if a SPARQL query can be parsed and modified to accommodate possible
+ * 	pusdhown instructions. If it returns false it does not mean that the query
+ * 	is invalid. It just means that it contains unsupported clauses and it cannot 
+ * 	be modifed. 
+ */
 static bool IsSPARQLParsable(struct RDFfdwState *state) 
 {
 	
 	int token_count = 0;
-	
+	elog(DEBUG1,"%s called",__func__);
 	/* 
-	 * SPARQL Queries containing SUB SELECTS are not supported.
+	 * SPARQL Queries containing SUB SELECTS are not supported. So, if any number
+	 * other than 1 is returned from LocateToken, this query cannot be parsed.
 	 */
-	state->sparql_select_index = LocateToken(state->raw_sparql, "{\n\t> ", "SELECT"," *?\n\t", &token_count);
-
-	/* 
-	 * we abort the whole thing in case the SPARQL query has no SELECT clause 
-	 */
-	if(token_count == 0)
-		ereport(ERROR,
-			(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-			 errmsg("unable to parse SPARQL SELECT clause:\n%s.", state->raw_sparql)));
-
+	LocateToken(state->raw_sparql, "{\n\t> ", "SELECT"," *?\n\t", &token_count, 0);
 	
 	elog(DEBUG1,"%s: SPARQL contains '%d' SELECT clauses.",__func__, token_count);
 
-	return LocateToken(state->raw_sparql, " \n\t}", "GROUP BY"," \n\t?", NULL) == RDF_TOKEN_NOT_FOUND &&
-	       LocateToken(state->raw_sparql, " \n\t}", "ORDER BY"," \n\t?DA", NULL) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t}", "LIMIT"," \n\t", NULL) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t}", "UNION"," \n\t{", NULL) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t", "HAVING"," \n\t(", NULL) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t", "FROM NAMED"," \n\t<", NULL) == RDF_TOKEN_NOT_FOUND &&
+	return LocateToken(state->raw_sparql, " \n\t}", "GROUP BY"," \n\t?", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
+	       LocateToken(state->raw_sparql, " \n\t}", "ORDER BY"," \n\t?DA", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(state->raw_sparql, " \n\t}", "LIMIT"," \n\t", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(state->raw_sparql, " \n\t}", "UNION"," \n\t{", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(state->raw_sparql, " \n\t", "HAVING"," \n\t(", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
+		   LocateToken(state->raw_sparql, " \n\t", "FROM NAMED"," \n\t<", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
 		   token_count == 1;
 
 }
@@ -1471,38 +1525,53 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 		appendStringInfo(&where_graph,"{%s%s}",pstrdup(state->sparql_where),pstrdup(state->sparql_filter));
 	else
 		appendStringInfo(&where_graph,"{%s}",pstrdup(state->sparql_where));
-	
 	/* 
 	 * if the raw SPARQL query contains a DISTINCT modifier, this must be added into the 
 	 * new SELECT clause 
 	 */	
 	if (state->is_sparql_parsable == true && 		
-		LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
+		LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) != RDF_TOKEN_NOT_FOUND)
 	{
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
-		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);		
+		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s%s",
+			state->sparql_prefixes, 
+			state->sparql_select,
+			state->sparql_from,
+			where_graph.data);		
 	} 
 	/* 
 	 * if the raw SPARQL query contains a REDUCED modifier, this must be added into the 
 	 * new SELECT clause 
 	 */	
 	else if (state->is_sparql_parsable == true && 		
-		LocateToken(state->raw_sparql, " \n", "REDUCED"," \n?", NULL) != RDF_TOKEN_NOT_FOUND)
+		LocateToken(state->raw_sparql, " \n", "REDUCED"," \n?", NULL, 0) != RDF_TOKEN_NOT_FOUND)
 	{
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
-		appendStringInfo(&state->sparql,"%s\nSELECT REDUCED %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);		
+		appendStringInfo(&state->sparql,"%s\nSELECT REDUCED %s\n%s%s",
+			state->sparql_prefixes, 
+			state->sparql_select, 
+			state->sparql_from, 
+			where_graph.data);		
 	}
 	/* 
 	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does, 
 	 * this must be added into the new SELECT clause 
 	 */
 	else if (state->is_sparql_parsable &&  
-			LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL) == RDF_TOKEN_NOT_FOUND && 
+			LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) == RDF_TOKEN_NOT_FOUND && 
 	        root->parse->distinctClause != NULL && 
 			!root->parse->hasDistinctOn)
-		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);
+		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s%s",
+			state->sparql_prefixes, 
+			state->sparql_select,
+			state->sparql_from,
+			where_graph.data);
 	else
-		appendStringInfo(&state->sparql,"%s\nSELECT %s\n%s",state->sparql_prefixes, state->sparql_select, where_graph.data);
+		appendStringInfo(&state->sparql,"%s\nSELECT %s\n%s%s",
+			state->sparql_prefixes, 
+			state->sparql_select, 
+			state->sparql_from, 
+			where_graph.data);
 
 	/*
 	 * if the SQL query contains an ORDER BY, we try to push it down.
@@ -1526,20 +1595,35 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 
 /*
  * LocateToken
- * 	This function locates a given 'token' within a 'str'. The tokens must be wrapped
- * 	with one of the characters given in 'start_chars' and 'end_chars'. The parameter'
- * 	'*count' stores the total number of occurrences of the searched token - if not 
- * 	needed, set it to NULL.
+ * -----------
+ * 	This function locates the first occurrence of given 'token' within 'str'. The 
+ *  tokens must be wrapped with one of the characters given in 'start_chars' and 
+ *  'end_chars'. If the parameter '*count' is used, this function will be called 
+ *  recursively to count how many times the searched 'token' can be found in 'str'
+ * 
+ * 	str				: string where 'token' will be searched
+ * 	start_chars		: all possible chars that can preceed the searched 'token'
+ * 	token			: the searched token (case insensitive)
+ * 	end_chars		: all possible chars that can be found after the 'token'
+ * 	count			: how many times 'token' was found in 'str' (nullable)
+ * 	start_position	: position in 'str' where the function has to start looking for 
+ * 					  'token'. Set it to '0' if the whole 'str' must be considered.
+ * 
+ * 	returns			: position where 'token' was found, or RDF_TOKEN_NOT_FOUND otherwise.
  */
-static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count) 
+static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count, int start_position) 
 {
 	int token_position = RDF_TOKEN_NOT_FOUND;
+		
+	elog(DEBUG1,"%s called: '%s' in start_position %d",__func__, token, start_position);
 
-	elog(DEBUG1,"%s called",__func__);
+	if(start_position < 0)
+		elog(ERROR, "%s: start_position is not nullable and must contain a positive number.", __func__);
 
 	/* In case the SPARQL has nothing prior to the SELECT clause */
-	if(strcasecmp(token,"SELECT") == 0 && strncasecmp(str,"SELECT",6) == 0)
+	if(strcasecmp(token,"SELECT") == 0 && strncasecmp(str,"SELECT",6) == 0 && start_position == 0)
 	{
+		elog(DEBUG1, "%s: nothing before SELECT. Setting token_position to 0,", __func__);
 		token_position = 0;
 
 		if(count)
@@ -1552,46 +1636,50 @@ static int LocateToken(char *str, char *start_chars, char *token, char *end_char
 		for (int j = 0; j < strlen(end_chars); j++)
 		{
 			char *el;
-			StringInfoData eval_token;			
+			StringInfoData eval_token;
 			initStringInfo(&eval_token);
-			
+
 			appendStringInfo(&eval_token, "%c%s%c", start_chars[i], token, end_chars[j]);
 
-			el = strcasestr(str, eval_token.data);
-			
+			el = strcasestr(str + start_position, eval_token.data);
+
 			if (el != NULL)
 			{
-				if(token_position == RDF_TOKEN_NOT_FOUND)
+				int nquotes = 0;
+
+				for (int k = 0; k <= (el - str); k++)
 				{
-
-					int nquotes = 0;
-
-					for (int k = 0; k <= (el - str); k++) {
-						if (str[k] == '\"') 
-							nquotes++;
-					}	
-
-					/*
-					 * If the token is located after an opening double-quote it is a literal and should
-					 * considered as a token.
-					 */
-					if (nquotes % 2 != 1)
-					{
-						token_position = el - str;
-						elog(DEBUG1,"  %s: '%s' located at position %d",__func__, token, token_position);
-
-					}
-
-				
-				
+					if (str[k] == '\"')
+						nquotes++;
 				}
 
-				if(count)
-					(*count)++; 
-								
+				/*
+				 * If the token is located after an opening double-quote it is a literal and should
+				 * not be considered as a token.
+				 */
+				if (nquotes % 2 != 1)
+				{
+					token_position = el - str;
+
+					if (count != NULL)
+					{				
+						elog(DEBUG1, "  %s (%d): token '%s' found in position '%d'. Recalling %s ... ", __func__, *count, token, token_position, __func__);
+						LocateToken(str, start_chars, token, end_chars, count, token_position + 1);
+					}
+
+				}
+
+				if (token_position != RDF_TOKEN_NOT_FOUND)
+					break;
 			}
-		}		
+		}
+
 	}
+
+	elog(DEBUG1,"  %s: '%s' returning  %d",__func__, token, token_position);
+
+	if((count) && token_position != RDF_TOKEN_NOT_FOUND)
+		(*count)++;
 
 	return token_position;
 
