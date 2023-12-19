@@ -104,6 +104,9 @@
 #define RDF_COLUMN_OPTION_VARIABLE "variable"
 #define RDF_COLUMN_OPTION_EXPRESSION "expression"
 
+#define RDF_SPARQL_KEYWORD_FROM "FROM"
+#define RDF_SPARQL_KEYWORD_NAMED "NAMED"
+
 /*
  * This macro is used by deparseExpr to identify PostgreSQL
  * types that can be translated to SPARQL
@@ -265,7 +268,7 @@ static char *deparseWhereConditions(struct RDFfdwState *state, RelOptInfo *baser
 static char *datumToString(Datum datum, Oid type);
 static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *deparseOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
-
+static char *deparseSPARQLFROM(char *raw_sparql);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -931,53 +934,9 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	state->sparql_limit = deparseLimit(state, root, baserel);
 
 	/*
-	 * Try to deparse SPARQL FROM clause, if any
+	 * Try to deparse SPARQL FROM and FROM NAMED clauses, if any
 	 */
-	int nfrom = 0;
-	LocateToken(state->raw_sparql, ">)\n\t ", "FROM"," <\n\t", &nfrom, 0);
-	int start_pos = 0;
-	
-	if(start_pos != RDF_TOKEN_NOT_FOUND) 
-	{		
-
-		StringInfoData from;
-		initStringInfo(&from);
-
-		if(nfrom > 0)
-		{
-			for (int i = 1; i <= nfrom; i++)
-			{
-				StringInfoData from_entry;
-				initStringInfo(&from_entry);
-
-				start_pos = LocateToken(state->raw_sparql, ")\n\t ", "FROM"," <\n\t", NULL, start_pos);
-
-				if(start_pos == RDF_TOKEN_NOT_FOUND)
-					break;
-
-				start_pos = start_pos + 5;
-
-				while (state->raw_sparql[start_pos] == ' ') {
-					start_pos++;
-				}
-
-				while (state->raw_sparql[start_pos] != ' ' && 
-				       state->raw_sparql[start_pos] != '\n' && 
-					   state->raw_sparql[start_pos] != '\t' && 
-					   state->raw_sparql[start_pos] != '\0') 
-				{
-					appendStringInfo(&from_entry,"%c",state->raw_sparql[start_pos]);
-					start_pos++;					
-				}
-				
-				appendStringInfo(&from,"FROM %s\n",from_entry.data);
-				
-			}
-		}
-
-		state->sparql_from = from.data;
-
-	}
+	state->sparql_from = deparseSPARQLFROM(state->raw_sparql);
 	
 	
 }
@@ -1506,7 +1465,6 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 		   LocateToken(state->raw_sparql, " \n\t}", "LIMIT"," \n\t", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
 		   LocateToken(state->raw_sparql, " \n\t}", "UNION"," \n\t{", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
 		   LocateToken(state->raw_sparql, " \n\t", "HAVING"," \n\t(", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t", "FROM NAMED"," \n\t<", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
 		   token_count == 1;
 
 }
@@ -2466,4 +2424,77 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 	}
 
 			
+}
+
+static char *deparseSPARQLFROM(char *raw_sparql)
+{
+	StringInfoData from;
+	char *open_chars = ">)\n\t ";
+	char *close_chars = " <\n\t";
+	int nfrom = 0;
+	
+	initStringInfo(&from);
+			
+	if(LocateToken(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_TOKEN_NOT_FOUND) 
+	{				
+		int entry_position = 0;
+		
+		for (int i = 1; i <= nfrom; i++)
+		{
+			bool is_named = false;
+			StringInfoData from_entry;
+			initStringInfo(&from_entry);
+
+			entry_position = LocateToken(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, NULL, entry_position);
+
+			if(entry_position == RDF_TOKEN_NOT_FOUND)
+				break;
+
+			entry_position = entry_position + (strlen(RDF_SPARQL_KEYWORD_FROM) + 1);
+
+			while (raw_sparql[entry_position] == ' ') 
+				entry_position++;
+			
+			/* Is the SPARQL long enough for 'FROM NAMED' to be parsed? */
+			if(entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED) <= strlen(raw_sparql))
+			{
+				char *named = pnstrdup(raw_sparql + entry_position, strlen(RDF_SPARQL_KEYWORD_NAMED));
+
+				/*
+				 * if the next token is NAMED, set is_named to 'true' and move the cursor 
+				 * to the next token
+				 */
+				if(strcasecmp(named,RDF_SPARQL_KEYWORD_NAMED) == 0) {
+					is_named = true;
+					entry_position = entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED);
+
+					while (raw_sparql[entry_position] == ' ') 
+						entry_position++;
+				}
+					
+			}
+
+			while (raw_sparql[entry_position] != ' ' && 
+				   raw_sparql[entry_position] != '\n' && 
+				   raw_sparql[entry_position] != '\t' && 
+				   raw_sparql[entry_position] != '\0') 
+			{
+				appendStringInfo(&from_entry,"%c",raw_sparql[entry_position]);
+								
+				if(raw_sparql[entry_position] == '>')
+					break;
+				
+				entry_position++;
+			}
+			
+			if(is_named)
+				appendStringInfo(&from,"%s %s %s\n", RDF_SPARQL_KEYWORD_FROM, RDF_SPARQL_KEYWORD_NAMED, from_entry.data);
+			else
+				appendStringInfo(&from,"%s %s\n", RDF_SPARQL_KEYWORD_FROM,from_entry.data);
+
+		}		
+
+	}
+
+	return from.data;
 }
