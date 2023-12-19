@@ -582,10 +582,7 @@ SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilte
 SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters;
 
 
-/* ===================== Keywords Tests =====================
- * Literals containing SPARQL keywords won't be treated by the
- * parser as SPARQL clauses
-
+/* 
  * Test SPARQL containing LIMIT keyword in a literal
  */
 CREATE FOREIGN TABLE dbpedia_limit (
@@ -715,7 +712,6 @@ FROM musical_artists
 LIMIT 10;
 
 
-
 /*
  * Test SPARQL containing multiple FROM clauses
  */
@@ -768,4 +764,54 @@ SERVER dbpedia OPTIONS (
 SELECT name
 FROM generic_rdf_table2
 WHERE uri = 'http://dbpedia.org/resource/Brazil'
+LIMIT 10;
+
+/*
+ * Test SPARQL containing FROM and FROM NAMED clauses
+ */
+CREATE FOREIGN TABLE generic_rdf_table3 (
+  uri text   OPTIONS (variable '?s'),
+  name text  OPTIONS (variable '?o')  
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  SELECT *
+  FROM <http://dbpedia.org>
+  FROM NAMED    <http://foo.bar>
+  FROM NAMED            <http://xyz.abc>
+  WHERE {
+    ?s rdfs:label ?o .    
+    FILTER (LANG(?o)="es" ) 
+  }
+'); 
+
+SELECT name
+FROM generic_rdf_table3
+WHERE uri = 'http://dbpedia.org/resource/Japan'
+LIMIT 10;
+
+
+CREATE FOREIGN TABLE generic_rdf_table4 (
+  uri text   OPTIONS (variable '?s'),
+  name text  OPTIONS (variable '?o')  
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX dbr: <http://dbpedia.org/resource/>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  SELECT *
+  FROM<http://dbpedia.org>FROM                      NAMED<http://foo.bar>FROM NAMED            <http://xyz.abc>
+  WHERE {
+    ?s rdfs:label ?o .    
+    FILTER (LANG(?o)="es" ) 
+  }
+'); 
+
+SELECT name
+FROM generic_rdf_table4
+WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
