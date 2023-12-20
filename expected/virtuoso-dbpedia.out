@@ -42,12 +42,10 @@ ORDER BY rel DESC, 1 ASC
 LIMIT 5;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?film ?name ?released ?runtime 
 {
       ?film a dbo:Film ;
@@ -79,12 +77,10 @@ ORDER BY count(runtime),avg(runtime)
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?runtime 
 {
       ?film a dbo:Film ;
@@ -111,12 +107,10 @@ OFFSET 5 ROWS
 FETCH FIRST 10 ROW ONLY; 
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released 
 {
       ?film a dbo:Film ;
@@ -154,12 +148,10 @@ OFFSET 5
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released 
 {
       ?film a dbo:Film ;
@@ -197,12 +189,10 @@ OFFSET 5
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released 
 {
       ?film a dbo:Film ;
@@ -239,12 +229,10 @@ OFFSET 5
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released 
 {
       ?film a dbo:Film ;
@@ -286,12 +274,10 @@ ORDER BY name
 FETCH FIRST 3 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released ?runtime 
 {
       ?film a dbo:Film ;
@@ -329,12 +315,10 @@ ORDER BY released
 FETCH FIRST 3 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released ?runtime 
 {
       ?film a dbo:Film ;
@@ -370,12 +354,10 @@ ORDER BY released ASC, name DESC
 FETCH FIRST 3 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released ?runtime 
 {
       ?film a dbo:Film ;
@@ -406,12 +388,10 @@ WHERE
   released <> '1930-03-25';
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released ?runtime 
 {
       ?film a dbo:Film ;
@@ -476,11 +456,9 @@ ORDER BY birthdate DESC, party ASC
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT DISTINCT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -525,11 +503,9 @@ ORDER BY birthdate
 LIMIT 3;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?country 
 {
         ?person 
@@ -565,11 +541,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -612,11 +586,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -653,11 +625,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -695,11 +665,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -737,11 +705,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -778,11 +744,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -817,11 +781,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -856,11 +818,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -895,11 +855,9 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -1080,12 +1038,11 @@ ORDER BY lat DESC
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
 
-    PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    PREFIX dbr:  <http://dbpedia.org/resource/>
-    
 SELECT ?name ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
 {
       ?uri dbo:type dbr:Public_university ;
@@ -1123,12 +1080,11 @@ WHERE
   wkt = 'POINT(8.49305534362793 52.03777694702148)'; -- 'expression' columns aren't safe to be pushed down.
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
 
-    PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    PREFIX dbr:  <http://dbpedia.org/resource/>
-    
 SELECT ?uri ?name ?lon ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
 {
       ?uri dbo:type dbr:Public_university ;
@@ -1157,12 +1113,11 @@ WHERE
   lon < 8+1; -- the expression in the right side will be computed before pushdown.
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
 
-    PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    PREFIX dbr:  <http://dbpedia.org/resource/>
-    
 SELECT ?uri ?name ?lon ?lat 
 {
       ?uri dbo:type dbr:Public_university ;
@@ -1279,10 +1234,9 @@ WHERE person <> ''
 LIMIT 5;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
 SELECT ?person ?birthdate 
 { 
       ?person a dbo:Politician;
@@ -1344,12 +1298,10 @@ ORDER BY name
 FETCH FIRST 3 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbr: <http://dbpedia.org/resource/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    
 SELECT DISTINCT ?name ?released ?runtime 
 {
       ?film a dbo:Film ;
@@ -1378,11 +1330,9 @@ ORDER BY birthdate DESC, party ASC
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    
-    
 SELECT DISTINCT ?personname ?birthdate ?partyname ?country 
 {
         ?person 
@@ -1502,12 +1452,10 @@ FROM dbpedia_limit
 LIMIT 2;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX dbp: <http://dbpedia.org/property/>
-  PREFIX dbo: <http://dbpedia.org/ontology/>
-
-  
 SELECT ?name 
 {
     dbr:Cacilhas_Lighthouse dbo:abstract ?abstract ;
@@ -1549,12 +1497,10 @@ ORDER BY name DESC
 LIMIT 2;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX dbp: <http://dbpedia.org/property/>
-  PREFIX dbo: <http://dbpedia.org/ontology/>
-
-  
 SELECT ?name 
 {
     dbr:List_of_flag_names dbo:abstract ?abstract ;
@@ -1596,12 +1542,10 @@ FROM dbpedia_distinct
 LIMIT 1;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX dbp: <http://dbpedia.org/property/>
-  PREFIX dbo: <http://dbpedia.org/ontology/>
-
-  
 SELECT DISTINCT ?name 
 {
     dbr:Cadillac_Eldorado dbo:abstract ?abstract ;
@@ -1641,12 +1585,10 @@ FROM dbpedia_groupby
 LIMIT 1;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX dbp: <http://dbpedia.org/property/>
-  PREFIX dbo: <http://dbpedia.org/ontology/>
-
-  
 SELECT ?name 
 {
     dbr:Only_for_Love dbo:abstract ?abstract ;
@@ -1682,10 +1624,9 @@ FROM musical_artists
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
 
-  PREFIX dbp: <http://dbpedia.org/property/>
-  PREFIX dbo: <http://dbpedia.org/ontology/>
-  
 SELECT REDUCED ?name 
 {
     ?uri a dbo:MusicalArtist;
@@ -1735,10 +1676,9 @@ WHERE uri = 'http://dbpedia.org/resource/Isle_of_Man'
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-  
 SELECT ?s ?o 
 FROM <http://dbpedia.org>
 FROM <http://foo.bar>
@@ -1781,10 +1721,9 @@ WHERE uri = 'http://dbpedia.org/resource/Brazil'
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-  
 SELECT ?s ?o 
 FROM <http://dbpedia.org>
 {
@@ -1826,10 +1765,9 @@ WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-  
 SELECT ?s ?o 
 FROM <http://dbpedia.org>
 FROM NAMED <http://foo.bar>
@@ -1868,10 +1806,9 @@ WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-  PREFIX dbr: <http://dbpedia.org/resource/>
-  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-  
 SELECT ?s ?o 
 FROM <http://dbpedia.org>
 FROM NAMED <http://foo.bar>
