@@ -76,7 +76,7 @@
 
 #define FDW_VERSION "0.0.1-dev"
 #define REQUEST_SUCCESS 0
-#define REQUEST_FAIL 1
+#define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
 #define RDF_DEFAULT_CONNECTTIMEOUT 300
 #define RDF_DEFAULT_MAXRETRY 3
@@ -260,6 +260,7 @@ static void rdfEndForeignScan(ForeignScanState *node);
 static int ExecuteSPARQL(RDFfdwState *state);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
+static int LoadHTTPRequestHeaders(RDFfdwState *state, struct curl_slist **headers);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
 static void InitSystem(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
@@ -978,7 +979,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
-	char *format;
+	struct curl_slist *headers = NULL;
+	//char *format;
 	long maxretries = RDF_DEFAULT_MAXRETRY;	
 	long connectTimeout = RDF_DEFAULT_CONNECTTIMEOUT;
 
@@ -992,10 +994,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	curl_global_init(CURL_GLOBAL_ALL);
 	curl = curl_easy_init();
 
-	if(state->format)
-		format = state->format;
-	else
-		format = RDF_DEFAULT_FORMAT;
+	if(!state->format)
+		state->format = RDF_DEFAULT_FORMAT;
 
 	if(state->connectTimeout)
 		connectTimeout = state->connectTimeout;
@@ -1008,13 +1008,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	initStringInfo(&url_buffer);
 	appendStringInfo(&url_buffer, "query=%s", curl_easy_escape(curl, state->sparql.data, 0));
-	appendStringInfo(&url_buffer, "&format=%s", format);
+	//appendStringInfo(&url_buffer, "&format=%s", format);
 
 	if(state->token)
 		appendStringInfo(&url_buffer, "&token=%s", state->token);
 
 	if(state->customParams)
-		appendStringInfo(&url_buffer, "&%s", state->customParams);
+		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(curl, state->customParams, 0));
 
 	elog(DEBUG1, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
 
@@ -1087,6 +1087,32 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
 
+	
+		if(LoadHTTPRequestHeaders(state, &headers) == REQUEST_SUCCESS)
+			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+		else
+			elog(ERROR,"%s: unable to load http headers", __func__);
+
+	/*
+		struct curl_slist *slist = NULL;
+		struct curl_slist *temp = NULL;
+		slist = curl_slist_append(slist, "pragma:");
+		if(!slist)
+			return -1;
+		
+		temp = curl_slist_append(slist, "User-Agent: rdf_fdw");
+		
+		if(!temp) {
+			curl_slist_free_all(slist);
+			return -1;
+		}
+		
+		slist = temp;
+
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+
+		*/
+
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
 
 		res = curl_easy_perform(curl);
@@ -1107,6 +1133,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			xmlFreeDoc(state->xmldoc);
 			pfree(chunk.memory);
 			pfree(chunk_header.memory);
+			curl_slist_free_all(headers);
 			curl_easy_cleanup(curl);
 			curl_global_cleanup();
 
@@ -1140,6 +1167,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	pfree(chunk.memory);
 	pfree(chunk_header.memory);
+	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
 	curl_global_cleanup();
 
@@ -1150,6 +1178,30 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		return REQUEST_FAIL;
 
 	return REQUEST_SUCCESS;
+}
+
+static int LoadHTTPRequestHeaders(RDFfdwState *state, struct curl_slist **headers) 
+{
+	StringInfoData format;
+	StringInfoData agent;
+
+	initStringInfo(&format);
+	initStringInfo(&agent);
+
+	appendStringInfo(&format, "Accept: %s", state->format);
+	appendStringInfo(&agent,  "User-Agent: rdf_fdw/%s PostgreSQL%s", FDW_VERSION, PG_VERSION);
+	
+	(*headers) = curl_slist_append((*headers), format.data);
+	(*headers) = curl_slist_append((*headers), agent.data);
+			
+	if(!headers) 
+	{
+		curl_slist_free_all((*headers));
+		return REQUEST_FAIL;
+	}
+
+	return REQUEST_SUCCESS;
+
 }
 
 static void LoadRDFData(RDFfdwState *state)
