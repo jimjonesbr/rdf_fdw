@@ -635,7 +635,86 @@ ORDER BY  ASC (?title)  ASC (?description)
 
 ```
 
+5. Create a `SERVER` and `FOREIGN TABLE` to query the [Wikidata](https://query.wikidata.org/sparql) SPARQL endpoint (Places that are below 10 meters above sea level and their geo coordinates)
 
+
+```sql
+CREATE SERVER wikidata
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint 'https://query.wikidata.org/sparql');
+
+CREATE FOREIGN TABLE places_below_sea_level (
+  wikidata_id text  OPTIONS (variable '?place'),
+  label text        OPTIONS (variable '?label'),
+  wkt text    OPTIONS (variable '?location'),
+  elevation numeric  OPTIONS (variable '?elev')
+)
+SERVER wikidata OPTIONS (
+  log_sparql 'true',
+  sparql '
+  SELECT *
+  WHERE
+  {
+    ?place rdfs:label ?label .
+    ?place p:P2044/psv:P2044 ?placeElev.
+    ?placeElev wikibase:quantityAmount ?elev.
+    ?placeElev wikibase:quantityUnit ?unit.
+    bind(0.01 as ?km).
+    FILTER( (?elev < ?km*1000 && ?unit = wd:Q11573)
+        || (?elev < ?km*3281 && ?unit = wd:Q3710)
+        || (?elev < ?km      && ?unit = wd:Q828224) ).
+    ?place wdt:P625 ?location.    
+    FILTER(LANG(?label)="en")
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
+  }
+');   
+```
+
+In the following SQL query we can observe that: 
+
+* the executed SPARQL query was logged.
+* the SPARQL `SELECT` clause was reduced to the columns used in the SQL query
+* the `FETCH FIRST 10 ROWS ONLY` was pushded down in a SPARQL `LIMIT`
+
+```sql
+SELECT wikidata_id, label, wkt
+FROM places_below_sea_level
+FETCH FIRST 10 ROWS ONLY;
+NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+SELECT ?place ?label ?location 
+{
+    ?place rdfs:label ?label .
+    ?place p:P2044/psv:P2044 ?placeElev.
+    ?placeElev wikibase:quantityAmount ?elev.
+    ?placeElev wikibase:quantityUnit ?unit.
+    bind(0.01 as ?km).
+    FILTER( (?elev < ?km*1000 && ?unit = wd:Q11573)
+        || (?elev < ?km*3281 && ?unit = wd:Q3710)
+        || (?elev < ?km      && ?unit = wd:Q828224) ).
+    ?place wdt:P625 ?location.    
+    FILTER(LANG(?label)="en")
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
+
+}
+LIMIT 10
+
+
+               wikidata_id                |      label      |                wkt                 
+------------------------------------------+-----------------+------------------------------------
+ http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | Point(-133.03 69.43)
+ http://www.wikidata.org/entity/Q403083   | Ahyi            | Point(145.033333333 20.416666666)
+ http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | Point(25.407 29.228419444)
+ http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | Point(-1.842397 47.798252)
+ http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | Point(-101.581388888 19.676944444)
+ http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | Point(35.43298 31.87073)
+ http://www.wikidata.org/entity/Q54888910 | Lydd Library    | Point(0.906514 50.949197)
+ http://www.wikidata.org/entity/Q55112853 | Ansdell Library | Point(-2.991656 53.743795)
+ http://www.wikidata.org/entity/Q2888647  | Petza'el        | Point(35.442222222 32.044166666)
+ http://www.wikidata.org/entity/Q2888816  | Gilgal          | Point(35.44440556 31.99966944)
+(10 rows)
+```
 
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
