@@ -80,7 +80,7 @@
 #define RDF_XML_NAME_TAG "name"
 #define RDF_DEFAULT_CONNECTTIMEOUT 300
 #define RDF_DEFAULT_MAXRETRY 3
-#define RDF_TOKEN_NOT_FOUND -1
+#define RDF_KEYWORD_NOT_FOUND -1
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
 
 #define RDF_SERVER_OPTION_ENDPOINT "endpoint"
@@ -106,6 +106,13 @@
 
 #define RDF_SPARQL_KEYWORD_FROM "FROM"
 #define RDF_SPARQL_KEYWORD_NAMED "NAMED"
+#define RDF_SPARQL_KEYWORD_PREFIX "PREFIX"
+#define RDF_SPARQL_KEYWORD_SELECT "SELECT"
+#define RDF_SPARQL_KEYWORD_GROUPBY "GROUP BY"
+#define RDF_SPARQL_KEYWORD_ORDERBY "ORDER BY"
+#define RDF_SPARQL_KEYWORD_HAVING "HAVING"
+#define RDF_SPARQL_KEYWORD_LIMIT "LIMIT"
+#define RDF_SPARQL_KEYWORD_UNION "UNION"
 
 /*
  * This macro is used by deparseExpr to identify PostgreSQL
@@ -257,7 +264,7 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
 static void InitSystem(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
-static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count, int start_position);
+static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
@@ -269,6 +276,8 @@ static char *datumToString(Datum datum, Oid type);
 static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *deparseOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *deparseSPARQLFROM(char *raw_sparql);
+static char *deparseSPARQLPREFIX(char *raw_sparql);
+
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -412,7 +421,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'")));
 
 					/* report ERROR if the SPARQL query does not contain a SELECT */
-					 if(LocateToken(sparql, " {\n\t>", "SELECT"," *?\n\t", NULL, 0) == RDF_TOKEN_NOT_FOUND)
+					 if(LocateKeyword(sparql, " {\n\t>", "SELECT"," *?\n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
 						ereport(ERROR,
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							errmsg("unable to parse SPARQL SELECT clause:\n%s.", sparql)));
@@ -706,7 +715,6 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	ListCell *cell;
 	int where_position = -1;
 	int where_size = -1;
-	int sparql_select_index = -1;
 	StringInfoData select;
 
 #if PG_VERSION_NUM < 130000
@@ -880,12 +888,9 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
 	/* 
-	 * Try to deparse SPARQL PREFIX clauses from raw_sparql 
+	 * deparse SPARQL PREFIX clauses from raw_sparql, if any
 	 */
-	sparql_select_index = LocateToken(state->raw_sparql, "{\n\t> ", "SELECT"," *?\n\t", NULL, 0);
-	
-	if(sparql_select_index != RDF_TOKEN_NOT_FOUND)
-		state->sparql_prefixes = pnstrdup(state->raw_sparql, sparql_select_index + 1);
+	state->sparql_prefixes = deparseSPARQLPREFIX(state->raw_sparql);
 
 	/* 
 	 * We create the SPARQL SELECT clause according to the columns used in the 
@@ -924,21 +929,21 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	state->sparql_filter = deparseWhereConditions(state, baserel);
 
 	/*
-	 * Try to deparse SQL ORDER BY, if any, and convert it to SPARQL
+	 * deparse SQL ORDER BY, if any, and convert it to SPARQL
 	 */
 	state->sparql_orderby = deparseOrderBy(state, root, baserel);
 
 	/*
-	 * Try to deparse SQL LIMIT, if any, and convert it to SPARQL
+	 * deparse SQL LIMIT, if any, and convert it to SPARQL
 	 */
 	state->sparql_limit = deparseLimit(state, root, baserel);
 
 	/*
-	 * Try to deparse SPARQL FROM and FROM NAMED clauses, if any
+	 * deparse SPARQL FROM and FROM NAMED clauses, if any
 	 */
 	state->sparql_from = deparseSPARQLFROM(state->raw_sparql);
 	
-	
+	deparseSPARQLPREFIX(state->raw_sparql);
 }
 
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
@@ -1450,22 +1455,22 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 static bool IsSPARQLParsable(struct RDFfdwState *state) 
 {
 	
-	int token_count = 0;
+	int keyword_count = 0;
 	elog(DEBUG1,"%s called",__func__);
 	/* 
 	 * SPARQL Queries containing SUB SELECTS are not supported. So, if any number
-	 * other than 1 is returned from LocateToken, this query cannot be parsed.
+	 * other than 1 is returned from LocateKeyword, this query cannot be parsed.
 	 */
-	LocateToken(state->raw_sparql, "{\n\t> ", "SELECT"," *?\n\t", &token_count, 0);
+	LocateKeyword(state->raw_sparql, "{\n\t> ", RDF_SPARQL_KEYWORD_SELECT," *?\n\t", &keyword_count, 0);
 	
-	elog(DEBUG1,"%s: SPARQL contains '%d' SELECT clauses.",__func__, token_count);
+	elog(DEBUG1,"%s: SPARQL contains '%d' SELECT clauses.",__func__, keyword_count);
 
-	return LocateToken(state->raw_sparql, " \n\t}", "GROUP BY"," \n\t?", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
-	       LocateToken(state->raw_sparql, " \n\t}", "ORDER BY"," \n\t?DA", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t}", "LIMIT"," \n\t", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t}", "UNION"," \n\t{", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
-		   LocateToken(state->raw_sparql, " \n\t", "HAVING"," \n\t(", NULL, 0) == RDF_TOKEN_NOT_FOUND &&
-		   token_count == 1;
+	return LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_GROUPBY," \n\t?", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+	       LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_ORDERBY," \n\t?DA", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_LIMIT," \n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_UNION," \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(state->raw_sparql, " \n\t",  RDF_SPARQL_KEYWORD_HAVING," \n\t(", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   keyword_count == 1;
 
 }
 
@@ -1488,7 +1493,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	 * new SELECT clause 
 	 */	
 	if (state->is_sparql_parsable == true && 		
-		LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) != RDF_TOKEN_NOT_FOUND)
+		LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s%s",
@@ -1502,7 +1507,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	 * new SELECT clause 
 	 */	
 	else if (state->is_sparql_parsable == true && 		
-		LocateToken(state->raw_sparql, " \n", "REDUCED"," \n?", NULL, 0) != RDF_TOKEN_NOT_FOUND)
+		LocateKeyword(state->raw_sparql, " \n", "REDUCED"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
 		appendStringInfo(&state->sparql,"%s\nSELECT REDUCED %s\n%s%s",
@@ -1516,7 +1521,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	 * this must be added into the new SELECT clause 
 	 */
 	else if (state->is_sparql_parsable &&  
-			LocateToken(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) == RDF_TOKEN_NOT_FOUND && 
+			LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND && 
 	        root->parse->distinctClause != NULL && 
 			!root->parse->hasDistinctOn)
 		appendStringInfo(&state->sparql,"%s\nSELECT DISTINCT %s\n%s%s",
@@ -1552,94 +1557,96 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 }
 
 /*
- * LocateToken
+ * LocateKeyword
  * -----------
- * 	This function locates the first occurrence of given 'token' within 'str'. The 
- *  tokens must be wrapped with one of the characters given in 'start_chars' and 
- *  'end_chars'. If the parameter '*count' is used, this function will be called 
- *  recursively to count how many times the searched 'token' can be found in 'str'
- * 
- * 	str				: string where 'token' will be searched
- * 	start_chars		: all possible chars that can preceed the searched 'token'
- * 	token			: the searched token (case insensitive)
- * 	end_chars		: all possible chars that can be found after the 'token'
- * 	count			: how many times 'token' was found in 'str' (nullable)
- * 	start_position	: position in 'str' where the function has to start looking for 
- * 					  'token'. Set it to '0' if the whole 'str' must be considered.
- * 
- * 	returns			: position where 'token' was found, or RDF_TOKEN_NOT_FOUND otherwise.
+ * This function locates the first occurrence of given 'keyword' within 'str'. The keywords
+ * must be wrapped with one of the characters given in 'start_chars' and end_chars'. If
+ * the parameter '*count' is used, this function will be called recursively to count how
+ * many times the searched 'keyword' can be found in 'str'
+ *
+ * str             : string where 'keyword' will be searched
+ * start_chars     : all possible chars that can preceed the searched 'keyword'
+ * keyword         : the searched keyword (case insensitive)
+ * end_chars       : all possible chars that can be found after the 'keyword'
+ * count           : how many times 'keyword' was found in 'str' (nullable)
+ * start_position  : position in 'str' where the function has to start looking for
+ *                   'keyword'. Set it to '0' if the whole 'str' must be considered.
+ *
+ * returns         : position where 'keyword' was found, or RDF_KEYWORD_NOT_FOUND otherwise.
  */
-static int LocateToken(char *str, char *start_chars, char *token, char *end_chars, int *count, int start_position) 
+static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position) 
 {
-	int token_position = RDF_TOKEN_NOT_FOUND;
+	int keyword_position = RDF_KEYWORD_NOT_FOUND;
 		
-	elog(DEBUG1,"%s called: '%s' in start_position %d",__func__, token, start_position);
+	elog(DEBUG1,"%s called: '%s' in start_position %d",__func__, keyword, start_position);
 
 	if(start_position < 0)
-		elog(ERROR, "%s: start_position is not nullable and must contain a positive number.", __func__);
+		elog(ERROR, "%s: start_position cannot be negative.", __func__);
 
-	/* In case the SPARQL has nothing prior to the SELECT clause */
-	if(strcasecmp(token,"SELECT") == 0 && strncasecmp(str,"SELECT",6) == 0 && start_position == 0)
+	/* 
+	 * Some SPARQL keywords can be placed in the very beginning of a query, so they not always 
+	 * have a preceeding character. So here we first check if the searched keyword exists
+	 * in the beginning of the string.
+	 */
+	if (((strcasecmp(keyword, RDF_SPARQL_KEYWORD_SELECT) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_SELECT, strlen(RDF_SPARQL_KEYWORD_SELECT)) == 0) ||
+		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0)) && 
+		 start_position == 0)
 	{
-		elog(DEBUG1, "%s: nothing before SELECT. Setting token_position to 0,", __func__);
-		token_position = 0;
-
-		if(count)
-			(*count)++; 
-	}
-
-	for (int i = 0; i < strlen(start_chars); i++)
+		elog(DEBUG1, "%s: nothing before SELECT. Setting keyword_position to 0,", __func__);
+		keyword_position = 0;
+	} 
+	else
 	{
 
-		for (int j = 0; j < strlen(end_chars); j++)
+		for (int i = 0; i < strlen(start_chars); i++)
 		{
-			char *el;
-			StringInfoData eval_token;
-			initStringInfo(&eval_token);
 
-			appendStringInfo(&eval_token, "%c%s%c", start_chars[i], token, end_chars[j]);
-
-			el = strcasestr(str + start_position, eval_token.data);
-
-			if (el != NULL)
+			for (int j = 0; j < strlen(end_chars); j++)
 			{
-				int nquotes = 0;
+				char *el;
+				StringInfoData eval_token;
+				initStringInfo(&eval_token);
 
-				for (int k = 0; k <= (el - str); k++)
+				appendStringInfo(&eval_token, "%c%s%c", start_chars[i], keyword, end_chars[j]);
+
+				el = strcasestr(str + start_position, eval_token.data);
+
+				if (el != NULL)
 				{
-					if (str[k] == '\"')
-						nquotes++;
-				}
+					int nquotes = 0;
 
-				/*
-				 * If the token is located after an opening double-quote it is a literal and should
-				 * not be considered as a token.
-				 */
-				if (nquotes % 2 != 1)
-				{
-					token_position = el - str;
-
-					if (count != NULL)
-					{				
-						elog(DEBUG1, "  %s (%d): token '%s' found in position '%d'. Recalling %s ... ", __func__, *count, token, token_position, __func__);
-						LocateToken(str, start_chars, token, end_chars, count, token_position + 1);
+					for (int k = 0; k <= (el - str); k++)
+					{
+						if (str[k] == '\"')
+							nquotes++;
 					}
 
-				}
+					/*
+					 * If the keyword is located after an opening double-quote it is a literal and should
+					 * not be considered as a keyword.
+					 */
+					if (nquotes % 2 != 1)
+						keyword_position = el - str;
 
-				if (token_position != RDF_TOKEN_NOT_FOUND)
-					break;
+					if (keyword_position != RDF_KEYWORD_NOT_FOUND)
+						break;
+				}
 			}
 		}
-
 	}
 
-	elog(DEBUG1,"  %s: '%s' returning  %d",__func__, token, token_position);
-
-	if((count) && token_position != RDF_TOKEN_NOT_FOUND)
+	
+	if((count) && keyword_position != RDF_KEYWORD_NOT_FOUND)
+	{
+		elog(DEBUG1, "  %s (%d): keyword '%s' found in position '%d'. Recalling %s ... ", __func__, *count, keyword, keyword_position, __func__);
+		LocateKeyword(str, start_chars, keyword, end_chars, count, keyword_position + 1);
 		(*count)++;
+	}
+		
 
-	return token_position;
+	elog(DEBUG1,"  %s: '%s' returning  %d",__func__, keyword, keyword_position);
+	
+	return keyword_position;
 
 }
 
@@ -2435,7 +2442,7 @@ static char *deparseSPARQLFROM(char *raw_sparql)
 	
 	initStringInfo(&from);
 			
-	if(LocateToken(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_TOKEN_NOT_FOUND) 
+	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_KEYWORD_NOT_FOUND) 
 	{				
 		int entry_position = 0;
 		
@@ -2445,9 +2452,9 @@ static char *deparseSPARQLFROM(char *raw_sparql)
 			StringInfoData from_entry;
 			initStringInfo(&from_entry);
 
-			entry_position = LocateToken(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, NULL, entry_position);
+			entry_position = LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, NULL, entry_position);
 
-			if(entry_position == RDF_TOKEN_NOT_FOUND)
+			if(entry_position == RDF_KEYWORD_NOT_FOUND)
 				break;
 
 			entry_position = entry_position + (strlen(RDF_SPARQL_KEYWORD_FROM) + 1);
@@ -2458,13 +2465,11 @@ static char *deparseSPARQLFROM(char *raw_sparql)
 			/* Is the SPARQL long enough for 'FROM NAMED' to be parsed? */
 			if(entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED) <= strlen(raw_sparql))
 			{
-				char *named = pnstrdup(raw_sparql + entry_position, strlen(RDF_SPARQL_KEYWORD_NAMED));
-
 				/*
-				 * if the next token is NAMED, set is_named to 'true' and move the cursor 
-				 * to the next token
+				 * if the next keyword is NAMED, set is_named to 'true' and move the cursor 
+				 * to the next keyword
 				 */
-				if(strcasecmp(named,RDF_SPARQL_KEYWORD_NAMED) == 0) {
+				if(strncasecmp(raw_sparql + entry_position, RDF_SPARQL_KEYWORD_NAMED, strlen(RDF_SPARQL_KEYWORD_NAMED)) == 0) {
 					is_named = true;
 					entry_position = entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED);
 
@@ -2497,4 +2502,48 @@ static char *deparseSPARQLFROM(char *raw_sparql)
 	}
 
 	return from.data;
+}
+
+static char *deparseSPARQLPREFIX(char *raw_sparql)
+{
+	StringInfoData prefixes;
+	char *open_chars = "\n\t ";
+	char *close_chars = " >\n\t";
+	int nprefix = 0;
+
+	initStringInfo(&prefixes);
+
+	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, &nprefix, 0) != RDF_KEYWORD_NOT_FOUND)
+	{
+		int keyword_position = 0;
+
+		for (int i = 1; i <= nprefix; i++)
+		{
+			StringInfoData keyword_entry;
+			initStringInfo(&keyword_entry);
+
+			keyword_position = LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, NULL, keyword_position);
+
+			if(keyword_position == RDF_KEYWORD_NOT_FOUND)
+				break;
+
+			while (raw_sparql[keyword_position] != '>' &&
+				   raw_sparql[keyword_position] != '\0')
+			{
+				appendStringInfo(&keyword_entry,"%c",raw_sparql[keyword_position]);
+
+				if(raw_sparql[keyword_position] == '>')
+					break;
+
+				keyword_position++;
+			}
+
+			appendStringInfo(&prefixes,"%s>\n", keyword_entry.data);
+
+		}
+	}
+
+	//elog(DEBUG1,">>>>>>>>>>>>>> \n\n%s", prefixes.data);
+
+	return prefixes.data;
 }
