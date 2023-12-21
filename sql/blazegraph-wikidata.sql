@@ -38,7 +38,8 @@ SERVER wikidata OPTIONS (
 '); 
 
 SELECT atmid, bankname, atmwkt
-FROM atms_munich;
+FROM atms_munich
+WHERE bankname = 'BBBank';
 
 
 CREATE FOREIGN TABLE places_below_sea_level (
@@ -69,4 +70,5 @@ SERVER wikidata OPTIONS (
 
 SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
+WHERE wikidata_id = 'http://www.wikidata.org/entity/Q61308849'
 FETCH FIRST 5 ROWS ONLY;

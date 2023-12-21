@@ -35,7 +35,8 @@ SERVER wikidata OPTIONS (
 }
 '); 
 SELECT atmid, bankname, atmwkt
-FROM atms_munich;
+FROM atms_munich
+WHERE bankname = 'BBBank';
 NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
@@ -63,25 +64,15 @@ NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 }
 
 
-                      atmid                       |   bankname    |            atmwkt            
---------------------------------------------------+---------------+------------------------------
- http://linkedgeodata.org/triplify/node418977189  | BBBank        | POINT(11.5558547 48.1592738)
- http://linkedgeodata.org/triplify/node3306244758 | Münchner Bank | POINT(11.5750586 48.1594927)
- http://linkedgeodata.org/triplify/node3306286827 | Münchner Bank | POINT(11.6176034 48.1485003)
- http://linkedgeodata.org/triplify/node3089072995 | Münchner Bank | POINT(11.5513026 48.134263)
- http://linkedgeodata.org/triplify/node2335233114 | Münchner Bank | POINT(11.5973765 48.1324592)
- http://linkedgeodata.org/triplify/node3736295643 | Münchner Bank | POINT(11.5802001 48.1160298)
- http://linkedgeodata.org/triplify/node1126961041 | Münchner Bank | POINT(11.5810138 48.1163941)
- http://linkedgeodata.org/triplify/node3310646670 | Münchner Bank | POINT(11.5452358 48.1223548)
- http://linkedgeodata.org/triplify/node447786236  | Münchner Bank | POINT(11.5746898 48.1479876)
- http://linkedgeodata.org/triplify/node445639031  | Münchner Bank | POINT(11.5723789 48.1858279)
- http://linkedgeodata.org/triplify/node308055991  | Münchner Bank | POINT(11.5750838 48.159489)
-(11 rows)
+                      atmid                      | bankname |            atmwkt            
+-------------------------------------------------+----------+------------------------------
+ http://linkedgeodata.org/triplify/node418977189 | BBBank   | POINT(11.5558547 48.1592738)
+(1 row)
 
 CREATE FOREIGN TABLE places_below_sea_level (
-  wikidata_id text  OPTIONS (variable '?place'),
-  label text        OPTIONS (variable '?label'),
-  wkt text    OPTIONS (variable '?location'),
+  wikidata_id text   OPTIONS (variable '?place'),
+  label text         OPTIONS (variable '?label'),
+  wkt text           OPTIONS (variable '?location'),
   elevation numeric  OPTIONS (variable '?elev')
 )
 SERVER wikidata OPTIONS (
@@ -105,6 +96,7 @@ SERVER wikidata OPTIONS (
 '); 
 SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
+WHERE wikidata_id = 'http://www.wikidata.org/entity/Q61308849'
 FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
@@ -122,15 +114,12 @@ SELECT ?place ?label ?location
     ?place wdt:P625 ?location.    
     FILTER(LANG(?label)="en")
     SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
+ FILTER(STR(?place) = "http://www.wikidata.org/entity/Q61308849")
 }
 LIMIT 5
 
-               wikidata_id                |     label      |                wkt                 
-------------------------------------------+----------------+------------------------------------
- http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A  | Point(-133.03 69.43)
- http://www.wikidata.org/entity/Q403083   | Ahyi           | Point(145.033333333 20.416666666)
- http://www.wikidata.org/entity/Q31796546 | Sahl al ‘Awjā' | Point(35.464722222 31.957777777)
- http://www.wikidata.org/entity/Q4518111  | Chupícuaro     | Point(-101.581388888 19.676944444)
- http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum   | Point(25.407 29.228419444)
-(5 rows)
+               wikidata_id                |     label     |         wkt          
+------------------------------------------+---------------+----------------------
+ http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A | Point(-133.03 69.43)
+(1 row)
 
