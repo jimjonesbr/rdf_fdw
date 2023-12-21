@@ -1,7 +1,7 @@
 ---------------------------------------------
 # PostgreSQL Foreign Data Wrapper for RDF Triplestores
 
-The `rdf_fdw` provides PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
+The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
 
 > [!WARNING]  
 > **THIS SOFTWARE IS CURRENTLY UNDER DEVELOPMENT AND IS STILL NOT READY FOR PRODUCTION USE**
@@ -24,6 +24,10 @@ The `rdf_fdw` provides PostgreSQL Foreign Data Wrapper to easily access RDF Trip
     - [IN and ANY constructs](#in-and-any-constructs)
   - [Pushdown Examples](#pushdown-examples)
 - [Examples](#examples)
+  - [DBpedia](#dbpedia)
+  - [Getty Thesaurus](#getty-thesaurus)
+  - [BBC Programmes and Music](#bbc-programmes-and-music)
+  - [Wikidata](#wikidata)
 - [Deploy with Docker](#deploy-with-docker)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
@@ -264,7 +268,9 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
 
-1. Create a `SERVER` and `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Endpoint (Politicians):
+### [DBpedia](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#dbpedia)
+
+* Create a `SERVER` and `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Endpoint (Politicians):
 
 ```sql
 CREATE SERVER dbpedia
@@ -352,7 +358,7 @@ LIMIT 5
 (5 rows)
 ```
 
-2. Create a `SERVER` and `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Endpoint (German Public Universities):
+* Create a `SERVER` and `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Endpoint (German Public Universities):
 
 **This examples requires the extension PostGIS**
 
@@ -433,7 +439,10 @@ LIMIT 10
  Free University of Berlin          | 0101000000FFFFFFBFC3942A40000000C0FD394A40
 (10 rows)
 ```
-3. Create a `SERVER` and `FOREIGN TABLE` to query the [Getty Thesaurus](http://vocab.getty.edu/sparql) SPARQL endpoint [Non-Italians Who Worked in Italy](http://vocab.getty.edu/queries?toc=&query=SELECT+*+WHERE+%7B%3Fs+a+%3Fo%7D+LIMIT+1&implicit=true&equivalent=false#Non-Italians_Who_Worked_in_Italy):
+
+### [Getty Thesaurus](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#getty-thesaurus)
+
+* Create a `SERVER` and `FOREIGN TABLE` to query the [Getty Thesaurus](http://vocab.getty.edu/sparql) SPARQL endpoint [Non-Italians Who Worked in Italy](http://vocab.getty.edu/queries?toc=&query=SELECT+*+WHERE+%7B%3Fs+a+%3Fo%7D+LIMIT+1&implicit=true&equivalent=false#Non-Italians_Who_Worked_in_Italy):
 
 Find non-Italians who worked in Italy and lived during a given time range
 
@@ -533,7 +542,9 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 (10 rows)
 ```
 
-4. Create a `SERVER` and `FOREIGN TABLE` to query the [BBC Programmes and Music](http://vocab.getty.edu/sparql) SPARQL endpoint (authors and their work)
+### [BBC Programmes and Music](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bbc-programmes-and-music)
+
+* Create a `SERVER` and `FOREIGN TABLE` to query the [BBC Programmes and Music](http://vocab.getty.edu/sparql) SPARQL endpoint (authors and their work)
 
 ```sql
 CREATE SERVER bbc
@@ -635,8 +646,9 @@ ORDER BY  ASC (?title)  ASC (?description)
 
 ```
 
-5. Create a `SERVER` and `FOREIGN TABLE` to query the [Wikidata](https://query.wikidata.org/sparql) SPARQL endpoint (Places that are below 10 meters above sea level and their geo coordinates)
+### [Wikidata](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#wikidata)
 
+* Create a `SERVER` and `FOREIGN TABLE` to query the [Wikidata](https://query.wikidata.org/sparql) SPARQL endpoint (Places that are below 10 meters above sea level and their geo coordinates)
 
 ```sql
 CREATE SERVER wikidata
