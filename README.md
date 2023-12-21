@@ -107,7 +107,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
 | `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
 | `enable_pushdown` | optional            | Globally enables or disables pushdown of SQL clauses into SPARQL (default `true`)
-| `format` | optional            | The `rdf_xml` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which is normally identified by the MIME type `application/sparql-results+xml`. However, there are some triplestores that encoded it differently, e.g. `xml`, `rdf-xml`. In case it differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
+| `format` | optional            | The `rdf_fdw` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which can be normally enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` http header. However, there are some products that expect a differently value, e.g. `xml`, `rdf-xml`. In case it differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
 | `http_proxy` | optional            | Proxy for HTTP requests.
 | `proxy_user` | optional            | User for proxy server authentication.
 | `proxy_user_password` | optional            | Password for proxy server authentication.

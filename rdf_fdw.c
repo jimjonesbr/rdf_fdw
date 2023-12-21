@@ -260,7 +260,6 @@ static void rdfEndForeignScan(ForeignScanState *node);
 static int ExecuteSPARQL(RDFfdwState *state);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
-static int LoadHTTPRequestHeaders(RDFfdwState *state, struct curl_slist **headers);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
 static void InitSystem(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
@@ -976,11 +975,11 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	CURL *curl;
 	CURLcode res;
 	StringInfoData url_buffer;
+	StringInfoData user_agent;
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
 	struct curl_slist *headers = NULL;
-	//char *format;
 	long maxretries = RDF_DEFAULT_MAXRETRY;	
 	long connectTimeout = RDF_DEFAULT_CONNECTTIMEOUT;
 
@@ -1008,7 +1007,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	initStringInfo(&url_buffer);
 	appendStringInfo(&url_buffer, "query=%s", curl_easy_escape(curl, state->sparql.data, 0));
-	//appendStringInfo(&url_buffer, "&format=%s", format);
 
 	if(state->token)
 		appendStringInfo(&url_buffer, "&token=%s", state->token);
@@ -1086,32 +1084,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+		curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, state->format);
 
-	
-		if(LoadHTTPRequestHeaders(state, &headers) == REQUEST_SUCCESS)
-			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-		else
-			elog(ERROR,"%s: unable to load http headers", __func__);
+		initStringInfo(&user_agent);
+		appendStringInfo(&user_agent,  "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
 
-	/*
-		struct curl_slist *slist = NULL;
-		struct curl_slist *temp = NULL;
-		slist = curl_slist_append(slist, "pragma:");
-		if(!slist)
-			return -1;
-		
-		temp = curl_slist_append(slist, "User-Agent: rdf_fdw");
-		
-		if(!temp) {
-			curl_slist_free_all(slist);
-			return -1;
-		}
-		
-		slist = temp;
-
-		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
-
-		*/
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent.data);		
 
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
 
@@ -1178,30 +1156,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		return REQUEST_FAIL;
 
 	return REQUEST_SUCCESS;
-}
-
-static int LoadHTTPRequestHeaders(RDFfdwState *state, struct curl_slist **headers) 
-{
-	StringInfoData format;
-	StringInfoData agent;
-
-	initStringInfo(&format);
-	initStringInfo(&agent);
-
-	appendStringInfo(&format, "Accept: %s", state->format);
-	appendStringInfo(&agent,  "User-Agent: rdf_fdw/%s PostgreSQL%s", FDW_VERSION, PG_VERSION);
-	
-	(*headers) = curl_slist_append((*headers), format.data);
-	(*headers) = curl_slist_append((*headers), agent.data);
-			
-	if(!headers) 
-	{
-		curl_slist_free_all((*headers));
-		return REQUEST_FAIL;
-	}
-
-	return REQUEST_SUCCESS;
-
 }
 
 static void LoadRDFData(RDFfdwState *state)
@@ -2594,8 +2548,6 @@ static char *deparseSPARQLPREFIX(char *raw_sparql)
 
 		}
 	}
-
-	//elog(DEBUG1,">>>>>>>>>>>>>> \n\n%s", prefixes.data);
 
 	return prefixes.data;
 }
