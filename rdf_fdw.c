@@ -115,7 +115,7 @@
 #define RDF_SPARQL_KEYWORD_UNION "UNION"
 
 /*
- * This macro is used by deparseExpr to identify PostgreSQL
+ * This macro is used by DeparseExpr to identify PostgreSQL
  * types that can be translated to SPARQL
  */
 #define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID \
@@ -128,60 +128,58 @@ PG_MODULE_MAGIC;
 
 typedef struct RDFfdwState
 {
-	int numcols;			 		/* Total number of columns in the foreign table. */
-	int rowcount;
-	int pagesize;
-	char *sparql_prefixes;
-	char *sparql_select;
-	char *sparql_from;
-	char *sparql_from_named;
-	char *sparql_where;
-	char *sparql_filter;
-	char *sparql_orderby;
-	char *sparql_limit;
-	char *raw_sparql;
-	char *endpoint;
-	char *format;
-	char *proxy;			 		/* Proxy for HTTP requests, if necessary. */
-	char *proxyType;		 		/* Proxy protocol (HTTPS, HTTP). */
-	char *proxyUser;		 		/* User name for proxy authentication. */
-	char *proxyUserPassword; 		/* Password for proxy authentication. */
-	char *token;
-	char *customParams;
-	bool requestRedirect;	 		/* Enables or disables URL redirecting. */
-	bool enablePushdown;
-	bool is_sparql_parsable;
-	bool log_sparql;
-	long requestMaxRedirect; 		/* Limit of how many times the URL redirection (jump) may occur. */
-	long connectTimeout;
-	long maxretries;
-	xmlDocPtr xmldoc;	
-	Oid foreigntableid;
-	List *records;
-	struct RDFfdwTable *rdfTable;
-	StringInfoData sparql;
-	List *remote_conds;  			/* can be pushed down to remote server */
-	List *local_conds;   			/* cannot be pushed down to remote server */
+	int numcols;                 /* Total number of columns in the foreign table. */
+	int rowcount;                /* Number of rows currently returned to the client */
+	int pagesize;                /* Total number of records retrieved from the SPARQL endpoint*/
+	char *sparql_prefixes;       /* SPARQL PREFIX entries */
+	char *sparql_select;         /* SPARQL SELECT containing the columns / variables used in the SQL query */
+	char *sparql_from;           /* SPARQL FROM clause entries*/
+	char *sparql_where;          /* SPARQL WHERE clause */
+	char *sparql_filter;         /* SPARQL FILTER clauses based on SQL WHERE conditions */
+	char *sparql_orderby;        /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
+	char *sparql_limit;          /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
+	char *raw_sparql;            /* Raw SPARQL query set in the CREATE TABLE statement */
+	char *endpoint;              /* SPARQL endpoint set in the CREATE SERVER statement*/
+	char *format;                /* Format in which the RDF triplestore has to reply */
+	char *proxy;                 /* Proxy for HTTP requests, if necessary. */
+	char *proxyType;             /* Proxy protocol (HTTPS, HTTP). */
+	char *proxyUser;             /* User name for proxy authentication. */
+	char *proxyUserPassword;     /* Password for proxy authentication. */
+	char *token;                 /* Token used for authentication in the SPARQL endpoint */
+	char *customParams;          /* Custom parameters used to compose the request URL */
+	bool requestRedirect;        /* Enables or disables URL redirecting. */
+	bool enablePushdown;         /* Enables or disables pushdown of SQL commands */
+	bool is_sparql_parsable;     /* Marks the query is or not for pushdown*/
+	bool log_sparql;             /* Enables or disables logging SPARQL queries as NOTICE */
+	long requestMaxRedirect;     /* Limit of how many times the URL redirection (jump) may occur. */
+	long connectTimeout;         /* Timeout for SPARQL queries */
+	long maxretries;             /* Number of re-try attemtps for failed SPARQL queries */
+	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
+	Oid foreigntableid;          /* FOREIGN TABLE oid */
+	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
+	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
+	StringInfoData sparql;       /* Final SPARQL query sent to the endpoint (after pusdhown) */
+	List *remote_conds;          /* Conditions that can be pushed down as SPARQL */
+	List *local_conds;           /* Conditions that cannot be pushed down as SPARQL */
 } RDFfdwState;
 
 typedef struct RDFfdwTable
 {	
-	char *name;
-	char *rdfvariable;
-	int   nfdwcols;
-	struct RDFfdwColumn **cols;
+	char *name;                  /* FOREIGN TABLE name */
+	int   nfdwcols;              /* Total number of columns */
+	struct RDFfdwColumn **cols;  /* List of columns of a FOREIGN TABLE */
 
 } RDFfdwTable;
 
 typedef struct RDFfdwColumn
 {	
-	char *name;
-	char *sparqlvar;
-	char *expression;
-	Oid  pgtype;		/* PostgreSQL data type */
-	int  pgtypmod;		/* PostgreSQL type modifier */
-	int  pgattnum;		/* PostgreSQL attribute number */
-	bool used;       
+	char *name;                  /* Column name */
+	char *sparqlvar;             /* Column OPTION 'variable'*/
+	char *expression;            /* Column OPTION 'expression' */
+	Oid  pgtype;                 /* PostgreSQL data type */
+	int  pgtypmod;               /* PostgreSQL type modifier */
+	int  pgattnum;               /* PostgreSQL attribute number */
+	bool used;                   /* Is the column used in the current SQL query? */
 
 } RDFfdwColumn;
 
@@ -268,15 +266,15 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
-static char *deparseDate(Datum datum);
-static char *deparseTimestamp(Datum datum, bool hasTimezone);
-static char *deparseLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
-static char *deparseWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
-static char *datumToString(Datum datum, Oid type);
-static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
-static char *deparseOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
-static char *deparseSPARQLFROM(char *raw_sparql);
-static char *deparseSPARQLPREFIX(char *raw_sparql);
+static char *DeparseDate(Datum datum);
+static char *DeparseTimestamp(Datum datum, bool hasTimezone);
+static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
+static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
+static char *DatumToString(Datum datum, Oid type);
+static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
+static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
+static char *DeparseSPARQLFrom(char *raw_sparql);
+static char *DeparseSPARQLPrefix(char *raw_sparql);
 
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
@@ -601,30 +599,6 @@ static void rdfEndForeignScan(ForeignScanState *node)
 {
 }
 
-static int CheckURL(char *url)
-{
-
-	CURLUcode code;
-	CURLU *handler = curl_url();
-
-	elog(DEBUG1, "%s called > '%s'", __func__, url);
-
-	code = curl_url_set(handler, CURLUPART_URL, url, 0);
-
-	curl_url_cleanup(handler);
-
-	elog(DEBUG1, "  %s handler return code: %u", __func__, code);
-
-	if (code != 0)
-	{
-		elog(DEBUG1, "%s: invalid URL (%u) > '%s'", __func__, code, url);
-
-		return code;
-	}
-
-	return REQUEST_SUCCESS;
-}
-
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
 	size_t realsize = size * nmemb;
@@ -686,9 +660,48 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	return realsize;
 }
 
+/* 
+ * CheckURL
+ * --------
+ * CheckS if an URL is valid.
+ * 
+ * url: URL to be validated.
+ * 
+ * returns REQUEST_SUCCESS or REQUEST_FAIL
+ */
+static int CheckURL(char *url)
+{
+
+	CURLUcode code;
+	CURLU *handler = curl_url();
+
+	elog(DEBUG1, "%s called > '%s'", __func__, url);
+
+	code = curl_url_set(handler, CURLUPART_URL, url, 0);
+
+	curl_url_cleanup(handler);
+
+	elog(DEBUG1, "  %s handler return code: %u", __func__, code);
+
+	if (code != 0)
+	{
+		elog(DEBUG1, "%s: invalid URL (%u) > '%s'", __func__, code, url);
+
+		return code;
+	}
+
+	return REQUEST_SUCCESS;
+}
 
 /*
+ * GetRDFColumn
+ * -------------
  * Returns the RDFfdwColumn mapped to the table column in `columname`
+ * 
+ * state    : SPARQL, SERVER and FOREIGN TABLE info
+ * columname: name of the FOREIGN TABLE column
+ * 
+ * returns RDFfdwColumn loded with all its attributes
  */
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname){
 
@@ -706,6 +719,18 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 	return NULL;
 }
 
+/*
+ * InitSystem
+ * ----------
+ * This function loads the 'OPTION' variables declared in SERVER and FOREIGN 
+ * TABLE statements. It also parses the raw_sparql query into its main clauses, 
+ * so that it can be later modified to match the SQL SELECT clause and commands
+ * that can be pushed down to SPARQL
+ * 
+ * state  : SPARQL, SERVER and FOREIGN TABLE info
+ * baserel: Conditions and columns used in the SQL query
+ * root   : Planner info
+ */
 static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root) {
 
 	ForeignTable *ft = GetForeignTable(state->foreigntableid);
@@ -890,7 +915,7 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	/* 
 	 * deparse SPARQL PREFIX clauses from raw_sparql, if any
 	 */
-	state->sparql_prefixes = deparseSPARQLPREFIX(state->raw_sparql);
+	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
 
 	/* 
 	 * We create the SPARQL SELECT clause according to the columns used in the 
@@ -926,26 +951,36 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	/* 
 	 * Try to deparse SQL WHERE conditions, if any, to create SPARQL FILTER expressions 
 	 */
-	state->sparql_filter = deparseWhereConditions(state, baserel);
+	state->sparql_filter = DeparseSQLWhereConditions(state, baserel);
 
 	/*
 	 * deparse SQL ORDER BY, if any, and convert it to SPARQL
 	 */
-	state->sparql_orderby = deparseOrderBy(state, root, baserel);
+	state->sparql_orderby = DeparseSQLOrderBy(state, root, baserel);
 
 	/*
 	 * deparse SQL LIMIT, if any, and convert it to SPARQL
 	 */
-	state->sparql_limit = deparseLimit(state, root, baserel);
+	state->sparql_limit = DeparseSQLLimit(state, root, baserel);
 
 	/*
 	 * deparse SPARQL FROM and FROM NAMED clauses, if any
 	 */
-	state->sparql_from = deparseSPARQLFROM(state->raw_sparql);
+	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
 	
-	deparseSPARQLPREFIX(state->raw_sparql);
+	//DeparseSPARQLPrefix(state->raw_sparql);
 }
 
+/*
+ * FetchNextBinding
+ * ----------------
+ * Loads the next binding from the record list 'state->recods' to return to
+ * the client.
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ * 
+ * returns xmlNodePtr containg the retrieved record or NULL if EOF.
+ */
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 {
 
@@ -969,6 +1004,16 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 
 }
 
+/*
+ * ExecuteSPARQL
+ * -------------
+ * Executes the SPARQL query in the endpoint set in the CREATE FOREIGN TABLE
+ * and CREATE SERVER statements. The result set is loaded into 'state'.
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ * 
+ * returns REQUEST_SUCCESS or REQUEST_FAIL
+ */
 static int ExecuteSPARQL(RDFfdwState *state)
 {
 
@@ -1158,6 +1203,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	return REQUEST_SUCCESS;
 }
 
+/*
+ * LoadRDFData
+ * -----------
+ * Parses the result set loaded into 'state->xmldoc' into records.
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ */
 static void LoadRDFData(RDFfdwState *state)
 {
 
@@ -1202,6 +1254,15 @@ static void LoadRDFData(RDFfdwState *state)
 
 }
 
+/*
+ * SetUsedColumns
+ * --------------
+ * Marks FOREIGN TABLE's columns as used if they're used in the SQL query. This is
+ * useful to get the mapped 'variable' OPTIONs, so that we can build a SPARQL SELECT 
+ * only with the required variables.
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ */
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid)
 {
 	Var *variable;
@@ -1453,10 +1514,15 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 
 /*
  * IsSPARQLParsable
- * 	Checks if a SPARQL query can be parsed and modified to accommodate possible
- * 	pusdhown instructions. If it returns false it does not mean that the query
- * 	is invalid. It just means that it contains unsupported clauses and it cannot 
- * 	be modifed. 
+ * ------------------
+ * Checks if a SPARQL query can be parsed and modified to accommodate possible
+ * pusdhown instructions. If it returns false it does not mean that the query
+ * is invalid. It just means that it contains unsupported clauses and it cannot 
+ * be modifed. 
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ * 
+ * returns 'true' if the SPARQL query is safe to be parsed or 'false' otherwise
  */
 static bool IsSPARQLParsable(struct RDFfdwState *state) 
 {
@@ -1480,6 +1546,15 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 
 }
 
+/*
+ * CreateSPARQL
+ * ------------
+ * Creates the final SPARQL query sent to the server, which might includes the
+ * pushdown of SQL instructions. The query will be loaded into 'state->sparql'
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ * root : Planner info
+ */
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 {
 	
@@ -1656,6 +1731,14 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 
 }
 
+/*
+ * CreateTuple
+ * -----------
+ * Creates tuple with data (or NULLs) to return to the client
+ * 
+ * slot : Tuple slot
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ */
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 {
 	
@@ -1743,7 +1826,17 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 }
 
-static char *datumToString(Datum datum, Oid type)
+/*
+ * DatumToString
+ * -------------
+ * Converts a 'Datum' into a char*.
+ * 
+ * datum: Data to be converted to char*
+ * type : Oid of the data type to be converted
+ * 
+ * returns a char* with the string representation of a Datum or an empty string.
+ */
+static char *DatumToString(Datum datum, Oid type)
 {
 	StringInfoData result;
 	regproc typoutput;
@@ -1781,17 +1874,17 @@ static char *datumToString(Datum datum, Oid type)
 			appendStringInfo(&result, "%s", str);
 			break;
 		case DATEOID:
-			str = deparseDate(datum);
+			str = DeparseDate(datum);
 			initStringInfo(&result);
 			appendStringInfo(&result, "%s", str);
 			break;
 		case TIMESTAMPOID:
-			str = deparseTimestamp(datum, false);
+			str = DeparseTimestamp(datum, false);
 			initStringInfo(&result);
 			appendStringInfo(&result, "%s", str);
 			break;
 		case TIMESTAMPTZOID:
-			str = deparseTimestamp(datum, true);
+			str = DeparseTimestamp(datum, true);
 			initStringInfo(&result);
 			break;
 		default:
@@ -1801,7 +1894,16 @@ static char *datumToString(Datum datum, Oid type)
 	return result.data;	
 }
 
-static char *deparseDate(Datum datum)
+/*
+ * DeparseDate
+ * -----------
+ * Deparses a 'Datum' of type 'date' and converts it to char*
+ * 
+ * datum: date to be converted
+ * 
+ * retrns a string representation of the given date
+ */
+static char *DeparseDate(Datum datum)
 {
 	struct pg_tm datetime_tm;
 	StringInfoData s;
@@ -1825,7 +1927,16 @@ static char *deparseDate(Datum datum)
 	return s.data;
 }
 
-static char *deparseTimestamp(Datum datum, bool hasTimezone)
+/* 
+ * DeparseTimestamp
+ * ----------------
+ * Deparses a 'Datum' of type 'timestamp' and converts it to char*
+ * 
+ * datum: timestamp to be converted
+ * 
+ * retrns a string representation of the given timestamp
+ */
+static char *DeparseTimestamp(Datum datum, bool hasTimezone)
 {
 	struct pg_tm datetime_tm;
 	int32 tzoffset;
@@ -1863,78 +1974,18 @@ static char *deparseTimestamp(Datum datum, bool hasTimezone)
 	return s.data;
 }
 
-static char *deparseLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
-{
-
-	StringInfoData limit_clause;
-	char *limit_val, *offset_val = NULL;
-
-	elog(DEBUG1,"%s called ",__func__);
-
-
-
-	/* don't push down LIMIT (OFFSET)  if the query has a GROUP BY clause or aggregates */
-	if (root->parse->groupClause != NULL || root->parse->hasAggs)
-	{
-		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains aggregators.",__func__);
-		return NULL;
-	}
-		
-	/* don't push down LIMIT (OFFSET) if the query contains DISTINCT */
-	if (root->parse->distinctClause != NULL) {
-		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains DISTINCT.",__func__);
-		return NULL;
-	}
-		
-	/*
-	 * disables LIMIT push down if any WHERE conidition cannot be be pushed down, otherwise you'll 
-	 * be scratching your head forever wondering why some data are missing from the result set.
-	 */
-	if (state->local_conds != NIL)
-	{
-		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as there are WHERE conditions that could not be translated.",__func__);
-		return NULL;
-	}
-		
-	
-	/* only push down constant LIMITs that are not NULL */
-	if (root->parse->limitCount != NULL && IsA(root->parse->limitCount, Const))
-	{
-		Const *limit = (Const *)root->parse->limitCount;
-
-		if (limit->constisnull)
-			return NULL;
-
-		limit_val = datumToString(limit->constvalue, limit->consttype);
-	}
-	else
-		return NULL;
-
-	/* only consider OFFSETS that are non-NULL constants */
-	if (root->parse->limitOffset != NULL && IsA(root->parse->limitOffset, Const))
-	{
-		Const *offset = (Const *)root->parse->limitOffset;
-
-		if (! offset->constisnull)
-			offset_val = datumToString(offset->constvalue, offset->consttype);
-	}
-
-	initStringInfo(&limit_clause);
-
-	if (offset_val)
-		appendStringInfo(&limit_clause,
-						 "LIMIT %s+%s",
-						 offset_val, limit_val);
-	else
-		appendStringInfo(&limit_clause,
-						 "LIMIT %s",
-						 limit_val);
-
-	return limit_clause.data;
-
-}
-
-static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
+/*
+ * DeparseExpr
+ * -----------
+ * Deparses SQL expressions and converts them into SPARQL expressions
+ * 
+ * state     : SPARQL, SERVER and FOREIGN TABLE info
+ * foreignrel: Conditions and columns used in the SQL query
+ * expr      : Expression to be deparsed
+ * 
+ * returns a string containing a SPARQL expression or NULL if not parseable 
+ */
+static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *opername, *left, *right, oprkind;
 	char *sparqlvar;
@@ -1973,7 +2024,7 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		else
 		{
 			/* get a string representation of the value */
-			char *c = datumToString(constant->constvalue, constant->consttype);
+			char *c = DatumToString(constant->constvalue, constant->consttype);
 			if (c == NULL)
 				return NULL;
 			else
@@ -2046,7 +2097,7 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			if (strcmp(opername, "<>") == 0)
 				opername = "!=";
 
-			left = deparseExpr(state, foreignrel, linitial(oper->args));
+			left = DeparseExpr(state, foreignrel, linitial(oper->args));
 
 			if (left == NULL)
 			{
@@ -2058,7 +2109,7 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			{
 
 				/* binary operator */
-				right = deparseExpr(state, foreignrel, lsecond(oper->args));
+				right = DeparseExpr(state, foreignrel, lsecond(oper->args));
 				rightexpr = lsecond(oper->args);
 
 				if (right == NULL)
@@ -2134,7 +2185,7 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (!canHandleType(leftargtype))
 			return NULL;
 
-		left = deparseExpr(state, foreignrel, linitial(arrayoper->args));
+		left = DeparseExpr(state, foreignrel, linitial(arrayoper->args));
 		if (left == NULL)
 			return NULL;
 
@@ -2191,7 +2242,7 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 					{
 						
-						c = datumToString(datum, ARR_ELEMTYPE(arr));						
+						c = DatumToString(datum, ARR_ELEMTYPE(arr));						
 						if (c == NULL)
 						{
 							array_free_iterator(iterator);
@@ -2250,7 +2301,7 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			foreach (cell, array->elements)
 			{
 				/* convert the argument to a string */
-				char *element = deparseExpr(state, foreignrel, (Expr *)lfirst(cell));
+				char *element = DeparseExpr(state, foreignrel, (Expr *)lfirst(cell));
 
 				/* if any element cannot be converted, give up */
 				if (element == NULL)
@@ -2284,10 +2335,17 @@ static char *deparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 }
 
 /*
- * Parses the WHERE clause of SQL queries and tries to convert them into 
+ * DeparseSQLWhereConditions
+ * ----------------------
+ * Deparses the WHERE clause of SQL queries and tries to convert its conditions into 
  * SPARQL FILTER expressions.
+ * 
+ * state  : SPARQL, SERVER and FOREIGN TABLE info
+ * baserel: Conditions and columns used in the SQL query
+ * 
+ * returns char* containing SPARQL FILTER expressions or an empty string if not applicable
  */
-static char *deparseWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel)
+static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel)
 {
 	List *conditions = baserel->baserestrictinfo;
 	ListCell *cell;
@@ -2299,7 +2357,7 @@ static char *deparseWhereConditions(struct RDFfdwState *state, RelOptInfo *baser
 	foreach(cell, conditions)
 	{		
 		/* check if the condition can be pushed down */
-		char *where = deparseExpr(
+		char *where = DeparseExpr(
 					state, baserel,
 					((RestrictInfo *)lfirst(cell))->clause
 				);
@@ -2323,7 +2381,17 @@ static char *deparseWhereConditions(struct RDFfdwState *state, RelOptInfo *baser
 	return where_clause.data;
 }
 
-static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
+/* 
+ * DeparseSQLOrderBy
+ * -----------------
+ * 
+ * state  : SPARQL, SERVER and FOREIGN TABLE info
+ * baserel: Conditions and columns used in the SQL query
+ * root   : Planner info
+ * 
+ * returns char* containg a SPARQL ORDER BY clause or an empty string if not applicable
+ */
+static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
 {
 
 	StringInfoData orderedquery;
@@ -2394,7 +2462,7 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 
 		elog(DEBUG1,"  %s: can push down > %d",__func__, can_pushdown);
 
-		if (can_pushdown &&	((sort_clause = deparseExpr(state, baserel, em_expr)) != NULL))
+		if (can_pushdown &&	((sort_clause = DeparseExpr(state, baserel, em_expr)) != NULL))
 		{
 			/* keep usable_pathkeys for later use. */
 			usable_pathkeys = lappend(usable_pathkeys, pathkey);
@@ -2439,7 +2507,16 @@ static char *deparseOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOpt
 			
 }
 
-static char *deparseSPARQLFROM(char *raw_sparql)
+/* 
+ * DeparseSPARQLFrom
+ * -----------------
+ * Deparses the SPARQL FROM clause.
+ * 
+ * raw_sparql: SPARQL query set in the CREATE TABLE statement
+ * 
+ * returns the SPARQL FROM clause
+ */
+static char *DeparseSPARQLFrom(char *raw_sparql)
 {
 	StringInfoData from;
 	char *open_chars = ">)\n\t ";
@@ -2510,7 +2587,16 @@ static char *deparseSPARQLFROM(char *raw_sparql)
 	return from.data;
 }
 
-static char *deparseSPARQLPREFIX(char *raw_sparql)
+/*
+ * DeparseSPARQLPrefix
+ * -------------------
+ * Deparses the SPARQL PREFIX entries.
+ * 
+ * raw_sparql: SPARQL query set in the CREATE TABLE statement
+ * 
+ * returns the SPARQL PREFIX entries
+ */
+static char *DeparseSPARQLPrefix(char *raw_sparql)
 {
 	StringInfoData prefixes;
 	char *open_chars = "\n\t ";
@@ -2550,4 +2636,86 @@ static char *deparseSPARQLPREFIX(char *raw_sparql)
 	}
 
 	return prefixes.data;
+}
+
+/*
+ * DeparseSQLLimit
+ * ---------------
+ * Deparses the SQL LIMIT or FETCH clause and converts it into a SPARQL LIMIT clause
+ * 
+ * state  : SPARQL, SERVER and FOREIGN TABLE info
+ * root   : Planner info
+ * baserel: Conditions and columns used in the SQL query
+ * 
+ * returns a SPARQL LIMIT clause or an empty string if not applicable
+ */
+static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
+{
+
+	StringInfoData limit_clause;
+	char *limit_val, *offset_val = NULL;
+
+	elog(DEBUG1,"%s called ",__func__);
+
+
+
+	/* don't push down LIMIT (OFFSET)  if the query has a GROUP BY clause or aggregates */
+	if (root->parse->groupClause != NULL || root->parse->hasAggs)
+	{
+		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains aggregators.",__func__);
+		return NULL;
+	}
+		
+	/* don't push down LIMIT (OFFSET) if the query contains DISTINCT */
+	if (root->parse->distinctClause != NULL) {
+		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains DISTINCT.",__func__);
+		return NULL;
+	}
+		
+	/*
+	 * disables LIMIT push down if any WHERE conidition cannot be be pushed down, otherwise you'll 
+	 * be scratching your head forever wondering why some data are missing from the result set.
+	 */
+	if (state->local_conds != NIL)
+	{
+		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as there are WHERE conditions that could not be translated.",__func__);
+		return NULL;
+	}
+		
+	
+	/* only push down constant LIMITs that are not NULL */
+	if (root->parse->limitCount != NULL && IsA(root->parse->limitCount, Const))
+	{
+		Const *limit = (Const *)root->parse->limitCount;
+
+		if (limit->constisnull)
+			return NULL;
+
+		limit_val = DatumToString(limit->constvalue, limit->consttype);
+	}
+	else
+		return NULL;
+
+	/* only consider OFFSETS that are non-NULL constants */
+	if (root->parse->limitOffset != NULL && IsA(root->parse->limitOffset, Const))
+	{
+		Const *offset = (Const *)root->parse->limitOffset;
+
+		if (! offset->constisnull)
+			offset_val = DatumToString(offset->constvalue, offset->consttype);
+	}
+
+	initStringInfo(&limit_clause);
+
+	if (offset_val)
+		appendStringInfo(&limit_clause,
+						 "LIMIT %s+%s",
+						 offset_val, limit_val);
+	else
+		appendStringInfo(&limit_clause,
+						 "LIMIT %s",
+						 limit_val);
+
+	return limit_clause.data;
+
 }
