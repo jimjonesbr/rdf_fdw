@@ -15,6 +15,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF Triplest
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER TABLE and ALTER SERVER](#alter-table-and-alter-server)
+  - [Version](#version)
 - [Pushdown](#pushdown)
   - [LIMIT](#limit)
   - [ORDER BY](#order-by)
@@ -107,7 +108,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
 | `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
 | `enable_pushdown` | optional            | Globally enables or disables pushdown of SQL clauses into SPARQL (default `true`)
-| `format` | optional            | The `rdf_fdw` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which can be normally enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` http header. However, there are some products that expect a differently value, e.g. `xml`, `rdf-xml`. In case it differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
+| `format` | optional            | The `rdf_fdw` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which can be normally enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, there are some products that expect a differently value, e.g. `xml`, `rdf-xml`. In case it differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
 | `http_proxy` | optional            | Proxy for HTTP requests.
 | `proxy_user` | optional            | User for proxy server authentication.
 | `proxy_user_password` | optional            | Password for proxy server authentication.
@@ -115,7 +116,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `connect_retry`         | optional            | Number of attempts to retry a request in case of failure (default `3` times).
 | `request_redirect`         | optional            | Enables URL redirect issued by the server (default `false`).
 | `request_max_redirect`         | optional            | Limit of how many times the URL redirection may occur. If that many redirections have been followed, the next redirect will cause an error. Not setting this parameter or setting it to `0` will allow an infinite number of redirects.
-| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`
+| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are added to the URL.
 
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
@@ -126,7 +127,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `sparql  `    | **required**    | The raw SPARQL query to be executed    |
+| `sparql`      | **required**    | The raw SPARQL query to be executed    |
 | `log_sparql`  | optional    | Logs the exact SPARQL query executed. This OPTION is useful to check for any modification to the configured SPARQL query due to push down  |
 | `enable_pushdown` | optional            | Enables or disables pushdown of SQL clauses into SPARQL for a specific foreign table. This overrides the `SERVER` option `enable_pushdown` |
 
@@ -200,7 +201,29 @@ ALTER FOREIGN TABLE film OPTIONS (DROP enable_pushdown,
 ALTER SERVER dbpedia OPTIONS (DROP enable_pushdown);
 ```
 
+### [Version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#version)
 
+**Synopsis**
+
+*text* **rdf_fdw_version**();
+
+-------
+
+**Availability**: 1.0.0
+
+**Description**
+
+Shows the version of the installed `rdf_fdw` and its main libraries.
+
+**Usage**
+
+```sql
+SELECT rdf_fdw_version();
+                                                                                       rdf_fdw_version
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw = 0.0.1-dev, libxml = 2.9.10, libcurl = libcurl/7.74.0 OpenSSL/1.1.1w zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.0 (+libidn2/2.3.0) libssh2/1.9.0 nghttp2/1.43.0 librtmp/2.3
+(1 row)
+```
 
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
  
