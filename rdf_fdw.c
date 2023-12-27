@@ -582,8 +582,10 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 	   /*
 		* No further records to be retrieved. Let's clean up the XML parser before ending the query.
 		*/	
-		xmlFreeDoc(state->xmldoc);
+		list_free(state->records);
+		pfree(state);
 		xmlCleanupParser();
+
 		elog(DEBUG2,"  %s: no rows left (%d/%d)",__func__,state->rowcount , state->pagesize);
 	}
 
@@ -984,7 +986,6 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 {
 
-	xmlNodePtr record;
 	ListCell *cell;
 
 	elog(DEBUG2, "%s: called > rowcount = %d/%d", __func__, state->rowcount, state->pagesize);
@@ -996,11 +997,10 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 	}
 
 	cell = list_nth_cell(state->records, state->rowcount);
-	record = (xmlNodePtr) lfirst(cell);
 
 	elog(DEBUG2,"  %s: returning %d",__func__,state->rowcount);
 	
-	return record;
+	return (xmlNodePtr) lfirst(cell);
 
 }
 
@@ -1212,8 +1212,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
  */
 static void LoadRDFData(RDFfdwState *state)
 {
-
-	xmlNodePtr xmlroot;
 	xmlNodePtr results;
 	xmlNodePtr record;
 
@@ -1226,31 +1224,30 @@ static void LoadRDFData(RDFfdwState *state)
 		elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
 
 	elog(DEBUG2, "  %s: loading 'xmlroot'",__func__);
-	xmlroot = xmlDocGetRootElement(state->xmldoc);
 
-	Assert(xmlroot);
+	Assert(state->xmldoc);
 	
-	for (results = xmlroot->children; results != NULL; results = results->next)
+	for (results = xmlDocGetRootElement(state->xmldoc)->children; results != NULL; results = results->next)
 	{
-
 		if (xmlStrcmp(results->name, (xmlChar *)"results") == 0)
 		{
-
 			for (record = results->children; record != NULL; record = record->next)
 			{
-
 				if (xmlStrcmp(record->name, (xmlChar *)"result") == 0)
 				{
-
 					state->records = lappend(state->records, record);
 					state->pagesize++;
 
 					elog(DEBUG2, "	appending %d > %s", state->pagesize, record->name);
-					
 				}
 			}
 		}
 	}
+
+	if(record)
+		xmlFreeNode(record);
+	if(results)
+		xmlFreeNode(results);
 
 }
 
@@ -1743,43 +1740,46 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 {
 	
 	xmlNodePtr record = FetchNextBinding(state);
+	xmlNodePtr result;
+	xmlNodePtr value;
+	regproc typinput;
+	HeapTuple tuple;
+	Datum datum;
+	xmlBufferPtr buffer;
+
+	StringInfoData name;
+	initStringInfo(&name);
 
 	elog(DEBUG2,"%s called ",__func__);
 
 	for (int i = 0; i < state->numcols; i++)
 	{
-		xmlNodePtr result;		
 		bool match = false;
 		Oid pgtype = state->rdfTable->cols[i]->pgtype;
 		char *sparqlvar = state->rdfTable->cols[i]->sparqlvar;
+		char *colname = state->rdfTable->cols[i]->name;
 		int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
-		char *name = state->rdfTable->cols[i]->name;
-		
-		elog(DEBUG2, "  %s: setting column > %s (type > %d), sparqlvar > %s",__func__, name, pgtype, state->rdfTable->cols[i]->sparqlvar);	
+
+		elog(DEBUG2, "  %s: setting column > %s (type > %d), sparqlvar > %s",__func__, colname, pgtype, sparqlvar);	
 
 		for (result = record->children; result != NULL; result = result->next)
-		{	
-			StringInfoData name;
-			initStringInfo(&name);			
+		{
 			appendStringInfo(&name, "?%s", (char *)xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG));
 			
 			if (strcmp(sparqlvar, name.data) == 0)
 			{
-				xmlNodePtr value;
-				match = true;		
-								
+				match = true;
+
 				for (value = result->children; value != NULL; value = value->next)
-				{					
-					regproc typinput;
-					HeapTuple tuple;
-					Datum datum;
-					xmlBufferPtr buffer = xmlBufferCreate();
-										
-					xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);					
-					datum = CStringGetDatum((char *) buffer->content);
+				{
+	
+					buffer = xmlBufferCreate();
+
+					xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
+					datum = CStringGetDatum(pstrdup((char *) buffer->content));
 					slot->tts_isnull[i] = false;
 
-					elog(DEBUG2, "    %s: setting value for column '%s' (%s) > '%s'",__func__, name.data, sparqlvar, buffer->content);
+					elog(DEBUG2, "    %s: setting value for column '%s' (%s) > '%s'",__func__, name.data, sparqlvar, pstrdup((char *)buffer->content));
 
 					/* find the appropriate conversion function */
 					tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
@@ -1795,35 +1795,44 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					ReleaseSysCache(tuple);
 					
 					if(pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
-					{						
+					{
 
 						slot->tts_values[i] = OidFunctionCall3(
 												typinput,
 												datum,
 												ObjectIdGetDatum(InvalidOid),
-												Int32GetDatum(pgtypmod));						
-					} 
+												Int32GetDatum(pgtypmod));
+					}
 					else
 					{
 						slot->tts_values[i] = OidFunctionCall1(typinput, datum);
-					} 
-										
+					}
+
 					xmlBufferFree(buffer);
 				}
 
 			}
 
+			resetStringInfo(&name);
+
 		}
 
 		if(!match) 
 		{
-			elog(DEBUG2, "    %s: setting NULL for column '%s' (%s)",__func__, name, sparqlvar);
+			elog(DEBUG2, "    %s: setting NULL for column '%s' (%s)",__func__, colname, sparqlvar);
 			slot->tts_isnull[i] = true;
 			slot->tts_values[i] = PointerGetDatum(NULL);					
 		}
 
 	}
 
+	if(result)
+		xmlFreeNode(result);
+	if(value)
+		xmlFreeNode(value);
+	if(record)
+		xmlFreeNode(record);
+	pfree(name.data);
 }
 
 /*
