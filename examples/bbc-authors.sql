@@ -5,6 +5,11 @@ OPTIONS (
   format 'application/sparql-results+xml'
 );
 
+/*
+ * Authors and their work registered in the BBC Programmes and Music database
+ * 
+ * SPARQL author: Jim Jones
+ */
 
 CREATE FOREIGN TABLE artists (
   id text          OPTIONS (variable '?person'),

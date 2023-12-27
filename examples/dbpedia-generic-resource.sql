@@ -6,7 +6,8 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 /*
  * All non IRI property values directly linked to a given resource.
  * Only numeric literals or literals written in English are accepted.
- * Author: Jim Jones
+ * 
+ * SPARQL author: Jim Jones
  */
 CREATE FOREIGN TABLE dbpedia_resource (
   uri text           OPTIONS (variable '?uri'),

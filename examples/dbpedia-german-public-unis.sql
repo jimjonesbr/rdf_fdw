@@ -2,6 +2,12 @@ CREATE SERVER dbpedia
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
+/*
+ * German public universities and their geographic coordinates
+ * 
+ * SPARQL author: Jim Jones
+ */
+
 CREATE FOREIGN TABLE german_public_universities (
   id text      OPTIONS (variable '?uri'),
   name text    OPTIONS (variable '?name'),
@@ -26,6 +32,9 @@ CREATE FOREIGN TABLE german_public_universities (
       }'
   ); 
 
+/* 
+ * This will select the first 10 universities from north to south 
+ */
 SELECT name, wkt::geometry 
 FROM german_public_universities 
 ORDER BY lat DESC 

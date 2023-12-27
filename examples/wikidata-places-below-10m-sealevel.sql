@@ -3,6 +3,14 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (
   endpoint 'https://query.wikidata.org/sparql');
 
+/*
+ * Places that are below 10 meters above sea level
+ * Items used: metre (Q11573)
+ * Properties used: elevation above sea level (P2044) 
+ *
+ * SPARQL Author: Wikidata (https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples#Places_that_are_below_10_meters_above_sea_level)
+ */
+
 CREATE FOREIGN TABLE places_below_sea_level (
   wikidata_id text  OPTIONS (variable '?place'),
   label text        OPTIONS (variable '?label'),

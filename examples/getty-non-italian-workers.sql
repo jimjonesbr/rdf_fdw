@@ -5,6 +5,17 @@ OPTIONS (
   format 'application/sparql-results+xml'
 );
 
+/*
+ * Find non-Italians who worked in Italy and lived during a given time range
+ * - Having event that took place in tgn:1000080 Italy or any of its descendants
+ * - Birth date between 1250 and 1780
+ * - Just for variety, we look for artists as descendants of facets ulan:500000003 "Corporate bodies" or ulan:500000002 "Persons, Artists", 
+ *   rather than having type "artist" as we did in previous queries. In the previous query we used values{..} but we here use filter(in(..)).
+ * - Not having nationality aat:300111198 Italian or any of its descendants
+ * 
+ * SPARQL author: Getty Thesaurus (http://vocab.getty.edu/queries#Non-Italians_Who_Worked_in_Italy)
+ */
+
 CREATE FOREIGN TABLE getty_non_italians (
   uri text   OPTIONS (variable '?x'),
   name text  OPTIONS (variable '?name'),

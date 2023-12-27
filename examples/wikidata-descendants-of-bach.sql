@@ -5,6 +5,7 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql');
 
 /*
  * Descendants of Bach 
+ *
  * Author: Wikidata [https://m.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples/human]
  */
 CREATE FOREIGN TABLE bach_descendants (

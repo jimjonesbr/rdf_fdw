@@ -2,6 +2,13 @@ CREATE SERVER dbpedia
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
+/*
+ * Living politicians in DBpedia that are affiliated to a party. The party name must have
+ * a german translation.
+ * 
+ * SPARQL author: Jim Jones
+ */
+
 CREATE FOREIGN TABLE politicians (
   uri text        OPTIONS (variable '?person'),
   name text       OPTIONS (variable '?personname'),
@@ -30,6 +37,9 @@ SERVER dbpedia OPTIONS (
       } 
 ');
 
+/* 
+ * Select the 5 youngest politicians from Germany and France who were bortn after Dec 31st 1995.
+ */
 
 SELECT name, birthdate, party
 FROM politicians
