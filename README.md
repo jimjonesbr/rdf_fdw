@@ -6,6 +6,8 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF Triplest
 > [!WARNING]  
 > **THIS SOFTWARE IS CURRENTLY UNDER DEVELOPMENT AND IS STILL NOT READY FOR PRODUCTION USE**
 
+![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
+
 ## Index
 
 - [Requirements](#requirements)
@@ -136,7 +138,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to the SPARQL variable.    |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls              |
+| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls. It is imperative that an `expression` is given an alias that matches the `variable`, so that the result sets can be returned to the right column. For instance, `variable '?foo'` and `expression 'CONCAT(?s,?o) AS ?foo'` |
 
 
 The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. SELECT queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
