@@ -1,0 +1,26 @@
+name: CI
+on: 
+  push:
+    paths-ignore:
+      - '*.md'
+      - 'examples/*'
+  pull_request:
+    paths-ignore:
+      - '*.md'
+      - 'examples/*'
+jobs:
+  test:
+    strategy:
+      matrix:
+        pg: [16,15,14,13,12,11]
+    name: 🐘 PostgreSQL ${{ matrix.pg }}
+    runs-on: ubuntu-latest
+    container: pgxn/pgxn-tools
+    steps:
+      - name: Prepare environment 
+        run: sudo apt-get update && sudo apt-get install -y make gcc libxml2-dev libcurl4-openssl-dev
+      - name: Start PostgreSQL ${{ matrix.pg }}
+        run: pg-start ${{ matrix.pg }}
+      - uses: actions/checkout@v2
+      - name: Build and Regression Tests 
+        run: pg-build-test
