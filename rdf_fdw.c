@@ -582,7 +582,6 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 	   /*
 		* No further records to be retrieved. Let's clean up the XML parser before ending the query.
 		*/	
-		list_free(state->records);
 		pfree(state);
 		xmlCleanupParser();
 
@@ -1021,6 +1020,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	CURLcode res;
 	StringInfoData url_buffer;
 	StringInfoData user_agent;
+	StringInfoData accept_header;
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
@@ -1038,8 +1038,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	curl_global_init(CURL_GLOBAL_ALL);
 	curl = curl_easy_init();
 
+	initStringInfo(&accept_header);
+
 	if(!state->format)
-		state->format = RDF_DEFAULT_FORMAT;
+		appendStringInfo(&accept_header, "Accept: %s", RDF_DEFAULT_FORMAT);
+	else
+		appendStringInfo(&accept_header, "Accept: %s", state->format);
 
 	if(state->connectTimeout)
 		connectTimeout = state->connectTimeout;
@@ -1129,12 +1133,14 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-		curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, state->format);
+		//curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, state->format);
 
 		initStringInfo(&user_agent);
 		appendStringInfo(&user_agent,  "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent.data);
 
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent.data);		
+		headers = curl_slist_append(headers, accept_header.data);
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
 
