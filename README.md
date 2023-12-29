@@ -118,7 +118,8 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `connect_retry`         | optional            | Number of attempts to retry a request in case of failure (default `3` times).
 | `request_redirect`         | optional            | Enables URL redirect issued by the server (default `false`).
 | `request_max_redirect`         | optional            | Limit of how many times the URL redirection may occur. If that many redirections have been followed, the next redirect will cause an error. Not setting this parameter or setting it to `0` will allow an infinite number of redirects.
-| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are added to the URL.
+| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are added to the request URL.
+| `query_param`         | optional            | The request parameter where the SPARQL endpoint expects the query in a HTTP request. Most SPARQL endpoints expects the query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option (default `query`)
 
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
@@ -130,7 +131,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `sparql`      | **required**    | The raw SPARQL query to be executed    |
-| `log_sparql`  | optional    | Logs the exact SPARQL query executed. This OPTION is useful to check for any modification to the configured SPARQL query due to push down  |
+| `log_sparql`  | optional    | Logs the exact SPARQL query executed. This OPTION is useful to check for any modification to the configured SPARQL query due to pushdown  |
 | `enable_pushdown` | optional            | Enables or disables pushdown of SQL clauses into SPARQL for a specific foreign table. This overrides the `SERVER` option `enable_pushdown` |
 
 **Column Options**:
@@ -138,7 +139,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to the SPARQL variable.    |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls. It is imperative that an `expression` is given an alias that matches the `variable`, so that the result sets can be returned to the right column. For instance, `variable '?foo'` and `expression 'CONCAT(?s,?o) AS ?foo'` |
+| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls. It is imperative that an `expression` is wrapped with an alias that matches `variable`, so that the result sets can be returned to the right column. For instance, `variable '?foo'` and `expression 'CONCAT(?s,?o) AS ?foo'`. |
 
 
 The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. SELECT queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
@@ -293,7 +294,7 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
 
-These and other examples can be downloaded [here](https://github.com/jimjonesbr/rdf_fdw/tree/main/expected)
+These and other examples can be downloaded [here](https://github.com/jimjonesbr/rdf_fdw/tree/main/examples)
 
 ### [DBpedia](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#dbpedia)
 

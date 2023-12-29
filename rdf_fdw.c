@@ -82,10 +82,10 @@
 #define RDF_DEFAULT_MAXRETRY 3
 #define RDF_KEYWORD_NOT_FOUND -1
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
+#define RDF_DEFAULT_QUERY_PARAM "query"
 
 #define RDF_SERVER_OPTION_ENDPOINT "endpoint"
 #define RDF_SERVER_OPTION_FORMAT "format"
-#define RDF_SERVER_OPTION_TOKEN "token"
 #define RDF_SERVER_OPTION_CUSTOMPARAM "custom"
 #define RDF_SERVER_OPTION_CONNECTTIMEOUT "connect_timeout"
 #define RDF_SERVER_OPTION_CONNECTRETRY "connect_retry"
@@ -96,6 +96,7 @@
 #define RDF_SERVER_OPTION_PROXY_USER "proxy_user"
 #define RDF_SERVER_OPTION_PROXY_USER_PASSWORD "proxy_user_password"
 #define RDF_SERVER_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
+#define RDF_SERVER_OPTION_QUERY_PARAM "query_param"
 
 #define RDF_TABLE_OPTION_SPARQL "sparql"
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
@@ -140,12 +141,12 @@ typedef struct RDFfdwState
 	char *sparql_limit;          /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
 	char *raw_sparql;            /* Raw SPARQL query set in the CREATE TABLE statement */
 	char *endpoint;              /* SPARQL endpoint set in the CREATE SERVER statement*/
+	char *query_param;           /* SPARQL query POST parameter used by the endpoint */
 	char *format;                /* Format in which the RDF triplestore has to reply */
 	char *proxy;                 /* Proxy for HTTP requests, if necessary. */
 	char *proxyType;             /* Proxy protocol (HTTPS, HTTP). */
 	char *proxyUser;             /* User name for proxy authentication. */
 	char *proxyUserPassword;     /* Password for proxy authentication. */
-	char *token;                 /* Token used for authentication in the SPARQL endpoint */
 	char *customParams;          /* Custom parameters used to compose the request URL */
 	bool requestRedirect;        /* Enables or disables URL redirecting. */
 	bool enablePushdown;         /* Enables or disables pushdown of SQL commands */
@@ -219,12 +220,12 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_SERVER_OPTION_CUSTOMPARAM, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_PROXY_USER, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_PROXY_USER_PASSWORD, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_TOKEN, ForeignServerRelationId, false, false},	
 	{RDF_SERVER_OPTION_CONNECTTIMEOUT, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_CONNECTRETRY, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_REQUEST_REDIRECT, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_ENABLE_PUSHDOWN, ForeignServerRelationId, false, false},
+	{RDF_SERVER_OPTION_QUERY_PARAM, ForeignServerRelationId, false, false},
 	/* Foreign Tables */
 	{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 	{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
@@ -260,7 +261,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static int CheckURL(char *url);
-static void InitSystem(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
+static void InitSession(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
@@ -504,7 +505,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	
 	state->foreigntableid = opts->foreigntableid;
 
-	InitSystem(state, baserel, root);
+	InitSession(state, baserel, root);
 
 	if(!state->enablePushdown) 
 	{
@@ -721,7 +722,7 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 }
 
 /*
- * InitSystem
+ * InitSession
  * ----------
  * This function loads the 'OPTION' variables declared in SERVER and FOREIGN 
  * TABLE statements. It also parses the raw_sparql query into its main clauses, 
@@ -732,7 +733,7 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
  * baserel: Conditions and columns used in the SQL query
  * root   : Planner info
  */
-static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root) {
+static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root) {
 
 	ForeignTable *ft = GetForeignTable(state->foreigntableid);
 	ForeignServer *server = GetForeignServer(ft->serverid);	
@@ -753,6 +754,10 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 
 	state->enablePushdown = true;
 	state->log_sparql = false;
+	state->query_param = RDF_DEFAULT_QUERY_PARAM;
+	state->format = RDF_DEFAULT_FORMAT;
+	state->connectTimeout = RDF_DEFAULT_CONNECTTIMEOUT;
+	state->maxretries = RDF_DEFAULT_MAXRETRY;	
 	state->numcols = rel->rd_att->natts;
 
 	/* 
@@ -826,8 +831,6 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 			state->endpoint = defGetString(def);
 		else if (strcmp(RDF_SERVER_OPTION_FORMAT, def->defname) == 0) 
 			state->format = defGetString(def);
-		else if (strcmp(RDF_SERVER_OPTION_TOKEN, def->defname) == 0) 
-			state->token = defGetString(def);
 		else if (strcmp(RDF_SERVER_OPTION_CUSTOMPARAM, def->defname) == 0) 
 			state->customParams = defGetString(def);
 		else if (strcmp(RDF_SERVER_OPTION_HTTP_PROXY, def->defname) == 0)
@@ -873,6 +876,10 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 		else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 		{
 			state->enablePushdown = defGetBoolean(def);
+		}
+		else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
+		{
+			state->query_param = defGetString(def);
 		}
 		
 	}
@@ -967,9 +974,7 @@ static void InitSystem(struct RDFfdwState *state, RelOptInfo *baserel, PlannerIn
 	/*
 	 * deparse SPARQL FROM and FROM NAMED clauses, if any
 	 */
-	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
-	
-	//DeparseSPARQLPrefix(state->raw_sparql);
+	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);	
 }
 
 /*
@@ -1025,8 +1030,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
 	struct curl_slist *headers = NULL;
-	long maxretries = RDF_DEFAULT_MAXRETRY;	
-	long connectTimeout = RDF_DEFAULT_CONNECTTIMEOUT;
 
 	chunk.memory = palloc(1);
 	chunk.size = 0; /* no data at this point */
@@ -1039,26 +1042,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	curl = curl_easy_init();
 
 	initStringInfo(&accept_header);
-
-	if(!state->format)
-		appendStringInfo(&accept_header, "Accept: %s", RDF_DEFAULT_FORMAT);
-	else
-		appendStringInfo(&accept_header, "Accept: %s", state->format);
-
-	if(state->connectTimeout)
-		connectTimeout = state->connectTimeout;
-
-	if (state->maxretries)
-		maxretries = state->maxretries;
+	appendStringInfo(&accept_header, "Accept: %s", state->format);
 
 	if(state->log_sparql)
 		elog(NOTICE,"SPARQL query sent to '%s':\n\n%s\n",state->endpoint,state->sparql.data);
 
 	initStringInfo(&url_buffer);
-	appendStringInfo(&url_buffer, "query=%s", curl_easy_escape(curl, state->sparql.data, 0));
-
-	if(state->token)
-		appendStringInfo(&url_buffer, "&token=%s", state->token);
+	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(curl, state->sparql.data, 0));
 
 	if(state->customParams)
 		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(curl, state->customParams, 0));
@@ -1079,9 +1069,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
 
-		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connectTimeout);
-		elog(DEBUG1, "  %s: timeout > %ld", __func__, connectTimeout);
-		elog(DEBUG1, "  %s: max retry > %ld", __func__, maxretries);
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, state->connectTimeout);
+		elog(DEBUG1, "  %s: timeout > %ld", __func__, state->connectTimeout);
+		elog(DEBUG1, "  %s: max retry > %ld", __func__, state->maxretries);
 
 		if (state->proxy)
 		{
@@ -1133,7 +1123,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-		//curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, state->format);
 
 		initStringInfo(&user_agent);
 		appendStringInfo(&user_agent,  "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
@@ -1148,7 +1137,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if (res != CURLE_OK)
 		{
-			for (long i = 1; i <= maxretries && (res = curl_easy_perform(curl)) != CURLE_OK; i++)
+			for (long i = 1; i <= state->maxretries && (res = curl_easy_perform(curl)) != CURLE_OK; i++)
 			{
 				elog(WARNING, "  %s: request to '%s' failed (%ld)", __func__, state->endpoint, i);
 			}

@@ -2,7 +2,8 @@ CREATE SERVER getty
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint 'http://vocab.getty.edu/sparql.xml',
-  format 'application/sparql-results+xml'
+  format 'application/sparql-results+xml',
+  query_param 'query'
 );
 
 
