@@ -1009,7 +1009,7 @@ CREATE FOREIGN TABLE german_public_universities (
   lon numeric  OPTIONS (variable '?lon'),
   lat numeric  OPTIONS (variable '?lat'),
   wkt text     OPTIONS (variable '?wkt',
-                        expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
+                        expression 'CONCAT("POINT(",?lon," ",?lat,")")')
 ) SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql '
@@ -1043,7 +1043,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbo: <http://dbpedia.org/ontology/>
  PREFIX dbr:  <http://dbpedia.org/resource/>
 
-SELECT ?name ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
+SELECT ?name ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt) 
 {
       ?uri dbo:type dbr:Public_university ;
         dbp:name ?name;
@@ -1085,7 +1085,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbo: <http://dbpedia.org/ontology/>
  PREFIX dbr:  <http://dbpedia.org/resource/>
 
-SELECT ?uri ?name ?lon ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
+SELECT ?uri ?name ?lon ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt) 
 {
       ?uri dbo:type dbr:Public_university ;
         dbp:name ?name;

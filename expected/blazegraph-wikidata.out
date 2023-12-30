@@ -71,7 +71,7 @@ NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 CREATE FOREIGN TABLE places_below_sea_level (
   wikidata_id text   OPTIONS (variable '?place'),
-  label text         OPTIONS (variable '?label'),
+  label text         OPTIONS (variable '?labelc', expression 'UCASE(?label)'),
   wkt text           OPTIONS (variable '?location'),
   elevation numeric  OPTIONS (variable '?elev')
 )
@@ -101,7 +101,7 @@ FETCH FIRST 5 ROWS ONLY;
 NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
-SELECT ?place ?label ?location 
+SELECT ?place (UCASE(?label) AS ?labelc) ?location 
 {
     ?place rdfs:label ?label .
     ?place p:P2044/psv:P2044 ?placeElev.
@@ -120,6 +120,6 @@ LIMIT 5
 
                wikidata_id                |     label     |         wkt          
 ------------------------------------------+---------------+----------------------
- http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A | Point(-133.03 69.43)
+ http://www.wikidata.org/entity/Q61308849 | TUKTOYAKTUK A | Point(-133.03 69.43)
 (1 row)
 
