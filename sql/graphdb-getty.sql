@@ -10,6 +10,8 @@ OPTIONS (
 CREATE FOREIGN TABLE getty_places (
   uri text     OPTIONS (variable '?place'),
   name text    OPTIONS (variable '?name'),
+  namec text    OPTIONS (variable '?namecapital', 
+                         expression 'UCASE(?name)'),
   lon numeric  OPTIONS (variable '?lon'),
   lat numeric  OPTIONS (variable '?lat')
 )

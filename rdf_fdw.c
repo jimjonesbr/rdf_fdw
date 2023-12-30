@@ -936,7 +936,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		if(state->rdfTable->cols[i]->used && !state->rdfTable->cols[i]->expression)
 			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->sparqlvar));
 		else if(state->rdfTable->cols[i]->used && state->rdfTable->cols[i]->expression)
-			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->expression));
+			appendStringInfo(&select,"(%s AS %s) ",pstrdup(state->rdfTable->cols[i]->expression),
+                                                   pstrdup(state->rdfTable->cols[i]->sparqlvar));
 	}
 
 	state->sparql_select = pstrdup(select.data);

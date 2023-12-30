@@ -44,7 +44,7 @@ WHERE bankname = 'BBBank';
 
 CREATE FOREIGN TABLE places_below_sea_level (
   wikidata_id text   OPTIONS (variable '?place'),
-  label text         OPTIONS (variable '?label'),
+  label text         OPTIONS (variable '?labelc', expression 'UCASE(?label)'),
   wkt text           OPTIONS (variable '?location'),
   elevation numeric  OPTIONS (variable '?elev')
 )

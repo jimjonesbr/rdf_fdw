@@ -375,7 +375,7 @@ CREATE FOREIGN TABLE german_public_universities (
   lon numeric  OPTIONS (variable '?lon'),
   lat numeric  OPTIONS (variable '?lat'),
   wkt text     OPTIONS (variable '?wkt',
-                        expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
+                        expression 'CONCAT("POINT(",?lon," ",?lat,")")')
 ) SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql '

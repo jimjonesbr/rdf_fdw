@@ -139,7 +139,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to the SPARQL variable.    |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls. It is imperative that an `expression` is wrapped with an alias that matches `variable`, so that the result sets can be returned to the right column. For instance, `variable '?foo'` and `expression 'CONCAT(?s,?o) AS ?foo'`. |
+| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls. |
 
 
 The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. SELECT queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
@@ -401,7 +401,7 @@ CREATE FOREIGN TABLE german_public_universities (
   lon numeric  OPTIONS (variable '?lon'),
   lat numeric  OPTIONS (variable '?lat'),
   wkt text     OPTIONS (variable '?wkt',
-                        expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
+                        expression 'CONCAT("POINT(",?lon," ",?lat,")")')
 ) SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql '
@@ -436,21 +436,20 @@ FETCH FIRST 10 ROWS ONLY;
 
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
-
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX dbp: <http://dbpedia.org/property/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX dbr:  <http://dbpedia.org/resource/>
-    
-SELECT ?name ?lat CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt 
-WHERE {
+
+SELECT ?name ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt) 
+{
   ?uri dbo:type dbr:Public_university ;
   dbp:name ?name;
     geo:lat ?lat; 
     geo:long ?lon; 
     dbp:country dbr:Germany
-   }
-ORDER BY DESC (?lat)
+}
+ORDER BY  DESC (?lat)
 LIMIT 10
 
                 name                |                    wkt                     
