@@ -19,7 +19,7 @@ SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql '
   PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-  SELECT ?prop ?val
+  SELECT *
   WHERE {
     ?uri ?propuri ?val .
     ?propuri rdfs:label ?proplabel .

@@ -29,8 +29,8 @@ CREATE FOREIGN TABLE german_public_universities (
         geo:lat ?lat; 
         geo:long ?lon; 
         dbp:country dbr:Germany
-      }'
-  ); 
+      }
+  '); 
 
 /* 
  * This will select the first 10 universities from north to south 
