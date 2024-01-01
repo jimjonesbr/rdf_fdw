@@ -72,3 +72,43 @@ SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
 WHERE wikidata_id = 'http://www.wikidata.org/entity/Q61308849'
 FETCH FIRST 5 ROWS ONLY;
+
+/*
+ * Expression pushdown tests with LCASE, UCASE, STRLEN, STRBEFORE, 
+ * STRAFTER, CONCAT and LANG
+ */
+CREATE FOREIGN TABLE european_countries (
+  uri text       OPTIONS (variable '?country'),
+  label text     OPTIONS (variable '?countryLabel'),
+  len_label int  OPTIONS (variable '?len', expression 'STRLEN(?nativename)'),
+  uname text     OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
+  lname text     OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
+  language text  OPTIONS (variable '?language', expression 'LANG(?nativename)'),
+  base_url text  OPTIONS (variable '?base', expression 'STRBEFORE(STR(?country),"Q")'),
+  qid text       OPTIONS (variable '?qid', expression 'STRAFTER(STR(?country),"entity/")'),
+  ctlang text    OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))')
+)
+SERVER wikidata OPTIONS (
+  log_sparql 'true',
+  sparql '
+  SELECT *
+  {
+    wd:Q458 wdt:P150 ?country.   
+    OPTIONAL { ?country wdt:P1705 ?nativename }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  }
+'); 
+
+SELECT * 
+FROM european_countries
+ORDER by language;
+
+SELECT * 
+FROM european_countries
+WHERE 
+ language = 'de' AND 
+ len_label <= 10 AND
+ qid = 'Q32' AND
+ base_url = 'http://www.wikidata.org/entity/' AND
+ ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
+ORDER by language;

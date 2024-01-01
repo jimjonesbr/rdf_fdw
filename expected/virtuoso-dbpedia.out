@@ -1095,6 +1095,7 @@ SELECT ?uri ?name ?lon ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt)
        FILTER(STR(?uri) != "")
  FILTER(?lat > 52)
  FILTER(?lon < 9)
+ FILTER(CONCAT("POINT(",?lon," ",?lat,")") = "POINT(8.49305534362793 52.03777694702148)")
 }
 
          name         |                    wkt                    

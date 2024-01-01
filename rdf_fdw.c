@@ -6,7 +6,7 @@
  * rdf_fdw is free software: you can redistribute it and/or modify
  * it under the terms of the MIT Licence.
  *
- * Copyright (C) 2022-2023 University of Münster, Germany
+ * Copyright (C) 2022-2024 University of Münster, Germany
  * Written by Jim Jones <jim.jones@uni-muenster.de>
  *
  **********************************************************************/
@@ -115,6 +115,14 @@
 #define RDF_SPARQL_KEYWORD_LIMIT "LIMIT"
 #define RDF_SPARQL_KEYWORD_UNION "UNION"
 
+#define RDF_SPARQL_AGGREGATE_FUNCTION_COUNT "COUNT"
+#define RDF_SPARQL_AGGREGATE_FUNCTION_AVG "AVG"
+#define RDF_SPARQL_AGGREGATE_FUNCTION_SUM "SUM"
+#define RDF_SPARQL_AGGREGATE_FUNCTION_MIN "MIN"
+#define RDF_SPARQL_AGGREGATE_FUNCTION_MAX "MAX"
+#define RDF_SPARQL_AGGREGATE_FUNCTION_SAMPLE "SAMPLE"
+#define RDF_SPARQL_AGGREGATE_FUNCTION_GROUPCONCAT "GROUP_CONCAT"
+
 /*
  * This macro is used by DeparseExpr to identify PostgreSQL
  * types that can be translated to SPARQL
@@ -181,6 +189,7 @@ typedef struct RDFfdwColumn
 	int  pgtypmod;               /* PostgreSQL type modifier */
 	int  pgattnum;               /* PostgreSQL attribute number */
 	bool used;                   /* Is the column used in the current SQL query? */
+	bool pushable;               /* Marks a column as safe or not to pushdown */
 
 } RDFfdwColumn;
 
@@ -267,6 +276,7 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
+static bool IsExpressionPushable(char *expression);
 static char *DeparseDate(Datum datum);
 static char *DeparseTimestamp(Datum datum, bool hasTimezone);
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
@@ -772,7 +782,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		ListCell *lc;
 
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
-		
+		state->rdfTable->cols[i]->pushable = true;
+
 		foreach (lc, options)
 		{
 			DefElem *def = (DefElem *)lfirst(lc);
@@ -786,6 +797,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			{
 				elog(DEBUG1,"  %s: (%d) adding sparql expression > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->expression = pstrdup(defGetString(def));
+				state->rdfTable->cols[i]->pushable = IsExpressionPushable(defGetString(def));
+				elog(DEBUG1,"  %s: (%d) is expression pushable? > '%s'",__func__,i,state->rdfTable->cols[i]->pushable ? "true" : "false");
 			}
 		
 		}
@@ -1539,6 +1552,19 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 
 }
 
+static bool IsExpressionPushable(char *expression) {
+
+	char *open = " \n(";
+	char *close = " \n(";
+
+	return LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_COUNT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+	       LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SUM, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_AVG, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MIN, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MAX, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SAMPLE, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_GROUPCONCAT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND;
+} 
 /*
  * CreateSPARQL
  * ------------
@@ -2132,16 +2158,22 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				 * if the column contains an 'expression' it is not safe to push it down.
 				 * as it might contain function calls that are invalid in FILTER conditions
 				 */
-				if(col->expression)
-					return NULL;
+				// if(col->expression)
+				// 	return NULL;
 
 				if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID) && rightexpr->type == T_Const)
 				{
-					appendStringInfo(&result, "STR(%s) %s \"%s\"", col->sparqlvar, opername, right);
+					if(col->pushable && col->expression)
+						appendStringInfo(&result, "%s %s \"%s\"", col->expression, opername, right);
+					else
+						appendStringInfo(&result, "STR(%s) %s \"%s\"", col->sparqlvar, opername, right);
 				}
 				else if (leftargtype == DATEOID && rightexpr->type == T_Const)
 				{
-					appendStringInfo(&result, "xsd:date(%s) %s xsd:date(\"%s\")", col->sparqlvar, opername, right);
+					if(col->pushable && col->expression)
+						appendStringInfo(&result, "%s %s xsd:date(\"%s\")", col->sparqlvar, opername, right);
+					else
+						appendStringInfo(&result, "xsd:date(%s) %s xsd:date(\"%s\")", col->sparqlvar, opername, right);
 				}
 				else if ((leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID) && rightexpr->type == T_Const)
 				{
@@ -2149,7 +2181,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				}
 				else
 				{
-					appendStringInfo(&result, "%s %s %s", col->sparqlvar, opername, right);
+					if(col->pushable && col->expression)
+						appendStringInfo(&result, "%s %s %s", col->expression, opername, right);
+					else
+						appendStringInfo(&result, "%s %s %s", col->sparqlvar, opername, right);
 				}
 
 			}
@@ -2371,7 +2406,7 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 			state->remote_conds = lappend(state->remote_conds, ((RestrictInfo *)lfirst(cell))->clause);
 
 			/* append new FILTER clause to query string */
-			appendStringInfo(&where_clause, " FILTER(%s)\n", where);
+			appendStringInfo(&where_clause, " FILTER(%s)\n", pstrdup(where));
 			pfree(where);
 
 		}

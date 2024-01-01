@@ -123,3 +123,122 @@ LIMIT 5
  http://www.wikidata.org/entity/Q61308849 | TUKTOYAKTUK A | Point(-133.03 69.43)
 (1 row)
 
+/*
+ * Expression pushdown tests with LCASE, UCASE, STRLEN, STRBEFORE, 
+ * STRAFTER, CONCAT and LANG
+ */
+CREATE FOREIGN TABLE european_countries (
+  uri text       OPTIONS (variable '?country'),
+  label text     OPTIONS (variable '?countryLabel'),
+  len_label int  OPTIONS (variable '?len', expression 'STRLEN(?nativename)'),
+  uname text     OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
+  lname text     OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
+  language text  OPTIONS (variable '?language', expression 'LANG(?nativename)'),
+  base_url text  OPTIONS (variable '?base', expression 'STRBEFORE(STR(?country),"Q")'),
+  qid text       OPTIONS (variable '?qid', expression 'STRAFTER(STR(?country),"entity/")'),
+  ctlang text    OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))')
+)
+SERVER wikidata OPTIONS (
+  log_sparql 'true',
+  sparql '
+  SELECT *
+  {
+    wd:Q458 wdt:P150 ?country.   
+    OPTIONAL { ?country wdt:P1705 ?nativename }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  }
+'); 
+SELECT * 
+FROM european_countries
+ORDER by language;
+NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+
+SELECT ?country ?countryLabel (STRLEN(?nativename) AS ?len) (UCASE(?nativename) AS ?ucase_nativename) (LCASE(?nativename) AS ?lcase_nativename) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?base) (STRAFTER(STR(?country),"entity/") AS ?qid) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) 
+{
+    wd:Q458 wdt:P150 ?country.   
+    OPTIONAL { ?country wdt:P1705 ?nativename }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  }
+ORDER BY  ASC (?language)
+
+                  uri                  |           label            | len_label |           uname            |           lname            | language |            base_url             |  qid   |                             ctlang                              
+---------------------------------------+----------------------------+-----------+----------------------------+----------------------------+----------+---------------------------------+--------+-----------------------------------------------------------------
+ http://www.wikidata.org/entity/Q219   | Bulgaria                   |         8 | БЪЛГАРИЯ                   | българия                   | bg       | http://www.wikidata.org/entity/ | Q219   | http://www.wikidata.org/entity/Q219БЪЛГАРИЯ
+ http://www.wikidata.org/entity/Q213   | Czech Republic             |        15 | ČESKÁ REPUBLIKA            | česká republika            | cs       | http://www.wikidata.org/entity/ | Q213   | http://www.wikidata.org/entity/Q213ČESKÁ REPUBLIKA
+ http://www.wikidata.org/entity/Q35    | Denmark                    |         7 | DANMARK                    | danmark                    | da       | http://www.wikidata.org/entity/ | Q35    | http://www.wikidata.org/entity/Q35DANMARK
+ http://www.wikidata.org/entity/Q35    | Denmark                    |        18 | KONGERIGET DANMARK         | kongeriget danmark         | da       | http://www.wikidata.org/entity/ | Q35    | http://www.wikidata.org/entity/Q35KONGERIGET DANMARK
+ http://www.wikidata.org/entity/Q35    | Denmark                    |        13 | DANMARKS RIGE              | danmarks rige              | da       | http://www.wikidata.org/entity/ | Q35    | http://www.wikidata.org/entity/Q35DANMARKS RIGE
+ http://www.wikidata.org/entity/Q31    | Belgium                    |        18 | KÖNIGREICH BELGIEN         | königreich belgien         | de       | http://www.wikidata.org/entity/ | Q31    | http://www.wikidata.org/entity/Q31KÖNIGREICH BELGIEN
+ http://www.wikidata.org/entity/Q32    | Luxembourg                 |         9 | LUXEMBURG                  | luxemburg                  | de       | http://www.wikidata.org/entity/ | Q32    | http://www.wikidata.org/entity/Q32LUXEMBURG
+ http://www.wikidata.org/entity/Q40    | Austria                    |        10 | ÖSTERREICH                 | österreich                 | de       | http://www.wikidata.org/entity/ | Q40    | http://www.wikidata.org/entity/Q40ÖSTERREICH
+ http://www.wikidata.org/entity/Q40    | Austria                    |        19 | REPUBLIK ÖSTERREICH        | republik österreich        | de       | http://www.wikidata.org/entity/ | Q40    | http://www.wikidata.org/entity/Q40REPUBLIK ÖSTERREICH
+ http://www.wikidata.org/entity/Q183   | Germany                    |        26 | BUNDESREPUBLIK DEUTSCHLAND | bundesrepublik deutschland | de       | http://www.wikidata.org/entity/ | Q183   | http://www.wikidata.org/entity/Q183BUNDESREPUBLIK DEUTSCHLAND
+ http://www.wikidata.org/entity/Q183   | Germany                    |        11 | DEUTSCHLAND                | deutschland                | de       | http://www.wikidata.org/entity/ | Q183   | http://www.wikidata.org/entity/Q183DEUTSCHLAND
+ http://www.wikidata.org/entity/Q41    | Greece                     |         6 | ΕΛΛΆΔΑ                     | ελλάδα                     | el       | http://www.wikidata.org/entity/ | Q41    | http://www.wikidata.org/entity/Q41ΕΛΛΆΔΑ
+ http://www.wikidata.org/entity/Q41    | Greece                     |        19 | ΕΛΛΗΝΙΚΉ ΔΗΜΟΚΡΑΤΊΑ        | ελληνική δημοκρατία        | el       | http://www.wikidata.org/entity/ | Q41    | http://www.wikidata.org/entity/Q41ΕΛΛΗΝΙΚΉ ΔΗΜΟΚΡΑΤΊΑ
+ http://www.wikidata.org/entity/Q41    | Greece                     |         5 | ΕΛΛΆΣ                      | ελλάς                      | el       | http://www.wikidata.org/entity/ | Q41    | http://www.wikidata.org/entity/Q41ΕΛΛΆΣ
+ http://www.wikidata.org/entity/Q229   | Cyprus                     |        19 | ΚΥΠΡΙΑΚΉ ΔΗΜΟΚΡΑΤΊΑ        | κυπριακή δημοκρατία        | el       | http://www.wikidata.org/entity/ | Q229   | http://www.wikidata.org/entity/Q229ΚΥΠΡΙΑΚΉ ΔΗΜΟΚΡΑΤΊΑ
+ http://www.wikidata.org/entity/Q27    | Republic of Ireland        |         7 | IRELAND                    | ireland                    | en       | http://www.wikidata.org/entity/ | Q27    | http://www.wikidata.org/entity/Q27IRELAND
+ http://www.wikidata.org/entity/Q29    | Spain                      |        15 | REINO DE ESPAÑA            | reino de españa            | es       | http://www.wikidata.org/entity/ | Q29    | http://www.wikidata.org/entity/Q29REINO DE ESPAÑA
+ http://www.wikidata.org/entity/Q191   | Estonia                    |        14 | EESTI VABARIIK             | eesti vabariik             | et       | http://www.wikidata.org/entity/ | Q191   | http://www.wikidata.org/entity/Q191EESTI VABARIIK
+ http://www.wikidata.org/entity/Q33    | Finland                    |         5 | SUOMI                      | suomi                      | fi       | http://www.wikidata.org/entity/ | Q33    | http://www.wikidata.org/entity/Q33SUOMI
+ http://www.wikidata.org/entity/Q31    | Belgium                    |        19 | ROYAUME DE BELGIQUE        | royaume de belgique        | fr       | http://www.wikidata.org/entity/ | Q31    | http://www.wikidata.org/entity/Q31ROYAUME DE BELGIQUE
+ http://www.wikidata.org/entity/Q32    | Luxembourg                 |        10 | LUXEMBOURG                 | luxembourg                 | fr       | http://www.wikidata.org/entity/ | Q32    | http://www.wikidata.org/entity/Q32LUXEMBOURG
+ http://www.wikidata.org/entity/Q142   | France                     |        20 | RÉPUBLIQUE FRANÇAISE       | république française       | fr       | http://www.wikidata.org/entity/ | Q142   | http://www.wikidata.org/entity/Q142RÉPUBLIQUE FRANÇAISE
+ http://www.wikidata.org/entity/Q27    | Republic of Ireland        |         4 | ÉIRE                       | éire                       | ga       | http://www.wikidata.org/entity/ | Q27    | http://www.wikidata.org/entity/Q27ÉIRE
+ http://www.wikidata.org/entity/Q224   | Croatia                    |         8 | HRVATSKA                   | hrvatska                   | hr       | http://www.wikidata.org/entity/ | Q224   | http://www.wikidata.org/entity/Q224HRVATSKA
+ http://www.wikidata.org/entity/Q224   | Croatia                    |        18 | REPUBLIKA HRVATSKA         | republika hrvatska         | hr       | http://www.wikidata.org/entity/ | Q224   | http://www.wikidata.org/entity/Q224REPUBLIKA HRVATSKA
+ http://www.wikidata.org/entity/Q28    | Hungary                    |        12 | MAGYARORSZÁG               | magyarország               | hu       | http://www.wikidata.org/entity/ | Q28    | http://www.wikidata.org/entity/Q28MAGYARORSZÁG
+ http://www.wikidata.org/entity/Q38    | Italy                      |         6 | ITALIA                     | italia                     | it       | http://www.wikidata.org/entity/ | Q38    | http://www.wikidata.org/entity/Q38ITALIA
+ http://www.wikidata.org/entity/Q38    | Italy                      |        19 | REPUBBLICA ITALIANA        | repubblica italiana        | it       | http://www.wikidata.org/entity/ | Q38    | http://www.wikidata.org/entity/Q38REPUBBLICA ITALIANA
+ http://www.wikidata.org/entity/Q32    | Luxembourg                 |        10 | LËTZEBUERG                 | lëtzebuerg                 | lb       | http://www.wikidata.org/entity/ | Q32    | http://www.wikidata.org/entity/Q32LËTZEBUERG
+ http://www.wikidata.org/entity/Q37    | Lithuania                  |         7 | LIETUVA                    | lietuva                    | lt       | http://www.wikidata.org/entity/ | Q37    | http://www.wikidata.org/entity/Q37LIETUVA
+ http://www.wikidata.org/entity/Q211   | Latvia                     |         7 | LATVIJA                    | latvija                    | lv       | http://www.wikidata.org/entity/ | Q211   | http://www.wikidata.org/entity/Q211LATVIJA
+ http://www.wikidata.org/entity/Q233   | Malta                      |         5 | MALTA                      | malta                      | mt       | http://www.wikidata.org/entity/ | Q233   | http://www.wikidata.org/entity/Q233MALTA
+ http://www.wikidata.org/entity/Q31    | Belgium                    |        17 | KONINKRIJK BELGIË          | koninkrijk belgië          | nl       | http://www.wikidata.org/entity/ | Q31    | http://www.wikidata.org/entity/Q31KONINKRIJK BELGIË
+ http://www.wikidata.org/entity/Q29999 | Kingdom of the Netherlands |        26 | KONINKRIJK DER NEDERLANDEN | koninkrijk der nederlanden | nl       | http://www.wikidata.org/entity/ | Q29999 | http://www.wikidata.org/entity/Q29999KONINKRIJK DER NEDERLANDEN
+ http://www.wikidata.org/entity/Q36    | Poland                     |         6 | POLSKA                     | polska                     | pl       | http://www.wikidata.org/entity/ | Q36    | http://www.wikidata.org/entity/Q36POLSKA
+ http://www.wikidata.org/entity/Q36    | Poland                     |        21 | RZECZPOSPOLITA POLSKA      | rzeczpospolita polska      | pl       | http://www.wikidata.org/entity/ | Q36    | http://www.wikidata.org/entity/Q36RZECZPOSPOLITA POLSKA
+ http://www.wikidata.org/entity/Q45    | Portugal                   |         8 | PORTUGAL                   | portugal                   | pt       | http://www.wikidata.org/entity/ | Q45    | http://www.wikidata.org/entity/Q45PORTUGAL
+ http://www.wikidata.org/entity/Q45    | Portugal                   |        20 | REPÚBLICA PORTUGUESA       | república portuguesa       | pt       | http://www.wikidata.org/entity/ | Q45    | http://www.wikidata.org/entity/Q45REPÚBLICA PORTUGUESA
+ http://www.wikidata.org/entity/Q218   | Romania                    |         7 | ROMÂNIA                    | românia                    | ro       | http://www.wikidata.org/entity/ | Q218   | http://www.wikidata.org/entity/Q218ROMÂNIA
+ http://www.wikidata.org/entity/Q33    | Finland                    |         6 | SUOPMA                     | suopma                     | se       | http://www.wikidata.org/entity/ | Q33    | http://www.wikidata.org/entity/Q33SUOPMA
+ http://www.wikidata.org/entity/Q214   | Slovakia                   |        19 | SLOVENSKÁ REPUBLIKA        | slovenská republika        | sk       | http://www.wikidata.org/entity/ | Q214   | http://www.wikidata.org/entity/Q214SLOVENSKÁ REPUBLIKA
+ http://www.wikidata.org/entity/Q215   | Slovenia                   |         9 | SLOVENIJA                  | slovenija                  | sl       | http://www.wikidata.org/entity/ | Q215   | http://www.wikidata.org/entity/Q215SLOVENIJA
+ http://www.wikidata.org/entity/Q33    | Finland                    |         5 | SUOMÂ                      | suomâ                      | smn      | http://www.wikidata.org/entity/ | Q33    | http://www.wikidata.org/entity/Q33SUOMÂ
+ http://www.wikidata.org/entity/Q33    | Finland                    |        12 | LÄÄʹDDJÂNNAM               | lääʹddjânnam               | sms      | http://www.wikidata.org/entity/ | Q33    | http://www.wikidata.org/entity/Q33LÄÄʹDDJÂNNAM
+ http://www.wikidata.org/entity/Q33    | Finland                    |         7 | FINLAND                    | finland                    | sv       | http://www.wikidata.org/entity/ | Q33    | http://www.wikidata.org/entity/Q33FINLAND
+ http://www.wikidata.org/entity/Q34    | Sweden                     |         7 | SVERIGE                    | sverige                    | sv       | http://www.wikidata.org/entity/ | Q34    | http://www.wikidata.org/entity/Q34SVERIGE
+ http://www.wikidata.org/entity/Q229   | Cyprus                     |        18 | KIBRIS CUMHURIYETI         | kıbrıs cumhuriyeti         | tr       | http://www.wikidata.org/entity/ | Q229   | http://www.wikidata.org/entity/Q229KIBRIS CUMHURIYETI
+(47 rows)
+
+SELECT * 
+FROM european_countries
+WHERE 
+ language = 'de' AND 
+ len_label <= 10 AND
+ qid = 'Q32' AND
+ base_url = 'http://www.wikidata.org/entity/' AND
+ ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
+ORDER by language;
+NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+
+SELECT ?country ?countryLabel (STRLEN(?nativename) AS ?len) (UCASE(?nativename) AS ?ucase_nativename) (LCASE(?nativename) AS ?lcase_nativename) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?base) (STRAFTER(STR(?country),"entity/") AS ?qid) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) 
+{
+    wd:Q458 wdt:P150 ?country.   
+    OPTIONAL { ?country wdt:P1705 ?nativename }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+   FILTER(STRLEN(?nativename) <= 10)
+ FILTER(LANG(?nativename) = "de")
+ FILTER(STRAFTER(STR(?country),"entity/") = "Q32")
+ FILTER(STRBEFORE(STR(?country),"Q") = "http://www.wikidata.org/entity/")
+ FILTER(CONCAT(STR(?country),UCASE(?nativename)) = "http://www.wikidata.org/entity/Q32LUXEMBURG")
+}
+
+                uri                 |   label    | len_label |   uname   |   lname   | language |            base_url             | qid |                   ctlang                    
+------------------------------------+------------+-----------+-----------+-----------+----------+---------------------------------+-----+---------------------------------------------
+ http://www.wikidata.org/entity/Q32 | Luxembourg |         9 | LUXEMBURG | luxemburg | de       | http://www.wikidata.org/entity/ | Q32 | http://www.wikidata.org/entity/Q32LUXEMBURG
+(1 row)
+
