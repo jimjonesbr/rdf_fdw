@@ -16,7 +16,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF Triplest
 - [Usage](#usage)
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
-  - [ALTER TABLE and ALTER SERVER](#alter-table-and-alter-server)
+  - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
   - [Version](#version)
 - [Pushdown](#pushdown)
   - [LIMIT](#limit)
@@ -173,7 +173,7 @@ SERVER dbpedia OPTIONS (
 '); 
 ```
 
-### [ALTER TABLE and ALTER SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#alter-table-and-alter-server)
+### [ALTER FOREIGN TABLE and ALTER SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#alter-foreign-table-and-alter-server)
 
 All options and parameters set to a `FOREIGN TABLE` or `SERVER` can be changed, dropped, and new ones can be added using the [`ALTER FOREIGN TABLE`](https://www.postgresql.org/docs/current/sql-alterforeigntable.html) and [`ALTER SERVER`](https://www.postgresql.org/docs/current/sql-alterserver.html) commands.
 
