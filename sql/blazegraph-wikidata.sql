@@ -86,7 +86,9 @@ CREATE FOREIGN TABLE european_countries (
   language text  OPTIONS (variable '?language', expression 'LANG(?nativename)'),
   base_url text  OPTIONS (variable '?base', expression 'STRBEFORE(STR(?country),"Q")'),
   qid text       OPTIONS (variable '?qid', expression 'STRAFTER(STR(?country),"entity/")'),
-  ctlang text    OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))')
+  ctlang text    OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))'),
+  dt date        OPTIONS (variable '?dt', expression '"2002-03-08"^^xsd:date'),
+  ts timestamp   OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -99,16 +101,31 @@ SERVER wikidata OPTIONS (
   }
 '); 
 
-SELECT * 
-FROM european_countries
-ORDER by language;
 
-SELECT * 
+SELECT uri, label, language 
 FROM european_countries
 WHERE 
- language = 'de' AND 
- len_label <= 10 AND
- qid = 'Q32' AND
- base_url = 'http://www.wikidata.org/entity/' AND
- ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
+  language = 'de' AND 
+  language <> 'en' AND
+  language IN ('de', 'en') AND
+  language NOT IN ('es','pt') AND 
+ 
+  len_label <= 10 AND
+  len_label IN (8,9) AND
+  len_label NOT IN (10,11) AND
+
+  dt NOT IN ('2000-01-01','2000-01-02') AND
+  dt IN ('2002-03-08','2000-01-02') AND
+  dt = '2002-03-08' AND
+  dt != '2002-03-10' AND
+
+  ts NOT IN ('2002-03-08 12:00:00', '2002-03-08 13:00:00') AND
+  ts IN ('2002-03-08T14:33:42', '2002-03-08 13:00:00') AND
+  ts = '2002-03-08 14:33:42' AND
+  ts <> '2002-03-08 11:30:00' AND
+
+  qid IN ('Q32','Q35') AND
+  qid NOT IN ('foo','bar') AND
+  base_url = 'http://www.wikidata.org/entity/' AND
+  ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
 ORDER by language;

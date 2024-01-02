@@ -2171,13 +2171,16 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				else if (leftargtype == DATEOID && rightexpr->type == T_Const)
 				{
 					if(col->pushable && col->expression)
-						appendStringInfo(&result, "%s %s xsd:date(\"%s\")", col->sparqlvar, opername, right);
+						appendStringInfo(&result, "%s %s \"%s\"^^xsd:date", col->expression, opername, right);
 					else
-						appendStringInfo(&result, "xsd:date(%s) %s xsd:date(\"%s\")", col->sparqlvar, opername, right);
+						appendStringInfo(&result, "%s %s \"%s\"^^xsd:date", col->sparqlvar, opername, right);
 				}
 				else if ((leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID) && rightexpr->type == T_Const)
 				{
-					appendStringInfo(&result, "xsd:dateTime(%s) %s xsd:dateTime(\"%s\")", col->sparqlvar, opername, right);
+					if(col->pushable && col->expression)
+						appendStringInfo(&result, "%s %s \"%s\"^^xsd:dateTime", col->expression, opername, right);
+					else
+						appendStringInfo(&result, "%s %s \"%s\"^^xsd:dateTime", col->sparqlvar, opername, right);
 				}
 				else
 				{
@@ -2232,24 +2235,68 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		initStringInfo(&result);
 		sparqlvar = (GetRDFColumn(state, left))->sparqlvar;
 
+		col = GetRDFColumn(state, left);
+
 		if (strcmp(opername, "=") == 0)
 			if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID))
-				appendStringInfo(&result, "STR(%s) IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s IN (", col->expression);
+				else
+					appendStringInfo(&result, "STR(%s) IN (", sparqlvar);
+			}
 			else if (leftargtype == DATEOID)
-				appendStringInfo(&result, "xsd:date(%s) IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s IN (", col->expression);
+				else
+					appendStringInfo(&result, "%s IN (", sparqlvar);
+			}
 			else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-				appendStringInfo(&result, "xsd:dateTime(%s) IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s IN (", col->expression);
+				else
+					appendStringInfo(&result, "%s IN (", sparqlvar);
+			}
 			else
-				appendStringInfo(&result, "%s IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s IN (", col->expression);
+				else
+					appendStringInfo(&result, "%s IN (", sparqlvar);
+
+			}
 		else
 			if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID))
-				appendStringInfo(&result, "STR(%s) NOT IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s NOT IN (", col->expression);
+				else
+					appendStringInfo(&result, "STR(%s) NOT IN (", sparqlvar);
+			}
 			else if (leftargtype == DATEOID)
-				appendStringInfo(&result, "xsd:date(%s) NOT IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s NOT IN (", col->expression);
+				else
+					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
+			}
 			else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-				appendStringInfo(&result, "xsd:dateTime(%s) NOT IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s NOT IN (", col->expression);
+				else
+					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
+			}	
 			else
-				appendStringInfo(&result, "%s NOT IN (", sparqlvar);
+			{
+				if(col->pushable && col->expression)
+					appendStringInfo(&result, "%s NOT IN (", col->expression);
+				else
+					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
+			}
+				
 
 		/* the second (=last) argument can be Const, ArrayExpr or ArrayCoerceExpr */
 		rightexpr = (Expr *)llast(arrayoper->args);
@@ -2295,9 +2342,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					if (leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID)
 						appendStringInfo(&result, "%s\"%s\"", first_arg ? "" : ", ", c);
 					else if (leftargtype == DATEOID)
-						appendStringInfo(&result, "%sxsd:date(\"%s\")", first_arg ? "" : ", ", c);
+						appendStringInfo(&result, "%s\"%s\"^^xsd:date", first_arg ? "" : ", ", c);
 					else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-						appendStringInfo(&result, "%sxsd:dateTime(\"%s\")", first_arg ? "" : ", ", c);
+						appendStringInfo(&result, "%s\"%s\"^^xsd:dateTime", first_arg ? "" : ", ", c);
 					else
 						appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", c);
 

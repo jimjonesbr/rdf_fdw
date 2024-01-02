@@ -289,7 +289,7 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (datatype(?released) = xsd:date)
       FILTER (datatype(?runtime) = xsd:integer)
       FILTER(?runtime < 10)
- FILTER(xsd:date(?released) < xsd:date("1930-03-25"))
+ FILTER(?released < "1930-03-25"^^xsd:date)
  FILTER(STR(?name) = "The Life of Adam Lindsay Gordon")
 }
 LIMIT 3
@@ -330,7 +330,7 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (datatype(?released) = xsd:date)
       FILTER (datatype(?runtime) = xsd:integer)
       FILTER(?runtime < 10)
- FILTER(xsd:date(?released) < xsd:date("1930-03-25"))
+ FILTER(?released < "1930-03-25"^^xsd:date)
 }
 ORDER BY  ASC (?released)
 
@@ -402,7 +402,7 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (LANG ( ?abstract ) = "en")
       FILTER (datatype(?released) = xsd:date)
       FILTER (datatype(?runtime) = xsd:integer)
-      FILTER(xsd:date(?released) != xsd:date("1930-03-25"))
+      FILTER(?released != "1930-03-25"^^xsd:date)
  FILTER(STR(?name) = "The Life of Adam Lindsay Gordon")
 }
 
@@ -556,7 +556,7 @@ SELECT ?personname ?birthdate ?partyname ?country
           rdfs:label ?partyname .
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
-       FILTER(xsd:date(?birthdate) > xsd:date("1995-12-31"))
+       FILTER(?birthdate > "1995-12-31"^^xsd:date)
  FILTER(STR(?country) = "Germany")
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
@@ -601,7 +601,7 @@ SELECT ?personname ?birthdate ?partyname ?country
           rdfs:label ?partyname .
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
-       FILTER(xsd:date(?birthdate) > xsd:date("1995-12-31"))
+       FILTER(?birthdate > "1995-12-31"^^xsd:date)
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
@@ -1314,7 +1314,7 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (datatype(?released) = xsd:date)
       FILTER (datatype(?runtime) = xsd:integer)
       FILTER(?runtime < 10)
- FILTER(xsd:date(?released) < xsd:date("1930-03-25"))
+ FILTER(?released < "1930-03-25"^^xsd:date)
  FILTER(STR(?name) = "The Life of Adam Lindsay Gordon")
 }
 LIMIT 3
@@ -1347,7 +1347,7 @@ SELECT DISTINCT ?personname ?birthdate ?partyname ?country
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
         FILTER(STR(?country) = "Germany")
-       FILTER(xsd:date(?birthdate) > xsd:date("1990-12-01"))
+       FILTER(?birthdate > "1990-12-01"^^xsd:date)
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)  ASC (?personname)  ASC (?country)
 
