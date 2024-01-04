@@ -10,9 +10,9 @@ OPTIONS (endpoint 'https://sparql.europeana.eu/');
  */
 
 CREATE FOREIGN TABLE audio (
-  uri text       OPTIONS (variable '?mediaURL'),
-  title text      OPTIONS (variable '?title'),
-  creator text       OPTIONS (variable '?creator'),
+  uri text     OPTIONS (variable '?mediaURL'),
+  title text   OPTIONS (variable '?title'),
+  creator text OPTIONS (variable '?creator'),
   source text  OPTIONS (variable '?source')
 )
 SERVER europeana OPTIONS (

@@ -7,8 +7,6 @@ OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
  * LinkedGeoData Cities
  * List all <http://linkedgeodata.org/ontology/City> that contain a WKT literal and a
  * label written in English. This example requires the extension PostGIS!
- *
- * SPARQL author: Jim Jones
  */
 
 CREATE FOREIGN TABLE cities (

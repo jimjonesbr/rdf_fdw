@@ -4,16 +4,14 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 /*
  * German public universities and their geographic coordinates
- * 
- * SPARQL author: Jim Jones
  */
 
 CREATE FOREIGN TABLE german_public_universities (
-  id text      OPTIONS (variable '?uri'),
-  name text    OPTIONS (variable '?name'),
-  lon numeric  OPTIONS (variable '?lon'),
-  lat numeric  OPTIONS (variable '?lat'),
-  wkt text     OPTIONS (variable '?wkt',
+  id text      OPTIONS (variable '?uri', nodetype 'iri'),
+  name text    OPTIONS (variable '?name',nodetype 'literal'),
+  lon numeric  OPTIONS (variable '?lon', nodetype 'literal'),
+  lat numeric  OPTIONS (variable '?lat', nodetype 'literal'),
+  wkt text     OPTIONS (variable '?wkt', nodetype 'literal',
                         expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
 ) SERVER dbpedia OPTIONS (
   log_sparql 'true',

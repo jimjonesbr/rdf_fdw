@@ -5,10 +5,10 @@ OPTIONS (
 );
 
 CREATE FOREIGN TABLE applications (
-  appuri text       OPTIONS (variable '?application'),
-  appnum text      OPTIONS (variable '?appNum'),
-  fdate date      OPTIONS (variable '?filingDate'),
-  authority text      OPTIONS (variable '?authority')
+  appuri text    OPTIONS (variable '?application', nodetype 'iri'),
+  appnum text    OPTIONS (variable '?appNum', nodetype 'literal'),
+  fdate date     OPTIONS (variable '?filingDate', nodetype 'literal', literaltype 'xsd:date'),
+  authority text OPTIONS (variable '?authority', nodetype 'literal')
 )
 SERVER epo OPTIONS (
   log_sparql 'true',
@@ -36,7 +36,12 @@ SERVER epo OPTIONS (
     }
 '); 
 
-SELECT * 
+SELECT appuri, appnum, fdate, authority 
 FROM applications
 WHERE fdate > '2023-01-01'
-LIMIT 100;
+LIMIT 10;
+
+SELECT appuri, appnum, fdate, authority 
+FROM applications
+WHERE appuri = 'http://data.epo.org/linked-data/id/application/EP/23723398'
+LIMIT 10;

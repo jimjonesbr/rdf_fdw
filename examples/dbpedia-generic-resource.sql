@@ -6,14 +6,12 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 /*
  * All non IRI property values directly linked to a given resource.
  * Only numeric literals or literals written in English are accepted.
- * 
- * SPARQL author: Jim Jones
  */
 CREATE FOREIGN TABLE dbpedia_resource (
-  uri text           OPTIONS (variable '?uri'),
-  property_uri text  OPTIONS (variable '?propuri'),
-  property text      OPTIONS (variable '?proplabel'),
-  value text         OPTIONS (variable '?val')
+  uri text           OPTIONS (variable '?uri', nodetype 'iri'),
+  property_uri text  OPTIONS (variable '?propuri', nodetype 'literal'),
+  property text      OPTIONS (variable '?label', nodetype 'literal', expression 'STR(?proplabel)'),
+  value text         OPTIONS (variable '?val', nodetype 'literal')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',

@@ -7,16 +7,14 @@ OPTIONS (
 
 /*
  * Authors and their work registered in the BBC Programmes and Music database
- * 
- * SPARQL author: Jim Jones
  */
 
 CREATE FOREIGN TABLE artists (
-  id text          OPTIONS (variable '?person'),
-  name text        OPTIONS (variable '?name'),
-  itemid text      OPTIONS (variable '?created'),
-  title text       OPTIONS (variable '?title'),
-  description text OPTIONS (variable '?description')
+  id text          OPTIONS (variable '?person',  nodetype 'iri'),
+  name text        OPTIONS (variable '?name',    nodetype 'literal'),
+  itemid text      OPTIONS (variable '?created', nodetype 'iri'),
+  title text       OPTIONS (variable '?title',   nodetype 'literal', literaltype 'xsd:string'),
+  description text OPTIONS (variable '?description', nodetype 'literal')
 )
 SERVER bbc OPTIONS (
   log_sparql 'true',
@@ -25,6 +23,7 @@ SERVER bbc OPTIONS (
   PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
   PREFIX dcterms: <http://purl.org/dc/terms/>
   PREFIX bibo: <http://purl.org/ontology/bibo/>
+  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
   SELECT ?person ?name ?created ?title ?description 
   WHERE 
@@ -35,8 +34,9 @@ SERVER bbc OPTIONS (
     ?created a bibo:Book ;
       dcterms:title ?title ;
     dcterms:description ?description
-   } 
-'); 
+} 
+');
+
 
 SELECT DISTINCT title, description 
 FROM artists

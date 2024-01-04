@@ -8,7 +8,7 @@ OPTIONS (
  * Items used: metre (Q11573)
  * Properties used: elevation above sea level (P2044) 
  *
- * SPARQL Author: Wikidata (https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples#Places_that_are_below_10_meters_above_sea_level)
+ * Source: Wikidata (https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples#Places_that_are_below_10_meters_above_sea_level)
  */
 
 CREATE FOREIGN TABLE places_below_sea_level (

@@ -5,16 +5,14 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 /*
  * Living politicians in DBpedia that are affiliated to a party. The party name must have
  * a german translation.
- * 
- * SPARQL author: Jim Jones
  */
 
 CREATE FOREIGN TABLE politicians (
-  uri text        OPTIONS (variable '?person'),
-  name text       OPTIONS (variable '?personname'),
-  birthdate date  OPTIONS (variable '?birthdate'),
-  party text      OPTIONS (variable '?partyname'),
-  country text    OPTIONS (variable '?country')
+  uri text        OPTIONS (variable '?person', nodetype 'iri'),
+  name text       OPTIONS (variable '?personname', nodetype 'literal', literaltype 'xsd:string'),
+  birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
+  party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
+  country text    OPTIONS (variable '?country', expression 'STR(?country)', nodetype 'literal')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
