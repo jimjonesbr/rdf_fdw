@@ -104,6 +104,10 @@
 
 #define RDF_COLUMN_OPTION_VARIABLE "variable"
 #define RDF_COLUMN_OPTION_EXPRESSION "expression"
+#define RDF_COLUMN_OPTION_LITERALTYPE "literaltype"
+#define RDF_COLUMN_OPTION_NODETYPE "nodetype"
+#define RDF_COLUMN_OPTION_NODETYPE_IRI "iri"
+#define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
 
 #define RDF_SPARQL_KEYWORD_FROM "FROM"
 #define RDF_SPARQL_KEYWORD_NAMED "NAMED"
@@ -129,7 +133,7 @@
  */
 #define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID \
 			|| (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID \
-			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID \
+			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
 			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID)
 
 
@@ -183,8 +187,10 @@ typedef struct RDFfdwTable
 typedef struct RDFfdwColumn
 {	
 	char *name;                  /* Column name */
-	char *sparqlvar;             /* Column OPTION 'variable'*/
-	char *expression;            /* Column OPTION 'expression' */
+	char *sparqlvar;             /* Column OPTION 'variable' - SPARQL variable */
+	char *expression;            /* Column OPTION 'expression' - SPARQL expression*/
+	char *literaltype;           /* Column OPTION 'type' - literal data type */
+	char *nodetype;              /* Column OPTION 'nodetype' - node data type */
 	Oid  pgtype;                 /* PostgreSQL data type */
 	int  pgtypmod;               /* PostgreSQL type modifier */
 	int  pgattnum;               /* PostgreSQL attribute number */
@@ -242,6 +248,8 @@ static struct RDFfdwOption valid_options[] =
 	/* Options for Foreign Table's Columns */
 	{RDF_COLUMN_OPTION_VARIABLE, AttributeRelationId, true, false},
 	{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
+	{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
+	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
 	/* EOList option */
 	{NULL, InvalidOid, false, false}
 };
@@ -783,6 +791,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 		state->rdfTable->cols[i]->pushable = true;
+		state->rdfTable->cols[i]->literaltype = "";
+		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 
 		foreach (lc, options)
 		{
@@ -799,6 +809,19 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 				state->rdfTable->cols[i]->expression = pstrdup(defGetString(def));
 				state->rdfTable->cols[i]->pushable = IsExpressionPushable(defGetString(def));
 				elog(DEBUG1,"  %s: (%d) is expression pushable? > '%s'",__func__,i,state->rdfTable->cols[i]->pushable ? "true" : "false");
+			} 
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0) 
+			{
+				StringInfoData literaltype;
+				initStringInfo(&literaltype);
+				appendStringInfo(&literaltype, "^^%s", defGetString(def));
+				elog(DEBUG1,"  %s: (%d) adding sparql literal data type > '%s'",__func__,i,defGetString(def));
+				state->rdfTable->cols[i]->literaltype = pstrdup(literaltype.data);
+			}
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_NODETYPE) == 0) 
+			{
+				elog(DEBUG1,"  %s: (%d) adding sparql node data type > '%s'",__func__,i,defGetString(def));
+				state->rdfTable->cols[i]->nodetype = pstrdup(defGetString(def));
 			}
 		
 		}
@@ -2029,6 +2052,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	Oid leftargtype, rightargtype, schema;
 	int index;
 	StringInfoData alias;
+	//StringInfoData literaltype;
 	ArrayExpr *array;
 	ArrayCoerceExpr *arraycoerce;
 	Expr *rightexpr;
@@ -2091,6 +2115,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	case T_OpExpr:		
 		oper = (OpExpr *)expr;
 		initStringInfo(&result);
+//		initStringInfo(&literaltype);
 
 		tuple = SearchSysCache1(OPEROID, ObjectIdGetDatum(oper->opno));
 		if (!HeapTupleIsValid(tuple))
@@ -2146,7 +2171,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (right == NULL)
 					return NULL;
 
-				initStringInfo(&result);
+				//initStringInfo(&result);
 
 				col = GetRDFColumn(state, left);
 
@@ -2154,6 +2179,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if(!col)
 					return NULL;
 
+				/* return NULL if the column is not safe to be pushed down */
+				if(!col->pushable)
+					return NULL;
+
+				// if(col->literaltype)
+				// 	appendStringInfo(&literaltype, "^^%s", col->literaltype);
 				/* 
 				 * if the column contains an 'expression' it is not safe to push it down.
 				 * as it might contain function calls that are invalid in FILTER conditions
@@ -2161,30 +2192,29 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				// if(col->expression)
 				// 	return NULL;
 
-				if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID) && rightexpr->type == T_Const)
+				if ((leftargtype == TEXTOID || 
+				    leftargtype == VARCHAROID || 
+					leftargtype == CHAROID || 
+					leftargtype == NAMEOID ||
+					leftargtype == DATEOID ||
+					leftargtype == TIMESTAMPOID ||
+					leftargtype == TIMESTAMPTZOID ||
+					leftargtype == NAMEOID ||
+					leftargtype == BOOLOID) && rightexpr->type == T_Const)
 				{
-					if(col->pushable && col->expression)
-						appendStringInfo(&result, "%s %s \"%s\"", col->expression, opername, right);
+					if(col->expression)
+						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, col->literaltype);
 					else
-						appendStringInfo(&result, "STR(%s) %s \"%s\"", col->sparqlvar, opername, right);
-				}
-				else if (leftargtype == DATEOID && rightexpr->type == T_Const)
-				{
-					if(col->pushable && col->expression)
-						appendStringInfo(&result, "%s %s \"%s\"^^xsd:date", col->expression, opername, right);
-					else
-						appendStringInfo(&result, "%s %s \"%s\"^^xsd:date", col->sparqlvar, opername, right);
-				}
-				else if ((leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID) && rightexpr->type == T_Const)
-				{
-					if(col->pushable && col->expression)
-						appendStringInfo(&result, "%s %s \"%s\"^^xsd:dateTime", col->expression, opername, right);
-					else
-						appendStringInfo(&result, "%s %s \"%s\"^^xsd:dateTime", col->sparqlvar, opername, right);
+					{
+						if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+							appendStringInfo(&result, "%s %s IRI(\"%s\")", col->sparqlvar, opername, right);
+						else if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_LITERAL) == 0)
+							appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, col->literaltype);
+					}
 				}
 				else
 				{
-					if(col->pushable && col->expression)
+					if(col->expression)
 						appendStringInfo(&result, "%s %s %s", col->expression, opername, right);
 					else
 						appendStringInfo(&result, "%s %s %s", col->sparqlvar, opername, right);
@@ -2233,6 +2263,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return NULL;
 
 		initStringInfo(&result);
+		//initStringInfo(&literaltype);
+
 		sparqlvar = (GetRDFColumn(state, left))->sparqlvar;
 
 		col = GetRDFColumn(state, left);
@@ -2243,7 +2275,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if(col->pushable && col->expression)
 					appendStringInfo(&result, "%s IN (", col->expression);
 				else
-					appendStringInfo(&result, "STR(%s) IN (", sparqlvar);
+					appendStringInfo(&result, "%s IN (", sparqlvar);
 			}
 			else if (leftargtype == DATEOID)
 			{
@@ -2273,7 +2305,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if(col->pushable && col->expression)
 					appendStringInfo(&result, "%s NOT IN (", col->expression);
 				else
-					appendStringInfo(&result, "STR(%s) NOT IN (", sparqlvar);
+					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
 			}
 			else if (leftargtype == DATEOID)
 			{
@@ -2316,6 +2348,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			else
 			{
 				ArrayType *arr = DatumGetArrayTypeP(constant->constvalue);
+				StringInfoData type;
+				initStringInfo(&type);
 
 				/* loop through the array elements */
 				iterator = array_create_iterator(arr, 0, NULL);
@@ -2338,15 +2372,14 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 					}
 
-				
 					if (leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID)
-						appendStringInfo(&result, "%s\"%s\"", first_arg ? "" : ", ", c);
+						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, col->literaltype);
 					else if (leftargtype == DATEOID)
-						appendStringInfo(&result, "%s\"%s\"^^xsd:date", first_arg ? "" : ", ", c);
+						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, col->literaltype);
 					else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-						appendStringInfo(&result, "%s\"%s\"^^xsd:dateTime", first_arg ? "" : ", ", c);
+						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, col->literaltype);
 					else
-						appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", c);
+						appendStringInfo(&result, "%s%s%s", first_arg ? "" : ", ", c, col->literaltype);
 
 					/* append the argument */
 					first_arg = false;

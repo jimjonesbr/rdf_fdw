@@ -6,9 +6,9 @@ OPTIONS (
 
 CREATE FOREIGN TABLE atms_munich (
 atmid text     OPTIONS (variable '?atm'),
-atmwkt text    OPTIONS (variable '?geometry'),
+atmwkt text    OPTIONS (variable '?geometry', literaltype 'geo:wktLiteral'),
 bankid text    OPTIONS (variable '?bank'),
-bankname text  OPTIONS (variable '?bankLabel')
+bankname text  OPTIONS (variable '?bankLabel', literaltype 'xsd:string')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -43,9 +43,9 @@ WHERE bankname = 'BBBank';
 
 
 CREATE FOREIGN TABLE places_below_sea_level (
-  wikidata_id text   OPTIONS (variable '?place'),
+  wikidata_id text   OPTIONS (variable '?placeid', expression 'STR(?place)'),
   label text         OPTIONS (variable '?labelc', expression 'UCASE(?label)'),
-  wkt text           OPTIONS (variable '?location'),
+  wkt text           OPTIONS (variable '?location', literaltype 'geo:wktLiteral'),
   elevation numeric  OPTIONS (variable '?elev')
 )
 SERVER wikidata OPTIONS (
@@ -75,20 +75,23 @@ FETCH FIRST 5 ROWS ONLY;
 
 /*
  * Expression pushdown tests with LCASE, UCASE, STRLEN, STRBEFORE, 
- * STRAFTER, CONCAT and LANG
+ * STRAFTER, CONCAT, STRSTARTS, STRENDS and LANG
  */
 CREATE FOREIGN TABLE european_countries (
-  uri text       OPTIONS (variable '?country'),
-  label text     OPTIONS (variable '?countryLabel'),
+  uri text       OPTIONS (variable '?country', literaltype 'xsd:string'),
+  label text     OPTIONS (variable '?label', expression 'STR(?countryLabel)'),
+  nativename text OPTIONS (variable '?label2', expression 'STR(?nativename)', literaltype 'xsd:string'),
   len_label int  OPTIONS (variable '?len', expression 'STRLEN(?nativename)'),
   uname text     OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
   lname text     OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
-  language text  OPTIONS (variable '?language', expression 'LANG(?nativename)'),
-  base_url text  OPTIONS (variable '?base', expression 'STRBEFORE(STR(?country),"Q")'),
-  qid text       OPTIONS (variable '?qid', expression 'STRAFTER(STR(?country),"entity/")'),
+  language text  OPTIONS (variable '?language', expression 'LANG(?nativename)', literaltype 'xsd:string'),
+  base_url text  OPTIONS (variable '?base', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'xsd:string'),
+  qid text       OPTIONS (variable '?qid', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'xsd:string'),
   ctlang text    OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))'),
-  dt date        OPTIONS (variable '?dt', expression '"2002-03-08"^^xsd:date'),
-  ts timestamp   OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime')
+  dt date        OPTIONS (variable '?dt', expression '"2002-03-08"^^xsd:date', literaltype 'xsd:date'),
+  ts timestamp   OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'xsd:dateTime'),
+  bt boolean     OPTIONS (variable '?bt', expression 'STRSTARTS(STR(?country),"http")'),
+  bf boolean     OPTIONS (variable '?bf', expression 'STRENDS(STR(?country),"http")')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -102,7 +105,7 @@ SERVER wikidata OPTIONS (
 '); 
 
 
-SELECT uri, label, language 
+SELECT uri, label, language, bf, bt
 FROM european_countries
 WHERE 
   language = 'de' AND 
@@ -127,5 +130,14 @@ WHERE
   qid IN ('Q32','Q35') AND
   qid NOT IN ('foo','bar') AND
   base_url = 'http://www.wikidata.org/entity/' AND
-  ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
+  ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG' AND
+
+  bt IS TRUE AND
+  bf IS NOT TRUE
+
 ORDER by language;
+
+
+SELECT uri, nativename 
+FROM european_countries
+WHERE nativename = 'Luxembourg';

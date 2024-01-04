@@ -98,9 +98,9 @@ The SQL command [CREATE SERVER](https://www.postgresql.org/docs/current/sql-crea
 The following example creates a `SERVER` that connects to the DBpedia SPARQL Endpoint:
 
 ```sql
-CREATE SERVER dbpedia
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
+  CREATE SERVER dbpedia
+  FOREIGN DATA WRAPPER rdf_fdw 
+  OPTIONS (endpoint 'https://dbpedia.org/sparql');
 ```
 
 
@@ -139,18 +139,20 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to the SPARQL variable.    |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, e.g. function calls. |
+| `literaltype`        | optional    | Data type of the literal, e.g. `xsd:string`, `xsd:date`, `xsd:dateTime`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions |
+| `nodetype`  | optional    | Type of the RDF node. Expected values are `literal` or `iri`. This option helps the query planner to optimize SPARQL `FILTER` expressions when the `WHERE` conditions are pushed down (default `literal`)  |
+| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as function calls. Anyone who already has written SPARQL queries containing non-numeric variables in `FILTER` expressions understands that the many literal types and languages can be quite annoying. In this option it is possible, for instance, to get rid of literal types or languages using the SPARQL function `STR()`. All SPARQL functions supported by the data sourcen can be used in this option, such as `LANG`, `CONCAT`, `STRSTARTS`, `STRBEFORE`, etc. |
 
 
 The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. SELECT queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
 
 ```sql
 CREATE FOREIGN TABLE film (
-  film_id text    OPTIONS (variable '?film'),
-  name text       OPTIONS (variable '?name'),
-  released date   OPTIONS (variable '?released'),
-  runtime int     OPTIONS (variable '?runtime'),
-  abstract text   OPTIONS (variable '?abstract')
+  film_id text    OPTIONS (variable '?film',     nodetype 'iri'),
+  name text       OPTIONS (variable '?name',     nodetype 'literal', literaltype 'xsd:string'),
+  released date   OPTIONS (variable '?released', nodetype 'literal', literaltype 'xsd:date'),
+  runtime int     OPTIONS (variable '?runtime',  nodetype 'literal', literaltype 'xsd:integer'),
+  abstract text   OPTIONS (variable '?abstract', nodetype 'literal', literaltype 'xsd:string')
 )
 SERVER dbpedia OPTIONS (
   sparql '
@@ -280,16 +282,16 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 | SQL                                                   | SPARQL |
 |-------------------------------------------------------|--------|
-| `name = 'foo'`                                        |  `FILTER(STR(?s) = "foo")`      |
-| `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`      |
+| `name = 'foo'`                                        |  `FILTER(?s = "foo")`      |
+| `name <> 'foo'`                                       |  `FILTER(?s != "foo")`      |
 | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`      |
 | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`      |
-| `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(xsd:date(?released) >= xsd:date("2021-04-01")) FILTER(xsd:date(?released) <= xsd:date("2021-04-30"))`      |
-| `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(xsd:dateTime(?modified) > xsd:dateTime("2021-04-06T14:07:00.260000"))`      |
-| `modified < '2021-04-06 14:07:00.26'`                 |  `FILTER(xsd:dateTime(?modified) < xsd:dateTime("2021-04-06T14:07:00.260000"))`      |
-| `country IN ('Germany','France','Portugal')`          |  `FILTER(STR(?country) IN ("Germany", "France", "Portugal"))`      |
-| `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(STR(?country) NOT IN ("Germany", "France", "Portugal"))`      |
-| `country = ANY(ARRAY['Germany','France','Portugal'])` |  `FILTER(STR(?country) IN ("Germany", "France", "Portugal"))`      |
+| `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`      |
+| `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`      |
+| `modified < '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified < "2021-04-06T14:07:00.260000"^^xsd:dateTime)`      |
+| `country IN ('Germany','France','Portugal')`          |  `FILTER(?country IN ("Germany"^^xsd:string, "France"^^xsd:string, "Portugal"^^xsd:string))`      |
+| `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany", "France", "Portugal"))`      |
+| `country = ANY(ARRAY['Germany','France','Portugal'])` |  `FILTER(?country IN ("Germany", "France", "Portugal"))`      |
 
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
@@ -306,11 +308,11 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE politicians (
-  uri text        OPTIONS (variable '?person'),
-  name text       OPTIONS (variable '?personname'),
-  birthdate date  OPTIONS (variable '?birthdate'),
-  party text      OPTIONS (variable '?partyname'),
-  country text    OPTIONS (variable '?country')
+  uri text        OPTIONS (variable '?person', nodetype 'iri'),
+  name text       OPTIONS (variable '?personname', nodetype 'literal', literaltype 'xsd:string'),
+  birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
+  party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
+  country text    OPTIONS (variable '?country', expression 'STR(?country)', nodetype 'literal')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -341,6 +343,7 @@ In the following SQL query we can observe that:
 * the conditions in the SQL `WHERE` clause were pushed down as SPARQL `FILTER` conditions.
 * the SQL `ORDER BY` clause was pushed down as SPARQL `ORDER BY`.
 * the `FETCH FIRST ... ROWS ONLY` was pushed down as SPARQL `LIMIT`
+* the column `country` has no `literaltype` OPTION, since it already contain an `expression` with a `STR()` call that evaluates the literal without an explict type - the literal has no data type in source.
 
 ```sql
 SELECT name, birthdate, party
@@ -354,26 +357,26 @@ FETCH FIRST 5 ROWS ONLY;
 
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
-PREFIX dbp: <http://dbpedia.org/property/>
-PREFIX dbo: <http://dbpedia.org/ontology/>  
-    
-SELECT ?personname ?birthdate ?partyname ?country 
-WHERE {
-  ?person 
-    a dbo:Politician;
-    dbo:birthDate ?birthdate;
-    dbp:name ?personname;
-    dbo:party ?party .       
-  ?party 
-    dbp:country ?country;
-    rdfs:label ?partyname .
-  FILTER NOT EXISTS {?person dbo:deathDate ?died}
-  FILTER(LANG(?partyname) = "de")
-  FILTER(STR(?country) IN ("Germany", "France"))
-  FILTER(xsd:date(?birthdate) > xsd:date("1995-12-31"))
-  FILTER(STR(?partyname) != "")
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?personname ?birthdate ?partyname (STR(?country) AS ?country) 
+{
+      ?person 
+          a dbo:Politician;
+          dbo:birthDate ?birthdate;
+          dbp:name ?personname;
+          dbo:party ?party .       
+        ?party 
+          dbp:country ?country;
+          rdfs:label ?partyname .
+        FILTER NOT EXISTS {?person dbo:deathDate ?died}
+        FILTER(LANG(?partyname) = "de")
+       FILTER(STR(?country) IN ("Germany", "France"))
+ FILTER(?birthdate > "1995-12-31"^^xsd:date)
+ FILTER(?partyname != ""^^xsd:string)
 }
-ORDER BY DESC (?birthdate), ASC (?partyname)
+ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
 
         name        | birthdate  |                  party                  
@@ -384,87 +387,7 @@ LIMIT 5
  Niklas Wagener     | 1998-04-16 | Bündnis 90/Die Grünen
  Jakob Blankenburg  | 1997-08-05 | Sozialdemokratische Partei Deutschlands
 (5 rows)
-```
 
-#### Create a `SERVER` and `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Endpoint (German Public Universities):
-
-**This examples requires the extension PostGIS**
-
-```sql
-CREATE SERVER dbpedia
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
-
-CREATE FOREIGN TABLE german_public_universities (
-  id text      OPTIONS (variable '?uri'),
-  name text    OPTIONS (variable '?name'),
-  lon numeric  OPTIONS (variable '?lon'),
-  lat numeric  OPTIONS (variable '?lat'),
-  wkt text     OPTIONS (variable '?wkt',
-                        expression 'CONCAT("POINT(",?lon," ",?lat,")")')
-) SERVER dbpedia OPTIONS (
-  log_sparql 'true',
-  sparql '
-    PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    PREFIX dbr:  <http://dbpedia.org/resource/>
-    SELECT ?uri ?name ?lon ?lat
-    WHERE {
-      ?uri dbo:type dbr:Public_university ;
-        dbp:name ?name;
-        geo:lat ?lat; 
-        geo:long ?lon; 
-        dbp:country dbr:Germany
-      }'
-  ); 
-```
-
-In the following SQL query we can observe that: 
-
-* the executed SPARQL query was logged.
-* the SPARQL `SELECT` was modified to retireve only the columns used in the SQL `SELECT` and `WHERE` clauses.
-* the `expression` OPTION set in the column `wkt` was used in the SPARQL `SELECT` clause -  although it wasn't previously defined in the SPARQL query set in the `CREATE TABLE` statement. This expression creates a WKT (Well Known Text) literal, based on `lon` and `lat`, that can be cast into a PostGIS `geometry` or `geography` value.
-* the SQL `ORDER BY lat DESC` clause was pushed down as SPARQL `ORDER BY DESC(lat)`.
-* the `FETCH FIRST 10 ROWS ONLY` clause was pushed down as SPARQL `LIMIT 10`
-
-```sql
-SELECT name, wkt::geometry 
-FROM german_public_universities 
-ORDER BY lat DESC 
-FETCH FIRST 10 ROWS ONLY;
-
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
-PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-PREFIX dbp: <http://dbpedia.org/property/>
-PREFIX dbo: <http://dbpedia.org/ontology/>
-PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?name ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt) 
-{
-  ?uri dbo:type dbr:Public_university ;
-  dbp:name ?name;
-    geo:lat ?lat; 
-    geo:long ?lon; 
-    dbp:country dbr:Germany
-}
-ORDER BY  DESC (?lat)
-LIMIT 10
-
-                name                |                    wkt                     
-------------------------------------+--------------------------------------------
- Europa Universität Flensburg       | 0101000000000000806CE722400000000054634B40
- University of Greifswald           | 010100000001000000CFBF2A40000000201D0C4B40
- University of Lübeck               | 0101000000FEFFFFFF62692540FFFFFFFF20EB4A40
- Hamburg University of Technology   | 0101000000000000005BF02340000000A0FCBA4A40
- University of Bremen               | 0101000000000000800CB5214001000000E78D4A40
- University of the Arts Bremen      | 0101000000000000C0F5882140000000208D8C4A40
- Humboldt University of Berlin      | 0101000000FEFFFFFF62C92A40000000A04F424A40
- Berlin University of the Arts      | 01010000000100004065A72A40000000602C414A40
- Berlin School of Economics and Law | 0101000000FEFFFF3FF1AC2A40000000A01D3E4A40
- Free University of Berlin          | 0101000000FFFFFFBFC3942A40000000C0FD394A40
-(10 rows)
 ```
 
 ### [Getty Thesaurus](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#getty-thesaurus)
@@ -531,7 +454,6 @@ LIMIT 10;
 
 NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
-
   PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
   PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
   PREFIX gvp: <http://vocab.getty.edu/ontology#>
@@ -542,16 +464,15 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
    SELECT ?x ?name ?bio ?birth {
   {SELECT DISTINCT ?x
     {?x foaf:focus/bio:event/(schema:location|(schema:location/gvp:broaderExtended)) tgn:1000080-place}}
-         ?x gvp:prefLabelGVP/xl:literalForm ?name;
-            foaf:focus/gvp:biographyPreferred [
-            schema:description ?bio;
-        gvp:estStart ?birth].
+ 	 ?x gvp:prefLabelGVP/xl:literalForm ?name;
+	    foaf:focus/gvp:biographyPreferred [
+	    schema:description ?bio;
+       	gvp:estStart ?birth].
 
   FILTER ("1250"^^xsd:gYear <= ?birth && ?birth <= "1780"^^xsd:gYear)
   FILTER EXISTS {?x gvp:broaderExtended ?facet.
   FILTER(?facet in (ulan:500000003, ulan:500000002))}
   FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
-
   
 
                 name                 |                                  bio                                  | birth 
@@ -567,6 +488,7 @@ NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
  Beys, G.                            | French artist, fl. ca.1786-1800                                       |  1766
  Vaucher, Gabriel Constant           | Swiss artist, 1768-1814                                               |  1768
 (10 rows)
+
 ```
 
 ### [BBC Programmes and Music](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bbc-programmes-and-music)
@@ -583,11 +505,11 @@ OPTIONS (
 
 
 CREATE FOREIGN TABLE artists (
-  id text          OPTIONS (variable '?person'),
-  name text        OPTIONS (variable '?name'),
-  itemid text      OPTIONS (variable '?created'),
-  title text       OPTIONS (variable '?title'),
-  description text OPTIONS (variable '?description')
+  id text          OPTIONS (variable '?person', nodetype 'iri'),
+  name text        OPTIONS (variable '?name', nodetype 'literal'),
+  itemid text      OPTIONS (variable '?created', nodetype 'iri'),
+  title text       OPTIONS (variable '?title', nodetype 'literal', literaltype 'xsd:string'),
+  description text OPTIONS (variable '?description', nodetype 'literal')
 )
 SERVER bbc OPTIONS (
   log_sparql 'true',
@@ -596,6 +518,7 @@ SERVER bbc OPTIONS (
   PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
   PREFIX dcterms: <http://purl.org/dc/terms/>
   PREFIX bibo: <http://purl.org/ontology/bibo/>
+  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
   SELECT ?person ?name ?created ?title ?description 
   WHERE 
@@ -621,24 +544,23 @@ In the following SQL query we can observe that:
 SELECT DISTINCT title, description 
 FROM artists
 WHERE name = 'John Lennon';
-
 NOTICE:  SPARQL query sent to 'https://lod.openlinksw.com/sparql':
 
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
-PREFIX dcterms: <http://purl.org/dc/terms/>
-PREFIX bibo: <http://purl.org/ontology/bibo/>
-
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
+ PREFIX dcterms: <http://purl.org/dc/terms/>
+ PREFIX bibo: <http://purl.org/ontology/bibo/>
+ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 SELECT DISTINCT ?name ?title ?description 
 {
-  ?person a foaf:Person ;
-    foaf:name ?name ;
-    blterms:hasCreated ?created .
-  ?created a bibo:Book ;
-    dcterms:title ?title ;
-  dcterms:description ?description
- FILTER(STR(?name) = "John Lennon")
+    ?person a foaf:Person ;
+      foaf:name ?name ;
+      blterms:hasCreated ?created .
+    ?created a bibo:Book ;
+      dcterms:title ?title ;
+    dcterms:description ?description
+ FILTER(?name = "John Lennon")
 }
 ORDER BY  ASC (?title)  ASC (?description)
 
@@ -670,7 +592,6 @@ ORDER BY  ASC (?title)  ASC (?description)
  John Lennon in his own write ; and a Spaniard in the works   | Originally published: 1965.
  Lennon on Lennon : conversations with John Lennon            | "This edition published by arrangement with Chicago Review Press"--Title page verso.
 (25 rows)
-
 ```
 
 ### [Wikidata](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#wikidata)
@@ -686,8 +607,8 @@ OPTIONS (
 CREATE FOREIGN TABLE places_below_sea_level (
   wikidata_id text  OPTIONS (variable '?place'),
   label text        OPTIONS (variable '?label'),
-  wkt text    OPTIONS (variable '?location'),
-  elevation numeric  OPTIONS (variable '?elev')
+  wkt text          OPTIONS (variable '?location'),
+  elevation numeric OPTIONS (variable '?elev')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -736,23 +657,21 @@ SELECT ?place ?label ?location
     ?place wdt:P625 ?location.    
     FILTER(LANG(?label)="en")
     SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
-
-}
+  }
 LIMIT 10
-
 
                wikidata_id                |      label      |                wkt                 
 ------------------------------------------+-----------------+------------------------------------
  http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | Point(-133.03 69.43)
  http://www.wikidata.org/entity/Q403083   | Ahyi            | Point(145.033333333 20.416666666)
  http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | Point(25.407 29.228419444)
- http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | Point(-1.842397 47.798252)
- http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | Point(-101.581388888 19.676944444)
- http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | Point(35.43298 31.87073)
- http://www.wikidata.org/entity/Q54888910 | Lydd Library    | Point(0.906514 50.949197)
- http://www.wikidata.org/entity/Q55112853 | Ansdell Library | Point(-2.991656 53.743795)
  http://www.wikidata.org/entity/Q2888647  | Petza'el        | Point(35.442222222 32.044166666)
  http://www.wikidata.org/entity/Q2888816  | Gilgal          | Point(35.44440556 31.99966944)
+ http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | Point(-101.581388888 19.676944444)
+ http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | Point(-1.842397 47.798252)
+ http://www.wikidata.org/entity/Q31796546 | Sahl al ‘Awjā'  | Point(35.464722222 31.957777777)
+ http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | Point(35.43298 31.87073)
+ http://www.wikidata.org/entity/Q2889475  | Na'aran         | Point(35.454338888 31.966872222)
 (10 rows)
 ```
 

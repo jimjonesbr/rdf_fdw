@@ -90,7 +90,7 @@ SELECT ?place ?name ?lon ?lat
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
     geo:long ?lon
-   FILTER(STR(?name) = "West Flanders, Flanders, Belgium, Europe, World")
+   FILTER(?name = "West Flanders, Flanders, Belgium, Europe, World")
 }
 
                 uri                 |   lon    |    lat    
