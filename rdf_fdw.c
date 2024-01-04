@@ -320,8 +320,8 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	initStringInfo(&buffer);
 
 	appendStringInfo(&buffer, "rdf_fdw = %s,", FDW_VERSION);
-	appendStringInfo(&buffer, " libxml = %s,", LIBXML_DOTTED_VERSION);
-	appendStringInfo(&buffer, " libcurl = %s", curl_version());
+	appendStringInfo(&buffer, " libxml/%s", LIBXML_DOTTED_VERSION);
+	appendStringInfo(&buffer, " %s", curl_version());
 
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
 }
@@ -1587,6 +1587,16 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 
 }
 
+/*
+ * IsExpressionPushable
+ * ------------
+ * Checks if an expression attached to a column can be pushed down, in case it
+ * is used in a condition in the SQL WHERE clause.
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ *
+ * returns 'true' if the expression can be pushed down or 'false' otherwise
+ */
 static bool IsExpressionPushable(char *expression) {
 
 	char *open = " \n(";
