@@ -133,3 +133,12 @@ SELECT * FROM t6;
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');
+
+
+/* empty nodetype  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype '')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid nodetype  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');

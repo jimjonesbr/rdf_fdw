@@ -153,3 +153,12 @@ CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');
 ERROR:  unable to parse SPARQL SELECT clause:
 ?s {?s ?p ?o}.
+/* empty nodetype  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype '')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  empty value in option 'nodetype'
+/* invalid nodetype  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid nodetype: 'foo'
+HINT:  this parameter expects node types ('iri' or 'literal')

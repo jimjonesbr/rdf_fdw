@@ -410,7 +410,6 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, enable_pushdown),
 								 errhint("this parameter expects boolean values ('true' or 'false')")));
-
 				}
 
 
@@ -455,10 +454,23 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 				}
 				
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_VARIABLE) == 0)
-				{
-					
+				{	
 					//TODO: check if the SPARQL variable is valid.
+				}
 
+				if(strcmp(opt->optname, RDF_COLUMN_OPTION_NODETYPE) == 0)
+				{
+					if(strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) != 0 &&
+					   strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_LITERAL) != 0)
+					   ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								 errhint("this parameter expects node types ('iri' or 'literal')")));
+				}
+
+				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0)
+				{
+					//TODO: check if the literal type is valid
 				}
 
 				break;
