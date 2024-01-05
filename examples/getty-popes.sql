@@ -36,4 +36,4 @@ SERVER getty OPTIONS (
 
 SELECT * 
 FROM popes
-ORDER BY startyear, endyear
+ORDER BY startyear, endyear;

@@ -13,8 +13,9 @@ OPTIONS (
  */
 
 CREATE FOREIGN TABLE plants (
-  uri text        OPTIONS (variable '?subject',  nodetype 'iri'),
-  label text      OPTIONS (variable '?labelstr', nodetype 'literal', expression 'STR(?label)')
+  uri text    OPTIONS (variable '?subject',  nodetype 'iri'),
+  label text  OPTIONS (variable '?label', nodetype 'literal', language 'en'),
+  lang text   OPTIONS (variable '?lang', expression 'LANG(?label)')
 )
 SERVER agrovoc OPTIONS (
   log_sparql 'true',
@@ -28,13 +29,16 @@ SERVER agrovoc OPTIONS (
     ?subject a skos:Concept . 
     ?subject skos:broader+ <http://aims.fao.org/aos/agrovoc/c_5993> . 
     ?subject skosxl:prefLabel ?xLabel . 
-    ?xLabel skosxl:literalForm ?label . 
-    FILTER (lang(?label)="en") 
+    ?xLabel skosxl:literalForm ?label .
   } 
 '); 
 
+/* 
+ * The WHERE condition will be pushed down in a FILTER expression, and the 
+ * literal will get the language configured in the CREATE TABLE statement
+ */
 SELECT * FROM plants
-ORDER BY label;
+WHERE label = 'chrysanthemums';
 
 /* 
  * The WHERE condition will be pushed down in a FILTER expression, and the 

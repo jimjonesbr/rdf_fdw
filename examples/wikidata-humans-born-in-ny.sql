@@ -4,7 +4,7 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql');
 
 /*
  * Humans born in New York City
- * Author: Wikidata (https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples#Humans_born_in_New_York_City)
+ * Source: Wikidata (https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples#Humans_born_in_New_York_City)
  * 
  * This example highlights the correct way to use the place of birth (P19) property, and by extension the place of death (P20) property. 
  * Place of birth (P19) is the most specific known place of birth. For example, it is known that Donald Trump (Donald Trump (Q22686)) was 
