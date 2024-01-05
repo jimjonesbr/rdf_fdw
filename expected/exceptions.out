@@ -162,3 +162,8 @@ CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid nodetype: 'foo'
 HINT:  this parameter expects node types ('iri' or 'literal')
+/* invalid combination of 'literaltype' and 'language'  */
+CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', language 'es')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid language: 'es'
+HINT:  the parameters 'literaltype' and 'language' cannot be combined

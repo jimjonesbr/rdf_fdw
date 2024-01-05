@@ -108,6 +108,7 @@
 #define RDF_COLUMN_OPTION_NODETYPE "nodetype"
 #define RDF_COLUMN_OPTION_NODETYPE_IRI "iri"
 #define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
+#define RDF_COLUMN_OPTION_LANGUAGE "language"
 
 #define RDF_SPARQL_KEYWORD_FROM "FROM"
 #define RDF_SPARQL_KEYWORD_NAMED "NAMED"
@@ -191,6 +192,7 @@ typedef struct RDFfdwColumn
 	char *expression;            /* Column OPTION 'expression' - SPARQL expression*/
 	char *literaltype;           /* Column OPTION 'type' - literal data type */
 	char *nodetype;              /* Column OPTION 'nodetype' - node data type */
+	char *language;              /* Column OPTION 'language' - RDF language tag for literals */
 	Oid  pgtype;                 /* PostgreSQL data type */
 	int  pgtypmod;               /* PostgreSQL type modifier */
 	int  pgattnum;               /* PostgreSQL attribute number */
@@ -250,6 +252,7 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
+	{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
 	/* EOList option */
 	{NULL, InvalidOid, false, false}
 };
@@ -332,6 +335,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	Oid catalog = PG_GETARG_OID(1);
 	ListCell *cell;
 	struct RDFfdwOption *opt;
+	bool literalatt = false;
 	
 	/* Initialize found state to not found */
 	for (opt = valid_options; opt->optname; opt++)
@@ -471,6 +475,25 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0)
 				{
 					//TODO: check if the literal type is valid
+					if(literalatt)
+						ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+							 errhint("the parameters '%s' and '%s' cannot be combined",RDF_COLUMN_OPTION_LITERALTYPE, RDF_COLUMN_OPTION_LANGUAGE)));
+					
+					literalatt = true;
+
+				}
+
+				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
+				{
+					if(literalatt)
+						ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+							 errhint("the parameters '%s' and '%s' cannot be combined",RDF_COLUMN_OPTION_LITERALTYPE, RDF_COLUMN_OPTION_LANGUAGE)));
+					
+					literalatt = true;
 				}
 
 				break;
@@ -803,7 +826,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 		state->rdfTable->cols[i]->pushable = true;
-		state->rdfTable->cols[i]->literaltype = "";
+		//state->rdfTable->cols[i]->literaltype = "";
+		//state->rdfTable->cols[i]->language = "";
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 
 		foreach (lc, options)
@@ -835,7 +859,14 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 				elog(DEBUG1,"  %s: (%d) adding sparql node data type > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->nodetype = pstrdup(defGetString(def));
 			}
-		
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LANGUAGE) == 0) 
+			{
+				StringInfoData tag;
+				initStringInfo(&tag);
+				appendStringInfo(&tag, "@%s", defGetString(def));
+				elog(DEBUG1,"  %s: (%d) adding literal language tag > '%s'",__func__,i,defGetString(def));
+				state->rdfTable->cols[i]->language = pstrdup(tag.data);
+			}
 		}
 
 		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,rel->rd_att->attrs[i].atttypid);
@@ -1002,7 +1033,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 		if (state->raw_sparql[i] == '}')
 			where_size = i - where_position;
-	}	
+	}
+
 	state->sparql_where = pnstrdup(state->raw_sparql + where_position, where_size);
 
 	/* 
@@ -2065,6 +2097,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 {
 	char *opername, *left, *right, oprkind;
 	char *sparqlvar;
+	char* literalatt = "";
 	Const *constant;
 	OpExpr *oper;
 	ScalarArrayOpExpr *arrayoper;
@@ -2204,6 +2237,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* return NULL if the column is not safe to be pushed down */
 				if(!col->pushable)
 					return NULL;
+				
+				if(col->literaltype)
+					literalatt = col->literaltype;
+
+				if(col->language)
+					literalatt = col->language;
 
 				// if(col->literaltype)
 				// 	appendStringInfo(&literaltype, "^^%s", col->literaltype);
@@ -2225,13 +2264,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					leftargtype == BOOLOID) && rightexpr->type == T_Const)
 				{
 					if(col->expression)
-						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, col->literaltype);
+						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, literalatt);
 					else
 					{
 						if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
 							appendStringInfo(&result, "%s %s IRI(\"%s\")", col->sparqlvar, opername, right);
 						else if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_LITERAL) == 0)
-							appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, col->literaltype);
+							appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, literalatt);
 					}
 				}
 				else
@@ -2394,14 +2433,20 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 					}
 
+					if(col->literaltype)
+						literalatt = col->literaltype;
+
+					if(col->language)
+						literalatt = col->language;
+
 					if (leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID)
-						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, col->literaltype);
+						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, literalatt);
 					else if (leftargtype == DATEOID)
-						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, col->literaltype);
+						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, literalatt);
 					else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, col->literaltype);
+						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, literalatt);
 					else
-						appendStringInfo(&result, "%s%s%s", first_arg ? "" : ", ", c, col->literaltype);
+						appendStringInfo(&result, "%s%s%s", first_arg ? "" : ", ", c, literalatt);
 
 					/* append the argument */
 					first_arg = false;

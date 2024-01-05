@@ -142,3 +142,7 @@ CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype '')
 /* invalid nodetype  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid combination of 'literaltype' and 'language'  */
+CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', language 'es')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
