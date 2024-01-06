@@ -139,10 +139,10 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to the SPARQL variable.    |
-| `language`    | optional        | RDF language tag. This option is necessary for the pushdown feature to properly set the literal language tag in `FILTER` expressions |  
-| `literaltype`        | optional    | Data type of the literal, e.g. `xsd:string`, `xsd:date`, `xsd:dateTime`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions |
+| `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option is necessary for the pushdown feature to properly set the literal language tag in `FILTER` expressions. Set it to `*` to ignore the language tags in `FILTER` espressions.   |  
+| `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:dateTime`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to ignore the literal data types in `FILTER` espressions, which is equivalent to the following SPARQL FILTER express. |
 | `nodetype`  | optional    | Type of the RDF node. Expected values are `literal` or `iri`. This option helps the query planner to optimize SPARQL `FILTER` expressions when the `WHERE` conditions are pushed down (default `literal`)  |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as function calls. Anyone who already has written SPARQL queries containing non-numeric variables in `FILTER` expressions understands that the many literal types and languages can be quite annoying. In this option it is possible, for instance, to get rid of literal types or languages using the SPARQL function `STR()`. All SPARQL functions supported by the data sourcen can be used in this option, such as `LANG`, `CONCAT`, `STRSTARTS`, `STRBEFORE`, etc. |
+| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). All functions supported by the data source can be used in this option. |
 
 
 The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. SELECT queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
@@ -309,11 +309,11 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE politicians (
-  uri text        OPTIONS (variable '?person', nodetype 'iri'),
+  uri text        OPTIONS (variable '?person',     nodetype 'iri'),
   name text       OPTIONS (variable '?personname', nodetype 'literal', literaltype 'xsd:string'),
-  birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
-  party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
-  country text    OPTIONS (variable '?country', expression 'STR(?country)', nodetype 'literal')
+  birthdate date  OPTIONS (variable '?birthdate',  nodetype 'literal', literaltype 'xsd:date'),
+  party text      OPTIONS (variable '?partyname',  nodetype 'literal', literaltype 'xsd:string'),
+  country text    OPTIONS (variable '?country',    nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -344,7 +344,7 @@ In the following SQL query we can observe that:
 * the conditions in the SQL `WHERE` clause were pushed down as SPARQL `FILTER` conditions.
 * the SQL `ORDER BY` clause was pushed down as SPARQL `ORDER BY`.
 * the `FETCH FIRST ... ROWS ONLY` was pushed down as SPARQL `LIMIT`
-* the column `country` has no `literaltype` OPTION, since it already contain an `expression` with a `STR()` call that evaluates the literal without an explict type - the literal has no data type in source.
+* the column `country` has a `language` option, and its value is used as a language tag in the SPARQL expression: `FILTER(?country IN ("Germany"@en, "France"@en))`
 
 ```sql
 SELECT name, birthdate, party
@@ -355,13 +355,12 @@ WHERE
   party <> ''
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-
 NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?personname ?birthdate ?partyname (STR(?country) AS ?country) 
+SELECT ?personname ?birthdate ?partyname ?country 
 {
       ?person 
           a dbo:Politician;
@@ -373,7 +372,7 @@ SELECT ?personname ?birthdate ?partyname (STR(?country) AS ?country)
           rdfs:label ?partyname .
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
-       FILTER(STR(?country) IN ("Germany", "France"))
+       FILTER(?country IN ("Germany"@en, "France"@en))
  FILTER(?birthdate > "1995-12-31"^^xsd:date)
  FILTER(?partyname != ""^^xsd:string)
 }
@@ -444,7 +443,8 @@ SERVER getty OPTIONS (
 In the following SQL query we can observe that: 
 
 * the executed SPARQL query was logged.
-* All conditions were applied locally (`rdf_fdw` currently does not support sub selects).
+* all conditions were applied locally (`rdf_fdw` currently does not support sub selects).
+* the columns of the FOREIGN TABLE have only the required option `variable`, as the other options are only necessary for the pushdown feature.
 
 ```sql
 SELECT name, bio, birth
@@ -506,31 +506,30 @@ OPTIONS (
 
 
 CREATE FOREIGN TABLE artists (
-  id text          OPTIONS (variable '?person', nodetype 'iri'),
-  name text        OPTIONS (variable '?name', nodetype 'literal'),
+  id text          OPTIONS (variable '?person',  nodetype 'iri'),
+  name text        OPTIONS (variable '?name',    nodetype 'literal'),
   itemid text      OPTIONS (variable '?created', nodetype 'iri'),
-  title text       OPTIONS (variable '?title', nodetype 'literal', literaltype 'xsd:string'),
-  description text OPTIONS (variable '?description', nodetype 'literal')
+  title text       OPTIONS (variable '?title',   nodetype 'literal'),
+  description text OPTIONS (variable '?descr',   nodetype 'literal')
 )
 SERVER bbc OPTIONS (
   log_sparql 'true',
   sparql '
-  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
   PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
   PREFIX dcterms: <http://purl.org/dc/terms/>
-  PREFIX bibo: <http://purl.org/ontology/bibo/>
-  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+  PREFIX bibo:    <http://purl.org/ontology/bibo/>
+  PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
 
-  SELECT ?person ?name ?created ?title ?description 
-  WHERE 
+  SELECT *
   {
     ?person a foaf:Person ;
       foaf:name ?name ;
       blterms:hasCreated ?created .
     ?created a bibo:Book ;
       dcterms:title ?title ;
-    dcterms:description ?description
-} 
+    dcterms:description ?descr
+  } 
 '); 
 ```
 
@@ -545,28 +544,31 @@ In the following SQL query we can observe that:
 SELECT DISTINCT title, description 
 FROM artists
 WHERE name = 'John Lennon';
+
 NOTICE:  SPARQL query sent to 'https://lod.openlinksw.com/sparql':
 
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
  PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
  PREFIX dcterms: <http://purl.org/dc/terms/>
- PREFIX bibo: <http://purl.org/ontology/bibo/>
- PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ PREFIX bibo:    <http://purl.org/ontology/bibo/>
+ PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
 
-SELECT DISTINCT ?name ?title ?description 
+SELECT DISTINCT ?name ?title ?descr 
 {
     ?person a foaf:Person ;
       foaf:name ?name ;
       blterms:hasCreated ?created .
     ?created a bibo:Book ;
       dcterms:title ?title ;
-    dcterms:description ?description
- FILTER(?name = "John Lennon")
+    dcterms:description ?descr
+   FILTER(?name = "John Lennon")
 }
-ORDER BY  ASC (?title)  ASC (?description)
+ORDER BY  ASC (?title)  ASC (?descr)
 
-                            title                             |                                                                      description                                                                      
---------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------
+                            title                             |                                                                      description                                
+                                      
+--------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------
+--------------------------------------
  Sometime in New York City                                    | Limited ed. of 3500 copies.
  All you need is love                                         | Originally published: 2019.
  The John Lennon letters                                      | Originally published: London: Weidenfeld &amp; Nicolson, 2012.
@@ -577,11 +579,14 @@ ORDER BY  ASC (?title)  ASC (?description)
  More Beatles hits arranged for ukulele                       | Publishers no.: NO91245.
  The John Lennon letters                                      | Originally published: 2012.
  Imagine John Yoko                                            | Includes numbered officially stamped giclée print in clothbound portfolio case.
- Last interview : all we are saying, John Lennon and Yoko Ono | Previous ed.: published as The Playboy interviews with John Lennon and Yoko Ono. New York: Playboy Press, 1981; Sevenoaks: New English Library, 1982.
- John Lennon : drawings, performances, films                  | Published in conjunction with the exhibition "The art of John Lennon: drawings, performances, films", Kunsthalle Bremen, 21 May to 13 August 1995.
+ Last interview : all we are saying, John Lennon and Yoko Ono | Previous ed.: published as The Playboy interviews with John Lennon and Yoko Ono. New York: Playboy Press, 1981; 
+Sevenoaks: New English Library, 1982.
+ John Lennon : drawings, performances, films                  | Published in conjunction with the exhibition "The art of John Lennon: drawings, performances, films", Kunsthalle
+ Bremen, 21 May to 13 August 1995.
  John Lennon in his own write                                 | Originally published in Great Britain in1964 by Johnathan Cape.
  Sometime in New York City                                    | In box.
- Imagine John Yoko                                            | "This edition is limited to 2,000 copies worldwide, numbered 1-2,000, plus 10 copies retained by the artist, inscribed i-x"--Container.
+ Imagine John Yoko                                            | "This edition is limited to 2,000 copies worldwide, numbered 1-2,000, plus 10 copies retained by the artist, ins
+cribed i-x"--Container.
  Last interview : all we are saying, John Lennon and Yoko Ono | This ed. originally published: London: Sidgwick &amp; Jackson, 2000.
  Imagine John Yoko                                            | Includes index.
  Sometime in New York City                                    | Includes index.
@@ -593,6 +598,7 @@ ORDER BY  ASC (?title)  ASC (?description)
  John Lennon in his own write ; and a Spaniard in the works   | Originally published: 1965.
  Lennon on Lennon : conversations with John Lennon            | "This edition published by arrangement with Chicago Review Press"--Title page verso.
 (25 rows)
+
 ```
 
 ### [Wikidata](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#wikidata)
@@ -664,15 +670,15 @@ LIMIT 10
                wikidata_id                |      label      |                wkt                 
 ------------------------------------------+-----------------+------------------------------------
  http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | Point(-133.03 69.43)
+ http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | Point(-1.842397 47.798252)
  http://www.wikidata.org/entity/Q403083   | Ahyi            | Point(145.033333333 20.416666666)
  http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | Point(25.407 29.228419444)
  http://www.wikidata.org/entity/Q2888647  | Petza'el        | Point(35.442222222 32.044166666)
  http://www.wikidata.org/entity/Q2888816  | Gilgal          | Point(35.44440556 31.99966944)
  http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | Point(-101.581388888 19.676944444)
- http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | Point(-1.842397 47.798252)
  http://www.wikidata.org/entity/Q31796546 | Sahl al ‘Awjā'  | Point(35.464722222 31.957777777)
- http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | Point(35.43298 31.87073)
  http://www.wikidata.org/entity/Q2889475  | Na'aran         | Point(35.454338888 31.966872222)
+ http://www.wikidata.org/entity/Q55112853 | Ansdell Library | Point(-2.991656 53.743795)
 (10 rows)
 ```
 

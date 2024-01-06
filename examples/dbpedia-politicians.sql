@@ -12,7 +12,7 @@ CREATE FOREIGN TABLE politicians (
   name text       OPTIONS (variable '?personname', nodetype 'literal', literaltype 'xsd:string'),
   birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
   party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
-  country text    OPTIONS (variable '?country', expression 'STR(?country)', nodetype 'literal')
+  country text    OPTIONS (variable '?country', nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',

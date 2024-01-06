@@ -10,7 +10,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 CREATE FOREIGN TABLE dbpedia_resource (
   uri text           OPTIONS (variable '?uri', nodetype 'iri'),
   property_uri text  OPTIONS (variable '?propuri', nodetype 'literal'),
-  property text      OPTIONS (variable '?label', nodetype 'literal', expression 'STR(?proplabel)'),
+  property text      OPTIONS (variable '?label', nodetype 'literal', language '*'),
   value text         OPTIONS (variable '?val', nodetype 'literal')
 )
 SERVER dbpedia OPTIONS (
@@ -23,7 +23,6 @@ SERVER dbpedia OPTIONS (
     ?propuri rdfs:label ?proplabel .
     FILTER(!isIRI(?val))
     FILTER(LANG(?val) = "en" || LANG(?val) = "")
-    FILTER(LANG(?proplabel) = "en")
   } 
 ');
 
