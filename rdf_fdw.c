@@ -288,6 +288,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
+static bool ContainsWhitespaces(char *str);
 static char *DeparseDate(Datum datum);
 static char *DeparseTimestamp(Datum datum, bool hasTimezone);
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
@@ -335,7 +336,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	Oid catalog = PG_GETARG_OID(1);
 	ListCell *cell;
 	struct RDFfdwOption *opt;
-	bool literalatt = false;
+	bool hasliteralatt = false;
 	
 	/* Initialize found state to not found */
 	for (opt = valid_options; opt->optname; opt++)
@@ -473,27 +474,38 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 				}
 
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0)
-				{
-					//TODO: check if the literal type is valid
-					if(literalatt)
+				{				
+					if(hasliteralatt)
 						ereport(ERROR,
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
 							 errhint("the parameters '%s' and '%s' cannot be combined",RDF_COLUMN_OPTION_LITERALTYPE, RDF_COLUMN_OPTION_LANGUAGE)));
 					
-					literalatt = true;
+					hasliteralatt = true;
+
+					if(ContainsWhitespaces(defGetString(def)))
+						ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+							errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LITERALTYPE)));
 
 				}
 
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
 				{
-					if(literalatt)
+					if(hasliteralatt)
 						ereport(ERROR,
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
 							 errhint("the parameters '%s' and '%s' cannot be combined",RDF_COLUMN_OPTION_LITERALTYPE, RDF_COLUMN_OPTION_LANGUAGE)));
 					
-					literalatt = true;
+					hasliteralatt = true;
+
+					if(ContainsWhitespaces(defGetString(def)))
+						ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+							errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LANGUAGE)));
 				}
 
 				break;
@@ -2270,7 +2282,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
 							appendStringInfo(&result, "%s %s IRI(\"%s\")", col->sparqlvar, opername, right);
 						else if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_LITERAL) == 0)
-							appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, literalatt);
+						{
+							if(strcmp(literalatt,"@*") == 0)
+								appendStringInfo(&result, "STR(%s) %s \"%s\"", col->sparqlvar, opername, right);
+							else
+								appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, literalatt);
+						}
 					}
 				}
 				else
@@ -2905,4 +2922,13 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 
 	return limit_clause.data;
 
+}
+
+static bool ContainsWhitespaces(char *str)
+{
+	for (int i = 0; str[i] != '\0'; i++)	
+		if (isspace((unsigned char)str[i]))
+			return true;
+			
+	return false;
 }

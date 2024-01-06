@@ -162,6 +162,16 @@ CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid nodetype: 'foo'
 HINT:  this parameter expects node types ('iri' or 'literal')
+/* invalid literaltype - contains whitespaces  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', literaltype ' xsd:string')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid literaltype: ' xsd:string'
+HINT:  whitespaces are not allwoed in 'literaltype' option
+/* invalid language - contains whitespaces  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', language 'de ')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid language: 'de '
+HINT:  whitespaces are not allwoed in 'language' option
 /* invalid combination of 'literaltype' and 'language'  */
 CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', language 'es')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');

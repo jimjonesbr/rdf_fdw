@@ -134,13 +134,20 @@ SELECT * FROM t6;
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');
 
-
 /* empty nodetype  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype '')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 
 /* invalid nodetype  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid literaltype - contains whitespaces  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', literaltype ' xsd:string')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid language - contains whitespaces  */
+CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', language 'de ')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 
 /* invalid combination of 'literaltype' and 'language'  */

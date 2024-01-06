@@ -12,7 +12,7 @@ OPTIONS (
 
 CREATE FOREIGN TABLE film (
   film_id text    OPTIONS (variable '?film'),
-  name text       OPTIONS (variable '?name', expression 'STR(?name)'),
+  name text       OPTIONS (variable '?name', language 'en'),
   released date   OPTIONS (variable '?released', literaltype 'xsd:date'),
   runtime int     OPTIONS (variable '?runtime'),
   abstract text   OPTIONS (variable '?abstract')
@@ -142,10 +142,10 @@ WHERE
 
   CREATE FOREIGN TABLE politicians (
   uri text        OPTIONS (variable '?person'),
-  name text       OPTIONS (variable '?personname'),
+  name text       OPTIONS (variable '?personname', language 'en'),
   birthdate date  OPTIONS (variable '?birthdate', literaltype 'xsd:date'),
   party text      OPTIONS (variable '?partyname'),
-  country text    OPTIONS (variable '?countryname', expression 'STR(?country)')
+  country text    OPTIONS (variable '?country', language 'en')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -716,7 +716,7 @@ LIMIT 10;
  * Test SPARQL containing multiple FROM clauses
  */
 CREATE FOREIGN TABLE generic_rdf_table (
-  uri text   OPTIONS (variable '?s', expression 'STR(?s)'),
+  uri text   OPTIONS (variable '?s', nodetype 'iri'),
   name text  OPTIONS (variable '?o')  
 )
 SERVER dbpedia OPTIONS (
@@ -745,7 +745,7 @@ LIMIT 10;
  * Test SPARQL containing a FROM clause
  */
 CREATE FOREIGN TABLE generic_rdf_table2 (
-  uri text   OPTIONS (variable '?uri', expression 'STR(?s)'),
+  uri text   OPTIONS (variable '?s', nodetype 'iri'),
   name text  OPTIONS (variable '?o')  
 )
 SERVER dbpedia OPTIONS (
@@ -770,7 +770,7 @@ LIMIT 10;
  * Test SPARQL containing FROM and FROM NAMED clauses
  */
 CREATE FOREIGN TABLE generic_rdf_table3 (
-  uri text   OPTIONS (variable '?uri', expression 'STR(?s)'),
+  uri text   OPTIONS (variable '?s', nodetype 'iri'),
   name text  OPTIONS (variable '?o')  
 )
 SERVER dbpedia OPTIONS (
@@ -795,7 +795,7 @@ LIMIT 10;
 
 
 CREATE FOREIGN TABLE generic_rdf_table4 (
-  uri text   OPTIONS (variable '?s', expression 'STR(?s)'),
+  uri text   OPTIONS (variable '?s', nodetype 'iri'),
   name text  OPTIONS (variable '?o')  
 )
 SERVER dbpedia OPTIONS (

@@ -129,8 +129,8 @@ LIMIT 5
  */
 CREATE FOREIGN TABLE european_countries (
   uri text       OPTIONS (variable '?country', literaltype 'xsd:string'),
-  label text     OPTIONS (variable '?label', expression 'STR(?countryLabel)'),
-  nativename text OPTIONS (variable '?label2', expression 'STR(?nativename)', literaltype 'xsd:string'),
+  label text     OPTIONS (variable '?label', literaltype '*'),
+  nativename text OPTIONS (variable '?nativename', language '*'),  
   len_label int  OPTIONS (variable '?len', expression 'STRLEN(?nativename)'),
   uname text     OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
   lname text     OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
@@ -182,7 +182,7 @@ ORDER by language;
 NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
-SELECT ?country (STR(?countryLabel) AS ?label) (STRLEN(?nativename) AS ?len) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?base) (STRAFTER(STR(?country),"entity/") AS ?qid) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) ("2002-03-08"^^xsd:date AS ?dt) ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) (STRSTARTS(STR(?country),"http") AS ?bt) (STRENDS(STR(?country),"http") AS ?bf) 
+SELECT ?country ?label (STRLEN(?nativename) AS ?len) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?base) (STRAFTER(STR(?country),"entity/") AS ?qid) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) ("2002-03-08"^^xsd:date AS ?dt) ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) (STRSTARTS(STR(?country),"http") AS ?bt) (STRENDS(STR(?country),"http") AS ?bf) 
 {
     wd:Q458 wdt:P150 ?country.   
     OPTIONAL { ?country wdt:P1705 ?nativename }
@@ -219,12 +219,12 @@ WHERE nativename = 'Luxembourg';
 NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
-SELECT ?country (STR(?nativename) AS ?label2) 
+SELECT ?country ?nativename 
 {
     wd:Q458 wdt:P150 ?country.   
     OPTIONAL { ?country wdt:P1705 ?nativename }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-   FILTER(STR(?nativename) = "Luxembourg"^^xsd:string)
+   FILTER(STR(?nativename) = "Luxembourg")
 }
 
                 uri                 | nativename 

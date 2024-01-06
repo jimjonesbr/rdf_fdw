@@ -79,8 +79,8 @@ FETCH FIRST 5 ROWS ONLY;
  */
 CREATE FOREIGN TABLE european_countries (
   uri text       OPTIONS (variable '?country', literaltype 'xsd:string'),
-  label text     OPTIONS (variable '?label', expression 'STR(?countryLabel)'),
-  nativename text OPTIONS (variable '?label2', expression 'STR(?nativename)', literaltype 'xsd:string'),
+  label text     OPTIONS (variable '?label', literaltype '*'),
+  nativename text OPTIONS (variable '?nativename', language '*'),  
   len_label int  OPTIONS (variable '?len', expression 'STRLEN(?nativename)'),
   uname text     OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
   lname text     OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
