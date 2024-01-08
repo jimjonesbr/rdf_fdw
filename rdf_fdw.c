@@ -137,6 +137,14 @@
 			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
 			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID)
 
+/* list API has changed in v13 */
+#if PG_VERSION_NUM < 130000
+#define list_next(l, e) lnext((e))
+#define do_each_cell(cell, list, element) for_each_cell(cell, (element))
+#else
+#define list_next(l, e) lnext((l), (e))
+#define do_each_cell(cell, list, element) for_each_cell(cell, (list), (element))
+#endif  /* PG_VERSION_NUM */
 
 PG_MODULE_MAGIC;
 
@@ -2107,8 +2115,7 @@ static char *DeparseTimestamp(Datum datum, bool hasTimezone)
  */
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
-	char *opername, *left, *right, oprkind;
-	char *sparqlvar;
+	char *arg, *opername, *left, *right, oprkind;
 	char* literalatt = "";
 	Const *constant;
 	OpExpr *oper;
@@ -2118,8 +2125,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	StringInfoData result;
 	Oid leftargtype, rightargtype, schema;
 	int index;
-	StringInfoData alias;
-	//StringInfoData literaltype;
 	ArrayExpr *array;
 	ArrayCoerceExpr *arraycoerce;
 	Expr *rightexpr;
@@ -2127,6 +2132,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	ArrayIterator iterator;
 	Datum datum;
 	ListCell *cell;
+	BooleanTest *btest;
 	struct RDFfdwColumn *col = (struct RDFfdwColumn *) palloc0(sizeof(struct RDFfdwColumn));
 
 	elog(DEBUG1, "%s called > %u", __func__, expr->type);
@@ -2158,31 +2164,28 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		break;
 	case T_Var:
 		variable = (Var *)expr;
+
+		if(variable->vartype == BOOLOID)
+			return NULL;
+
 		index = state->numcols - 1;
 
 		while (index >= 0 && state->rdfTable->cols[index]->pgattnum != variable->varattno)
 			--index;
 
-		/* if no foreign table column corresponds, translate as NULL */
+		/* if no foreign table column is found, return NULL */
 		if (index == -1)
-		{
-			initStringInfo(&result);
-			appendStringInfo(&result, "NULL");
-			break;
-		}
+			return NULL;
 
 		initStringInfo(&result);
-		/* qualify with an alias based on the range table index */
-		initStringInfo(&alias);
+		appendStringInfo(&result, "%s", state->rdfTable->cols[index]->name);
 
-		appendStringInfo(&result, "%s%s", alias.data, state->rdfTable->cols[index]->name);
+		elog(DEBUG1, "  %s: T_Var -> index = %d result = %s", __func__, index, state->rdfTable->cols[index]->name);
 
-		elog(DEBUG1, "  %s T_Var -> index = %d result = %s", __func__, index, state->rdfTable->cols[index]->name);
 		break;
-	case T_OpExpr:		
+	case T_OpExpr:
 		oper = (OpExpr *)expr;
 		initStringInfo(&result);
-//		initStringInfo(&literaltype);
 
 		tuple = SearchSysCache1(OPEROID, ObjectIdGetDatum(oper->opno));
 		if (!HeapTupleIsValid(tuple))
@@ -2238,8 +2241,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (right == NULL)
 					return NULL;
 
-				//initStringInfo(&result);
-
 				col = GetRDFColumn(state, left);
 
 				/* if the sparql variable cannot be found, there is no point in keep going */
@@ -2250,20 +2251,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if(!col->pushable)
 					return NULL;
 				
+				/* set the corresponding literal language tag or data type, if any */
 				if(col->literaltype)
 					literalatt = col->literaltype;
-
-				if(col->language)
+				else if(col->language)
 					literalatt = col->language;
-
-				// if(col->literaltype)
-				// 	appendStringInfo(&literaltype, "^^%s", col->literaltype);
-				/* 
-				 * if the column contains an 'expression' it is not safe to push it down.
-				 * as it might contain function calls that are invalid in FILTER conditions
-				 */
-				// if(col->expression)
-				// 	return NULL;
 
 				if ((leftargtype == TEXTOID || 
 				    leftargtype == VARCHAROID || 
@@ -2272,8 +2264,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					leftargtype == DATEOID ||
 					leftargtype == TIMESTAMPOID ||
 					leftargtype == TIMESTAMPTZOID ||
-					leftargtype == NAMEOID ||
-					leftargtype == BOOLOID) && rightexpr->type == T_Const)
+					leftargtype == NAMEOID) && rightexpr->type == T_Const)
 				{
 					if(col->expression)
 						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, literalatt);
@@ -2311,6 +2302,107 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		break;
+	case T_BooleanTest:
+		btest = (BooleanTest *) expr;
+
+		if(btest->arg->type != T_Var)
+			return NULL;
+
+		variable = (Var *) btest->arg;
+
+		index = state->numcols - 1;
+		while (index >= 0 && state->rdfTable->cols[index]->pgattnum != variable->varattno)
+			--index;
+		
+		arg = state->rdfTable->cols[index]->name;
+
+		if (arg == NULL)
+			return NULL;
+
+		col = GetRDFColumn(state, arg);
+
+		if(!col)
+			return NULL;
+
+		if(!col->pushable)
+			return NULL;
+
+		initStringInfo(&result);
+
+		switch (btest->booltesttype)
+		{
+			case IS_TRUE:
+				appendStringInfo(&result, "%s = \"true\"%s",
+					col->expression ? col->expression : col->sparqlvar,
+					col->literaltype ? col->literaltype : "");
+				break;
+			case IS_NOT_TRUE:
+				appendStringInfo(&result, "%s != \"true\"%s",
+					col->expression ? col->expression : col->sparqlvar,
+					col->literaltype ? col->literaltype : "");
+				break;
+			case IS_FALSE:
+				appendStringInfo(&result, "%s = \"false\"%s",
+					col->expression ? col->expression : col->sparqlvar,
+					col->literaltype ? col->literaltype : "");
+				break;
+			case IS_NOT_FALSE:
+				appendStringInfo(&result, "%s != \"false\"%s", 
+					col->expression ? col->expression : col->sparqlvar,
+					col->literaltype ? col->literaltype : "");
+				break;
+			default:
+				return NULL;
+		}
+
+		break;
+	// case T_BoolExpr:
+	// 	boolexpr = (BoolExpr *)expr;
+
+	// 	arg = DeparseExpr(state, foreignrel, linitial(boolexpr->args));
+
+	// 	if (arg == NULL)
+	// 		return NULL;
+
+	// 	col = GetRDFColumn(state, arg);
+
+	// 	if(!col)
+	// 		return NULL;
+	// 	// 	literalatt = col->literaltype;
+			
+	// 	initStringInfo(&result);
+
+	// 	if(col->expression)
+	// 		appendStringInfo(&result, "%s",col->expression);
+	// 	else
+	// 		appendStringInfo(&result, "%s",col->sparqlvar);
+
+	// 	// appendStringInfo(&result, "(%s%s",
+	// 	// 		boolexpr->boolop == NOT_EXPR ? "NOT " : "",
+	// 	// 		arg);
+		
+	// 	do_each_cell(cell, boolexpr->args, list_next(boolexpr->args, list_head(boolexpr->args)))
+	// 	{
+	// 		arg = DeparseExpr(state, foreignrel, (Expr *)lfirst(cell));
+	// 		if (arg == NULL)
+	// 		{
+	// 			pfree(result.data);				
+	// 			return NULL;
+	// 		}
+
+	// 		appendStringInfo(&result, " %s %s",
+	// 				boolexpr->boolop == AND_EXPR ? "&&" : "||",
+	// 				arg);
+	// 	}
+
+	// 	if(boolexpr->boolop == NOT_EXPR)
+	// 		appendStringInfo(&result, " = \"false\"%s", col->literaltype ? col->literaltype : "");
+	// 	else
+	// 		appendStringInfo(&result, " = \"true\"%s", col->literaltype ? col->literaltype : "");
+
+	// 	//appendStringInfo(&result, ")");
+		
+	// 	break;
 	case T_ScalarArrayOpExpr:		
 		arrayoper = (ScalarArrayOpExpr *)expr;
 		
@@ -2340,73 +2432,19 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (left == NULL)
 			return NULL;
 
-		initStringInfo(&result);
-		//initStringInfo(&literaltype);
-
-		sparqlvar = (GetRDFColumn(state, left))->sparqlvar;
-
 		col = GetRDFColumn(state, left);
+		if(!col)
+			return NULL;
+
+		if(!col->pushable)
+			return NULL;
+
+		initStringInfo(&result);
 
 		if (strcmp(opername, "=") == 0)
-			if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID))
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s IN (", sparqlvar);
-			}
-			else if (leftargtype == DATEOID)
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s IN (", sparqlvar);
-			}
-			else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s IN (", sparqlvar);
-			}
-			else
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s IN (", sparqlvar);
-
-			}
+			appendStringInfo(&result, "%s IN (", !col->expression ? col->sparqlvar : col->expression);
 		else
-			if ((leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID))
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s NOT IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
-			}
-			else if (leftargtype == DATEOID)
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s NOT IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
-			}
-			else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s NOT IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
-			}	
-			else
-			{
-				if(col->pushable && col->expression)
-					appendStringInfo(&result, "%s NOT IN (", col->expression);
-				else
-					appendStringInfo(&result, "%s NOT IN (", sparqlvar);
-			}
-				
+			appendStringInfo(&result, "%s NOT IN (", !col->expression ? col->sparqlvar : col->expression);
 
 		/* the second (=last) argument can be Const, ArrayExpr or ArrayCoerceExpr */
 		rightexpr = (Expr *)llast(arrayoper->args);
@@ -2456,14 +2494,19 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					if(col->language)
 						literalatt = col->language;
 
-					if (leftargtype == TEXTOID || leftargtype == VARCHAROID || leftargtype == CHAROID || leftargtype == NAMEOID)
-						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, literalatt);
-					else if (leftargtype == DATEOID)
-						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, literalatt);
-					else if (leftargtype == TIMESTAMPOID || leftargtype == TIMESTAMPTZOID)
-						appendStringInfo(&result, "%s\"%s\"%s", first_arg ? "" : ", ", c, literalatt);
+					if (leftargtype == TEXTOID ||
+					    leftargtype == VARCHAROID ||
+						leftargtype == CHAROID ||
+						leftargtype == NAMEOID ||
+						leftargtype == BOOLOID ||
+						leftargtype == DATEOID ||
+						leftargtype == TIMESTAMPOID ||
+						leftargtype == TIMESTAMPTZOID)
+						appendStringInfo(&result, "%s\"%s\"%s",
+							first_arg ? "" : ", ", c, literalatt);
 					else
-						appendStringInfo(&result, "%s%s%s", first_arg ? "" : ", ", c, literalatt);
+						appendStringInfo(&result, "%s%s%s",
+							first_arg ? "" : ", ", c, literalatt);
 
 					/* append the argument */
 					first_arg = false;
@@ -2924,6 +2967,15 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 
 }
 
+/*
+ * ContainsWhitespaces
+ * ---------------
+ * Checks if a string contains whitespaces
+ * 
+ * str: string to be evaluated
+ * 
+ * returns true if the string contains whitespaces or false otherwise
+ */
 static bool ContainsWhitespaces(char *str)
 {
 	for (int i = 0; str[i] != '\0'; i++)	

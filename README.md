@@ -138,7 +138,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to the SPARQL variable.    |
+| `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to a SPARQL variable used in the table option `sparql`.    |
 | `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). All functions supported by the data source can be used in this option. |
 | `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option is necessary for the pushdown feature to properly set the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` espressions ignore language tags when comparing literals.   |  
 | `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:dateTime`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` espressions ignore data types when comparing literals. |
@@ -270,11 +270,12 @@ The `rdf_fdw` will attempt to translate RDF literals to the data type of the map
 
 #### Supported Data Types and Operators
 
-| Data type                                                  | Supported operator                    |
+| Data type                                                  | Operator                              |
 |------------------------------------------------------------|---------------------------------------|
-| `text`, `varchar`                                          | `=`                                   |
+| `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`                       |
 | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
 | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
+| `boolean`                                                  | `IS`, `IS NOT`                        |
 
 #### IN and ANY constructs
 
@@ -282,19 +283,42 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 ### Pushdown Examples
 
-| SQL                                                   | SPARQL |
-|-------------------------------------------------------|--------|
-| `name = 'foo'`                                        |  `FILTER(?s = "foo")`      |
-| `name <> 'foo'`                                       |  `FILTER(?s != "foo")`      |
-| `runtime > 42 `                                       |  `FILTER(?runtime > 42)`      |
-| `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`      |
-| `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`      |
-| `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`      |
-| `modified < '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified < "2021-04-06T14:07:00.260000"^^xsd:dateTime)`      |
-| `country IN ('Germany','France','Portugal')`          |  `FILTER(?country IN ("Germany"^^xsd:string, "France"^^xsd:string, "Portugal"^^xsd:string))`      |
-| `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany", "France", "Portugal"))`      |
-| `country = ANY(ARRAY['Germany','France','Portugal'])` |  `FILTER(?country IN ("Germany", "France", "Portugal"))`      |
+ Foreign table columns with `literaltype`
 
+| PostgreSQL Type  | Literay Type   | SQL                                                   | SPARQL                                                                                         |
+|------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
+| `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |
+| `int`            | `xsd:integer`  | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`                                                                       |
+| `int`            | `xsd:integer`  | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`                                                                       |
+| `numeric`        | -              | `val >= 42.73`                                        |  `FILTER(?val >= 42.73)`                                                                       |
+| `date`           | `xsd:date`     | `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`     |
+| `timestamp`      | `xsd:dateTime` | `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |
+| `timestamp`      | `xsd:dateTime` | `modified < '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified < "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |
+| `text`           | `xsd:string`   | `country IN ('Germany','France','Portugal')`          |  `FILTER(?country IN ("Germany"^^xsd:string, "France"^^xsd:string, "Portugal"^^xsd:string))`   |
+| `varchar`        | -              | `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany", "France", "Portugal"))`                                   |
+| `name`           | -              | `country = ANY(ARRAY['Germany','France','Portugal'])` |  `FILTER(?country IN ("Germany", "France", "Portugal"))`                                       |
+| `boolean`        | `xsd:boolean`  | `bnode IS TRUE`                                       |  `FILTER(?node = "true"^^xsd:boolean)`                                                         |
+| `boolean`        | `xsd:boolean`  | `bnode IS NOT TRUE`                                   |  `FILTER(?node != "true"^^xsd:boolean)`                                                        |
+| `boolean`        | `xsd:boolean`  | `bnode IS FALSE`                                      |  `FILTER(?node = "false"^^xsd:boolean)`                                                        |
+| `boolean`        | `xsd:boolean`  | `bnode IS NOT FALSE`                                  |  `FILTER(?node != "false"^^xsd:boolean)`                                                       |
+
+Foreign table columns with `language`
+ 
+| PostgreSQL Type  | Language Tag   | SQL                                                   | SPARQL                                                                                         |
+|------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| `text`           | `en`           | `name = 'foo'`                                        |  `FILTER(?s = "foo"@en)`                                                                       |
+| `name`           | `de`           | `name <> 'foo'`                                       |  `FILTER(?s != "foo"@de)`                                                                      |
+| `varchar`        | `en`           | `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany"@en, "France"@en, "Portugal"@en))`                          |
+| `text`           | `*`            | `name = 'foo'`                                        |  `FILTER(STR(?s) = "foo")`                                                                     |
+
+Foreign table columns with `expression`
+ 
+| PostgreSQL Type  | Expression                        | Literal Type | SQL                 | SPARQL                                                                                         |
+|------------------|-----------------------------------|--------------|---------------------|------------------------------------------------------------------------------------------------|
+| `boolean`        | `STRSTARTS(STR(?country),"https")`| `xsd:boolean`|`bnode IS TRUE`      |  `FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)`                               |
+| `int`            | `STRLEN(?variable)`               | `xsd:integer`|`strlen > 10`        |  `FILTER(STRLEN(?variable) > 10)`                                                              |
+| `text`           | `UCASE(?variable)`                | -            |`uname = 'FOO'`      |  `FILTER(UCASE(?variable) = "FOO")`                                                            |
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
 
