@@ -81,17 +81,17 @@ CREATE FOREIGN TABLE european_countries (
   uri text        OPTIONS (variable '?country', literaltype 'xsd:string'),
   label text      OPTIONS (variable '?label', literaltype '*'),
   nativename name OPTIONS (variable '?nativename', language '*'),
-  len_label int   OPTIONS (variable '?len', expression 'STRLEN(?nativename)'),
+  len_label int   OPTIONS (variable '?1len2', expression 'STRLEN(?nativename)'),
   uname text      OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
   lname text      OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
   language text   OPTIONS (variable '?language', expression 'LANG(?nativename)', literaltype 'xsd:string'),
-  base_url text   OPTIONS (variable '?base', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'xsd:string'),
-  qid text        OPTIONS (variable '?qid', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'xsd:string'),
+  base_url text   OPTIONS (variable '?b4se', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'xsd:string'),
+  qid text        OPTIONS (variable '?q1d', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'xsd:string'),
   ctlang text     OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))'),
-  dt date         OPTIONS (variable '?dt', expression '"2002-03-08"^^xsd:date', literaltype 'xsd:date'),
+  dt date         OPTIONS (variable '?det', expression '"2002-03-08"^^xsd:date', literaltype 'xsd:date'),
   ts timestamp    OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'xsd:dateTime'),
-  bt boolean      OPTIONS (variable '?bt', expression 'STRSTARTS(STR(?country),"http")', literaltype 'xsd:boolean'),
-  bf boolean      OPTIONS (variable '?bf', expression 'STRENDS(STR(?country),"http")', literaltype 'xsd:boolean')
+  bt boolean      OPTIONS (variable '?but', expression 'STRSTARTS(STR(?country),"http")', literaltype 'xsd:boolean'),
+  bf boolean      OPTIONS (variable '?buf', expression 'STRENDS(STR(?country),"http")', literaltype 'xsd:boolean')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',

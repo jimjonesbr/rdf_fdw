@@ -177,3 +177,28 @@ CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', langu
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid language: 'es'
 HINT:  the parameters 'literaltype' and 'language' cannot be combined
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t9 (s text OPTIONS (variable 's', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid variable: 's'
+HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t10 (s text OPTIONS (variable '?a-z', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid variable: '?a-z'
+HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t11 (s text OPTIONS (variable '?a$z', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid variable: '?a$z'
+HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t12 (s text OPTIONS (variable '?a?z', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid variable: '?a?z'
+HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t13 (s text OPTIONS (variable ' ?a', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid variable: ' ?a'
+HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.

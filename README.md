@@ -138,10 +138,10 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to a SPARQL variable used in the table option `sparql`.    |
+| `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` - the `?` or `$` is not part of the variable name -, and the name must be a string with the following characters:  `[a-z]`, `[A-Z]`,` [0-9]`   |
 | `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). All functions supported by the data source can be used in this option. |
 | `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option is necessary for the pushdown feature to properly set the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` espressions ignore language tags when comparing literals.   |  
-| `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:dateTime`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` espressions ignore data types when comparing literals. |
+| `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` espressions ignore data types when comparing literals. |
 | `nodetype`  | optional    | Type of the RDF node. Expected values are `literal` or `iri`. This option helps the query planner to optimize SPARQL `FILTER` expressions when the `WHERE` conditions are pushed down (default `literal`)  |
 
 

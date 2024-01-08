@@ -153,3 +153,23 @@ CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', language 'de ')
 /* invalid combination of 'literaltype' and 'language'  */
 CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', language 'es')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t9 (s text OPTIONS (variable 's', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t10 (s text OPTIONS (variable '?a-z', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t11 (s text OPTIONS (variable '?a$z', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t12 (s text OPTIONS (variable '?a?z', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* invalid 'variable' */
+CREATE FOREIGN TABLE t13 (s text OPTIONS (variable ' ?a', expression 'now()')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');

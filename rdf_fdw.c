@@ -297,6 +297,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
 static bool ContainsWhitespaces(char *str);
+static bool IsSPARQLVariableValid(const char* str);
 static char *DeparseDate(Datum datum);
 static char *DeparseTimestamp(Datum datum, bool hasTimezone);
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
@@ -468,7 +469,11 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 				
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_VARIABLE) == 0)
 				{	
-					//TODO: check if the SPARQL variable is valid.
+					if(!IsSPARQLVariableValid(defGetString(def)))
+						ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								errhint("a query variable must start with either \"?\" or \"$\"; the \"?\" or \"$\" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.")));
 				}
 
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_NODETYPE) == 0)
@@ -2983,4 +2988,27 @@ static bool ContainsWhitespaces(char *str)
 			return true;
 			
 	return false;
+}
+
+/*
+ * IsSPARQLVariableValid
+ * ---------------
+ * A query variable is marked by the use of either "?" or "$"; the "?" or 
+ * "$" is not part of the variable name. Valid characters for the name
+ * are [a-z], [A-Z], [0-9]
+ * 
+ * str: string to be evaluated
+ * 
+ * returns true if the variable is valid or false otherwise
+ */
+static bool IsSPARQLVariableValid(const char* str) {
+
+	if (str[0] != '?' && str[0] != '$')
+		return false;
+
+	for (int i = 1; str[i] != '\0'; i++) 
+		if (!isalnum(str[i]) && str[i] != '_') 
+			return false;
+
+	return true;
 }
