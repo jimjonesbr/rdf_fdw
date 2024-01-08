@@ -1,7 +1,7 @@
 
 /**********************************************************************
  *
- * rdf_fdw - Foreign-data Wrapper for RDF Triplestores
+ * rdf_fdw - PostgreSQL Foreign-data Wrapper for RDF Triplestores
  *
  * rdf_fdw is free software: you can redistribute it and/or modify
  * it under the terms of the MIT Licence.
@@ -74,7 +74,7 @@
 #define ADD_REL_QUALIFIER(buf, varno)   \
 		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
-#define FDW_VERSION "0.0.1-dev"
+#define FDW_VERSION "1.0.0-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -851,8 +851,6 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 		state->rdfTable->cols[i]->pushable = true;
-		//state->rdfTable->cols[i]->literaltype = "";
-		//state->rdfTable->cols[i]->language = "";
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 
 		foreach (lc, options)

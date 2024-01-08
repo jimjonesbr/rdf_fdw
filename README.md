@@ -3,9 +3,6 @@
 
 The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
 
-> [!WARNING]  
-> **THIS SOFTWARE IS CURRENTLY UNDER DEVELOPMENT AND IS STILL NOT READY FOR PRODUCTION USE**
-
 ![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
 
 ## Index
@@ -138,7 +135,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` - the `?` or `$` is not part of the variable name -, and the name must be a string with the following characters:  `[a-z]`, `[A-Z]`,` [0-9]`   |
+| `variable`    | **required**    | A SPARQL variable used in the SERVER OPTION `sparql`. This option maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` - the `?` or `$` is not part of the variable name -, and the name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
 | `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). All functions supported by the data source can be used in this option. |
 | `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option is necessary for the pushdown feature to properly set the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` espressions ignore language tags when comparing literals.   |  
 | `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` espressions ignore data types when comparing literals. |
@@ -285,7 +282,7 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
  Foreign table columns with `literaltype`
 
-| PostgreSQL Type  | Literay Type   | SQL                                                   | SPARQL                                                                                         |
+| PostgreSQL Type  | Literal Type   | SQL                                                   | SPARQL                                                                                         |
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
 | `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |

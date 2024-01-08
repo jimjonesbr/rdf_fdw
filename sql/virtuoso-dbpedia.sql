@@ -413,7 +413,7 @@ WHERE
   id <> '' AND 
   lat > 52 AND 
   lon < 9 AND
-  wkt = 'POINT(8.49305534362793 52.03777694702148)'; -- 'expression' columns aren't safe to be pushed down.
+  wkt = 'POINT(8.49305534362793 52.03777694702148)';
 
 
 /*
@@ -473,7 +473,7 @@ SELECT birthdate FROM person2 WHERE person = 'foo';
 
 
 /*
- * SPARQL contains has no explicit WHERE clause.
+ * SPARQL contains no explicit WHERE clause.
  */
  CREATE FOREIGN TABLE person3 (
   person text OPTIONS (variable '?person'),
