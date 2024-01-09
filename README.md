@@ -1,7 +1,8 @@
----------------------------------------------
-# PostgreSQL Foreign Data Wrapper for RDF Triplestores
 
-The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF Triplestores, including pushdown of several SQL Query clauses.
+---------------------------------------------
+# PostgreSQL Foreign Data Wrapper for RDF Triplestores (rdf_fdw)
+
+The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplestores via SPARQL endpoints, including pushdown of several SQL Query clauses.
 
 ![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
 
@@ -101,7 +102,7 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 ```
 
 
-**Server Options**:
+**Server Options**
 
 | Server Option | Type          | Description                                                                                                        |
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
@@ -123,7 +124,7 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 
 Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and RDF Triplestores. Each `FOREIGN TABLE` column must be mapped to a SPARQL `variable`, so that PostgreSQL knows where to display each node retrieved from the SPARQL queries. Optionally, it is possible to add an `expression` to the column, so that function calls can be used to retrieve or format the data.
 
-**Server Options**:
+**Table Options**
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
@@ -131,7 +132,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | `log_sparql`  | optional    | Logs the exact SPARQL query executed. This OPTION is useful to check for any modification to the configured SPARQL query due to pushdown  |
 | `enable_pushdown` | optional            | Enables or disables pushdown of SQL clauses into SPARQL for a specific foreign table. This overrides the `SERVER` option `enable_pushdown` |
 
-**Column Options**:
+**Column Options**
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
@@ -223,9 +224,9 @@ Shows the version of the installed `rdf_fdw` and its main libraries.
 
 ```sql
 SELECT rdf_fdw_version();
-                                                                                               rdf_fdw_version                                                                                               
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- rdf_fdw = 0.0.1-dev, libxml/2.9.14 libcurl/7.88.1 OpenSSL/3.0.11 zlib/1.2.13 brotli/1.0.9 zstd/1.5.4 libidn2/2.3.3 libpsl/0.21.2 (+libidn2/2.3.3) libssh2/1.10.0 nghttp2/1.52.0 librtmp/2.3 OpenLDAP/2.5.13
+                                                                                 rdf_fdw_version                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw = 1.0.0-dev, libxml/2.9.10 libcurl/7.74.0 OpenSSL/1.1.1w zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.0 (+libidn2/2.3.0) libssh2/1.9.0 nghttp2/1.43.0 librtmp/2.3
 (1 row)
 ```
 
@@ -243,7 +244,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 | `OFFSET y LIMIT x`| `OFFSET y LIMIT x` 
 | `FETCH FIRST x ROWS` | `LIMIT x` |
 | `FETCH FIRST ROW ONLY` | `LIMIT 1` |
-| `OFFSET x ROWS FETCH FIRST y ROW ONLY` | `OFFSET y LIMIT x` |
+| `OFFSET x ROWS FETCH FIRST y ROW ONLY` | `OFFSET x LIMIT y` |
  
 
 ### ORDER BY
@@ -267,7 +268,7 @@ The `rdf_fdw` will attempt to translate RDF literals to the data type of the map
 
 #### Supported Data Types and Operators
 
-| Data type                                                  | Operator                              |
+| Data type                                                  | Operators                             |
 |------------------------------------------------------------|---------------------------------------|
 | `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`                       |
 | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
@@ -280,9 +281,9 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 ### Pushdown Examples
 
- Foreign table columns with `literaltype`
+ Foreign table columns with the option `literaltype`
 
-| PostgreSQL Type  | Literal Type   | SQL                                                   | SPARQL                                                                                         |
+| PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL (pushdown)                                                                                         |
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
 | `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |
@@ -300,18 +301,18 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 | `boolean`        | `xsd:boolean`  | `bnode IS FALSE`                                      |  `FILTER(?node = "false"^^xsd:boolean)`                                                        |
 | `boolean`        | `xsd:boolean`  | `bnode IS NOT FALSE`                                  |  `FILTER(?node != "false"^^xsd:boolean)`                                                       |
 
-Foreign table columns with `language`
+Foreign table columns with the option `language`
  
-| PostgreSQL Type  | Language Tag   | SQL                                                   | SPARQL                                                                                         |
+| PostgreSQL Type  | Language Tag   | SQL WHERE Condition                                   | SPARQL (pushdown)                                                                              |
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `text`           | `en`           | `name = 'foo'`                                        |  `FILTER(?s = "foo"@en)`                                                                       |
 | `name`           | `de`           | `name <> 'foo'`                                       |  `FILTER(?s != "foo"@de)`                                                                      |
 | `varchar`        | `en`           | `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany"@en, "France"@en, "Portugal"@en))`                          |
 | `text`           | `*`            | `name = 'foo'`                                        |  `FILTER(STR(?s) = "foo")`                                                                     |
 
-Foreign table columns with `expression`
+Foreign table columns with the option `expression`
  
-| PostgreSQL Type  | Expression                        | Literal Type | SQL                 | SPARQL                                                                                         |
+| PostgreSQL Type  | Expression                        | Literal Type | SQL WHERE Condition | SPARQL (pushdown)                                                                              |
 |------------------|-----------------------------------|--------------|---------------------|------------------------------------------------------------------------------------------------|
 | `boolean`        | `STRSTARTS(STR(?country),"https")`| `xsd:boolean`|`bnode IS TRUE`      |  `FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)`                               |
 | `int`            | `STRLEN(?variable)`               | `xsd:integer`|`strlen > 10`        |  `FILTER(STRLEN(?variable) > 10)`                                                              |

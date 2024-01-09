@@ -349,9 +349,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	
 	/* Initialize found state to not found */
 	for (opt = valid_options; opt->optname; opt++)
-	{
 		opt->optfound = false;
-	}
 
 	foreach (cell, options_list)
 	{
@@ -766,7 +764,6 @@ static int CheckURL(char *url)
 	if (code != 0)
 	{
 		elog(DEBUG1, "%s: invalid URL (%u) > '%s'", __func__, code, url);
-
 		return code;
 	}
 
@@ -830,6 +827,9 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	
 	elog(DEBUG1,"%s called",__func__);
 
+	/*
+	 * Setting session's default values.
+	 */
 	state->enablePushdown = true;
 	state->log_sparql = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
@@ -850,8 +850,13 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		ListCell *lc;
 
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
+
+		/*
+	 	 * Setting foreign table colmuns's default values.
+	     */
 		state->rdfTable->cols[i]->pushable = true;
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
+		state->rdfTable->cols[i]->used = false; 
 
 		foreach (lc, options)
 		{
@@ -867,7 +872,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 				elog(DEBUG1,"  %s: (%d) adding sparql expression > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->expression = pstrdup(defGetString(def));
 				state->rdfTable->cols[i]->pushable = IsExpressionPushable(defGetString(def));
-				elog(DEBUG1,"  %s: (%d) is expression pushable? > '%s'",__func__,i,state->rdfTable->cols[i]->pushable ? "true" : "false");
+				elog(DEBUG1,"  %s: (%d) is expression pushable? > '%s'",__func__,i,
+					state->rdfTable->cols[i]->pushable ? "true" : "false");
 			} 
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0) 
 			{
@@ -915,7 +921,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		/* 
 		 * The parser will set it to true if the column is used in the SQL query.
 		 */
-		state->rdfTable->cols[i]->used = false; 
+		//state->rdfTable->cols[i]->used = false; 
 	}
 
 #if PG_VERSION_NUM < 130000
@@ -931,10 +937,13 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 		if (strcmp(RDF_SERVER_OPTION_ENDPOINT, def->defname) == 0)
 			state->endpoint = defGetString(def);
+
 		else if (strcmp(RDF_SERVER_OPTION_FORMAT, def->defname) == 0) 
 			state->format = defGetString(def);
+
 		else if (strcmp(RDF_SERVER_OPTION_CUSTOMPARAM, def->defname) == 0) 
 			state->customParams = defGetString(def);
+
 		else if (strcmp(RDF_SERVER_OPTION_HTTP_PROXY, def->defname) == 0)
 		{
 			state->proxy = defGetString(def);
@@ -946,13 +955,11 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			state->proxyType = RDF_SERVER_OPTION_HTTPS_PROXY;
 		}
 		else if (strcmp(RDF_SERVER_OPTION_PROXY_USER, def->defname) == 0)
-		{
 			state->proxyUser = defGetString(def);
-		}
+
 		else if (strcmp(RDF_SERVER_OPTION_PROXY_USER_PASSWORD, def->defname) == 0)
-		{
 			state->proxyUserPassword = defGetString(def);
-		}
+
 		else if (strcmp(RDF_SERVER_OPTION_CONNECTRETRY, def->defname) == 0)
 		{
 			char *tailpt;
@@ -960,9 +967,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			state->maxretries = strtol(maxretry_str, &tailpt, 0);
 		}
 		else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
-		{
 			state->requestRedirect = defGetBoolean(def);
-		}
+
 		else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)
 		{
 			char *tailpt;
@@ -976,13 +982,10 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			state->connectTimeout = strtol(timeout_str, &tailpt, 0);
 		}
 		else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
-		{
 			state->enablePushdown = defGetBoolean(def);
-		}
+
 		else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
-		{
 			state->query_param = defGetString(def);
-		}
 		
 	}
 
@@ -998,16 +1001,12 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		{
 			state->raw_sparql = defGetString(def);
 			state->is_sparql_parsable = IsSPARQLParsable(state);
-
-		} else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0) 
-		{
-			state->log_sparql = defGetBoolean(def);
 		} 
-		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0) 
-		{
-			state->enablePushdown = defGetBoolean(def);
-		}
+		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0) 
+			state->log_sparql = defGetBoolean(def);
 
+		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0) 
+			state->enablePushdown = defGetBoolean(def);
 					
 	}
 
@@ -1037,6 +1036,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	{
 		if(state->rdfTable->cols[i]->used && !state->rdfTable->cols[i]->expression)
 			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->sparqlvar));
+
 		else if(state->rdfTable->cols[i]->used && state->rdfTable->cols[i]->expression)
 			appendStringInfo(&select,"(%s AS %s) ",pstrdup(state->rdfTable->cols[i]->expression),
                                                    pstrdup(state->rdfTable->cols[i]->sparqlvar));
@@ -1639,7 +1639,6 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 		   LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_UNION," \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 		   LocateKeyword(state->raw_sparql, " \n\t",  RDF_SPARQL_KEYWORD_HAVING," \n\t(", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 		   keyword_count == 1;
-
 }
 
 /*
@@ -1739,7 +1738,8 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	/*
 	 * if the SQL query contains an ORDER BY, we try to push it down.
 	 */
-	if(state->is_sparql_parsable && state->sparql_orderby) {
+	if(state->is_sparql_parsable && state->sparql_orderby) 
+	{
 		elog(DEBUG1, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, state->sparql_orderby);
 		appendStringInfo(&state->sparql, "\nORDER BY%s", pstrdup(state->sparql_orderby));
 	}
@@ -1789,7 +1789,7 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 	 * in the beginning of the string.
 	 */
 	if (((strcasecmp(keyword, RDF_SPARQL_KEYWORD_SELECT) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_SELECT, strlen(RDF_SPARQL_KEYWORD_SELECT)) == 0) ||
-		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0)) && 
+		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0)) &&
 		 start_position == 0)
 	{
 		elog(DEBUG1, "%s: nothing before SELECT. Setting keyword_position to 0,", __func__);
@@ -1842,12 +1842,10 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 		LocateKeyword(str, start_chars, keyword, end_chars, count, keyword_position + 1);
 		(*count)++;
 	}
-		
 
 	elog(DEBUG1,"  %s: '%s' returning  %d",__func__, keyword, keyword_position);
-	
-	return keyword_position;
 
+	return keyword_position;
 }
 
 /*
@@ -1882,7 +1880,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 		char *colname = state->rdfTable->cols[i]->name;
 		int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
 
-		elog(DEBUG2, "  %s: setting column > %s (type > %d), sparqlvar > %s",__func__, colname, pgtype, sparqlvar);	
+		elog(DEBUG2, "  %s: setting column > %s (type > %d), sparqlvar > %s",__func__, colname, pgtype, sparqlvar);
 
 		for (result = record->children; result != NULL; result = result->next)
 		{
@@ -1894,7 +1892,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 				for (value = result->children; value != NULL; value = value->next)
 				{
-	
+
 					buffer = xmlBufferCreate();
 
 					xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
@@ -1915,7 +1913,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 					typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
 					ReleaseSysCache(tuple);
-					
+
 					if(pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
 					{
 
@@ -1943,7 +1941,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 		{
 			elog(DEBUG2, "    %s: setting NULL for column '%s' (%s)",__func__, colname, sparqlvar);
 			slot->tts_isnull[i] = true;
-			slot->tts_values[i] = PointerGetDatum(NULL);					
+			slot->tts_values[i] = PointerGetDatum(NULL);
 		}
 
 	}
@@ -2113,7 +2111,7 @@ static char *DeparseTimestamp(Datum datum, bool hasTimezone)
  * state     : SPARQL, SERVER and FOREIGN TABLE info
  * foreignrel: Conditions and columns used in the SQL query
  * expr      : Expression to be deparsed
- * 
+ *
  * returns a string containing a SPARQL expression or NULL if not parseable 
  */
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
@@ -2253,16 +2251,16 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* return NULL if the column is not safe to be pushed down */
 				if(!col->pushable)
 					return NULL;
-				
+
 				/* set the corresponding literal language tag or data type, if any */
 				if(col->literaltype)
 					literalatt = col->literaltype;
 				else if(col->language)
 					literalatt = col->language;
 
-				if ((leftargtype == TEXTOID || 
-				    leftargtype == VARCHAROID || 
-					leftargtype == CHAROID || 
+				if ((leftargtype == TEXTOID ||
+				    leftargtype == VARCHAROID ||
+					leftargtype == CHAROID ||
 					leftargtype == NAMEOID ||
 					leftargtype == DATEOID ||
 					leftargtype == TIMESTAMPOID ||
@@ -2359,53 +2357,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		break;
-	// case T_BoolExpr:
-	// 	boolexpr = (BoolExpr *)expr;
-
-	// 	arg = DeparseExpr(state, foreignrel, linitial(boolexpr->args));
-
-	// 	if (arg == NULL)
-	// 		return NULL;
-
-	// 	col = GetRDFColumn(state, arg);
-
-	// 	if(!col)
-	// 		return NULL;
-	// 	// 	literalatt = col->literaltype;
-			
-	// 	initStringInfo(&result);
-
-	// 	if(col->expression)
-	// 		appendStringInfo(&result, "%s",col->expression);
-	// 	else
-	// 		appendStringInfo(&result, "%s",col->sparqlvar);
-
-	// 	// appendStringInfo(&result, "(%s%s",
-	// 	// 		boolexpr->boolop == NOT_EXPR ? "NOT " : "",
-	// 	// 		arg);
-		
-	// 	do_each_cell(cell, boolexpr->args, list_next(boolexpr->args, list_head(boolexpr->args)))
-	// 	{
-	// 		arg = DeparseExpr(state, foreignrel, (Expr *)lfirst(cell));
-	// 		if (arg == NULL)
-	// 		{
-	// 			pfree(result.data);				
-	// 			return NULL;
-	// 		}
-
-	// 		appendStringInfo(&result, " %s %s",
-	// 				boolexpr->boolop == AND_EXPR ? "&&" : "||",
-	// 				arg);
-	// 	}
-
-	// 	if(boolexpr->boolop == NOT_EXPR)
-	// 		appendStringInfo(&result, " = \"false\"%s", col->literaltype ? col->literaltype : "");
-	// 	else
-	// 		appendStringInfo(&result, " = \"true\"%s", col->literaltype ? col->literaltype : "");
-
-	// 	//appendStringInfo(&result, ")");
-		
-	// 	break;
 	case T_ScalarArrayOpExpr:		
 		arrayoper = (ScalarArrayOpExpr *)expr;
 		
@@ -2482,7 +2433,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 					{
 						
-						c = DatumToString(datum, ARR_ELEMTYPE(arr));						
+						c = DatumToString(datum, ARR_ELEMTYPE(arr));
 						if (c == NULL)
 						{
 							array_free_iterator(iterator);
@@ -2523,7 +2474,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			}
 
 			break;
-
 		case T_ArrayCoerceExpr:
 			/* the second (=last) argument is an ArrayCoerceExpr */
 			arraycoerce = (ArrayCoerceExpr *)rightexpr;
@@ -2567,7 +2517,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				return NULL;
 
 			break;
-
 		default:
 			return NULL;
 		}
@@ -2625,7 +2574,7 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 			state->local_conds = lappend(state->local_conds, ((RestrictInfo *)lfirst(cell))->clause);
 			elog(DEBUG1,"  %s: condition cannot be pushed down.",__func__);
 		}
-			
+
 	}
 
 	return where_clause.data;
@@ -2707,7 +2656,7 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 		 * SPARQL does not support sorting with functions, so it is not safe to 
 		 * push down anything other than T_Var.
 		 */
-		
+
 		can_pushdown = (em_expr->type == T_Var) && canHandleType(em_type);
 
 		elog(DEBUG1,"  %s: can push down > %d",__func__, can_pushdown);
@@ -2753,8 +2702,6 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 		elog(DEBUG1,"  %s: unable to deparse ORDER BY clause ",__func__);
 		return NULL;
 	}
-
-			
 }
 
 /* 
@@ -2772,10 +2719,10 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 	char *open_chars = ">)\n\t ";
 	char *close_chars = " <\n\t";
 	int nfrom = 0;
-	
+
 	initStringInfo(&from);
-			
-	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_KEYWORD_NOT_FOUND) 
+
+	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_KEYWORD_NOT_FOUND)
 	{				
 		int entry_position = 0;
 		
@@ -2792,39 +2739,39 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 
 			entry_position = entry_position + (strlen(RDF_SPARQL_KEYWORD_FROM) + 1);
 
-			while (raw_sparql[entry_position] == ' ') 
+			while (raw_sparql[entry_position] == ' ')
 				entry_position++;
-			
+
 			/* Is the SPARQL long enough for 'FROM NAMED' to be parsed? */
 			if(entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED) <= strlen(raw_sparql))
 			{
 				/*
-				 * if the next keyword is NAMED, set is_named to 'true' and move the cursor 
+				 * if the next keyword is NAMED, set is_named to 'true' and move the cursor
 				 * to the next keyword
 				 */
 				if(strncasecmp(raw_sparql + entry_position, RDF_SPARQL_KEYWORD_NAMED, strlen(RDF_SPARQL_KEYWORD_NAMED)) == 0) {
 					is_named = true;
 					entry_position = entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED);
 
-					while (raw_sparql[entry_position] == ' ') 
+					while (raw_sparql[entry_position] == ' ')
 						entry_position++;
 				}
-					
+
 			}
 
-			while (raw_sparql[entry_position] != ' ' && 
-				   raw_sparql[entry_position] != '\n' && 
-				   raw_sparql[entry_position] != '\t' && 
-				   raw_sparql[entry_position] != '\0') 
+			while (raw_sparql[entry_position] != ' ' &&
+				   raw_sparql[entry_position] != '\n' &&
+				   raw_sparql[entry_position] != '\t' &&
+				   raw_sparql[entry_position] != '\0')
 			{
 				appendStringInfo(&from_entry,"%c",raw_sparql[entry_position]);
-								
+
 				if(raw_sparql[entry_position] == '>')
 					break;
 				
 				entry_position++;
 			}
-			
+
 			if(is_named)
 				appendStringInfo(&from,"%s %s %s\n", RDF_SPARQL_KEYWORD_FROM, RDF_SPARQL_KEYWORD_NAMED, from_entry.data);
 			else
@@ -2907,23 +2854,21 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 
 	elog(DEBUG1,"%s called ",__func__);
 
-
-
 	/* don't push down LIMIT (OFFSET)  if the query has a GROUP BY clause or aggregates */
 	if (root->parse->groupClause != NULL || root->parse->hasAggs)
 	{
 		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains aggregators.",__func__);
 		return NULL;
 	}
-		
+
 	/* don't push down LIMIT (OFFSET) if the query contains DISTINCT */
 	if (root->parse->distinctClause != NULL) {
 		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains DISTINCT.",__func__);
 		return NULL;
 	}
-		
+
 	/*
-	 * disables LIMIT push down if any WHERE conidition cannot be be pushed down, otherwise you'll 
+	 * disables LIMIT push down if any WHERE conidition cannot be be pushed down, otherwise you'll
 	 * be scratching your head forever wondering why some data are missing from the result set.
 	 */
 	if (state->local_conds != NIL)
@@ -2931,8 +2876,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as there are WHERE conditions that could not be translated.",__func__);
 		return NULL;
 	}
-		
-	
+
 	/* only push down constant LIMITs that are not NULL */
 	if (root->parse->limitCount != NULL && IsA(root->parse->limitCount, Const))
 	{
@@ -2981,31 +2925,32 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
  */
 static bool ContainsWhitespaces(char *str)
 {
-	for (int i = 0; str[i] != '\0'; i++)	
+	for (int i = 0; str[i] != '\0'; i++)
 		if (isspace((unsigned char)str[i]))
 			return true;
-			
+
 	return false;
 }
 
 /*
  * IsSPARQLVariableValid
  * ---------------
- * A query variable is marked by the use of either "?" or "$"; the "?" or 
+ * A query variable is marked by the use of either "?" or "$"; the "?" or
  * "$" is not part of the variable name. Valid characters for the name
  * are [a-z], [A-Z], [0-9]
- * 
+ *
  * str: string to be evaluated
- * 
+ *
  * returns true if the variable is valid or false otherwise
  */
-static bool IsSPARQLVariableValid(const char* str) {
+static bool IsSPARQLVariableValid(const char* str) 
+{
 
 	if (str[0] != '?' && str[0] != '$')
 		return false;
 
-	for (int i = 1; str[i] != '\0'; i++) 
-		if (!isalnum(str[i]) && str[i] != '_') 
+	for (int i = 1; str[i] != '\0'; i++)
+		if (!isalnum(str[i]) && str[i] != '_')
 			return false;
 
 	return true;
