@@ -43,11 +43,14 @@ LIMIT 10;
 
 SELECT uri, lon, lat
 FROM getty_places
-WHERE name = 'West Flanders, Flanders, Belgium, Europe, World';
+WHERE name = 'West Flanders, Flanders, Belgium, Europe, World'
+ORDER BY lon;
 
-SELECT DISTINCT ON (name) name, lon, lat
-FROM getty_places
-WHERE lat BETWEEN 52.5 AND 53.0;
+SELECT * FROM (
+  SELECT DISTINCT ON (name) name, lon, lat
+  FROM getty_places
+  WHERE lat BETWEEN 52.5 AND 53.0) j
+ORDER BY lat;
 
 /*
  * == Non-Italians Who Worked in Italy ==

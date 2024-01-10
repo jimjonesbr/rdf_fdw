@@ -824,7 +824,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 #else
 	Relation rel = table_open(state->foreigntableid, NoLock);
 #endif
-	
+
 	elog(DEBUG1,"%s called",__func__);
 
 	/*
@@ -917,11 +917,6 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			table_close(rel, NoLock);
 #endif
 		}
-
-		/* 
-		 * The parser will set it to true if the column is used in the SQL query.
-		 */
-		//state->rdfTable->cols[i]->used = false; 
 	}
 
 #if PG_VERSION_NUM < 130000
@@ -941,7 +936,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		else if (strcmp(RDF_SERVER_OPTION_FORMAT, def->defname) == 0) 
 			state->format = defGetString(def);
 
-		else if (strcmp(RDF_SERVER_OPTION_CUSTOMPARAM, def->defname) == 0) 
+		else if (strcmp(RDF_SERVER_OPTION_CUSTOMPARAM, def->defname) == 0)
 			state->customParams = defGetString(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_HTTP_PROXY, def->defname) == 0)
@@ -986,32 +981,30 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 		else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 			state->query_param = defGetString(def);
-		
 	}
 
 
 	/* 
-	 * Loading Foreign Table OPTIONS 
+	 * Loading Foreign Table OPTIONS
 	 */
 	foreach (cell, ft->options)
 	{
 		DefElem *def = lfirst_node(DefElem, cell);
 
-		if (strcmp(RDF_TABLE_OPTION_SPARQL, def->defname) == 0) 
+		if (strcmp(RDF_TABLE_OPTION_SPARQL, def->defname) == 0)
 		{
 			state->raw_sparql = defGetString(def);
 			state->is_sparql_parsable = IsSPARQLParsable(state);
-		} 
-		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0) 
+		}
+		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0)
 			state->log_sparql = defGetBoolean(def);
 
-		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0) 
+		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 			state->enablePushdown = defGetBoolean(def);
-					
 	}
 
 	/* 
-	 * Marking columns used in the SQL query for SPARQL pushdown 
+	 * Marking columns used in the SQL query for SPARQL pushdown
 	 */
 	elog(DEBUG1, "%s: looking for columns in the SELECT entry list",__func__);
 	foreach(cell, columnlist)
@@ -1021,14 +1014,14 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	foreach(cell, conditions)
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
-	/* 
+	/*
 	 * deparse SPARQL PREFIX clauses from raw_sparql, if any
 	 */
 	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
 
-	/* 
-	 * We create the SPARQL SELECT clause according to the columns used in the 
-	 * SQL SELECT. Functions calls and expressions are only pushed down if explicitly 
+	/*
+	 * We create the SPARQL SELECT clause according to the columns used in the
+	 * SQL SELECT. Functions calls and expressions are only pushed down if explicitly
 	 * declared in the 'expression' column OPTION.
 	 */
 	initStringInfo(&select);
@@ -1045,8 +1038,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	state->sparql_select = pstrdup(select.data);
 
 	/* 
-	 * Deparsing SPARQL WHERE clause  
-	 *   'where_position = i + 1' to remove the surrounging curly braces {} as we are 
+	 * Deparsing SPARQL WHERE clause
+	 *   'where_position = i + 1' to remove the surrounging curly braces {} as we are
 	 *   interested only in WHERE clause's containing triples
 	 */
 	for (int i = 0; state->raw_sparql[i] != '\0'; i++)
@@ -1060,8 +1053,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 	state->sparql_where = pnstrdup(state->raw_sparql + where_position, where_size);
 
-	/* 
-	 * Try to deparse SQL WHERE conditions, if any, to create SPARQL FILTER expressions 
+	/*
+	 * Try to deparse SQL WHERE conditions, if any, to create SPARQL FILTER expressions
 	 */
 	state->sparql_filter = DeparseSQLWhereConditions(state, baserel);
 
@@ -1078,7 +1071,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	/*
 	 * deparse SPARQL FROM and FROM NAMED clauses, if any
 	 */
-	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);	
+	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
 }
 
 /*
@@ -1086,9 +1079,9 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
  * ----------------
  * Loads the next binding from the record list 'state->recods' to return to
  * the client.
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
- * 
+ *
  * returns xmlNodePtr containg the retrieved record or NULL if EOF.
  */
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
@@ -1109,7 +1102,6 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 	elog(DEBUG2,"  %s: returning %d",__func__,state->rowcount);
 	
 	return (xmlNodePtr) lfirst(cell);
-
 }
 
 /*
@@ -1119,7 +1111,7 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
  * and CREATE SERVER statements. The result set is loaded into 'state'.
  * 
  * state: SPARQL, SERVER and FOREIGN TABLE info
- * 
+ *
  * returns REQUEST_SUCCESS or REQUEST_FAIL
  */
 static int ExecuteSPARQL(RDFfdwState *state)
