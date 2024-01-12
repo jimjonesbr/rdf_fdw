@@ -738,3 +738,22 @@ $ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_imag
 ```bash
 $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
 ```
+
+### For testers and developers
+
+If you're cool enough to try out the latest commits:
+
+
+```dockerfile
+FROM postgres:15
+
+RUN apt-get update && \
+    apt-get install -y git make gcc postgresql-server-dev-15 libxml2-dev libcurl4-openssl-dev
+
+WORKDIR /
+
+RUN git clone https://github.com/jimjonesbr/rdf_fdw.git && \
+    cd rdf_fdw && \
+    make -j && \
+    make install
+```
