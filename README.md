@@ -739,9 +739,11 @@ $ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_imag
 $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
 ```
 
-### For testers and developers
+### [For testers and developers](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#for-testers-and-developers)
 
 If you're cool enough to try out the latest commits:
+
+Dockerfile
 
 
 ```dockerfile
@@ -756,4 +758,11 @@ RUN git clone https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
     make -j && \
     make install
+```
+Deployment
+
+```bash
+ $ docker build -t rdf_fdw_image .
+ $ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_image
+ $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
 ```
