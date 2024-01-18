@@ -91,7 +91,7 @@ To use the `rdf_fdw` you must first create a `SERVER` to connect to a SPARQL end
 
 ### [CREATE SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_server)
 
-The SQL command [CREATE SERVER](https://www.postgresql.org/docs/current/sql-createserver.html) defines a new foreign server. The user who defines the server becomes its owner. A SERVER requires an `endpoint`, so that `rdf_fdw` knows where to sent the SPARQL queries.
+The SQL command [CREATE SERVER](https://www.postgresql.org/docs/current/sql-createserver.html) defines a new foreign server. The user who defines the server becomes its owner. A `SERVER` requires an `endpoint`, so that `rdf_fdw` knows where to sent the SPARQL queries.
 
 The following example creates a `SERVER` that connects to the DBpedia SPARQL Endpoint:
 
@@ -107,8 +107,8 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 | Server Option | Type          | Description                                                                                                        |
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
 | `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
-| `enable_pushdown` | optional            | Globally enables or disables pushdown of SQL clauses into SPARQL (default `true`)
-| `format` | optional            | The `rdf_fdw` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which can be normally enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, there are some products that expect a differently value, e.g. `xml`, `rdf-xml`. In case it differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
+| `enable_pushdown` | optional            | Globally enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL (default `true`)
+| `format` | optional            | The `rdf_fdw` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which can be normally enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, there are some products that deviate from the standard and expect a differently value, e.g. `xml`, `rdf-xml`. In case the expected parameter differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
 | `http_proxy` | optional            | Proxy for HTTP requests.
 | `proxy_user` | optional            | User for proxy server authentication.
 | `proxy_user_password` | optional            | Password for proxy server authentication.
@@ -129,8 +129,8 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `sparql`      | **required**    | The raw SPARQL query to be executed    |
-| `log_sparql`  | optional    | Logs the exact SPARQL query executed. This OPTION is useful to check for any modification to the configured SPARQL query due to pushdown  |
-| `enable_pushdown` | optional            | Enables or disables pushdown of SQL clauses into SPARQL for a specific foreign table. This overrides the `SERVER` option `enable_pushdown` |
+| `log_sparql`  | optional    | Logs the exact SPARQL query executed. This option is useful to check for any modification to the configured SPARQL query due to pushdown  |
+| `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. This overrides the `SERVER` option `enable_pushdown` |
 
 **Column Options**
 
