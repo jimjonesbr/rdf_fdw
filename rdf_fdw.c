@@ -165,24 +165,23 @@ typedef struct RDFfdwState
 	char *query_param;           /* SPARQL query POST parameter used by the endpoint */
 	char *format;                /* Format in which the RDF triplestore has to reply */
 	char *proxy;                 /* Proxy for HTTP requests, if necessary. */
-	char *proxyType;             /* Proxy protocol (HTTPS, HTTP). */
-	char *proxyUser;             /* User name for proxy authentication. */
-	char *proxyUserPassword;     /* Password for proxy authentication. */
-	char *customParams;          /* Custom parameters used to compose the request URL */
-	bool requestRedirect;        /* Enables or disables URL redirecting. */
-	bool enablePushdown;         /* Enables or disables pushdown of SQL commands */
+	char *proxy_type;            /* Proxy protocol (HTTPS, HTTP). */
+	char *proxy_user;            /* User name for proxy authentication. */
+	char *proxy_user_password;   /* Password for proxy authentication. */
+	char *custom_params;         /* Custom parameters used to compose the request URL */
+	bool request_redirect;       /* Enables or disables URL redirecting. */
+	bool enable_pushdown;        /* Enables or disables pushdown of SQL commands */
 	bool is_sparql_parsable;     /* Marks the query is or not for pushdown*/
 	bool log_sparql;             /* Enables or disables logging SPARQL queries as NOTICE */
-	long requestMaxRedirect;     /* Limit of how many times the URL redirection (jump) may occur. */
-	long connectTimeout;         /* Timeout for SPARQL queries */
-	long maxretries;             /* Number of re-try attemtps for failed SPARQL queries */
+	bool has_unparsable_conds;   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
+	long request_max_redirect;   /* Limit of how many times the URL redirection (jump) may occur. */
+	long connect_timeout;        /* Timeout for SPARQL queries */
+	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
 	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
 	StringInfoData sparql;       /* Final SPARQL query sent to the endpoint (after pusdhown) */
-	List *remote_conds;          /* Conditions that can be pushed down as SPARQL */
-	List *local_conds;           /* Conditions that cannot be pushed down as SPARQL */
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -583,7 +582,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 
 	InitSession(state, baserel, root);
 
-	if(!state->enablePushdown) 
+	if(!state->enable_pushdown) 
 	{
 		initStringInfo(&state->sparql);
 		appendStringInfo(&state->sparql,"%s",state->raw_sparql);		
@@ -830,12 +829,13 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	/*
 	 * Setting session's default values.
 	 */
-	state->enablePushdown = true;
+	state->enable_pushdown = true;
 	state->log_sparql = false;
+	state->has_unparsable_conds = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
-	state->connectTimeout = RDF_DEFAULT_CONNECTTIMEOUT;
-	state->maxretries = RDF_DEFAULT_MAXRETRY;	
+	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+	state->max_retries = RDF_DEFAULT_MAXRETRY;	
 	state->numcols = rel->rd_att->natts;
 
 	/* 
@@ -937,47 +937,47 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			state->format = defGetString(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_CUSTOMPARAM, def->defname) == 0)
-			state->customParams = defGetString(def);
+			state->custom_params = defGetString(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_HTTP_PROXY, def->defname) == 0)
 		{
 			state->proxy = defGetString(def);
-			state->proxyType = RDF_SERVER_OPTION_HTTP_PROXY;
+			state->proxy_type = RDF_SERVER_OPTION_HTTP_PROXY;
 		}
 		else if (strcmp(RDF_SERVER_OPTION_HTTPS_PROXY, def->defname) == 0)
 		{
 			state->proxy = defGetString(def);
-			state->proxyType = RDF_SERVER_OPTION_HTTPS_PROXY;
+			state->proxy_type = RDF_SERVER_OPTION_HTTPS_PROXY;
 		}
 		else if (strcmp(RDF_SERVER_OPTION_PROXY_USER, def->defname) == 0)
-			state->proxyUser = defGetString(def);
+			state->proxy_user = defGetString(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_PROXY_USER_PASSWORD, def->defname) == 0)
-			state->proxyUserPassword = defGetString(def);
+			state->proxy_user_password = defGetString(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_CONNECTRETRY, def->defname) == 0)
 		{
 			char *tailpt;
 			char *maxretry_str = defGetString(def);
-			state->maxretries = strtol(maxretry_str, &tailpt, 0);
+			state->max_retries = strtol(maxretry_str, &tailpt, 0);
 		}
 		else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
-			state->requestRedirect = defGetBoolean(def);
+			state->request_redirect = defGetBoolean(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)
 		{
 			char *tailpt;
 			char *maxredirect_str = defGetString(def);
-			state->requestMaxRedirect = strtol(maxredirect_str, &tailpt, 0);
+			state->request_max_redirect = strtol(maxredirect_str, &tailpt, 0);
 		}
 		else if (strcmp(RDF_SERVER_OPTION_CONNECTTIMEOUT, def->defname) == 0)
 		{
 			char *tailpt;
 			char *timeout_str = defGetString(def);
-			state->connectTimeout = strtol(timeout_str, &tailpt, 0);
+			state->connect_timeout = strtol(timeout_str, &tailpt, 0);
 		}
 		else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
-			state->enablePushdown = defGetBoolean(def);
+			state->enable_pushdown = defGetBoolean(def);
 
 		else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 			state->query_param = defGetString(def);
@@ -1000,7 +1000,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 			state->log_sparql = defGetBoolean(def);
 
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
-			state->enablePushdown = defGetBoolean(def);
+			state->enable_pushdown = defGetBoolean(def);
 	}
 
 	/* 
@@ -1146,8 +1146,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	initStringInfo(&url_buffer);
 	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(curl, state->sparql.data, 0));
 
-	if(state->customParams)
-		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(curl, state->customParams, 0));
+	if(state->custom_params)
+		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(curl, state->custom_params, 0));
 
 	elog(DEBUG1, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
 
@@ -1165,9 +1165,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
 
-		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, state->connectTimeout);
-		elog(DEBUG1, "  %s: timeout > %ld", __func__, state->connectTimeout);
-		elog(DEBUG1, "  %s: max retry > %ld", __func__, state->maxretries);
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, state->connect_timeout);
+		elog(DEBUG1, "  %s: timeout > %ld", __func__, state->connect_timeout);
+		elog(DEBUG1, "  %s: max retry > %ld", __func__, state->max_retries);
 
 		if (state->proxy)
 		{
@@ -1175,40 +1175,40 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 			curl_easy_setopt(curl, CURLOPT_PROXY, state->proxy);
 
-			if (strcmp(state->proxyType, RDF_SERVER_OPTION_HTTP_PROXY) == 0)
+			if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTP_PROXY) == 0)
 			{
 				elog(DEBUG1, "  %s: proxy protocol > 'HTTP'", __func__);
 				curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
 			}
-			else if (strcmp(state->proxyType, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
+			else if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
 			{
 				elog(DEBUG1, "  %s: proxy protocol > 'HTTPS'", __func__);
 				curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
 			}
 
-			if (state->proxyUser)
+			if (state->proxy_user)
 			{
-				elog(DEBUG1, "  %s: entering proxy user ('%s').", __func__, state->proxyUser);
-				curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, state->proxyUser);
+				elog(DEBUG1, "  %s: entering proxy user ('%s').", __func__, state->proxy_user);
+				curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, state->proxy_user);
 			}
 
-			if (state->proxyUserPassword)
+			if (state->proxy_user_password)
 			{
 				elog(DEBUG1, "  %s: entering proxy user's password.", __func__);
-				curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, state->proxyUserPassword);
+				curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, state->proxy_user_password);
 			}
 		}
 
-		if (state->requestRedirect == true)
+		if (state->request_redirect == true)
 		{
 
-			elog(DEBUG1, "  %s: setting request redirect: %d", __func__, state->requestRedirect);
+			elog(DEBUG1, "  %s: setting request redirect: %d", __func__, state->request_redirect);
 			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-			if (state->requestMaxRedirect)
+			if (state->request_max_redirect)
 			{
-				elog(DEBUG1, "  %s: setting maxredirs: %ld", __func__, state->requestMaxRedirect);
-				curl_easy_setopt(curl, CURLOPT_MAXREDIRS, state->requestMaxRedirect);
+				elog(DEBUG1, "  %s: setting maxredirs: %ld", __func__, state->request_max_redirect);
+				curl_easy_setopt(curl, CURLOPT_MAXREDIRS, state->request_max_redirect);
 			}
 		}
 
@@ -1233,7 +1233,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if (res != CURLE_OK)
 		{
-			for (long i = 1; i <= state->maxretries && (res = curl_easy_perform(curl)) != CURLE_OK; i++)
+			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(curl)) != CURLE_OK; i++)
 			{
 				elog(WARNING, "  %s: request to '%s' failed (%ld)", __func__, state->endpoint, i);
 			}
@@ -2547,23 +2547,21 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	initStringInfo(&where_clause);
 	foreach(cell, conditions)
 	{		
-		/* check if the condition can be pushed down */
+		/* deparse expression for pushdown */
 		char *where = DeparseExpr(
 					state, baserel,
 					((RestrictInfo *)lfirst(cell))->clause
 				);
 
-		if (where != NULL) {
-			state->remote_conds = lappend(state->remote_conds, ((RestrictInfo *)lfirst(cell))->clause);
-
+		if (where != NULL) 
+		{
 			/* append new FILTER clause to query string */
 			appendStringInfo(&where_clause, " FILTER(%s)\n", pstrdup(where));
 			pfree(where);
-
 		}
 		else
 		{
-			state->local_conds = lappend(state->local_conds, ((RestrictInfo *)lfirst(cell))->clause);
+			state->has_unparsable_conds = true;
 			elog(DEBUG1,"  %s: condition cannot be pushed down.",__func__);
 		}
 
@@ -2863,7 +2861,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	 * disables LIMIT push down if any WHERE conidition cannot be be pushed down, otherwise you'll
 	 * be scratching your head forever wondering why some data are missing from the result set.
 	 */
-	if (state->local_conds != NIL)
+	if (state->has_unparsable_conds)
 	{
 		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as there are WHERE conditions that could not be translated.",__func__);
 		return NULL;
