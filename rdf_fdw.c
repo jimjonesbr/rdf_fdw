@@ -187,9 +187,7 @@ typedef struct RDFfdwState
 typedef struct RDFfdwTable
 {	
 	char *name;                  /* FOREIGN TABLE name */
-	int   nfdwcols;              /* Total number of columns */
 	struct RDFfdwColumn **cols;  /* List of columns of a FOREIGN TABLE */
-
 } RDFfdwTable;
 
 typedef struct RDFfdwColumn
@@ -327,7 +325,6 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 
 Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 {
-
 	StringInfoData buffer;
 	initStringInfo(&buffer);
 
