@@ -20,7 +20,7 @@ SERVER dbpedia OPTIONS (
   SELECT *
   WHERE {
     ?uri ?propuri ?val .
-    ?propuri rdfs:label ?proplabel .
+    ?propuri rdfs:label ?label .
     FILTER(!isIRI(?val))
     FILTER(LANG(?val) = "en" || LANG(?val) = "")
   } 
