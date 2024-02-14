@@ -1,6 +1,6 @@
 
 ---------------------------------------------
-# PostgreSQL Foreign Data Wrapper for RDF Triplestores (rdf_fdw)
+# RDF Triplestore Foreign Data Wrapper for PostgreSQL (rdf_fdw)
 
 The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplestores via SPARQL endpoints, including pushdown of several SQL Query clauses.
 
