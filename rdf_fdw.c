@@ -2890,7 +2890,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 
 	if (offset_val)
 		appendStringInfo(&limit_clause,
-						 "LIMIT %s+%s",
+						 "OFFSET %s LIMIT %s",
 						 offset_val, limit_val);
 	else
 		appendStringInfo(&limit_clause,

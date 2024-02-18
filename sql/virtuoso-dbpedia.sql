@@ -419,7 +419,7 @@ WHERE
 /*
  * WHERE conditions with expressions
  */
-SELECT name, lon, lat 
+SELECT name, lon < 9, lat > 52
 FROM german_public_universities 
 WHERE 
   id <> '' AND 
