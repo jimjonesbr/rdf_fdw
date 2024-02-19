@@ -166,3 +166,16 @@ WHERE
   bf != true AND
   bt = true AND
   bt != false;
+
+
+DO $$
+BEGIN    
+  CREATE TABLE tmp_eu_countries AS
+  SELECT uri, nativename 
+  FROM european_countries
+  ORDER BY nativename
+  OFFSET 0 LIMIT 5;  
+END; $$;
+
+SELECT * FROM tmp_eu_countries;
+DROP TABLE tmp_eu_countries;

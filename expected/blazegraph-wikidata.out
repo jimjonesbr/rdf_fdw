@@ -297,3 +297,34 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
  http://www.wikidata.org/entity/Q32 | Luxembourg
 (1 row)
 
+DO $$
+BEGIN    
+  CREATE TABLE tmp_eu_countries AS
+  SELECT uri, nativename 
+  FROM european_countries
+  ORDER BY nativename
+  OFFSET 0 LIMIT 5;  
+END; $$;
+NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+
+SELECT ?country ?nativename 
+{
+    wd:Q458 wdt:P150 ?country.
+    OPTIONAL { ?country wdt:P1705 ?nativename }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  }
+ORDER BY  ASC (?nativename)
+OFFSET 0 LIMIT 5
+
+SELECT * FROM tmp_eu_countries;
+                 uri                 |     nativename     
+-------------------------------------+--------------------
+ http://www.wikidata.org/entity/Q35  | Danmark
+ http://www.wikidata.org/entity/Q35  | Danmarks Rige
+ http://www.wikidata.org/entity/Q35  | Kongeriget Danmark
+ http://www.wikidata.org/entity/Q213 | Česká republika
+ http://www.wikidata.org/entity/Q219 | България
+(5 rows)
+
+DROP TABLE tmp_eu_countries;
