@@ -182,8 +182,6 @@ typedef struct RDFfdwState
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
-	RelOptInfo *baserel;
-	PlannerInfo *root;
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -281,8 +279,8 @@ static int ExecuteSPARQL(RDFfdwState *state);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
-static char *ConstantToCString(Const *constant);
-static Const *CStringToConstant(const char* str);
+static char *ConstToCString(Const *constant);
+static Const *CStringToConst(const char* str);
 static List *SerializePlanData(RDFfdwState *state);
 static struct RDFfdwState *DeserializePlanData(List *list);
 static int CheckURL(char *url);
@@ -670,13 +668,13 @@ static void rdfEndForeignScan(ForeignScanState *node)
 }
 
 /*
- * CStringToConstant
+ * CStringToConst
  * -----------------
  * Extracts a Const from a char*
  *
  * returns Const from given string.
  */
-Const *CStringToConstant(const char* str)
+Const *CStringToConst(const char* str)
 {
 	if (str == NULL)
 		return makeNullConst(TEXTOID, -1, InvalidOid);
@@ -685,13 +683,13 @@ Const *CStringToConstant(const char* str)
 }
 
 /*
- * ConstantToCString
+ * ConstToCString
  * -----------------
  * Extracts a string from a Const
  *
  * returns a palloc'ed copy.
  */
-char *ConstantToCString(Const *constant)
+char *ConstToCString(Const *constant)
 {
 	if (constant->constisnull)
 		return NULL;
@@ -699,83 +697,103 @@ char *ConstantToCString(Const *constant)
 		return text_to_cstring(DatumGetTextP(constant->constvalue));
 }
 
-#define serializeInt(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
-#define serializeOid(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
+#define IntToConst(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
+#define OidToConst(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
 
+/*
+ * SerializePlanData
+ * -----------------
+ * Converts parameters into Const variables, so that it can be properly 
+ * stored by the plan
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ * 
+ * returns a List containing all converted parameterrs.
+ */
 static List *SerializePlanData(RDFfdwState *state)
 {
 	List *result = NIL;
 
 	elog(DEBUG1,"%s called",__func__);
 
-	result = lappend(result, serializeInt((int)state->numcols));
-	result = lappend(result, CStringToConstant(state->sparql));
-	result = lappend(result, CStringToConstant(state->sparql_prefixes));
-	result = lappend(result, CStringToConstant(state->sparql_select));
-	result = lappend(result, CStringToConstant(state->sparql_from));
-	result = lappend(result, CStringToConstant(state->sparql_where));
-	result = lappend(result, CStringToConstant(state->sparql_filter));
-	result = lappend(result, CStringToConstant(state->sparql_orderby));
-	result = lappend(result, CStringToConstant(state->sparql_limit));
-	result = lappend(result, CStringToConstant(state->raw_sparql));
-	result = lappend(result, CStringToConstant(state->endpoint));
-	result = lappend(result, CStringToConstant(state->query_param));
-	result = lappend(result, CStringToConstant(state->format));
-	result = lappend(result, CStringToConstant(state->proxy));
-	result = lappend(result, CStringToConstant(state->proxy_type));
-	result = lappend(result, CStringToConstant(state->proxy_user));
-	result = lappend(result, CStringToConstant(state->proxy_user_password));
-	result = lappend(result, CStringToConstant(state->custom_params));
-	result = lappend(result, serializeInt((int)state->request_redirect));
-	result = lappend(result, serializeInt((int)state->enable_pushdown));
-	result = lappend(result, serializeInt((int)state->is_sparql_parsable));
-	result = lappend(result, serializeInt((int)state->log_sparql));
-	result = lappend(result, serializeInt((int)state->has_unparsable_conds));
-	result = lappend(result, serializeInt((int)state->request_max_redirect));
-	result = lappend(result, serializeInt((int)state->connect_timeout));
-	result = lappend(result, serializeInt((int)state->max_retries));
-	result = lappend(result, serializeOid(state->foreigntableid));
+	result = lappend(result, IntToConst((int)state->numcols));
+	result = lappend(result, CStringToConst(state->sparql));
+	result = lappend(result, CStringToConst(state->sparql_prefixes));
+	result = lappend(result, CStringToConst(state->sparql_select));
+	result = lappend(result, CStringToConst(state->sparql_from));
+	result = lappend(result, CStringToConst(state->sparql_where));
+	result = lappend(result, CStringToConst(state->sparql_filter));
+	result = lappend(result, CStringToConst(state->sparql_orderby));
+	result = lappend(result, CStringToConst(state->sparql_limit));
+	result = lappend(result, CStringToConst(state->raw_sparql));
+	result = lappend(result, CStringToConst(state->endpoint));
+	result = lappend(result, CStringToConst(state->query_param));
+	result = lappend(result, CStringToConst(state->format));
+	result = lappend(result, CStringToConst(state->proxy));
+	result = lappend(result, CStringToConst(state->proxy_type));
+	result = lappend(result, CStringToConst(state->proxy_user));
+	result = lappend(result, CStringToConst(state->proxy_user_password));
+	result = lappend(result, CStringToConst(state->custom_params));
+	result = lappend(result, IntToConst((int)state->request_redirect));
+	result = lappend(result, IntToConst((int)state->enable_pushdown));
+	result = lappend(result, IntToConst((int)state->is_sparql_parsable));
+	result = lappend(result, IntToConst((int)state->log_sparql));
+	result = lappend(result, IntToConst((int)state->has_unparsable_conds));
+	result = lappend(result, IntToConst((int)state->request_max_redirect));
+	result = lappend(result, IntToConst((int)state->connect_timeout));
+	result = lappend(result, IntToConst((int)state->max_retries));
+	result = lappend(result, OidToConst(state->foreigntableid));
 
 	elog(DEBUG1,"%s: serializing table with %d columns",__func__, state->numcols);
 	for (int i = 0; i < state->numcols; ++i)
 	{
 		elog(DEBUG2,"%s: column name '%s'",__func__, state->rdfTable->cols[i]->name);
-		result = lappend(result, CStringToConstant(state->rdfTable->cols[i]->name));
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->name));
 
 		elog(DEBUG2,"%s: sparqlvar '%s'",__func__, state->rdfTable->cols[i]->sparqlvar);
-		result = lappend(result, CStringToConstant(state->rdfTable->cols[i]->sparqlvar));
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->sparqlvar));
 
 		elog(DEBUG2,"%s: expression '%s'",__func__, state->rdfTable->cols[i]->expression);
-		result = lappend(result, CStringToConstant(state->rdfTable->cols[i]->expression));
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->expression));
 
 		elog(DEBUG2,"%s: literaltype '%s'",__func__, state->rdfTable->cols[i]->literaltype);
-		result = lappend(result, CStringToConstant(state->rdfTable->cols[i]->literaltype));
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literaltype));
 
 		elog(DEBUG2,"%s: nodetype '%s'",__func__, state->rdfTable->cols[i]->nodetype);
-		result = lappend(result, CStringToConstant(state->rdfTable->cols[i]->nodetype));
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->nodetype));
 
 		elog(DEBUG2,"%s: language '%s'",__func__, state->rdfTable->cols[i]->language);
-		result = lappend(result, CStringToConstant(state->rdfTable->cols[i]->language));
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->language));
 
 		elog(DEBUG2,"%s: pgtype '%u'",__func__, state->rdfTable->cols[i]->pgtype);
-		result = lappend(result, serializeOid(state->rdfTable->cols[i]->pgtype));
+		result = lappend(result, OidToConst(state->rdfTable->cols[i]->pgtype));
 
 		elog(DEBUG2,"%s: pgtypmod '%d'",__func__, state->rdfTable->cols[i]->pgtypmod);
-		result = lappend(result, serializeInt(state->rdfTable->cols[i]->pgtypmod));
+		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pgtypmod));
 
 		elog(DEBUG2,"%s: pgattnum '%d'",__func__, state->rdfTable->cols[i]->pgattnum);
-		result = lappend(result, serializeInt(state->rdfTable->cols[i]->pgattnum));
+		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pgattnum));
 
 		elog(DEBUG2,"%s: used '%d'",__func__, state->rdfTable->cols[i]->used);
-		result = lappend(result, serializeInt(state->rdfTable->cols[i]->used));
+		result = lappend(result, IntToConst(state->rdfTable->cols[i]->used));
 
 		elog(DEBUG2,"%s: pushable '%d'",__func__, state->rdfTable->cols[i]->pushable);
-		result = lappend(result, serializeInt(state->rdfTable->cols[i]->pushable));
+		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pushable));
 	}
 
 	return result;
 }
 
+/*
+ * DeserializePlanData
+ * -----------------
+ * Converts Const variables created using SerializePlanData back
+ * into pointers
+ * 
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ * 
+ * returns a RDFfdwState containing all converted parameterrs.
+ */
 static struct RDFfdwState *DeserializePlanData(List *list)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
@@ -788,55 +806,55 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	state->pagesize = 0;
 	cell = list_next(list, cell);
 
-	state->sparql = ConstantToCString(lfirst(cell));
+	state->sparql = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_prefixes = ConstantToCString(lfirst(cell));
+	state->sparql_prefixes = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_select = ConstantToCString(lfirst(cell));
+	state->sparql_select = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_from = ConstantToCString(lfirst(cell));
+	state->sparql_from = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_where = ConstantToCString(lfirst(cell));
+	state->sparql_where = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_filter = ConstantToCString(lfirst(cell));
+	state->sparql_filter = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_orderby = ConstantToCString(lfirst(cell));
+	state->sparql_orderby = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->sparql_limit = ConstantToCString(lfirst(cell));
+	state->sparql_limit = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->raw_sparql = ConstantToCString(lfirst(cell));
+	state->raw_sparql = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->endpoint = ConstantToCString(lfirst(cell));
+	state->endpoint = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->query_param = ConstantToCString(lfirst(cell));
+	state->query_param = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->format = ConstantToCString(lfirst(cell));
+	state->format = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->proxy = ConstantToCString(lfirst(cell));
+	state->proxy = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->proxy_type = ConstantToCString(lfirst(cell));
+	state->proxy_type = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->proxy_user = ConstantToCString(lfirst(cell));
+	state->proxy_user = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->proxy_user_password = ConstantToCString(lfirst(cell));
+	state->proxy_user_password = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->custom_params = ConstantToCString(lfirst(cell));
+	state->custom_params = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
 	state->request_redirect = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
@@ -874,23 +892,23 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	{
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
-		state->rdfTable->cols[i]->name = ConstantToCString(lfirst(cell));
+		state->rdfTable->cols[i]->name = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 		elog(DEBUG2,"  %s: column name '%s'",__func__, state->rdfTable->cols[i]->name);
 
-		state->rdfTable->cols[i]->sparqlvar = ConstantToCString(lfirst(cell));
+		state->rdfTable->cols[i]->sparqlvar = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 
-		state->rdfTable->cols[i]->expression = ConstantToCString(lfirst(cell));
+		state->rdfTable->cols[i]->expression = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 
-		state->rdfTable->cols[i]->literaltype = ConstantToCString(lfirst(cell));
+		state->rdfTable->cols[i]->literaltype = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 
-		state->rdfTable->cols[i]->nodetype = ConstantToCString(lfirst(cell));
+		state->rdfTable->cols[i]->nodetype = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 
-		state->rdfTable->cols[i]->language = ConstantToCString(lfirst(cell));
+		state->rdfTable->cols[i]->language = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 
 		state->rdfTable->cols[i]->pgtype = DatumGetObjectId(((Const *)lfirst(cell))->constvalue);
@@ -1985,7 +2003,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 		appendStringInfo(&sparql, "\n%s", state->sparql_limit);
 	}
 
-	state->sparql = NameStr(sparql);
+	state->sparql = pstrdup(NameStr(sparql));
 }
 
 /*
