@@ -179,3 +179,39 @@ END; $$;
 
 SELECT * FROM tmp_eu_countries;
 DROP TABLE tmp_eu_countries;
+
+/* Pagination with OFFSET + LIMIT */
+DO $$
+DECLARE 
+ chunk_size int := 5;
+ max int := 15;
+BEGIN
+
+  CREATE TEMPORARY TABLE local (
+    id text DEFAULT '',
+    name text DEFAULT ''
+  );
+
+  /* Select records from the foreign table in chunks
+   * in the size of 'chunk_size' with a maximum of
+   * 'max' records.
+   */
+  FOR i IN 0..max-chunk_size BY chunk_size LOOP
+    INSERT INTO local
+    SELECT uri, nativename 
+    FROM european_countries
+    ORDER BY uri 
+    OFFSET i LIMIT chunk_size;
+  END LOOP;
+
+END; $$;
+
+/* Compare the stored records from the loop with a
+ * single query with a LIMIT 'max' */
+WITH j AS (
+SELECT uri, nativename 
+  FROM european_countries
+  ORDER BY uri 
+  LIMIT 15
+)
+SELECT * FROM local EXCEPT SELECT * FROM j;

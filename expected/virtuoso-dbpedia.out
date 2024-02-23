@@ -123,16 +123,21 @@ SELECT DISTINCT ?name ?released
       FILTER (datatype(?runtime) = xsd:integer)
      }
 ORDER BY  DESC (?released)  ASC (?name)
-OFFSET 5 LIMIT 10
+LIMIT 15
 
             name             |  released  
 -----------------------------+------------
+ Sagardwipey Jawker Dhan     | 12-06-2019
+ Old-Timers                  | 10-17-2019
+ Mitin Mashi                 | 09-18-2019
+ Bu                          | 04-11-2019
+ Bu, Kasih Suci              | 04-11-2019
  Hotel Milan                 | 08-28-2018
  Happy Days                  | 01-26-2018
  Middle Class Abbayi         | 12-11-2017
  Chocolate City: Vegas Strip | 08-12-2017
  Breach of  Trust            | 06-09-2017
-(5 rows)
+(10 rows)
 
 -- OFFSET x AND LIMIT x are pushed down
 -- ORDER BY is pushed down.
@@ -159,16 +164,21 @@ SELECT DISTINCT ?name ?released
       FILTER (datatype(?runtime) = xsd:integer)
      }
 ORDER BY  DESC (?released)  ASC (?name)
-OFFSET 5 LIMIT 10
+LIMIT 15
 
             name             |  released  
 -----------------------------+------------
+ Sagardwipey Jawker Dhan     | 12-06-2019
+ Old-Timers                  | 10-17-2019
+ Mitin Mashi                 | 09-18-2019
+ Bu                          | 04-11-2019
+ Bu, Kasih Suci              | 04-11-2019
  Hotel Milan                 | 08-28-2018
  Happy Days                  | 01-26-2018
  Middle Class Abbayi         | 12-11-2017
  Chocolate City: Vegas Strip | 08-12-2017
  Breach of  Trust            | 06-09-2017
-(5 rows)
+(10 rows)
 
 -- LIMIT + OFFSET won't be pushed down, as this is not
 -- safe to do so with DISTINCT.

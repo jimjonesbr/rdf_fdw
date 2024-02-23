@@ -106,9 +106,9 @@ DELETE FROM t1;
 ERROR:  cannot delete from foreign table "t1"
 /* EXPLAIN isn't supported*/
 EXPLAIN SELECT * FROM t1;
-                         QUERY PLAN                          
--------------------------------------------------------------
- Foreign Scan on t1  (cost=1.00..1001.00 rows=1000 width=32)
+                            QUERY PLAN                            
+------------------------------------------------------------------
+ Foreign Scan on t1  (cost=10000.00..20000.00 rows=1000 width=32)
 (1 row)
 
 /* invalid SPARQL - missing closing curly braces (\n)*/
