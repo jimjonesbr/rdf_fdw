@@ -15,3 +15,5 @@ COMMENT ON FUNCTION rdf_fdw_validator(text[], oid) IS 'RDF Triplestore Foreign-d
 CREATE FOREIGN DATA WRAPPER rdf_fdw
 HANDLER rdf_fdw_handler
 VALIDATOR rdf_fdw_validator;
+
+COMMENT ON FOREIGN DATA WRAPPER rdf_fdw IS 'RDF Triplestore Foreign Data Wrapper';

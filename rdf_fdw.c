@@ -182,6 +182,8 @@ typedef struct RDFfdwState
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
+	Cost startup_cost;             /* cost estimate, only needed for planning */
+	Cost total_cost;               /* cost estimate, only needed for planning */
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -546,6 +548,9 @@ static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 	elog(DEBUG1, "%s called", __func__);
 
 	state->foreigntableid = foreigntableid;
+	state->startup_cost = 10000.0;
+	/* estimate total cost as startup cost + 10 * (returned rows) */
+	state->total_cost = state->startup_cost + baserel->rows * 10.0;
 
 	InitSession(state, baserel, root);
 
@@ -555,15 +560,17 @@ static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid)
 {
 
+	struct RDFfdwState *state = (struct RDFfdwState *)baserel->fdw_private;
+
 	Path *path = (Path *)create_foreignscan_path(root, baserel,
 												 NULL,				/* default pathtarget */
 												 baserel->rows,		/* rows */
-												 1,					/* startup cost */
-												 1 + baserel->rows, /* total cost */
+												 state->startup_cost,/* startup cost */
+												 state->total_cost, /* total cost */
 												 NIL,				/* no pathkeys */
-												 NULL,				/* no required outer relids */
+												 baserel->lateral_relids,				/* no required outer relids */
 												 NULL,				/* no fdw_outerpath */
-												 NIL);				/* no fdw_private */
+												 NULL);				/* no fdw_private */
 	add_path(baserel, path);
 }
 
@@ -3150,15 +3157,15 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	initStringInfo(&limit_clause);
 
 	if (offset_val)
-		appendStringInfo(&limit_clause,
-						 "OFFSET %s LIMIT %s",
-						 offset_val, limit_val);
+	{
+		int val_offset = DatumGetInt32(((Const *)root->parse->limitOffset)->constvalue);
+		int val_limit = DatumGetInt32(((Const *)root->parse->limitCount)->constvalue);
+		appendStringInfo(&limit_clause, "LIMIT %d", val_offset+val_limit);
+	}
 	else
-		appendStringInfo(&limit_clause,
-						 "LIMIT %s",
-						 limit_val);
+		appendStringInfo(&limit_clause, "LIMIT %s", limit_val);
 
-	return limit_clause.data;
+	return NameStr(limit_clause);
 
 }
 
