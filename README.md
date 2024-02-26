@@ -236,7 +236,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 
 ### LIMIT
 
-`LIMIT` clauses are pushed down if the SQL query does not contain aggregates and all conditions in the `WHERE` clause can be pushed translated to SPARQL.
+`LIMIT` clauses are pushed down only if the SQL query does not contain aggregates and when all conditions in the `WHERE` clause can be translated to SPARQL.
  
 | SQL | SPARQL|
 | -- | --- |
@@ -244,7 +244,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 | `FETCH FIRST x ROWS` | `LIMIT x` |
 | `FETCH FIRST ROW ONLY` | `LIMIT 1` |
 
-**OFFSET** clauses are **not** supported and won't be pushed down.  
+Pushdown of **OFFSET** clauses is **not** supported, which means that OFFSET filters will be applied locally in the client.
 
 ### ORDER BY
 
