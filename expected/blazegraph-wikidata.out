@@ -37,7 +37,7 @@ SERVER wikidata OPTIONS (
 SELECT atmid, bankname, atmwkt
 FROM atms_munich
 WHERE bankname = 'BBBank';
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
   PREFIX lgdo: <http://linkedgeodata.org/ontology/>
@@ -98,7 +98,7 @@ SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
 WHERE wikidata_id = 'http://www.wikidata.org/entity/Q61308849'
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location 
@@ -177,7 +177,7 @@ WHERE
   base_url = 'http://www.wikidata.org/entity/' AND
   ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
 ORDER by language;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?b4se) (STRAFTER(STR(?country),"entity/") AS ?q1d) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) ("2002-03-08"^^xsd:date AS ?det) ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -222,7 +222,7 @@ WHERE
   bf IS NOT true AND
   bt IS true AND
   bt IS NOT false;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -250,7 +250,7 @@ WHERE
   NOT bf IS true AND
   bt IS true AND
   NOT bt IS false;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -281,7 +281,7 @@ WHERE
   bf != true AND
   bt = true AND
   bt != false;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -305,7 +305,7 @@ BEGIN
   ORDER BY nativename
   OFFSET 0 LIMIT 5;  
 END; $$;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename 
@@ -353,7 +353,7 @@ BEGIN
   END LOOP;
 
 END; $$;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename 
@@ -365,7 +365,7 @@ SELECT ?country ?nativename
 ORDER BY  ASC (?country)
 LIMIT 5
 
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename 
@@ -377,7 +377,7 @@ SELECT ?country ?nativename
 ORDER BY  ASC (?country)
 LIMIT 10
 
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename 
@@ -398,7 +398,7 @@ SELECT uri, nativename
   LIMIT 15
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?country ?nativename 

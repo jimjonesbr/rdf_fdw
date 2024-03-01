@@ -36,7 +36,7 @@ SELECT DISTINCT name, lon, lat
 FROM getty_places 
 ORDER BY lat
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
+INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -74,7 +74,7 @@ SELECT uri, lon, lat
 FROM getty_places
 WHERE name = 'West Flanders, Flanders, Belgium, Europe, World'
 ORDER BY lon;
-NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
+INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -178,7 +178,7 @@ SELECT * FROM (
   FROM getty_places
   WHERE lat BETWEEN 52.5 AND 53.0) j
 ORDER BY lat;
-NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
+INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -258,7 +258,7 @@ FROM getty_non_italians
 WHERE bio ~~* '%artist%'
 ORDER BY birth 
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
+INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
 
   PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>

@@ -40,7 +40,7 @@ SELECT film_id AS id, name, runtime, released AS rel
 FROM film
 ORDER BY rel DESC, 1 ASC
 LIMIT 5;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -75,7 +75,7 @@ SELECT count(runtime),avg(runtime)
 FROM film
 ORDER BY count(runtime),avg(runtime)
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -105,7 +105,7 @@ FROM film
 ORDER BY released DESC, name ASC
 OFFSET 5 ROWS
 FETCH FIRST 10 ROW ONLY; 
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -146,7 +146,7 @@ FROM film
 ORDER BY released DESC, name ASC
 OFFSET 5 
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -187,7 +187,7 @@ FROM film
 ORDER BY released DESC, name ASC
 OFFSET 5 
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -227,7 +227,7 @@ FROM film
 ORDER BY released DESC, name ASC
 OFFSET 5 
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -272,7 +272,7 @@ WHERE
   released < '1930-03-25'
 ORDER BY name
 FETCH FIRST 3 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -313,7 +313,7 @@ WHERE
   released < '1930-03-25'
 ORDER BY released
 FETCH FIRST 3 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -352,7 +352,7 @@ WHERE
   released < '1930-03-25')
 ORDER BY released ASC, name DESC
 FETCH FIRST 3 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -386,7 +386,7 @@ FROM film
 WHERE   
   name = 'The Life of Adam Lindsay Gordon' AND 
   released <> '1930-03-25';
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -454,7 +454,7 @@ FROM politicians
 WHERE country = 'Germany'
 ORDER BY birthdate DESC, party ASC
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -501,7 +501,7 @@ FROM politicians
 WHERE country = 'Germany'
 ORDER BY birthdate
 LIMIT 3;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -539,7 +539,7 @@ FROM politicians
 WHERE country = 'Germany' AND birthdate > '1995-12-31'
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -584,7 +584,7 @@ WHERE lower(country) = 'germany' AND
       birthdate > '1995-12-31'
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -623,7 +623,7 @@ FROM politicians
 WHERE country IN ('Germany','France','Portugal')
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -663,7 +663,7 @@ FROM politicians
 WHERE country NOT IN ('Germany','France','Portugal')
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -703,7 +703,7 @@ FROM politicians
 WHERE country = ANY(ARRAY['Germany','France','Portugal'])
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -742,7 +742,7 @@ FROM politicians
 WHERE country <> ANY(ARRAY['Germany','France','Portugal'])
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -779,7 +779,7 @@ FROM politicians
 WHERE country ~~* ANY(ARRAY['%UsTr%','%TugA%'])
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -816,7 +816,7 @@ FROM politicians
 WHERE country ~~ ANY(ARRAY['__land%','%GERMAN%'])
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -853,7 +853,7 @@ FROM politicians
 WHERE NOT country ~~* ANY(ARRAY['%UnItEd%','%land%'])
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -917,7 +917,7 @@ FROM party_members
 WHERE country ~~* '%isle of man%'
 ORDER BY nmembers ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
     PREFIX dbp: <http://dbpedia.org/property/>
@@ -978,7 +978,7 @@ SELECT name, party, birthdate
 FROM chanceler_candidates
 WHERE party <> ''
 ORDER BY birthdate DESC;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
     PREFIX dbp: <http://dbpedia.org/property/>
@@ -1036,7 +1036,7 @@ SELECT name, wkt
 FROM german_public_universities 
 ORDER BY lat DESC 
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1078,7 +1078,7 @@ WHERE
   lat > 52 AND 
   lon < 9 AND
   wkt = 'POINT(8.49305534362793 52.03777694702148)';
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1112,7 +1112,7 @@ WHERE
   id <> '' AND 
   lat - 1 > 52 AND -- conditions with expressions in the left side won't be pushed down.
   lon < 8+1; -- the expression in the right side will be computed before pushdown.
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1157,7 +1157,7 @@ SELECT ?uri ?name ?lon ?lat
   ', 
   log_sparql 'true');
 SELECT birthdate FROM person1 WHERE person = 'foo'; 
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
     PREFIX dbp: <http://dbpedia.org/property/>
@@ -1195,7 +1195,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
   ', 
   log_sparql 'true');
 SELECT birthdate FROM person2 WHERE person = 'foo';
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
     PREFIX dbp: <http://dbpedia.org/property/>
@@ -1233,7 +1233,7 @@ NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT birthdate FROM person3 
 WHERE person <> '' 
 LIMIT 5;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -1297,7 +1297,7 @@ WHERE
   released < '1930-03-25'
 ORDER BY name
 FETCH FIRST 3 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1329,7 +1329,7 @@ FROM politicians_germany
 WHERE birthdate > '1990-12-01'
 ORDER BY birthdate DESC, party ASC
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -1363,7 +1363,7 @@ WHERE
   released < '1930-03-25'
 ORDER BY name
 FETCH FIRST 3 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
     PREFIX dbr: <http://dbpedia.org/resource/>
@@ -1394,7 +1394,7 @@ FROM politicians_germany
 WHERE birthdate > '1990-12-01'
 ORDER BY birthdate DESC, party ASC
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
     PREFIX dbp: <http://dbpedia.org/property/>
@@ -1451,7 +1451,7 @@ SERVER dbpedia OPTIONS (
 SELECT name
 FROM dbpedia_limit
 LIMIT 2;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1496,7 +1496,7 @@ SELECT name
 FROM dbpedia_orderby
 ORDER BY name DESC
 LIMIT 2;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1541,7 +1541,7 @@ SERVER dbpedia OPTIONS (
 SELECT DISTINCT name
 FROM dbpedia_distinct
 LIMIT 1;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1584,7 +1584,7 @@ SERVER dbpedia OPTIONS (
 SELECT name
 FROM dbpedia_groupby
 LIMIT 1;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1623,7 +1623,7 @@ SERVER dbpedia OPTIONS (
 SELECT name
 FROM musical_artists
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -1675,7 +1675,7 @@ SELECT name
 FROM generic_rdf_table
 WHERE uri = 'http://dbpedia.org/resource/Isle_of_Man'
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1720,7 +1720,7 @@ SELECT name
 FROM generic_rdf_table2
 WHERE uri = 'http://dbpedia.org/resource/Brazil'
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1764,7 +1764,7 @@ SELECT name
 FROM generic_rdf_table3
 WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1805,7 +1805,7 @@ SELECT name
 FROM generic_rdf_table4
 WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbr: <http://dbpedia.org/resource/>
  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
