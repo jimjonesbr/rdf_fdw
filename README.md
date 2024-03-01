@@ -740,7 +740,7 @@ $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION r
 
 ### [For testers and developers](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#for-testers-and-developers)
 
-If you're cool enough to try out the latest commits:
+If you're cool enough, try out the latest commits:
 
 Dockerfile
 
