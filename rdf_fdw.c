@@ -973,7 +973,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 	ListCell *cell;	
 
 #if PG_VERSION_NUM < 130000
-	Relation rel = heap_open(ft->relid, NoLock);
+	Relation rel = heap_open(state->foreigntableid, NoLock);
 #else
 	Relation rel = table_open(state->foreigntableid, NoLock);
 #endif
