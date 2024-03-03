@@ -29,12 +29,32 @@ OPTIONS (
 );
 ERROR:  invalid enable_pushdown: 'foo'
 HINT:  this parameter expects boolean values ('true' or 'false')
-CREATE SERVER testserver
+/*
+  invalid fetch_size
+  nevative fetch_size
+ */
+CREATE SERVER rdfserver_error4
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
   endpoint 'https://dbpedia.org/sparql',
-  enable_pushdown 'fAlSe'
+  fetch_size '-1'
 );
+ERROR:  invalid fetch_size: '-1'
+HINT:  expected values are positive integers
+/*
+  invalid fetch_size
+  empty string
+ */
+CREATE SERVER rdfserver_error5
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  fetch_size ''
+);
+ERROR:  empty value in option 'fetch_size'
+CREATE SERVER testserver
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://dbpedia.org/sparql');
 /* 
   invalid colum option 
   OPTION 'foo' does not exist
@@ -202,3 +222,20 @@ CREATE FOREIGN TABLE t13 (s text OPTIONS (variable ' ?a', expression 'now()')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid variable: ' ?a'
 HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
+/* 
+  invalid foreign table option 
+  fetch_size empty
+*/
+CREATE FOREIGN TABLE t14 (
+  name text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '');
+ERROR:  empty value in option 'fetch_size'
+/* 
+  invalid foreign table option 
+  fetch_size negative
+*/
+CREATE FOREIGN TABLE t15 (
+  name text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
+ERROR:  invalid fetch_size: '-1'
+HINT:  expected values are positive integers

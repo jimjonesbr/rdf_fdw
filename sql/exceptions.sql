@@ -28,13 +28,32 @@ OPTIONS (
   enable_pushdown 'foo'
 );
 
-
-CREATE SERVER testserver
+/*
+  invalid fetch_size
+  nevative fetch_size
+ */
+CREATE SERVER rdfserver_error4
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
   endpoint 'https://dbpedia.org/sparql',
-  enable_pushdown 'fAlSe'
+  fetch_size '-1'
 );
+
+/*
+  invalid fetch_size
+  empty string
+ */
+CREATE SERVER rdfserver_error5
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  fetch_size ''
+);
+
+CREATE SERVER testserver
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://dbpedia.org/sparql');
+
 /* 
   invalid colum option 
   OPTION 'foo' does not exist
@@ -173,3 +192,19 @@ CREATE FOREIGN TABLE t12 (s text OPTIONS (variable '?a?z', expression 'now()')
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t13 (s text OPTIONS (variable ' ?a', expression 'now()')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* 
+  invalid foreign table option 
+  fetch_size empty
+*/
+CREATE FOREIGN TABLE t14 (
+  name text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '');
+
+/* 
+  invalid foreign table option 
+  fetch_size negative
+*/
+CREATE FOREIGN TABLE t15 (
+  name text OPTIONS (variable '?s')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
