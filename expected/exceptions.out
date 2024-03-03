@@ -131,6 +131,46 @@ EXPLAIN SELECT * FROM t1;
  Foreign Scan on t1  (cost=10000.00..20000.00 rows=1000 width=32)
 (1 row)
 
+/*
+ empty target_table
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => ''
+    );
+ERROR:  no target table provided
+/*
+ negative fetch_size
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => 't',
+        fetch_size => -1
+    );
+ERROR:  invalid fetch_size: -1
+HINT:  the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number
+/*
+ negative begin_offset
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => 't',
+        begin_offset => -1
+    );
+ERROR:  invalid begin_offset: -1
+/*
+ invalid ordering_column
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => 't',
+        ordering_column => 'foo'
+    );
+ERROR:  invalid ordering_column 'foo'
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '

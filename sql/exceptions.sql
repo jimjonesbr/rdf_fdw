@@ -125,6 +125,46 @@ DELETE FROM t1;
 /* EXPLAIN isn't supported*/
 EXPLAIN SELECT * FROM t1;
 
+/*
+ empty target_table
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => ''
+    );
+
+/*
+ negative fetch_size
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => 't',
+        fetch_size => -1
+    );
+
+/*
+ negative begin_offset
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => 't',
+        begin_offset => -1
+    );
+
+/*
+ invalid ordering_column
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table => 't',
+        ordering_column => 'foo'
+    );
+
+
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
