@@ -83,6 +83,7 @@
 #define RDF_KEYWORD_NOT_FOUND -1
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
 #define RDF_DEFAULT_QUERY_PARAM "query"
+#define RDF_DEFAULT_FETCH_SIZE 100
 
 #define RDF_SERVER_OPTION_ENDPOINT "endpoint"
 #define RDF_SERVER_OPTION_FORMAT "format"
@@ -97,10 +98,12 @@
 #define RDF_SERVER_OPTION_PROXY_USER_PASSWORD "proxy_user_password"
 #define RDF_SERVER_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
 #define RDF_SERVER_OPTION_QUERY_PARAM "query_param"
+#define RDF_SERVER_OPTION_FETCH_SIZE "fetch_size"
 
 #define RDF_TABLE_OPTION_SPARQL "sparql"
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
 #define RDF_TABLE_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
+#define RDF_TABLE_OPTION_FETCH_SIZE "fetch_size"
 
 #define RDF_COLUMN_OPTION_VARIABLE "variable"
 #define RDF_COLUMN_OPTION_EXPRESSION "expression"
@@ -153,6 +156,7 @@ typedef struct RDFfdwState
 	int numcols;                 /* Total number of columns in the foreign table. */
 	int rowcount;                /* Number of rows currently returned to the client */
 	int pagesize;                /* Total number of records retrieved from the SPARQL endpoint*/
+	int fetch_size;
 	char* sparql;                /* Final SPARQL query sent to the endpoint (after pusdhown) */
 	char *sparql_prefixes;       /* SPARQL PREFIX entries */
 	char *sparql_select;         /* SPARQL SELECT containing the columns / variables used in the SQL query */
@@ -170,6 +174,7 @@ typedef struct RDFfdwState
 	char *proxy_user;            /* User name for proxy authentication. */
 	char *proxy_user_password;   /* Password for proxy authentication. */
 	char *custom_params;         /* Custom parameters used to compose the request URL */
+	char *ordering_pgcolumn;
 	bool request_redirect;       /* Enables or disables URL redirecting. */
 	bool enable_pushdown;        /* Enables or disables pushdown of SQL commands */
 	bool is_sparql_parsable;     /* Marks the query is or not for pushdown*/
@@ -180,13 +185,15 @@ typedef struct RDFfdwState
 	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
 	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
+	Oid target_table_id;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
 	Cost startup_cost;             /* cost estimate, only needed for planning */
 	Cost total_cost;               /* cost estimate, only needed for planning */
 	ForeignServer *server;
-	ForeignTable *ft;
-	char* target_table;
+	ForeignTable *foreign_table;
+	Relation target_table;
+	bool verbose;
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -247,10 +254,12 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_ENABLE_PUSHDOWN, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_QUERY_PARAM, ForeignServerRelationId, false, false},
+	{RDF_SERVER_OPTION_FETCH_SIZE, ForeignServerRelationId, false, false},
 	/* Foreign Tables */
 	{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 	{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
 	{RDF_TABLE_OPTION_ENABLE_PUSHDOWN, ForeignTableRelationId, false, false},
+	{RDF_TABLE_OPTION_FETCH_SIZE, ForeignTableRelationId, false, false},
 	/* Options for Foreign Table's Columns */
 	{RDF_COLUMN_OPTION_VARIABLE, AttributeRelationId, true, false},
 	{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
@@ -297,7 +306,7 @@ static void InitSession(struct RDFfdwState *state,  RelOptInfo *baserel, Planner
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
-static char *CreateSQLBulkINSERT(RDFfdwState *state);
+static int InsertRetrievedData(RDFfdwState *state);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
@@ -347,10 +356,10 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
-	Oid foreign_table = PG_GETARG_OID(0);
-	text *target_table = PG_GETARG_TEXT_P(1);
+	Oid foreigntableid = PG_GETARG_OID(0);
+	Oid targettableid = PG_GETARG_OID(1);
 	int begin_offset = PG_GETARG_INT32(2);
-	int page_size = PG_GETARG_INT32(3);
+	int fetch_size = PG_GETARG_INT32(3);
 	int max_records = PG_GETARG_INT32(4);
 	text *ordering_pgcolumn = PG_GETARG_TEXT_P(5);
 	bool create_table = PG_GETARG_BOOL(6);
@@ -358,32 +367,47 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	int processed_records = 0;
 	int num_pages_retrieved = 0;
 	char *orderby_variable = NULL;
-
+	int ret;
 	StringInfoData select;
+	bool match = false;
+	Relation rel;
 
 	elog(DEBUG1,"%s called",__func__);
 
-	if(page_size <= 0)
+	if(!targettableid)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid page_size: %d",page_size),
-				 errhint("the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number")));
+				 errmsg("no target table provided")));
 
+	if(fetch_size < 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid fetch_size: %d",fetch_size),
+				 errhint("the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number")));
+	
 	if(max_records < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("invalid max_records: %d",max_records),
 				 errhint("max_records corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number")));
 
-	state->foreigntableid = foreign_table;
-	state->ft = GetForeignTable(state->foreigntableid);
-	state->server = GetForeignServer(state->ft->serverid);
-	state->target_table = text_to_cstring(target_table);
+	if(begin_offset < 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid begin_offset: %d",begin_offset)));
+
+
+	state->target_table_id = targettableid;
+	state->foreigntableid = foreigntableid;
+	state->foreign_table = GetForeignTable(state->foreigntableid);
+	state->server = GetForeignServer(state->foreign_table->serverid);
+	state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
 	state->enable_pushdown = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
+	state->verbose = verbose;
 
 	/*
 	 * Load configured SERVER parameters
@@ -395,7 +419,71 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 */
 	LoadRDFTableInfo(state);
 
-	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
+	/* 
+	 * Here we check if the target table matches the columns of the 
+	 * FOREIGN TABLE.
+	 */
+
+#if PG_VERSION_NUM < 130000
+	rel = heap_open(state->target_table_id, NoLock);
+#else
+	rel = table_open(state->target_table_id, NoLock);
+#endif	
+
+	for (size_t ftidx = 0; ftidx < state->numcols; ftidx++)
+	{
+		for (size_t ttidx = 0; ttidx < rel->rd_att->natts; ttidx++)
+		{
+			elog(DEBUG1,"%s: comparing %s - %s", __func__,
+				NameStr(rel->rd_att->attrs[ttidx].attname), 
+				state->rdfTable->cols[ftidx]->name);
+
+			if(strcmp(NameStr(rel->rd_att->attrs[ttidx].attname), state->rdfTable->cols[ftidx]->name) == 0)
+			{
+				state->rdfTable->cols[ftidx]->used = true;
+				match = true;
+			}
+		}
+	}
+
+#if PG_VERSION_NUM < 130000
+	heap_close(rel, NoLock);
+#else
+	table_close(rel, NoLock);
+#endif		
+
+	/* 
+	 * If both foreign and target table share no column we better stop it right here.
+	 */
+	if(!match)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid target table"),
+				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
+				 	get_rel_name(state->target_table_id),
+					get_rel_name(state->foreigntableid))
+				)
+			);
+	}
+
+
+
+
+
+	if(fetch_size == 0)
+	{
+		if(state->fetch_size != 0)
+			fetch_size = state->fetch_size;
+		else
+		{
+			fetch_size = RDF_DEFAULT_FETCH_SIZE;
+			if(verbose)
+				elog(INFO,"setting 'fetch_size' to %d (default)", RDF_DEFAULT_FETCH_SIZE);
+		}
+	}
+
+	elog(DEBUG1,"fetch_size = %d",fetch_size);
 
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
@@ -404,13 +492,13 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * Setting ORDER BY column for the SPARQL query. In case no column
 		 * is provided, we pick up the first 'iri' column in the table.
 		 */
-		if(strlen(text_to_cstring(ordering_pgcolumn)) == 0 && !orderby_variable)
+		if(strlen(state->ordering_pgcolumn) == 0 && !orderby_variable)
 		{
 			if (state->rdfTable->cols[i]->nodetype &&
 				strcmp(state->rdfTable->cols[i]->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
 				orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
 		}
-		else if (strcmp(state->rdfTable->cols[i]->name, text_to_cstring(ordering_pgcolumn)) == 0)
+		else if (strcmp(state->rdfTable->cols[i]->name, state->ordering_pgcolumn) == 0)
 		{
 			orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
 		}
@@ -423,23 +511,36 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 								pstrdup(state->rdfTable->cols[i]->sparqlvar)
 							);
 	}
+		
+	elog(DEBUG1,"ordering_pgcolumn = %s",state->ordering_pgcolumn);
 
-	if(!orderby_variable && strlen(text_to_cstring(ordering_pgcolumn)) !=0)
+	if(!orderby_variable && strlen(state->ordering_pgcolumn) !=0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid ordering_column '%s'",text_to_cstring(ordering_pgcolumn))));
-
+				 errmsg("invalid ordering_column '%s'", state->ordering_pgcolumn)));
+	
+	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
+	
 	/*
 	 * If no 'ordering_column' was provided and the table has no 'iri' column,
 	 * we use the first colum (index 1) for the SPARQL ORDER BY.
 	*/
 	if(!orderby_variable)
-		orderby_variable = pstrdup(state->rdfTable->cols[1]->sparqlvar);
+		orderby_variable = "1";// pstrdup(state->rdfTable->cols[1]->sparqlvar);
+
+	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
 
 	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
+	elog(DEBUG1,"sparql_prefixes = %s",state->sparql_prefixes);
+
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
+	elog(DEBUG1,"sparql_from = %s",state->sparql_from);
+
 	state->sparql_select = NameStr(select);
+	elog(DEBUG1,"sparql_select = %s",state->sparql_select);
+
 	state->sparql_where = DeparseSPARQLWhereGraphPattern(state);
+	elog(DEBUG1,"sparql_where = %s",state->sparql_where);
 
 	/*
 	 * Here we try to create the target table with the name give in 'target_table'.
@@ -453,23 +554,26 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 		initStringInfo(&ct);
 		appendStringInfo(&ct,"CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
-			state->target_table,
+			get_rel_name(state->target_table_id),
 			get_rel_name(state->foreigntableid));
 
-		 if(SPI_exec(NameStr(ct), 0) == SPI_OK_UTILITY && verbose)
+		if(SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
+			ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("unable to create target table '%s'",get_rel_name(state->target_table_id))));
+
+		 if(verbose)
 			elog(INFO,"Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
-				state->target_table, get_rel_name(state->foreigntableid), NameStr(ct));
+				get_rel_name(targettableid), get_rel_name(state->foreigntableid), NameStr(ct));
 
 		SPI_finish();
 	}
 
-	SPI_connect();
-
 	while(true)
 	{
-		char *sqlinsert;
-		int offset = begin_offset + (num_pages_retrieved * page_size);
-		int limit = page_size;
+		//char *sqlinsert;
+		int offset = begin_offset + (num_pages_retrieved * fetch_size);
+		int limit = fetch_size;
 		StringInfoData limit_clause;
 
 		/* stop iteration if the current offset is greater than max_records */
@@ -480,15 +584,15 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 						max_records,
 						processed_records,
 						num_pages_retrieved,
-						page_size);
+						fetch_size);
 			break;
 		}
 
 		/*
-		 * if the current offset + page_size exceed the set limit we change
+		 * if the current offset + fetch_size exceed the set limit we change
 		 * the limit.
 		 */
-		if(max_records != 0 && offset + page_size > max_records)
+		if(max_records != 0 && offset + fetch_size > max_records)
 			limit = max_records - offset;
 
 		/*
@@ -521,68 +625,61 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * execute the newly created SPARQL and load it in 'state'. It updates
 		 * state->pagesize!
 		 */
+		if(verbose)
+			elog(INFO,"loading data (%d - %d) ... ",
+				offset, offset + fetch_size);
+
 		LoadRDFData(state);
 
 		/* get out in case the SPARQL retrieves nothing */
 		if(state->pagesize == 0)
 		{
-			elog(DEBUG1,"%s: SPARQL returned nothing.",__func__);
+			elog(DEBUG1,"%s: SPARQL query returned nothing",__func__);
 			break;
 		}
 
-		/*
-		 * create SQL INSERT statements based on the records retrieved from
-		 * the SPARQL query.
-		 */
-		sqlinsert = CreateSQLBulkINSERT(state);
+		ret = InsertRetrievedData(state);
 
-		if(SPI_exec(sqlinsert, 0) == SPI_OK_INSERT && verbose)
-			elog(INFO,"page (%d - %d) stored: %ld records successfully inserted ",
-				offset, offset + page_size, SPI_processed);
-		else
+		if(ret < 0)
 			ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("unable to insert data in the target table '%s'",state->target_table)));
+				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, get_rel_name(state->target_table_id))));
 
 		num_pages_retrieved++;
-		processed_records = processed_records + SPI_processed;
 
 		pfree(limit_clause.data);
 	}
 
-	if(verbose)
-		elog(INFO,"Total inserted records: %d", processed_records);
-
-	SPI_finish();
-
 	PG_RETURN_VOID();
 }
 
-static char *CreateSQLBulkINSERT(RDFfdwState *state)
+static int InsertRetrievedData(RDFfdwState *state)
 {
 	xmlNodePtr result;
 	xmlNodePtr value;
-	xmlNodePtr record;
-	StringInfoData name;
-	StringInfoData values;
-	StringInfoData insert_columns;
-	StringInfoData insert_statement;
+	xmlNodePtr record;	
+	int ret = -1;
+	int processed_records = 0;
 
-	initStringInfo(&name);
-	initStringInfo(&values);
-	initStringInfo(&insert_columns);
-	initStringInfo(&insert_statement);
-
-	for (int i = 0; i < state->numcols; i++)
-	{
-		appendStringInfo(&insert_columns, "%s%s%s ",
-			i == 0 ? "(" : "",
-			state->rdfTable->cols[i]->name,
-			i == (state->numcols - 1) ? ")" : ",");
-	}
+	SPI_connect();
 
 	for (size_t rec = 0; rec < state->pagesize; rec++)
 	{
+		SPIPlanPtr	pplan;
+		Oid		   		*ctypes = (Oid *) palloc(state->numcols * sizeof(Oid));
+		StringInfoData 	insert_stmt;
+		StringInfoData 	insert_cols;
+		StringInfoData 	insert_pidx;
+
+		Datum	   		*cvals;			/* column values */
+		char	   		*cnulls;			/* column nulls */
+		int 			colindex = 0;		
+
+		cvals = (Datum *) palloc(state->numcols * sizeof(Datum));
+		cnulls = (char *) palloc(state->numcols * sizeof(char));
+		initStringInfo(&insert_cols);
+		initStringInfo(&insert_pidx);
+
 		record = FetchNextBinding(state);
 
 		for (int i = 0; i < state->numcols; i++)
@@ -591,42 +688,63 @@ static char *CreateSQLBulkINSERT(RDFfdwState *state)
 
 			for (result = record->children; result != NULL; result = result->next)
 			{
-				appendStringInfo(&name, "?%s",
-					(char *)xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG));
+				StringInfoData name;
+				initStringInfo(&name);
+				appendStringInfo(&name, "?%s", (char *)xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG));
 
-				if (strcmp(sparqlvar, NameStr(name)) == 0)
-				{
+				if (strcmp(sparqlvar, NameStr(name)) == 0 && state->rdfTable->cols[i]->used)
+				{				
 
 					for (value = result->children; value != NULL; value = value->next)
 					{
 						xmlBufferPtr buffer = xmlBufferCreate();
 						xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
-						appendStringInfo(&values, "%s$$%s$$%s ",
-							i == 0 ? "(" : "",
-							buffer->content,
-							i == (state->numcols - 1) ? ")" : ",");
 
+						cvals[colindex] = CStringGetTextDatum((char*)buffer->content);
+						ctypes[colindex] = state->rdfTable->cols[i]->pgtype;
+												
 						xmlBufferFree(buffer);
 					}
+										
+					colindex++;
+
+					appendStringInfo(&insert_cols,"%s %s",
+						colindex > 1 ? "," : "", 
+						state->rdfTable->cols[i]->name);
+						
+
+					appendStringInfo(&insert_pidx,"%s$%d",
+						colindex > 1 ? "," : "", 
+						colindex);
 				}
 
-				resetStringInfo(&name);
+				pfree(name.data);
 			}
 		}
 
-		if(rec+1 < state->pagesize)
-			appendStringInfo(&values,",");
-
 		state->rowcount++;
+
+		initStringInfo(&insert_stmt);
+		appendStringInfo(&insert_stmt,"INSERT INTO %s (%s) VALUES (%s);",
+			get_rel_name(state->target_table_id),
+			NameStr(insert_cols),
+			NameStr(insert_pidx)
+		);
+
+		pplan = SPI_prepare(NameStr(insert_stmt), colindex, ctypes);
+		
+		ret = SPI_execp(pplan, cvals, cnulls, 0);
+
+		processed_records = processed_records + SPI_processed;
+
 	}
 
-	appendStringInfo(&insert_statement,"INSERT INTO %s %s VALUES %s;",
-		state->target_table,
-		NameStr(insert_columns),
-		NameStr(values));
+	if(state->verbose)
+		elog(INFO,"inserted records: %d", processed_records);
 
+	SPI_finish();
 
-	return NameStr(insert_statement);
+	return ret;
 }
 
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
@@ -685,6 +803,21 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
 								 errhint("expected values are positive integers (timeout in seconds)")));
+					}
+				}
+
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_FETCH_SIZE) == 0)
+				{
+					char *endptr;
+					char *fetch_size_str = defGetString(def);
+					long fetch_size_val = strtol(fetch_size_str, &endptr, 0);
+
+					if (fetch_size_str[0] == '\0' || *endptr != '\0' || fetch_size_val < 0)
+					{
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, fetch_size_str),
+								 errhint("expected values are positive integers")));
 					}
 				}
 
@@ -1067,7 +1200,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 	/*
 	 * Loading FOREIGN TABLE OPTIONS
 	 */
-	foreach (cell, state->ft->options)
+	foreach (cell, state->foreign_table->options)
 	{
 		DefElem *def = lfirst_node(DefElem, cell);
 
@@ -1122,6 +1255,12 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			else if (strcmp(RDF_SERVER_OPTION_PROXY_USER_PASSWORD, def->defname) == 0)
 				state->proxy_user_password = defGetString(def);
 
+			else if (strcmp(RDF_SERVER_OPTION_FETCH_SIZE, def->defname) == 0)
+			{
+				char *tailpt;
+				char *fetch_size_str = defGetString(def);
+				state->fetch_size = strtol(fetch_size_str, &tailpt, 0);
+			}
 			else if (strcmp(RDF_SERVER_OPTION_CONNECTRETRY, def->defname) == 0)
 			{
 				char *tailpt;
@@ -1151,6 +1290,7 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 		}
 	}
 }
+
 /*
  * CStringToConst
  * -----------------
@@ -1564,9 +1704,10 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
-	state->max_retries = RDF_DEFAULT_MAXRETRY;	
-	state->ft = GetForeignTable(state->foreigntableid);
-	state->server = GetForeignServer(state->ft->serverid);
+	state->max_retries = RDF_DEFAULT_MAXRETRY;
+	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
+	state->foreign_table = GetForeignTable(state->foreigntableid);
+	state->server = GetForeignServer(state->foreign_table->serverid);
 
 	/*
 	 * Loading SERVER OPTIONS
@@ -3381,6 +3522,8 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
 	int nprefix = 0;
 
 	initStringInfo(&prefixes);
+
+	elog(DEBUG1,"%s called",__func__);
 
 	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, &nprefix, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
