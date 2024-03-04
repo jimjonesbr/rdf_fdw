@@ -1,0 +1,215 @@
+CREATE SERVER dbpedia
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://dbpedia.org/sparql');
+CREATE FOREIGN TABLE public.dbpedia_cities (
+  uri text        OPTIONS (variable '?city', nodetype 'iri'),
+  city_name text  OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+    PREFIX dbo:  <http://dbpedia.org/ontology/>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX dbr:  <http://dbpedia.org/resource/>
+    SELECT ?name
+    {
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+    ORDER BY ?name
+    OFFSET 73 LIMIT 1042
+');
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 'public.dbpedia_cities'::regclass::oid,
+        target_table => 't_dbpedia1',
+        page_size => 2,
+        max_records => 9,
+        create_table => true,
+        verbose => true
+    );
+INFO:  Target TABLE "t_dbpedia1" created based on FOREIGN TABLE "dbpedia_cities":
+
+  CREATE TABLE t_dbpedia1 AS SELECT * FROM dbpedia_cities WITH NO DATA;
+
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?city 
+OFFSET 0 LIMIT 2
+
+INFO:  page (0 - 2) stored: 2 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?city 
+OFFSET 2 LIMIT 2
+
+INFO:  page (2 - 4) stored: 2 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?city 
+OFFSET 4 LIMIT 2
+
+INFO:  page (4 - 6) stored: 2 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?city 
+OFFSET 6 LIMIT 2
+
+INFO:  page (6 - 8) stored: 2 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?city 
+OFFSET 8 LIMIT 1
+
+INFO:  page (8 - 10) stored: 1 records successfully inserted 
+INFO:  Total inserted records: 9
+ rdf_fdw_clone_table 
+---------------------
+ 
+(1 row)
+
+SELECT * FROM t_local1;
+ERROR:  relation "t_local1" does not exist
+LINE 1: SELECT * FROM t_local1;
+                      ^
+SELECT 
+    rdf_fdw_clone_table(
+        foreign_table => 'public.dbpedia_cities'::regclass::oid,
+        ordering_column => 'city_name',
+        target_table => 't_dbpedia2',
+        page_size => 6,
+        create_table => true,
+        verbose => true
+    );
+INFO:  Target TABLE "t_dbpedia2" created based on FOREIGN TABLE "dbpedia_cities":
+
+  CREATE TABLE t_dbpedia2 AS SELECT * FROM dbpedia_cities WITH NO DATA;
+
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?name 
+OFFSET 0 LIMIT 6
+
+INFO:  page (0 - 6) stored: 6 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?name 
+OFFSET 6 LIMIT 6
+
+INFO:  page (6 - 12) stored: 6 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?name 
+OFFSET 12 LIMIT 6
+
+INFO:  page (12 - 18) stored: 2 records successfully inserted 
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbo:  <http://dbpedia.org/ontology/>
+ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+ PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT ?city ?name 
+{
+        ?city a dbo:City ;
+            foaf:name ?name ;
+            dbo:federalState dbr:North_Rhine-Westphalia
+        }
+ORDER BY ?name 
+OFFSET 18 LIMIT 6
+
+INFO:  Total inserted records: 14
+ rdf_fdw_clone_table 
+---------------------
+ 
+(1 row)
+
+SELECT * FROM t_local2;
+ERROR:  relation "t_local2" does not exist
+LINE 1: SELECT * FROM t_local2;
+                      ^
+DROP SERVER dbpedia CASCADE;
+NOTICE:  drop cascades to foreign table dbpedia_cities
+DROP TABLE IF EXISTS t_dbpedia1;
+DROP TABLE IF EXISTS t_dbpedia2;

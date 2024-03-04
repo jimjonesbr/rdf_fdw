@@ -125,13 +125,15 @@ DELETE FROM t1;
 /* EXPLAIN isn't supported*/
 EXPLAIN SELECT * FROM t1;
 
+CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
+
 /*
  empty target_table
 */
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => ''
+        target_table => ''::regclass::oid
     );
 
 /*
@@ -140,7 +142,7 @@ SELECT
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => 't',
+        target_table => 't1_local'::regclass::oid,
         fetch_size => -1
     );
 
@@ -150,7 +152,7 @@ SELECT
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => 't',
+        target_table => 't1_local'::regclass::oid,
         begin_offset => -1
     );
 
@@ -160,10 +162,18 @@ SELECT
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => 't',
+        target_table => 't1_local'::regclass::oid,
         ordering_column => 'foo'
     );
 
+/* 
+ target table does not match any column of t1
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table  => 't1_local'::regclass::oid
+    );
 
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
@@ -248,3 +258,6 @@ CREATE FOREIGN TABLE t14 (
 CREATE FOREIGN TABLE t15 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
+
+DROP FOREIGN TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t1_local;

@@ -215,3 +215,5 @@ SELECT uri, nativename
   LIMIT 15
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
+
+DROP SERVER wikidata CASCADE;

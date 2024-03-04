@@ -815,3 +815,5 @@ SELECT name
 FROM generic_rdf_table4
 WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
+
+DROP SERVER dbpedia CASCADE;

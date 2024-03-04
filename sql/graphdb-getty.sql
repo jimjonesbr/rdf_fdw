@@ -97,3 +97,5 @@ FROM getty_non_italians
 WHERE bio ~~* '%artist%'
 ORDER BY birth 
 LIMIT 10;
+
+DROP SERVER getty CASCADE;

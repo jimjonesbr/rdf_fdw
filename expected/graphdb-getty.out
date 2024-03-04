@@ -296,3 +296,7 @@ INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
  Vaucher, Gabriel Constant           | Swiss artist, 1768-1814                                               |  1768
 (10 rows)
 
+DROP SERVER getty CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table getty_places
+drop cascades to foreign table getty_non_italians

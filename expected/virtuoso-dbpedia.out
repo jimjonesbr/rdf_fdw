@@ -1826,3 +1826,23 @@ LIMIT 10
  Japón
 (1 row)
 
+DROP SERVER dbpedia CASCADE;
+NOTICE:  drop cascades to 18 other objects
+DETAIL:  drop cascades to foreign table film
+drop cascades to foreign table politicians
+drop cascades to foreign table party_members
+drop cascades to foreign table chanceler_candidates
+drop cascades to foreign table german_public_universities
+drop cascades to foreign table person1
+drop cascades to foreign table person2
+drop cascades to foreign table person3
+drop cascades to foreign table politicians_germany
+drop cascades to foreign table dbpedia_limit
+drop cascades to foreign table dbpedia_orderby
+drop cascades to foreign table dbpedia_distinct
+drop cascades to foreign table dbpedia_groupby
+drop cascades to foreign table musical_artists
+drop cascades to foreign table generic_rdf_table
+drop cascades to foreign table generic_rdf_table2
+drop cascades to foreign table generic_rdf_table3
+drop cascades to foreign table generic_rdf_table4

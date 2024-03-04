@@ -131,22 +131,25 @@ EXPLAIN SELECT * FROM t1;
  Foreign Scan on t1  (cost=10000.00..20000.00 rows=1000 width=32)
 (1 row)
 
+CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
 /*
  empty target_table
 */
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => ''
+        target_table => ''::regclass::oid
     );
-ERROR:  no target table provided
+ERROR:  invalid name syntax
+LINE 7:         target_table => ''::regclass::oid
+                                ^
 /*
  negative fetch_size
 */
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => 't',
+        target_table => 't1_local'::regclass::oid,
         fetch_size => -1
     );
 ERROR:  invalid fetch_size: -1
@@ -157,7 +160,7 @@ HINT:  the page size corresponds to the number of records that are retrieved aft
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => 't',
+        target_table => 't1_local'::regclass::oid,
         begin_offset => -1
     );
 ERROR:  invalid begin_offset: -1
@@ -167,10 +170,21 @@ ERROR:  invalid begin_offset: -1
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1'::regclass::oid,
-        target_table => 't',
+        target_table => 't1_local'::regclass::oid,
         ordering_column => 'foo'
     );
-ERROR:  invalid ordering_column 'foo'
+ERROR:  invalid target table
+HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
+/* 
+ target table does not match any column of t1
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1'::regclass::oid,
+        target_table  => 't1_local'::regclass::oid
+    );
+ERROR:  invalid target table
+HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
@@ -279,3 +293,5 @@ CREATE FOREIGN TABLE t15 (
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 ERROR:  invalid fetch_size: '-1'
 HINT:  expected values are positive integers
+DROP FOREIGN TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t1_local;
