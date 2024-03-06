@@ -388,7 +388,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'target_table' provided")));
-	else
+	else if (!create_table)
 		state->target_table =  get_rel_from_relname(target_table_name, NoLock);
 
 	if(!ft)
@@ -460,12 +460,20 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				text_to_cstring(target_table_name), get_rel_name(state->foreigntableid), NameStr(ct));
 
 		SPI_finish();
+
 	}
 
 	/* 
+	 * at this point we re able to retrieve the target_table's Relation, as
+	 * it either existed before the function call or was just created.
+	 */
+	state->target_table =  get_rel_from_relname(target_table_name, NoLock);
+	/* 
 	 * Here we check if the target table matches the columns of the 
 	 * FOREIGN TABLE.
-	 */
+	 */	
+
+	elog(DEBUG1,"%s: checking if tables match",__func__);
 	for (size_t ftidx = 0; ftidx < state->numcols; ftidx++)
 	{
 		for (size_t ttidx = 0; ttidx < state->target_table->rd_att->natts; ttidx++)
@@ -500,7 +508,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 
 
-
+	elog(DEBUG1,"%s: validating 'fetch_size' tables match",__func__);
 	if(fetch_size == 0)
 	{
 		if(state->fetch_size != 0)
@@ -3715,12 +3723,58 @@ static bool IsSPARQLVariableValid(const char* str)
 
 static Relation get_rel_from_relname(text *relname_text, LOCKMODE lockmode)
 {
-	RangeVar   *relvar;
+	//RangeVar   *relvar;
 	Relation	rel;
-	//AclResult	aclresult;
+	StringInfoData str;
+	int ret;
+	Oid res = 0;
 
-	relvar = makeRangeVarFromNameList(textToQualifiedNameList(relname_text));
-	rel = table_openrv(relvar, lockmode);
+	initStringInfo(&str);
+
+	appendStringInfo(&str,"SELECT '%s'::regclass::oid", text_to_cstring(relname_text));
+	//AclResult	aclresult;
+	
+
+	SPI_connect();
+
+	ret = SPI_exec(NameStr(str), 0);
+
+	if (ret > 0 && SPI_tuptable != NULL)
+    {
+        SPITupleTable *tuptable = SPI_tuptable;
+        TupleDesc tupdesc = tuptable->tupdesc;
+        //char buf[8192];
+        //uint64 j;
+
+		HeapTuple tuple = tuptable->vals[0];
+		res = (Oid) atoi(SPI_getvalue(tuple, tupdesc, 1));
+
+		//elog(INFO,">> %d", res);
+
+        // for (j = 0; j < tuptable->numvals; j++)
+        // {
+        //     HeapTuple tuple = tuptable->vals[j];
+        //     int i;
+
+        //     for (i = 1, buf[0] = 0; i <= tupdesc->natts; i++)
+        //         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " %s%s",
+        //                 SPI_getvalue(tuple, tupdesc, i),
+        //                 (i == tupdesc->natts) ? " " : " |");
+
+        //     elog(INFO, "EXECQ: %d", atoi(buf));
+        // }
+    }
+
+	SPI_finish();
+
+#if PG_VERSION_NUM < 130000
+	rel = heap_open(res, NoLock);
+#else
+	rel = table_open(res, NoLock);
+#endif	
+
+	// relvar = makeRangeVarFromNameList(textToQualifiedNameList(relname_text));
+	// rel = table_openrv(relvar, lockmode);
 
 	// aclresult = pg_class_aclcheck(RelationGetRelid(rel), GetUserId(),
 	// 							  aclmode);

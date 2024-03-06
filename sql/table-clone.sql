@@ -34,7 +34,7 @@ CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_nul
  * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
  * function call do not set 'fetch_size'.
  */
---SET client_min_messages = DEBUG2;
+
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
