@@ -328,6 +328,9 @@ static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
 //static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode);
 static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode);
+
+static Oid GetRelOidFromName(char *relname);
+
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
 	FdwRoutine *fdwroutine = makeNode(FdwRoutine);
@@ -374,7 +377,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	int ret;
 	StringInfoData select;
 	bool match = false;
-	Relation ft;
+	//Relation ft;
 	
 	elog(DEBUG1,"%s called",__func__);
 
@@ -382,8 +385,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'foreign_table' provided")));
-	else
-		ft = get_rel_from_relname(text_to_cstring(foreign_table_name), NoLock);
+	//else
+		//ft = get_rel_from_relname(text_to_cstring(foreign_table_name), NoLock);
 
 	if(strlen(text_to_cstring(target_table_name)) == 0)
 		ereport(ERROR,
@@ -394,10 +397,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	// else if (!create_table)
 	// 	state->target_table =  get_rel_from_relname(target_table_name, NoLock);
 
-	if(!ft)
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'foreign_table': %s",text_to_cstring(foreign_table_name))));
+	// if(!ft)
+	// 	ereport(ERROR,
+	// 			(errcode(ERRCODE_FDW_ERROR),
+	// 			 errmsg("invalid 'foreign_table': %s",text_to_cstring(foreign_table_name))));
 
 	if(fetch_size < 0)
 		ereport(ERROR,
@@ -417,7 +420,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				 errmsg("invalid 'begin_offset': %d",begin_offset)));
 
 
-	state->foreigntableid = ft->rd_rel->oid;
+	//state->foreign_table = GetForeignTable(GetRelOidFromName());
+
+	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name));
+	
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
 	state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
@@ -502,7 +508,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("target table mismatch"),
 				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
-				 	get_rel_name(state->target_table->rd_rel->oid),
+				 	state->target_table_name,
 					get_rel_name(state->foreigntableid))
 				)
 			);
@@ -656,7 +662,9 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		if(ret < 0)
 			ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, get_rel_name(state->target_table->rd_rel->oid))));
+				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, state->target_table_name)
+				)
+			);
 
 		num_pages_retrieved++;
 
@@ -3723,6 +3731,35 @@ static bool IsSPARQLVariableValid(const char* str)
 
 // 	return res;
 // }
+
+static Oid GetRelOidFromName(char *relname)
+{
+	
+	StringInfoData str;
+	Oid res = 0;
+	int ret;
+
+	initStringInfo(&str);
+	appendStringInfo(&str,"SELECT '%s'::regclass::oid", relname);
+	
+	SPI_connect();
+
+	ret = SPI_exec(NameStr(str), 0);
+
+	if (ret > 0 && SPI_tuptable != NULL)
+    {
+        SPITupleTable *tuptable = SPI_tuptable;
+        TupleDesc tupdesc = tuptable->tupdesc;
+     
+		HeapTuple tuple = tuptable->vals[0];
+		res = (Oid) atoi(SPI_getvalue(tuple, tupdesc, 1));
+	}
+
+	SPI_finish();
+
+	return res;
+
+}
 
 static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode)
 {
