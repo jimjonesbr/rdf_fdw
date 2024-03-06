@@ -44,7 +44,6 @@ SELECT
 
 SELECT * FROM public.t1;
 
---select pg_sleep(11);
 /*
  * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
  * reducing the 'fetch_size' to 2 and setting maximum limit of 9 records.

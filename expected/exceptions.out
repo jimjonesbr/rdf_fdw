@@ -159,7 +159,7 @@ SELECT
         target_table => 't1_local',
         fetch_size => -1
     );
-ERROR:  invalid fetch_size: -1
+ERROR:  invalid 'fetch_size': -1
 HINT:  the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number
 /*
  negative begin_offset
@@ -170,7 +170,7 @@ SELECT
         target_table => 't1_local',
         begin_offset => -1
     );
-ERROR:  invalid begin_offset: -1
+ERROR:  invalid 'begin_offset': -1
 /*
  invalid ordering_column
 */
@@ -180,7 +180,7 @@ SELECT
         target_table => 't1_local',
         ordering_column => 'foo'
     );
-ERROR:  invalid target table
+ERROR:  target table mismatch
 HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
 /* 
  target table does not match any column of t1
@@ -190,7 +190,7 @@ SELECT
         foreign_table => 't1',
         target_table  => 't1_local'
     );
-ERROR:  invalid target table
+ERROR:  target table mismatch
 HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')

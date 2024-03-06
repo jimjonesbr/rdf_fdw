@@ -394,24 +394,24 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	if(!ft)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid foreign table '%s'",text_to_cstring(foreign_table_name))));
+				 errmsg("invalid 'foreign_table': %s",text_to_cstring(foreign_table_name))));
 
 	if(fetch_size < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid fetch_size: %d",fetch_size),
+				 errmsg("invalid 'fetch_size': %d",fetch_size),
 				 errhint("the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number")));
 	
 	if(max_records < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid max_records: %d",max_records),
-				 errhint("max_records corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number")));
+				 errmsg("invalid 'max_records': %d",max_records),
+				 errhint("'max_records' corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number")));
 
 	if(begin_offset < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid begin_offset: %d",begin_offset)));
+				 errmsg("invalid 'begin_offset': %d",begin_offset)));
 
 
 	state->foreigntableid = ft->rd_rel->oid;
@@ -489,7 +489,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid target table"),
+				 errmsg("target table mismatch"),
 				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
 				 	get_rel_name(state->target_table->rd_rel->oid),
 					get_rel_name(state->foreigntableid))
@@ -547,7 +547,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	if(!orderby_variable && strlen(state->ordering_pgcolumn) !=0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid ordering_column '%s'", state->ordering_pgcolumn)));
+				 errmsg("invalid 'ordering_column' '%s'", state->ordering_pgcolumn)));
 	
 	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
 	
