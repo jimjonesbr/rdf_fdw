@@ -197,6 +197,7 @@ typedef struct RDFfdwState
 	ForeignTable *foreign_table;
 	Relation target_table;
 	bool verbose;
+	char *target_table_name;
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -326,7 +327,7 @@ static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, Re
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
 //static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode);
-static Relation get_rel_from_relname(text *relname_text, LOCKMODE lockmode);
+static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode);
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
 	FdwRoutine *fdwroutine = makeNode(FdwRoutine);
@@ -382,14 +383,16 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'foreign_table' provided")));
 	else
-		ft = get_rel_from_relname(foreign_table_name, NoLock);
+		ft = get_rel_from_relname(text_to_cstring(foreign_table_name), NoLock);
 
 	if(strlen(text_to_cstring(target_table_name)) == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'target_table' provided")));
-	else if (!create_table)
-		state->target_table =  get_rel_from_relname(target_table_name, NoLock);
+	else
+		state->target_table_name = text_to_cstring(target_table_name);
+	// else if (!create_table)
+	// 	state->target_table =  get_rel_from_relname(target_table_name, NoLock);
 
 	if(!ft)
 		ereport(ERROR,
@@ -447,13 +450,13 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 		initStringInfo(&ct);
 		appendStringInfo(&ct,"CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
-			text_to_cstring(target_table_name),
+			state->target_table_name,
 			get_rel_name(state->foreigntableid));
 
 		if(SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
 			ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("unable to create target table '%s'",text_to_cstring(target_table_name))));
+				 errmsg("unable to create target table '%s'",state->target_table_name)));
 
 		 if(verbose)
 			elog(INFO,"Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
@@ -467,7 +470,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * at this point we re able to retrieve the target_table's Relation, as
 	 * it either existed before the function call or was just created.
 	 */
-	state->target_table =  get_rel_from_relname(target_table_name, NoLock);
+	state->target_table =  get_rel_from_relname(state->target_table_name, NoLock);
 	/* 
 	 * Here we check if the target table matches the columns of the 
 	 * FOREIGN TABLE.
@@ -736,7 +739,7 @@ static int InsertRetrievedData(RDFfdwState *state)
 
 		initStringInfo(&insert_stmt);
 		appendStringInfo(&insert_stmt,"INSERT INTO %s (%s) VALUES (%s);",
-			get_rel_name(state->target_table->rd_rel->oid),
+			state->target_table_name,
 			NameStr(insert_cols),
 			NameStr(insert_pidx)
 		);
@@ -3721,7 +3724,7 @@ static bool IsSPARQLVariableValid(const char* str)
 // 	return res;
 // }
 
-static Relation get_rel_from_relname(text *relname_text, LOCKMODE lockmode)
+static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode)
 {
 	//RangeVar   *relvar;
 	Relation	rel;
@@ -3731,7 +3734,7 @@ static Relation get_rel_from_relname(text *relname_text, LOCKMODE lockmode)
 
 	initStringInfo(&str);
 
-	appendStringInfo(&str,"SELECT '%s'::regclass::oid", text_to_cstring(relname_text));
+	appendStringInfo(&str,"SELECT '%s'::regclass::oid", relname_text);
 	//AclResult	aclresult;
 	
 
