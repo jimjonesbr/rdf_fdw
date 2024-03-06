@@ -132,8 +132,17 @@ CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => ''::regclass::oid
+        foreign_table => 't1',
+        target_table => ''
+    );
+
+/*
+ empty foreign_table
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => '',
+        target_table => 't1_local'
     );
 
 /*
@@ -141,8 +150,8 @@ SELECT
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => 't1_local'::regclass::oid,
+        foreign_table => 't1',
+        target_table => 't1_local',
         fetch_size => -1
     );
 
@@ -151,8 +160,8 @@ SELECT
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => 't1_local'::regclass::oid,
+        foreign_table => 't1',
+        target_table => 't1_local',
         begin_offset => -1
     );
 
@@ -161,8 +170,8 @@ SELECT
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => 't1_local'::regclass::oid,
+        foreign_table => 't1',
+        target_table => 't1_local',
         ordering_column => 'foo'
     );
 
@@ -171,8 +180,8 @@ SELECT
  */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table  => 't1_local'::regclass::oid
+        foreign_table => 't1',
+        target_table  => 't1_local'
     );
 
 /* invalid SPARQL - missing closing curly braces (\n)*/

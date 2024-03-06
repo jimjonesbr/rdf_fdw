@@ -34,25 +34,28 @@ CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_nul
  * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
  * function call do not set 'fetch_size'.
  */
+--SET client_min_messages = DEBUG2;
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table  => 'public.t1'::regclass::oid,
+        foreign_table => 'public.dbpedia_cities',
+        target_table  => 'public.t1',
         verbose => true
     );
 
 SELECT * FROM public.t1;
 
+--select pg_sleep(11);
 /*
  * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
  * reducing the 'fetch_size' to 2 and setting maximum limit of 9 records.
  * the SPARQL query will be ordered by 'city_name'
  */ 
+ 
 CREATE TABLE public.t2(id serial, foo int, bar date, city_name text);
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table  => 'public.t2'::regclass::oid,
+        foreign_table => 'public.dbpedia_cities',
+        target_table  => 'public.t2',
         fetch_size => 2,
         max_records => 9,
         ordering_column => 'city_name',
@@ -67,16 +70,15 @@ SELECT * FROM public.t2;
  */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table  => 'public.t3'::regclass::oid,
+        foreign_table => 'public.dbpedia_cities',
+        target_table  => 'public.t3',
         create_table => true,
-        fetch_size => 2,
-        max_records => 9,
         ordering_column => 'city_name',
         verbose => true
     );
 
 SELECT * FROM public.t3;
+
 
 
 DROP TABLE IF EXISTS public.t1, public.t2, public.t3;

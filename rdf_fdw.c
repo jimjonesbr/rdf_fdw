@@ -68,6 +68,9 @@
 #endif
 #include "utils/date.h"
 #include "executor/spi.h"
+#include "catalog/namespace.h"
+#include "utils/varlena.h"
+
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
@@ -185,7 +188,7 @@ typedef struct RDFfdwState
 	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
 	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
-	Oid target_table_id;          /* FOREIGN TABLE oid */
+	//Oid target_table_id;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
 	Cost startup_cost;             /* cost estimate, only needed for planning */
@@ -322,8 +325,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
-
-
+//static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode);
+static Relation get_rel_from_relname(text *relname_text, LOCKMODE lockmode);
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
 	FdwRoutine *fdwroutine = makeNode(FdwRoutine);
@@ -356,8 +359,8 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
-	Oid foreigntableid = PG_GETARG_OID(0);
-	Oid targettableid = PG_GETARG_OID(1);
+	text *foreign_table_name = PG_GETARG_TEXT_P(0);
+	text *target_table_name = PG_GETARG_TEXT_P(1);
 	int begin_offset = PG_GETARG_INT32(2);
 	int fetch_size = PG_GETARG_INT32(3);
 	int max_records = PG_GETARG_INT32(4);
@@ -370,14 +373,28 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	int ret;
 	StringInfoData select;
 	bool match = false;
-	Relation rel;
-
+	Relation ft;
+	
 	elog(DEBUG1,"%s called",__func__);
 
-	if(!targettableid)
+	if(strlen(text_to_cstring(foreign_table_name)) == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("no target table provided")));
+				 errmsg("no 'foreign_table' provided")));
+	else
+		ft = get_rel_from_relname(foreign_table_name, NoLock);
+
+	if(strlen(text_to_cstring(target_table_name)) == 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("no 'target_table' provided")));
+	else
+		state->target_table =  get_rel_from_relname(target_table_name, NoLock);
+
+	if(!ft)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid foreign table '%s'",text_to_cstring(foreign_table_name))));
 
 	if(fetch_size < 0)
 		ereport(ERROR,
@@ -397,8 +414,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				 errmsg("invalid begin_offset: %d",begin_offset)));
 
 
-	state->target_table_id = targettableid;
-	state->foreigntableid = foreigntableid;
+	state->foreigntableid = ft->rd_rel->oid;
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
 	state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
@@ -419,38 +435,52 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 */
 	LoadRDFTableInfo(state);
 
+	/*
+	 * Here we try to create the target table with the name give in 'target_table'.
+	 * This new table will be a clone of the queried FOREIGN TABLE, of couse without
+	 * the table and column OPTIONS.
+	 */
+	if(create_table)
+	{
+		StringInfoData ct;
+		SPI_connect();
+
+		initStringInfo(&ct);
+		appendStringInfo(&ct,"CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
+			text_to_cstring(target_table_name),
+			get_rel_name(state->foreigntableid));
+
+		if(SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
+			ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("unable to create target table '%s'",text_to_cstring(target_table_name))));
+
+		 if(verbose)
+			elog(INFO,"Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
+				text_to_cstring(target_table_name), get_rel_name(state->foreigntableid), NameStr(ct));
+
+		SPI_finish();
+	}
+
 	/* 
 	 * Here we check if the target table matches the columns of the 
 	 * FOREIGN TABLE.
 	 */
-
-#if PG_VERSION_NUM < 130000
-	rel = heap_open(state->target_table_id, NoLock);
-#else
-	rel = table_open(state->target_table_id, NoLock);
-#endif	
-
 	for (size_t ftidx = 0; ftidx < state->numcols; ftidx++)
 	{
-		for (size_t ttidx = 0; ttidx < rel->rd_att->natts; ttidx++)
+		for (size_t ttidx = 0; ttidx < state->target_table->rd_att->natts; ttidx++)
 		{
 			elog(DEBUG1,"%s: comparing %s - %s", __func__,
-				NameStr(rel->rd_att->attrs[ttidx].attname), 
+				NameStr(state->target_table->rd_att->attrs[ttidx].attname), 
 				state->rdfTable->cols[ftidx]->name);
 
-			if(strcmp(NameStr(rel->rd_att->attrs[ttidx].attname), state->rdfTable->cols[ftidx]->name) == 0)
+			if(strcmp(NameStr(state->target_table->rd_att->attrs[ttidx].attname), state->rdfTable->cols[ftidx]->name) == 0)
 			{
 				state->rdfTable->cols[ftidx]->used = true;
 				match = true;
 			}
 		}
 	}
-
-#if PG_VERSION_NUM < 130000
-	heap_close(rel, NoLock);
-#else
-	table_close(rel, NoLock);
-#endif		
 
 	/* 
 	 * If both foreign and target table share no column we better stop it right here.
@@ -461,7 +491,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("invalid target table"),
 				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
-				 	get_rel_name(state->target_table_id),
+				 	get_rel_name(state->target_table->rd_rel->oid),
 					get_rel_name(state->foreigntableid))
 				)
 			);
@@ -542,36 +572,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->sparql_where = DeparseSPARQLWhereGraphPattern(state);
 	elog(DEBUG1,"sparql_where = %s",state->sparql_where);
 
-	/*
-	 * Here we try to create the target table with the name give in 'target_table'.
-	 * This new table will be a clone of the queried FOREIGN TABLE, of couse without
-	 * the table and column OPTIONS.
-	 */
-	if(create_table)
-	{
-		StringInfoData ct;
-		SPI_connect();
-
-		initStringInfo(&ct);
-		appendStringInfo(&ct,"CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
-			get_rel_name(state->target_table_id),
-			get_rel_name(state->foreigntableid));
-
-		if(SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
-			ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("unable to create target table '%s'",get_rel_name(state->target_table_id))));
-
-		 if(verbose)
-			elog(INFO,"Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
-				get_rel_name(targettableid), get_rel_name(state->foreigntableid), NameStr(ct));
-
-		SPI_finish();
-	}
-
 	while(true)
 	{
-		//char *sqlinsert;
 		int offset = begin_offset + (num_pages_retrieved * fetch_size);
 		int limit = fetch_size;
 		StringInfoData limit_clause;
@@ -643,7 +645,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		if(ret < 0)
 			ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, get_rel_name(state->target_table_id))));
+				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, get_rel_name(state->target_table->rd_rel->oid))));
 
 		num_pages_retrieved++;
 
@@ -665,14 +667,14 @@ static int InsertRetrievedData(RDFfdwState *state)
 
 	for (size_t rec = 0; rec < state->pagesize; rec++)
 	{
-		SPIPlanPtr	pplan;
+		SPIPlanPtr		pplan;
 		Oid		   		*ctypes = (Oid *) palloc(state->numcols * sizeof(Oid));
 		StringInfoData 	insert_stmt;
 		StringInfoData 	insert_cols;
 		StringInfoData 	insert_pidx;
 
 		Datum	   		*cvals;			/* column values */
-		char	   		*cnulls;			/* column nulls */
+		char	   		*cnulls;		/* column nulls */
 		int 			colindex = 0;		
 
 		cvals = (Datum *) palloc(state->numcols * sizeof(Datum));
@@ -726,7 +728,7 @@ static int InsertRetrievedData(RDFfdwState *state)
 
 		initStringInfo(&insert_stmt);
 		appendStringInfo(&insert_stmt,"INSERT INTO %s (%s) VALUES (%s);",
-			get_rel_name(state->target_table_id),
+			get_rel_name(state->target_table->rd_rel->oid),
 			NameStr(insert_cols),
 			NameStr(insert_pidx)
 		);
@@ -3677,4 +3679,60 @@ static bool IsSPARQLVariableValid(const char* str)
 			return false;
 
 	return true;
+}
+
+// static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode)
+// {
+// 	RangeVar   *relvar = makeRangeVarFromNameList(textToQualifiedNameList(relname_text));
+// 	Relation	rel = table_openrv(relvar, NoLock);
+// 	Oid			res = rel->rd_rel->oid;
+
+// 	//AclResult	aclresult;
+
+	
+// 	//elog(ERROR,"******** %s",  NameListToString(relvar));
+	
+
+// 	// aclresult = pg_class_aclcheck(RelationGetRelid(rel), GetUserId(),
+// 	// 							  aclmode);
+// 	// if (aclresult != ACLCHECK_OK)
+// 	// 	aclcheck_error(aclresult, get_relkind_objtype(rel->rd_rel->relkind),
+// 	// 				   RelationGetRelationName(rel));
+
+// 	//elog(ERROR,"####### %s > %u",  RelationGetRelationName(rel), rel->rd_rel->oid);
+
+	
+
+// #if PG_VERSION_NUM < 130000
+// 	heap_close(rel, NoLock);
+// #else
+// 	table_close(rel, NoLock);
+// #endif	
+
+
+// 	return res;
+// }
+
+static Relation get_rel_from_relname(text *relname_text, LOCKMODE lockmode)
+{
+	RangeVar   *relvar;
+	Relation	rel;
+	//AclResult	aclresult;
+
+	relvar = makeRangeVarFromNameList(textToQualifiedNameList(relname_text));
+	rel = table_openrv(relvar, lockmode);
+
+	// aclresult = pg_class_aclcheck(RelationGetRelid(rel), GetUserId(),
+	// 							  aclmode);
+	// if (aclresult != ACLCHECK_OK)
+	// 	aclcheck_error(aclresult, get_relkind_objtype(rel->rd_rel->relkind),
+	// 				   RelationGetRelationName(rel));
+
+#if PG_VERSION_NUM < 130000
+	heap_close(rel, NoLock);
+#else
+	table_close(rel, NoLock);
+#endif	
+
+	return rel;
 }

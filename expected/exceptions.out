@@ -137,19 +137,26 @@ CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => ''::regclass::oid
+        foreign_table => 't1',
+        target_table => ''
     );
-ERROR:  invalid name syntax
-LINE 7:         target_table => ''::regclass::oid
-                                ^
+ERROR:  no 'target_table' provided
+/*
+ empty foreign_table
+*/
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => '',
+        target_table => 't1_local'
+    );
+ERROR:  no 'foreign_table' provided
 /*
  negative fetch_size
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => 't1_local'::regclass::oid,
+        foreign_table => 't1',
+        target_table => 't1_local',
         fetch_size => -1
     );
 ERROR:  invalid fetch_size: -1
@@ -159,8 +166,8 @@ HINT:  the page size corresponds to the number of records that are retrieved aft
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => 't1_local'::regclass::oid,
+        foreign_table => 't1',
+        target_table => 't1_local',
         begin_offset => -1
     );
 ERROR:  invalid begin_offset: -1
@@ -169,8 +176,8 @@ ERROR:  invalid begin_offset: -1
 */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table => 't1_local'::regclass::oid,
+        foreign_table => 't1',
+        target_table => 't1_local',
         ordering_column => 'foo'
     );
 ERROR:  invalid target table
@@ -180,8 +187,8 @@ HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
  */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table  => 't1_local'::regclass::oid
+        foreign_table => 't1',
+        target_table  => 't1_local'
     );
 ERROR:  invalid target table
 HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
