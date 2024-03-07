@@ -571,7 +571,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * we use the first colum (index 1) for the SPARQL ORDER BY.
 	*/
 	if(!orderby_variable)
-		orderby_variable = "1"
+		orderby_variable = "1";
 
 	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
 
