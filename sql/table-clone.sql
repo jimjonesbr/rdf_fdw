@@ -6,7 +6,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql',
 CREATE FOREIGN TABLE public.dbpedia_cities (
   uri text           OPTIONS (variable '?city', nodetype 'iri'),
   city_name text     OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string'),
-  elevation text  OPTIONS (variable '?elevation', nodetype 'literal', literaltype 'xsd:integer')
+  elevation numeric  OPTIONS (variable '?elevation', nodetype 'literal', literaltype 'xsd:integer')
 )
 SERVER dbpedia OPTIONS (
   sparql '
@@ -72,128 +72,107 @@ SELECT
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t3',
         create_table => true,
-        ordering_column => 'city_name',
+        ordering_column => 'elevation',
         verbose => true
     );
 
 SELECT * FROM public.t3;
 
 
+/*----------------------------------------------------------------------------------------------------------*/
 
-DROP TABLE IF EXISTS public.t1, public.t2, public.t3;
+CREATE FOREIGN TABLE public.film (
+  film_id text    OPTIONS (variable '?film'),
+  name text       OPTIONS (variable '?name', language 'en'),
+  released date   OPTIONS (variable '?released', literaltype 'xsd:date'),
+  runtime int     OPTIONS (variable '?runtime'),
+  abstract text   OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'false',
+  sparql '
+    PREFIX dbr: <http://dbpedia.org/resource/>
+    PREFIX dbp: <http://dbpedia.org/property/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
 
+    SELECT DISTINCT ?film ?name ?released ?runtime ?abstract
+    WHERE
+    {
+      ?film a dbo:Film ;
+            rdfs:comment ?abstract ;
+            dbp:name ?name ;
+            dbp:released ?released ;
+            dbp:runtime ?runtime .
+      FILTER (LANG ( ?abstract ) = "en")
+      FILTER (datatype(?released) = xsd:date)
+      FILTER (datatype(?runtime) = xsd:integer)
+     }
+     OFFSET 7300 LIMIT 4200
+'); 
 
-
-
-
-
-
-
-
-
-
-
-
-
+CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
 
 /*
-CREATE TABLE public.t2(
-  id serial,
-  c1_null text,
-  c2_null text
-);
-
+ * 'public.heap1' only partially matches the columns of 'public.film'.
+ * the non-matching columns will be set to NULL.
+ */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table  => 'public.t2'::regclass::oid
+        foreign_table => 'public.film',
+        target_table  => 'public.heap1',
+        ordering_column => 'released',
+        fetch_size => 4,
+        max_records => 15
     );
 
-DROP TABLE IF EXISTS t1,t2;
-
-*/
-
+SELECT * FROM public.heap1;
 
 /*
-CREATE SERVER testserver2
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql'
-);
-
-CREATE FOREIGN TABLE t1 (
-  name text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS 
-  (sparql 'SELECT ?s WHERE {?s ?p ?o}', log_sparql 'true');
-
-
-SET client_min_messages = DEBUG1;
-
+ * 'public.heap2' does not exist.
+ * it will be created, since 'create_table' is set to true.
+ */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 't1'::regclass::oid,
-        target_table  => 't1_local'::regclass::oid
-    );
-*/
-
-
-
---SET client_min_messages = DEBUG1;
-
-
-/*
-SELECT count(*) FROM public.t_dbpedia0;
-
-
-SELECT
-    rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table => 'public.t_dbpedia1',
-        fetch_size => 2,
-        max_records => 9,
+        foreign_table => 'public.film',
+        target_table  => 'public.heap2',
+        ordering_column => 'released',
         create_table => true,
-        verbose => true
+        fetch_size => 4,
+        max_records => 15
     );
 
-SELECT * FROM t_local1;
-
-SELECT 
-    rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        ordering_column => 'city_name',
-        target_table => 'public.t_dbpedia2',
-        fetch_size => 6,
-        create_table => true,
-        verbose => true
-    );
-
-SELECT * FROM t_local2;
-*/
-
+SELECT runtime,name,released FROM public.heap2;
 
 /* 
- * Target table exists
- * Manually create target table with columns in a different order than 
- * in the FOREIGN TABLE 
+ * the matching columns of 'public.heap1' and 'public.heap2' 
+ * must be identical 
  */
- /*
-CREATE TABLE public.t_dbpedia3 (city_name text, uri text);
+SELECT runtime,name,released FROM public.heap1
+EXCEPT
+SELECT runtime,name,released FROM public.heap2;
 
-SELECT 
+/* 
+ * setting 'begin_offset' to 10
+ */
+SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table => 'public.t_dbpedia3',
-        fetch_size => 5,
+        foreign_table => 'public.film',
+        target_table  => 'public.heap3',
+        ordering_column => 'released',
+        create_table => true,
+        begin_offset => 10,
+        fetch_size => 2,
+        max_records => 7,
         verbose => true
     );
 
-SELECT * FROM public.t_dbpedia3;
+SELECT runtime,name,released FROM public.heap3;
 
-DROP SERVER dbpedia CASCADE;
+/*
+ * clean up the mess
+ */
+DROP TABLE IF EXISTS public.t1, public.t2, public.t3, public.heap1, public.heap2, public.heap3;
+DROP FOREIGN TABLE public.film, dbpedia_cities;
+DROP SERVER dbpedia;
 
-DROP TABLE t_dbpedia1;
-DROP TABLE t_dbpedia2;
-DROP TABLE t_dbpedia3;
-
-*/
 

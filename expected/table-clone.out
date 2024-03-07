@@ -1,215 +1,308 @@
 CREATE SERVER dbpedia
 FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
+OPTIONS (endpoint 'https://dbpedia.org/sparql',
+         fetch_size '5');
 CREATE FOREIGN TABLE public.dbpedia_cities (
-  uri text        OPTIONS (variable '?city', nodetype 'iri'),
-  city_name text  OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string')
+  uri text           OPTIONS (variable '?city', nodetype 'iri'),
+  city_name text     OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string'),
+  elevation numeric  OPTIONS (variable '?elevation', nodetype 'literal', literaltype 'xsd:integer')
 )
 SERVER dbpedia OPTIONS (
-  log_sparql 'true',
   sparql '
     PREFIX dbo:  <http://dbpedia.org/ontology/>
     PREFIX foaf: <http://xmlns.com/foaf/0.1/>
     PREFIX dbr:  <http://dbpedia.org/resource/>
-    SELECT ?name
+    SELECT *
     {
         ?city a dbo:City ;
             foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
+            dbo:federalState dbr:North_Rhine-Westphalia ;
+            dbo:elevation ?elevation
+    }
     ORDER BY ?name
-    OFFSET 73 LIMIT 1042
+    OFFSET 7300 LIMIT 4200
 ');
+/*
+ * 't1' only partially matches with 'dbpedia_cities', with columns
+ * 'city_name' and 'uri'.
+ */
+CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
+/* 
+ * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
+ * function call do not set 'fetch_size'.
+ */
 SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
-        target_table => 't_dbpedia1',
-        page_size => 2,
-        max_records => 9,
-        create_table => true,
+        foreign_table => 'public.dbpedia_cities',
+        target_table  => 'public.t1',
         verbose => true
     );
-INFO:  Target TABLE "t_dbpedia1" created based on FOREIGN TABLE "dbpedia_cities":
-
-  CREATE TABLE t_dbpedia1 AS SELECT * FROM dbpedia_cities WITH NO DATA;
-
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?city 
-OFFSET 0 LIMIT 2
-
-INFO:  page (0 - 2) stored: 2 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?city 
-OFFSET 2 LIMIT 2
-
-INFO:  page (2 - 4) stored: 2 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?city 
-OFFSET 4 LIMIT 2
-
-INFO:  page (4 - 6) stored: 2 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?city 
-OFFSET 6 LIMIT 2
-
-INFO:  page (6 - 8) stored: 2 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?city 
-OFFSET 8 LIMIT 1
-
-INFO:  page (8 - 10) stored: 1 records successfully inserted 
-INFO:  Total inserted records: 9
+INFO:  page processed [0 - 5]: 5 inserted
+INFO:  page processed [5 - 10]: 5 inserted
+INFO:  page processed [10 - 15]: 3 inserted
  rdf_fdw_clone_table 
 ---------------------
  
 (1 row)
 
-SELECT * FROM t_local1;
-ERROR:  relation "t_local1" does not exist
-LINE 1: SELECT * FROM t_local1;
-                      ^
-SELECT 
+SELECT * FROM public.t1;
+ id |      city_name      | c1_null |                            uri                            | c2_null 
+----+---------------------+---------+-----------------------------------------------------------+---------
+  1 | Aachen              |         | http://dbpedia.org/resource/Aachen                        | 
+  2 | Bielefeld           |         | http://dbpedia.org/resource/Bielefeld                     | 
+  3 | Dortmund            |         | http://dbpedia.org/resource/Dortmund                      | 
+  4 | Düsseldorf          |         | http://dbpedia.org/resource/Düsseldorf                    | 
+  5 | Gelsenkirchen       |         | http://dbpedia.org/resource/Gelsenkirchen                 | 
+  6 | Hagen               |         | http://dbpedia.org/resource/Hagen                         | 
+  7 | Hamm                |         | http://dbpedia.org/resource/Hamm                          | 
+  8 | Herne               |         | http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | 
+  9 | Krefeld             |         | http://dbpedia.org/resource/Krefeld                       | 
+ 10 | Mönchengladbach     |         | http://dbpedia.org/resource/Mönchengladbach               | 
+ 11 | Mülheim an der Ruhr |         | http://dbpedia.org/resource/Mülheim                       | 
+ 12 | Münster             |         | http://dbpedia.org/resource/Münster                       | 
+ 13 | Remscheid           |         | http://dbpedia.org/resource/Remscheid                     | 
+(13 rows)
+
+/*
+ * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
+ * reducing the 'fetch_size' to 2 and setting maximum limit of 9 records.
+ * the SPARQL query will be ordered by 'city_name'
+ */ 
+ 
+CREATE TABLE public.t2(id serial, foo int, bar date, city_name text);
+SELECT
     rdf_fdw_clone_table(
-        foreign_table => 'public.dbpedia_cities'::regclass::oid,
+        foreign_table => 'public.dbpedia_cities',
+        target_table  => 'public.t2',
+        fetch_size => 2,
+        max_records => 9,
         ordering_column => 'city_name',
-        target_table => 't_dbpedia2',
-        page_size => 6,
-        create_table => true,
         verbose => true
     );
-INFO:  Target TABLE "t_dbpedia2" created based on FOREIGN TABLE "dbpedia_cities":
-
-  CREATE TABLE t_dbpedia2 AS SELECT * FROM dbpedia_cities WITH NO DATA;
-
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?name 
-OFFSET 0 LIMIT 6
-
-INFO:  page (0 - 6) stored: 6 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?name 
-OFFSET 6 LIMIT 6
-
-INFO:  page (6 - 12) stored: 6 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?name 
-OFFSET 12 LIMIT 6
-
-INFO:  page (12 - 18) stored: 2 records successfully inserted 
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbo:  <http://dbpedia.org/ontology/>
- PREFIX foaf: <http://xmlns.com/foaf/0.1/>
- PREFIX dbr:  <http://dbpedia.org/resource/>
-
-SELECT ?city ?name 
-{
-        ?city a dbo:City ;
-            foaf:name ?name ;
-            dbo:federalState dbr:North_Rhine-Westphalia
-        }
-ORDER BY ?name 
-OFFSET 18 LIMIT 6
-
-INFO:  Total inserted records: 14
+INFO:  page processed [0 - 2]: 2 inserted
+INFO:  page processed [2 - 4]: 2 inserted
+INFO:  page processed [4 - 6]: 2 inserted
+INFO:  page processed [6 - 8]: 2 inserted
+INFO:  page processed [8 - 10]: 1 inserted
  rdf_fdw_clone_table 
 ---------------------
  
 (1 row)
 
-SELECT * FROM t_local2;
-ERROR:  relation "t_local2" does not exist
-LINE 1: SELECT * FROM t_local2;
-                      ^
-DROP SERVER dbpedia CASCADE;
-NOTICE:  drop cascades to foreign table dbpedia_cities
-DROP TABLE IF EXISTS t_dbpedia1;
-DROP TABLE IF EXISTS t_dbpedia2;
+SELECT * FROM public.t2;
+ id | foo | bar |   city_name   
+----+-----+-----+---------------
+  1 |     |     | Aachen
+  2 |     |     | Bielefeld
+  3 |     |     | Dortmund
+  4 |     |     | Düsseldorf
+  5 |     |     | Gelsenkirchen
+  6 |     |     | Hagen
+  7 |     |     | Hamm
+  8 |     |     | Herne
+  9 |     |     | Krefeld
+(9 rows)
+
+/* 
+ * 't3' does not exist. it will be created by the function due to
+ * 'create_table => true' as a copy of 'dbedia_cities'
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 'public.dbpedia_cities',
+        target_table  => 'public.t3',
+        create_table => true,
+        ordering_column => 'elevation',
+        verbose => true
+    );
+INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "dbpedia_cities":
+
+  CREATE TABLE public.t3 AS SELECT * FROM dbpedia_cities WITH NO DATA;
+
+INFO:  page processed [0 - 5]: 5 inserted
+INFO:  page processed [5 - 10]: 5 inserted
+INFO:  page processed [10 - 15]: 3 inserted
+ rdf_fdw_clone_table 
+---------------------
+ 
+(1 row)
+
+SELECT * FROM public.t3;
+                            uri                            |      city_name      | elevation 
+-----------------------------------------------------------+---------------------+-----------
+ http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
+ http://dbpedia.org/resource/Hamm                          | Hamm                |      37.7
+ http://dbpedia.org/resource/Düsseldorf                    | Düsseldorf          |      38.0
+ http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
+ http://dbpedia.org/resource/Gelsenkirchen                 | Gelsenkirchen       |      60.0
+ http://dbpedia.org/resource/Münster                       | Münster             |      60.0
+ http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
+ http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
+ http://dbpedia.org/resource/Dortmund                      | Dortmund            |      86.0
+ http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
+ http://dbpedia.org/resource/Bielefeld                     | Bielefeld           |     118.0
+ http://dbpedia.org/resource/Aachen                        | Aachen              |     173.0
+ http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
+(13 rows)
+
+/*----------------------------------------------------------------------------------------------------------*/
+CREATE FOREIGN TABLE public.film (
+  film_id text    OPTIONS (variable '?film'),
+  name text       OPTIONS (variable '?name', language 'en'),
+  released date   OPTIONS (variable '?released', literaltype 'xsd:date'),
+  runtime int     OPTIONS (variable '?runtime'),
+  abstract text   OPTIONS (variable '?abstract')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'false',
+  sparql '
+    PREFIX dbr: <http://dbpedia.org/resource/>
+    PREFIX dbp: <http://dbpedia.org/property/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+
+    SELECT DISTINCT ?film ?name ?released ?runtime ?abstract
+    WHERE
+    {
+      ?film a dbo:Film ;
+            rdfs:comment ?abstract ;
+            dbp:name ?name ;
+            dbp:released ?released ;
+            dbp:runtime ?runtime .
+      FILTER (LANG ( ?abstract ) = "en")
+      FILTER (datatype(?released) = xsd:date)
+      FILTER (datatype(?runtime) = xsd:integer)
+     }
+     OFFSET 7300 LIMIT 4200
+'); 
+CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
+/*
+ * 'public.heap1' only partially matches the columns of 'public.film'.
+ * the non-matching columns will be set to NULL.
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 'public.film',
+        target_table  => 'public.heap1',
+        ordering_column => 'released',
+        fetch_size => 4,
+        max_records => 15
+    );
+ rdf_fdw_clone_table 
+---------------------
+ 
+(1 row)
+
+SELECT * FROM public.heap1;
+ id | foo | runtime | bar |             name              |  released  
+----+-----+---------+-----+-------------------------------+------------
+  1 |     |       2 |     | Nervy Nat Kisses the Bride    | 09-30-1904
+  2 |     |       1 |     | When Knights Were Bold        | 05-20-1908
+  3 |     |       1 |     | Pippa Passes                  | 10-04-1909
+  4 |     |       1 |     | Briton and Boer               | 10-25-1909
+  5 |     |      12 |     | Twelfth Night                 | 02-05-1910
+  6 |     |       1 |     | In the Season of Buds         | 06-02-1910
+  7 |     |       1 |     | An Engineer's Sweetheart      | 06-14-1910
+  8 |     |       1 |     | The Fire Chief's Daughter     | 06-30-1910
+  9 |     |       1 |     | The Merry Wives of Windsor    | 11-24-1910
+ 10 |     |       1 |     | A Tin-Type Romance            | 12-06-1910
+ 11 |     |       1 |     | Baseball and Bloomers         | 01-06-1911
+ 12 |     |       1 |     | Jean Rescues                  | 01-31-1911
+ 13 |     |       1 |     | Fisher Folks                  | 02-16-1911
+ 14 |     |       1 |     | Artful Kate                   | 02-23-1911
+ 15 |     |    2500 |     | A Tale of the Australian Bush | 03-15-1911
+(15 rows)
+
+/*
+ * 'public.heap2' does not exist.
+ * it will be created, since 'create_table' is set to true.
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 'public.film',
+        target_table  => 'public.heap2',
+        ordering_column => 'released',
+        create_table => true,
+        fetch_size => 4,
+        max_records => 15
+    );
+ rdf_fdw_clone_table 
+---------------------
+ 
+(1 row)
+
+SELECT runtime,name,released FROM public.heap2;
+ runtime |             name              |  released  
+---------+-------------------------------+------------
+       2 | Nervy Nat Kisses the Bride    | 09-30-1904
+       1 | When Knights Were Bold        | 05-20-1908
+       1 | Pippa Passes                  | 10-04-1909
+       1 | Briton and Boer               | 10-25-1909
+      12 | Twelfth Night                 | 02-05-1910
+       1 | In the Season of Buds         | 06-02-1910
+       1 | An Engineer's Sweetheart      | 06-14-1910
+       1 | The Fire Chief's Daughter     | 06-30-1910
+       1 | The Merry Wives of Windsor    | 11-24-1910
+       1 | A Tin-Type Romance            | 12-06-1910
+       1 | Baseball and Bloomers         | 01-06-1911
+       1 | Jean Rescues                  | 01-31-1911
+       1 | Fisher Folks                  | 02-16-1911
+       1 | Artful Kate                   | 02-23-1911
+    2500 | A Tale of the Australian Bush | 03-15-1911
+(15 rows)
+
+/* 
+ * the matching columns of 'public.heap1' and 'public.heap2' 
+ * must be identical 
+ */
+SELECT runtime,name,released FROM public.heap1
+EXCEPT
+SELECT runtime,name,released FROM public.heap2;
+ runtime | name | released 
+---------+------+----------
+(0 rows)
+
+/* 
+ * setting 'begin_offset' to 10
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 'public.film',
+        target_table  => 'public.heap3',
+        ordering_column => 'released',
+        create_table => true,
+        begin_offset => 10,
+        fetch_size => 2,
+        max_records => 7,
+        verbose => true
+    );
+INFO:  Target TABLE "public.heap3" created based on FOREIGN TABLE "film":
+
+  CREATE TABLE public.heap3 AS SELECT * FROM film WITH NO DATA;
+
+INFO:  page processed [10 - 12]: 2 inserted
+INFO:  page processed [12 - 14]: 2 inserted
+INFO:  page processed [14 - 16]: 2 inserted
+INFO:  page processed [16 - 18]: 1 inserted
+ rdf_fdw_clone_table 
+---------------------
+ 
+(1 row)
+
+SELECT runtime,name,released FROM public.heap3;
+ runtime |             name              |  released  
+---------+-------------------------------+------------
+       1 | Baseball and Bloomers         | 01-06-1911
+       1 | Jean Rescues                  | 01-31-1911
+       1 | Fisher Folks                  | 02-16-1911
+       1 | Artful Kate                   | 02-23-1911
+    2500 | A Tale of the Australian Bush | 03-15-1911
+       1 | Monsieur                      | 04-04-1911
+       1 | How Spriggins Took Lodgers    | 04-19-1911
+(7 rows)
+
+/*
+ * clean up the mess
+ */
+DROP TABLE IF EXISTS public.t1, public.t2, public.t3, public.heap1, public.heap2, public.heap3;
+DROP FOREIGN TABLE public.film, dbpedia_cities;
+DROP SERVER dbpedia;

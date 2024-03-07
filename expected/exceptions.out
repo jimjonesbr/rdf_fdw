@@ -133,7 +133,7 @@ EXPLAIN SELECT * FROM t1;
 
 CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
 CREATE TABLE public.t2_local(name text, foo text);
-/* 
+/*
  ordinary table instead of foreign table in 'foreign_table'
  */
 SELECT
@@ -142,7 +142,7 @@ SELECT
         target_table  => 't2_local'
     );
 ERROR:  invalid relation: 't1_local' is not a foreign table
-/* 
+/*
  foreign table instead of an ordinary table in 'target_table'
  */
 SELECT
@@ -211,10 +211,10 @@ SELECT
     );
 ERROR:  target table mismatch
 HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
-/* 
+/*
  invalid relation.
- an existing sequence is used instead of a relation on 
- 'target_table', so the oid retrieval will not fail. 
+ an existing sequence is used instead of a relation on
+ 'target_table', so the oid retrieval will not fail.
  it has to check if the oid corresponds to a relation and
  throw an error otherwise.
  */
