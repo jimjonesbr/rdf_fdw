@@ -201,6 +201,7 @@ typedef struct RDFfdwState
 	char *target_table_name;
 	int offset;
 	int fetch_size;
+	int inserted_records;
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -374,13 +375,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	text *ordering_pgcolumn = PG_GETARG_TEXT_P(5);
 	bool create_table = PG_GETARG_BOOL(6);
 	bool verbose = PG_GETARG_BOOL(7);
-	int processed_records = 0;
-	int num_pages_retrieved = 0;
 	char *orderby_variable = NULL;
 	int ret;
 	StringInfoData select;
 	bool match = false;
-	//Relation ft;
 	
 	elog(DEBUG1,"%s called",__func__);
 
@@ -424,7 +422,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->verbose = verbose;
-
+	
 	/*
 	 * Load configured SERVER parameters
 	 */
@@ -573,7 +571,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * we use the first colum (index 1) for the SPARQL ORDER BY.
 	*/
 	if(!orderby_variable)
-		orderby_variable = "1";// pstrdup(state->rdfTable->cols[1]->sparqlvar);
+		orderby_variable = "1"
 
 	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
 
@@ -589,20 +587,21 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->sparql_where = DeparseSPARQLWhereGraphPattern(state);
 	elog(DEBUG1,"sparql_where = %s",state->sparql_where);
 
+	state->inserted_records = 0;
+	state->offset = begin_offset;
+
 	while(true)
 	{
-		int offset = begin_offset + (num_pages_retrieved * fetch_size);
 		int limit = fetch_size;
 		StringInfoData limit_clause;
 
 		/* stop iteration if the current offset is greater than max_records */
-		if(max_records != 0 && offset >= max_records)
+		if(max_records != 0 && state->inserted_records >= max_records)
 		{
-			elog(DEBUG1,"%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  pages: %d\n  page size: %d\n",
+			elog(DEBUG1,"%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  fetch size: %d\n",
 						__func__,
 						max_records,
-						processed_records,
-						num_pages_retrieved,
+						state->inserted_records,
 						fetch_size);
 			break;
 		}
@@ -611,8 +610,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * if the current offset + fetch_size exceed the set limit we change
 		 * the limit.
 		 */
-		if(max_records != 0 && offset + fetch_size > max_records)
-			limit = max_records - offset;
+		if(max_records != 0 && state->inserted_records + fetch_size >= max_records)
+			limit = max_records - state->inserted_records;
 
 		/*
 		 * pagesize and rowcount must be reset before every SPARQL query,
@@ -630,7 +629,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		initStringInfo(&limit_clause);
 		appendStringInfo(&limit_clause,"ORDER BY %s \nOFFSET %d LIMIT %d",
 			orderby_variable,
-			num_pages_retrieved == 0 ? 0 : offset,
+			state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
 			limit);
 
 		state->sparql_limit = NameStr(limit_clause);
@@ -644,10 +643,6 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * execute the newly created SPARQL and load it in 'state'. It updates
 		 * state->pagesize!
 		 */
-		// if(verbose)
-		// 	elog(INFO,"loading data (%d - %d) ... ",
-		// 		offset, offset + fetch_size);
-
 		LoadRDFData(state);
 
 		/* get out in case the SPARQL retrieves nothing */
@@ -657,16 +652,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			break;
 		}
 
-		ret = InsertRetrievedData(state,offset, offset + fetch_size);
+		ret = InsertRetrievedData(state,state->offset, state->offset + fetch_size);
+		state->inserted_records = state->inserted_records + ret;
 
-		if(ret < 0)
-			ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, state->target_table_name)
-				)
-			);
-
-		num_pages_retrieved++;
+		state->offset = state->offset + fetch_size;
 
 		pfree(limit_clause.data);
 	}
@@ -722,20 +711,20 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 				if (strcmp(sparqlvar, NameStr(name)) == 0 && state->rdfTable->cols[i]->used)
 				{
-					
+
 					for (value = result->children; value != NULL; value = value->next)
 					{
 						xmlBufferPtr buffer = xmlBufferCreate();
 						xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
 
-						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));						
+						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
 						datum = CStringGetDatum(pstrdup((char *) buffer->content));
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
 
-						if (!HeapTupleIsValid(tuple)) 
+						if (!HeapTupleIsValid(tuple))
 						{
-							ereport(ERROR, 
+							ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
 									errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
 						}
@@ -754,7 +743,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						else
 						{
 							cvals[colindex] = OidFunctionCall1(typinput, datum);
-						}						
+						}
 												
 						xmlBufferFree(buffer);
 					}
@@ -788,6 +777,13 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 		
 		ret = SPI_execp(pplan, cvals, cnulls, 0);
 
+		if(ret < 0)
+			ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, state->target_table_name)
+				)
+			);
+
 		processed_records = processed_records + SPI_processed;
 
 	}
@@ -797,7 +793,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 	SPI_finish();
 
-	return ret;
+	return processed_records;
 }
 
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
@@ -3734,7 +3730,6 @@ static bool IsSPARQLVariableValid(const char* str)
 
 static Oid GetRelOidFromName(char *relname, char *code)
 {
-	
 	StringInfoData str;
 	Oid res = 0;
 	int ret;
