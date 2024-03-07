@@ -132,6 +132,25 @@ EXPLAIN SELECT * FROM t1;
 (1 row)
 
 CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
+CREATE TABLE public.t2_local(name text, foo text);
+/* 
+ ordinary table instead of foreign table in 'foreign_table'
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1_local',
+        target_table  => 't2_local'
+    );
+ERROR:  invalid relation: 't1_local' is not a foreign table
+/* 
+ foreign table instead of an ordinary table in 'target_table'
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 't1'
+    );
+ERROR:  invalid relation: 't1' is not a table
 /*
  empty target_table
 */
@@ -177,11 +196,11 @@ ERROR:  invalid 'begin_offset': -1
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1',
-        target_table => 't1_local',
+        target_table => 't2_local',
         ordering_column => 'foo'
     );
-ERROR:  target table mismatch
-HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
+ERROR:  invalid 'ordering_column': foo
+HINT:  the column 'foo' does not exist in the foreign table 't1'
 /* 
  target table does not match any column of t1
  */
@@ -192,6 +211,20 @@ SELECT
     );
 ERROR:  target table mismatch
 HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
+/* 
+ invalid relation.
+ an existing sequence is used instead of a relation on 
+ 'target_table', so the oid retrieval will not fail. 
+ it has to check if the oid corresponds to a relation and
+ throw an error otherwise.
+ */
+CREATE SEQUENCE seq1;
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 'seq1'
+    );
+ERROR:  invalid relation: 'seq1' is not a table
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
@@ -300,5 +333,6 @@ CREATE FOREIGN TABLE t15 (
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 ERROR:  invalid fetch_size: '-1'
 HINT:  expected values are positive integers
+DROP SEQUENCE seq1;
 DROP FOREIGN TABLE IF EXISTS t1;
-DROP TABLE IF EXISTS t1_local;
+DROP TABLE IF EXISTS t1_local, t2_local;

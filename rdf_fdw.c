@@ -87,6 +87,8 @@
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
 #define RDF_DEFAULT_QUERY_PARAM "query"
 #define RDF_DEFAULT_FETCH_SIZE 100
+#define RDF_ORDINARY_TABLE_CODE "r"
+#define RDF_FOREIGN_TABLE_CODE "f"
 
 #define RDF_SERVER_OPTION_ENDPOINT "endpoint"
 #define RDF_SERVER_OPTION_FORMAT "format"
@@ -159,7 +161,6 @@ typedef struct RDFfdwState
 	int numcols;                 /* Total number of columns in the foreign table. */
 	int rowcount;                /* Number of rows currently returned to the client */
 	int pagesize;                /* Total number of records retrieved from the SPARQL endpoint*/
-	int fetch_size;
 	char* sparql;                /* Final SPARQL query sent to the endpoint (after pusdhown) */
 	char *sparql_prefixes;       /* SPARQL PREFIX entries */
 	char *sparql_select;         /* SPARQL SELECT containing the columns / variables used in the SQL query */
@@ -188,16 +189,18 @@ typedef struct RDFfdwState
 	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
 	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
-	//Oid target_table_id;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
-	Cost startup_cost;             /* cost estimate, only needed for planning */
-	Cost total_cost;               /* cost estimate, only needed for planning */
+	Cost startup_cost;           /* startup cost estimate */
+	Cost total_cost;             /* total cost estimate */
 	ForeignServer *server;
 	ForeignTable *foreign_table;
+	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
 	char *target_table_name;
+	int offset;
+	int fetch_size;
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -310,7 +313,7 @@ static void InitSession(struct RDFfdwState *state,  RelOptInfo *baserel, Planner
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
-static int InsertRetrievedData(RDFfdwState *state);
+static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
@@ -327,9 +330,9 @@ static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, Re
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
 //static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode);
-static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode);
+//static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode);
 
-static Oid GetRelOidFromName(char *relname);
+static Oid GetRelOidFromName(char *relname, char *code);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -385,8 +388,6 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'foreign_table' provided")));
-	//else
-		//ft = get_rel_from_relname(text_to_cstring(foreign_table_name), NoLock);
 
 	if(strlen(text_to_cstring(target_table_name)) == 0)
 		ereport(ERROR,
@@ -394,13 +395,6 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				 errmsg("no 'target_table' provided")));
 	else
 		state->target_table_name = text_to_cstring(target_table_name);
-	// else if (!create_table)
-	// 	state->target_table =  get_rel_from_relname(target_table_name, NoLock);
-
-	// if(!ft)
-	// 	ereport(ERROR,
-	// 			(errcode(ERRCODE_FDW_ERROR),
-	// 			 errmsg("invalid 'foreign_table': %s",text_to_cstring(foreign_table_name))));
 
 	if(fetch_size < 0)
 		ereport(ERROR,
@@ -420,10 +414,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 				 errmsg("invalid 'begin_offset': %d",begin_offset)));
 
 
-	//state->foreign_table = GetForeignTable(GetRelOidFromName());
-
-	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name));
-	
+	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name), RDF_FOREIGN_TABLE_CODE);
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
 	state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
@@ -472,11 +463,17 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	}
 
-	/* 
-	 * at this point we re able to retrieve the target_table's Relation, as
+	/*
+	 * at this point we are able to retrieve the target_table's Relation, as
 	 * it either existed before the function call or was just created.
 	 */
-	state->target_table =  get_rel_from_relname(state->target_table_name, NoLock);
+#if PG_VERSION_NUM < 130000
+	state->target_table = heap_open(GetRelOidFromName(state->target_table_name,RDF_ORDINARY_TABLE_CODE), NoLock);
+	heap_close(state->target_table, NoLock);
+#else
+	state->target_table = table_open(GetRelOidFromName(state->target_table_name,RDF_ORDINARY_TABLE_CODE), NoLock);
+	table_close(state->target_table, NoLock);
+#endif
 	/* 
 	 * Here we check if the target table matches the columns of the 
 	 * FOREIGN TABLE.
@@ -564,7 +561,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	if(!orderby_variable && strlen(state->ordering_pgcolumn) !=0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'ordering_column' '%s'", state->ordering_pgcolumn)));
+				 errmsg("invalid 'ordering_column': %s", state->ordering_pgcolumn),
+				 errhint("the column '%s' does not exist in the foreign table '%s'",
+						state->ordering_pgcolumn,
+						get_rel_name(state->foreigntableid))));
 	
 	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
 	
@@ -644,9 +644,9 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * execute the newly created SPARQL and load it in 'state'. It updates
 		 * state->pagesize!
 		 */
-		if(verbose)
-			elog(INFO,"loading data (%d - %d) ... ",
-				offset, offset + fetch_size);
+		// if(verbose)
+		// 	elog(INFO,"loading data (%d - %d) ... ",
+		// 		offset, offset + fetch_size);
 
 		LoadRDFData(state);
 
@@ -657,7 +657,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			break;
 		}
 
-		ret = InsertRetrievedData(state);
+		ret = InsertRetrievedData(state,offset, offset + fetch_size);
 
 		if(ret < 0)
 			ereport(ERROR,
@@ -674,11 +674,15 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	PG_RETURN_VOID();
 }
 
-static int InsertRetrievedData(RDFfdwState *state)
+static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 {
 	xmlNodePtr result;
 	xmlNodePtr value;
-	xmlNodePtr record;	
+	xmlNodePtr record;
+	regproc typinput;
+	HeapTuple tuple;
+	Datum datum;
+
 	int ret = -1;
 	int processed_records = 0;
 
@@ -706,6 +710,9 @@ static int InsertRetrievedData(RDFfdwState *state)
 		for (int i = 0; i < state->numcols; i++)
 		{
 			char *sparqlvar = state->rdfTable->cols[i]->sparqlvar;
+			char *colname = state->rdfTable->cols[i]->name;
+			Oid pgtype = state->rdfTable->cols[i]->pgtype;
+			int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
 
 			for (result = record->children; result != NULL; result = result->next)
 			{
@@ -714,15 +721,40 @@ static int InsertRetrievedData(RDFfdwState *state)
 				appendStringInfo(&name, "?%s", (char *)xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG));
 
 				if (strcmp(sparqlvar, NameStr(name)) == 0 && state->rdfTable->cols[i]->used)
-				{				
-
+				{
+					
 					for (value = result->children; value != NULL; value = value->next)
 					{
 						xmlBufferPtr buffer = xmlBufferCreate();
 						xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
 
-						cvals[colindex] = CStringGetTextDatum((char*)buffer->content);
-						ctypes[colindex] = state->rdfTable->cols[i]->pgtype;
+						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));						
+						datum = CStringGetDatum(pstrdup((char *) buffer->content));
+						ctypes[colindex] = pgtype;
+						cnulls[colindex] = false;
+
+						if (!HeapTupleIsValid(tuple)) 
+						{
+							ereport(ERROR, 
+								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
+									errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
+						}
+
+						typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
+						ReleaseSysCache(tuple);
+
+						if(pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
+						{
+							cvals[colindex] = OidFunctionCall3(
+												typinput,
+												datum,
+												ObjectIdGetDatum(InvalidOid),
+												Int32GetDatum(pgtypmod));
+						}
+						else
+						{
+							cvals[colindex] = OidFunctionCall1(typinput, datum);
+						}						
 												
 						xmlBufferFree(buffer);
 					}
@@ -761,7 +793,7 @@ static int InsertRetrievedData(RDFfdwState *state)
 	}
 
 	if(state->verbose)
-		elog(INFO,"inserted records: %d", processed_records);
+		elog(INFO,"page processed [%d - %d]: %d inserted",offset,fetch_size, processed_records);
 
 	SPI_finish();
 
@@ -3700,39 +3732,7 @@ static bool IsSPARQLVariableValid(const char* str)
 	return true;
 }
 
-// static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode)
-// {
-// 	RangeVar   *relvar = makeRangeVarFromNameList(textToQualifiedNameList(relname_text));
-// 	Relation	rel = table_openrv(relvar, NoLock);
-// 	Oid			res = rel->rd_rel->oid;
-
-// 	//AclResult	aclresult;
-
-	
-// 	//elog(ERROR,"******** %s",  NameListToString(relvar));
-	
-
-// 	// aclresult = pg_class_aclcheck(RelationGetRelid(rel), GetUserId(),
-// 	// 							  aclmode);
-// 	// if (aclresult != ACLCHECK_OK)
-// 	// 	aclcheck_error(aclresult, get_relkind_objtype(rel->rd_rel->relkind),
-// 	// 				   RelationGetRelationName(rel));
-
-// 	//elog(ERROR,"####### %s > %u",  RelationGetRelationName(rel), rel->rd_rel->oid);
-
-	
-
-// #if PG_VERSION_NUM < 130000
-// 	heap_close(rel, NoLock);
-// #else
-// 	table_close(rel, NoLock);
-// #endif	
-
-
-// 	return res;
-// }
-
-static Oid GetRelOidFromName(char *relname)
+static Oid GetRelOidFromName(char *relname, char *code)
 {
 	
 	StringInfoData str;
@@ -3740,8 +3740,13 @@ static Oid GetRelOidFromName(char *relname)
 	int ret;
 
 	initStringInfo(&str);
-	appendStringInfo(&str,"SELECT '%s'::regclass::oid", relname);
+	appendStringInfo(&str,"SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
 	
+	if(strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("internal error: '%s' unknown relation type",code)));
+
 	SPI_connect();
 
 	ret = SPI_exec(NameStr(str), 0);
@@ -3757,76 +3762,12 @@ static Oid GetRelOidFromName(char *relname)
 
 	SPI_finish();
 
+	if(res == InvalidOid)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid relation: '%s' is not a %s",relname, 
+				 	strcmp(code,RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table" )));
+
 	return res;
 
-}
-
-static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode)
-{
-	//RangeVar   *relvar;
-	Relation	rel;
-	StringInfoData str;
-	int ret;
-	Oid res = 0;
-
-	initStringInfo(&str);
-
-	appendStringInfo(&str,"SELECT '%s'::regclass::oid", relname_text);
-	//AclResult	aclresult;
-	
-
-	SPI_connect();
-
-	ret = SPI_exec(NameStr(str), 0);
-
-	if (ret > 0 && SPI_tuptable != NULL)
-    {
-        SPITupleTable *tuptable = SPI_tuptable;
-        TupleDesc tupdesc = tuptable->tupdesc;
-        //char buf[8192];
-        //uint64 j;
-
-		HeapTuple tuple = tuptable->vals[0];
-		res = (Oid) atoi(SPI_getvalue(tuple, tupdesc, 1));
-
-		//elog(INFO,">> %d", res);
-
-        // for (j = 0; j < tuptable->numvals; j++)
-        // {
-        //     HeapTuple tuple = tuptable->vals[j];
-        //     int i;
-
-        //     for (i = 1, buf[0] = 0; i <= tupdesc->natts; i++)
-        //         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " %s%s",
-        //                 SPI_getvalue(tuple, tupdesc, i),
-        //                 (i == tupdesc->natts) ? " " : " |");
-
-        //     elog(INFO, "EXECQ: %d", atoi(buf));
-        // }
-    }
-
-	SPI_finish();
-
-#if PG_VERSION_NUM < 130000
-	rel = heap_open(res, NoLock);
-#else
-	rel = table_open(res, NoLock);
-#endif	
-
-	// relvar = makeRangeVarFromNameList(textToQualifiedNameList(relname_text));
-	// rel = table_openrv(relvar, lockmode);
-
-	// aclresult = pg_class_aclcheck(RelationGetRelid(rel), GetUserId(),
-	// 							  aclmode);
-	// if (aclresult != ACLCHECK_OK)
-	// 	aclcheck_error(aclresult, get_relkind_objtype(rel->rd_rel->relkind),
-	// 				   RelationGetRelationName(rel));
-
-#if PG_VERSION_NUM < 130000
-	heap_close(rel, NoLock);
-#else
-	table_close(rel, NoLock);
-#endif	
-
-	return rel;
 }

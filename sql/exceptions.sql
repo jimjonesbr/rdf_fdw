@@ -126,6 +126,25 @@ DELETE FROM t1;
 EXPLAIN SELECT * FROM t1;
 
 CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
+CREATE TABLE public.t2_local(name text, foo text);
+
+/*
+ ordinary table instead of foreign table in 'foreign_table'
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1_local',
+        target_table  => 't2_local'
+    );
+
+/*
+ foreign table instead of an ordinary table in 'target_table'
+ */
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 't1'
+    );
 
 /*
  empty target_table
@@ -171,7 +190,7 @@ SELECT
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1',
-        target_table => 't1_local',
+        target_table => 't2_local',
         ordering_column => 'foo'
     );
 
@@ -182,6 +201,20 @@ SELECT
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 't1_local'
+    );
+
+/*
+ invalid relation.
+ an existing sequence is used instead of a relation on
+ 'target_table', so the oid retrieval will not fail.
+ it has to check if the oid corresponds to a relation and
+ throw an error otherwise.
+ */
+CREATE SEQUENCE seq1;
+SELECT
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 'seq1'
     );
 
 /* invalid SPARQL - missing closing curly braces (\n)*/
@@ -268,5 +301,6 @@ CREATE FOREIGN TABLE t15 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 
+DROP SEQUENCE seq1;
 DROP FOREIGN TABLE IF EXISTS t1;
-DROP TABLE IF EXISTS t1_local;
+DROP TABLE IF EXISTS t1_local, t2_local;
