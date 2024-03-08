@@ -594,6 +594,17 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->inserted_records = 0;
 	state->offset = begin_offset;
 
+	if(verbose)
+		elog(INFO,"\n\n== Parameters ==\n\nforeign_table: '%s'\ntarget_table: '%s'\ncreate_table: '%s'\nfetch_size: %d\nbegin_offset: %d\nmax_records: %d\nordering_column: '%s'\nordering sparql variable: '%s'\n",
+			get_rel_name(state->foreigntableid),
+			state->target_table_name,
+			create_table == 1 ? "true" : "false",
+			fetch_size, 
+			begin_offset,
+			max_records,
+			strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn, 
+			orderby_variable);
+
 	while(true)
 	{
 		int ret = 0;

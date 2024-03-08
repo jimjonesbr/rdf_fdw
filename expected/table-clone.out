@@ -35,6 +35,19 @@ SELECT
         target_table  => 'public.t1',
         verbose => true
     );
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'dbpedia_cities'
+target_table: 'public.t1'
+create_table: 'false'
+fetch_size: 5
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?city'
+
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
 INFO:  [10 - 15]: 3 records inserted
@@ -77,6 +90,19 @@ SELECT
         ordering_column => 'city_name',
         verbose => true
     );
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'dbpedia_cities'
+target_table: 'public.t2'
+create_table: 'false'
+fetch_size: 2
+begin_offset: 0
+max_records: 9
+ordering_column: 'city_name'
+ordering sparql variable: '?name'
+
 INFO:  [0 - 2]: 2 records inserted
 INFO:  [2 - 4]: 2 records inserted
 INFO:  [4 - 6]: 2 records inserted
@@ -116,6 +142,19 @@ SELECT
 INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "dbpedia_cities":
 
   CREATE TABLE public.t3 AS SELECT * FROM dbpedia_cities WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'dbpedia_cities'
+target_table: 'public.t3'
+create_table: 'true'
+fetch_size: 5
+begin_offset: 0
+max_records: 0
+ordering_column: 'elevation'
+ordering sparql variable: '?elevation'
 
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
@@ -276,6 +315,19 @@ SELECT
 INFO:  Target TABLE "public.heap3" created based on FOREIGN TABLE "film":
 
   CREATE TABLE public.heap3 AS SELECT * FROM film WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'film'
+target_table: 'public.heap3'
+create_table: 'true'
+fetch_size: 2
+begin_offset: 10
+max_records: 7
+ordering_column: 'released'
+ordering sparql variable: '?released'
 
 INFO:  [10 - 12]: 2 records inserted
 INFO:  [12 - 14]: 2 records inserted
