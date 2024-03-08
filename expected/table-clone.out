@@ -25,21 +25,19 @@ SERVER dbpedia OPTIONS (
 /*
  * 't1' only partially matches with 'dbpedia_cities', with columns
  * 'city_name' and 'uri'.
- */
-CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
-/* 
  * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
  * function call do not set 'fetch_size'.
  */
+CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t1',
         verbose => true
     );
-INFO:  page processed [0 - 5]: 5 inserted
-INFO:  page processed [5 - 10]: 5 inserted
-INFO:  page processed [10 - 15]: 3 inserted
+INFO:  [0 - 5]: 5 records inserted
+INFO:  [5 - 10]: 5 records inserted
+INFO:  [10 - 15]: 3 records inserted
  rdf_fdw_clone_table 
 ---------------------
  
@@ -79,11 +77,11 @@ SELECT
         ordering_column => 'city_name',
         verbose => true
     );
-INFO:  page processed [0 - 2]: 2 inserted
-INFO:  page processed [2 - 4]: 2 inserted
-INFO:  page processed [4 - 6]: 2 inserted
-INFO:  page processed [6 - 8]: 2 inserted
-INFO:  page processed [8 - 10]: 1 inserted
+INFO:  [0 - 2]: 2 records inserted
+INFO:  [2 - 4]: 2 records inserted
+INFO:  [4 - 6]: 2 records inserted
+INFO:  [6 - 8]: 2 records inserted
+INFO:  [8 - 10]: 1 records inserted
  rdf_fdw_clone_table 
 ---------------------
  
@@ -119,9 +117,9 @@ INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "dbpedia_cities":
 
   CREATE TABLE public.t3 AS SELECT * FROM dbpedia_cities WITH NO DATA;
 
-INFO:  page processed [0 - 5]: 5 inserted
-INFO:  page processed [5 - 10]: 5 inserted
-INFO:  page processed [10 - 15]: 3 inserted
+INFO:  [0 - 5]: 5 records inserted
+INFO:  [5 - 10]: 5 records inserted
+INFO:  [10 - 15]: 3 records inserted
  rdf_fdw_clone_table 
 ---------------------
  
@@ -174,11 +172,11 @@ SERVER dbpedia OPTIONS (
      }
      OFFSET 7300 LIMIT 4200
 '); 
-CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
 /*
  * 'public.heap1' only partially matches the columns of 'public.film'.
  * the non-matching columns will be set to NULL.
  */
+CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
@@ -279,10 +277,10 @@ INFO:  Target TABLE "public.heap3" created based on FOREIGN TABLE "film":
 
   CREATE TABLE public.heap3 AS SELECT * FROM film WITH NO DATA;
 
-INFO:  page processed [10 - 12]: 2 inserted
-INFO:  page processed [12 - 14]: 2 inserted
-INFO:  page processed [14 - 16]: 2 inserted
-INFO:  page processed [16 - 18]: 1 inserted
+INFO:  [10 - 12]: 2 records inserted
+INFO:  [12 - 14]: 2 records inserted
+INFO:  [14 - 16]: 2 records inserted
+INFO:  [16 - 18]: 1 records inserted
  rdf_fdw_clone_table 
 ---------------------
  

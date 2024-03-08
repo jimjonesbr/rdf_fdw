@@ -178,7 +178,6 @@ typedef struct RDFfdwState
 	char *proxy_user;            /* User name for proxy authentication. */
 	char *proxy_user_password;   /* Password for proxy authentication. */
 	char *custom_params;         /* Custom parameters used to compose the request URL */
-	char *ordering_pgcolumn;
 	bool request_redirect;       /* Enables or disables URL redirecting. */
 	bool enable_pushdown;        /* Enables or disables pushdown of SQL commands */
 	bool is_sparql_parsable;     /* Marks the query is or not for pushdown*/
@@ -193,12 +192,13 @@ typedef struct RDFfdwState
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
 	Cost startup_cost;           /* startup cost estimate */
 	Cost total_cost;             /* total cost estimate */
-	ForeignServer *server;
+	ForeignServer *server;       
 	ForeignTable *foreign_table;
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
 	char *target_table_name;
+	char *ordering_pgcolumn;
 	int offset;
 	int fetch_size;
 	int inserted_records;
@@ -330,9 +330,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
-//static Oid get_rel_oid_from_text(text *relname_text, LOCKMODE lockmode, AclMode aclmode);
-//static Relation get_rel_from_relname(char *relname_text, LOCKMODE lockmode);
-
 static Oid GetRelOidFromName(char *relname, char *code);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
@@ -364,6 +361,12 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
 }
 
+/*
+ * rdf_fdw_clone_table
+ * -----------------
+ * 
+ * Materializes the content of a foreign table into a normal table.
+ */
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
@@ -376,7 +379,6 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	bool create_table = PG_GETARG_BOOL(6);
 	bool verbose = PG_GETARG_BOOL(7);
 	char *orderby_variable = NULL;
-	int ret;
 	StringInfoData select;
 	bool match = false;
 	
@@ -592,6 +594,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	while(true)
 	{
+		int ret = 0;
 		int limit = fetch_size;
 		StringInfoData limit_clause;
 
@@ -653,6 +656,9 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		}
 
 		ret = InsertRetrievedData(state,state->offset, state->offset + fetch_size);
+
+		elog(DEBUG1,"%s: InsertRetrievedData returned %d records",__func__, ret);
+
 		state->inserted_records = state->inserted_records + ret;
 
 		state->offset = state->offset + fetch_size;
@@ -663,6 +669,17 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	PG_RETURN_VOID();
 }
 
+/*
+ * InsertRetrievedData
+ * -----------------
+ * 
+ * Inserts data retrieved from the triplestore and stoted at the RDFfdwState.
+ * 
+ * state     : records retrieved from the triple store and SPARQL, SERVER and 
+ * 			   FOREIGN TABLE info.
+ * offset    : current offset in the data harvesting set by the caller
+ * fetch_size: fetch_size (page size) in the data harvesting set by the caller
+ */
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 {
 	xmlNodePtr result;
@@ -789,7 +806,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	}
 
 	if(state->verbose)
-		elog(INFO,"page processed [%d - %d]: %d inserted",offset,fetch_size, processed_records);
+		elog(INFO,"[%d - %d]: %d records inserted",offset,fetch_size, processed_records);
 
 	SPI_finish();
 
@@ -3728,6 +3745,16 @@ static bool IsSPARQLVariableValid(const char* str)
 	return true;
 }
 
+/*
+ * GetRelOidFromName
+ * ---------------
+ * Retrieves the Oid of a relation based on its name and type
+ * 
+ * relname: relation name
+ * code   : code of relation type, as in 'relkind' of pg_class.
+ * 
+ * returns the Oid of the given relation
+ */
 static Oid GetRelOidFromName(char *relname, char *code)
 {
 	StringInfoData str;

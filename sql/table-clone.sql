@@ -27,14 +27,10 @@ SERVER dbpedia OPTIONS (
 /*
  * 't1' only partially matches with 'dbpedia_cities', with columns
  * 'city_name' and 'uri'.
- */
-CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
-
-/* 
  * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
  * function call do not set 'fetch_size'.
  */
-
+CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
@@ -110,12 +106,11 @@ SERVER dbpedia OPTIONS (
      OFFSET 7300 LIMIT 4200
 '); 
 
-CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
-
 /*
  * 'public.heap1' only partially matches the columns of 'public.film'.
  * the non-matching columns will be set to NULL.
  */
+CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
 SELECT
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
