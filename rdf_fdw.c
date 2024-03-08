@@ -528,6 +528,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	}
 
 	elog(DEBUG1,"fetch_size = %d",fetch_size);
+	elog(DEBUG1,"ordering_pgcolumn = '%s'", strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
 
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
@@ -536,7 +537,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * Setting ORDER BY column for the SPARQL query. In case no column
 		 * is provided, we pick up the first 'iri' column in the table.
 		 */
-		if(strlen(state->ordering_pgcolumn) == 0 && !orderby_variable)
+		if(strlen(state->ordering_pgcolumn) == 0 && orderby_variable == NULL)
 		{
 			if (state->rdfTable->cols[i]->nodetype &&
 				strcmp(state->rdfTable->cols[i]->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
@@ -545,7 +546,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		else if (strcmp(state->rdfTable->cols[i]->name, state->ordering_pgcolumn) == 0)
 		{
 			orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
-		}
+		} 
 
 		if (!state->rdfTable->cols[i]->expression)
 			appendStringInfo(&select, "%s ", pstrdup(state->rdfTable->cols[i]->sparqlvar));
@@ -555,9 +556,19 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 								pstrdup(state->rdfTable->cols[i]->sparqlvar)
 							);
 	}
-		
-	elog(DEBUG1,"ordering_pgcolumn = %s",state->ordering_pgcolumn);
 
+	/*
+	* If at this point no 'orderby_variable' was set, we set it to the first 
+	* sparqlvar we can find in the table, so that we for sure have a variable
+	* to order by. This value might be overwritten in further iterations of this
+	* loop.
+	*/
+	if(orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0 && state->rdfTable->cols[0]->sparqlvar)
+	{
+		elog(DEBUG1,"%s: setting ordering variable to '%s'",__func__,state->rdfTable->cols[0]->sparqlvar);
+		orderby_variable = pstrdup(state->rdfTable->cols[0]->sparqlvar);
+	}
+	
 	if(!orderby_variable && strlen(state->ordering_pgcolumn) !=0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
@@ -566,28 +577,19 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 						state->ordering_pgcolumn,
 						get_rel_name(state->foreigntableid))));
 	
-	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
-	
-	/*
-	 * If no 'ordering_column' was provided and the table has no 'iri' column,
-	 * we use the first colum (index 1) for the SPARQL ORDER BY.
-	*/
-	if(!orderby_variable)
-		orderby_variable = "1";
-
-	elog(DEBUG1,"orderby_variable = %s",orderby_variable);
+	elog(DEBUG1,"orderby_variable = '%s'",orderby_variable);
 
 	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
-	elog(DEBUG1,"sparql_prefixes = %s",state->sparql_prefixes);
+	elog(DEBUG1,"sparql_prefixes = \n\n'%s'",state->sparql_prefixes);
 
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
-	elog(DEBUG1,"sparql_from = %s",state->sparql_from);
+	elog(DEBUG1,"sparql_from = \n\n'%s'",state->sparql_from);
 
 	state->sparql_select = NameStr(select);
-	elog(DEBUG1,"sparql_select = %s",state->sparql_select);
+	elog(DEBUG1,"sparql_select = \n\n'%s'",state->sparql_select);
 
 	state->sparql_where = DeparseSPARQLWhereGraphPattern(state);
-	elog(DEBUG1,"sparql_where = %s",state->sparql_where);
+	elog(DEBUG1,"sparql_where = \n\n'%s'",state->sparql_where);
 
 	state->inserted_records = 0;
 	state->offset = begin_offset;
