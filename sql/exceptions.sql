@@ -131,7 +131,7 @@ CREATE TABLE public.t2_local(name text, foo text);
 /*
  ordinary table instead of foreign table in 'foreign_table'
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1_local',
         target_table  => 't2_local'
@@ -140,7 +140,7 @@ SELECT
 /*
  foreign table instead of an ordinary table in 'target_table'
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 't1'
@@ -149,7 +149,7 @@ SELECT
 /*
  empty target_table
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => ''
@@ -158,7 +158,7 @@ SELECT
 /*
  empty foreign_table
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => '',
         target_table => 't1_local'
@@ -167,7 +167,7 @@ SELECT
 /*
  negative fetch_size
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't1_local',
@@ -177,7 +177,7 @@ SELECT
 /*
  negative begin_offset
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't1_local',
@@ -187,7 +187,7 @@ SELECT
 /*
  invalid ordering_column
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't2_local',
@@ -197,7 +197,7 @@ SELECT
 /* 
  target table does not match any column of t1
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 't1_local'
@@ -211,7 +211,7 @@ SELECT
  throw an error otherwise.
  */
 CREATE SEQUENCE seq1;
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 'seq1'

@@ -28,14 +28,17 @@ SERVER dbpedia OPTIONS (
  * 't1' only partially matches with 'dbpedia_cities', with columns
  * 'city_name' and 'uri'.
  * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
- * function call do not set 'fetch_size'.
+ * function call do not set 'fetch_size'. 
+ * 'commit_page' is set to 'false', so all retrieved and inserted records
+ * are committed only when the transaction finishes.
  */
 CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t1',
-        verbose => true
+        verbose => true,
+        commit_page => false
     );
 
 SELECT * FROM public.t1;
@@ -47,14 +50,15 @@ SELECT * FROM public.t1;
  */ 
  
 CREATE TABLE public.t2(id serial, foo int, bar date, city_name text);
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t2',
         fetch_size => 2,
         max_records => 9,
         ordering_column => 'city_name',
-        verbose => true
+        verbose => true,
+        commit_page => true
     );
 
 SELECT * FROM public.t2;
@@ -63,7 +67,7 @@ SELECT * FROM public.t2;
  * 't3' does not exist. it will be created by the function due to
  * 'create_table => true' as a copy of 'dbedia_cities'
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t3',
@@ -111,7 +115,7 @@ SERVER dbpedia OPTIONS (
  * the non-matching columns will be set to NULL.
  */
 CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap1',
@@ -126,7 +130,7 @@ SELECT * FROM public.heap1;
  * 'public.heap2' does not exist.
  * it will be created, since 'create_table' is set to true.
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap2',
@@ -149,7 +153,7 @@ SELECT runtime,name,released FROM public.heap2;
 /* 
  * setting 'begin_offset' to 10
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap3',

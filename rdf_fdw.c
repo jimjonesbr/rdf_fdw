@@ -197,11 +197,12 @@ typedef struct RDFfdwState
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
+	bool commit_page;
 	char *target_table_name;
 	char *ordering_pgcolumn;
 	int offset;
 	int fetch_size;
-	int inserted_records;
+	int inserted_records;	
 } RDFfdwState;
 
 typedef struct RDFfdwTable
@@ -378,6 +379,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	text *ordering_pgcolumn = PG_GETARG_TEXT_P(5);
 	bool create_table = PG_GETARG_BOOL(6);
 	bool verbose = PG_GETARG_BOOL(7);
+	bool commit_page = PG_GETARG_BOOL(8);
 	char *orderby_variable = NULL;
 	StringInfoData select;
 	bool match = false;
@@ -424,7 +426,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->verbose = verbose;
-	
+	state->commit_page = commit_page;
 	/*
 	 * Load configured SERVER parameters
 	 */
@@ -705,7 +707,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	int ret = -1;
 	int processed_records = 0;
 
-	SPI_connect();
+	SPI_connect_ext(SPI_OPT_NONATOMIC);
 
 	for (size_t rec = 0; rec < state->pagesize; rec++)
 	{
@@ -813,6 +815,9 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, state->target_table_name)
 				)
 			);
+
+		if(state->commit_page)
+			SPI_commit();
 
 		processed_records = processed_records + SPI_processed;
 

@@ -26,14 +26,17 @@ SERVER dbpedia OPTIONS (
  * 't1' only partially matches with 'dbpedia_cities', with columns
  * 'city_name' and 'uri'.
  * SERVER option 'fetch_size' will be used, as both FOREIGN TABLE and
- * function call do not set 'fetch_size'.
+ * function call do not set 'fetch_size'. 
+ * 'commit_page' is set to 'false', so all retrieved and inserted records
+ * are committed only when the transaction finishes.
  */
 CREATE TABLE public.t1(id serial, city_name text, c1_null text, uri text, c2_null text);
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t1',
-        verbose => true
+        verbose => true,
+        commit_page => false
     );
 INFO:  
 
@@ -51,11 +54,6 @@ ordering sparql variable: '?city'
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
 INFO:  [10 - 15]: 3 records inserted
- rdf_fdw_clone_table 
----------------------
- 
-(1 row)
-
 SELECT * FROM public.t1;
  id |      city_name      | c1_null |                            uri                            | c2_null 
 ----+---------------------+---------+-----------------------------------------------------------+---------
@@ -81,14 +79,15 @@ SELECT * FROM public.t1;
  */ 
  
 CREATE TABLE public.t2(id serial, foo int, bar date, city_name text);
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t2',
         fetch_size => 2,
         max_records => 9,
         ordering_column => 'city_name',
-        verbose => true
+        verbose => true,
+        commit_page => true
     );
 INFO:  
 
@@ -108,11 +107,6 @@ INFO:  [2 - 4]: 2 records inserted
 INFO:  [4 - 6]: 2 records inserted
 INFO:  [6 - 8]: 2 records inserted
 INFO:  [8 - 10]: 1 records inserted
- rdf_fdw_clone_table 
----------------------
- 
-(1 row)
-
 SELECT * FROM public.t2;
  id | foo | bar |   city_name   
 ----+-----+-----+---------------
@@ -131,7 +125,7 @@ SELECT * FROM public.t2;
  * 't3' does not exist. it will be created by the function due to
  * 'create_table => true' as a copy of 'dbedia_cities'
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t3',
@@ -159,11 +153,6 @@ ordering sparql variable: '?elevation'
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
 INFO:  [10 - 15]: 3 records inserted
- rdf_fdw_clone_table 
----------------------
- 
-(1 row)
-
 SELECT * FROM public.t3;
                             uri                            |      city_name      | elevation 
 -----------------------------------------------------------+---------------------+-----------
@@ -216,7 +205,7 @@ SERVER dbpedia OPTIONS (
  * the non-matching columns will be set to NULL.
  */
 CREATE TABLE public.heap1 (id bigserial, foo text, runtime int, bar text, name varchar, released date);
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap1',
@@ -224,11 +213,6 @@ SELECT
         fetch_size => 4,
         max_records => 15
     );
- rdf_fdw_clone_table 
----------------------
- 
-(1 row)
-
 SELECT * FROM public.heap1;
  id | foo | runtime | bar |             name              |  released  
 ----+-----+---------+-----+-------------------------------+------------
@@ -253,7 +237,7 @@ SELECT * FROM public.heap1;
  * 'public.heap2' does not exist.
  * it will be created, since 'create_table' is set to true.
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap2',
@@ -262,11 +246,6 @@ SELECT
         fetch_size => 4,
         max_records => 15
     );
- rdf_fdw_clone_table 
----------------------
- 
-(1 row)
-
 SELECT runtime,name,released FROM public.heap2;
  runtime |             name              |  released  
 ---------+-------------------------------+------------
@@ -301,7 +280,7 @@ SELECT runtime,name,released FROM public.heap2;
 /* 
  * setting 'begin_offset' to 10
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap3',
@@ -333,11 +312,6 @@ INFO:  [10 - 12]: 2 records inserted
 INFO:  [12 - 14]: 2 records inserted
 INFO:  [14 - 16]: 2 records inserted
 INFO:  [16 - 18]: 1 records inserted
- rdf_fdw_clone_table 
----------------------
- 
-(1 row)
-
 SELECT runtime,name,released FROM public.heap3;
  runtime |             name              |  released  
 ---------+-------------------------------+------------

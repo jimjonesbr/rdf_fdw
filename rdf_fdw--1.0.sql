@@ -12,7 +12,7 @@ LANGUAGE C STRICT;
 
 COMMENT ON FUNCTION rdf_fdw_validator(text[], oid) IS 'RDF Triplestore Foreign-data Wrapper options validator';
 
-CREATE FUNCTION rdf_fdw_clone_table(
+CREATE PROCEDURE rdf_fdw_clone_table(
     foreign_table text DEFAULT '',
     target_table text DEFAULT '',
     begin_offset int DEFAULT 0,
@@ -20,11 +20,12 @@ CREATE FUNCTION rdf_fdw_clone_table(
     max_records int DEFAULT 0, 
     ordering_column text DEFAULT '',
     create_table boolean DEFAULT false,
-    verbose boolean DEFAULT false)
-RETURNS void AS 'MODULE_PATHNAME', 'rdf_fdw_clone_table'
-LANGUAGE C IMMUTABLE STRICT PARALLEL UNSAFE;
+    verbose boolean DEFAULT false,
+    commit_page boolean DEFAULT true)
+AS 'MODULE_PATHNAME', 'rdf_fdw_clone_table'
+LANGUAGE C;
 
-COMMENT ON FUNCTION rdf_fdw_clone_table(text,text,int,int,int,text,boolean,boolean) IS 'materialize rdf_fdw foreign tables into heap tables';
+COMMENT ON PROCEDURE rdf_fdw_clone_table(text,text,int,int,int,text,boolean,boolean,boolean) IS 'materialize rdf_fdw foreign tables into heap tables';
 
 CREATE FOREIGN DATA WRAPPER rdf_fdw
 HANDLER rdf_fdw_handler

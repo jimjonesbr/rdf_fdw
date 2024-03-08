@@ -136,7 +136,7 @@ CREATE TABLE public.t2_local(name text, foo text);
 /*
  ordinary table instead of foreign table in 'foreign_table'
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1_local',
         target_table  => 't2_local'
@@ -145,7 +145,7 @@ ERROR:  invalid relation: 't1_local' is not a foreign table
 /*
  foreign table instead of an ordinary table in 'target_table'
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 't1'
@@ -154,7 +154,7 @@ ERROR:  invalid relation: 't1' is not a table
 /*
  empty target_table
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => ''
@@ -163,7 +163,7 @@ ERROR:  no 'target_table' provided
 /*
  empty foreign_table
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => '',
         target_table => 't1_local'
@@ -172,7 +172,7 @@ ERROR:  no 'foreign_table' provided
 /*
  negative fetch_size
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't1_local',
@@ -183,7 +183,7 @@ HINT:  the page size corresponds to the number of records that are retrieved aft
 /*
  negative begin_offset
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't1_local',
@@ -193,7 +193,7 @@ ERROR:  invalid 'begin_offset': -1
 /*
  invalid ordering_column
 */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't2_local',
@@ -204,7 +204,7 @@ HINT:  the column 'foo' does not exist in the foreign table 't1'
 /* 
  target table does not match any column of t1
  */
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 't1_local'
@@ -219,7 +219,7 @@ HINT:  at least one column of 't1_local' must match with the FOREIGN TABLE 't1'
  throw an error otherwise.
  */
 CREATE SEQUENCE seq1;
-SELECT
+CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table  => 'seq1'
