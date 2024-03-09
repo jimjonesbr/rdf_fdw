@@ -50,6 +50,7 @@ begin_offset: 0
 max_records: 0
 ordering_column: 'NOT SET'
 ordering sparql variable: '?city'
+sort_order: 'ASC'
 
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
@@ -85,7 +86,7 @@ CALL
         target_table  => 'public.t2',
         fetch_size => 2,
         max_records => 9,
-        ordering_column => 'city_name',
+        orderby_column => 'city_name',
         verbose => true,
         commit_page => true
     );
@@ -101,6 +102,7 @@ begin_offset: 0
 max_records: 9
 ordering_column: 'city_name'
 ordering sparql variable: '?name'
+sort_order: 'ASC'
 
 INFO:  [0 - 2]: 2 records inserted
 INFO:  [2 - 4]: 2 records inserted
@@ -130,7 +132,8 @@ CALL
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t3',
         create_table => true,
-        ordering_column => 'elevation',
+        orderby_column => 'elevation',
+        sort_order => 'DESC',
         verbose => true
     );
 INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "dbpedia_cities":
@@ -149,6 +152,7 @@ begin_offset: 0
 max_records: 0
 ordering_column: 'elevation'
 ordering sparql variable: '?elevation'
+sort_order: 'DESC'
 
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
@@ -156,19 +160,19 @@ INFO:  [10 - 15]: 3 records inserted
 SELECT * FROM public.t3;
                             uri                            |      city_name      | elevation 
 -----------------------------------------------------------+---------------------+-----------
- http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
- http://dbpedia.org/resource/Hamm                          | Hamm                |      37.7
- http://dbpedia.org/resource/Düsseldorf                    | Düsseldorf          |      38.0
- http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
+ http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
+ http://dbpedia.org/resource/Aachen                        | Aachen              |     173.0
+ http://dbpedia.org/resource/Bielefeld                     | Bielefeld           |     118.0
+ http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
+ http://dbpedia.org/resource/Dortmund                      | Dortmund            |      86.0
+ http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
+ http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
  http://dbpedia.org/resource/Gelsenkirchen                 | Gelsenkirchen       |      60.0
  http://dbpedia.org/resource/Münster                       | Münster             |      60.0
- http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
- http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
- http://dbpedia.org/resource/Dortmund                      | Dortmund            |      86.0
- http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
- http://dbpedia.org/resource/Bielefeld                     | Bielefeld           |     118.0
- http://dbpedia.org/resource/Aachen                        | Aachen              |     173.0
- http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
+ http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
+ http://dbpedia.org/resource/Düsseldorf                    | Düsseldorf          |      38.0
+ http://dbpedia.org/resource/Hamm                          | Hamm                |      37.7
+ http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
 (13 rows)
 
 /*----------------------------------------------------------------------------------------------------------*/
@@ -209,7 +213,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap1',
-        ordering_column => 'released',
+        orderby_column => 'released',
         fetch_size => 4,
         max_records => 15
     );
@@ -241,7 +245,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap2',
-        ordering_column => 'released',
+        orderby_column => 'released',
         create_table => true,
         fetch_size => 4,
         max_records => 15
@@ -284,7 +288,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap3',
-        ordering_column => 'released',
+        orderby_column => 'released',
         create_table => true,
         begin_offset => 10,
         fetch_size => 2,
@@ -307,6 +311,7 @@ begin_offset: 10
 max_records: 7
 ordering_column: 'released'
 ordering sparql variable: '?released'
+sort_order: 'ASC'
 
 INFO:  [10 - 12]: 2 records inserted
 INFO:  [12 - 14]: 2 records inserted

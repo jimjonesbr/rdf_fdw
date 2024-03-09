@@ -191,7 +191,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't2_local',
-        ordering_column => 'foo'
+        orderby_column => 'foo'
     );
 
 /* 

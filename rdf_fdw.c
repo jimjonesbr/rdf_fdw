@@ -200,6 +200,7 @@ typedef struct RDFfdwState
 	bool commit_page;
 	char *target_table_name;
 	char *ordering_pgcolumn;
+	char *sort_order;
 	int offset;
 	int fetch_size;
 	int inserted_records;	
@@ -377,9 +378,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	int fetch_size = PG_GETARG_INT32(3);
 	int max_records = PG_GETARG_INT32(4);
 	text *ordering_pgcolumn = PG_GETARG_TEXT_P(5);
-	bool create_table = PG_GETARG_BOOL(6);
-	bool verbose = PG_GETARG_BOOL(7);
-	bool commit_page = PG_GETARG_BOOL(8);
+	text *sort_order = PG_GETARG_TEXT_P(6);
+	bool create_table = PG_GETARG_BOOL(7);
+	bool verbose = PG_GETARG_BOOL(8);
+	bool commit_page = PG_GETARG_BOOL(9);
 	char *orderby_variable = NULL;
 	StringInfoData select;
 	bool match = false;
@@ -420,6 +422,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
 	state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
+	state->sort_order = text_to_cstring(sort_order);
 	state->enable_pushdown = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
@@ -597,7 +600,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->offset = begin_offset;
 
 	if(verbose)
-		elog(INFO,"\n\n== Parameters ==\n\nforeign_table: '%s'\ntarget_table: '%s'\ncreate_table: '%s'\nfetch_size: %d\nbegin_offset: %d\nmax_records: %d\nordering_column: '%s'\nordering sparql variable: '%s'\n",
+		elog(INFO,"\n\n== Parameters ==\n\nforeign_table: '%s'\ntarget_table: '%s'\ncreate_table: '%s'\nfetch_size: %d\nbegin_offset: %d\nmax_records: %d\nordering_column: '%s'\nordering sparql variable: '%s'\nsort_order: '%s'\n",
 			get_rel_name(state->foreigntableid),
 			state->target_table_name,
 			create_table == 1 ? "true" : "false",
@@ -605,7 +608,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			begin_offset,
 			max_records,
 			strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn, 
-			orderby_variable);
+			orderby_variable,
+			state->sort_order);
 
 	while(true)
 	{
@@ -645,7 +649,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * already contains a OFFSET LIMIT, it will be overwritten by this string
 		 */
 		initStringInfo(&limit_clause);
-		appendStringInfo(&limit_clause,"ORDER BY %s \nOFFSET %d LIMIT %d",
+		appendStringInfo(&limit_clause,"ORDER BY %s(%s) \nOFFSET %d LIMIT %d",
+			state->sort_order,
 			orderby_variable,
 			state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
 			limit);

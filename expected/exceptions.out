@@ -197,7 +197,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 't1',
         target_table => 't2_local',
-        ordering_column => 'foo'
+        orderby_column => 'foo'
     );
 ERROR:  invalid 'ordering_column': foo
 HINT:  the column 'foo' does not exist in the foreign table 't1'

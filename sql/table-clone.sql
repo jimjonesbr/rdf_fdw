@@ -56,7 +56,7 @@ CALL
         target_table  => 'public.t2',
         fetch_size => 2,
         max_records => 9,
-        ordering_column => 'city_name',
+        orderby_column => 'city_name',
         verbose => true,
         commit_page => true
     );
@@ -72,7 +72,8 @@ CALL
         foreign_table => 'public.dbpedia_cities',
         target_table  => 'public.t3',
         create_table => true,
-        ordering_column => 'elevation',
+        orderby_column => 'elevation',
+        sort_order => 'DESC',
         verbose => true
     );
 
@@ -119,7 +120,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap1',
-        ordering_column => 'released',
+        orderby_column => 'released',
         fetch_size => 4,
         max_records => 15
     );
@@ -134,7 +135,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap2',
-        ordering_column => 'released',
+        orderby_column => 'released',
         create_table => true,
         fetch_size => 4,
         max_records => 15
@@ -157,7 +158,7 @@ CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.film',
         target_table  => 'public.heap3',
-        ordering_column => 'released',
+        orderby_column => 'released',
         create_table => true,
         begin_offset => 10,
         fetch_size => 2,

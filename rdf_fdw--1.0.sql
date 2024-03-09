@@ -18,14 +18,16 @@ CREATE PROCEDURE rdf_fdw_clone_table(
     begin_offset int DEFAULT 0,
     fetch_size int DEFAULT 0,
     max_records int DEFAULT 0, 
-    ordering_column text DEFAULT '',
+    orderby_column text DEFAULT '',
+    sort_order text DEFAULT 'ASC',
     create_table boolean DEFAULT false,
     verbose boolean DEFAULT false,
     commit_page boolean DEFAULT true)
 AS 'MODULE_PATHNAME', 'rdf_fdw_clone_table'
 LANGUAGE C;
 
-COMMENT ON PROCEDURE rdf_fdw_clone_table(text,text,int,int,int,text,boolean,boolean,boolean) IS 'materialize rdf_fdw foreign tables into heap tables';
+COMMENT ON PROCEDURE rdf_fdw_clone_table(text,text,int,int,int,text,text,boolean,boolean,boolean) 
+    IS 'materialize rdf_fdw foreign tables into heap tables';
 
 CREATE FOREIGN DATA WRAPPER rdf_fdw
 HANDLER rdf_fdw_handler
