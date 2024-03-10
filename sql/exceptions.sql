@@ -194,7 +194,7 @@ CALL
         orderby_column => 'foo'
     );
 
-/* 
+/*
  target table does not match any column of t1
  */
 CALL
@@ -203,6 +203,121 @@ CALL
         target_table  => 't1_local'
     );
 
+/*
+ invalid sort_order
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        sort_order => 'foo'
+    );
+
+/*
+  NULL foreign_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => NULL,
+      target_table  => 't1_local');
+
+/*
+  NULL target_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => NULL);
+
+/*
+  NULL begin_offset
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => NULL);
+
+/*
+  NULL fetch_size
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => NULL);
+
+/*
+  NULL max_records
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => NULL);
+
+/*
+  NULL orderby_colum
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => NULL);
+
+/*
+  NULL sort_order
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => NULL);
+
+/*
+  NULL create_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => NULL);
+
+/*
+  NULL verbose
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => true,
+      verbose => NULL);
+
+/*
+  NULL commit_page
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => true,
+      verbose => false,
+      commit_page => NULL);
 /*
  invalid relation.
  an existing sequence is used instead of a relation on

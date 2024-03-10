@@ -372,21 +372,93 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
-	text *foreign_table_name = PG_GETARG_TEXT_P(0);
-	text *target_table_name = PG_GETARG_TEXT_P(1);
-	int begin_offset = PG_GETARG_INT32(2);
-	int fetch_size = PG_GETARG_INT32(3);
-	int max_records = PG_GETARG_INT32(4);
-	text *ordering_pgcolumn = PG_GETARG_TEXT_P(5);
-	text *sort_order = PG_GETARG_TEXT_P(6);
-	bool create_table = PG_GETARG_BOOL(7);
-	bool verbose = PG_GETARG_BOOL(8);
-	bool commit_page = PG_GETARG_BOOL(9);
+	text *foreign_table_name;
+	text *target_table_name;
+	text *ordering_pgcolumn;
+	text *sort_order;
+	int begin_offset;
+	int fetch_size;
+	int max_records;
+	bool create_table;
+	bool verbose;
+	bool commit_page;
+	bool match = false;
 	char *orderby_variable = NULL;
 	StringInfoData select;
-	bool match = false;
-	
+
 	elog(DEBUG1,"%s called",__func__);
+
+	if(PG_ARGISNULL(0))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'foreign_table' cannot be NULL")));
+	else
+		foreign_table_name = PG_GETARG_TEXT_P(0);
+
+	if(PG_ARGISNULL(1))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'target_table' cannot be NULL")));
+	else
+		target_table_name = PG_GETARG_TEXT_P(1);
+
+	if(PG_ARGISNULL(2))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'begin_offset' cannot be NULL"),
+				 errhint("either set it to 0 or ignore the paramter to start the pagination from the beginning")));
+	else
+		begin_offset = PG_GETARG_INT32(2);
+
+	if(PG_ARGISNULL(3))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'fetch_size' cannot be NULL")));
+	else
+		fetch_size = PG_GETARG_INT32(3);
+
+	if(PG_ARGISNULL(4))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'max_records' cannot be NULL")));
+	else
+		max_records = PG_GETARG_INT32(4);
+
+	if(PG_ARGISNULL(5))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'orderby_column' cannot be NULL")));
+	else
+		ordering_pgcolumn = PG_GETARG_TEXT_P(5);
+
+	if(PG_ARGISNULL(6))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'sort_order' cannot be NULL")));
+	else
+		sort_order = PG_GETARG_TEXT_P(6);
+	
+	if(PG_ARGISNULL(7))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'create_table' cannot be NULL")));
+	else
+		create_table = PG_GETARG_BOOL(7);
+
+	if(PG_ARGISNULL(8))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'verbose' cannot be NULL")));
+	else
+		verbose = PG_GETARG_BOOL(8);
+
+	if(PG_ARGISNULL(9))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("'commit_page' cannot be NULL")));
+	else
+		commit_page = PG_GETARG_BOOL(9);
+
 
 	if(strlen(text_to_cstring(foreign_table_name)) == 0)
 		ereport(ERROR,
@@ -416,6 +488,13 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("invalid 'begin_offset': %d",begin_offset)));
+
+	if(strcasecmp(text_to_cstring(sort_order),"ASC") != 0 &&
+	   strcasecmp(text_to_cstring(sort_order),"DESC") != 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid 'sort_order': %s",text_to_cstring(sort_order)),
+				 errhint("the 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending)")));
 
 
 	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name), RDF_FOREIGN_TABLE_CODE);
@@ -2492,7 +2571,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	/* 
 	 * if the raw SPARQL query contains a REDUCED modifier, this must be added into the 
 	 * new SELECT clause 
-	 */	
+	 */
 	else if (state->is_sparql_parsable == true && 		
 		LocateKeyword(state->raw_sparql, " \n", "REDUCED"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
@@ -2508,21 +2587,26 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	 * this must be added into the new SELECT clause 
 	 */
 	else if (state->is_sparql_parsable &&  
-			LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND && 
-	        root->parse->distinctClause != NULL && 
-			!root->parse->hasDistinctOn)
+			root && 								/* was the PlanerInfo provided? */
+			root->parse->distinctClause != NULL &&	/* is there a DISTINCT clause in the PlanerInfo?*/
+			!root->parse->hasDistinctOn &&			/* does the DISTINCT clause have a DISTINCT ON?*/
+			LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND) /* does the SPARQL have a DISTINCT clause?*/
+	{
 		appendStringInfo(&sparql,"%s\nSELECT DISTINCT %s\n%s%s",
 			state->sparql_prefixes, 
 			state->sparql_select,
 			state->sparql_from,
 			where_graph.data);
+	}
 	else
+	{	
+		elog(DEBUG2, "  %s: ####", __func__);
 		appendStringInfo(&sparql,"%s\nSELECT %s\n%s%s",
 			state->sparql_prefixes, 
 			state->sparql_select, 
 			state->sparql_from, 
 			where_graph.data);
-
+	}
 	/*
 	 * if the SQL query contains an ORDER BY, we try to push it down.
 	 */
