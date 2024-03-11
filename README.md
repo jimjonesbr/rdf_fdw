@@ -15,7 +15,8 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
-  - [Version](#version)
+  - [version](#version)
+  - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
 - [Pushdown](#pushdown)
   - [LIMIT](#limit)
   - [ORDER BY](#order-by)
@@ -206,19 +207,21 @@ ALTER FOREIGN TABLE film OPTIONS (DROP enable_pushdown,
 ALTER SERVER dbpedia OPTIONS (DROP enable_pushdown);
 ```
 
-### [Version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#version)
+### [version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#version)
 
 **Synopsis**
 
-*text* **rdf_fdw_version**();
-
--------
+```
+text rdf_fdw_version();
+```
 
 **Availability**: 1.0.0
 
 **Description**
 
 Shows the version of the installed `rdf_fdw` and its main libraries.
+
+-------
 
 **Usage**
 
@@ -228,6 +231,105 @@ SELECT rdf_fdw_version();
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  rdf_fdw = 1.0.0-dev, libxml/2.9.10 libcurl/7.74.0 OpenSSL/1.1.1w zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.0 (+libidn2/2.3.0) libssh2/1.9.0 nghttp2/1.43.0 librtmp/2.3
 (1 row)
+```
+### [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table)
+**Synopsis**
+```
+void rdf_fdw_clone_table(
+  foreign_table text,
+    target_table text,
+    begin_offset int,
+    fetch_size int,
+    max_records int,
+    orderby_column text,
+    sort_order text,
+    create_table boolean,
+    verbose boolean,
+    commit_page boolean
+)
+```
+
+**Availability**: 1.0.0
+
+**Description**
+
+Sometimes we need to make a copy of a remote repository and often there are issues related to the data set's size, e.g. can vary from triplestore settings to server capacity. To overcome this issue it is sometimes necessary to retrieve data in batches instead of everything in a single request - this is exactly what this stored procedure provides. This procedure retrieves records from a `FOREIGN TABLE`, in user defined batches, and stores them into a given heap `TABLE`.
+
+**Parameters**
+
+`foreign_table` **(required)**:  `FOREIGN TABLE` from where the data has to be copied.
+
+`target_table` **(required)**: heap `TABLE` where the data from the `FOREIGN TABLE` is copied to.
+
+`begin_offset`: starting point in the SPARQL query pagination. Default `0`.
+
+`fetch_size`: size of the page fetched from the triplestore. Default is the value set at `fetch_size` in either `SERVER` or `FOREIGN TABLE`. In case `SERVER` and `FOREIGN TABLE` do not set `fetch_size`, the default will be set to `100`.
+
+`max_records`: maximum number of records that should be retrieved from the `FOREIGN TABLE`. Default `0`, which means no limit. 
+
+`orderby_column`: ordering column used for the pagination - just like in SQL `ORDER BY`. Default `''`, which means that the function will chose a column to use in the `ORDER BY` clause on its own. That is, the procedure will try to set the first column with the option `nodetype` set to `iri`. If the table has no `iri` typed `nodetype`, the first column will be chosen as ordering column. If you do not wish to have an `ORDER BY` clause at al, set this parameter to `NULL`.
+
+`sort_order`: `ASC` or `DESC` to sort the data returned in ascending or descending order, respectivelly. Default `ASC`.
+
+`create_table`: creates the table set in `target_table` before harvesting the `FOREIGN TABLE`. Default `false`.
+
+`verbose`: prints debugging messages in the standard output. Default `false`.
+
+`commit_page`: commits the inserted records immediatelly or only after the transaction is finished. Useful for those who want records to be discarded in case of an error - following the principle of *everyhing or nothing*. Default `true`, which means that all inserts will me committed immediatelly.
+
+-------
+
+**Usage Example**
+
+```sql
+CREATE SERVER dbpedia
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://dbpedia.org/sparql');
+
+CREATE FOREIGN TABLE public.dbpedia_cities (
+  uri text           OPTIONS (variable '?city', nodetype 'iri'),
+  city_name text     OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string'),
+  elevation numeric  OPTIONS (variable '?elevation', nodetype 'literal', literaltype 'xsd:integer')
+)
+SERVER dbpedia OPTIONS (
+  sparql '
+    PREFIX dbo:  <http://dbpedia.org/ontology/>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX dbr:  <http://dbpedia.org/resource/>
+    SELECT *
+    {?city a dbo:City ;
+      foaf:name ?name ;
+      dbo:federalState dbr:North_Rhine-Westphalia ;
+      dbo:elevation ?elevation
+    }
+');
+
+/*
+ * Materilize all records from the FOREIGN TABLE 'public.dbpedia_cities' in 
+ * the table 'public.t1_local'. 
+ */ 
+CALL rdf_fdw_clone_table(
+      foreign_table => 'dbpedia_cities',
+      target_table  => 't1_local',
+      create_table => true);
+
+SELECT * FROM t1_local;
+                            uri                            |      city_name      | elevation 
+-----------------------------------------------------------+---------------------+-----------
+ http://dbpedia.org/resource/Aachen                        | Aachen              |     173.0
+ http://dbpedia.org/resource/Bielefeld                     | Bielefeld           |     118.0
+ http://dbpedia.org/resource/Dortmund                      | Dortmund            |      86.0
+ http://dbpedia.org/resource/Düsseldorf                    | Düsseldorf          |      38.0
+ http://dbpedia.org/resource/Gelsenkirchen                 | Gelsenkirchen       |      60.0
+ http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
+ http://dbpedia.org/resource/Hamm                          | Hamm                |      37.7
+ http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
+ http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
+ http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
+ http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
+ http://dbpedia.org/resource/Münster                       | Münster             |      60.0
+ http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
+(13 rows)
 ```
 
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
@@ -244,7 +346,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 | `FETCH FIRST x ROWS` | `LIMIT x` |
 | `FETCH FIRST ROW ONLY` | `LIMIT 1` |
 
-Pushdown of **OFFSET** clauses is **not** supported, which means that OFFSET filters will be applied locally in the client.
+Pushdown of **OFFSET** clauses is **not** supported, which means that OFFSET filters will be applied locally in the client. Take a look at [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table) if you wish to retrieve records in batches.
 
 ### ORDER BY
 
