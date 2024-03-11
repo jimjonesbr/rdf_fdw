@@ -383,6 +383,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	bool verbose;
 	bool commit_page;
 	bool match = false;
+	bool orderby_query = true;
+
 	char *orderby_variable = NULL;
 	StringInfoData select;
 
@@ -425,11 +427,12 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		max_records = PG_GETARG_INT32(4);
 
 	if(PG_ARGISNULL(5))
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("'orderby_column' cannot be NULL")));
+		orderby_query = false;
 	else
+	{
 		ordering_pgcolumn = PG_GETARG_TEXT_P(5);
+		state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
+	}
 
 	if(PG_ARGISNULL(6))
 		ereport(ERROR,
@@ -500,7 +503,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name), RDF_FOREIGN_TABLE_CODE);
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
-	state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
+	
 	state->sort_order = text_to_cstring(sort_order);
 	state->enable_pushdown = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
@@ -612,7 +615,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	}
 
 	elog(DEBUG1,"fetch_size = %d",fetch_size);
-	elog(DEBUG1,"ordering_pgcolumn = '%s'", strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
+	
+	elog(DEBUG1,"ordering_pgcolumn = '%s'", !orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
 
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
@@ -621,16 +625,19 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * Setting ORDER BY column for the SPARQL query. In case no column
 		 * is provided, we pick up the first 'iri' column in the table.
 		 */
-		if(strlen(state->ordering_pgcolumn) == 0 && orderby_variable == NULL)
+		if (orderby_query)
 		{
-			if (state->rdfTable->cols[i]->nodetype &&
-				strcmp(state->rdfTable->cols[i]->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+			if (strlen(state->ordering_pgcolumn) == 0 && orderby_variable == NULL)
+			{
+				if (state->rdfTable->cols[i]->nodetype &&
+					strcmp(state->rdfTable->cols[i]->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+					orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
+			}
+			else if (strcmp(state->rdfTable->cols[i]->name, state->ordering_pgcolumn) == 0)
+			{
 				orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
+			}
 		}
-		else if (strcmp(state->rdfTable->cols[i]->name, state->ordering_pgcolumn) == 0)
-		{
-			orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
-		} 
 
 		if (!state->rdfTable->cols[i]->expression)
 			appendStringInfo(&select, "%s ", pstrdup(state->rdfTable->cols[i]->sparqlvar));
@@ -647,21 +654,24 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	* to order by. This value might be overwritten in further iterations of this
 	* loop.
 	*/
-	if(orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0 && state->rdfTable->cols[0]->sparqlvar)
+	if (orderby_query)
 	{
-		elog(DEBUG1,"%s: setting ordering variable to '%s'",__func__,state->rdfTable->cols[0]->sparqlvar);
-		orderby_variable = pstrdup(state->rdfTable->cols[0]->sparqlvar);
+		if (orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0 && state->rdfTable->cols[0]->sparqlvar)
+		{
+			elog(DEBUG1, "%s: setting ordering variable to '%s'", __func__, state->rdfTable->cols[0]->sparqlvar);
+			orderby_variable = pstrdup(state->rdfTable->cols[0]->sparqlvar);
+		}
+
+		if (!orderby_variable && strlen(state->ordering_pgcolumn) != 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("invalid 'ordering_column': %s", state->ordering_pgcolumn),
+					 errhint("the column '%s' does not exist in the foreign table '%s'",
+							 state->ordering_pgcolumn,
+							 get_rel_name(state->foreigntableid))));
+
+		elog(DEBUG1, "orderby_variable = '%s'", orderby_variable);
 	}
-	
-	if(!orderby_variable && strlen(state->ordering_pgcolumn) !=0)
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'ordering_column': %s", state->ordering_pgcolumn),
-				 errhint("the column '%s' does not exist in the foreign table '%s'",
-						state->ordering_pgcolumn,
-						get_rel_name(state->foreigntableid))));
-	
-	elog(DEBUG1,"orderby_variable = '%s'",orderby_variable);
 
 	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
 	elog(DEBUG1,"sparql_prefixes = \n\n'%s'",state->sparql_prefixes);
@@ -686,7 +696,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			fetch_size, 
 			begin_offset,
 			max_records,
-			strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn, 
+			!orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn, 
 			orderby_variable,
 			state->sort_order);
 
@@ -728,11 +738,17 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * already contains a OFFSET LIMIT, it will be overwritten by this string
 		 */
 		initStringInfo(&limit_clause);
-		appendStringInfo(&limit_clause,"ORDER BY %s(%s) \nOFFSET %d LIMIT %d",
-			state->sort_order,
-			orderby_variable,
-			state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
-			limit);
+		if(orderby_query)
+			appendStringInfo(&limit_clause,"ORDER BY %s(%s) \nOFFSET %d LIMIT %d",
+				state->sort_order,
+				orderby_variable,
+				state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
+				limit);
+		else
+			appendStringInfo(&limit_clause,"OFFSET %d LIMIT %d",
+				state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
+				limit);
+
 
 		state->sparql_limit = NameStr(limit_clause);
 

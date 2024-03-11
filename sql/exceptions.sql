@@ -255,17 +255,6 @@ CALL rdf_fdw_clone_table(
       max_records => NULL);
 
 /*
-  NULL orderby_colum
-*/
-CALL rdf_fdw_clone_table(
-      foreign_table => 't1',
-      target_table  => 't1_local',
-      begin_offset => 42,
-      fetch_size => 8,
-      max_records => 103,
-      orderby_column => NULL);
-
-/*
   NULL sort_order
 */
 CALL rdf_fdw_clone_table(
