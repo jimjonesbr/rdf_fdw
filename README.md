@@ -253,8 +253,7 @@ void rdf_fdw_clone_table(
 
 **Description**
 
-Sometimes we need to make a copy of a remote repository and often there are issues related to the data set's size, e.g. can vary from triplestore settings to server capacity. To overcome this issue it is sometimes necessary to retrieve data in batches instead of everything in a single request - this is exactly what this stored procedure provides. This procedure retrieves records from a `FOREIGN TABLE`, in user defined batches, and stores them into a given heap `TABLE`.
-
+This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `TABLE`. It provides the possibility to retrieve the data set in batches, so that issues related to triplestore limits and client's memory don't bother too much. 
 **Parameters**
 
 `foreign_table` **(required)**:  `FOREIGN TABLE` from where the data has to be copied.
