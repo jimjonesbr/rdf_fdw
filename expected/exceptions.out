@@ -92,11 +92,22 @@ CREATE FOREIGN TABLE table_error4 (
 ) SERVER testserver OPTIONS 
   (log_sparql 'true', 
    sparql 'SELECT * WHERE {?s ?p ?o}');
-SELECT * FROM table_error3
+SELECT * FROM table_error4
 LIMIT 3;
-ERROR:  relation "table_error3" does not exist
-LINE 1: SELECT * FROM table_error3
-                      ^
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?foo 
+{?s ?p ?o}
+LIMIT 3
+
+ name 
+------
+ 
+ 
+ 
+(3 rows)
+
 /* 
   invalid foreign table option 
   log_sparql must be boolean

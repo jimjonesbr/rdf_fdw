@@ -200,7 +200,7 @@ LIMIT 3;
 /*
  * SELECT does not contain the column 'country' but it is
  * used in the WHERE clause. We automatically add it to the 
- * SPARQL SELECT claue, so that it can be also filtered locally
+ * SPARQL SELECT clause, so that it can be also filtered locally
 */
 SELECT name, birthdate, party
 FROM politicians

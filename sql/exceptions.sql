@@ -92,7 +92,7 @@ CREATE FOREIGN TABLE table_error4 (
   (log_sparql 'true', 
    sparql 'SELECT * WHERE {?s ?p ?o}');
 
-SELECT * FROM table_error3
+SELECT * FROM table_error4
 LIMIT 3;
 
 /* 
