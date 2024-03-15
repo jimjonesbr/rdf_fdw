@@ -815,8 +815,12 @@ FROM postgres:15
 RUN apt-get update && \
     apt-get install -y make gcc postgresql-server-dev-15 libxml2-dev libcurl4-openssl-dev
 
-RUN tar xvzf rdf_fdw-[VERSION].tar.gz && \
-    cd rdf_fdw-[VERSION] && \
+RUN mkdir /extensions
+COPY ./rdf_fdw-1.0.0.tar.gz /extensions/
+WORKDIR /extensions
+
+RUN tar xvzf rdf_fdw-1.0.0.tar.gz && \
+    cd rdf_fdw-1.0.0 && \
     make -j && \
     make install
 ```
