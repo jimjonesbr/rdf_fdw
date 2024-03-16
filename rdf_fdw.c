@@ -70,14 +70,14 @@
 #include "executor/spi.h"
 #include "catalog/namespace.h"
 #include "utils/varlena.h"
-
+#include "miscadmin.h"
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
 #define ADD_REL_QUALIFIER(buf, varno)   \
 		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
-#define FDW_VERSION "1.0.0"
+#define FDW_VERSION "1.1.0-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -89,6 +89,9 @@
 #define RDF_DEFAULT_FETCH_SIZE 100
 #define RDF_ORDINARY_TABLE_CODE "r"
 #define RDF_FOREIGN_TABLE_CODE "f"
+
+#define RDF_USERMAPPING_USER "user"
+#define RDF_USERMAPPING_PASSWORD "password"
 
 #define RDF_SERVER_OPTION_ENDPOINT "endpoint"
 #define RDF_SERVER_OPTION_FORMAT "format"
@@ -161,7 +164,9 @@ typedef struct RDFfdwState
 	int numcols;                 /* Total number of columns in the foreign table. */
 	int rowcount;                /* Number of rows currently returned to the client */
 	int pagesize;                /* Total number of records retrieved from the SPARQL endpoint*/
-	char* sparql;                /* Final SPARQL query sent to the endpoint (after pusdhown) */
+	char *sparql;                /* Final SPARQL query sent to the endpoint (after pusdhown) */
+	char *user;
+	char *password;
 	char *sparql_prefixes;       /* SPARQL PREFIX entries */
 	char *sparql_select;         /* SPARQL SELECT containing the columns / variables used in the SQL query */
 	char *sparql_from;           /* SPARQL FROM clause entries*/
@@ -194,6 +199,7 @@ typedef struct RDFfdwState
 	Cost total_cost;             /* total cost estimate */
 	ForeignServer *server;       
 	ForeignTable *foreign_table;
+	UserMapping *mapping;
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
@@ -276,6 +282,9 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
+	/* User Mapping */
+	{RDF_USERMAPPING_USER, UserMappingRelationId, false, false},
+	{RDF_USERMAPPING_PASSWORD, UserMappingRelationId, false, false},
 	/* EOList option */
 	{NULL, InvalidOid, false, false}
 };
@@ -1475,6 +1484,83 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 	}
 }
 
+static void LoadRDFUserMapping(RDFfdwState *state)
+{
+
+	Datum		datum;
+	HeapTuple	tp;
+	bool		isnull;
+	UserMapping *um;
+	List *options = NIL;
+	ListCell *cell;
+	bool usermatch = true;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	tp = SearchSysCache2(USERMAPPINGUSERSERVER,
+						 ObjectIdGetDatum(GetUserId()),
+						 ObjectIdGetDatum(state->server->serverid));
+
+	if (!HeapTupleIsValid(tp))
+	{
+		elog(DEBUG2, "%s: not found for the specific user -- try PUBLIC",__func__);
+		tp = SearchSysCache2(USERMAPPINGUSERSERVER,
+							 ObjectIdGetDatum(InvalidOid),
+							 ObjectIdGetDatum(state->server->serverid));
+	}
+
+	if (!HeapTupleIsValid(tp))
+	{
+		elog(DEBUG2, "%s: user mapping not found for user \"%s\", server \"%s\"",
+			 __func__, MappingUserName(GetUserId()), state->server->servername);
+
+		usermatch = false;
+	}
+
+	if (usermatch)
+	{
+		elog(DEBUG2, "%s: setting UserMapping*", __func__);
+		um = (UserMapping *)palloc(sizeof(UserMapping));
+		um->umid = ((Form_pg_user_mapping)GETSTRUCT(tp))->oid;
+		um->userid = GetUserId();
+		um->serverid = state->server->serverid;
+
+		elog(DEBUG1, "%s: extract the umoptions", __func__);
+		datum = SysCacheGetAttr(USERMAPPINGUSERSERVER,
+								tp,
+								Anum_pg_user_mapping_umoptions,
+								&isnull);
+		if (isnull)
+			um->options = NIL;
+		else
+			um->options = untransformRelOptions(datum);
+
+		if (um->options != NIL)
+		{
+			options = list_concat(options, um->options);
+
+			foreach (cell, options)
+			{
+				DefElem *def = (DefElem *)lfirst(cell);
+
+				if (strcmp(def->defname, RDF_USERMAPPING_USER) == 0)
+				{
+					state->user = pstrdup(strVal(def->arg));
+					elog(DEBUG1, "%s: >>> %s", __func__, strVal(def->arg));
+				}
+
+				if (strcmp(def->defname, RDF_USERMAPPING_PASSWORD) == 0)
+				{
+					elog(DEBUG1, "%s: >>> %s", __func__, strVal(def->arg));
+					state->password = pstrdup(strVal(def->arg));
+				}
+			}
+		}
+
+		ReleaseSysCache(tp);
+	}
+
+}
 /*
  * CStringToConst
  * -----------------
@@ -1542,6 +1628,8 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, CStringToConst(state->proxy_user));
 	result = lappend(result, CStringToConst(state->proxy_user_password));
 	result = lappend(result, CStringToConst(state->custom_params));
+	result = lappend(result, CStringToConst(state->user));
+	result = lappend(result, CStringToConst(state->password));
 	result = lappend(result, IntToConst((int)state->request_redirect));
 	result = lappend(result, IntToConst((int)state->enable_pushdown));
 	result = lappend(result, IntToConst((int)state->is_sparql_parsable));
@@ -1663,6 +1751,12 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	cell = list_next(list, cell);
 
 	state->custom_params = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
+
+	state->user = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
+
+	state->password = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
 	state->request_redirect = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
@@ -1892,17 +1986,20 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
-
 	/*
 	 * Loading SERVER OPTIONS
 	 */
 	LoadRDFServerInfo(state);
 
-
 	/*
 	 * Loading FOREIGN TABLE structure and OPTIONS
 	 */
 	LoadRDFTableInfo(state);
+
+	/*
+	 * Loading USER MAPPING (if any)
+	 */
+	LoadRDFUserMapping(state);
 
 	/* 
 	 * Marking columns used in the SQL query for SPARQL pushdown
@@ -2012,6 +2109,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	StringInfoData url_buffer;
 	StringInfoData user_agent;
 	StringInfoData accept_header;
+	StringInfoData http_auth;
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
@@ -2116,6 +2214,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		headers = curl_slist_append(headers, accept_header.data);
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+
+		if(state->user && state->password)
+		{
+			initStringInfo(&http_auth);
+			appendStringInfo(&http_auth,"%s:%s",state->user,state->password);
+			elog(DEBUG1, "  %s: setting http auth: %s", __func__, NameStr(http_auth));
+			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
+			curl_easy_setopt(curl, CURLOPT_USERPWD, NameStr(http_auth));
+		}
 
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
 
@@ -2616,7 +2724,6 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	}
 	else
 	{	
-		elog(DEBUG2, "  %s: ####", __func__);
 		appendStringInfo(&sparql,"%s\nSELECT %s\n%s%s",
 			state->sparql_prefixes, 
 			state->sparql_select, 

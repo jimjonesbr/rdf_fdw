@@ -405,6 +405,16 @@ CREATE FOREIGN TABLE t15 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 
+/*
+ empty user name
+*/
+CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user '', password 'foo');
+
+/*
+ empty password
+*/
+CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'foo', password '');
+
 DROP SEQUENCE seq1;
 DROP FOREIGN TABLE IF EXISTS t1;
 DROP TABLE IF EXISTS t1_local, t2_local;
