@@ -312,6 +312,7 @@ static void rdfEndForeignScan(ForeignScanState *node);
 
 static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
+static void LoadRDFUserMapping(RDFfdwState *state);
 static int ExecuteSPARQL(RDFfdwState *state);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
@@ -1546,13 +1547,13 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 				if (strcmp(def->defname, RDF_USERMAPPING_USER) == 0)
 				{
 					state->user = pstrdup(strVal(def->arg));
-					elog(DEBUG1, "%s: >>> %s", __func__, strVal(def->arg));
+					elog(DEBUG1, "%s: %s '%s'", __func__, def->defname, state->user);
 				}
 
 				if (strcmp(def->defname, RDF_USERMAPPING_PASSWORD) == 0)
-				{
-					elog(DEBUG1, "%s: >>> %s", __func__, strVal(def->arg));
+				{					
 					state->password = pstrdup(strVal(def->arg));
+					elog(DEBUG1, "%s: %s '*******'", __func__, def->defname);
 				}
 			}
 		}
@@ -2114,6 +2115,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
 	struct curl_slist *headers = NULL;
+	long response_code;
 
 	chunk.memory = palloc(1);
 	chunk.size = 0; /* no data at this point */
@@ -2251,10 +2253,23 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 			if (len)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
-						 errmsg("%s => (%u) %s%s", __func__, res, errbuf,
-								((errbuf[len - 1] != '\n') ? "\n" : ""))));
+				curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+				
+				if(response_code == 401)
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+						 errmsg("Unauthorized (HTTP status %ld)", response_code),
+						 errhint("Check the user and password set in the USER MAPPING and try again.")));
+				else if(response_code == 405)
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+						 errmsg("Method Not Allowed (HTTP status %ld)", response_code),
+						 errhint("This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: '%s'",state->endpoint)));
+				else
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+						 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->endpoint, response_code)),
+						 errdetail("%s (curl error code %u)",curl_easy_strerror(res), res));
 			}
 			else
 			{
@@ -2265,7 +2280,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		}
 		else
 		{
-			long response_code;
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 			state->xmldoc = xmlReadMemory(chunk.memory, chunk.size, NULL, NULL, XML_PARSE_NOBLANKS);
 
