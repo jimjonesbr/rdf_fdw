@@ -461,6 +461,11 @@ ERROR:  empty value in option 'user'
 */
 CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'foo', password '');
 ERROR:  empty value in option 'password'
+/*
+ invalid option
+*/
+CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'jim', foo 'bar');
+ERROR:  invalid rdf_fdw option 'foo'
 DROP SEQUENCE seq1;
 DROP FOREIGN TABLE IF EXISTS t1;
 DROP TABLE IF EXISTS t1_local, t2_local;

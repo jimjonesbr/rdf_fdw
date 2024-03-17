@@ -415,6 +415,11 @@ CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user '', password '
 */
 CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'foo', password '');
 
+/*
+ invalid option
+*/
+CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'jim', foo 'bar');
+
 DROP SEQUENCE seq1;
 DROP FOREIGN TABLE IF EXISTS t1;
 DROP TABLE IF EXISTS t1_local, t2_local;
