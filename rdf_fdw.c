@@ -90,8 +90,8 @@
 #define RDF_ORDINARY_TABLE_CODE "r"
 #define RDF_FOREIGN_TABLE_CODE "f"
 
-#define RDF_USERMAPPING_USER "user"
-#define RDF_USERMAPPING_PASSWORD "password"
+#define RDF_USERMAPPING_OPTION_USER "user"
+#define RDF_USERMAPPING_OPTION_PASSWORD "password"
 
 #define RDF_SERVER_OPTION_ENDPOINT "endpoint"
 #define RDF_SERVER_OPTION_FORMAT "format"
@@ -283,8 +283,8 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
 	/* User Mapping */
-	{RDF_USERMAPPING_USER, UserMappingRelationId, false, false},
-	{RDF_USERMAPPING_PASSWORD, UserMappingRelationId, false, false},
+	{RDF_USERMAPPING_OPTION_USER, UserMappingRelationId, false, false},
+	{RDF_USERMAPPING_OPTION_PASSWORD, UserMappingRelationId, false, false},
 	/* EOList option */
 	{NULL, InvalidOid, false, false}
 };
@@ -1544,13 +1544,13 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 			{
 				DefElem *def = (DefElem *)lfirst(cell);
 
-				if (strcmp(def->defname, RDF_USERMAPPING_USER) == 0)
+				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_USER) == 0)
 				{
 					state->user = pstrdup(strVal(def->arg));
 					elog(DEBUG1, "%s: %s '%s'", __func__, def->defname, state->user);
 				}
 
-				if (strcmp(def->defname, RDF_USERMAPPING_PASSWORD) == 0)
+				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PASSWORD) == 0)
 				{					
 					state->password = pstrdup(strVal(def->arg));
 					elog(DEBUG1, "%s: %s '*******'", __func__, def->defname);
@@ -2110,7 +2110,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	StringInfoData url_buffer;
 	StringInfoData user_agent;
 	StringInfoData accept_header;
-	StringInfoData http_auth;
+	//StringInfoData http_auth;
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
@@ -2220,11 +2220,14 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if(state->user && state->password)
 		{
-			initStringInfo(&http_auth);
-			appendStringInfo(&http_auth,"%s:%s",state->user,state->password);
-			elog(DEBUG1, "  %s: setting http auth: %s", __func__, NameStr(http_auth));
-			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
-			curl_easy_setopt(curl, CURLOPT_USERPWD, NameStr(http_auth));
+			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_easy_setopt(curl, CURLOPT_USERNAME, state->user);
+			curl_easy_setopt(curl, CURLOPT_PASSWORD, state->password);
+		}
+		else if(state->user && !state->password)
+		{
+			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_easy_setopt(curl, CURLOPT_USERNAME, state->user);
 		}
 
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
@@ -2260,6 +2263,11 @@ static int ExecuteSPARQL(RDFfdwState *state)
 						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
 						 errmsg("Unauthorized (HTTP status %ld)", response_code),
 						 errhint("Check the user and password set in the USER MAPPING and try again.")));
+				else if(response_code == 404)
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+						 errmsg("Not Found (HTTP status %ld)", response_code),
+						 errhint("This indicates that the server cannot find the requested resource. Check the SERVER url and try again: '%s'",state->endpoint)));
 				else if(response_code == 405)
 					ereport(ERROR,
 						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
