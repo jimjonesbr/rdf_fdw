@@ -12,6 +12,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
 - [Build and Install](#build-and-install)
 - [Update](#update)
 - [Usage](#usage)
+  - [CREATE USER MAPPING](#create-user-mapping)
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
@@ -37,6 +38,16 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
 * [PostgreSQL](https://www.postgresql.org): version 11 or higher.
+* [gcc](https://gcc.gnu.org/)
+* [make](https://www.gnu.org/software/make/)
+
+In an Ubuntu environment you can install all dependencies with the following command:
+
+```shell
+apt install -y make gcc postgresql-server-dev-16 libxml2-dev libcurl4-openssl-dev
+```
+
+Note that `postgresql-server-dev-16` only installs the libraries for PostgreSQL 16. Change it to another version if you're using another PostgreSQL version.
 
 ## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
 
@@ -120,6 +131,27 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 | `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are added to the request URL.
 | `query_param`         | optional            | The request parameter where the SPARQL endpoint expects the query in a HTTP request. Most SPARQL endpoints expects the query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option (default `query`)
 
+### [CREATE USER MAPPING](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create-user-mapping)
+
+Availability: **1.1.0**
+
+[CREATE USER MAPPING](https://www.postgresql.org/docs/current/sql-createusermapping.html) defines a mapping of a PostgreSQL user to an user in the target triplestore. For instance, to map the PostgreSQL user `postgres` to the user `admin` in the `SERVER` named `graphdb`:
+
+```sql
+CREATE SERVER graphdb
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (endpoint 'http://192.168.178.27:7200/repositories/myrepo');
+
+CREATE USER MAPPING FOR postgres
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
+```
+
+| Option | Type | Description |
+|---|---|---|
+| `user` | **required** | name of the user for authentication |
+| `password` | optional |   password of the user set in the option `user` |
+
+The `rdf_fdw` will try to authenticate the user using HTTP Basic Authentication - no other authentication method is currently supported. This feature can be ignored if the triplestore does not require user authentication.
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
 
