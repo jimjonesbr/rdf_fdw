@@ -2,6 +2,10 @@ CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint 'https://query.wikidata.org/sparql');
+/*
+ * this USER MAPPING must be ignored, as the triplestore does not require user authentication
+ */
+CREATE USER MAPPING FOR postgres SERVER wikidata OPTIONS (user 'foo', password 'bar');
 CREATE FOREIGN TABLE atms_munich (
 atmid text     OPTIONS (variable '?atm'),
 atmwkt text    OPTIONS (variable '?geometry', literaltype 'geo:wktLiteral'),
@@ -415,7 +419,8 @@ LIMIT 15
 (0 rows)
 
 DROP SERVER wikidata CASCADE;
-NOTICE:  drop cascades to 3 other objects
-DETAIL:  drop cascades to foreign table atms_munich
+NOTICE:  drop cascades to 4 other objects
+DETAIL:  drop cascades to user mapping for postgres on server wikidata
+drop cascades to foreign table atms_munich
 drop cascades to foreign table places_below_sea_level
 drop cascades to foreign table european_countries

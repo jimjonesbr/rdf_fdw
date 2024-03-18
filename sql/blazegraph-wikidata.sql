@@ -3,6 +3,10 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (
   endpoint 'https://query.wikidata.org/sparql');
 
+/*
+ * this USER MAPPING must be ignored, as the triplestore does not require user authentication
+ */
+CREATE USER MAPPING FOR postgres SERVER wikidata OPTIONS (user 'foo', password 'bar');
 
 CREATE FOREIGN TABLE atms_munich (
 atmid text     OPTIONS (variable '?atm'),
