@@ -1,7 +1,7 @@
 MODULE_big = rdf_fdw
 OBJS = rdf_fdw.o
 EXTENSION = rdf_fdw
-DATA = rdf_fdw--1.0.sql
+DATA = rdf_fdw--1.1.sql rdf_fdw--1.0--1.1.sql
 REGRESS = virtuoso-dbpedia graphdb-getty blazegraph-wikidata exceptions table-clone
 
 CURL_CONFIG = curl-config

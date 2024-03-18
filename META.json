@@ -2,7 +2,7 @@
     "name": "rdf_fdw",
     "abstract": "RDF Triplestore Foreign Data Wrapper for PostgreSQL",
     "description": "A PostgreSQL Foreign Data Wrapper to easily access RDF triplestores via SPARQL endpoints, including pushdown of several SQL Query clauses.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "maintainer": [
        "Jim Jones <jim.jones@uni-muenster.de>"
     ],
@@ -12,7 +12,7 @@
           "abstract": "RDF Triplestore Foreign Data Wrapper for PostgreSQL",
           "file": "rdf_fdw--1.0.sql",
           "docfile": "README.md",
-          "version": "1.0.0"
+          "version": "1.1.0"
        }
     },
     "prereqs": {
@@ -39,7 +39,7 @@
     },
     "generated_by": "Jim Jones",
     "meta-spec": {
-       "version": "1.0.0",
+       "version": "1.1.0",
        "url": "https://pgxn.org/meta/spec.txt"
     },
     "tags": [
