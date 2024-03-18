@@ -1522,11 +1522,15 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 	{
 		elog(DEBUG2, "%s: setting UserMapping*", __func__);
 		um = (UserMapping *)palloc(sizeof(UserMapping));
+#if PG_VERSION_NUM < 120000
+		um->umid = HeapTupleGetOid(tp);
+#else
 		um->umid = ((Form_pg_user_mapping)GETSTRUCT(tp))->oid;
+#endif		
 		um->userid = GetUserId();
 		um->serverid = state->server->serverid;
 
-		elog(DEBUG1, "%s: extract the umoptions", __func__);
+		elog(DEBUG2, "%s: extract the umoptions", __func__);
 		datum = SysCacheGetAttr(USERMAPPINGUSERSERVER,
 								tp,
 								Anum_pg_user_mapping_umoptions,
@@ -2217,7 +2221,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		headers = curl_slist_append(headers, accept_header.data);
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-
 		if(state->user && state->password)
 		{
 			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -2276,8 +2279,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				else
 					ereport(ERROR,
 						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-						 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->endpoint, response_code)),
-						 errdetail("%s (curl error code %u)",curl_easy_strerror(res), res));
+						 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->endpoint, response_code),
+						 errdetail("%s (curl error code %u)",curl_easy_strerror(res), res)));
 			}
 			else
 			{
