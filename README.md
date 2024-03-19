@@ -38,8 +38,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
 * [PostgreSQL](https://www.postgresql.org): version 11 or higher.
-* [gcc](https://gcc.gnu.org/)
-* [make](https://www.gnu.org/software/make/)
+* [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to complile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
 
@@ -47,7 +46,7 @@ In an Ubuntu environment you can install all dependencies with the following com
 apt install -y make gcc postgresql-server-dev-16 libxml2-dev libcurl4-openssl-dev
 ```
 
-Note that `postgresql-server-dev-16` only installs the libraries for PostgreSQL 16. Change it to another version if you're using another PostgreSQL version.
+Note that `postgresql-server-dev-16` only installs the libraries for PostgreSQL 16. Change it if you're using another PostgreSQL version.
 
 ## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
 
@@ -128,7 +127,7 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 | `connect_retry`         | optional            | Number of attempts to retry a request in case of failure (default `3` times).
 | `request_redirect`         | optional            | Enables URL redirect issued by the server (default `false`).
 | `request_max_redirect`         | optional            | Limit of how many times the URL redirection may occur. If that many redirections have been followed, the next redirect will cause an error. Not setting this parameter or setting it to `0` will allow an infinite number of redirects.
-| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are added to the request URL.
+| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are appended to the request URL.
 | `query_param`         | optional            | The request parameter where the SPARQL endpoint expects the query in a HTTP request. Most SPARQL endpoints expects the query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option (default `query`)
 
 ### [CREATE USER MAPPING](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create-user-mapping)
@@ -151,7 +150,7 @@ SERVER graphdb OPTIONS (user 'admin', password 'secret');
 | `user` | **required** | name of the user for authentication |
 | `password` | optional |   password of the user set in the option `user` |
 
-The `rdf_fdw` will try to authenticate the user using HTTP Basic Authentication - no other authentication method is currently supported. This feature can be ignored if the triplestore does not require user authentication.
+The `rdf_fdw` will try to authenticate the given user using HTTP Basic Authentication - no other authentication method is currently supported. This feature can be ignored if the triplestore does not require user authentication.
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
 
