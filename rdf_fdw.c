@@ -343,6 +343,7 @@ static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, Re
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
 static Oid GetRelOidFromName(char *relname, char *code);
+static char* CreateRegexString(char* str);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -3239,7 +3240,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			strcmp(opername, "+") == 0 ||
 			strcmp(opername, "*") == 0 ||
 			strcmp(opername, "!=") == 0 ||
-			strcmp(opername, "<>") == 0)
+			strcmp(opername, "<>") == 0 ||
+			strcmp(opername, "~~") == 0 ||
+			strcmp(opername, "!~~") == 0 ||
+			strcmp(opername, "~~*") == 0 ||
+			strcmp(opername, "!~~*") == 0)
 		{
 
 			/* SPARQL does not suppot <> */
@@ -3289,7 +3294,16 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					leftargtype == TIMESTAMPTZOID ||
 					leftargtype == NAMEOID) && rightexpr->type == T_Const)
 				{
-					if(col->expression)
+					if(strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 ||
+					   strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0 )
+					{
+						appendStringInfo(&result, "%s(%s,\"%s\"%s)",
+							opername[0] == '!' ? "!REGEX" : "REGEX",
+							!col->expression ? col->sparqlvar : col->expression,
+							CreateRegexString(right),
+							strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
+					}
+					else if(col->expression)
 						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, literalatt);
 					else
 					{
@@ -4047,4 +4061,35 @@ static Oid GetRelOidFromName(char *relname, char *code)
 
 	return res;
 
+}
+
+static char* CreateRegexString(char* str)
+{
+	StringInfoData res;
+	initStringInfo(&res);
+
+	if(!str)
+		return NULL;
+
+	for (int i = 0; str[i] != '\0'; i++)
+	{
+		char c = str[i];
+
+		if( i == 0 && c != '%' && c != '_' && c != '^' )
+			appendStringInfo(&res,"^");
+
+		if(strchr("^()[]{}+-*$\".?|",c) != NULL)
+			appendStringInfo(&res,"\\\\%s", &c);
+		else if(c == '%')
+			appendStringInfo(&res,".*");
+		else if(c == '_')
+			appendStringInfo(&res,".");
+		else
+			appendStringInfo(&res, "%s", &c);
+
+		if(i == strlen(str)-1 && c != '%' && c != '_')
+			appendStringInfo(&res,"$");
+	}
+
+	return NameStr(res);
 }
