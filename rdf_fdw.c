@@ -2714,7 +2714,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
 		appendStringInfo(&sparql,"%s\nSELECT DISTINCT %s\n%s%s",
 			state->sparql_prefixes, 
-			state->sparql_select,
+			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
 			state->sparql_from,
 			where_graph.data);		
 	} 
@@ -2728,7 +2728,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 		elog(DEBUG1, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
 		appendStringInfo(&sparql,"%s\nSELECT REDUCED %s\n%s%s",
 			state->sparql_prefixes, 
-			state->sparql_select, 
+			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
 			state->sparql_from, 
 			where_graph.data);		
 	}
@@ -2744,7 +2744,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	{
 		appendStringInfo(&sparql,"%s\nSELECT DISTINCT %s\n%s%s",
 			state->sparql_prefixes, 
-			state->sparql_select,
+			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
 			state->sparql_from,
 			where_graph.data);
 	}
@@ -2752,7 +2752,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	{	
 		appendStringInfo(&sparql,"%s\nSELECT %s\n%s%s",
 			state->sparql_prefixes, 
-			state->sparql_select, 
+			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
 			state->sparql_from, 
 			where_graph.data);
 	}
