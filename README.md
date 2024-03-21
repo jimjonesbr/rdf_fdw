@@ -31,6 +31,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
   - [Getty Thesaurus](#getty-thesaurus)
   - [BBC Programmes and Music](#bbc-programmes-and-music)
   - [Wikidata](#wikidata)
+  - [Import data into QGIS](#import-data-into-qgis)
 - [Deploy with Docker](#deploy-with-docker)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
@@ -835,6 +836,56 @@ LIMIT 10
  http://www.wikidata.org/entity/Q55112853 | Ansdell Library | Point(-2.991656 53.743795)
 (10 rows)
 ```
+
+### [Import data into QGIS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#import-data-into-qgis)
+
+#### Create a `SERVER` and a `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Geographic Information Systems
+The `rdf_fdw` can also be used as a bridge between GIS (Geographic Information Systems) and RDF Triplestores. This example shows how to retrieve geographic coordinates of all German public universities from DBpedia, create a WKT (Well Known Text) representation of them, and finally import this data into [QGIS](https://qgis.org/) to plot a map.
+
+> [!NOTE]  
+> This example requires the extension PostGIS.
+
+
+```sql
+CREATE SERVER dbpedia
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://dbpedia.org/sparql');
+
+CREATE FOREIGN TABLE german_public_universities (
+  id text      OPTIONS (variable '?uri', nodetype 'iri'),
+  name text    OPTIONS (variable '?name',nodetype 'literal'),
+  lon numeric  OPTIONS (variable '?lon', nodetype 'literal'),
+  lat numeric  OPTIONS (variable '?lat', nodetype 'literal'),
+  wkt text     OPTIONS (variable '?wkt', nodetype 'literal',
+                        expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
+) SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+    PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+    PREFIX dbp: <http://dbpedia.org/property/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+    PREFIX dbr:  <http://dbpedia.org/resource/>
+    SELECT ?uri ?name ?lon ?lat
+    WHERE {
+      ?uri dbo:type dbr:Public_university ;
+        dbp:name ?name;
+        geo:lat ?lat; 
+        geo:long ?lon; 
+        dbp:country dbr:Germany
+      }
+  ');
+```
+Now that we have our `FOREIGN TABLE` in place, we just need to create a [New PostGIS Connection in QGIS](https://docs.qgis.org/3.34/en/docs/user_manual/managing_data_source/opening_data.html#creating-a-stored-connection) and go to **Database > DB Manager ...** to select the data we want to plot in the map. 
+
+```sql
+SELECT id, name, wkt::geometry AS geom
+FROM german_public_universities
+```
+![unis](examples/img/qgis-query.png?raw=true)
+
+Finally give the layer a name, select the geometry column and press **Load**.
+
+![unis](examples/img/qgis-map.png?raw=true)
 
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
