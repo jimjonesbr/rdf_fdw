@@ -402,7 +402,7 @@ The `rdf_fdw` will attempt to translate RDF literals to the data type of the map
 
 | Data type                                                  | Operators                             |
 |------------------------------------------------------------|---------------------------------------|
-| `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`                       |
+| `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`, `~~`, `!~~`, `~~*`, `!~~*`                       |
 | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
 | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
 | `boolean`                                                  | `IS`, `IS NOT`                        |
@@ -411,14 +411,20 @@ The `rdf_fdw` will attempt to translate RDF literals to the data type of the map
 
 SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation).
 
+#### LIKE / ILIKE pattern matching operators
+
+Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~~*` -  are converted to [REGEX](https://www.w3.org/TR/sparql11-query/#func-regex) filters in SPARQL. It is important to notice that pattern matching operations using `LIKE`/`ILIKE` only support the wildcards `%` and `_`, and therefore only these characters will be translated to their `REGEX` equivalents. Any other character that might be potentially used as a wildcard in `REGEX`, such as `^`, `|` or `$`,  will be escaped.
+
 ### Pushdown Examples
 
  Foreign table columns with the option `literaltype`
 
-| PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL (pushdown)                                                                                         |
+| PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL (pushdown)                                                                              |
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
 | `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |
+| `text`           | `*`            | `name ILIKE '%Jon_s'`, ` name ~~* '%Jon_s'`          |  `FILTER(REGEX(?name,".*Jon.s$","i"))`                                                         |
+| `text`           | `*`            | `name LIKE '%foo%'`, `name ~~ '%foo%';`          |  `FILTER(REGEX(?name,".*foo.*"))`                                                            |
 | `int`            | `xsd:integer`  | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`                                                                       |
 | `int`            | `xsd:integer`  | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`                                                                       |
 | `numeric`        | -              | `val >= 42.73`                                        |  `FILTER(?val >= 42.73)`                                                                       |
