@@ -4078,12 +4078,14 @@ static char* CreateRegexString(char* str)
 		if( i == 0 && c != '%' && c != '_' && c != '^' )
 			appendStringInfo(&res,"^");
 
-		if(strchr("\\/:=#@^()[]{}+-*$\".?|",c) != NULL)
+		if(strchr("/:=#@^()[]{}+-*$.?|",c) != NULL)
 			appendStringInfo(&res,"\\\\%s", &c);
 		else if(c == '%')
 			appendStringInfo(&res,".*");
 		else if(c == '_')
 			appendStringInfo(&res,".");
+		else if(c == '"')
+			appendStringInfo(&res,"\\\"");
 		else
 			appendStringInfo(&res, "%s", &c);
 
