@@ -10,7 +10,7 @@
     "provides": {
        "rdf_fdw": {
           "abstract": "RDF Triplestore Foreign Data Wrapper for PostgreSQL",
-          "file": "rdf_fdw--1.0.sql",
+          "file": "rdf_fdw--1.1.sql",
           "docfile": "README.md",
           "version": "1.1.0"
        }
@@ -39,7 +39,7 @@
     },
     "generated_by": "Jim Jones",
     "meta-spec": {
-       "version": "1.1.0",
+       "version": "1.0.0",
        "url": "https://pgxn.org/meta/spec.txt"
     },
     "tags": [
