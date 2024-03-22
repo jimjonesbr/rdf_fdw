@@ -816,4 +816,68 @@ FROM generic_rdf_table4
 WHERE uri = 'http://dbpedia.org/resource/Japan'
 LIMIT 10;
 
+
+
+CREATE FOREIGN TABLE public.regex_test1 (
+  txt text OPTIONS (variable '?o', nodetype 'literal')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  SELECT * {<http://dbpedia.org/resource/%5Etxt2regex$> foaf:name ?o}
+');
+
+
+/*
+ ILIKE expression containing "^" and "$"
+ */
+SELECT txt FROM public.regex_test1
+WHERE txt ~~* '%^___2reGeX$';
+
+
+
+CREATE FOREIGN TABLE public.regex_test (
+  name     text OPTIONS (variable '?name', nodetype 'literal'),
+  abstract text OPTIONS (variable '?abstract', expression 'STR(?abs)')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql '
+   PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+   PREFIX dbo:  <http://dbpedia.org/ontology/>
+   PREFIX dbr: <http://dbpedia.org/resource/>
+   SELECT *
+   {?s a dbo:WrittenWork ;
+     dbo:genre dbr:Computer_magazine;
+     dbo:abstract ?abs ;
+     foaf:name ?name .
+    FILTER(LANG(?abs) = "en")
+   }');
+
+/*
+ LIKE and ILIKE expressions containing  "." 
+ */
+SELECT name FROM regex_test
+WHERE name LIKE '%P.P.%' AND abstract ILIKE '%wITh_MAC__.';
+
+/*
+ LIKE and ILIKE expressions containing "(" and "["
+ */
+SELECT name FROM regex_test
+WHERE abstract ~~ '%(Computer%' AND abstract ~~* '%[WwW%' ;
+
+/*
+ LIKE and ILIKE expressions containing "-"
+ */
+SELECT name FROM regex_test
+WHERE abstract ~~ '%VIC-_0%' AND abstract ~~* '%__-MoNtHlY%' AND name ~~ 'Your___';
+
+/*
+ LIKE and ILIKE expressions containing single and double quotes
+ */
+SELECT name FROM regex_test
+WHERE abstract ~~ '%"serious end"%' AND abstract ~~* E'%rEADer\'s%' ;
+
+
 DROP SERVER dbpedia CASCADE;
