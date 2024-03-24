@@ -25,6 +25,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
   - [WHERE](#where)
     - [Supported Data Types and Operators](#supported-data-types-and-operators)
     - [IN and ANY constructs](#in-and-any-constructs)
+    - [Pattern matching operators LIKE and ILIKE](#pattern-matching-operators-like-and-ilike)
   - [Pushdown Examples](#pushdown-examples)
 - [Examples](#examples)
   - [DBpedia](#dbpedia)
@@ -411,7 +412,7 @@ The `rdf_fdw` will attempt to translate RDF literals to the data type of the map
 
 SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation).
 
-#### LIKE / ILIKE pattern matching operators
+#### Pattern matching operators LIKE and ILIKE
 
 Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~~*` -  are converted to [REGEX](https://www.w3.org/TR/sparql11-query/#func-regex) filters in SPARQL. It is important to notice that pattern matching operations using `LIKE`/`ILIKE` only support the wildcards `%` and `_`, and therefore only these characters will be translated to their `REGEX` equivalents. Any other character that might be potentially used as a wildcard in `REGEX`, such as `^`, `|` or `$`,  will be escaped.
 
