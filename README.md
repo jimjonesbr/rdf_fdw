@@ -48,7 +48,8 @@ In an Ubuntu environment you can install all dependencies with the following com
 apt install -y make gcc postgresql-server-dev-16 libxml2-dev libcurl4-openssl-dev
 ```
 
-Note that `postgresql-server-dev-16` only installs the libraries for PostgreSQL 16. Change it if you're using another PostgreSQL version.
+> [!NOTE]  
+> `postgresql-server-dev-16` only installs the libraries for PostgreSQL 16. Change it if you're using another PostgreSQL version.
 
 ## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
 
