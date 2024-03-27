@@ -417,6 +417,9 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~~*` -  are converted to [REGEX](https://www.w3.org/TR/sparql11-query/#func-regex) filters in SPARQL. It is important to notice that pattern matching operations using `LIKE`/`ILIKE` only support the wildcards `%` and `_`, and therefore only these characters will be translated to their `REGEX` equivalents. Any other character that might be potentially used as a wildcard in `REGEX`, such as `^`, `|` or `$`,  will be escaped.
 
+> [!NOTE]  
+> These pattern matching operators do not support nondeterministic collations. If required, apply a different collation to the expression to work around this limitation.
+
 ### Pushdown Examples
 
  Foreign table columns with the option `literaltype`
