@@ -121,3 +121,21 @@ SERVER makg OPTIONS (
         }
     }
 '); 
+
+CREATE FOREIGN TABLE makg_author_affiliation (
+  affiliation_id  text OPTIONS (variable '?affiliation',  nodetype 'iri'),
+  author_id       text OPTIONS (variable '?author', nodetype 'iri')
+)
+SERVER makg OPTIONS (
+  log_sparql 'true',
+  sparql '
+    PREFIX org: <http://www.w3.org/ns/org#>
+    PREFIX magc: <https://makg.org/class/>
+
+    SELECT *
+    WHERE {
+      ?affiliation a magc:Affiliation .
+      ?author org:memberOf ?affiliation .
+      ?author a magc:Author .
+    }
+'); 
