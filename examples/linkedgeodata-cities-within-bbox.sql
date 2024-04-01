@@ -10,10 +10,12 @@ OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
  */
 
 CREATE FOREIGN TABLE cities (
-  uri text          OPTIONS (variable '?city'),
-  city text         OPTIONS (variable '?label'),
-  country_code text OPTIONS (variable '?countryCode'),
-  wkt text          OPTIONS (variable '?wkt')
+  uri text                  OPTIONS (variable '?city'),
+  city text                 OPTIONS (variable '?label'),
+  country_code text         OPTIONS (variable '?countryCode'),
+  geom geometry(point,4326) OPTIONS (variable '?wkt'),
+  geog geography            OPTIONS (variable '?wkt')
+
 )
 SERVER linkedgeodata OPTIONS (
   log_sparql 'true',
@@ -33,9 +35,9 @@ SERVER linkedgeodata OPTIONS (
 /*
  * Select all records that overlap with a given bbox
  */
-SELECT uri, city, country_code, wkt::geometry
+SELECT uri, city, country_code, geom, geog
 FROM cities 
 WHERE 
   ST_Contains(
     'SRID=4326;POLYGON ((-8.613281 52.268157, -8.613281 56.218923, 0.878906 56.218923, 0.878906 52.268157, -8.613281 52.268157))',
-    ST_SetSRID(wkt::geometry,4326));
+    ST_SetSRID(geom,4326));
