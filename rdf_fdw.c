@@ -1377,12 +1377,12 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->pgtypmod = rel->rd_att->attrs[i].atttypmod;
 		state->rdfTable->cols[i]->pgattnum = rel->rd_att->attrs[i].attnum;
 
-		if (!canHandleType(state->rdfTable->cols[i]->pgtype))
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-					 errmsg("data type of '%s' not supported: %d\n", state->rdfTable->cols[i]->name, state->rdfTable->cols[i]->pgtype)));
-		}
+		// if (!canHandleType(state->rdfTable->cols[i]->pgtype))
+		// {
+		// 	ereport(ERROR,
+		// 			(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
+		// 			 errmsg("data type of '%s' not supported: %d\n", state->rdfTable->cols[i]->name, state->rdfTable->cols[i]->pgtype)));
+		// }
 	}
 
 #if PG_VERSION_NUM < 130000
