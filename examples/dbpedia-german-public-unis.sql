@@ -7,11 +7,11 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
  */
 
 CREATE FOREIGN TABLE german_public_universities (
-  id text      OPTIONS (variable '?uri', nodetype 'iri'),
-  name text    OPTIONS (variable '?name',nodetype 'literal'),
-  lon numeric  OPTIONS (variable '?lon', nodetype 'literal'),
-  lat numeric  OPTIONS (variable '?lat', nodetype 'literal'),
-  wkt text     OPTIONS (variable '?wkt', nodetype 'literal',
+  id text        OPTIONS (variable '?uri', nodetype 'iri'),
+  name text      OPTIONS (variable '?name',nodetype 'literal'),
+  lon numeric    OPTIONS (variable '?lon', nodetype 'literal'),
+  lat numeric    OPTIONS (variable '?lat', nodetype 'literal'),
+  geog geography OPTIONS (variable '?wkt', nodetype 'literal',
                         expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
 ) SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -33,7 +33,7 @@ CREATE FOREIGN TABLE german_public_universities (
 /* 
  * This will select the first 10 universities from north to south 
  */
-SELECT name, wkt::geometry 
+SELECT name, geog
 FROM german_public_universities 
 ORDER BY lat DESC 
 FETCH FIRST 10 ROWS ONLY;

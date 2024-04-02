@@ -778,10 +778,10 @@ OPTIONS (
   endpoint 'https://query.wikidata.org/sparql');
 
 CREATE FOREIGN TABLE places_below_sea_level (
-  wikidata_id text  OPTIONS (variable '?place'),
-  label text        OPTIONS (variable '?label'),
-  wkt text          OPTIONS (variable '?location'),
-  elevation numeric OPTIONS (variable '?elev')
+  wikidata_id text         OPTIONS (variable '?place'),
+  label text               OPTIONS (variable '?label'),
+  wkt geometry(point,4326) OPTIONS (variable '?location'),
+  elevation numeric        OPTIONS (variable '?elev')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -814,8 +814,8 @@ In the following SQL query we can observe that:
 SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
 FETCH FIRST 10 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-NOTICE:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?place ?label ?location 
 {
@@ -833,18 +833,19 @@ SELECT ?place ?label ?location
   }
 LIMIT 10
 
-               wikidata_id                |      label      |                wkt                 
-------------------------------------------+-----------------+------------------------------------
- http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | Point(-133.03 69.43)
- http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | Point(-1.842397 47.798252)
- http://www.wikidata.org/entity/Q403083   | Ahyi            | Point(145.033333333 20.416666666)
- http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | Point(25.407 29.228419444)
- http://www.wikidata.org/entity/Q2888647  | Petza'el        | Point(35.442222222 32.044166666)
- http://www.wikidata.org/entity/Q2888816  | Gilgal          | Point(35.44440556 31.99966944)
- http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | Point(-101.581388888 19.676944444)
- http://www.wikidata.org/entity/Q31796546 | Sahl al ‘Awjā'  | Point(35.464722222 31.957777777)
- http://www.wikidata.org/entity/Q2889475  | Na'aran         | Point(35.454338888 31.966872222)
- http://www.wikidata.org/entity/Q55112853 | Ansdell Library | Point(-2.991656 53.743795)
+               wikidata_id                |      label      |                    wkt                     
+------------------------------------------+-----------------+--------------------------------------------
+ http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | 0101000000295C8FC2F5A060C0EC51B81E855B5140
+ http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | 0101000000F10DBD79356559C05C30283B4CAD3340
+ http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | 0101000000E8F9D346757AFDBFB9FB1C1F2DE64740
+ http://www.wikidata.org/entity/Q31796546 | Sahl al ‘Awjā'  | 0101000000739B8C047CBB4140F30CA5EC30F53F40
+ http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | 0101000000D578E9263168394021C059B2793A3D40
+ http://www.wikidata.org/entity/Q403083   | Ahyi            | 010100000041E3101111216240A9CDA7AAAA6A3440
+ http://www.wikidata.org/entity/Q2889475  | Na'aran         | 010100000069A1D4C627BA41409EE61CF084F73F40
+ http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | 01010000003AE97DE36BB7414065A54929E8DE3F40
+ http://www.wikidata.org/entity/Q2888647  | Petza'el        | 0101000000F886DEBC9AB841408D05D940A7054040
+ http://www.wikidata.org/entity/Q2888816  | Gilgal          | 0101000000272E0948E2B84140539C1F56EAFF3F40
+(10 rows)12853 | Ansdell Library | Point(-2.991656 53.743795)
 (10 rows)
 ```
 
@@ -863,12 +864,12 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE german_public_universities (
-  id text      OPTIONS (variable '?uri', nodetype 'iri'),
-  name text    OPTIONS (variable '?name',nodetype 'literal'),
-  lon numeric  OPTIONS (variable '?lon', nodetype 'literal'),
-  lat numeric  OPTIONS (variable '?lat', nodetype 'literal'),
-  wkt text     OPTIONS (variable '?wkt', nodetype 'literal',
-                        expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
+  id text                   OPTIONS (variable '?uri', nodetype 'iri'),
+  name text                 OPTIONS (variable '?name',nodetype 'literal'),
+  lon numeric               OPTIONS (variable '?lon', nodetype 'literal'),
+  lat numeric               OPTIONS (variable '?lat', nodetype 'literal'),
+  geom geometry(point,4326) OPTIONS (variable '?wkt', nodetype 'literal',
+                                    expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
 ) SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql '
@@ -886,10 +887,10 @@ CREATE FOREIGN TABLE german_public_universities (
       }
   ');
 ```
-Now that we have our `FOREIGN TABLE` in place, we just need to create a [New PostGIS Connection in QGIS](https://docs.qgis.org/3.34/en/docs/user_manual/managing_data_source/opening_data.html#creating-a-stored-connection) and go to **Database > DB Manager ...** to select the data we want to plot in the map. 
+Now that we have our `FOREIGN TABLE` in place, we just need to create a [New PostGIS Connection in QGIS](https://docs.qgis.org/3.34/en/docs/user_manual/managing_data_source/opening_data.html#creating-a-stored-connection) and go to **Database > DB Manager ...**, select the table we just created and query the data using SQL:
 
 ```sql
-SELECT id, name, wkt::geometry AS geom
+SELECT id, name, geom
 FROM german_public_universities
 ```
 ![unis](examples/img/qgis-query.png?raw=true)
