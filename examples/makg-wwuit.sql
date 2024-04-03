@@ -2,7 +2,9 @@ CREATE SERVER makg
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://makg.org/sparql');
 
-CREATE FOREIGN TABLE makg_papers (
+CREATE SCHEMA makg;
+
+CREATE FOREIGN TABLE makg.papers (
   id text       OPTIONS (variable '?paper',  nodetype 'iri'),
   title text    OPTIONS (variable '?paperTitle', nodetype 'literal', literaltype 'xsd:string'),
   pubdate date  OPTIONS (variable '?paperPubDate', nodetype 'literal', literaltype 'xsd:date'),
@@ -31,7 +33,7 @@ SERVER makg OPTIONS (
     }
 '); 
 
-CREATE FOREIGN TABLE makg_author (
+CREATE FOREIGN TABLE makg.authors (
   id text       OPTIONS (variable '?author',  nodetype 'iri'),
   name text     OPTIONS (variable '?authorName', nodetype 'literal', literaltype 'xsd:string'),
   citations int OPTIONS (variable '?ct', nodetype 'literal', literaltype 'xsd:integer')
@@ -51,7 +53,7 @@ SERVER makg OPTIONS (
     }
 '); 
 
-CREATE FOREIGN TABLE makg_author_paper (
+CREATE FOREIGN TABLE makg.authors_papers (
   paper_id  text OPTIONS (variable '?paper',  nodetype 'iri'),
   author_id text OPTIONS (variable '?creator', nodetype 'iri')
 )
@@ -70,7 +72,7 @@ SERVER makg OPTIONS (
     }
 '); 
 
-CREATE FOREIGN TABLE makg_papers_citation (
+CREATE FOREIGN TABLE makg.papers_citations (
   paper text    OPTIONS (variable '?paper',  nodetype 'iri'),
   cited_by text OPTIONS (variable '?citing_paper',  nodetype 'iri')
 )
@@ -88,7 +90,7 @@ SERVER makg OPTIONS (
     }
 '); 
 
-CREATE FOREIGN TABLE makg_affiliations (
+CREATE FOREIGN TABLE makg.affiliations (
   id text       OPTIONS (variable '?paper',  nodetype 'iri'),
   name text     OPTIONS (variable '?affilName', nodetype 'literal', literaltype 'xsd:string'),
   homepage text OPTIONS (variable '?homepage', nodetype 'literal', literaltype 'xsd:string'),
@@ -122,7 +124,7 @@ SERVER makg OPTIONS (
     }
 '); 
 
-CREATE FOREIGN TABLE makg_author_affiliation (
+CREATE FOREIGN TABLE makg.author_affiliation (
   affiliation_id  text OPTIONS (variable '?affiliation',  nodetype 'iri'),
   author_id       text OPTIONS (variable '?author', nodetype 'iri')
 )
@@ -139,3 +141,7 @@ SERVER makg OPTIONS (
       ?author a magc:Author .
     }
 '); 
+
+
+/* materialize FOREIGN TABLE makg.papers in a heap table */
+CREATE TABLE makg.local_papers AS SELECT * FROM makg.papers;
