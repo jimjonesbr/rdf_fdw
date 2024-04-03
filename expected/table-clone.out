@@ -136,9 +136,9 @@ CALL
         sort_order => 'DESC',
         verbose => true
     );
-INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "dbpedia_cities":
+INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "public.dbpedia_cities":
 
-  CREATE TABLE public.t3 AS SELECT * FROM dbpedia_cities WITH NO DATA;
+  CREATE TABLE public.t3 AS SELECT * FROM public.dbpedia_cities WITH NO DATA;
 
 INFO:  
 
@@ -295,9 +295,9 @@ CALL
         max_records => 7,
         verbose => true
     );
-INFO:  Target TABLE "public.heap3" created based on FOREIGN TABLE "film":
+INFO:  Target TABLE "public.heap3" created based on FOREIGN TABLE "public.film":
 
-  CREATE TABLE public.heap3 AS SELECT * FROM film WITH NO DATA;
+  CREATE TABLE public.heap3 AS SELECT * FROM public.film WITH NO DATA;
 
 INFO:  
 

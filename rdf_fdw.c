@@ -546,7 +546,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		initStringInfo(&ct);
 		appendStringInfo(&ct,"CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
 			state->target_table_name,
-			get_rel_name(state->foreigntableid));
+			text_to_cstring(foreign_table_name));
 
 		if(SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
 			ereport(ERROR,
@@ -555,7 +555,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 		 if(verbose)
 			elog(INFO,"Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
-				text_to_cstring(target_table_name), get_rel_name(state->foreigntableid), NameStr(ct));
+				text_to_cstring(target_table_name), text_to_cstring(foreign_table_name), NameStr(ct));
 
 		SPI_finish();
 
