@@ -1900,7 +1900,7 @@ SELECT ?name (STR(?abs) AS ?abstract)
  LIKE and ILIKE expressions containing "(" and "["
  */
 SELECT name FROM regex_test
-WHERE abstract ~~ '%(Computer%' AND abstract ~~* '%[WwW%' ;
+WHERE abstract ~~ '%(IT)%' AND abstract ~~* '%(ABBREVIATED AS cw)%' ;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -1913,13 +1913,13 @@ SELECT ?name (STR(?abs) AS ?abstract)
      dbo:abstract ?abs ;
      foaf:name ?name .
     FILTER(LANG(?abs) = "en")
-    FILTER(REGEX(STR(?abs),".*\\(Computer.*"))
- FILTER(REGEX(STR(?abs),".*\\[WwW.*","i"))
+    FILTER(REGEX(STR(?abs),".*\\(IT\\).*"))
+ FILTER(REGEX(STR(?abs),".*\\(ABBREVIATED AS cw\\).*","i"))
 }
 
-    name    
-------------
- Computerra
+     name      
+---------------
+ Computerworld
 (1 row)
 
 /*
@@ -1953,7 +1953,7 @@ SELECT ?name (STR(?abs) AS ?abstract)
  LIKE and ILIKE expressions containing single and double quotes
  */
 SELECT name FROM regex_test
-WHERE abstract ~~ '%"serious end"%' AND abstract ~~* E'%rEADer\'s%' ;
+WHERE abstract ~~ '%"went digital."%' AND abstract ~~* E'%cOuNtRy\'s%' ;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -1966,13 +1966,13 @@ SELECT ?name (STR(?abs) AS ?abstract)
      dbo:abstract ?abs ;
      foaf:name ?name .
     FILTER(LANG(?abs) = "en")
-    FILTER(REGEX(STR(?abs),".*\"serious end\".*"))
- FILTER(REGEX(STR(?abs),".*rEADer's.*","i"))
+    FILTER(REGEX(STR(?abs),".*\"went digital\\.\".*"))
+ FILTER(REGEX(STR(?abs),".*cOuNtRy's.*","i"))
 }
 
-   name    
------------
- ST Review
+     name      
+---------------
+ Computerworld
 (1 row)
 
 DROP SERVER dbpedia CASCADE;

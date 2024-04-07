@@ -865,7 +865,7 @@ WHERE name LIKE '%P.P.%' AND abstract ILIKE '%wITh_MAC__.';
  LIKE and ILIKE expressions containing "(" and "["
  */
 SELECT name FROM regex_test
-WHERE abstract ~~ '%(Computer%' AND abstract ~~* '%[WwW%' ;
+WHERE abstract ~~ '%(IT)%' AND abstract ~~* '%(ABBREVIATED AS cw)%' ;
 
 /*
  LIKE and ILIKE expressions containing "-"
@@ -877,7 +877,7 @@ WHERE abstract ~~ '%VIC-_0%' AND abstract ~~* '%__-MoNtHlY%' AND name ~~ 'Your__
  LIKE and ILIKE expressions containing single and double quotes
  */
 SELECT name FROM regex_test
-WHERE abstract ~~ '%"serious end"%' AND abstract ~~* E'%rEADer\'s%' ;
+WHERE abstract ~~ '%"went digital."%' AND abstract ~~* E'%cOuNtRy\'s%' ;
 
 
 DROP SERVER dbpedia CASCADE;
