@@ -12,9 +12,12 @@ Release date: **YYYY-MM-DD**
 * Enables usage of non-pushable data types in `FOREIGN TABLE` columns: This disables a check that raised an excepetion when data types that cannot be pushed down were used. This includes non-standard data types, such as `geometry` or `geography` from PostGIS.
 
 ### Bug Fixes
+
 * Empty SPARQL `SELECT` clause: This fixes a bug that led some SPARQL queries to be created without any variable in the `SELECT` clause. We now use `SELECT *` in case the planner cannot identify which nodes should be retrieved, which can be a bit inefficent if we're dealing with many columns, but it is much better than an error message.
 
 * Missing schema from foreign tables in `rdf_fdw_clone_table` calls: This fixes a bug that led the `rdf_fdw_clone_table` procedure to always look for the given `FOREIGN TABLE` in the `public` schema.
+
+* Fix xmldoc memory leak: The xml doc that contains the resulst set from the triple store wasn't beeing freed after the query is complete. This could lead to a memory leak that could cause a system crash once all available was consumed - which is an issue for rather modest server settings that execute mutliple queries in the same session.
 
 ## 1.0.0
 Release date: **2024-03-15**
