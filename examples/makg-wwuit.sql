@@ -90,8 +90,8 @@ SERVER makg OPTIONS (
     }
 '); 
 
+
 CREATE FOREIGN TABLE makg.affiliations (
-  id text       OPTIONS (variable '?paper',  nodetype 'iri'),
   name text     OPTIONS (variable '?affilName', nodetype 'literal', literaltype 'xsd:string'),
   homepage text OPTIONS (variable '?homepage', nodetype 'literal', literaltype 'xsd:string'),
   citations int OPTIONS (variable '?citCountAffil', nodetype 'literal', literaltype 'xsd:date'),
@@ -124,7 +124,7 @@ SERVER makg OPTIONS (
     }
 '); 
 
-CREATE FOREIGN TABLE makg.author_affiliation (
+CREATE FOREIGN TABLE makg.authors_affiliations (
   affiliation_id  text OPTIONS (variable '?affiliation',  nodetype 'iri'),
   author_id       text OPTIONS (variable '?author', nodetype 'iri')
 )
@@ -143,5 +143,19 @@ SERVER makg OPTIONS (
 '); 
 
 
-/* materialize FOREIGN TABLE makg.papers in a heap table */
-CREATE TABLE makg.local_papers AS SELECT * FROM makg.papers;
+/* materialize FOREIGN TABLES */
+CREATE TABLE makg.local_papers               AS SELECT * FROM makg.papers;
+CREATE TABLE makg.local_papers_citations     AS SELECT * FROM makg.papers_citations;
+CREATE TABLE makg.local_authors_papers       AS SELECT * FROM makg.authors_papers;
+CREATE TABLE makg.local_authors              AS SELECT * FROM makg.authors;
+CREATE TABLE makg.local_affiliations         AS SELECT * FROM makg.affiliations;
+CREATE TABLE makg.local_authors_affiliations AS SELECT * FROM makg.authors_affiliations;
+
+/*
+SELECT id, title, pubdate, field, array_agg(keyword) AS keywords
+FROM makg.local_papers
+WHERE 
+  pubdate BETWEEN '1992-01-20' AND '1992-01-31' AND 
+  field = 'Engineering'
+GROUP BY id, title, pubdate, field;
+*/

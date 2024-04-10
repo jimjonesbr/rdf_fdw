@@ -77,7 +77,7 @@
 #define ADD_REL_QUALIFIER(buf, varno)   \
 		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
-#define FDW_VERSION "1.1.0-dev"
+#define FDW_VERSION "1.1.0"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -139,6 +139,9 @@
 #define RDF_SPARQL_AGGREGATE_FUNCTION_SAMPLE "SAMPLE"
 #define RDF_SPARQL_AGGREGATE_FUNCTION_GROUPCONCAT "GROUP_CONCAT"
 
+#define IntToConst(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
+#define OidToConst(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
+
 /*
  * This macro is used by DeparseExpr to identify PostgreSQL
  * types that can be translated to SPARQL
@@ -165,8 +168,8 @@ typedef struct RDFfdwState
 	int rowcount;                /* Number of rows currently returned to the client */
 	int pagesize;                /* Total number of records retrieved from the SPARQL endpoint*/
 	char *sparql;                /* Final SPARQL query sent to the endpoint (after pusdhown) */
-	char *user;
-	char *password;
+	char *user;                  /* User name for HTTP basic authentication */
+	char *password;              /* Password for HTTP basic authentication */
 	char *sparql_prefixes;       /* SPARQL PREFIX entries */
 	char *sparql_select;         /* SPARQL SELECT containing the columns / variables used in the SQL query */
 	char *sparql_from;           /* SPARQL FROM clause entries*/
@@ -192,16 +195,15 @@ typedef struct RDFfdwState
 	long connect_timeout;        /* Timeout for SPARQL queries */
 	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
 	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
-	xmlParserCtxtPtr ctxt;
 	Oid foreigntableid;          /* FOREIGN TABLE oid */
 	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
 	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
 	Cost startup_cost;           /* startup cost estimate */
 	Cost total_cost;             /* total cost estimate */
-	ForeignServer *server;       
-	ForeignTable *foreign_table;
-	UserMapping *mapping;
-	MemoryContext rdfctxt; /* Memory Context for data manipulation. */
+	ForeignServer *server;       /* FOREIGN SERVER to connect to the RDF triplestore */
+	ForeignTable *foreign_table; /* FOREIGN TABLE containing the graph pattern (SPARQL Query) and column / variable mapping */
+	UserMapping *mapping;        /* USER MAPPING to enable http basic authentication for a given postgres user */
+	MemoryContext rdfctxt;       /* Memory Context for data manipulation. */
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
@@ -1298,11 +1300,11 @@ static void rdfEndForeignScan(ForeignScanState *node)
 {
 	struct RDFfdwState *state;
 
+	elog(DEBUG1,"%s: called ",__func__);
+
 	if(node->fdw_state) {
 
 		state = (struct RDFfdwState *) node->fdw_state;
-
-		elog(DEBUG1,"%s: called ",__func__);
 
 		if(state->xmldoc)
 		{
@@ -1318,6 +1320,7 @@ static void rdfEndForeignScan(ForeignScanState *node)
 
 	}
 
+	elog(DEBUG1,"%s: so long .. \n",__func__);
 }
 
 static void LoadRDFTableInfo(RDFfdwState *state)
@@ -1613,9 +1616,6 @@ char *ConstToCString(Const *constant)
 	else
 		return text_to_cstring(DatumGetTextP(constant->constvalue));
 }
-
-#define IntToConst(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
-#define OidToConst(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
 
 /*
  * SerializePlanData
@@ -1928,7 +1928,6 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
  */
 static int CheckURL(char *url)
 {
-
 	CURLUcode code;
 	CURLU *handler = curl_url();
 
@@ -2096,11 +2095,10 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
  */
 static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 {
-
 	ListCell *cell;
 	xmlNodePtr res;
 
-	elog(DEBUG2, "%s: called > rowcount = %d/%d", __func__, state->rowcount, state->pagesize);
+	elog(DEBUG2, "  %s: called > rowcount = %d/%d", __func__, state->rowcount, state->pagesize);
 
 	if (state->rowcount > state->pagesize)
 	{
@@ -2128,7 +2126,6 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
  */
 static int ExecuteSPARQL(RDFfdwState *state)
 {
-
 	CURL *curl;
 	CURLcode res;
 	StringInfoData url_buffer;
@@ -2296,6 +2293,11 @@ static int ExecuteSPARQL(RDFfdwState *state)
 						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
 						 errmsg("Method Not Allowed (HTTP status %ld)", response_code),
 						 errhint("This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: '%s'",state->endpoint)));
+				else if(response_code == 500)
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+						 errmsg("Internal Server Error (HTTP status %ld)", response_code),
+						 errhint("This indicates that the SERVER is currently unable to process any request due to internal problems. Check the SERVER url and try again: '%s'",state->endpoint)));				
 				else
 					ereport(ERROR,
 						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
@@ -2358,10 +2360,9 @@ static void LoadRDFData(RDFfdwState *state)
 	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
 		elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
 
-	elog(DEBUG2, "  %s: loading 'xmlroot'",__func__);
-
 	Assert(state->xmldoc);
-	
+
+	elog(DEBUG2, "  %s: loading 'xmlroot'",__func__);	
 	root = xmlDocGetRootElement(state->xmldoc);
 
 	for (results = root->children; results != NULL; results = results->next)
@@ -2377,7 +2378,7 @@ static void LoadRDFData(RDFfdwState *state)
 					state->records = lappend(state->records, record);
 					state->pagesize++;
 
-					elog(DEBUG2, "	appending %d > %s", state->pagesize, record->name);
+					elog(DEBUG2, "  %s: appending record %d", __func__, state->pagesize);
 				}
 			}
 		}
@@ -2425,24 +2426,23 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 		/* ignore columns belonging to a different foreign table */
 		if (variable->varno != foreignrelid)
 		{
-			elog(DEBUG1, "  %s: column belonging to a different foreign table", __func__);
+			elog(WARNING, "%s: column belonging to a different foreign table", __func__);
 			break;
 		}
 
 		/* ignore system columns */
 		if (variable->varattno < 0)
 		{
-			elog(DEBUG1, "  %s: ignoring as system column", __func__);
+			elog(WARNING, "%s: ignoring system column", __func__);
 			break;
 		}
 
 		for (int i = 0; i < state->numcols; i++)
 		{
-
 			if (state->rdfTable->cols[i]->pgattnum == variable->varattno)
 			{
 				state->rdfTable->cols[i]->used = true;
-				elog(DEBUG1, "  %s: column '%s' (%d) required in the SQL query", __func__, state->rdfTable->cols[i]->name, i);
+				elog(DEBUG1, "%s: column '%s' (%d) required in the SQL query", __func__, state->rdfTable->cols[i]->name, i);
 				break;
 			}
 		}
@@ -2656,8 +2656,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
  * returns 'true' if the SPARQL query is safe to be parsed or 'false' otherwise
  */
 static bool IsSPARQLParsable(struct RDFfdwState *state) 
-{
-	
+{	
 	int keyword_count = 0;
 	elog(DEBUG1,"%s called",__func__);
 	/* 
@@ -2686,8 +2685,8 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
  *
  * returns 'true' if the expression can be pushed down or 'false' otherwise
  */
-static bool IsExpressionPushable(char *expression) {
-
+static bool IsExpressionPushable(char *expression) 
+{
 	char *open = " \n(";
 	char *close = " \n(";
 
@@ -2698,7 +2697,8 @@ static bool IsExpressionPushable(char *expression) {
 		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MAX, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SAMPLE, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_GROUPCONCAT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND;
-} 
+}
+
 /*
  * CreateSPARQL
  * ------------
@@ -2709,8 +2709,7 @@ static bool IsExpressionPushable(char *expression) {
  * root : Planner info
  */
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
-{
-	
+{	
 	StringInfoData where_graph;
 	StringInfoData sparql;
 
@@ -2819,11 +2818,21 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position) 
 {
 	int keyword_position = RDF_KEYWORD_NOT_FOUND;
-		
-	elog(DEBUG1,"%s called: '%s' in start_position %d",__func__, keyword, start_position);
+	StringInfoData idt;
+	initStringInfo(&idt);
+
+	if(count)
+	{
+		for (size_t i = 0; i < *count; i++)
+		{
+			appendStringInfo(&idt,"  ");
+		}
+	}
+
+	elog(DEBUG1,"%s%s called: searching '%s' in start_position %d", NameStr(idt), __func__, keyword, start_position);
 
 	if(start_position < 0)
-		elog(ERROR, "%s: start_position cannot be negative.", __func__);
+		elog(ERROR, "%s%s: start_position cannot be negative.",NameStr(idt), __func__);
 
 	/* 
 	 * Some SPARQL keywords can be placed in the very beginning of a query, so they not always 
@@ -2834,7 +2843,7 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0)) &&
 		 start_position == 0)
 	{
-		elog(DEBUG1, "%s: nothing before SELECT. Setting keyword_position to 0,", __func__);
+		elog(DEBUG1, "%s%s: nothing before SELECT. Setting keyword_position to 0.", NameStr(idt), __func__);
 		keyword_position = 0;
 	} 
 	else
@@ -2877,15 +2886,15 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 		}
 	}
 
-	
+
 	if((count) && keyword_position != RDF_KEYWORD_NOT_FOUND)
 	{
-		elog(DEBUG1, "  %s (%d): keyword '%s' found in position '%d'. Recalling %s ... ", __func__, *count, keyword, keyword_position, __func__);
+		(*count)++;		
+		elog(DEBUG1, "%s%s (%d): keyword '%s' found in position %d. Recalling %s ... ", NameStr(idt), __func__, *count, keyword, keyword_position, __func__);
 		LocateKeyword(str, start_chars, keyword, end_chars, count, keyword_position + 1);
-		(*count)++;
-	}
 
-	elog(DEBUG1,"  %s: '%s' returning  %d",__func__, keyword, keyword_position);
+		elog(DEBUG1,"%s%s: '%s' search returning postition %d for start position %d", NameStr(idt), __func__, keyword, keyword_position, start_position);
+	} 
 
 	return keyword_position;
 }
@@ -3231,7 +3240,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		initStringInfo(&result);
 		appendStringInfo(&result, "%s", state->rdfTable->cols[index]->name);
 
-		elog(DEBUG1, "  %s: T_Var -> index = %d result = %s", __func__, index, state->rdfTable->cols[index]->name);
+		elog(DEBUG1, "  %s: T_Var > index = %d result = '%s'", __func__, index, state->rdfTable->cols[index]->name);
 
 		break;
 	case T_OpExpr:
@@ -3675,7 +3684,6 @@ static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
  */
 static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
 {
-
 	StringInfoData orderedquery;
 	List *usable_pathkeys = NIL;
 	ListCell *cell;
@@ -3933,7 +3941,6 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
  */
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
 {
-
 	StringInfoData limit_clause;
 	char *limit_val, *offset_val = NULL;
 
@@ -4030,7 +4037,6 @@ static bool ContainsWhitespaces(char *str)
  */
 static bool IsSPARQLVariableValid(const char* str) 
 {
-
 	if (str[0] != '?' && str[0] != '$')
 		return false;
 
@@ -4090,6 +4096,15 @@ static Oid GetRelOidFromName(char *relname, char *code)
 
 }
 
+/*
+ * CreateRegexString
+ * ---------------
+ * Escapes regex wildcards into normal characters by adding \\ to them
+ * 
+ * str: string to be converted
+ * 
+ * returns str with the regex wildcards escaped.
+ */
 static char* CreateRegexString(char* str)
 {
 	StringInfoData res;
