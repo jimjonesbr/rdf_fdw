@@ -46,6 +46,7 @@
        "foreign data wrapper",
        "rdf",
        "triplestore",
-       "sparql"
+       "sparql endpoint",
+       "linked open data"
     ]
  }
