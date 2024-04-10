@@ -82,7 +82,12 @@ To run the predefined regression tests run `make installcheck` with the user `po
 
 ```bash
 $ make PGUSER=postgres installcheck
+
 ```
+
+> [!NOTE]  
+> In order for `rdf_fdw` to convert the data retrieved from the RDF triplestore into a format that can be interpreted by PostgreSQL, it must first load all the retrieved data into memory. Therefore, if you expect to retrieve large volumes of data with a single query, make sure PostgreSQL has access to sufficient memory. Another option is to retrieve the data in chuncks by using `rdf_fdw_clone_table` or a customised script.
+
 
 ## [Update](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update)
 
@@ -814,8 +819,8 @@ In the following SQL query we can observe that:
 SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
 FETCH FIRST 10 ROWS ONLY;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?place ?label ?location 
 {
@@ -836,17 +841,17 @@ LIMIT 10
                wikidata_id                |      label      |                    wkt                     
 ------------------------------------------+-----------------+--------------------------------------------
  http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | 0101000000295C8FC2F5A060C0EC51B81E855B5140
- http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | 0101000000F10DBD79356559C05C30283B4CAD3340
- http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | 0101000000E8F9D346757AFDBFB9FB1C1F2DE64740
- http://www.wikidata.org/entity/Q31796546 | Sahl al ‘Awjā'  | 0101000000739B8C047CBB4140F30CA5EC30F53F40
- http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | 0101000000D578E9263168394021C059B2793A3D40
  http://www.wikidata.org/entity/Q403083   | Ahyi            | 010100000041E3101111216240A9CDA7AAAA6A3440
- http://www.wikidata.org/entity/Q2889475  | Na'aran         | 010100000069A1D4C627BA41409EE61CF084F73F40
  http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | 01010000003AE97DE36BB7414065A54929E8DE3F40
+ http://www.wikidata.org/entity/Q54888910 | Lydd Library    | 010100000074B7EBA52902ED3F0C3B8C497F794940
+ http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | 0101000000E8F9D346757AFDBFB9FB1C1F2DE64740
+ http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | 0101000000D578E9263168394021C059B2793A3D40
  http://www.wikidata.org/entity/Q2888647  | Petza'el        | 0101000000F886DEBC9AB841408D05D940A7054040
  http://www.wikidata.org/entity/Q2888816  | Gilgal          | 0101000000272E0948E2B84140539C1F56EAFF3F40
-(10 rows)12853 | Ansdell Library | Point(-2.991656 53.743795)
+ http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | 0101000000F10DBD79356559C05C30283B4CAD3340
+ http://www.wikidata.org/entity/Q2889475  | Na'aran         | 010100000069A1D4C627BA41409EE61CF084F73F40
 (10 rows)
+
 ```
 
 ### [Import data into QGIS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#import-data-into-qgis)
