@@ -33,7 +33,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
   - [BBC Programmes and Music](#bbc-programmes-and-music)
   - [Wikidata](#wikidata)
   - [Import data into QGIS](#import-data-into-qgis)
-  - [Publish Foreign Table as WFS layer in GeoServer](#publish-foreign-table-as-wfs-layer-in-geoserver)
+  - [Publish FOREIGN TABLE as WFS layer in GeoServer](#publish-foreign-table-as-wfs-layer-in-geoserver)
 - [Deploy with Docker](#deploy-with-docker)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
@@ -902,7 +902,7 @@ Finally give the layer a name, select the geometry column and press **Load**.
 
 ![unis](examples/img/qgis-map.png?raw=true)
 
-### [Publish Foreign Table as WFS layer in GeoServer](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#publish-foreign-table-as-wfs-layer-in-geoserver)
+### [Publish FOREIGN TABLE as WFS layer in GeoServer](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#publish-foreign-table-as-wfs-layer-in-geoserver)
 
 Just like with an ordinary `TABLE` in PostgreSQL, it is possible to create and publish `FOREIGN TABLES` as WFS layers in GeoServer. 
 
@@ -917,45 +917,32 @@ CREATE FOREIGN TABLE museums_brittany (
   id text                   OPTIONS (variable '?villeId', nodetype 'iri'),
   label text                OPTIONS (variable '?museumLabel',nodetype 'literal'),
   ville text                OPTIONS (variable '?villeIdLabel', nodetype 'literal'),
-  lat numeric               OPTIONS (variable '?lat', nodetype 'literal'),
-  lon numeric               OPTIONS (variable '?on', nodetype 'literal'),
   geom geometry(point,4326) OPTIONS (variable '?coord', nodetype 'literal')
 ) SERVER wikidata OPTIONS (
   sparql '
-    SELECT DISTINCT ?museumLabel ?villeId ?villeIdLabel ?coord ?lat ?lon
+    SELECT DISTINCT ?museumLabel ?villeId ?villeIdLabel ?coord
     WHERE
     {
       ?museum wdt:P539 ?museofile. # french museofile Id
       ?museum wdt:P131* wd:Q12130. # in Brittany
-      ?museum wdt:P131 ?villeId. #city of the museum
-      # ?object wdt:P166 wd:Q2275045 # that have french label "musées de France"
-      OPTIONAL {?museum wdt:P856 ?link.} # official website
-      OPTIONAL {?museum wdt:P625 ?coord .} # geographic coord
-      OPTIONAL {
-        ?museum p:P625 ?statement.
-        ?statement psv:P625 ?node.
-        ?node wikibase:geoLatitude ?lat.
-        ?node wikibase:geoLongitude ?lon.
-      }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". } #french label
+      ?museum wdt:P131 ?villeId.   # city of the museum
+      ?museum wdt:P625 ?coord .    # wkt literal      
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". } # french label
     }
   ');
 ```
 Then set up the [Workspace](https://docs.geoserver.org/latest/en/user/data/webadmin/workspaces.html) and [Store](https://docs.geoserver.org/latest/en/user/data/webadmin/stores.html), go to  **Layers -> Add a new layer**, select the proper workspace and go to **Configure new SQL view...** to create a layer create a layer with a native **SQL statement**:
 
 ```sql
-SELECT id, label, ville
+SELECT id, label, ville, geom
 FROM museums_brittany
 ```
-Then hit **Save**.
 
 ![geoserver](examples/img/geoserver-layer.png?raw=true)
 
-Finally, fill in the remaining layer attributes, such as Style, Bounding Boxes and Spatial Reference System, and click **Save** - see this [instructions](https://docs.geoserver.org/latest/en/user/data/webadmin/layers.html) for more details. After that you'll be able to reach your layer from a standard OGC WFS client, e.g. [QGIS](https://docs.qgis.org/3.34/en/docs/server_manual/services/wfs.html).
+Afer that set the geometery column and identifier, and hit **Save**. Finally, fill in the remaining layer attributes, such as Style, Bounding Boxes and Spatial Reference System, and click **Save** - see this [instructions](https://docs.geoserver.org/latest/en/user/data/webadmin/layers.html) for more details. After that you'll be able to reach your layer from a standard OGC WFS client, e.g. using [QGIS](https://docs.qgis.org/3.34/en/docs/server_manual/services/wfs.html).
 
 ![geoserver-wfs](examples/img/geoserver-wfs-client.png?raw=true)
-
-Then hit **Add** to load the WFS layer
 
 ![geoserver-wfs-map](examples/img/geoserver-wfs-map.png?raw=true)
 
