@@ -300,11 +300,11 @@ LIMIT 3
  The Life of Adam Lindsay Gordon | 09-04-1916 |       5
 (2 rows)
 
--- 'lower(name) =' WHERE condition won't be pushed down, as
--- functions are not supported. Consequently, the LIMIT clause
--- won't be pushed down either. It is necessary that either 
--- the SQL has no WHERE clause or all its conditions can be 
--- translated in order for LIMIT to be pushed down.
+/*
+  All three conditions in the WHERE clause are pushed down.
+  The lower() function call will be translated to LCASE in a
+  SPARQL FILTER expression.
+*/ 
 SELECT name, released, runtime
 FROM film
 WHERE 
@@ -331,8 +331,52 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (datatype(?runtime) = xsd:integer)
       FILTER(?runtime < 10)
  FILTER(?released < "1930-03-25"^^xsd:date)
+ FILTER(LCASE(STR(?name)) = "the life of adam lindsay gordon")
 }
 ORDER BY  ASC (?released)
+LIMIT 3
+
+              name               |  released  | runtime 
+---------------------------------+------------+---------
+ The Life of Adam Lindsay Gordon | 08-17-1916 |       5
+ The Life of Adam Lindsay Gordon | 09-04-1916 |       5
+(2 rows)
+
+/*
+  All three conditions in the WHERE clause are pushed down.
+  The upper() function call will be translated to UCASE in a
+  SPARQL FILTER expression.
+*/ 
+SELECT name, released, runtime
+FROM film
+WHERE 
+  upper(name) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
+  runtime < 10 AND
+  released < '1930-03-25'
+ORDER BY released
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbr: <http://dbpedia.org/resource/>
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT ?name ?released ?runtime 
+{
+      ?film a dbo:Film ;
+            rdfs:comment ?abstract ;
+            dbp:name ?name ;
+            dbp:released ?released ;
+            dbp:runtime ?runtime .
+      FILTER (LANG ( ?abstract ) = "en")
+      FILTER (datatype(?released) = xsd:date)
+      FILTER (datatype(?runtime) = xsd:integer)
+      FILTER(?runtime < 10)
+ FILTER(?released < "1930-03-25"^^xsd:date)
+ FILTER(UCASE(STR(?name)) = "THE LIFE OF ADAM LINDSAY GORDON")
+}
+ORDER BY  ASC (?released)
+LIMIT 3
 
               name               |  released  | runtime 
 ---------------------------------+------------+---------
@@ -602,8 +646,10 @@ SELECT ?personname ?birthdate ?partyname ?country
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
        FILTER(?birthdate > "1995-12-31"^^xsd:date)
+ FILTER(LCASE(STR(?country)) = "germany")
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
+LIMIT 5
 
        name        | birthdate  |                  party                  
 -------------------+------------+-----------------------------------------

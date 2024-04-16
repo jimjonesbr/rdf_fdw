@@ -99,16 +99,31 @@ ORDER BY name
 FETCH FIRST 3 ROWS ONLY;
 
 
--- 'lower(name) =' WHERE condition won't be pushed down, as
--- functions are not supported. Consequently, the LIMIT clause
--- won't be pushed down either. It is necessary that either 
--- the SQL has no WHERE clause or all its conditions can be 
--- translated in order for LIMIT to be pushed down.
+/*
+  All three conditions in the WHERE clause are pushed down.
+  The lower() function call will be translated to LCASE in a
+  SPARQL FILTER expression.
+*/ 
 
 SELECT name, released, runtime
 FROM film
 WHERE 
   lower(name) = 'the life of adam lindsay gordon' AND 
+  runtime < 10 AND
+  released < '1930-03-25'
+ORDER BY released
+FETCH FIRST 3 ROWS ONLY;
+
+/*
+  All three conditions in the WHERE clause are pushed down.
+  The upper() function call will be translated to UCASE in a
+  SPARQL FILTER expression.
+*/ 
+
+SELECT name, released, runtime
+FROM film
+WHERE 
+  upper(name) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released

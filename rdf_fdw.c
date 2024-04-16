@@ -28,7 +28,7 @@
 
 #include "foreign/foreign.h"
 #include "commands/defrem.h"
-
+#include "catalog/pg_proc.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
 #include "nodes/pg_list.h"
@@ -3176,7 +3176,7 @@ static char *DeparseTimestamp(Datum datum, bool hasTimezone)
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *arg, *opername, *left, *right, oprkind;
-	char* literalatt = "";
+	char *literalatt = "";
 	Const *constant;
 	OpExpr *oper;
 	ScalarArrayOpExpr *arrayoper;
@@ -3193,7 +3193,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	Datum datum;
 	ListCell *cell;
 	BooleanTest *btest;
-	struct RDFfdwColumn *col = (struct RDFfdwColumn *) palloc0(sizeof(struct RDFfdwColumn));
+	FuncExpr *func;
+	struct RDFfdwColumn *col = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
 	elog(DEBUG1, "%s called > %u", __func__, expr->type);
 
@@ -3225,7 +3226,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	case T_Var:
 		variable = (Var *)expr;
 
-		if(variable->vartype == BOOLOID)
+		if (variable->vartype == BOOLOID)
 			return NULL;
 
 		index = state->numcols - 1;
@@ -3287,7 +3288,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			if (strcmp(opername, "<>") == 0)
 				opername = "!=";
 
+			elog(DEBUG1,"  %s: deparsing left operand ", __func__);
 			left = DeparseExpr(state, foreignrel, linitial(oper->args));
+			elog(DEBUG1,"  %s: left operand returned '%s'", __func__, left);
 
 			if (left == NULL)
 			{
@@ -3297,7 +3300,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (oprkind == 'b')
 			{
-
+				//elog(DEBUG1,"  %s: operkind = '%d'",__func__, oprkind);
 				/* binary operator */
 				right = DeparseExpr(state, foreignrel, lsecond(oper->args));
 				rightexpr = lsecond(oper->args);
@@ -3305,49 +3308,58 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (right == NULL)
 					return NULL;
 
+				
+				if(((Expr *)linitial(oper->args))->type != T_Var)
+				{
+					appendStringInfo(&result, "%s %s \"%s\"",left,opername,right);
+					break;
+				}
+
+
 				col = GetRDFColumn(state, left);
 
 				/* if the sparql variable cannot be found, there is no point in keep going */
-				if(!col)
+				if (!col)
 					return NULL;
 
 				/* return NULL if the column is not safe to be pushed down */
-				if(!col->pushable)
+				if (!col->pushable)
 					return NULL;
 
 				/* set the corresponding literal language tag or data type, if any */
-				if(col->literaltype)
+				if (col->literaltype)
 					literalatt = col->literaltype;
-				else if(col->language)
+				else if (col->language)
 					literalatt = col->language;
 
 				if ((leftargtype == TEXTOID ||
-				    leftargtype == VARCHAROID ||
-					leftargtype == CHAROID ||
-					leftargtype == NAMEOID ||
-					leftargtype == DATEOID ||
-					leftargtype == TIMESTAMPOID ||
-					leftargtype == TIMESTAMPTZOID ||
-					leftargtype == NAMEOID) && rightexpr->type == T_Const)
+					 leftargtype == VARCHAROID ||
+					 leftargtype == CHAROID ||
+					 leftargtype == NAMEOID ||
+					 leftargtype == DATEOID ||
+					 leftargtype == TIMESTAMPOID ||
+					 leftargtype == TIMESTAMPTZOID ||
+					 leftargtype == NAMEOID) &&
+					rightexpr->type == T_Const)
 				{
-					if(strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 ||
-					   strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0 )
+					if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 ||
+						strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
 					{
 						appendStringInfo(&result, "%s(%s,\"%s\"%s)",
-							opername[0] == '!' ? "!REGEX" : "REGEX",
-							!col->expression ? col->sparqlvar : col->expression,
-							CreateRegexString(right),
-							strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
+										 opername[0] == '!' ? "!REGEX" : "REGEX",
+										 !col->expression ? col->sparqlvar : col->expression,
+										 CreateRegexString(right),
+										 strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
 					}
-					else if(col->expression)
+					else if (col->expression)
 						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, literalatt);
 					else
 					{
-						if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+						if (strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
 							appendStringInfo(&result, "%s %s IRI(\"%s\")", col->sparqlvar, opername, right);
-						else if(strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_LITERAL) == 0)
+						else if (strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_LITERAL) == 0)
 						{
-							if(strcmp(literalatt,"@*") == 0)
+							if (strcmp(literalatt, "@*") == 0)
 								appendStringInfo(&result, "STR(%s) %s \"%s\"", col->sparqlvar, opername, right);
 							else
 								appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, literalatt);
@@ -3356,12 +3368,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				}
 				else
 				{
-					if(col->expression)
+					if (col->expression)
 						appendStringInfo(&result, "%s %s %s", col->expression, opername, right);
 					else
 						appendStringInfo(&result, "%s %s %s", col->sparqlvar, opername, right);
 				}
-
 			}
 			else
 			{
@@ -3376,17 +3387,17 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		break;
 	case T_BooleanTest:
-		btest = (BooleanTest *) expr;
+		btest = (BooleanTest *)expr;
 
-		if(btest->arg->type != T_Var)
+		if (btest->arg->type != T_Var)
 			return NULL;
 
-		variable = (Var *) btest->arg;
+		variable = (Var *)btest->arg;
 
 		index = state->numcols - 1;
 		while (index >= 0 && state->rdfTable->cols[index]->pgattnum != variable->varattno)
 			--index;
-		
+
 		arg = state->rdfTable->cols[index]->name;
 
 		if (arg == NULL)
@@ -3394,44 +3405,44 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		col = GetRDFColumn(state, arg);
 
-		if(!col)
+		if (!col)
 			return NULL;
 
-		if(!col->pushable)
+		if (!col->pushable)
 			return NULL;
 
 		initStringInfo(&result);
 
 		switch (btest->booltesttype)
 		{
-			case IS_TRUE:
-				appendStringInfo(&result, "%s = \"true\"%s",
-					col->expression ? col->expression : col->sparqlvar,
-					col->literaltype ? col->literaltype : "");
-				break;
-			case IS_NOT_TRUE:
-				appendStringInfo(&result, "%s != \"true\"%s",
-					col->expression ? col->expression : col->sparqlvar,
-					col->literaltype ? col->literaltype : "");
-				break;
-			case IS_FALSE:
-				appendStringInfo(&result, "%s = \"false\"%s",
-					col->expression ? col->expression : col->sparqlvar,
-					col->literaltype ? col->literaltype : "");
-				break;
-			case IS_NOT_FALSE:
-				appendStringInfo(&result, "%s != \"false\"%s", 
-					col->expression ? col->expression : col->sparqlvar,
-					col->literaltype ? col->literaltype : "");
-				break;
-			default:
-				return NULL;
+		case IS_TRUE:
+			appendStringInfo(&result, "%s = \"true\"%s",
+							 col->expression ? col->expression : col->sparqlvar,
+							 col->literaltype ? col->literaltype : "");
+			break;
+		case IS_NOT_TRUE:
+			appendStringInfo(&result, "%s != \"true\"%s",
+							 col->expression ? col->expression : col->sparqlvar,
+							 col->literaltype ? col->literaltype : "");
+			break;
+		case IS_FALSE:
+			appendStringInfo(&result, "%s = \"false\"%s",
+							 col->expression ? col->expression : col->sparqlvar,
+							 col->literaltype ? col->literaltype : "");
+			break;
+		case IS_NOT_FALSE:
+			appendStringInfo(&result, "%s != \"false\"%s",
+							 col->expression ? col->expression : col->sparqlvar,
+							 col->literaltype ? col->literaltype : "");
+			break;
+		default:
+			return NULL;
 		}
 
 		break;
-	case T_ScalarArrayOpExpr:		
+	case T_ScalarArrayOpExpr:
 		arrayoper = (ScalarArrayOpExpr *)expr;
-		
+
 		/* get operator name, left argument type and schema */
 		tuple = SearchSysCache1(OPEROID, ObjectIdGetDatum(arrayoper->opno));
 		if (!HeapTupleIsValid(tuple))
@@ -3459,10 +3470,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return NULL;
 
 		col = GetRDFColumn(state, left);
-		if(!col)
+		if (!col)
 			return NULL;
 
-		if(!col->pushable)
+		if (!col->pushable)
 			return NULL;
 
 		initStringInfo(&result);
@@ -3481,9 +3492,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			/* the second (=last) argument is a Const of ArrayType */
 			constant = (Const *)rightexpr;
 
-			/* 
+			/*
 			 * NULL isn't supported in Linked Data. A NULL "value" is rather represented
-			 * by the absence of a relation 
+			 * by the absence of a relation
 			 */
 			if (constant->constisnull)
 				return NULL;
@@ -3504,24 +3515,23 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						c = "NULL";
 					else
 					{
-						
+
 						c = DatumToString(datum, ARR_ELEMTYPE(arr));
 						if (c == NULL)
 						{
 							array_free_iterator(iterator);
 							return NULL;
 						}
-
 					}
 
-					if(col->literaltype)
+					if (col->literaltype)
 						literalatt = col->literaltype;
 
-					if(col->language)
+					if (col->language)
 						literalatt = col->language;
 
 					if (leftargtype == TEXTOID ||
-					    leftargtype == VARCHAROID ||
+						leftargtype == VARCHAROID ||
 						leftargtype == CHAROID ||
 						leftargtype == NAMEOID ||
 						leftargtype == BOOLOID ||
@@ -3529,14 +3539,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						leftargtype == TIMESTAMPOID ||
 						leftargtype == TIMESTAMPTZOID)
 						appendStringInfo(&result, "%s\"%s\"%s",
-							first_arg ? "" : ", ", c, literalatt);
+										 first_arg ? "" : ", ", c, literalatt);
 					else
 						appendStringInfo(&result, "%s%s%s",
-							first_arg ? "" : ", ", c, literalatt);
+										 first_arg ? "" : ", ", c, literalatt);
 
 					/* append the argument */
 					first_arg = false;
-
 				}
 				array_free_iterator(iterator);
 
@@ -3595,7 +3604,67 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		/* parentheses close the FILTER expression */
 		appendStringInfo(&result, ")");
-		
+
+		break;
+	case T_FuncExpr:
+
+		func = (FuncExpr *)expr;
+
+		if (!canHandleType(func->funcresulttype))
+			return NULL;
+
+		/* do nothing for implicit casts */
+		if (func->funcformat == COERCE_IMPLICIT_CAST)
+			return DeparseExpr(state, foreignrel, linitial(func->args));
+
+		/* get function name and schema */
+		tuple = SearchSysCache1(PROCOID, ObjectIdGetDatum(func->funcid));
+		if (!HeapTupleIsValid(tuple))
+		{
+			elog(ERROR, "cache lookup failed for function %u", func->funcid);
+		}
+		opername = pstrdup(((Form_pg_proc)GETSTRUCT(tuple))->proname.data);
+		schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
+		ReleaseSysCache(tuple);
+
+		/* ignore functions in other than the pg_catalog schema */
+		if (schema != PG_CATALOG_NAMESPACE)
+			return NULL;
+
+		if (strcmp(opername, "upper") == 0 || strcmp(opername, "lower") == 0)
+		{
+			initStringInfo(&result);
+
+			first_arg = true;
+			foreach (cell, func->args)
+			{
+				elog(DEBUG1, "  %s: deparsing column name for %s", __func__, opername);
+				arg = DeparseExpr(state, foreignrel, lfirst(cell));
+				
+				if (arg == NULL)
+				{
+					pfree(result.data);
+					pfree(opername);
+					return NULL;
+				}
+
+				if (first_arg)
+				{
+					col = GetRDFColumn(state, arg);
+					break;
+				}
+			}
+
+			if(col)
+			{
+				if(strcmp(opername, "upper") == 0)
+					appendStringInfo(&result, "UCASE(STR(%s))", col->sparqlvar);
+				else if(strcmp(opername, "lower") == 0)
+					appendStringInfo(&result, "LCASE(STR(%s))", col->sparqlvar);
+			}
+		}
+
+		pfree(opername);
 		break;
 	default:
 		elog(DEBUG1, "  %s: expression not supported > %u", __func__, expr->type);
