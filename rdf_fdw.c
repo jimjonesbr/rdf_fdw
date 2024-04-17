@@ -77,7 +77,7 @@
 #define ADD_REL_QUALIFIER(buf, varno)   \
 		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
-#define FDW_VERSION "1.1.0"
+#define FDW_VERSION "1.2.0-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -348,6 +348,7 @@ static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
 static Oid GetRelOidFromName(char *relname, char *code);
 static char* CreateRegexString(char* str);
+static bool IsStringDataType(Oid type);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -3302,16 +3303,24 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			{
 				//elog(DEBUG1,"  %s: operkind = '%d'",__func__, oprkind);
 				/* binary operator */
+				elog(DEBUG1,"  %s: deparsing right operand ", __func__);
 				right = DeparseExpr(state, foreignrel, lsecond(oper->args));
+				elog(DEBUG1,"  %s: right operand returned '%s'", __func__, right);
 				rightexpr = lsecond(oper->args);
 
 				if (right == NULL)
 					return NULL;
 
 				
-				if(((Expr *)linitial(oper->args))->type != T_Var)
+				if(((Expr *)linitial(oper->args))->type != T_Var)				
 				{
-					appendStringInfo(&result, "%s %s \"%s\"",left,opername,right);
+					elog(DEBUG1,"  %s: left argument is not a T_Var (%d)", __func__,leftargtype);
+
+					if(IsStringDataType(leftargtype))
+						appendStringInfo(&result, "%s %s \"%s\"",left,opername,right);
+					else
+						appendStringInfo(&result, "%s %s %s",left,opername,right);
+
 					break;
 				}
 
@@ -3332,18 +3341,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				else if (col->language)
 					literalatt = col->language;
 
-				if ((leftargtype == TEXTOID ||
-					 leftargtype == VARCHAROID ||
-					 leftargtype == CHAROID ||
-					 leftargtype == NAMEOID ||
-					 leftargtype == DATEOID ||
-					 leftargtype == TIMESTAMPOID ||
-					 leftargtype == TIMESTAMPTZOID ||
-					 leftargtype == NAMEOID) &&
-					rightexpr->type == T_Const)
+				if (IsStringDataType(leftargtype) && rightexpr->type == T_Const)
 				{
-					if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 ||
-						strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
+					if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
 					{
 						appendStringInfo(&result, "%s(%s,\"%s\"%s)",
 										 opername[0] == '!' ? "!REGEX" : "REGEX",
@@ -3631,7 +3631,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (schema != PG_CATALOG_NAMESPACE)
 			return NULL;
 
-		if (strcmp(opername, "upper") == 0 || strcmp(opername, "lower") == 0)
+		if (strcmp(opername, "upper") == 0 || strcmp(opername, "lower") == 0 || strcmp(opername, "length") == 0)
 		{
 			initStringInfo(&result);
 
@@ -3661,6 +3661,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					appendStringInfo(&result, "UCASE(STR(%s))", col->sparqlvar);
 				else if(strcmp(opername, "lower") == 0)
 					appendStringInfo(&result, "LCASE(STR(%s))", col->sparqlvar);
+				else if(strcmp(opername, "length") == 0)
+					appendStringInfo(&result, "STRLEN(STR(%s))", col->sparqlvar);
+
 			}
 		}
 
@@ -4205,4 +4208,29 @@ static char* CreateRegexString(char* str)
 	}
 
 	return NameStr(res);
+}
+
+/*
+ * IsStringDataType
+ * ---------------
+ * Determines if a postgres data type is string or numeric type
+ * so that we can know when to wrap the value with single quotes
+ * or leave as is.
+ * 
+ * type: postgres data type
+ * 
+ * returns true if the data type needs to be wrapped with quotes 
+ *         or false otherwise.
+ */
+static bool IsStringDataType(Oid type)
+{
+	return 
+		type == TEXTOID ||
+		type == VARCHAROID ||
+		type == CHAROID ||
+		type == NAMEOID ||
+		type == DATEOID ||
+		type == TIMESTAMPOID ||
+		type == TIMESTAMPTZOID ||
+		type == NAMEOID;
 }
