@@ -160,6 +160,7 @@ WHERE
   name text       OPTIONS (variable '?personname', language 'en'),
   birthdate date  OPTIONS (variable '?birthdate', literaltype 'xsd:date'),
   party text      OPTIONS (variable '?partyname'),
+  wikiid int      OPTIONS (variable '?pageid', nodetype 'literal', literaltype 'xsd:nonNegativeInteger'),
   country text    OPTIONS (variable '?country', language 'en')
 )
 SERVER dbpedia OPTIONS (
@@ -175,7 +176,8 @@ SERVER dbpedia OPTIONS (
           a dbo:Politician;
           dbo:birthDate ?birthdate;
           dbp:name ?personname;
-          dbo:party ?party .       
+          dbo:party ?party ;   
+          dbo:wikiPageID ?pageid .       
         ?party 
           dbp:country ?country;
           rdfs:label ?partyname .
@@ -306,6 +308,39 @@ FROM politicians
 WHERE NOT country ~~* ANY(ARRAY['%UnItEd%','%land%'])
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
+
+/*
+ * Query containing function calls in the WHERE conditions. upper, 
+ * lower, abs, floor, round, ceil and length will be pushed down as 
+ * ucase, lcase, abs, floor, round, ceil and strlen, respectively. 
+ * This query also tests WHERE conditions with "inverted"
+ * arguments, e.g. "10 > length(name)", "'the United States' = country",
+ * "'THE UNITED STATES' = upper(country)". The LIMIT will also be pushed 
+ * down, since all WHERE conditions can be pushed down as well.
+ */
+SELECT * FROM politicians 
+WHERE 
+  upper(name) = 'WILL' || ' BOND' AND 
+  lower(name) = 'will bond' AND
+  length(name) = 9 AND
+  length(name) > 8 AND
+  10 > length(name) AND
+  length(name) != 42 AND
+  length(name) != (2+2) AND
+  'the United States' = country AND
+  'THE UNITED STATES' = upper(country)  AND
+  lower('the United States') = lower(country) AND
+  abs(wikiid) <> 42.73 AND
+  abs(wikiid) <> abs(-300) AND
+  47035308 = round(wikiid + .4) AND
+  round(wikiid) = 47035308 AND
+  47035308 = wikiid AND
+  wikiid = 47035308 AND
+  round(wikiid) = ROUND(47035308.4) AND
+  Floor(wikiid) < 47035308.99999 AND
+  CEIL(wikiid) = ceil(47035307.1) AND
+  47035307 < ceil(wikiid)
+LIMIT 42;
 
 /* ################### SPARQL  Aggregators ################### */
 
