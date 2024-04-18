@@ -3189,6 +3189,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	ArrayExpr *array;
 	ArrayCoerceExpr *arraycoerce;
 	Expr *rightexpr;
+	Expr *leftexpr;
 	bool first_arg, isNull;
 	ArrayIterator iterator;
 	Datum datum;
@@ -3285,13 +3286,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			strcmp(opername, "!~~*") == 0)
 		{
 
-			/* SPARQL does not suppot <> */
+			/* SPARQL does not negate with <> */
 			if (strcmp(opername, "<>") == 0)
 				opername = "!=";
 
-			elog(DEBUG1,"  %s: deparsing left operand ", __func__);
+			elog(DEBUG1,"  %s: deparsing operand of left expression", __func__);
 			left = DeparseExpr(state, foreignrel, linitial(oper->args));
-			elog(DEBUG1,"  %s: left operand returned '%s'", __func__, left);
+			elog(DEBUG1,"  %s: left operand returned => %s", __func__, left);
 
 			if (left == NULL)
 			{
@@ -3301,78 +3302,168 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (oprkind == 'b')
 			{
-				//elog(DEBUG1,"  %s: operkind = '%d'",__func__, oprkind);
-				/* binary operator */
-				elog(DEBUG1,"  %s: deparsing right operand ", __func__);
-				right = DeparseExpr(state, foreignrel, lsecond(oper->args));
-				elog(DEBUG1,"  %s: right operand returned '%s'", __func__, right);
+				StringInfoData left_filter_arg;
+				StringInfoData right_filter_arg;
+				struct RDFfdwColumn *right_column = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
+				struct RDFfdwColumn *left_column = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
+				
+				char *right_literal_attribute = "";
+				char *left_literal_attribute = "";
+
+				elog(DEBUG1,"  %s: deparsing left and right expressions", __func__);
+				leftexpr = linitial(oper->args);
 				rightexpr = lsecond(oper->args);
 
+				elog(DEBUG1,"  %s: deparsing operand of right expression", __func__);
+				right = DeparseExpr(state, foreignrel, rightexpr);
+				
 				if (right == NULL)
 					return NULL;
 
-				
-				if(((Expr *)linitial(oper->args))->type != T_Var)				
+				initStringInfo(&left_filter_arg);
+				initStringInfo(&right_filter_arg);
+
+				if(leftexpr->type == T_Var)
 				{
-					elog(DEBUG1,"  %s: left argument is not a T_Var (%d)", __func__,leftargtype);
+					left_column = GetRDFColumn(state, left);
 
-					if(IsStringDataType(leftargtype))
-						appendStringInfo(&result, "%s %s \"%s\"",left,opername,right);
-					else
-						appendStringInfo(&result, "%s %s %s",left,opername,right);
-
-					break;
+					/* return NULL if the column cannot be found or cannot be pushed down */
+					if(!left_column || !left_column->pushable)
+						return NULL;
+					/* set literal type as attribute, e.g. ^^xsd:string, ^^xsd:integer */
+					else if (left_column->literaltype)
+						left_literal_attribute = left_column->literaltype;
+					/* set language as attribute, e.g. de, en, es */
+					else if (left_column->language)
+						left_literal_attribute = left_column->language;
 				}
 
+				if(rightexpr->type == T_Var)
+				{					
+					right_column = GetRDFColumn(state, right);
+					
+					/* return NULL if the column cannot be found or cannot be pushed down */
+					if(!right_column || !right_column->pushable)
+						return NULL;
+					/* set literal type as attribute, e.g. ^^xsd:string, ^^xsd:integer */
+					else if (right_column->literaltype)
+						right_literal_attribute = right_column->literaltype;
+					/* set language as attribute, e.g. de, en, es */
+					else if (right_column->language)
+						right_literal_attribute = right_column->language;
+				}
+				
 
-				col = GetRDFColumn(state, left);
-
-				/* if the sparql variable cannot be found, there is no point in keep going */
-				if (!col)
-					return NULL;
-
-				/* return NULL if the column is not safe to be pushed down */
-				if (!col->pushable)
-					return NULL;
-
-				/* set the corresponding literal language tag or data type, if any */
-				if (col->literaltype)
-					literalatt = col->literaltype;
-				else if (col->language)
-					literalatt = col->language;
-
-				if (IsStringDataType(leftargtype) && rightexpr->type == T_Const)
+				/* if the column contains an expression we use it in all FILTER expressions*/
+				if(left_column->expression)
+					appendStringInfo(&left_filter_arg,"%s",left_column->expression);
+				/* check if the argument is a string (T_Const) */
+				else if(IsStringDataType(leftargtype) && leftexpr->type == T_Const)
 				{
-					if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
-					{
-						appendStringInfo(&result, "%s(%s,\"%s\"%s)",
-										 opername[0] == '!' ? "!REGEX" : "REGEX",
-										 !col->expression ? col->sparqlvar : col->expression,
-										 CreateRegexString(right),
-										 strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
-					}
-					else if (col->expression)
-						appendStringInfo(&result, "%s %s \"%s\"%s", col->expression, opername, right, literalatt);
+					/* 
+					 * if the argument is a IRI/URI we must wrap it with IRI(), so that it
+					 * can be handled as such in the FILTER expressions.
+					 */
+					if (right_column->nodetype && strcmp(right_column->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+						appendStringInfo(&left_filter_arg,"IRI(\"%s\")",left);
+					/* 
+					 * we ignore the attribute of the left side if the right side argument's 
+					 * language is set to * (all languages) 
+					 */
+					else if(strcmp(right_literal_attribute,"@*") == 0)
+						appendStringInfo(&left_filter_arg,"\"%s\"",left);					
+					/* add the attribute to the argument as set in the CREATE TABLE statement */
 					else
-					{
-						if (strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
-							appendStringInfo(&result, "%s %s IRI(\"%s\")", col->sparqlvar, opername, right);
-						else if (strcmp(col->nodetype, RDF_COLUMN_OPTION_NODETYPE_LITERAL) == 0)
-						{
-							if (strcmp(literalatt, "@*") == 0)
-								appendStringInfo(&result, "STR(%s) %s \"%s\"", col->sparqlvar, opername, right);
-							else
-								appendStringInfo(&result, "%s %s \"%s\"%s", col->sparqlvar, opername, right, literalatt);
-						}
-					}
+						appendStringInfo(&left_filter_arg,"\"%s\"%s",left, right_literal_attribute);
+				}
+				/* check if the argument is a column */
+				else if(leftexpr->type == T_Var)
+				{
+					/* 
+					 * we wrap the column name (sparqlvar!) with STR() if the column's language
+					 * is set ti * (all languages)
+					 */
+					if(strcmp(left_literal_attribute,"@*") == 0)
+						appendStringInfo(&left_filter_arg,"STR(%s)",left_column->sparqlvar);
+					/* set the sparqlvar to the FILTER expression */
+					else
+						appendStringInfo(&left_filter_arg,"%s",left_column->sparqlvar);
 				}
 				else
-				{
-					if (col->expression)
-						appendStringInfo(&result, "%s %s %s", col->expression, opername, right);
-					else
-						appendStringInfo(&result, "%s %s %s", col->sparqlvar, opername, right);
+					appendStringInfo(&left_filter_arg, "%s", left);
+
+
+
+
+				/* if the column contains an expression we use it in all FILTER expressions*/
+				if(right_column->expression)
+					appendStringInfo(&right_filter_arg,"%s",right_column->expression);
+				/* check if the argument is a string (T_Const) */
+				else if(IsStringDataType(rightargtype) && rightexpr->type == T_Const)
+				{	
+					/* 
+					 * if the argument is a IRI/URI we must wrap it with IRI(), so that it
+					 * can be handled as such in the FILTER expressions.
+					 */
+					if(left_column->nodetype && strcmp(left_column->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+						appendStringInfo(&right_filter_arg, "IRI(\"%s\")",right);
+					/* 
+					 * we ignore the attribute of the right side if the left side argument's 
+					 * language is set to * (all languages) 
+					 */
+					else if(strcmp(left_literal_attribute,"@*") == 0)
+						appendStringInfo(&right_filter_arg, "\"%s\"", right);
+					/* add the attribute to the argument as set in the CREATE TABLE statement */
+					else					
+						appendStringInfo(&right_filter_arg,"\"%s\"%s", right, left_literal_attribute);
 				}
+				else if(rightexpr->type == T_Var)
+				{
+					/* 
+					 * we wrap the column name (sparqlvar!) with STR() if the column's language
+					 * is set ti * (all languages)
+					 */
+					if(strcmp(right_literal_attribute, "@*") == 0)
+						appendStringInfo(&right_filter_arg, "STR(%s)", right_column->sparqlvar);
+					/* set the sparqlvar to the FILTER expression */
+					else
+						appendStringInfo(&right_filter_arg,"%s", right_column->sparqlvar);
+				}
+				else 
+					appendStringInfo(&right_filter_arg, "%s", right);
+
+ 
+				elog(DEBUG1,"  %s: left argument converted: '%s' => '%s'", __func__, left, NameStr(left_filter_arg));
+				elog(DEBUG1,"  %s: oper  => %s", __func__, opername);
+				elog(DEBUG1,"  %s: right argument converted: '%s' => '%s'", __func__, right,  NameStr(right_filter_arg));
+
+
+				if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
+				{
+					/* 
+					 * If the left and right side arguments are not respectively T_Var and 
+					 * T_Const it is not safe to push down the REGEX FILTER. We then let
+					 * the client to deal with it.
+					 */
+					if(leftexpr->type != T_Var && rightexpr->type != T_Const)
+						return NULL;
+
+					appendStringInfo(&result, "%s(%s,\"%s\"%s)",
+									 opername[0] == '!' ? "!REGEX" : "REGEX",
+									 NameStr(left_filter_arg),
+									 CreateRegexString(right),
+									 strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
+				} 
+				else
+				{
+					appendStringInfo(&result, "%s %s %s", 
+						NameStr(left_filter_arg),
+						opername, 
+						NameStr(right_filter_arg));
+				}
+
+
+
 			}
 			else
 			{
@@ -3666,6 +3757,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			}
 		}
+		else
+			return NULL;
 
 		pfree(opername);
 		break;
@@ -4182,6 +4275,8 @@ static char* CreateRegexString(char* str)
 	StringInfoData res;
 	initStringInfo(&res);
 
+	elog(DEBUG1,"%s called with string => %s", __func__, str);
+
 	if(!str)
 		return NULL;
 
@@ -4193,7 +4288,7 @@ static char* CreateRegexString(char* str)
 			appendStringInfo(&res,"^");
 
 		if(strchr("/:=#@^()[]{}+-*$.?|",c) != NULL)
-			appendStringInfo(&res,"\\\\%s", &c);
+			appendStringInfo(&res,"\\\\%c", c);
 		else if(c == '%')
 			appendStringInfo(&res,".*");
 		else if(c == '_')
@@ -4201,11 +4296,15 @@ static char* CreateRegexString(char* str)
 		else if(c == '"')
 			appendStringInfo(&res,"\\\"");
 		else
-			appendStringInfo(&res, "%s", &c);
+			appendStringInfo(&res, "%c", c);
 
 		if(i == strlen(str)-1 && c != '%' && c != '_')
 			appendStringInfo(&res,"$");
+
+		elog(DEBUG2, "%s loop => %c res => %s", __func__, str[i], NameStr(res));
 	}
+
+	elog(DEBUG1,"%s returning => %s",__func__,NameStr(res));
 
 	return NameStr(res);
 }
