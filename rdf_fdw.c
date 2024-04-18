@@ -1972,6 +1972,7 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 			return state->rdfTable->cols[i];		
 	}
 
+	elog(DEBUG1,"%s: no match found for '%s'",__func__,columnname);
 	return NULL;
 }
 
@@ -3038,7 +3039,7 @@ static char *DatumToString(Datum datum, Oid type)
 	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(type));
 	if (!HeapTupleIsValid(tuple))
 	{
-		elog(ERROR, "cache lookup failed for type %u", type);
+		elog(ERROR, "%s: cache lookup failed for type %u",__func__, type);
 	}
 	typoutput = ((Form_pg_type)GETSTRUCT(tuple))->typoutput;
 	ReleaseSysCache(tuple);
@@ -3243,7 +3244,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		initStringInfo(&result);
 		appendStringInfo(&result, "%s", state->rdfTable->cols[index]->name);
 
-		elog(DEBUG1, "  %s: T_Var > index = %d result = '%s'", __func__, index, state->rdfTable->cols[index]->name);
+		elog(DEBUG1, "  %s (T_Var): index = %d, result = '%s'", __func__, index, state->rdfTable->cols[index]->name);
 
 		break;
 	case T_OpExpr:
@@ -3290,9 +3291,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			if (strcmp(opername, "<>") == 0)
 				opername = "!=";
 
-			elog(DEBUG1,"  %s: deparsing operand of left expression", __func__);
+			elog(DEBUG1,"  %s (T_OpExpr): deparsing operand of left expression", __func__);
 			left = DeparseExpr(state, foreignrel, linitial(oper->args));
-			elog(DEBUG1,"  %s: left operand returned => %s", __func__, left);
+			elog(DEBUG1,"  %s (T_OpExpr): left operand returned => %s", __func__, left);
 
 			if (left == NULL)
 			{
@@ -3310,22 +3311,28 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				char *right_literal_attribute = "";
 				char *left_literal_attribute = "";
 
-				elog(DEBUG1,"  %s: deparsing left and right expressions", __func__);
+				elog(DEBUG1,"  %s (T_OpExpr): deparsing left and right expressions", __func__);
 				leftexpr = linitial(oper->args);
 				rightexpr = lsecond(oper->args);
-
-				elog(DEBUG1,"  %s: deparsing operand of right expression", __func__);
+				
+				elog(DEBUG1,"  %s (T_OpExpr): deparsing operand of right expression, type %u", __func__, rightexpr->type);
 				right = DeparseExpr(state, foreignrel, rightexpr);
 				
+
+				elog(DEBUG1,"  %s (T_OpExpr): [%s] left type %u, [%s] right type %u", __func__, left, leftexpr->type, right, rightexpr->type);
+
+
 				if (right == NULL)
 					return NULL;
 
 				initStringInfo(&left_filter_arg);
 				initStringInfo(&right_filter_arg);
 
+left_column = GetRDFColumn(state, left);
+
 				if(leftexpr->type == T_Var)
 				{
-					left_column = GetRDFColumn(state, left);
+					// left_column = GetRDFColumn(state, left);
 
 					/* return NULL if the column cannot be found or cannot be pushed down */
 					if(!left_column || !left_column->pushable)
@@ -3338,9 +3345,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						left_literal_attribute = left_column->language;
 				}
 
+right_column = GetRDFColumn(state, right);
 				if(rightexpr->type == T_Var)
 				{					
-					right_column = GetRDFColumn(state, right);
+					// right_column = GetRDFColumn(state, right);
 					
 					/* return NULL if the column cannot be found or cannot be pushed down */
 					if(!right_column || !right_column->pushable)
@@ -3352,10 +3360,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else if (right_column->language)
 						right_literal_attribute = right_column->language;
 				}
-				
+
+
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
-				if(left_column->expression)
+				if(left_column && left_column->expression)
 					appendStringInfo(&left_filter_arg,"%s",left_column->expression);
 				/* check if the argument is a string (T_Const) */
 				else if(IsStringDataType(leftargtype) && leftexpr->type == T_Const)
@@ -3364,7 +3373,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 * if the argument is a IRI/URI we must wrap it with IRI(), so that it
 					 * can be handled as such in the FILTER expressions.
 					 */
-					if (right_column->nodetype && strcmp(right_column->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+					if (right_column && right_column->nodetype && strcmp(right_column->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
 						appendStringInfo(&left_filter_arg,"IRI(\"%s\")",left);
 					/* 
 					 * we ignore the attribute of the left side if the right side argument's 
@@ -3377,7 +3386,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						appendStringInfo(&left_filter_arg,"\"%s\"%s",left, right_literal_attribute);
 				}
 				/* check if the argument is a column */
-				else if(leftexpr->type == T_Var)
+				else if(left_column && leftexpr->type == T_Var)
 				{
 					/* 
 					 * we wrap the column name (sparqlvar!) with STR() if the column's language
@@ -3389,14 +3398,28 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 						appendStringInfo(&left_filter_arg,"%s",left_column->sparqlvar);
 				}
+				else if(leftexpr->type == T_FuncExpr)
+				{
+					/* We try to resolve the column name <-> sparql variable one last time */
+					left_column = GetRDFColumn(state, left);
+
+					if(left_column)
+						appendStringInfo(&left_filter_arg, "%s", left_column->sparqlvar);
+					else
+						appendStringInfo(&left_filter_arg, "%s", left);
+				} 
 				else
+				{
 					appendStringInfo(&left_filter_arg, "%s", left);
+				}
+					
+
 
 
 
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
-				if(right_column->expression)
+				if(right_column && right_column->expression)
 					appendStringInfo(&right_filter_arg,"%s",right_column->expression);
 				/* check if the argument is a string (T_Const) */
 				else if(IsStringDataType(rightargtype) && rightexpr->type == T_Const)
@@ -3405,7 +3428,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 * if the argument is a IRI/URI we must wrap it with IRI(), so that it
 					 * can be handled as such in the FILTER expressions.
 					 */
-					if(left_column->nodetype && strcmp(left_column->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+					if(left_column && left_column->nodetype && strcmp(left_column->nodetype, RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
 						appendStringInfo(&right_filter_arg, "IRI(\"%s\")",right);
 					/* 
 					 * we ignore the attribute of the right side if the left side argument's 
@@ -3423,19 +3446,29 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 * we wrap the column name (sparqlvar!) with STR() if the column's language
 					 * is set ti * (all languages)
 					 */
-					if(strcmp(right_literal_attribute, "@*") == 0)
+					if(right_column && strcmp(right_literal_attribute, "@*") == 0)
 						appendStringInfo(&right_filter_arg, "STR(%s)", right_column->sparqlvar);
 					/* set the sparqlvar to the FILTER expression */
 					else
 						appendStringInfo(&right_filter_arg,"%s", right_column->sparqlvar);
 				}
-				else 
+				else if(rightexpr->type == T_FuncExpr)
+				{ 
+					/* We try to resolve the column name <-> sparql variable one last time */
+					right_column = GetRDFColumn(state, left);
+
+					if(right_column)
+						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
+					else
+						appendStringInfo(&right_filter_arg, "%s", right);
+				}
+				else
 					appendStringInfo(&right_filter_arg, "%s", right);
 
  
-				elog(DEBUG1,"  %s: left argument converted: '%s' => '%s'", __func__, left, NameStr(left_filter_arg));
-				elog(DEBUG1,"  %s: oper  => %s", __func__, opername);
-				elog(DEBUG1,"  %s: right argument converted: '%s' => '%s'", __func__, right,  NameStr(right_filter_arg));
+				elog(DEBUG1,"  %s (T_OpExpr): left argument converted: '%s' => '%s'", __func__, left, NameStr(left_filter_arg));
+				elog(DEBUG1,"  %s (T_OpExpr): oper  => %s", __func__, opername);
+				elog(DEBUG1,"  %s (T_OpExpr): right argument converted: '%s' => '%s'", __func__, right,  NameStr(right_filter_arg));
 
 
 				if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
@@ -3467,12 +3500,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			}
 			else
 			{
-				elog(DEBUG1, "  %s: unary operator not supported", __func__);
+				elog(DEBUG1, "  %s (T_OpExpr): unary operator not supported", __func__);
 			}
 		}
 		else
 		{
-			elog(DEBUG1, "  %s: operator cannot be translated > '%s' ", __func__, opername);
+			elog(DEBUG1, "  %s (T_OpExpr): operator cannot be translated > '%s' ", __func__, opername);
 			return NULL;
 		}
 
@@ -3700,20 +3733,27 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	case T_FuncExpr:
 
 		func = (FuncExpr *)expr;
+		
+		elog(DEBUG1,"  %s (T_FuncExpr): called",__func__);
 
 		if (!canHandleType(func->funcresulttype))
 			return NULL;
 
 		/* do nothing for implicit casts */
 		if (func->funcformat == COERCE_IMPLICIT_CAST)
+		{
+			elog(DEBUG1,"  %s (T_FuncExpr): implicit cast! aborting ... ",__func__);
 			return DeparseExpr(state, foreignrel, linitial(func->args));
+			//return NULL;
+		}
 
 		/* get function name and schema */
 		tuple = SearchSysCache1(PROCOID, ObjectIdGetDatum(func->funcid));
 		if (!HeapTupleIsValid(tuple))
 		{
-			elog(ERROR, "cache lookup failed for function %u", func->funcid);
+			elog(ERROR, "%s (T_FuncExpr): cache lookup failed for function %u",__func__, func->funcid);
 		}
+
 		opername = pstrdup(((Form_pg_proc)GETSTRUCT(tuple))->proname.data);
 		schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
 		ReleaseSysCache(tuple);
@@ -3722,40 +3762,57 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (schema != PG_CATALOG_NAMESPACE)
 			return NULL;
 
-		if (strcmp(opername, "upper") == 0 || strcmp(opername, "lower") == 0 || strcmp(opername, "length") == 0)
+		if (strcmp(opername, "upper") == 0 || strcmp(opername, "lower") == 0 || strcmp(opername, "length") == 0 || 
+		    strcmp(opername, "abs") == 0 || strcmp(opername, "round") == 0 || strcmp(opername, "floor") == 0||
+			strcmp(opername, "ceil") == 0) 
 		{
+			bool initarg = true;
+			StringInfoData args;
+			initStringInfo(&args);
 			initStringInfo(&result);
 
-			first_arg = true;
 			foreach (cell, func->args)
 			{
-				elog(DEBUG1, "  %s: deparsing column name for %s", __func__, opername);
-				arg = DeparseExpr(state, foreignrel, lfirst(cell));
-				
-				if (arg == NULL)
+				elog(DEBUG1, "  %s (T_FuncExpr): deparsing column name for %s", __func__, opername);
+				arg = DeparseExpr(state, foreignrel, lfirst(cell));				
+				col = GetRDFColumn(state, arg);				
+
+				if(!col)
 				{
-					pfree(result.data);
 					pfree(opername);
 					return NULL;
 				}
+				
+				elog(DEBUG1, "  %s (T_FuncExpr): arg => '%s', col->sparqlvar => %s", __func__, arg, col->sparqlvar);
 
-				if (first_arg)
-				{
-					col = GetRDFColumn(state, arg);
-					break;
+				if (initarg)
+				{					
+					appendStringInfo(&args, "%s", !col ? arg : col->sparqlvar);
+					initarg = false;
 				}
-			}
-
-			if(col)
-			{
-				if(strcmp(opername, "upper") == 0)
-					appendStringInfo(&result, "UCASE(STR(%s))", col->sparqlvar);
-				else if(strcmp(opername, "lower") == 0)
-					appendStringInfo(&result, "LCASE(STR(%s))", col->sparqlvar);
-				else if(strcmp(opername, "length") == 0)
-					appendStringInfo(&result, "STRLEN(STR(%s))", col->sparqlvar);
+				else
+					appendStringInfo(&args, ", %s", !col ? arg : col->sparqlvar);
 
 			}
+
+			if(strcmp(opername, "upper") == 0)
+				appendStringInfo(&result, "UCASE(STR(%s))", NameStr(args));
+			else if(strcmp(opername, "lower") == 0)
+				appendStringInfo(&result, "LCASE(STR(%s))", NameStr(args));
+			else if(strcmp(opername, "length") == 0)
+				appendStringInfo(&result, "STRLEN(STR(%s))", NameStr(args));
+			else if(strcmp(opername, "abs") == 0)
+				appendStringInfo(&result, "ABS(%s)", NameStr(args));
+			else if(strcmp(opername, "round") == 0)
+				appendStringInfo(&result, "ROUND(%s)", NameStr(args));
+			else if(strcmp(opername, "floor") == 0)
+				appendStringInfo(&result, "FLOOR(%s)", NameStr(args));
+			else if(strcmp(opername, "ceil") == 0)
+				appendStringInfo(&result, "CEIL(%s)", NameStr(args));
+
+
+			
+			pfree(args.data);
 		}
 		else
 			return NULL;
@@ -3766,6 +3823,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		elog(DEBUG1, "  %s: expression not supported > %u", __func__, expr->type);
 		return NULL;
 	}
+
+	elog(DEBUG1,"\n");
 
 	return result.data;
 }
