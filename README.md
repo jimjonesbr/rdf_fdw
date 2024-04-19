@@ -26,6 +26,8 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
     - [Supported Data Types and Operators](#supported-data-types-and-operators)
     - [IN and ANY constructs](#in-and-any-constructs)
     - [Pattern matching operators LIKE and ILIKE](#pattern-matching-operators-like-and-ilike)
+    - [String Functions](#string-functions)
+    - [Mathematical Functions](#string-functions)
   - [Pushdown Examples](#pushdown-examples)
 - [Examples](#examples)
   - [DBpedia](#dbpedia)
@@ -141,7 +143,7 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 
 ### [CREATE USER MAPPING](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create-user-mapping)
 
-Availability: **1.1.0**
+**Availability**: 1.1.0
 
 [CREATE USER MAPPING](https://www.postgresql.org/docs/current/sql-createusermapping.html) defines a mapping of a PostgreSQL user to an user in the target triplestore. For instance, to map the PostgreSQL user `postgres` to the user `admin` in the `SERVER` named `graphdb`:
 
@@ -421,10 +423,34 @@ SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](ht
 
 #### Pattern matching operators LIKE and ILIKE
 
+**Availability**: 1.1.0
+
 Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~~*` -  are converted to [REGEX](https://www.w3.org/TR/sparql11-query/#func-regex) filters in SPARQL. It is important to notice that pattern matching operations using `LIKE`/`ILIKE` only support the wildcards `%` and `_`, and therefore only these characters will be translated to their `REGEX` equivalents. Any other character that might be potentially used as a wildcard in `REGEX`, such as `^`, `|` or `$`,  will be escaped.
 
-> [!NOTE]  
-> These pattern matching operators do not support nondeterministic collations. If required, apply a different collation to the expression to work around this limitation.
+#### String Functions
+
+**Availability**: 1.2.0
+
+The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+
+| SQL | SPARQL|
+| -- | --- |
+| `UPPER()` | `UCASE()`|
+| `LOWER()` |`LCASE()` |
+| `LENGTH()` |`STRLEN()` |
+
+#### Mathematical Functions
+
+**Availability**: 1.2.0
+
+The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+
+| SQL | SPARQL|
+| -- | --- |
+| `ABS()` | `ABS()`|
+| `CEIL()` |`CEIL()` |
+| `FLOOR()` |`FLOOR()` |
+| `ROUND()` |`ROUND()` |
 
 ### Pushdown Examples
 
@@ -434,10 +460,17 @@ Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
 | `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |
-| `text`           | `*`            | `name ILIKE '%Jon_s'`, ` name ~~* '%Jon_s'`          |  `FILTER(REGEX(?name,".*Jon.s$","i"))`                                                         |
-| `text`           | `*`            | `name LIKE '%foo%'`, `name ~~ '%foo%';`          |  `FILTER(REGEX(?name,".*foo.*"))`                                                            |
+| `text`           | `*`            | `name ILIKE '%Jon_s'`, ` name ~~* '%Jon_s'`           |  `FILTER(REGEX(?name,".*Jon.s$","i"))`                                                         |
+| `text`           | `*`            | `name LIKE '%foo%'`, `name ~~ '%foo%';`               |  `FILTER(REGEX(?name,".*foo.*"))`                                                              |
+| `text`           | -              | `upper(val) = 'FOO'`                                  |  `FILTER(UCASE(STR(?var)) = "FOO")`                                                            |
+| `text`           | -              | `lower(val) = 'foo'`                                  |  `FILTER(LCASE(STR(?var)) = "foo")`                                                            |
 | `int`            | `xsd:integer`  | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`                                                                       |
 | `int`            | `xsd:integer`  | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`                                                                       |
+| `int`            | -              | `abs(val) <> 42.73`                                   |  `FILTER(ABS(?var) != 42.73)`                                                                  |
+| `int`            | -              | `ceil(val) = 42`                                      |  `FILTER(CEIL(?var) = 42)`                                                                     |
+| `int`            | -              | `floor(val) = 42`                                     |  `FILTER(FLOOR(?var) = 42)`                                                                    |
+| `int`            | -              | `length(val) = 42`                                    |  `FILTER(STRLEN(STR(?var)) = 42)`                                                              |
+| `int`            | -              | `round(val) = 42`                                     |  `FILTER(ROUND(?var) = 42)`                                                              |
 | `numeric`        | -              | `val >= 42.73`                                        |  `FILTER(?val >= 42.73)`                                                                       |
 | `date`           | `xsd:date`     | `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`     |
 | `timestamp`      | `xsd:dateTime` | `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |

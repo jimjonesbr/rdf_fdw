@@ -1,5 +1,17 @@
 # Release Notes
 
+## 1.2.0
+Release date: **YYYY-MM-DD**
+
+### Enhancements
+
+Pushdown support for the [mathematical](https://www.postgresql.org/docs/current/functions-math.html) and [string](https://www.postgresql.org/docs/current/functions-string.html) functions `abs`, `ceil`, `floor`, `round`, `length`, `upper`, `lower`: When used in the `WHERE` clause these functions will be translated to their correspondent SPARQL FILTER expressions.
+
+### Bug Fixes
+
+Bug fix for WHERE conditions with "inverted" arguments: This fixes a bug that led the pushdown of `WHERE` condiditions containing "inverted" arguments to fail, e.g `"foo" = column`, `42 > column`. Now the order of T_Const and T_Var in the arguments is irrelevant.
+
+
 ## 1.1.0
 Release date: **2024-04-10**
 
