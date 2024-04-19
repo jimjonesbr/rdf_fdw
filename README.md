@@ -443,7 +443,7 @@ The following [string functions](https://www.postgresql.org/docs/current/functio
 
 **Availability**: 1.2.0
 
-The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+The following [mathematical functions](https://www.postgresql.org/docs/current/functions-math.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
 
 | SQL | SPARQL|
 | -- | --- |
