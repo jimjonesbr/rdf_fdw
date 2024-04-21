@@ -155,36 +155,37 @@ WHERE
 
 /* ################### DBpedia Politicians ################### */
 
-  CREATE FOREIGN TABLE politicians (
-  uri text        OPTIONS (variable '?person'),
-  name text       OPTIONS (variable '?personname', language 'en'),
-  birthdate date  OPTIONS (variable '?birthdate', literaltype 'xsd:date'),
-  party text      OPTIONS (variable '?partyname'),
+CREATE FOREIGN TABLE politicians (
+  uri text        OPTIONS (variable '?person', nodetype 'iri'),
+  name text       OPTIONS (variable '?personname', nodetype 'literal', literaltype 'xsd:string'),
+  name_upper text OPTIONS (variable '?name_ucase', nodetype 'literal', expression 'UCASE(?personname)'),
+  name_len int    OPTIONS (variable '?name_len', nodetype 'literal', expression 'STRLEN(?personname)'),
+  birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
+  party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
   wikiid int      OPTIONS (variable '?pageid', nodetype 'literal', literaltype 'xsd:nonNegativeInteger'),
-  country text    OPTIONS (variable '?country', language 'en')
+  country text    OPTIONS (variable '?country', nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql '
     PREFIX dbp: <http://dbpedia.org/property/>
     PREFIX dbo: <http://dbpedia.org/ontology/>
-    
+
     SELECT *
-    WHERE
-      {
-        ?person 
+    WHERE {
+      ?person 
           a dbo:Politician;
           dbo:birthDate ?birthdate;
           dbp:name ?personname;
           dbo:party ?party ;   
-          dbo:wikiPageID ?pageid .       
+          dbo:wikiPageID ?pageid .
         ?party 
           dbp:country ?country;
           rdfs:label ?partyname .
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
       } 
-'); 
+');
 
 /*
  * DISTINCT and WHERE clause will be pushed down.
@@ -310,37 +311,93 @@ ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 
 /*
- * Query containing function calls in the WHERE conditions. upper, 
- * lower, abs, floor, round, ceil and length will be pushed down as 
- * ucase, lcase, abs, floor, round, ceil and strlen, respectively. 
- * This query also tests WHERE conditions with "inverted"
- * arguments, e.g. "10 > length(name)", "'the United States' = country",
- * "'THE UNITED STATES' = upper(country)". The LIMIT will also be pushed 
- * down, since all WHERE conditions can be pushed down as well.
+ * Pushdown test for UPPER and LOWER 
+ */
+SELECT * 
+FROM politicians 
+WHERE 
+  upper(name) = 'WILL' || ' BOND' AND 
+  'will bond' = lower(name) AND
+  lower(name_upper) = lower(name)
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for LENGTH
  */
 SELECT * FROM politicians 
 WHERE 
-  upper(name) = 'WILL' || ' BOND' AND 
-  lower(name) = 'will bond' AND
-  length(name) = 9 AND
-  length(name) > 8 AND
-  10 > length(name) AND
-  length(name) != 42 AND
-  length(name) != (2+2) AND
-  'the United States' = country AND
-  'THE UNITED STATES' = upper(country)  AND
-  lower('the United States') = lower(country) AND
+  47035308 = wikiid AND 
+  length(name) = 9  AND 
+  length(name) < (9+1)  AND 
+  length(name_upper) < (40+2)  AND 
+  13 <= LENGTH(country) AND
+  5 < LENGTH(name_upper) AND
+  LENGTH(name) <= LENGTH(country) 
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for STARTS_WITH
+ */
+SELECT * FROM politicians 
+WHERE 
+  47035308 = wikiid AND 
+  starts_with(party,'Demokratisch') AND
+  starts_with(name_upper,'WILL')
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for ABS
+ */
+SELECT * FROM politicians 
+WHERE 
+  47035308 = wikiid AND 
   abs(wikiid) <> 42.73 AND
-  abs(wikiid) <> abs(-300) AND
-  47035308 = round(wikiid + .4) AND
-  round(wikiid) = 47035308 AND
-  47035308 = wikiid AND
-  wikiid = 47035308 AND
-  round(wikiid) = ROUND(47035308.4) AND
-  Floor(wikiid) < 47035308.99999 AND
+  abs(wikiid) <> abs(-300) AND  
+  wikiid = abs(-47035308) AND
+  wikiid > abs(name_len)
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for CEIL
+ */
+SELECT * FROM politicians 
+WHERE
+  47035308 = wikiid AND  
   CEIL(wikiid) = ceil(47035307.1) AND
-  47035307 < ceil(wikiid)
-LIMIT 42;
+  ceil(name_len) <> ceil(wikiid)
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for ROUND
+ */
+SELECT * FROM politicians 
+WHERE
+  47035308 = wikiid AND 
+  round(wikiid) = ROUND(47035308.4) AND
+  round(name_len) <> round(wikiid)
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for FLOOR
+ */
+SELECT * FROM politicians 
+WHERE
+  47035308 = wikiid AND 
+  Floor(wikiid) < 47035308.99999  AND
+  floor(name_len) <> floor(wikiid)
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for SUBSTRING
+ */
+SELECT * FROM politicians 
+WHERE
+  47035308 = wikiid AND 
+  SUBstring(name,1,4) = 'Will' AND
+  'Bond' = subSTRING(name, 6,4) AND
+  lower(SUBstring(name,1,4)) = 'will' AND
+  SUBSTRING(lower(name_upper),1,4) = 'will'
+FETCH FIRST ROW ONLY;
 
 /* ################### SPARQL  Aggregators ################### */
 

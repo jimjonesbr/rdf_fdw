@@ -349,6 +349,8 @@ static char *DeparseSPARQLPrefix(char *raw_sparql);
 static Oid GetRelOidFromName(char *relname, char *code);
 static char* CreateRegexString(char* str);
 static bool IsStringDataType(Oid type);
+static bool IsFunctionPushable(char *funcname);
+static bool IsSPARQLStringFunction(char *funcname);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -3328,7 +3330,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				initStringInfo(&left_filter_arg);
 				initStringInfo(&right_filter_arg);
 
-left_column = GetRDFColumn(state, left);
+				left_column = GetRDFColumn(state, left);
 
 				if(leftexpr->type == T_Var)
 				{
@@ -3344,8 +3346,10 @@ left_column = GetRDFColumn(state, left);
 					else if (left_column->language)
 						left_literal_attribute = left_column->language;
 				}
+				
+				elog(DEBUG1,"%s: getting right column based on '%s' ... ",__func__, right);
+				right_column = GetRDFColumn(state, right);
 
-right_column = GetRDFColumn(state, right);
 				if(rightexpr->type == T_Var)
 				{					
 					// right_column = GetRDFColumn(state, right);
@@ -3365,7 +3369,11 @@ right_column = GetRDFColumn(state, right);
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
 				if(left_column && left_column->expression)
+				{
+					elog(DEBUG1,"%s: adding expression '%s' for left expression",__func__, left_column->expression);
 					appendStringInfo(&left_filter_arg,"%s",left_column->expression);
+				}
+					
 				/* check if the argument is a string (T_Const) */
 				else if(IsStringDataType(leftargtype) && leftexpr->type == T_Const)
 				{
@@ -3420,7 +3428,10 @@ right_column = GetRDFColumn(state, right);
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
 				if(right_column && right_column->expression)
+				{
+					elog(DEBUG1,"%s: adding expression '%s' for left expression",__func__, right_column->expression);
 					appendStringInfo(&right_filter_arg,"%s",right_column->expression);
+				}
 				/* check if the argument is a string (T_Const) */
 				else if(IsStringDataType(rightargtype) && rightexpr->type == T_Const)
 				{	
@@ -3455,7 +3466,7 @@ right_column = GetRDFColumn(state, right);
 				else if(rightexpr->type == T_FuncExpr)
 				{ 
 					/* We try to resolve the column name <-> sparql variable one last time */
-					right_column = GetRDFColumn(state, left);
+					right_column = GetRDFColumn(state, right);
 
 					if(right_column)
 						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
@@ -3467,7 +3478,7 @@ right_column = GetRDFColumn(state, right);
 
  
 				elog(DEBUG1,"  %s (T_OpExpr): left argument converted: '%s' => '%s'", __func__, left, NameStr(left_filter_arg));
-				elog(DEBUG1,"  %s (T_OpExpr): oper  => %s", __func__, opername);
+				elog(DEBUG1,"  %s (T_OpExpr): oper  => '%s'", __func__, opername);
 				elog(DEBUG1,"  %s (T_OpExpr): right argument converted: '%s' => '%s'", __func__, right,  NameStr(right_filter_arg));
 
 
@@ -3742,7 +3753,7 @@ right_column = GetRDFColumn(state, right);
 		/* do nothing for implicit casts */
 		if (func->funcformat == COERCE_IMPLICIT_CAST)
 		{
-			elog(DEBUG1,"  %s (T_FuncExpr): implicit cast! aborting ... ",__func__);
+			elog(DEBUG1,"  %s (T_FuncExpr): implicit cast! ",__func__);
 			return DeparseExpr(state, foreignrel, linitial(func->args));
 			//return NULL;
 		}
@@ -3762,9 +3773,7 @@ right_column = GetRDFColumn(state, right);
 		if (schema != PG_CATALOG_NAMESPACE)
 			return NULL;
 
-		if (strcmp(opername, "upper") == 0 || strcmp(opername, "lower") == 0 || strcmp(opername, "length") == 0 || 
-		    strcmp(opername, "abs") == 0 || strcmp(opername, "round") == 0 || strcmp(opername, "floor") == 0||
-			strcmp(opername, "ceil") == 0) 
+		if (IsFunctionPushable(opername))
 		{
 			bool initarg = true;
 			StringInfoData args;
@@ -3773,34 +3782,64 @@ right_column = GetRDFColumn(state, right);
 
 			foreach (cell, func->args)
 			{
+				Expr *ex = lfirst(cell);
+				
 				elog(DEBUG1, "  %s (T_FuncExpr): deparsing column name for %s", __func__, opername);
-				arg = DeparseExpr(state, foreignrel, lfirst(cell));				
-				col = GetRDFColumn(state, arg);				
+				arg = DeparseExpr(state, foreignrel, ex);
 
-				if(!col)
+				
+				if(!arg)
 				{
 					pfree(opername);
 					return NULL;
 				}
-				
-				elog(DEBUG1, "  %s (T_FuncExpr): arg => '%s', col->sparqlvar => %s", __func__, arg, col->sparqlvar);
 
-				if (initarg)
-				{					
-					appendStringInfo(&args, "%s", !col ? arg : col->sparqlvar);
-					initarg = false;
+				
+
+				if(!initarg)
+				{
+					if(strcmp(opername, "round") == 0)
+						break;
+					else
+						appendStringInfo(&args, "%s", ", ");
+				}
+
+				col = GetRDFColumn(state, arg);
+
+				if(col)
+				{
+					if(!IsSPARQLStringFunction(opername))
+						appendStringInfo(&args, "%s",  !col->expression ? col->sparqlvar : col->expression);
+					else
+						appendStringInfo(&args, "STR(%s)", !col->expression ? col->sparqlvar : col->expression);
 				}
 				else
-					appendStringInfo(&args, ", %s", !col ? arg : col->sparqlvar);
+				{
+					if (ex->type == T_Const)
+					{
+				 		Const *ct = (Const *)ex;
+
+						if(IsStringDataType(ct->consttype))
+							appendStringInfo(&args, "\"%s\"", arg);	
+						else
+							appendStringInfo(&args, "%s", arg);
+					}
+					else
+						appendStringInfo(&args, "%s", arg);
+
+				}
+				
+				initarg = false;
+
 
 			}
 
 			if(strcmp(opername, "upper") == 0)
-				appendStringInfo(&result, "UCASE(STR(%s))", NameStr(args));
+				appendStringInfo(&result, "UCASE(%s)", NameStr(args));
 			else if(strcmp(opername, "lower") == 0)
-				appendStringInfo(&result, "LCASE(STR(%s))", NameStr(args));
+				appendStringInfo(&result, "LCASE(%s)", NameStr(args));
 			else if(strcmp(opername, "length") == 0)
-				appendStringInfo(&result, "STRLEN(STR(%s))", NameStr(args));
+				appendStringInfo(&result, "STRLEN(%s)", NameStr(args));
 			else if(strcmp(opername, "abs") == 0)
 				appendStringInfo(&result, "ABS(%s)", NameStr(args));
 			else if(strcmp(opername, "round") == 0)
@@ -3809,6 +3848,12 @@ right_column = GetRDFColumn(state, right);
 				appendStringInfo(&result, "FLOOR(%s)", NameStr(args));
 			else if(strcmp(opername, "ceil") == 0)
 				appendStringInfo(&result, "CEIL(%s)", NameStr(args));
+			else if(strcmp(opername, "starts_with") == 0)
+				appendStringInfo(&result, "STRSTARTS(%s)", NameStr(args));
+			else if(strcmp(opername, "substring") == 0)
+				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
+			else
+				return NULL;
 
 
 			
@@ -4391,4 +4436,29 @@ static bool IsStringDataType(Oid type)
 		type == TIMESTAMPOID ||
 		type == TIMESTAMPTZOID ||
 		type == NAMEOID;
+}
+
+static bool IsFunctionPushable(char *funcname)
+{
+	return 
+		strcmp(funcname, "abs") == 0 ||
+		strcmp(funcname, "ceil") == 0 ||
+		strcmp(funcname, "floor") == 0 ||
+		strcmp(funcname, "round") == 0 ||
+		strcmp(funcname, "upper") == 0 ||
+		strcmp(funcname, "lower") == 0 ||
+		strcmp(funcname, "length") == 0 ||
+		strcmp(funcname, "starts_with") == 0 ||
+		strcmp(funcname, "substring") == 0;
+}
+
+
+static bool IsSPARQLStringFunction(char *funcname)
+{
+	return 
+		strcmp(funcname, "upper") == 0 ||
+		strcmp(funcname, "lower") == 0 ||
+		strcmp(funcname, "length") == 0 ||
+		strcmp(funcname, "starts_with") == 0 ||
+		strcmp(funcname, "substring") == 0;
 }
