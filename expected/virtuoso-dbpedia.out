@@ -986,6 +986,7 @@ LIMIT 1
  */
 SELECT * FROM politicians 
 WHERE 
+  47035308 = wikiid AND 
   length(name) = 9  AND 
   length(name) < (9+1)  AND 
   length(name_upper) < (40+2)  AND 
@@ -1016,13 +1017,14 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
  FILTER(13 <= STRLEN(STR(?country)))
  FILTER(5 < STRLEN(STR(UCASE(?personname))))
  FILTER(STRLEN(STR(?personname)) <= STRLEN(STR(?country)))
+ FILTER(47035308 = ?pageid)
  FILTER(STRLEN(STR(?personname)) = 9)
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |           party           |  wikiid  |    country    
----------------------------------------+-----------+------------+----------+------------+---------------------------+----------+---------------
- http://dbpedia.org/resource/Cale_Case | Cale Case | CALE CASE  |        9 | 06-02-1958 | National Republican Party | 16657015 | United States
+                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
+---------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
 (1 row)
 
 /*
