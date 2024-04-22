@@ -351,6 +351,7 @@ static char* CreateRegexString(char* str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static bool IsSPARQLStringFunction(char *funcname);
+static bool IsSQLExtractFieldSupported(char *field);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -3775,6 +3776,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (IsFunctionPushable(opername))
 		{
+			char *extract_type = "";
 			bool initarg = true;
 			StringInfoData args;
 			initStringInfo(&args);
@@ -3790,17 +3792,20 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				
 				if(!arg)
 				{
+					elog(WARNING,"############ ARG = %s", arg);
 					pfree(opername);
 					return NULL;
 				}
-
-				
-
+		
 				if(!initarg)
 				{
+					/* 
+					 * We discard any possible remaining parameters of round, 
+					 * because its equivalent in SPARQL only gets one parameter
+					 */
 					if(strcmp(opername, "round") == 0)
 						break;
-					else
+					else if(strcmp(opername, "extract") != 0)
 						appendStringInfo(&args, "%s", ", ");
 				}
 
@@ -3810,6 +3815,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				{
 					if(!IsSPARQLStringFunction(opername))
 						appendStringInfo(&args, "%s",  !col->expression ? col->sparqlvar : col->expression);
+
 					else
 						appendStringInfo(&args, "STR(%s)", !col->expression ? col->sparqlvar : col->expression);
 				}
@@ -3819,7 +3825,32 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					{
 				 		Const *ct = (Const *)ex;
 
-						if(IsStringDataType(ct->consttype))
+						/* Return NULLL if the EXTRACT field cannot be converted to SPARQL */
+						if(strcmp(opername, "extract") == 0 && initarg && !IsSQLExtractFieldSupported(arg))
+							return NULL;
+
+						/* 
+						 * The fields "years", "months" and "days" (plural) and "hour", "minute", "second"
+						 * (singular) are note supported in SPARQL. Here we convert it to a form that 
+						 * correspond to a SPARQL function.
+						 */
+						if(strcmp(opername, "extract") == 0 && (strcmp(arg, "years") == 0 || strcmp(arg, "year") == 0))
+							arg = "YEAR";
+						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "months") == 0 || strcmp(arg, "month") == 0))
+							arg = "MONTH";
+						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "days") == 0 || strcmp(arg, "day") == 0))
+							arg = "DAY";
+						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "hour") == 0 || strcmp(arg, "hours") == 0))
+							arg = "HOURS";
+						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "minute") == 0 || strcmp(arg, "minutes") == 0))
+							arg = "MINUTES";
+						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "second") == 0 || strcmp(arg, "seconds") == 0))
+							arg = "SECONDS";
+
+						if(strcmp(opername, "extract") == 0 && initarg)
+							extract_type = arg;	
+
+						else if(IsStringDataType(ct->consttype))
 							appendStringInfo(&args, "\"%s\"", arg);	
 						else
 							appendStringInfo(&args, "%s", arg);
@@ -3852,6 +3883,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "STRSTARTS(%s)", NameStr(args));
 			else if(strcmp(opername, "substring") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
+			else if(strcmp(opername, "extract") == 0)
+				appendStringInfo(&result, "%s(%s)", extract_type, NameStr(args));
 			else
 				return NULL;
 
@@ -3860,7 +3893,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			pfree(args.data);
 		}
 		else
+		{
+			elog(DEBUG1, "  %s (T_FuncExpr): function '%s' is not pushable", __func__, opername);
 			return NULL;
+		}
+			
 
 		pfree(opername);
 		break;
@@ -4449,6 +4486,7 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "lower") == 0 ||
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
+		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
 
@@ -4461,4 +4499,15 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
 		strcmp(funcname, "substring") == 0;
+}
+
+static bool IsSQLExtractFieldSupported(char *field)
+{
+	return 
+		strcmp(field, "year") == 0   || strcmp(field, "years") == 0 ||
+		strcmp(field, "month") == 0  || strcmp(field, "months") == 0 ||
+		strcmp(field, "day") == 0    || strcmp(field, "days") == 0 ||
+		strcmp(field, "hour") == 0   || strcmp(field, "hours") == 0 ||
+		strcmp(field, "minute") == 0 ||	strcmp(field, "minutes") == 0 ||
+		strcmp(field, "second") == 0 || strcmp(field, "seconds") == 0 ;
 }

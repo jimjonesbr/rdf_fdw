@@ -5,7 +5,12 @@ Release date: **YYYY-MM-DD**
 
 ### Enhancements
 
-Pushdown support for the [mathematical](https://www.postgresql.org/docs/current/functions-math.html) and [string](https://www.postgresql.org/docs/current/functions-string.html) functions `abs`, `ceil`, `floor`, `round`, `length`, `upper`, `lower`: When used in the `WHERE` clause these functions will be translated to their correspondent SPARQL FILTER expressions.
+* Pushdown support for [Math](https://www.postgresql.org/docs/current/functions-math.html), [String](https://www.postgresql.org/docs/current/functions-string.html) and [Date/Time](https://www.postgresql.org/docs/current/functions-datetime.html) functions:
+  * `abs`, `ceil`, `floor`, `round`
+  * `length`, `upper`, `lower`, `starts_with`, `substring`
+  * `extract(year from x)`, `extract(month from x)`, `extract(year from x)`, `extract(hour from x)`, `extract(minute from x)`, `extract(second from x)`
+
+  When used in the `WHERE` clause these functions will be translated to their correspondent SPARQL `FILTER` expressions.
 
 ### Bug Fixes
 

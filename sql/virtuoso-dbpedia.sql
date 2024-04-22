@@ -163,6 +163,7 @@ CREATE FOREIGN TABLE politicians (
   birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
   party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
   wikiid int      OPTIONS (variable '?pageid', nodetype 'literal', literaltype 'xsd:nonNegativeInteger'),
+  ts timestamp with time zone   OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'xsd:dateTime'),
   country text    OPTIONS (variable '?country', nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (
@@ -313,8 +314,7 @@ FETCH FIRST 5 ROWS ONLY;
 /*
  * Pushdown test for UPPER and LOWER 
  */
-SELECT * 
-FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE 
   upper(name) = 'WILL' || ' BOND' AND 
   'will bond' = lower(name) AND
@@ -324,7 +324,7 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for LENGTH
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE 
   47035308 = wikiid AND 
   length(name) = 9  AND 
@@ -338,7 +338,7 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for STARTS_WITH
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE 
   47035308 = wikiid AND 
   starts_with(party,'Demokratisch') AND
@@ -348,7 +348,7 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for ABS
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE 
   47035308 = wikiid AND 
   abs(wikiid) <> 42.73 AND
@@ -360,7 +360,7 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for CEIL
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE
   47035308 = wikiid AND  
   CEIL(wikiid) = ceil(47035307.1) AND
@@ -370,7 +370,7 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for ROUND
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE
   47035308 = wikiid AND 
   round(wikiid) = ROUND(47035308.4) AND
@@ -380,7 +380,7 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for FLOOR
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE
   47035308 = wikiid AND 
   Floor(wikiid) < 47035308.99999  AND
@@ -390,13 +390,43 @@ FETCH FIRST ROW ONLY;
 /*
  * Pushdown test for SUBSTRING
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE
   47035308 = wikiid AND 
   SUBstring(name,1,4) = 'Will' AND
   'Bond' = subSTRING(name, 6,4) AND
   lower(SUBstring(name,1,4)) = 'will' AND
   SUBSTRING(lower(name_upper),1,4) = 'will'
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for EXTRACT
+ * Fields in singular form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  extract(YEAR FROM birthdate) = 1970 AND
+  EXTRACT(month FROM birthdate) = 4 AND
+  Extract(Day FROM birthdate) = 8 AND
+  EXTRACT(hour FROM ts) = 14  AND
+  ExtracT(minute FROM ts) = 33  AND
+  EXTRACT(second FROM ts) = 42
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for EXTRACT
+ * Fields in plural form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  EXTRACT(YEARs FROM birthdate) = 1970 AND
+  EXTRACT(months FROM birthdate) = 4 AND
+  EXTRACT(Days FROM birthdate) = 8 AND
+  EXTRACT(hours FROM ts) = 14  AND
+  EXTRACT(minutes FROM ts) = 33  AND
+  EXTRACT(seconds FROM ts) = 42
 FETCH FIRST ROW ONLY;
 
 /* ################### SPARQL  Aggregators ################### */

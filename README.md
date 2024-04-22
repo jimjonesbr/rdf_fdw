@@ -28,6 +28,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
     - [Pattern matching operators LIKE and ILIKE](#pattern-matching-operators-like-and-ilike)
     - [String Functions](#string-functions)
     - [Mathematical Functions](#string-functions)
+    - [Date Time Functions](#date-time-functions)
   - [Pushdown Examples](#pushdown-examples)
 - [Examples](#examples)
   - [DBpedia](#dbpedia)
@@ -435,9 +436,12 @@ The following [string functions](https://www.postgresql.org/docs/current/functio
 
 | SQL | SPARQL|
 | -- | --- |
-| `UPPER()` | `UCASE()`|
-| `LOWER()` |`LCASE()` |
-| `LENGTH()` |`STRLEN()` |
+| `LENGTH()` |[`STRLEN()`](https://www.w3.org/TR/sparql11-query/#func-strlen) |
+| `STARTS_WITH()` |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) |
+| `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) |
+| `UPPER()` | [`UCASE()`](https://www.w3.org/TR/sparql11-query/#func-ucase)|
+| `LOWER()` |[`LCASE()`](https://www.w3.org/TR/sparql11-query/#func-lcase) |
+
 
 #### Mathematical Functions
 
@@ -447,10 +451,25 @@ The following [mathematical functions](https://www.postgresql.org/docs/current/f
 
 | SQL | SPARQL|
 | -- | --- |
-| `ABS()` | `ABS()`|
-| `CEIL()` |`CEIL()` |
-| `FLOOR()` |`FLOOR()` |
-| `ROUND()` |`ROUND()` |
+| `ABS()` | [`ABS()`](https://www.w3.org/TR/sparql11-query/#func-abs)|
+| `CEIL()` |[`CEIL()`](https://www.w3.org/TR/sparql11-query/#func-ceil) |
+| `FLOOR()` |[`FLOOR()`](https://www.w3.org/TR/sparql11-query/#func-floor) |
+| `ROUND()` |[`ROUND()`](https://www.w3.org/TR/sparql11-query/#func-round) |
+
+#### Date Time Functions
+
+**Availability**: 1.2.0
+
+The following [date/time functions](https://www.postgresql.org/docs/current/functions-math.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+
+| SQL | SPARQL|
+| -- | --- |
+| `EXTRACT(YEAR FROM x)` | [`YEAR(x)`](https://www.w3.org/TR/sparql11-query/#func-year)|
+| `EXTRACT(MONTH FROM x)` | [`MONTH(x)`](https://www.w3.org/TR/sparql11-query/#func-month)|
+| `EXTRACT(DAY FROM x)` | [`DAY(x)`](https://www.w3.org/TR/sparql11-query/#func-day)|
+| `EXTRACT(HOUR FROM x)` | [`HOURS(x)`](https://www.w3.org/TR/sparql11-query/#func-hours)|
+| `EXTRACT(MINUTE FROM x)` | [`MINUTES(x)`](https://www.w3.org/TR/sparql11-query/#func-minutes)|
+| `EXTRACT(SECOND FROM x)` | [`SECONDS(x)`](https://www.w3.org/TR/sparql11-query/#func-seconds)|
 
 ### Pushdown Examples
 

@@ -465,6 +465,7 @@ CREATE FOREIGN TABLE politicians (
   birthdate date  OPTIONS (variable '?birthdate', nodetype 'literal', literaltype 'xsd:date'),
   party text      OPTIONS (variable '?partyname', nodetype 'literal', literaltype 'xsd:string'),
   wikiid int      OPTIONS (variable '?pageid', nodetype 'literal', literaltype 'xsd:nonNegativeInteger'),
+  ts timestamp with time zone   OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'xsd:dateTime'),
   country text    OPTIONS (variable '?country', nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (
@@ -945,8 +946,7 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 /*
  * Pushdown test for UPPER and LOWER 
  */
-SELECT * 
-FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE 
   upper(name) = 'WILL' || ' BOND' AND 
   'will bond' = lower(name) AND
@@ -957,7 +957,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) 
 {
       ?person 
           a dbo:Politician;
@@ -976,15 +976,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_upper 
+---------------------------------------+-----------+------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
 (1 row)
 
 /*
  * Pushdown test for LENGTH
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE 
   47035308 = wikiid AND 
   length(name) = 9  AND 
@@ -999,7 +999,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?pageid ?country 
 {
       ?person 
           a dbo:Politician;
@@ -1022,15 +1022,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_upper 
+---------------------------------------+-----------+------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
 (1 row)
 
 /*
  * Pushdown test for STARTS_WITH
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE 
   47035308 = wikiid AND 
   starts_with(party,'Demokratisch') AND
@@ -1041,7 +1041,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?partyname ?pageid 
 {
       ?person 
           a dbo:Politician;
@@ -1060,15 +1060,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_upper 
+---------------------------------------+-----------+------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
 (1 row)
 
 /*
  * Pushdown test for ABS
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE 
   47035308 = wikiid AND 
   abs(wikiid) <> 42.73 AND
@@ -1081,7 +1081,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid 
 {
       ?person 
           a dbo:Politician;
@@ -1101,15 +1101,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
 (1 row)
 
 /*
  * Pushdown test for CEIL
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE
   47035308 = wikiid AND  
   CEIL(wikiid) = ceil(47035307.1) AND
@@ -1120,7 +1120,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid 
 {
       ?person 
           a dbo:Politician;
@@ -1139,15 +1139,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
 (1 row)
 
 /*
  * Pushdown test for ROUND
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE
   47035308 = wikiid AND 
   round(wikiid) = ROUND(47035308.4) AND
@@ -1158,7 +1158,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid 
 {
       ?person 
           a dbo:Politician;
@@ -1177,15 +1177,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
 (1 row)
 
 /*
  * Pushdown test for FLOOR
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_len FROM politicians 
 WHERE
   47035308 = wikiid AND 
   Floor(wikiid) < 47035308.99999  AND
@@ -1196,7 +1196,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid 
 {
       ?person 
           a dbo:Politician;
@@ -1215,15 +1215,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
 (1 row)
 
 /*
  * Pushdown test for SUBSTRING
  */
-SELECT * FROM politicians 
+SELECT uri, name, name_upper FROM politicians 
 WHERE
   47035308 = wikiid AND 
   SUBstring(name,1,4) = 'Will' AND
@@ -1236,7 +1236,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
  PREFIX dbp: <http://dbpedia.org/property/>
  PREFIX dbo: <http://dbpedia.org/ontology/>
 
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personname) AS ?name_len) ?birthdate ?partyname ?pageid ?country 
+SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?pageid 
 {
       ?person 
           a dbo:Politician;
@@ -1257,9 +1257,103 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) (STRLEN(?personna
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper | name_len | birthdate  |                   party                   |  wikiid  |      country      
----------------------------------------+-----------+------------+----------+------------+-------------------------------------------+----------+-------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND  |        9 | 04-08-1970 | Demokratische Partei (Vereinigte Staaten) | 47035308 | the United States
+                  uri                  |   name    | name_upper 
+---------------------------------------+-----------+------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
+(1 row)
+
+/*
+ * Pushdown test for EXTRACT
+ * Fields in singular form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  extract(YEAR FROM birthdate) = 1970 AND
+  EXTRACT(month FROM birthdate) = 4 AND
+  Extract(Day FROM birthdate) = 8 AND
+  EXTRACT(hour FROM ts) = 14  AND
+  ExtracT(minute FROM ts) = 33  AND
+  EXTRACT(second FROM ts) = 42
+FETCH FIRST ROW ONLY;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) 
+{
+      ?person 
+          a dbo:Politician;
+          dbo:birthDate ?birthdate;
+          dbp:name ?personname;
+          dbo:party ?party ;   
+          dbo:wikiPageID ?pageid .
+        ?party 
+          dbp:country ?country;
+          rdfs:label ?partyname .
+        FILTER NOT EXISTS {?person dbo:deathDate ?died}
+        FILTER(LANG(?partyname) = "de")
+       FILTER(47035308 = ?pageid)
+ FILTER(YEAR(?birthdate) = 1970)
+ FILTER(MONTH(?birthdate) = 4)
+ FILTER(DAY(?birthdate) = 8)
+ FILTER(HOURS("2002-03-08T14:33:42"^^xsd:dateTime) = 14)
+ FILTER(MINUTES("2002-03-08T14:33:42"^^xsd:dateTime) = 33)
+ FILTER(SECONDS("2002-03-08T14:33:42"^^xsd:dateTime) = 42)
+}
+LIMIT 1
+
+                  uri                  |   name    | birthdate  |              ts              
+---------------------------------------+-----------+------------+------------------------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
+(1 row)
+
+/*
+ * Pushdown test for EXTRACT
+ * Fields in plural form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  EXTRACT(YEARs FROM birthdate) = 1970 AND
+  EXTRACT(months FROM birthdate) = 4 AND
+  EXTRACT(Days FROM birthdate) = 8 AND
+  EXTRACT(hours FROM ts) = 14  AND
+  EXTRACT(minutes FROM ts) = 33  AND
+  EXTRACT(seconds FROM ts) = 42
+FETCH FIRST ROW ONLY;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) 
+{
+      ?person 
+          a dbo:Politician;
+          dbo:birthDate ?birthdate;
+          dbp:name ?personname;
+          dbo:party ?party ;   
+          dbo:wikiPageID ?pageid .
+        ?party 
+          dbp:country ?country;
+          rdfs:label ?partyname .
+        FILTER NOT EXISTS {?person dbo:deathDate ?died}
+        FILTER(LANG(?partyname) = "de")
+       FILTER(47035308 = ?pageid)
+ FILTER(YEAR(?birthdate) = 1970)
+ FILTER(MONTH(?birthdate) = 4)
+ FILTER(DAY(?birthdate) = 8)
+ FILTER(HOURS("2002-03-08T14:33:42"^^xsd:dateTime) = 14)
+ FILTER(MINUTES("2002-03-08T14:33:42"^^xsd:dateTime) = 33)
+ FILTER(SECONDS("2002-03-08T14:33:42"^^xsd:dateTime) = 42)
+}
+LIMIT 1
+
+                  uri                  |   name    | birthdate  |              ts              
+---------------------------------------+-----------+------------+------------------------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
 (1 row)
 
 /* ################### SPARQL  Aggregators ################### */
