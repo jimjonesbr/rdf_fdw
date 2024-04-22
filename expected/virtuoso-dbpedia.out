@@ -1356,6 +1356,100 @@ LIMIT 1
  http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
 (1 row)
 
+/*
+ * Pushdown test for DATE_PART
+ * Fields in plural form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  1970 = date_part(lower('years'), birthdate) AND
+  date_part('months', birthdate) = 4 AND
+  8 = date_part('days', birthdate) AND
+  date_part('hours', ts) = 14  AND
+  33 = date_part('minutes', ts) AND
+  date_part('seconds', ts) = 42
+FETCH FIRST ROW ONLY;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) 
+{
+      ?person 
+          a dbo:Politician;
+          dbo:birthDate ?birthdate;
+          dbp:name ?personname;
+          dbo:party ?party ;   
+          dbo:wikiPageID ?pageid .
+        ?party 
+          dbp:country ?country;
+          rdfs:label ?partyname .
+        FILTER NOT EXISTS {?person dbo:deathDate ?died}
+        FILTER(LANG(?partyname) = "de")
+       FILTER(47035308 = ?pageid)
+ FILTER(1970 = YEAR(?birthdate))
+ FILTER(MONTH(?birthdate) = 4)
+ FILTER(8 = DAY(?birthdate))
+ FILTER(HOURS("2002-03-08T14:33:42"^^xsd:dateTime) = 14)
+ FILTER(33 = MINUTES("2002-03-08T14:33:42"^^xsd:dateTime))
+ FILTER(SECONDS("2002-03-08T14:33:42"^^xsd:dateTime) = 42)
+}
+LIMIT 1
+
+                  uri                  |   name    | birthdate  |              ts              
+---------------------------------------+-----------+------------+------------------------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
+(1 row)
+
+/*
+ * Pushdown test for DATE_PART
+ * Fields in singular form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  1970 = date_part(lower('year'), birthdate) AND
+  date_part('month', birthdate) = 4 AND
+  8 = date_part('day', birthdate) AND
+  date_part('hour', ts) = 14  AND
+  33 = date_part('minute', ts) AND
+  date_part('second', ts) = 42
+FETCH FIRST ROW ONLY;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) 
+{
+      ?person 
+          a dbo:Politician;
+          dbo:birthDate ?birthdate;
+          dbp:name ?personname;
+          dbo:party ?party ;   
+          dbo:wikiPageID ?pageid .
+        ?party 
+          dbp:country ?country;
+          rdfs:label ?partyname .
+        FILTER NOT EXISTS {?person dbo:deathDate ?died}
+        FILTER(LANG(?partyname) = "de")
+       FILTER(47035308 = ?pageid)
+ FILTER(1970 = YEAR(?birthdate))
+ FILTER(MONTH(?birthdate) = 4)
+ FILTER(8 = DAY(?birthdate))
+ FILTER(HOURS("2002-03-08T14:33:42"^^xsd:dateTime) = 14)
+ FILTER(33 = MINUTES("2002-03-08T14:33:42"^^xsd:dateTime))
+ FILTER(SECONDS("2002-03-08T14:33:42"^^xsd:dateTime) = 42)
+}
+LIMIT 1
+
+                  uri                  |   name    | birthdate  |              ts              
+---------------------------------------+-----------+------------+------------------------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
+(1 row)
+
 /* ################### SPARQL  Aggregators ################### */
 CREATE FOREIGN TABLE party_members (
   country text  OPTIONS (variable '?country'),

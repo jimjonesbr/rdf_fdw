@@ -429,6 +429,36 @@ WHERE
   EXTRACT(seconds FROM ts) = 42
 FETCH FIRST ROW ONLY;
 
+/*
+ * Pushdown test for DATE_PART
+ * Fields in plural form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  1970 = date_part(lower('years'), birthdate) AND
+  date_part('months', birthdate) = 4 AND
+  8 = date_part('days', birthdate) AND
+  date_part('hours', ts) = 14  AND
+  33 = date_part('minutes', ts) AND
+  date_part('seconds', ts) = 42
+FETCH FIRST ROW ONLY;
+
+/*
+ * Pushdown test for DATE_PART
+ * Fields in singular form
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  1970 = date_part(lower('year'), birthdate) AND
+  date_part('month', birthdate) = 4 AND
+  8 = date_part('day', birthdate) AND
+  date_part('hour', ts) = 14  AND
+  33 = date_part('minute', ts) AND
+  date_part('second', ts) = 42
+FETCH FIRST ROW ONLY;
+
 /* ################### SPARQL  Aggregators ################### */
 
 CREATE FOREIGN TABLE party_members (

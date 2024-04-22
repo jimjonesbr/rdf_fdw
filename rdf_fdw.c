@@ -351,7 +351,8 @@ static char* CreateRegexString(char* str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static bool IsSPARQLStringFunction(char *funcname);
-static bool IsSQLExtractFieldSupported(char *field);
+//static bool IsSQLExtractFieldSupported(char *field);
+static char *FormatSQLExtractField(char *field);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -3785,14 +3786,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			foreach (cell, func->args)
 			{
 				Expr *ex = lfirst(cell);
-				
-				elog(DEBUG1, "  %s (T_FuncExpr): deparsing column name for %s", __func__, opername);
+				elog(DEBUG1, "  %s (T_FuncExpr): deparsing arguments for '%s'", __func__, opername);
 				arg = DeparseExpr(state, foreignrel, ex);
-
 				
 				if(!arg)
 				{
-					elog(WARNING,"############ ARG = %s", arg);
+					elog(DEBUG1, "  %s (T_FuncExpr): arg is NULL (opername = %s)", __func__, opername);
 					pfree(opername);
 					return NULL;
 				}
@@ -3824,31 +3823,17 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					if (ex->type == T_Const)
 					{
 				 		Const *ct = (Const *)ex;
+						
+						if (strcmp(opername, "extract") == 0 && initarg)
+						{	
+							//arg = FormatSQLExtractField(arg);
+							extract_type = FormatSQLExtractField(arg);
+							continue;
+						}
 
 						/* Return NULLL if the EXTRACT field cannot be converted to SPARQL */
-						if(strcmp(opername, "extract") == 0 && initarg && !IsSQLExtractFieldSupported(arg))
+						if(strcmp(opername, "extract") == 0 && initarg && !arg)
 							return NULL;
-
-						/* 
-						 * The fields "years", "months" and "days" (plural) and "hour", "minute", "second"
-						 * (singular) are note supported in SPARQL. Here we convert it to a form that 
-						 * correspond to a SPARQL function.
-						 */
-						if(strcmp(opername, "extract") == 0 && (strcmp(arg, "years") == 0 || strcmp(arg, "year") == 0))
-							arg = "YEAR";
-						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "months") == 0 || strcmp(arg, "month") == 0))
-							arg = "MONTH";
-						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "days") == 0 || strcmp(arg, "day") == 0))
-							arg = "DAY";
-						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "hour") == 0 || strcmp(arg, "hours") == 0))
-							arg = "HOURS";
-						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "minute") == 0 || strcmp(arg, "minutes") == 0))
-							arg = "MINUTES";
-						else if(strcmp(opername, "extract") == 0 && (strcmp(arg, "second") == 0 || strcmp(arg, "seconds") == 0))
-							arg = "SECONDS";
-
-						if(strcmp(opername, "extract") == 0 && initarg)
-							extract_type = arg;	
 
 						else if(IsStringDataType(ct->consttype))
 							appendStringInfo(&args, "\"%s\"", arg);	
@@ -3891,6 +3876,67 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			
 			pfree(args.data);
+		}
+		/* In PostgreSQL 11 EXTRACT is internally called as DATE_PART */
+		else if(strcmp(opername, "date_part") == 0)
+		{
+			Expr *field = linitial(func->args);
+			char *date_part_type = "";
+
+			elog(DEBUG1, "  %s (T_FuncExpr): deparsing FIELD for '%s'", __func__, opername);
+			date_part_type = DeparseExpr(state, foreignrel, field);
+			
+			if(!date_part_type)
+			{
+				elog(DEBUG1, "  %s (T_FuncExpr): date_part_type is NULL (opername = %s)", __func__, opername);
+				pfree(opername);
+				return NULL;
+			}
+
+			elog(DEBUG1, "  %s (T_FuncExpr): date_part FIELD '%s'", __func__, date_part_type);
+
+			date_part_type = FormatSQLExtractField(date_part_type);
+
+			if(date_part_type)
+			{
+				char * val;
+				
+				elog(DEBUG1, "  %s (T_FuncExpr): deparsing VALUE for '%s'", __func__, opername);				
+				val = DeparseExpr(state, foreignrel, lsecond(func->args));
+
+				col = GetRDFColumn(state, val);
+
+
+				initStringInfo(&result);
+
+				if(col)
+					appendStringInfo(&result, "%s(%s)", date_part_type, !col->expression ? col->sparqlvar : col->expression);
+				else
+					appendStringInfo(&result, "%s(\"%s\")", date_part_type, val);
+
+				//appendStringInfo(&result, "%s(%s)", date_part_type, val);
+			}
+			else
+			{	
+				pfree(opername);
+				return NULL;
+			}
+
+		}
+		else if(strcmp(opername, "timestamp") == 0)
+		{
+			char *value;
+			Expr *ex = linitial(func->args);
+			
+			value = DeparseExpr(state, foreignrel, ex);
+
+			if(!value)
+				return NULL;
+
+			initStringInfo(&result);
+			appendStringInfo(&result, "%s",  value);
+
+			elog(DEBUG1, "  %s (T_FuncExpr): returning VALUE for '%s': '%s'", __func__, opername,NameStr(result));			
 		}
 		else
 		{
@@ -4501,13 +4547,36 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "substring") == 0;
 }
 
-static bool IsSQLExtractFieldSupported(char *field)
+
+/*
+ * FormatSQLExtractField
+ * ---------------
+ * The fields "years", "months" and "days" (plural) and "hour", "minute", "second"
+ * (singular) are note supported in SPARQL, but PostgreSQL can handle both. So here
+ * we convert the parameters to a form that correspond to a SPARQL function.
+ *
+ * field: EXTRACT or DATE_PART field parameter
+ * 
+ * returns formated field parameter (uppercase)
+ */
+static char *FormatSQLExtractField(char *field)
 {
-	return 
-		strcmp(field, "year") == 0   || strcmp(field, "years") == 0 ||
-		strcmp(field, "month") == 0  || strcmp(field, "months") == 0 ||
-		strcmp(field, "day") == 0    || strcmp(field, "days") == 0 ||
-		strcmp(field, "hour") == 0   || strcmp(field, "hours") == 0 ||
-		strcmp(field, "minute") == 0 ||	strcmp(field, "minutes") == 0 ||
-		strcmp(field, "second") == 0 || strcmp(field, "seconds") == 0 ;
+	char *res;
+
+	if (strcasecmp(field, "year") == 0 || strcasecmp(field, "years") == 0)
+		res = "YEAR";
+	else if (strcasecmp(field, "month") == 0 || strcasecmp(field, "months") == 0)
+		res = "MONTH";
+	else if (strcasecmp(field, "day") == 0 || strcasecmp(field, "days") == 0)
+		res = "DAY";
+	else if (strcasecmp(field, "hour") == 0 || strcasecmp(field, "hours") == 0)
+		res = "HOURS";
+	else if (strcasecmp(field, "minute") == 0 || strcasecmp(field, "minutes") == 0)
+		res = "MINUTES";
+	else if (strcasecmp(field, "second") == 0 || strcasecmp(field, "seconds") == 0)
+		res = "SECONDS";
+	else
+		res = NULL;
+
+	return res;
 }
