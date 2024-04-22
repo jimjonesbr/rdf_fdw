@@ -464,12 +464,12 @@ The following [date/time functions](https://www.postgresql.org/docs/current/func
 
 | SQL | SPARQL|
 | -- | --- |
-| `EXTRACT(YEAR FROM x)` | [`YEAR(x)`](https://www.w3.org/TR/sparql11-query/#func-year)|
-| `EXTRACT(MONTH FROM x)` | [`MONTH(x)`](https://www.w3.org/TR/sparql11-query/#func-month)|
-| `EXTRACT(DAY FROM x)` | [`DAY(x)`](https://www.w3.org/TR/sparql11-query/#func-day)|
-| `EXTRACT(HOUR FROM x)` | [`HOURS(x)`](https://www.w3.org/TR/sparql11-query/#func-hours)|
-| `EXTRACT(MINUTE FROM x)` | [`MINUTES(x)`](https://www.w3.org/TR/sparql11-query/#func-minutes)|
-| `EXTRACT(SECOND FROM x)` | [`SECONDS(x)`](https://www.w3.org/TR/sparql11-query/#func-seconds)|
+| `EXTRACT(YEAR FROM x)`, `DATE_PART('year', x)` | [`YEAR(x)`](https://www.w3.org/TR/sparql11-query/#func-year)|
+| `EXTRACT(MONTH FROM x)`, `DATE_PART('month', x)` | [`MONTH(x)`](https://www.w3.org/TR/sparql11-query/#func-month)|
+| `EXTRACT(DAY FROM x)`, `DATE_PART('day', x)` | [`DAY(x)`](https://www.w3.org/TR/sparql11-query/#func-day)|
+| `EXTRACT(HOUR FROM x)`, `DATE_PART('hour', x)` | [`HOURS(x)`](https://www.w3.org/TR/sparql11-query/#func-hours)|
+| `EXTRACT(MINUTE FROM x)`, `DATE_PART('minute', x)` | [`MINUTES(x)`](https://www.w3.org/TR/sparql11-query/#func-minutes)|
+| `EXTRACT(SECOND FROM x)`, `DATE_PART('second', x)` | [`SECONDS(x)`](https://www.w3.org/TR/sparql11-query/#func-seconds)|
 
 ### Pushdown Examples
 

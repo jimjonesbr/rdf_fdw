@@ -9,6 +9,7 @@ Release date: **YYYY-MM-DD**
   * `abs`, `ceil`, `floor`, `round`
   * `length`, `upper`, `lower`, `starts_with`, `substring`
   * `extract(year from x)`, `extract(month from x)`, `extract(year from x)`, `extract(hour from x)`, `extract(minute from x)`, `extract(second from x)`
+  * `date_part(year, x)`, `date_part('month',x)`, `date_part('year', x)`, `date_part('hour', x)`, `date_part('minute', x)`, `date_part('second', x)`
 
   When used in the `WHERE` clause these functions will be translated to their correspondent SPARQL `FILTER` expressions.
 
