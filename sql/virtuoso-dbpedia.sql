@@ -459,6 +459,16 @@ WHERE
   date_part('second', ts) = 42
 FETCH FIRST ROW ONLY;
 
+/*
+ * Pushdown test for MD5
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  md5(name) = 'dd16aacc7f77cec7ed83139f81704577' AND
+  'foo' <> md5(name)
+FETCH FIRST ROW ONLY;
+
 /* ################### SPARQL  Aggregators ################### */
 
 CREATE FOREIGN TABLE party_members (

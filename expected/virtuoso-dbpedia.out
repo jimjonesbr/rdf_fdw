@@ -1450,6 +1450,44 @@ LIMIT 1
  http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
 (1 row)
 
+/*
+ * Pushdown test for MD5
+ */
+SELECT uri, name, birthdate, ts FROM politicians
+WHERE
+  47035308 = wikiid AND 
+  md5(name) = 'dd16aacc7f77cec7ed83139f81704577' AND
+  'foo' <> md5(name)
+FETCH FIRST ROW ONLY;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+ PREFIX dbp: <http://dbpedia.org/property/>
+ PREFIX dbo: <http://dbpedia.org/ontology/>
+
+SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) 
+{
+      ?person 
+          a dbo:Politician;
+          dbo:birthDate ?birthdate;
+          dbp:name ?personname;
+          dbo:party ?party ;   
+          dbo:wikiPageID ?pageid .
+        ?party 
+          dbp:country ?country;
+          rdfs:label ?partyname .
+        FILTER NOT EXISTS {?person dbo:deathDate ?died}
+        FILTER(LANG(?partyname) = "de")
+       FILTER("foo" != MD5(STR(?personname)))
+ FILTER(47035308 = ?pageid)
+ FILTER(MD5(STR(?personname)) = "dd16aacc7f77cec7ed83139f81704577")
+}
+LIMIT 1
+
+                  uri                  |   name    | birthdate  |              ts              
+---------------------------------------+-----------+------------+------------------------------
+ http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
+(1 row)
+
 /* ################### SPARQL  Aggregators ################### */
 CREATE FOREIGN TABLE party_members (
   country text  OPTIONS (variable '?country'),
