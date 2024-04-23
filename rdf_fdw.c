@@ -3868,6 +3868,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "STRSTARTS(%s)", NameStr(args));
 			else if(strcmp(opername, "substring") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
+			else if(strcmp(opername, "md5") == 0)
+				appendStringInfo(&result, "MD5(%s)", NameStr(args));
 			else if(strcmp(opername, "extract") == 0)
 				appendStringInfo(&result, "%s(%s)", extract_type, NameStr(args));
 			else
@@ -4531,6 +4533,7 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "upper") == 0 ||
 		strcmp(funcname, "lower") == 0 ||
 		strcmp(funcname, "length") == 0 ||
+		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
 		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "substring") == 0;
@@ -4544,6 +4547,7 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "lower") == 0 ||
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
+		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
 

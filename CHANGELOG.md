@@ -7,7 +7,7 @@ Release date: **YYYY-MM-DD**
 
 * Pushdown support for [Math](https://www.postgresql.org/docs/current/functions-math.html), [String](https://www.postgresql.org/docs/current/functions-string.html) and [Date/Time](https://www.postgresql.org/docs/current/functions-datetime.html) functions:
   * `abs`, `ceil`, `floor`, `round`
-  * `length`, `upper`, `lower`, `starts_with`, `substring`
+  * `length`, `upper`, `lower`, `starts_with`, `substring`, `md5`
   * `extract(year from x)`, `extract(month from x)`, `extract(year from x)`, `extract(hour from x)`, `extract(minute from x)`, `extract(second from x)`
   * `date_part(year, x)`, `date_part('month',x)`, `date_part('year', x)`, `date_part('hour', x)`, `date_part('minute', x)`, `date_part('second', x)`
 

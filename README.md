@@ -441,6 +441,7 @@ The following [string functions](https://www.postgresql.org/docs/current/functio
 | `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) |
 | `UPPER()` | [`UCASE()`](https://www.w3.org/TR/sparql11-query/#func-ucase)|
 | `LOWER()` |[`LCASE()`](https://www.w3.org/TR/sparql11-query/#func-lcase) |
+| `MD5()` |[`MD5()`](https://www.w3.org/TR/sparql11-query/#func-md5) |
 
 
 #### Mathematical Functions
