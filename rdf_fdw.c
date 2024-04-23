@@ -3795,12 +3795,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					pfree(opername);
 					return NULL;
 				}
-		
+
 				if(!initarg)
 				{
 					/* 
-					 * We discard any possible remaining parameters of round, 
-					 * because its equivalent in SPARQL only gets one parameter
+					 * We discard any further parameters of ROUND, as its equivalent
+					 * in SPARQL expects a single parameter.
 					 */
 					if(strcmp(opername, "round") == 0)
 						break;
@@ -3814,7 +3814,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				{
 					if(!IsSPARQLStringFunction(opername))
 						appendStringInfo(&args, "%s",  !col->expression ? col->sparqlvar : col->expression);
-
 					else
 						appendStringInfo(&args, "STR(%s)", !col->expression ? col->sparqlvar : col->expression);
 				}
@@ -3823,17 +3822,25 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					if (ex->type == T_Const)
 					{
 				 		Const *ct = (Const *)ex;
-						
+
 						if (strcmp(opername, "extract") == 0 && initarg)
-						{	
-							//arg = FormatSQLExtractField(arg);
+						{
+							/*
+							 * in EXTRACT calls the first parameter becomes the function
+							 * call in SPARQL. So we leave this cycle after we parsed the
+							 * parameter.
+							 */
 							extract_type = FormatSQLExtractField(arg);
 							continue;
 						}
 
 						/* Return NULLL if the EXTRACT field cannot be converted to SPARQL */
 						if(strcmp(opername, "extract") == 0 && initarg && !arg)
+						{
+							elog(DEBUG1, "  %s (T_FuncExpr): EXTRACT field cannot be converted to SPARQL: '%s'", __func__, arg);
+							pfree(opername);
 							return NULL;
+						}
 
 						else if(IsStringDataType(ct->consttype))
 							appendStringInfo(&args, "\"%s\"", arg);	
@@ -3846,7 +3853,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				}
 				
 				initarg = false;
-
 
 			}
 
@@ -3874,8 +3880,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "%s(%s)", extract_type, NameStr(args));
 			else
 				return NULL;
-
-
 			
 			pfree(args.data);
 		}
@@ -3903,7 +3907,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			{
 				char * val;
 				
-				elog(DEBUG1, "  %s (T_FuncExpr): deparsing VALUE for '%s'", __func__, opername);				
+				elog(DEBUG1, "  %s (T_FuncExpr): deparsing VALUE for '%s'", __func__, opername);
 				val = DeparseExpr(state, foreignrel, lsecond(func->args));
 
 				col = GetRDFColumn(state, val);
@@ -3915,8 +3919,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					appendStringInfo(&result, "%s(%s)", date_part_type, !col->expression ? col->sparqlvar : col->expression);
 				else
 					appendStringInfo(&result, "%s(\"%s\")", date_part_type, val);
-
-				//appendStringInfo(&result, "%s(%s)", date_part_type, val);
 			}
 			else
 			{	
@@ -3938,14 +3940,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			initStringInfo(&result);
 			appendStringInfo(&result, "%s",  value);
 
-			elog(DEBUG1, "  %s (T_FuncExpr): returning VALUE for '%s': '%s'", __func__, opername,NameStr(result));			
+			elog(DEBUG1, "  %s (T_FuncExpr): returning VALUE for '%s': '%s'", __func__, opername,NameStr(result));
 		}
 		else
 		{
 			elog(DEBUG1, "  %s (T_FuncExpr): function '%s' is not pushable", __func__, opername);
 			return NULL;
 		}
-			
 
 		pfree(opername);
 		break;
@@ -4501,11 +4502,11 @@ static char* CreateRegexString(char* str)
 /*
  * IsStringDataType
  * ---------------
- * Determines if a postgres data type is string or numeric type
+ * Determines if a PostgreSQL data type is string or numeric type
  * so that we can know when to wrap the value with single quotes
- * or leave as is.
+ * or leave it as is.
  * 
- * type: postgres data type
+ * type: PostgreSQL data type
  * 
  * returns true if the data type needs to be wrapped with quotes 
  *         or false otherwise.
@@ -4523,6 +4524,15 @@ static bool IsStringDataType(Oid type)
 		type == NAMEOID;
 }
 
+/*
+ * IsFunctionPushable
+ * ---------------
+ * Check if a PostgreSQL function can be pushed down.
+ *
+ * funcname: name of the PostgreSQL function
+ *
+ * returns true if the function can be pushed down or false otherwise
+ */
 static bool IsFunctionPushable(char *funcname)
 {
 	return 
@@ -4539,7 +4549,17 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "substring") == 0;
 }
 
-
+/*
+ * IsSPARQLStringFunction
+ * ---------------
+ * This function is a workaround solely written to tell which SPARQL
+ * functions expect parameters of type string, so that they can be properly
+ * wrapped with STR().
+ *
+ * funcname: name of the PostgreSQL function
+ *
+ * returns true if the function expects a string parameter or false otherwise
+ */
 static bool IsSPARQLStringFunction(char *funcname)
 {
 	return 
@@ -4551,16 +4571,16 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "substring") == 0;
 }
 
-
 /*
  * FormatSQLExtractField
  * ---------------
- * The fields "years", "months" and "days" (plural) and "hour", "minute", "second"
- * (singular) are note supported in SPARQL, but PostgreSQL can handle both. So here
- * we convert the parameters to a form that correspond to a SPARQL function.
+ * The fields "years", "months" and "days" (plural) and "hour", "minute",
+ * "second" (singular) are note supported in SPARQL, but PostgreSQL can
+ * handle both. So here we convert the parameters to a form that correspond
+ * to a SPARQL function.
  *
  * field: EXTRACT or DATE_PART field parameter
- * 
+ *
  * returns formated field parameter (uppercase)
  */
 static char *FormatSQLExtractField(char *field)
