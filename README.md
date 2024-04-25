@@ -484,13 +484,22 @@ The following [date/time functions](https://www.postgresql.org/docs/current/func
 | `text`           | `*`            | `name LIKE '%foo%'`, `name ~~ '%foo%';`               |  `FILTER(REGEX(?name,".*foo.*"))`                                                              |
 | `text`           | -              | `upper(val) = 'FOO'`                                  |  `FILTER(UCASE(STR(?var)) = "FOO")`                                                            |
 | `text`           | -              | `lower(val) = 'foo'`                                  |  `FILTER(LCASE(STR(?var)) = "foo")`                                                            |
+| `text`           | -              | `md5(name) = 'dd16aacc7f77cec7ed83139f81704577'`      |  `FILTER(MD5(STR(?personname)) = "dd16aacc7f77cec7ed83139f81704577")`                          |
+| `text`           | -              | `substring(name,1,4) = 'foo'`                         |  `FILTER(SUBSTR(STR(?personname), 1, 4) = "foo")`                                              |
+| `text`           | -              | `starts_with(name,'foo')`                             |  `FILTER(STRSTARTS(STR(?partyname), "foo"))`                                                   |
 | `int`            | `xsd:integer`  | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`                                                                       |
 | `int`            | `xsd:integer`  | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`                                                                       |
 | `int`            | -              | `abs(val) <> 42.73`                                   |  `FILTER(ABS(?var) != 42.73)`                                                                  |
 | `int`            | -              | `ceil(val) = 42`                                      |  `FILTER(CEIL(?var) = 42)`                                                                     |
 | `int`            | -              | `floor(val) = 42`                                     |  `FILTER(FLOOR(?var) = 42)`                                                                    |
 | `int`            | -              | `length(val) = 42`                                    |  `FILTER(STRLEN(STR(?var)) = 42)`                                                              |
-| `int`            | -              | `round(val) = 42`                                     |  `FILTER(ROUND(?var) = 42)`                                                              |
+| `int`            | -              | `round(val) = 42`                                     |  `FILTER(ROUND(?var) = 42)`                                                                    |
+| `int`            | `xsd:date`     | `extract(year FROM birthdate) = 1970`                 |  `FILTER(YEAR(?birthdate) = 1970)`                                                             |
+| `int`            | `xsd:date`     | `extract(month FROM birthdate) = 4`                   |  `FILTER(MONTH(?birthdate) = 4)`                                                               |
+| `int`            | `xsd:date`     | `extract(day FROM birthdate) = 8`                     |  `FILTER(DAY(?birthdate) = 8)`                                                                 |
+| `int`            | `xsd:dateTime` | `extract(hour FROM ts) = 14`                          |  `FILTER(HOURS(?ts) = 14)`                                                                     |
+| `int`            | `xsd:dateTime` | `extract(minute FROM ts) = 33`                        |  `FILTER(MINUTES(?ts) = 33)`                                                                   |
+| `int`            | `xsd:dateTime` | `extract(second FROM ts) = 42`                        |  `FILTER(SECONDS(?ts) = 42)`                                                                   |
 | `numeric`        | -              | `val >= 42.73`                                        |  `FILTER(?val >= 42.73)`                                                                       |
 | `date`           | `xsd:date`     | `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`     |
 | `timestamp`      | `xsd:dateTime` | `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |
