@@ -476,7 +476,7 @@ The following [date/time functions](https://www.postgresql.org/docs/current/func
 
  Foreign table columns with the option `literaltype`
 
-| PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL (pushdown)                                                                              |
+| PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL FILTER (pushdown)                                                                              |
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
 | `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |
@@ -487,19 +487,19 @@ The following [date/time functions](https://www.postgresql.org/docs/current/func
 | `text`           | -              | `md5(name) = 'dd16aacc7f77cec7ed83139f81704577'`      |  `FILTER(MD5(STR(?personname)) = "dd16aacc7f77cec7ed83139f81704577")`                          |
 | `text`           | -              | `substring(name,1,4) = 'foo'`                         |  `FILTER(SUBSTR(STR(?personname), 1, 4) = "foo")`                                              |
 | `text`           | -              | `starts_with(name,'foo')`                             |  `FILTER(STRSTARTS(STR(?partyname), "foo"))`                                                   |
+| `text`           | -              | `length(val) = 42`                                    |  `FILTER(STRLEN(STR(?var)) = 42)`                                                              |
 | `int`            | `xsd:integer`  | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`                                                                       |
 | `int`            | `xsd:integer`  | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`                                                                       |
-| `int`            | -              | `abs(val) <> 42.73`                                   |  `FILTER(ABS(?var) != 42.73)`                                                                  |
-| `int`            | -              | `ceil(val) = 42`                                      |  `FILTER(CEIL(?var) = 42)`                                                                     |
-| `int`            | -              | `floor(val) = 42`                                     |  `FILTER(FLOOR(?var) = 42)`                                                                    |
-| `int`            | -              | `length(val) = 42`                                    |  `FILTER(STRLEN(STR(?var)) = 42)`                                                              |
-| `int`            | -              | `round(val) = 42`                                     |  `FILTER(ROUND(?var) = 42)`                                                                    |
-| `int`            | `xsd:date`     | `extract(year FROM birthdate) = 1970`                 |  `FILTER(YEAR(?birthdate) = 1970)`                                                             |
-| `int`            | `xsd:date`     | `extract(month FROM birthdate) = 4`                   |  `FILTER(MONTH(?birthdate) = 4)`                                                               |
-| `int`            | `xsd:date`     | `extract(day FROM birthdate) = 8`                     |  `FILTER(DAY(?birthdate) = 8)`                                                                 |
-| `int`            | `xsd:dateTime` | `extract(hour FROM ts) = 14`                          |  `FILTER(HOURS(?ts) = 14)`                                                                     |
-| `int`            | `xsd:dateTime` | `extract(minute FROM ts) = 33`                        |  `FILTER(MINUTES(?ts) = 33)`                                                                   |
-| `int`            | `xsd:dateTime` | `extract(second FROM ts) = 42`                        |  `FILTER(SECONDS(?ts) = 42)`                                                                   |
+| `numeric`        | -              | `abs(val) <> 42.73`                                   |  `FILTER(ABS(?var) != 42.73)`                                                                  |
+| `numeric`        | -              | `ceil(val) = 42`                                      |  `FILTER(CEIL(?var) = 42)`                                                                     |
+| `numeric`        | -              | `floor(val) = 42`                                     |  `FILTER(FLOOR(?var) = 42)`                                                                    |
+| `numeric`        | -              | `round(val) = 42`                                     |  `FILTER(ROUND(?var) = 42)`                                                                    |
+| `date`           | `xsd:date`     | `extract(year FROM birthdate) = 1970`                 |  `FILTER(YEAR(?birthdate) = 1970)`                                                             |
+| `date`           | `xsd:date`     | `extract(month FROM birthdate) = 4`                   |  `FILTER(MONTH(?birthdate) = 4)`                                                               |
+| `date`           | `xsd:date`     | `extract(day FROM birthdate) = 8`                     |  `FILTER(DAY(?birthdate) = 8)`                                                                 |
+| `timestamp`      | `xsd:dateTime` | `extract(hour FROM ts) = 14`                          |  `FILTER(HOURS(?ts) = 14)`                                                                     |
+| `timestamp`      | `xsd:dateTime` | `extract(minute FROM ts) = 33`                        |  `FILTER(MINUTES(?ts) = 33)`                                                                   |
+| `timestamp`      | `xsd:dateTime` | `extract(second FROM ts) = 42`                        |  `FILTER(SECONDS(?ts) = 42)`                                                                   |
 | `numeric`        | -              | `val >= 42.73`                                        |  `FILTER(?val >= 42.73)`                                                                       |
 | `date`           | `xsd:date`     | `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`     |
 | `timestamp`      | `xsd:dateTime` | `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |
@@ -531,7 +531,7 @@ Foreign table columns with the option `expression`
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
 
-These and other examples can be downloaded [here](https://github.com/jimjonesbr/rdf_fdw/tree/main/examples)
+These and other examples can be found [here](https://github.com/jimjonesbr/rdf_fdw/tree/main/examples)
 
 ### [DBpedia](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#dbpedia)
 
