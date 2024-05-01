@@ -29,7 +29,7 @@ CREATE FOREIGN TABLE wikidata_german_cities (
 )
 SERVER wikidata OPTIONS (
   sparql '
-  SELECT * 
+  SELECT DISTINCT * 
   {
     VALUES ?type {wd:Q515 wd:Q15284}
     ?id wdt:P17 wd:Q183 ;
@@ -45,31 +45,34 @@ DO $$
 DECLARE 
   g record; 
   w record;
+  match boolean := false;
 BEGIN
   -- Iterate over all cities / municipalities from Germany
   FOR g IN 
     SELECT DISTINCT gid_4, name_4, type_4, geom
     FROM adm_adm_4 
     WHERE gid_0 = 'DEU' 
-    ORDER BY name_4
+    ORDER BY name_4            LIMIT 50
   LOOP
     -- Look in Wikidata for cities that match the GADM city name
-	  SELECT * INTO w FROM wikidata_german_cities 
-	  WHERE name = g.name_4 
-	  FETCH FIRST ROW ONLY;
-    
-	  IF w IS NOT NULL THEN
-      -- If the wikidata geometry is at least 5km away from the GADM geometry
-      -- we consider it a match. 
+    FOR w IN
+      SELECT * FROM wikidata_german_cities WHERE name = g.name_4 
+    LOOP
+      -- Is the retrieved geometry at least 5km away from the GADM geometry?
       IF ST_Distance(w.geom::geography, g.geom::geography) < 5000 THEN 
 	      INSERT INTO gadm_mapping VALUES (g.gid_4, 'wikidata', w.uri);
 	      RAISE INFO '[OK] GADM "% (%)" mapped to Wikidata "% (%)"',g.name_4, g.gid_4, w.name, w.uri;
+        match := true;
+        EXIT;
       ELSE
-        RAISE WARNING '"% (%)" is too far from the GADM geometry: % km',g.name_4, g.gid_4,  ST_Distance(w.geom::geography, g.geom::geography) / 1000;
-      END IF;
-	  ELSE
-	    RAISE WARNING '% % (%) not found', g.type_4, g.name_4, g.gid_4;
-	  END IF;
+        RAISE WARNING '"% (%)" is too far from its correspondent GADM geometry: % km', w.name, w.uri, ST_Distance(w.geom::geography, g.geom::geography) / 1000;
+      END IF;      
+
+    END LOOP;
+
+    IF NOT match THEN
+      RAISE WARNING 'No match found for % (%)',g.name_4, g.gid_4;
+    END IF;
 
   END LOOP;
 END;
