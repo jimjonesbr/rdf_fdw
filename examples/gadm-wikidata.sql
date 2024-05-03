@@ -12,7 +12,11 @@ CREATE TABLE external_source (
     PRIMARY KEY (source_id)
 );
 
-INSERT INTO external_source VALUES ('wikidata', 'https://query.wikidata.org/');
+INSERT INTO external_source 
+VALUES 
+  ('wikidata', 'https://query.wikidata.org'),
+  ('gnd',      'https://www.dnb.de'),
+  ('geonames', 'https://www.geonames.org/');
 
 CREATE TABLE gadm_mapping (
   gadm_id text,
@@ -21,21 +25,26 @@ CREATE TABLE gadm_mapping (
   PRIMARY KEY (gadm_id, source_id)
 );
 
-
 CREATE FOREIGN TABLE wikidata_german_cities (
-  uri text                   OPTIONS (variable '?id'),
+  wikidataid text            OPTIONS (variable '?wikidataid'),
+  geonamesid text            OPTIONS (variable '?geonamesid'),
+  gndid text                 OPTIONS (variable '?gndid'),
   name text                  OPTIONS (variable '?label', language 'de'),
   geom geometry(point, 4326) OPTIONS (variable '?geo')
 )
 SERVER wikidata OPTIONS (
+  log_sparql 'false',
   sparql '
   SELECT DISTINCT * 
   {
     VALUES ?type {wd:Q515 wd:Q15284}
-    ?id wdt:P17 wd:Q183 ;
+    ?wikidataid 
+        wdt:P17 wd:Q183 ;
         wdt:P1705 ?label ;
 	      wdt:P625 ?geo ;
         p:P31/ps:P31/wdt:P279* ?type
+    OPTIONAL {?wikidataid wdt:P227 ?gndid}
+    OPTIONAL {?wikidataid wdt:P1566 ?geonamesid}
     SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE]". }
   }
 ');
@@ -52,20 +61,27 @@ BEGIN
     SELECT DISTINCT gid_4, name_4, type_4, geom
     FROM adm_adm_4 
     WHERE gid_0 = 'DEU' 
-    ORDER BY name_4            LIMIT 50
+    ORDER BY name_4
   LOOP
     -- Look in Wikidata for cities that match the GADM city name
     FOR w IN
-      SELECT * FROM wikidata_german_cities WHERE name = g.name_4 
+      EXECUTE FORMAT('SELECT * FROM wikidata_german_cities WHERE name = %s',quote_literal(g.name_4))
     LOOP
       -- Is the retrieved geometry at least 5km away from the GADM geometry?
       IF ST_Distance(w.geom::geography, g.geom::geography) < 5000 THEN 
-	      INSERT INTO gadm_mapping VALUES (g.gid_4, 'wikidata', w.uri);
-	      RAISE INFO '[OK] GADM "% (%)" mapped to Wikidata "% (%)"',g.name_4, g.gid_4, w.name, w.uri;
+	      INSERT INTO gadm_mapping VALUES (g.gid_4, 'wikidata', w.wikidataid);
+	      RAISE INFO '[OK] GADM "% (%)" mapped to Wikidata "% (%)"',g.name_4, g.gid_4, w.name, w.wikidataid;
         match := true;
+
+        IF w.gndid IS NOT NULL THEN
+          INSERT INTO gadm_mapping VALUES (g.gid_4, 'gnd', w.gndid);
+        END IF;
+
+        IF w.geonamesid IS NOT NULL THEN
+          INSERT INTO gadm_mapping VALUES (g.gid_4, 'geonames', w.geonamesid);
+        END IF;
+        -- Leaving loop, as at this point we've already found a match.
         EXIT;
-      ELSE
-        RAISE WARNING '"% (%)" is too far from its correspondent GADM geometry: % km', w.name, w.uri, ST_Distance(w.geom::geography, g.geom::geography) / 1000;
       END IF;      
 
     END LOOP;
