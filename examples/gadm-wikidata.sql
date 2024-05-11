@@ -51,7 +51,7 @@ SERVER wikidata OPTIONS (
   sparql '
   SELECT DISTINCT * 
   {
-    VALUES ?type {wd:Q515 wd:Q15284}
+    VALUES ?type {wd:Q515 wd:Q15284 wd:Q269528}
     ?wikidataid 
         wdt:P17 wd:Q183 ;
         rdfs:label ?label ;
@@ -100,7 +100,8 @@ BEGIN
 	      INSERT INTO gadm_mapping (gadm_id, source_id, external_id) 
         VALUES (g.gid_4, 'wikidata', replace(w.wikidataid,'http://www.wikidata.org/entity/',''));
 
-	      RAISE INFO '[OK] GADM "% (%)" mapped to Wikidata "% (%)"',g.name_4, g.gid_4, w.name, w.wikidataid;
+	      RAISE INFO '[OK] %s - GADM "% (%)" mapped to Wikidata "% (%)"', 
+          date_trunc('second', now()), g.name_4, g.gid_4, w.name, w.wikidataid;
         
         -- Store the GND identifier, if the match has any.
         IF w.gndid IS NOT NULL THEN
@@ -116,12 +117,16 @@ BEGIN
 
         -- Leaving loop, as at this point we already have a match.
         EXIT;
+      ELSE
+        RAISE INFO '[FAIL] The match for % (%) too far away from the GADM geometry: % km', 
+          g.name_4, replace(w.wikidataid,'http://www.wikidata.org/entity/',''), ST_Distance(w.geom::geography, g.geom::geography);
       END IF;      
 
     END LOOP;
 
     IF NOT match THEN
-      RAISE INFO '[FAIL] No match found for "% (%)"',g.name_4, g.gid_4;
+      RAISE INFO '[FAIL] % - No match found for "% (%)"', 
+        date_trunc('second', CURRENT_TIMESTAMP), g.name_4, g.gid_4;
     END IF;
 
     COMMIT;
