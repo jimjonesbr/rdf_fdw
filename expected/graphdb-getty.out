@@ -212,8 +212,8 @@ ORDER BY  ASC (?name)
  North Holland, Netherlands, Europe, World     | 5.266667 | 52.716667
  Overijssel, Netherlands, Europe, World        | 6.133333 | 52.716667
  Friesland, Netherlands, Europe, World         | 5.433333 | 52.733333
- Groningen, Netherlands, Europe, World         | 7.066667 | 52.883333
  Gwynedd, Wales, United Kingdom, Europe, World |   4.4586 |   52.9756
+ Groningen, Netherlands, Europe, World         | 6.983333 |        53
 (12 rows)
 
 /*
