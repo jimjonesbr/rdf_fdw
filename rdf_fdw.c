@@ -351,7 +351,6 @@ static char* CreateRegexString(char* str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static bool IsSPARQLStringFunction(char *funcname);
-//static bool IsSQLExtractFieldSupported(char *field);
 static char *FormatSQLExtractField(char *field);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
@@ -2833,6 +2832,9 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 		{
 			appendStringInfo(&idt,"  ");
 		}
+
+		if(*count > 0)
+			appendStringInfo(&idt,"├─ ");
 	}
 
 	elog(DEBUG1,"%s%s called: searching '%s' in start_position %d", NameStr(idt), __func__, keyword, start_position);
