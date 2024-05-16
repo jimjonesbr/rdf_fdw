@@ -142,6 +142,9 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 | `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are appended to the request URL.
 | `query_param`         | optional            | The request parameter where the SPARQL endpoint expects the query in a HTTP request. Most SPARQL endpoints expects the query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option (default `query`)
 
+> [!NOTE]  
+> To visualise the foreign server's options use the `psql` meta-command `\des[+]`
+
 ### [CREATE USER MAPPING](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create-user-mapping)
 
 **Availability**: 1.1.0
@@ -163,6 +166,9 @@ SERVER graphdb OPTIONS (user 'admin', password 'secret');
 | `password` | optional |   password of the user set in the option `user` |
 
 The `rdf_fdw` will try to authenticate the given user using HTTP Basic Authentication - no other authentication method is currently supported. This feature can be ignored if the triplestore does not require user authentication.
+
+> [!NOTE]  
+> To visualise created user mappings use the `psql` meta-command `\deu[+]`
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
 
@@ -218,6 +224,9 @@ SERVER dbpedia OPTIONS (
      }
 '); 
 ```
+
+> [!NOTE]  
+> To visualise the foreign table's columns and options use the `psql` meta-commands `\d[+]` or `\det[+]`
 
 ### [ALTER FOREIGN TABLE and ALTER SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#alter-foreign-table-and-alter-server)
 
