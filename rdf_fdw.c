@@ -1200,6 +1200,9 @@ static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid forei
 												 NIL,				/* no pathkeys */
 												 baserel->lateral_relids,				/* no required outer relids */
 												 NULL,				/* no fdw_outerpath */
+#if PG_VERSION_NUM >= 170000
+												 NIL,   			/* no fdw_restrictinfo */
+#endif  /* PG_VERSION_NUM */
 												 NULL);				/* no fdw_private */
 	add_path(baserel, path);
 }
