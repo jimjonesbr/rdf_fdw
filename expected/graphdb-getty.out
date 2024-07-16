@@ -102,11 +102,11 @@ ORDER BY  ASC (?lon)
  http://vocab.getty.edu/tgn/7251247 | 3.391555 | 51.161424
  http://vocab.getty.edu/tgn/1026705 | 3.394156 | 51.040392
  http://vocab.getty.edu/tgn/7259441 | 3.397425 | 50.933036
- http://vocab.getty.edu/tgn/7252418 |      3.4 | 50.933333
- http://vocab.getty.edu/tgn/7244225 |      3.4 | 50.966667
- http://vocab.getty.edu/tgn/7254794 |      3.4 |     50.85
  http://vocab.getty.edu/tgn/7238735 |      3.4 | 50.883333
  http://vocab.getty.edu/tgn/7243404 |      3.4 | 50.816667
+ http://vocab.getty.edu/tgn/7254794 |      3.4 |     50.85
+ http://vocab.getty.edu/tgn/7252418 |      3.4 | 50.933333
+ http://vocab.getty.edu/tgn/7244225 |      3.4 | 50.966667
  http://vocab.getty.edu/tgn/7251715 | 3.400297 | 50.946335
  http://vocab.getty.edu/tgn/7254795 | 3.401288 | 50.838681
  http://vocab.getty.edu/tgn/7244196 | 3.401882 | 51.012903
@@ -115,14 +115,14 @@ ORDER BY  ASC (?lon)
  http://vocab.getty.edu/tgn/7245335 | 3.413569 | 51.058347
  http://vocab.getty.edu/tgn/7256042 | 3.415451 | 50.909112
  http://vocab.getty.edu/tgn/7245720 | 3.416172 |  50.96429
- http://vocab.getty.edu/tgn/7249060 | 3.416667 |        51
+ http://vocab.getty.edu/tgn/7254082 | 3.416667 |      50.8
  http://vocab.getty.edu/tgn/7251467 | 3.416667 |     51.05
- http://vocab.getty.edu/tgn/7251057 | 3.416667 | 51.033333
- http://vocab.getty.edu/tgn/7241847 | 3.416667 |     50.85
+ http://vocab.getty.edu/tgn/7249060 | 3.416667 |        51
  http://vocab.getty.edu/tgn/7253626 | 3.416667 | 50.883333
+ http://vocab.getty.edu/tgn/7241847 | 3.416667 |     50.85
  http://vocab.getty.edu/tgn/7243766 | 3.416667 | 50.833333
  http://vocab.getty.edu/tgn/7252741 | 3.416667 | 50.916667
- http://vocab.getty.edu/tgn/7254082 | 3.416667 |      50.8
+ http://vocab.getty.edu/tgn/7251057 | 3.416667 | 51.033333
  http://vocab.getty.edu/tgn/7259328 | 3.417234 | 50.824914
  http://vocab.getty.edu/tgn/7245179 |  3.41954 | 50.996632
  http://vocab.getty.edu/tgn/7252554 | 3.420431 | 50.806933
@@ -134,36 +134,36 @@ ORDER BY  ASC (?lon)
  http://vocab.getty.edu/tgn/1026794 | 3.427562 | 50.888978
  http://vocab.getty.edu/tgn/7250327 | 3.431847 | 50.937889
  http://vocab.getty.edu/tgn/7245401 | 3.433333 |        51
- http://vocab.getty.edu/tgn/7245713 | 3.433333 |     50.95
- http://vocab.getty.edu/tgn/7251920 | 3.433333 |     50.85
- http://vocab.getty.edu/tgn/7241693 | 3.433333 | 50.866667
- http://vocab.getty.edu/tgn/7242017 | 3.433333 | 50.866667
  http://vocab.getty.edu/tgn/7247495 | 3.433333 | 50.883333
+ http://vocab.getty.edu/tgn/7242017 | 3.433333 | 50.866667
+ http://vocab.getty.edu/tgn/7241693 | 3.433333 | 50.866667
+ http://vocab.getty.edu/tgn/7251920 | 3.433333 |     50.85
+ http://vocab.getty.edu/tgn/7245713 | 3.433333 |     50.95
  http://vocab.getty.edu/tgn/7243848 | 3.433729 | 50.820134
  http://vocab.getty.edu/tgn/7253725 | 3.434125 | 50.823303
  http://vocab.getty.edu/tgn/7249744 | 3.436056 | 50.864364
  http://vocab.getty.edu/tgn/7241983 | 3.440068 | 50.797029
  http://vocab.getty.edu/tgn/7251353 | 3.443138 | 50.932441
  http://vocab.getty.edu/tgn/7239946 | 3.446831 | 50.847425
- http://vocab.getty.edu/tgn/7259585 |     3.45 | 50.883333
- http://vocab.getty.edu/tgn/7240315 |     3.45 | 50.883333
- http://vocab.getty.edu/tgn/7256022 |     3.45 | 50.816667
- http://vocab.getty.edu/tgn/7241570 |     3.45 | 50.816667
- http://vocab.getty.edu/tgn/7248375 |     3.45 | 50.816667
- http://vocab.getty.edu/tgn/7252182 |     3.45 |      50.8
  http://vocab.getty.edu/tgn/7250499 |     3.45 |      50.8
+ http://vocab.getty.edu/tgn/7252182 |     3.45 |      50.8
+ http://vocab.getty.edu/tgn/7240315 |     3.45 | 50.883333
+ http://vocab.getty.edu/tgn/7259585 |     3.45 | 50.883333
+ http://vocab.getty.edu/tgn/7256022 |     3.45 | 50.816667
+ http://vocab.getty.edu/tgn/7248375 |     3.45 | 50.816667
+ http://vocab.getty.edu/tgn/7241570 |     3.45 | 50.816667
  http://vocab.getty.edu/tgn/7244158 | 3.450666 | 50.788186
  http://vocab.getty.edu/tgn/7249577 | 3.463173 | 50.944057
+ http://vocab.getty.edu/tgn/7259438 | 3.466667 |      50.8
  http://vocab.getty.edu/tgn/7248381 | 3.466667 | 50.833333
  http://vocab.getty.edu/tgn/7251904 | 3.466667 | 50.816667
- http://vocab.getty.edu/tgn/7259438 | 3.466667 |      50.8
  http://vocab.getty.edu/tgn/7244415 | 3.468621 | 50.843237
  http://vocab.getty.edu/tgn/7239221 | 3.468621 | 50.801783
  http://vocab.getty.edu/tgn/7254662 | 3.470106 | 50.851981
  http://vocab.getty.edu/tgn/7254736 | 3.474789 | 50.809013
  http://vocab.getty.edu/tgn/7244717 |  3.47786 | 50.836998
- http://vocab.getty.edu/tgn/7246518 | 3.483333 | 50.833333
  http://vocab.getty.edu/tgn/7239553 | 3.483333 |      50.8
+ http://vocab.getty.edu/tgn/7246518 | 3.483333 | 50.833333
  http://vocab.getty.edu/tgn/7259356 | 3.486601 | 50.789969
  http://vocab.getty.edu/tgn/7244238 | 3.495912 |   50.8133
  http://vocab.getty.edu/tgn/7253514 |      3.5 | 50.816667
@@ -176,7 +176,7 @@ ORDER BY  ASC (?lon)
 SELECT * FROM (
   SELECT DISTINCT ON (name) name, lon, lat
   FROM getty_places
-  WHERE lat BETWEEN 52.5 AND 53.0) j
+  WHERE lat BETWEEN 52.50 AND 52.60 AND lon BETWEEN 4.81 AND 4.82) j
 ORDER BY lat;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
@@ -195,26 +195,18 @@ SELECT ?name ?lon ?lat
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
     geo:long ?lon
-   FILTER(?lat >= 52.5)
- FILTER(?lat <= 53.0)
+   FILTER(?lat >= 52.50)
+ FILTER(?lat <= 52.60)
+ FILTER(?lon >= 4.81)
+ FILTER(?lon <= 4.82)
 }
 ORDER BY  ASC (?name)
 
-                     name                      |   lon    |    lat    
------------------------------------------------+----------+-----------
- South Holland, Netherlands, Europe, World     |   4.8333 |   52.5167
- Gelderland, Netherlands, Europe, World        |     5.65 |      52.6
- Europe, World                                 |    6.766 |     52.65
- Netherlands, Europe, World                    |      6.2 |      52.7
- Lower Saxony, Germany, Europe, World          |     7.15 |      52.7
- Drenthe, Netherlands, Europe, World           | 6.333333 | 52.716667
- Flevoland, Netherlands, Europe, World         |     5.75 | 52.716667
- North Holland, Netherlands, Europe, World     | 5.266667 | 52.716667
- Overijssel, Netherlands, Europe, World        | 6.133333 | 52.716667
- Friesland, Netherlands, Europe, World         | 5.433333 | 52.733333
- Gwynedd, Wales, United Kingdom, Europe, World |   4.4586 |   52.9756
- Groningen, Netherlands, Europe, World         | 6.983333 |        53
-(12 rows)
+                   name                    |   lon    |    lat    
+-------------------------------------------+----------+-----------
+ Netherlands, Europe, World                |   4.8167 |      52.5
+ North Holland, Netherlands, Europe, World | 4.816667 | 52.583333
+(2 rows)
 
 /*
  * == Non-Italians Who Worked in Italy ==

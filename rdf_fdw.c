@@ -77,7 +77,7 @@
 #define ADD_REL_QUALIFIER(buf, varno)   \
 		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
-#define FDW_VERSION "1.2.0"
+#define FDW_VERSION "1.3.0"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"

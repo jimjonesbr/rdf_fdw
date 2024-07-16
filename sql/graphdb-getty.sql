@@ -49,7 +49,7 @@ ORDER BY lon;
 SELECT * FROM (
   SELECT DISTINCT ON (name) name, lon, lat
   FROM getty_places
-  WHERE lat BETWEEN 52.5 AND 53.0) j
+  WHERE lat BETWEEN 52.50 AND 52.60 AND lon BETWEEN 4.81 AND 4.82) j
 ORDER BY lat;
 
 /*

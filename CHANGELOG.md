@@ -1,5 +1,12 @@
 # Release Notes
 
+## 1.3.0
+Release date: **YYYY-MM-YY**
+
+### Enhancements
+
+* Add PostgreSQL 17 support.
+
 ## 1.2.0
 Release date: **2024-05-22**
 
