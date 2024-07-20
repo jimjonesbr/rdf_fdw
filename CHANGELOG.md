@@ -5,7 +5,8 @@ Release date: **YYYY-MM-YY**
 
 ### Enhancements
 
-* Add PostgreSQL 17 support.
+* PostgreSQL 10 support: it is definitely not recommended to use PostgreSQL 10, as it is since November 2022 EOL'd. Since the support for `PROCEDURE` was only implemented in PostgreSQL 11, it is not possible to use the procedure `rdf_fdw_clone_table` in this PostgreSQL version.
+* PostgreSQL 17 support.
 
 ## 1.2.0
 Release date: **2024-05-22**

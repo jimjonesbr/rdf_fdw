@@ -335,3 +335,199 @@ SELECT runtime,name,released FROM public.heap3;
 DROP TABLE IF EXISTS public.t1, public.t2, public.t3, public.heap1, public.heap2, public.heap3;
 DROP FOREIGN TABLE public.film, dbpedia_cities;
 DROP SERVER dbpedia;
+/* == Exceptions == */
+CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
+CREATE TABLE public.t2_local(name text, foo text);
+/*
+ ordinary table instead of foreign table in 'foreign_table'
+ */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1_local',
+        target_table  => 't2_local'
+    );
+ERROR:  invalid relation: 't1_local' is not a foreign table
+/*
+ foreign table instead of an ordinary table in 'target_table'
+ */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 't1'
+    );
+ERROR:  relation "t1" does not exist
+LINE 1: ...'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regc...
+                                                             ^
+QUERY:  SELECT CASE relkind WHEN 'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regclass::oid;
+/*
+ empty target_table
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => ''
+    );
+ERROR:  no 'target_table' provided
+/*
+ empty foreign_table
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => '',
+        target_table => 't1_local'
+    );
+ERROR:  no 'foreign_table' provided
+/*
+ negative fetch_size
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        fetch_size => -1
+    );
+ERROR:  invalid 'fetch_size': -1
+HINT:  the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number
+/*
+ negative begin_offset
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        begin_offset => -1
+    );
+ERROR:  invalid 'begin_offset': -1
+/*
+ invalid ordering_column
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't2_local',
+        orderby_column => 'foo'
+    );
+ERROR:  relation "t1" does not exist
+LINE 1: ...'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regc...
+                                                             ^
+QUERY:  SELECT CASE relkind WHEN 'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regclass::oid;
+/*
+ target table does not match any column of t1
+ */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 't1_local'
+    );
+ERROR:  relation "t1" does not exist
+LINE 1: ...'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regc...
+                                                             ^
+QUERY:  SELECT CASE relkind WHEN 'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regclass::oid;
+/*
+ invalid sort_order
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        sort_order => 'foo'
+    );
+ERROR:  invalid 'sort_order': foo
+HINT:  the 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending)
+/*
+  NULL foreign_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => NULL,
+      target_table  => 't1_local');
+ERROR:  'foreign_table' cannot be NULL
+/*
+  NULL target_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => NULL);
+ERROR:  'target_table' cannot be NULL
+/*
+  NULL begin_offset
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => NULL);
+ERROR:  'begin_offset' cannot be NULL
+HINT:  either set it to 0 or ignore the paramter to start the pagination from the beginning
+/*
+  NULL fetch_size
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => NULL);
+ERROR:  'fetch_size' cannot be NULL
+/*
+  NULL max_records
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => NULL);
+ERROR:  'max_records' cannot be NULL
+/*
+  NULL sort_order
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => NULL);
+ERROR:  'sort_order' cannot be NULL
+/*
+  NULL create_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => NULL);
+ERROR:  'create_table' cannot be NULL
+/*
+  NULL verbose
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => true,
+      verbose => NULL);
+ERROR:  'verbose' cannot be NULL
+/*
+  NULL commit_page
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => true,
+      verbose => false,
+      commit_page => NULL);
+ERROR:  'commit_page' cannot be NULL
+DROP TABLE IF EXISTS t1_local, t2_local;

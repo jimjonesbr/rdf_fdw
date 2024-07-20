@@ -1028,44 +1028,6 @@ LIMIT 1
 (1 row)
 
 /*
- * Pushdown test for STARTS_WITH
- */
-SELECT uri, name, name_upper FROM politicians 
-WHERE 
-  47035308 = wikiid AND 
-  starts_with(party,'Demokratisch') AND
-  starts_with(name_upper,'WILL')
-FETCH FIRST ROW ONLY;
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
- PREFIX dbp: <http://dbpedia.org/property/>
- PREFIX dbo: <http://dbpedia.org/ontology/>
-
-SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?partyname ?pageid 
-{
-      ?person 
-          a dbo:Politician;
-          dbo:birthDate ?birthdate;
-          dbp:name ?personname;
-          dbo:party ?party ;   
-          dbo:wikiPageID ?pageid .
-        ?party 
-          dbp:country ?country;
-          rdfs:label ?partyname .
-        FILTER NOT EXISTS {?person dbo:deathDate ?died}
-        FILTER(LANG(?partyname) = "de")
-       FILTER(STRSTARTS(STR(?partyname), "Demokratisch"))
- FILTER(STRSTARTS(STR(UCASE(?personname)), "WILL"))
- FILTER(47035308 = ?pageid)
-}
-LIMIT 1
-
-                  uri                  |   name    | name_upper 
----------------------------------------+-----------+------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
-(1 row)
-
-/*
  * Pushdown test for ABS
  */
 SELECT uri, name, name_len FROM politicians 

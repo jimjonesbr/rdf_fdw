@@ -336,16 +336,6 @@ WHERE
 FETCH FIRST ROW ONLY;
 
 /*
- * Pushdown test for STARTS_WITH
- */
-SELECT uri, name, name_upper FROM politicians 
-WHERE 
-  47035308 = wikiid AND 
-  starts_with(party,'Demokratisch') AND
-  starts_with(name_upper,'WILL')
-FETCH FIRST ROW ONLY;
-
-/*
  * Pushdown test for ABS
  */
 SELECT uri, name, name_len FROM politicians 

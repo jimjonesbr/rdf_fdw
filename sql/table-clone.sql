@@ -175,4 +175,188 @@ DROP TABLE IF EXISTS public.t1, public.t2, public.t3, public.heap1, public.heap2
 DROP FOREIGN TABLE public.film, dbpedia_cities;
 DROP SERVER dbpedia;
 
+/* == Exceptions == */
+CREATE TABLE public.t1_local(id serial, c1_null text, c2_null text);
+CREATE TABLE public.t2_local(name text, foo text);
 
+/*
+ ordinary table instead of foreign table in 'foreign_table'
+ */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1_local',
+        target_table  => 't2_local'
+    );
+
+/*
+ foreign table instead of an ordinary table in 'target_table'
+ */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 't1'
+    );
+
+/*
+ empty target_table
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => ''
+    );
+
+/*
+ empty foreign_table
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => '',
+        target_table => 't1_local'
+    );
+
+/*
+ negative fetch_size
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        fetch_size => -1
+    );
+
+/*
+ negative begin_offset
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        begin_offset => -1
+    );
+
+/*
+ invalid ordering_column
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't2_local',
+        orderby_column => 'foo'
+    );
+
+/*
+ target table does not match any column of t1
+ */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 't1_local'
+    );
+
+/*
+ invalid sort_order
+*/
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table => 't1_local',
+        sort_order => 'foo'
+    );
+
+/*
+  NULL foreign_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => NULL,
+      target_table  => 't1_local');
+
+/*
+  NULL target_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => NULL);
+
+/*
+  NULL begin_offset
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => NULL);
+
+/*
+  NULL fetch_size
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => NULL);
+
+/*
+  NULL max_records
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => NULL);
+
+/*
+  NULL sort_order
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => NULL);
+
+/*
+  NULL create_table
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => NULL);
+
+/*
+  NULL verbose
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => true,
+      verbose => NULL);
+
+/*
+  NULL commit_page
+*/
+CALL rdf_fdw_clone_table(
+      foreign_table => 't1',
+      target_table  => 't1_local',
+      begin_offset => 42,
+      fetch_size => 8,
+      max_records => 103,
+      orderby_column => 'foo',
+      sort_order => 'DESC',
+      create_table => true,
+      verbose => false,
+      commit_page => NULL);
+
+DROP TABLE IF EXISTS t1_local, t2_local;

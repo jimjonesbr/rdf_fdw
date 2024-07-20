@@ -12,51 +12,67 @@
  **********************************************************************/
 
 #include "postgres.h"
+
+#include <curl/curl.h>
+#include <libxml/tree.h>
 #include "fmgr.h"
-#include "foreign/fdwapi.h"
-#include "optimizer/restrictinfo.h"
-#include "optimizer/planmain.h"
-#include "utils/rel.h"
-
 #include "access/htup_details.h"
-#include "access/sysattr.h"
 #include "access/reloptions.h"
-
-#if PG_VERSION_NUM >= 120000
-#include "access/table.h"
-#endif
-
-#include "foreign/foreign.h"
-#include "commands/defrem.h"
+#include "access/sysattr.h"
+#include "access/xact.h"
+#include "catalog/indexing.h"
+#include "catalog/pg_attribute.h"
+#include "catalog/pg_cast.h"
+#include "catalog/pg_collation.h"
+#include "catalog/pg_foreign_data_wrapper.h"
+#include "catalog/pg_foreign_server.h"
+#include "catalog/pg_foreign_table.h"
+#include "catalog/pg_namespace.h"
+#include "catalog/pg_operator.h"
 #include "catalog/pg_proc.h"
+#include "catalog/pg_user_mapping.h"
+#include "catalog/pg_type.h"
+#include "commands/defrem.h"
+#include "commands/explain.h"
+#include "commands/vacuum.h"
+#include "foreign/fdwapi.h"
+#include "foreign/foreign.h"
+#include "libpq/pqsignal.h"
+#include "mb/pg_wchar.h"
+#include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
 #include "nodes/pg_list.h"
+#include "optimizer/cost.h"
 #include "optimizer/pathnode.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <curl/curl.h>
-#include <utils/builtins.h>
-#include <utils/array.h>
-#include <commands/explain.h>
-#include <libxml/tree.h>
-#include <catalog/pg_collation.h>
-#include <funcapi.h>
-#include "lib/stringinfo.h"
-#include <utils/lsyscache.h>
+#include "optimizer/planmain.h"
+#include "optimizer/restrictinfo.h"
+#include "optimizer/tlist.h"
+#include "parser/parse_relation.h"
+#include "parser/parsetree.h"
+#include "pgtime.h"
+#include "port.h"
+#include "storage/ipc.h"
+#include "storage/lock.h"
+#include "tcop/tcopprot.h"
+#include "utils/array.h"
+#include "utils/builtins.h"
+#include "utils/catcache.h"
+#include "utils/date.h"
 #include "utils/datetime.h"
-#include "utils/timestamp.h"
+#include "utils/elog.h"
+#include "utils/fmgroids.h"
 #include "utils/formatting.h"
-#include "catalog/pg_operator.h"
+#include "utils/guc.h"
+#include "utils/lsyscache.h"
+#include "utils/memutils.h"
+#include "utils/rel.h"
+#include "utils/resowner.h"
+#include "utils/timestamp.h"
+#include "utils/snapmgr.h"
 #include "utils/syscache.h"
-#include "catalog/pg_foreign_table.h"
-#include "catalog/pg_foreign_server.h"
-#include "catalog/pg_user_mapping.h"
-#include "catalog/pg_type.h"
-#include "access/reloptions.h"
-#include "catalog/pg_namespace.h"
-
+#include "utils/timestamp.h"
+#include "executor/spi.h"
 #if PG_VERSION_NUM < 120000
 #include "nodes/relation.h"
 #include "optimizer/var.h"
@@ -66,18 +82,24 @@
 #include "optimizer/optimizer.h"
 #include "access/heapam.h"
 #endif
-#include "utils/date.h"
-#include "executor/spi.h"
-#include "catalog/namespace.h"
-#include "utils/varlena.h"
-#include "miscadmin.h"
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
 #define ADD_REL_QUALIFIER(buf, varno)   \
 		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
-#define FDW_VERSION "1.3.0"
+/* Doesn't exist prior PostgreSQL 11 */
+#ifndef ALLOCSET_SMALL_SIZES
+#define ALLOCSET_SMALL_SIZES \
+	ALLOCSET_SMALL_MINSIZE, ALLOCSET_SMALL_INITSIZE, ALLOCSET_SMALL_MAXSIZE
+#endif
+
+#if PG_VERSION_NUM >= 90500
+/* array_create_iterator has a new signature from 9.5 on */
+#define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
+#endif  /* PG_VERSION_NUM */
+
+#define FDW_VERSION "1.3.0-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -330,7 +352,10 @@ static void InitSession(struct RDFfdwState *state,  RelOptInfo *baserel, Planner
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
+#if PG_VERSION_NUM >= 110000
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
+static Oid GetRelOidFromName(char *relname, char *code);
+#endif  /*PG_VERSION_NUM */
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
@@ -346,12 +371,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
-static Oid GetRelOidFromName(char *relname, char *code);
 static char* CreateRegexString(char* str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static bool IsSPARQLStringFunction(char *funcname);
 static char *FormatSQLExtractField(char *field);
+//static bool getBoolVal(DefElem *def);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -388,6 +413,7 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
  * 
  * Materializes the content of a foreign table into a normal table.
  */
+#if PG_VERSION_NUM >= 110000
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
@@ -950,6 +976,56 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	return processed_records;
 }
 
+/*
+ * GetRelOidFromName
+ * ---------------
+ * Retrieves the Oid of a relation based on its name and type
+ *
+ * relname: relation name
+ * code   : code of relation type, as in 'relkind' of pg_class.
+ *
+ * returns the Oid of the given relation
+ */
+static Oid GetRelOidFromName(char *relname, char *code)
+{
+	StringInfoData str;
+	Oid res = 0;
+	int ret;
+
+	initStringInfo(&str);
+	appendStringInfo(&str,"SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
+
+	if(strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("internal error: '%s' unknown relation type",code)));
+
+	SPI_connect();
+
+	ret = SPI_exec(NameStr(str), 0);
+
+	if (ret > 0 && SPI_tuptable != NULL)
+    {
+        SPITupleTable *tuptable = SPI_tuptable;
+        TupleDesc tupdesc = tuptable->tupdesc;
+
+		HeapTuple tuple = tuptable->vals[0];
+		res = (Oid) atoi(SPI_getvalue(tuple, tupdesc, 1));
+	}
+
+	SPI_finish();
+
+	if(res == InvalidOid)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("invalid relation: '%s' is not a %s",relname,
+					strcmp(code,RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table" )));
+
+	return res;
+
+}
+#endif  /* PG_VERSION_NUM >= 110000 */
+
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 {
 	List *options_list = untransformRelOptions(PG_GETARG_DATUM(0));
@@ -990,7 +1066,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					{
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", opt->optname, defGetString(def))));
+								errmsg("invalid %s: '%s'", opt->optname, defGetString(def))));
 					}
 				}
 
@@ -1404,12 +1480,20 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			}
 		}
 
-		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,rel->rd_att->attrs[i].atttypid);
+#if PG_VERSION_NUM < 110000
+		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,rel->rd_att->attrs[i]->atttypid);
+		state->rdfTable->cols[i]->pgtype = rel->rd_att->attrs[i]->atttypid;
+		state->rdfTable->cols[i]->name = pstrdup(NameStr(rel->rd_att->attrs[i]->attname));
+		state->rdfTable->cols[i]->pgtypmod = rel->rd_att->attrs[i]->atttypmod;
+		state->rdfTable->cols[i]->pgattnum = rel->rd_att->attrs[i]->attnum;
 
+#else
+		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,rel->rd_att->attrs[i].atttypid);
 		state->rdfTable->cols[i]->pgtype = rel->rd_att->attrs[i].atttypid;
 		state->rdfTable->cols[i]->name = pstrdup(NameStr(rel->rd_att->attrs[i].attname));
 		state->rdfTable->cols[i]->pgtypmod = rel->rd_att->attrs[i].atttypmod;
 		state->rdfTable->cols[i]->pgattnum = rel->rd_att->attrs[i].attnum;
+#endif
 	}
 
 #if PG_VERSION_NUM < 130000
@@ -1433,9 +1517,11 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		}
 		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0)
 			state->log_sparql = defGetBoolean(def);
+			//state->log_sparql = getBoolVal(def);
 
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 			state->enable_pushdown = defGetBoolean(def);
+			//state->enable_pushdown = getBoolVal(def);
 	}
 
 }
@@ -1491,6 +1577,7 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
 				state->request_redirect = defGetBoolean(def);
+				//state->request_redirect = getBoolVal(def);
 
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)
 			{
@@ -1506,6 +1593,7 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
+				//state->enable_pushdown = getBoolVal(def);
 
 			else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 				state->query_param = defGetString(def);
@@ -1578,13 +1666,13 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 
 				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_USER) == 0)
 				{
-					state->user = pstrdup(strVal(def->arg));
+					state->user = pstrdup(defGetString(def));
 					elog(DEBUG1, "%s: %s '%s'", __func__, def->defname, state->user);
 				}
 
 				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PASSWORD) == 0)
 				{					
-					state->password = pstrdup(strVal(def->arg));
+					state->password = pstrdup(defGetString(def));
 					elog(DEBUG1, "%s: %s '*******'", __func__, def->defname);
 				}
 			}
@@ -3647,7 +3735,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				initStringInfo(&type);
 
 				/* loop through the array elements */
-				iterator = array_create_iterator(arr, 0, NULL);
+				iterator = array_create_iterator(arr, 0);
 				first_arg = true;
 				while (array_iterate(iterator, &datum, &isNull))
 				{
@@ -3702,10 +3790,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			arraycoerce = (ArrayCoerceExpr *)rightexpr;
 
 			/* if the conversion requires more than binary coercion, don't push it down */
-
+#if PG_VERSION_NUM < 110000
+			if (arraycoerce->elemfuncid != InvalidOid)
+				return NULL;
+#else
 			if (arraycoerce->elemexpr && arraycoerce->elemexpr->type != T_RelabelType)
 				return NULL;
-
+#endif
 			/* punt on anything but ArrayExpr (e.g, parameters) */
 			if (arraycoerce->arg->type != T_ArrayExpr)
 				return NULL;
@@ -4405,55 +4496,6 @@ static bool IsSPARQLVariableValid(const char* str)
 			return false;
 
 	return true;
-}
-
-/*
- * GetRelOidFromName
- * ---------------
- * Retrieves the Oid of a relation based on its name and type
- * 
- * relname: relation name
- * code   : code of relation type, as in 'relkind' of pg_class.
- * 
- * returns the Oid of the given relation
- */
-static Oid GetRelOidFromName(char *relname, char *code)
-{
-	StringInfoData str;
-	Oid res = 0;
-	int ret;
-
-	initStringInfo(&str);
-	appendStringInfo(&str,"SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
-	
-	if(strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("internal error: '%s' unknown relation type",code)));
-
-	SPI_connect();
-
-	ret = SPI_exec(NameStr(str), 0);
-
-	if (ret > 0 && SPI_tuptable != NULL)
-    {
-        SPITupleTable *tuptable = SPI_tuptable;
-        TupleDesc tupdesc = tuptable->tupdesc;
-     
-		HeapTuple tuple = tuptable->vals[0];
-		res = (Oid) atoi(SPI_getvalue(tuple, tupdesc, 1));
-	}
-
-	SPI_finish();
-
-	if(res == InvalidOid)
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid relation: '%s' is not a %s",relname, 
-				 	strcmp(code,RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table" )));
-
-	return res;
-
 }
 
 /*
