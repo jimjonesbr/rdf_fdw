@@ -43,7 +43,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
 
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
-* [PostgreSQL](https://www.postgresql.org): version 11 or higher.
+* [PostgreSQL](https://www.postgresql.org): version 9.6 or higher.
 * [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to complile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
