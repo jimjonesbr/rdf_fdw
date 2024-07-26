@@ -301,7 +301,7 @@ void rdf_fdw_clone_table(
 )
 ```
 
-**Availability**: 1.0.0
+**Availability**: 1.0.0 (PostgreSQL 11+ only)
 
 **Description**
 
