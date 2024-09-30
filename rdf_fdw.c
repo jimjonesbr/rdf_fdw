@@ -99,7 +99,7 @@
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
 #endif  /* PG_VERSION_NUM */
 
-#define FDW_VERSION "1.3.0-dev"
+#define FDW_VERSION "1.3.0"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"

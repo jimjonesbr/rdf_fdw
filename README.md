@@ -79,7 +79,7 @@ CREATE EXTENSION rdf_fdw;
 To install an specific version add the full version number in the `WITH VERSION` clause
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '1.0';
+CREATE EXTENSION rdf_fdw WITH VERSION '1.3';
 ```
 
 To run the predefined regression tests run `make installcheck` with the user `postgres`:
@@ -105,7 +105,7 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '1.1';
+ALTER EXTENSION rdf_fdw UPDATE TO '1.3';
 ```
 
 ## [Usage](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#usage)

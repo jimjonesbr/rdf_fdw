@@ -1,13 +1,11 @@
 # Release Notes
 
 ## 1.3.0
-Release date: **YYYY-MM-DD**
+Release date: **2024-09-30**
 
 ### Enhancements
 
-* Support for PodtgreSQL 9.6 and 10: This adds support for EOL'd PostgreSQL versions. It is definitely discouraged to use unsupported versions, but in case you're for whatever reason unable to perform an upgrade you can now use the `rdf_fdw` in these versions. 
-
-* PostgreSQL 17 support.
+* Support for PostgreSQL 9.6, 10, and 17: This adds support for the long EOL'd PostgreSQL versions 9.6 and 10. It is definitely discouraged to use these unsupported versions, but in case you're for whatever reason unable to perform an upgrade you can now use the `rdf_fdw`. 
 
 ## 1.2.0
 Release date: **2024-05-22**
