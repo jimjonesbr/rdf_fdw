@@ -6,7 +6,7 @@
  * rdf_fdw is free software: you can redistribute it and/or modify
  * it under the terms of the MIT Licence.
  *
- * Copyright (C) 2022-2024 University of Münster, Germany
+ * Copyright (C) 2022-2025 University of Münster, Germany
  * Written by Jim Jones <jim.jones@uni-muenster.de>
  *
  **********************************************************************/
