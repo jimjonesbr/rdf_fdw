@@ -9,7 +9,7 @@ ifndef MAJORVERSION
 MAJORVERSION := $(basename $(VERSION))
 endif
 
-REGRESS = virtuoso-dbpedia graphdb-getty blazegraph-wikidata $(if $(findstring $(MAJORVERSION),11 12 13 14 15 16 17),exceptions table-clone,)
+REGRESS = virtuoso-dbpedia graphdb-getty blazegraph-wikidata $(if $(findstring $(MAJORVERSION),11 12 13 14 15 16 17 18),exceptions table-clone,)
 
 CFLAGS += $(shell $(CURL_CONFIG) --cflags)
 LIBS += $(shell $(CURL_CONFIG) --libs)

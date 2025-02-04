@@ -430,6 +430,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	bool commit_page;
 	bool match = false;
 	bool orderby_query = true;
+	TupleDesc tupdesc;
 
 	char *orderby_variable = NULL;
 	StringInfoData select;
@@ -611,17 +612,20 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * Here we check if the target table matches the columns of the 
 	 * FOREIGN TABLE.
 	 */	
+	tupdesc = state->target_table->rd_att;
 
 	elog(DEBUG1,"%s: checking if tables match",__func__);
 	for (size_t ftidx = 0; ftidx < state->numcols; ftidx++)
 	{
 		for (size_t ttidx = 0; ttidx < state->target_table->rd_att->natts; ttidx++)
 		{
+			Form_pg_attribute attr = TupleDescAttr(tupdesc, ttidx);
+
 			elog(DEBUG1,"%s: comparing %s - %s", __func__,
-				NameStr(state->target_table->rd_att->attrs[ttidx].attname), 
+				NameStr(attr->attname),
 				state->rdfTable->cols[ftidx]->name);
 
-			if(strcmp(NameStr(state->target_table->rd_att->attrs[ttidx].attname), state->rdfTable->cols[ftidx]->name) == 0)
+			if(strcmp(NameStr(attr->attname), state->rdfTable->cols[ftidx]->name) == 0)
 			{
 				state->rdfTable->cols[ftidx]->used = true;
 				match = true;
@@ -1270,17 +1274,20 @@ static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid forei
 	struct RDFfdwState *state = (struct RDFfdwState *)baserel->fdw_private;
 
 	Path *path = (Path *)create_foreignscan_path(root, baserel,
-												 NULL,				/* default pathtarget */
-												 baserel->rows,		/* rows */
-												 state->startup_cost,/* startup cost */
-												 state->total_cost, /* total cost */
-												 NIL,				/* no pathkeys */
-												 baserel->lateral_relids,				/* no required outer relids */
-												 NULL,				/* no fdw_outerpath */
+												 NULL,			/* default pathtarget */
+												 baserel->rows, /* rows */
+#if PG_VERSION_NUM >= 180000
+												 0,						  /* no disabled plan nodes */
+#endif																	  /* PG_VERSION_NUM */
+												 state->startup_cost,	  /* startup cost */
+												 state->total_cost,		  /* total cost */
+												 NIL,					  /* no pathkeys */
+												 baserel->lateral_relids, /* no required outer relids */
+												 NULL,					  /* no fdw_outerpath */
 #if PG_VERSION_NUM >= 170000
-												 NIL,   			/* no fdw_restrictinfo */
-#endif  /* PG_VERSION_NUM */
-												 NULL);				/* no fdw_private */
+												 NIL,	/* no fdw_restrictinfo */
+#endif													/* PG_VERSION_NUM */
+												 NULL); /* no fdw_private */
 	add_path(baserel, path);
 }
 
@@ -1410,7 +1417,7 @@ static void rdfEndForeignScan(ForeignScanState *node)
 static void LoadRDFTableInfo(RDFfdwState *state)
 {
 	ListCell *cell;	
-
+	TupleDesc tupdesc;
 #if PG_VERSION_NUM < 130000
 	Relation rel = heap_open(state->foreigntableid, NoLock);
 #else
@@ -1420,6 +1427,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 	elog(DEBUG1, "%s called", __func__);
 
 	state->numcols = rel->rd_att->natts;
+	tupdesc = rel->rd_att;
 
 	/*
 	 *Loading FOREIGN TABLE strucuture (columns and their OPTION values)
@@ -1432,6 +1440,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		List *options = GetForeignColumnOptions(state->foreigntableid, i + 1);
 		ListCell *lc;
 
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
 		/*
@@ -1482,18 +1491,18 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		}
 
 #if PG_VERSION_NUM < 110000
-		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,rel->rd_att->attrs[i]->atttypid);
-		state->rdfTable->cols[i]->pgtype = rel->rd_att->attrs[i]->atttypid;
-		state->rdfTable->cols[i]->name = pstrdup(NameStr(rel->rd_att->attrs[i]->attname));
-		state->rdfTable->cols[i]->pgtypmod = rel->rd_att->attrs[i]->atttypmod;
-		state->rdfTable->cols[i]->pgattnum = rel->rd_att->attrs[i]->attnum;
+		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,attr->atttypid);
+		state->rdfTable->cols[i]->pgtype = attr->atttypid;
+		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
+		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
+		state->rdfTable->cols[i]->pgattnum = attr->attnum;
 
 #else
-		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,rel->rd_att->attrs[i].atttypid);
-		state->rdfTable->cols[i]->pgtype = rel->rd_att->attrs[i].atttypid;
-		state->rdfTable->cols[i]->name = pstrdup(NameStr(rel->rd_att->attrs[i].attname));
-		state->rdfTable->cols[i]->pgtypmod = rel->rd_att->attrs[i].atttypmod;
-		state->rdfTable->cols[i]->pgattnum = rel->rd_att->attrs[i].attnum;
+		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,attr->atttypid);
+		state->rdfTable->cols[i]->pgtype = attr->atttypid;
+		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
+		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
+		state->rdfTable->cols[i]->pgattnum = attr->attnum;
 #endif
 	}
 
