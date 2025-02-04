@@ -226,6 +226,7 @@ typedef struct RDFfdwState
 	ForeignTable *foreign_table; /* FOREIGN TABLE containing the graph pattern (SPARQL Query) and column / variable mapping */
 	UserMapping *mapping;        /* USER MAPPING to enable http basic authentication for a given postgres user */
 	MemoryContext rdfctxt;       /* Memory Context for data manipulation. */
+	CURL *curl;					 /* CURL request handler */
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
@@ -1800,7 +1801,7 @@ static List *SerializePlanData(RDFfdwState *state)
 
 /*
  * DeserializePlanData
- * -----------------
+ * -------------------
  * Converts Const variables created using SerializePlanData back
  * into pointers
  * 
@@ -2012,13 +2013,31 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	return realsize;
 }
 
-/* 
+/*
+ * CURLProgressCallback
+ * --------------------
+ * Progress callback function for cURL requests. This allows us to
+ * check for interruptions to immediatelly cancel the request.
+ * 
+ * dltotal: Total bytes to download
+ * dlnow: Bytes downloaded so far
+ * ultotal: Total bytes to upload
+ * ulnow: Bytes uploaded so far
+ */
+static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+{
+	CHECK_FOR_INTERRUPTS();
+
+	return 0;
+}
+
+/*
  * CheckURL
  * --------
  * CheckS if an URL is valid.
- * 
+ *
  * url: URL to be validated.
- * 
+ *
  * returns REQUEST_SUCCESS or REQUEST_FAIL
  */
 static int CheckURL(char *url)
@@ -2222,7 +2241,6 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
  */
 static int ExecuteSPARQL(RDFfdwState *state)
 {
-	CURL *curl;
 	CURLcode res;
 	StringInfoData url_buffer;
 	StringInfoData user_agent;
@@ -2242,7 +2260,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	elog(DEBUG1, "%s called",__func__);
 
 	curl_global_init(CURL_GLOBAL_ALL);
-	curl = curl_easy_init();
+	state->curl = curl_easy_init();
 
 	initStringInfo(&accept_header);
 	appendStringInfo(&accept_header, "Accept: %s", state->format);
@@ -2251,28 +2269,28 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		elog(INFO,"SPARQL query sent to '%s':\n\n%s\n",state->endpoint,state->sparql);
 
 	initStringInfo(&url_buffer);
-	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(curl, state->sparql, 0));
+	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
 
 	if(state->custom_params)
-		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(curl, state->custom_params, 0));
+		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(state->curl, state->custom_params, 0));
 
 	elog(DEBUG1, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
 
-	if (curl)
+	if (state->curl)
 	{
 		errbuf[0] = 0;
 
-		curl_easy_setopt(curl, CURLOPT_URL, state->endpoint);
+		curl_easy_setopt(state->curl, CURLOPT_URL, state->endpoint);
 
 #if ((LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 85) || LIBCURL_VERSION_MAJOR < 7)
-		curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+		curl_easy_setopt(state->curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 #else
-		curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
+		curl_easy_setopt(state->curl, CURLOPT_PROTOCOLS_STR, "http,https");
 #endif
 
-		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+		curl_easy_setopt(state->curl, CURLOPT_ERRORBUFFER, errbuf);
 
-		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, state->connect_timeout);
+		curl_easy_setopt(state->curl, CURLOPT_CONNECTTIMEOUT, state->connect_timeout);
 		elog(DEBUG1, "  %s: timeout > %ld", __func__, state->connect_timeout);
 		elog(DEBUG1, "  %s: max retry > %ld", __func__, state->max_retries);
 
@@ -2280,29 +2298,29 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			elog(DEBUG1, "  %s: proxy URL > '%s'", __func__, state->proxy);
 
-			curl_easy_setopt(curl, CURLOPT_PROXY, state->proxy);
+			curl_easy_setopt(state->curl, CURLOPT_PROXY, state->proxy);
 
 			if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTP_PROXY) == 0)
 			{
 				elog(DEBUG1, "  %s: proxy protocol > 'HTTP'", __func__);
-				curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
 			}
 			else if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
 			{
 				elog(DEBUG1, "  %s: proxy protocol > 'HTTPS'", __func__);
-				curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
 			}
 
 			if (state->proxy_user)
 			{
 				elog(DEBUG1, "  %s: entering proxy user ('%s').", __func__, state->proxy_user);
-				curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, state->proxy_user);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYUSERNAME, state->proxy_user);
 			}
 
 			if (state->proxy_user_password)
 			{
 				elog(DEBUG1, "  %s: entering proxy user's password.", __func__);
-				curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, state->proxy_user_password);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYUSERPWD, state->proxy_user_password);
 			}
 		}
 
@@ -2310,49 +2328,61 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 
 			elog(DEBUG1, "  %s: setting request redirect: %d", __func__, state->request_redirect);
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 			if (state->request_max_redirect)
 			{
 				elog(DEBUG1, "  %s: setting maxredirs: %ld", __func__, state->request_max_redirect);
-				curl_easy_setopt(curl, CURLOPT_MAXREDIRS, state->request_max_redirect);
+				curl_easy_setopt(state->curl, CURLOPT_MAXREDIRS, state->request_max_redirect);
 			}
 		}
 
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, url_buffer.data);
-		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallbackFunction);
-		curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
+		curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, url_buffer.data);
+		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, HeaderCallbackFunction);
+		curl_easy_setopt(state->curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
+		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+		curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
+		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, true);
+
+        /* Enable verbose mode for debugging */
+        curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
+
+        /* Set the progress callback function */
+        curl_easy_setopt(state->curl, CURLOPT_XFERINFOFUNCTION, CURLProgressCallback);
+
+        /* Optional: Pass user data to the callback (NULL in this case) */
+        curl_easy_setopt(state->curl, CURLOPT_XFERINFODATA, NULL);
+
+        /* Enable progress callback */
+        curl_easy_setopt(state->curl, CURLOPT_NOPROGRESS, 0L);
 
 		initStringInfo(&user_agent);
 		appendStringInfo(&user_agent,  "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent.data);
+		curl_easy_setopt(state->curl, CURLOPT_USERAGENT, user_agent.data);
 
 		headers = curl_slist_append(headers, accept_header.data);
-		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(state->curl, CURLOPT_HTTPHEADER, headers);
 
 		if(state->user && state->password)
 		{
-			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-			curl_easy_setopt(curl, CURLOPT_USERNAME, state->user);
-			curl_easy_setopt(curl, CURLOPT_PASSWORD, state->password);
+			curl_easy_setopt(state->curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_easy_setopt(state->curl, CURLOPT_USERNAME, state->user);
+			curl_easy_setopt(state->curl, CURLOPT_PASSWORD, state->password);
 		}
 		else if(state->user && !state->password)
 		{
-			curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-			curl_easy_setopt(curl, CURLOPT_USERNAME, state->user);
+			curl_easy_setopt(state->curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_easy_setopt(state->curl, CURLOPT_USERNAME, state->user);
 		}
 
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
 
-		res = curl_easy_perform(curl);
+		res = curl_easy_perform(state->curl);
 
 		if (res != CURLE_OK)
 		{
-			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(curl)) != CURLE_OK; i++)
+			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(state->curl)) != CURLE_OK; i++)
 			{
 				elog(WARNING, "  %s: request to '%s' failed (%ld)", __func__, state->endpoint, i);
 			}
@@ -2367,12 +2397,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			pfree(chunk.memory);
 			pfree(chunk_header.memory);
 			curl_slist_free_all(headers);
-			curl_easy_cleanup(curl);
+			curl_easy_cleanup(state->curl);
 			curl_global_cleanup();
 
 			if (len)
 			{
-				curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+				curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 				
 				if(response_code == 401)
 					ereport(ERROR,
@@ -2409,14 +2439,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		}
 		else
 		{
-			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 			elog(DEBUG3, "  %s: xml document \n\n%s", __func__, chunk.memory);
 			state->xmldoc = xmlReadMemory(chunk.memory, chunk.size, NULL, NULL, XML_PARSE_NOBLANKS);
 
 			elog(DEBUG2, "  %s: http response code = %ld", __func__, response_code);
 			elog(DEBUG2, "  %s: http response size = %ld", __func__, chunk.size);
 			elog(DEBUG2, "  %s: http response header = \n%s", __func__, chunk_header.memory);
-
 		}
 
 	}
@@ -2424,7 +2453,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	pfree(chunk.memory);
 	pfree(chunk_header.memory);
 	curl_slist_free_all(headers);
-	curl_easy_cleanup(curl);
+	curl_easy_cleanup(state->curl);
 	curl_global_cleanup();
 
 	/*
