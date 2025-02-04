@@ -820,13 +820,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-      name       | birthdate  |                   party                   |      country      
------------------+------------+-------------------------------------------+-------------------
- Bob Evnen       | 11-29-2022 | National Republican Party                 | United States
- Bob Evnen       | 11-29-2022 | Republikanische Partei                    | United States
- Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
- Bob Drewel      | 12-13-2013 | Demokratische Partei (Vereinigte Staaten) | the United States
- Nicholas Smith  | 03-14-2012 | Demokratische Partei (Vereinigte Staaten) | the United States
+      name       | birthdate  |            party             |    country    
+-----------------+------------+------------------------------+---------------
+ Bob Evnen       | 11-29-2022 | National Republican Party    | United States
+ Bob Evnen       | 11-29-2022 | Republikanische Partei       | United States
+ Russell Findlay | 01-07-2021 | Scottish Conservative Party  | Scotland
+ Rachael Thomas  | 11-15-2020 | Konservative Partei Kanadas  | Canada
+ Ausma Malik     | 12-17-2018 | Ontario New Democratic Party | Canada
 (5 rows)
 
 /*
@@ -858,13 +858,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-        name        | birthdate  |            party             |  country  
---------------------+------------+------------------------------+-----------
- Neil Symes         | 12-11-1988 | Pauline Hanson’s One Nation  | Australia
- Inês de Sousa Real | 06-06-1980 | Pessoas – Animais – Natureza | Portugal
- George Christensen | 06-30-1978 | Pauline Hanson’s One Nation  | Australia
- Bruno Nunes        | 11-16-1976 | Partido Popular Monárquico   | Portugal
- Shaun Nelson       | 03-22-1973 | Pauline Hanson’s One Nation  | Australia
+        name        | birthdate  |            party            |  country  
+--------------------+------------+-----------------------------+-----------
+ Stephen Mullighan  | 04-14-2012 | Australian Labor Party      | Australia
+ Rita Matias        | 10-17-1998 | Chega                       | Portugal
+ Jordon Steele-John | 10-14-1994 | Australian Greens           | Australia
+ Kira Grünberg      | 08-13-1993 | Österreichische Volkspartei | Austria
+ Joana Sá Pereira   | 07-04-1993 | Partido Socialista          | Portugal
 (5 rows)
 
 /* 
@@ -896,13 +896,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-        name         | birthdate  |            party             | country 
----------------------+------------+------------------------------+---------
- Jan Ziobro          | 09-04-1989 | Zjednoczona Prawica          | Poland
- Patryk Jaki         | 05-11-1985 | Solidarna Polska             | Poland
- Krzysztof Gawkowski | 04-11-1980 | Sojusz Lewicy Demokratycznej | Poland
- Dariusz Joński      | 01-12-1979 | Sojusz Lewicy Demokratycznej | Poland
- Dariusz Joński      | 01-12-1979 | Zjednoczona Lewica           | Poland
+           name           | birthdate  |         party          | country 
+--------------------------+------------+------------------------+---------
+ Łukasz Rzepecki          | 09-05-1992 | Kukiz’15               | Poland
+ Kinga Magdalena Gajewska | 07-22-1990 | Platforma Obywatelska  | Poland
+ Adam Andruszkiewicz      | 06-30-1990 | Prawo i Sprawiedliwość | Poland
+ Adam Andruszkiewicz      | 06-30-1990 | Ruch Narodowy          | Poland
+ Adam Andruszkiewicz      | 06-30-1990 | Wolni i Solidarni      | Poland
 (5 rows)
 
 /* 
@@ -934,13 +934,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-       name       | birthdate  |                   party                   |  country  
-------------------+------------+-------------------------------------------+-----------
- Miran Charuka    | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
- Sam Oosterhoff   | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
- Chiara Barchiesi | 12-22-1996 | Republikanische Partei (Chile)            | Chile
- Fernando Holiday | 09-22-1996 | Democratas                                | Brazil
- Fernando Holiday | 09-22-1996 | Patriota (Brasilien)                      | Brazil
+       name        | birthdate  |            party             |   country    
+-------------------+------------+------------------------------+--------------
+ Rachael Thomas    | 11-15-2020 | Konservative Partei Kanadas  | Canada
+ Ausma Malik       | 12-17-2018 | Ontario New Democratic Party | Canada
+ Kenny Motsamai    | 02-18-2016 | Economic Freedom Fighters    | South Africa
+ Kenny Motsamai    | 02-18-2016 | Pan Africanist Congress      | South Africa
+ Margarita Bolaños | 03-15-2014 | Partido Acción Ciudadana     | Costa Rica
 (5 rows)
 
 /*
@@ -1991,9 +1991,19 @@ SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilte
 (0 rows)
 
 SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters;
- name | birthdate | party | country 
-------+-----------+-------+---------
-(0 rows)
+       name        | birthdate  |                  party                  | country 
+-------------------+------------+-----------------------------------------+---------
+ Klara Schedlich   | 01-04-2000 | Bündnis 90/Die Grünen                   | Germany
+ Lukas Benner      | 02-20-1996 | Bündnis 90/Die Grünen                   | Germany
+ Niklas Wagener    | 04-16-1998 | Bündnis 90/Die Grünen                   | Germany
+ Jakob Blankenburg | 08-05-1997 | Sozialdemokratische Partei Deutschlands | Germany
+ Bruno Hönel       | 04-01-1996 | Bündnis 90/Die Grünen                   | Germany
+ Max Lucks         | 04-19-1997 | Bündnis 90/Die Grünen                   | Germany
+ Fabian Funke      | 07-25-1997 | Sozialdemokratische Partei Deutschlands | Germany
+ Merle Spellerberg | 11-13-1996 | Bündnis 90/Die Grünen                   | Germany
+ June Tomiak       | 02-08-1997 | Bündnis 90/Die Grünen                   | Germany
+ Karoline Otte     | 09-11-1996 | Bündnis 90/Die Grünen                   | Germany
+(10 rows)
 
 /* 
  * Test SPARQL containing LIMIT keyword in a literal
