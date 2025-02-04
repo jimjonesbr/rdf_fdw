@@ -501,7 +501,7 @@ SELECT DISTINCT
 FROM politicians
 WHERE country = 'Germany'
 ORDER BY birthdate DESC, party ASC
-LIMIT 10;
+LIMIT 3;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -529,14 +529,7 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)  ASC (?personname)
  Klara Schedlich   | 01-04-2000 | Bündnis 90/Die Grünen                   | Germany
  Niklas Wagener    | 04-16-1998 | Bündnis 90/Die Grünen                   | Germany
  Jakob Blankenburg | 08-05-1997 | Sozialdemokratische Partei Deutschlands | Germany
- Fabian Funke      | 07-25-1997 | Sozialdemokratische Partei Deutschlands | Germany
- Max Lucks         | 04-19-1997 | Bündnis 90/Die Grünen                   | Germany
- June Tomiak       | 02-08-1997 | Bündnis 90/Die Grünen                   | Germany
- Merle Spellerberg | 11-13-1996 | Bündnis 90/Die Grünen                   | Germany
- Karoline Otte     | 09-11-1996 | Bündnis 90/Die Grünen                   | Germany
- Bruno Hönel       | 04-01-1996 | Bündnis 90/Die Grünen                   | Germany
- Lukas Benner      | 02-20-1996 | Bündnis 90/Die Grünen                   | Germany
-(10 rows)
+(3 rows)
 
 /*
  * DISTINCT ON won't be pushed - SPARQL does not support it.
@@ -1896,7 +1889,7 @@ SELECT DISTINCT
 FROM politicians_germany
 WHERE birthdate > '1990-12-01'
 ORDER BY birthdate DESC, party ASC
-LIMIT 10;
+LIMIT 3;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
  PREFIX dbp: <http://dbpedia.org/property/>
@@ -1961,7 +1954,7 @@ SELECT DISTINCT
 FROM politicians_germany
 WHERE birthdate > '1990-12-01'
 ORDER BY birthdate DESC, party ASC
-LIMIT 10;
+LIMIT 3;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1994,16 +1987,9 @@ SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_loc
        name        | birthdate  |                  party                  | country 
 -------------------+------------+-----------------------------------------+---------
  Klara Schedlich   | 01-04-2000 | Bündnis 90/Die Grünen                   | Germany
- Lukas Benner      | 02-20-1996 | Bündnis 90/Die Grünen                   | Germany
  Niklas Wagener    | 04-16-1998 | Bündnis 90/Die Grünen                   | Germany
  Jakob Blankenburg | 08-05-1997 | Sozialdemokratische Partei Deutschlands | Germany
- Bruno Hönel       | 04-01-1996 | Bündnis 90/Die Grünen                   | Germany
- Max Lucks         | 04-19-1997 | Bündnis 90/Die Grünen                   | Germany
- Fabian Funke      | 07-25-1997 | Sozialdemokratische Partei Deutschlands | Germany
- Merle Spellerberg | 11-13-1996 | Bündnis 90/Die Grünen                   | Germany
- June Tomiak       | 02-08-1997 | Bündnis 90/Die Grünen                   | Germany
- Karoline Otte     | 09-11-1996 | Bündnis 90/Die Grünen                   | Germany
-(10 rows)
+(3 rows)
 
 /* 
  * Test SPARQL containing LIMIT keyword in a literal

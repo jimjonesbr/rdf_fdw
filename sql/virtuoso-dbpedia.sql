@@ -200,7 +200,7 @@ SELECT DISTINCT
 FROM politicians
 WHERE country = 'Germany'
 ORDER BY birthdate DESC, party ASC
-LIMIT 10;
+LIMIT 3;
 
 
 /*
@@ -717,7 +717,7 @@ SELECT DISTINCT
 FROM politicians_germany
 WHERE birthdate > '1990-12-01'
 ORDER BY birthdate DESC, party ASC
-LIMIT 10;
+LIMIT 3;
 
 /* Disabling enable_pushdown OPTION */
 ALTER FOREIGN TABLE film                OPTIONS (ADD enable_pushdown 'false');
@@ -742,7 +742,7 @@ SELECT DISTINCT
 FROM politicians_germany
 WHERE birthdate > '1990-12-01'
 ORDER BY birthdate DESC, party ASC
-LIMIT 10;
+LIMIT 3;
 
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
