@@ -44,7 +44,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
 * [PostgreSQL](https://www.postgresql.org): version 9.6 or higher.
-* [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to complile the code.
+* [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to compile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
 
@@ -57,32 +57,32 @@ apt install -y make gcc postgresql-server-dev-16 libxml2-dev libcurl4-openssl-de
 
 ## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
 
-To compile the source code you need to ensure the [pg_config](https://www.postgresql.org/docs/current/app-pgconfig.html) executable is properly set when you run `make` - this executable is typically in your PostgreSQL installation's bin directory. After that, just run `make` in the root directory:
+Ensure [pg_config](https://www.postgresql.org/docs/current/app-pgconfig.html) is properly set before running `make`. This executable is typically found in your PostgreSQL installation's `bin` directory.
 
 ```bash
 $ cd rdf_fdw
 $ make
 ```
 
-After compilation, just run `make install` to install the Foreign Data Wrapper:
+After compilation, install the Foreign Data Wrapper:
 
 ```bash
 $ make install
 ```
 
-After building and installing the extension you're ready to create the extension in a PostgreSQL database with `CREATE EXTENSION`:
+Then, create the extension in PostgreSQL:
 
 ```sql
 CREATE EXTENSION rdf_fdw;
 ```
 
-To install an specific version add the full version number in the `WITH VERSION` clause
+To install a specific version, use:
 
 ```sql
 CREATE EXTENSION rdf_fdw WITH VERSION '1.3';
 ```
 
-To run the predefined regression tests run `make installcheck` with the user `postgres`:
+To run the predefined regression tests: 
 
 ```bash
 $ make PGUSER=postgres installcheck
@@ -90,7 +90,7 @@ $ make PGUSER=postgres installcheck
 ```
 
 > [!NOTE]  
-> In order for `rdf_fdw` to convert the data retrieved from the RDF triplestore into a format that can be interpreted by PostgreSQL, it must first load all the retrieved data into memory. Therefore, if you expect to retrieve large volumes of data with a single query, make sure PostgreSQL has access to sufficient memory. Another option is to retrieve the data in chuncks by using `rdf_fdw_clone_table` or a customised script.
+> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory, or retrieve data in chunks using `rdf_fdw_clone_table` or a custom script.
 
 
 ## [Update](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update)
@@ -102,19 +102,19 @@ To update the extension's version you must first build and install the binaries 
 ALTER EXTENSION rdf_fdw UPDATE;
 ```
 
-To update to an specific version use `UPDATE TO` and the full version number
+To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '1.3';
+ALTER EXTENSION rdf_fdw UPDATE TO '1.4';
 ```
 
 ## [Usage](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#usage)
 
-To use the `rdf_fdw` you must first create a `SERVER` to connect to a SPARQL endpoint. After that, you have to create the `FOREIGN TABLE`s, which will contain the SPARQL instructions of what to retrieve from the endpoint.
+To use the `rdf_fdw` you must first create a `SERVER` to connect to a SPARQL endpoint. Then, define the `FOREIGN TABLE`s, which specify the SPARQL instructions for retrieving data from the endpoint.
 
 ### [CREATE SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_server)
 
-The SQL command [CREATE SERVER](https://www.postgresql.org/docs/current/sql-createserver.html) defines a new foreign server. The user who defines the server becomes its owner. A `SERVER` requires an `endpoint`, so that `rdf_fdw` knows where to sent the SPARQL queries.
+The SQL command [CREATE SERVER](https://www.postgresql.org/docs/current/sql-createserver.html) defines a new foreign server. The user who defines the server becomes its owner. A `SERVER` requires an `endpoint` to specify where `rdf_fdw` should send SPARQL queries.
 
 The following example creates a `SERVER` that connects to the DBpedia SPARQL Endpoint:
 
@@ -131,16 +131,16 @@ The following example creates a `SERVER` that connects to the DBpedia SPARQL End
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
 | `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
 | `enable_pushdown` | optional            | Globally enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL (default `true`)
-| `format` | optional            | The `rdf_fdw` expects the result sets encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which can be normally enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, there are some products that deviate from the standard and expect a differently value, e.g. `xml`, `rdf-xml`. In case the expected parameter differs from the official MIME type, it should be set in this parameter (default `application/sparql-results+xml`).
+| `format` | optional            | The `rdf_fdw` expects the result sets to be encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which is typically enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, some products deviate from this standard and expect a different value, e.g. `xml`, `rdf-xml`. If the expected parameter differs from the official MIME type, it should be specified explicitly (default `application/sparql-results+xml`).
 | `http_proxy` | optional            | Proxy for HTTP requests.
 | `proxy_user` | optional            | User for proxy server authentication.
 | `proxy_user_password` | optional            | Password for proxy server authentication.
 | `connect_timeout`         | optional            | Connection timeout for HTTP requests in seconds (default `300` seconds).
 | `connect_retry`         | optional            | Number of attempts to retry a request in case of failure (default `3` times).
 | `request_redirect`         | optional            | Enables URL redirect issued by the server (default `false`).
-| `request_max_redirect`         | optional            | Limit of how many times the URL redirection may occur. If that many redirections have been followed, the next redirect will cause an error. Not setting this parameter or setting it to `0` will allow an infinite number of redirects.
+| `request_max_redirect`         | optional            | Specifies the maximum number of URL redirects allowed. If this limit is reached, any further redirection will result in an error. Leaving this parameter unset or setting it to `0` allows an unlimited number of redirects.
 | `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are appended to the request URL.
-| `query_param`         | optional            | The request parameter where the SPARQL endpoint expects the query in a HTTP request. Most SPARQL endpoints expects the query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option (default `query`)
+| `query_param`         | optional            | The request parameter in which the SPARQL endpoint expects the query in an HTTP request. Most endpoints expect the SPARQL query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option.
 
 > [!NOTE]  
 > To visualise the foreign server's options use the `psql` meta-command `\des[+]`
@@ -179,22 +179,21 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `sparql`      | **required**    | The raw SPARQL query to be executed    |
-| `log_sparql`  | optional    | Logs the exact SPARQL query executed. This option is useful to check for any modification to the configured SPARQL query due to pushdown  |
-| `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. This overrides the `SERVER` option `enable_pushdown` |
+| `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown.  |
+| `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. Overrides the `SERVER` option `enable_pushdown` |
 
 **Column Options**
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `variable`    | **required**    |This option maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` (*`?` or `$` are **not** part of the variable name!)*, and the name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). All expressions supported by the data source can be used in this option. |
-| `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option is necessary for the pushdown feature to properly set the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` espressions ignore language tags when comparing literals.   |  
-| `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option is necessary for the pushdown feature to properly set the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` espressions ignore data types when comparing literals. |
+| `variable`    | **required**    | Maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` (*`?` or `$` are **not** part of the variable name!)*. The name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
+| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable, it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). Any expression supported by the data source can be used. |
+| `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option ensures that the pushdown feature correctly sets the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` espressions ignore language tags when comparing literals.   |  
+| `literaltype`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option ensures that the pushdown feature correctly sets the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` expressions ignore data types when comparing literals. |
 | `nodetype`  | optional    | Type of the RDF node. Expected values are `literal` or `iri`. This option helps the query planner to optimize SPARQL `FILTER` expressions when the `WHERE` conditions are pushed down (default `literal`)  |
 
 
-
-The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. SELECT queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
+The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. `SELECT` queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
 
 ```sql
 CREATE FOREIGN TABLE film (
@@ -281,7 +280,7 @@ Shows the version of the installed `rdf_fdw` and its main libraries.
 SELECT * FROM rdf_fdw_version();
                                                                                              rdf_fdw_version
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- rdf_fdw = 1.0.0, libxml/2.9.14 libcurl/7.88.1 OpenSSL/3.0.11 zlib/1.2.13 brotli/1.0.9 zstd/1.5.4 libidn2/2.3.3 libpsl/0.21.2 (+libidn2/2.3.3) libssh2/1.10.0 nghttp2/1.52.0 librtmp/2.3 OpenLDAP/2.5.13
+ rdf_fdw = 1.3.0, libxml/2.9.14 libcurl/7.88.1 OpenSSL/3.0.14 zlib/1.2.13 brotli/1.0.9 zstd/1.5.4 libidn2/2.3.3 libpsl/0.21.2 (+libidn2/2.3.3) libssh2/1.10.0 nghttp2/1.52.0 librtmp/2.3 OpenLDAP/2.5.13
 (1 row)
 ```
 ### [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table)
@@ -305,7 +304,8 @@ void rdf_fdw_clone_table(
 
 **Description**
 
-This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `TABLE`. It provides the possibility to retrieve the data set in batches, so that issues related to triplestore limits and client's memory don't bother too much. 
+This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `TABLE`. It provides the possibility to retrieve the data set in batches, so that known issues related to triplestore limits and client's memory don't bother too much. 
+
 **Parameters**
 
 `foreign_table` **(required)**:  `FOREIGN TABLE` from where the data has to be copied.
@@ -326,7 +326,7 @@ This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `T
 
 `verbose`: prints debugging messages in the standard output. Default `false`.
 
-`commit_page`: commits the inserted records immediatelly or only after the transaction is finished. Useful for those who want records to be discarded in case of an error - following the principle of *everyhing or nothing*. Default `true`, which means that all inserts will me committed immediatelly.
+`commit_page`: commits the inserted records immediatelly or only after the transaction is finished. Useful for those who want records to be discarded in case of an error - following the principle of *everything or nothing*. Default `true`, which means that all inserts will me committed immediatelly.
 
 -------
 
@@ -356,7 +356,7 @@ SERVER dbpedia OPTIONS (
 ');
 
 /*
- * Materilize all records from the FOREIGN TABLE 'public.dbpedia_cities' in 
+ * Materialize all records from the FOREIGN TABLE 'public.dbpedia_cities' in 
  * the table 'public.t1_local'. 
  */ 
 CALL rdf_fdw_clone_table(
@@ -384,8 +384,12 @@ SELECT * FROM t1_local;
 ```
 
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
- 
-A *pushdown* is the ability to translate SQL queries in such a way that operations are performed in the data source rather than in PostgreSQL, e.g. sorting, formatting, filtering. This feature can significantly reduce the number of records retrieved from the data source. For instance, a SQL `LIMIT` not pushed down means that the target system will perform a full scan in the data source, prepare everything for data transfer, return it to PostgreSQL via network, and then PostgreSQL will only locally discard the unnecessary data, which depending on the total number of records can be extremely inefficient. The `rdf_fdw` tries to translate SQL into SPARQL queries, which due to their conceptual differences is not always an easy task, so it is often worth considering to keep SQL queries involving foreign tables as simple as possible - or just to stick to the features, data types and operators described in this section. 
+
+A *pushdown* is the ability to translate SQL queries so that operations—such as sorting, formatting, and filtering—are performed directly in the data source rather than in PostgreSQL. This feature can significantly reduce the number of records retrieved from the data source.  
+
+For example, if a SQL `LIMIT` clause is not pushed down, the target system will perform a full scan of the data source, prepare the entire result set for transfer, send it to PostgreSQL over the network, and only then will PostgreSQL discard the unnecessary data. Depending on the total number of records, this process can be extremely inefficient.  
+
+The `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, due to fundamental differences between the two languages, this is not always straightforward. To optimize performance, it is often best to keep SQL queries involving foreign tables as simple as possible or to use only the features, data types, and operators described in this section.  
 
 ### LIMIT
 
@@ -397,7 +401,7 @@ A *pushdown* is the ability to translate SQL queries in such a way that operatio
 | `FETCH FIRST x ROWS` | `LIMIT x` |
 | `FETCH FIRST ROW ONLY` | `LIMIT 1` |
 
-Pushdown of **OFFSET** clauses is **not** supported, which means that OFFSET filters will be applied locally in the client. Take a look at [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table) if you wish to retrieve records in batches.
+**OFFSET** pushdown is **not** supported, meaning that OFFSET filters will be applied locally in PostgreSQL. If you need to retrieve records in batches, consider using  [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table).
 
 ### ORDER BY
 
@@ -411,11 +415,11 @@ Pushdown of **OFFSET** clauses is **not** supported, which means that OFFSET fil
 
 ### DISTINCT
 
-`DISTINCT` is pushed down to the SPARQL SELECT statement just like in SQL. In case that the configured SPARQL query already contains a `DISTINCT` or a `REDUCED` modifier, the SQL `DISTINCT` won't be pushed down. There is no equivalent for `DISTINCT ON`, so it cannot be pushed down either.
+`DISTINCT` is pushed down to the SPARQL `SELECT` statement just as in SQL. However, if the configured SPARQL query already includes a `DISTINCT` or `REDUCED` modifier, the SQL `DISTINCT` won't be pushed down. Since there is no SPARQL equivalent for `DISTINCT ON`, this feature cannot be pushed down.  
 
 ### WHERE
 
-The `rdf_fdw` will attempt to translate RDF literals to the data type of the mapped column, and this can be quite tricky! RDF literals can be pretty much everything, as often they have no explicit data type declarations, e.g. `"wwu"` and `"wwu"^^xsd:string` are equivalent. The contents of literals are often also not validated by the RDF triplestores, but PostgreSQL will validate them in query time. So, if a retrieved literal cannot be translated to declared column data type, the query will be interrupted. SQL `WHERE` conditions are translated into SPARQL `FILTER` expressions, as long as the involved columns data types and operators are supported.
+The `rdf_fdw` will attempt to translate RDF literals to the data type of the mapped column, which can be quite tricky! RDF literals can be pretty much everything, as often they have no explicit data type declarations - for example, `"wwu"` and `"wwu"^^xsd:string` are equivalent. The contents of literals are often also not validated by the RDF triplestores, but PostgreSQL will validate them in query time. So, if a retrieved literal cannot be translated to declared column type, the query will fail. SQL `WHERE` conditions are translated into SPARQL `FILTER` expressions, provided that the involved column data types and operators are supported as described below. 
 
 
 #### Supported Data Types and Operators
@@ -583,7 +587,7 @@ SERVER dbpedia OPTIONS (
 In the following SQL query we can observe that: 
 
 * the executed SPARQL query was logged.
-* the SPARQL `SELECT` was modified to retireve only the columns used in the SQL `SELECT` and `WHERE` clauses.
+* the SPARQL `SELECT` was modified to retrieve only the columns used in the SQL `SELECT` and `WHERE` clauses.
 * the conditions in the SQL `WHERE` clause were pushed down as SPARQL `FILTER` conditions.
 * the SQL `ORDER BY` clause was pushed down as SPARQL `ORDER BY`.
 * the `FETCH FIRST ... ROWS ONLY` was pushed down as SPARQL `LIMIT`
@@ -928,7 +932,7 @@ LIMIT 10
 ### [Import data into QGIS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#import-data-into-qgis)
 
 #### Create a `SERVER` and a `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Geographic Information Systems
-The `rdf_fdw` can also be used as a bridge between GIS (Geographic Information Systems) and RDF Triplestores. This example shows how to retrieve geographic coordinates of all German public universities from DBpedia, create a WKT (Well Known Text) representation of them, and finally import this data into [QGIS](https://qgis.org/) to plot a map.
+The `rdf_fdw` can also be used as a bridge between GIS (Geographic Information Systems) and RDF Triplestores. This example demonstrates how to retrieve geographic coordinates of all German public universities from DBpedia, create WKT (Well Known Text) literals, and import the data into [QGIS](https://qgis.org/) to visualize it on a map.
 
 > [!NOTE]  
 > This example requires the extension PostGIS.
@@ -1019,7 +1023,7 @@ Afer that set the geometery column and identifier, and hit **Save**. Finally, fi
 
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
-To deploy `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For instance, a `rdf_fdw` `Dockerfile` for PostgreSQL 15 should look like this (minimal example):
+To deploy `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 15 should look like this (minimal example):
 
 ```dockerfile
 FROM postgres:15
@@ -1057,7 +1061,7 @@ $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION r
 
 ### [For testers and developers](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#for-testers-and-developers)
 
-If you're cool enough, try out the latest commits:
+Think you're cool enough? Try compiling the latest commits from source!
 
 Dockerfile
 
