@@ -17,4 +17,5 @@ SHLIB_LINK := $(LIBS)
 
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
+PG_CFLAGS = $(shell xml2-config --cflags)
 include $(PGXS)
