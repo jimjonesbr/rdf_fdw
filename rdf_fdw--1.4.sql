@@ -12,6 +12,18 @@ LANGUAGE C STRICT;
 
 COMMENT ON FUNCTION rdf_fdw_validator(text[], oid) IS 'RDF Triplestore Foreign-data Wrapper options validator';
 
+CREATE TYPE rdf_fdw_triple AS (
+  subject text,
+  predicate text,
+  object text
+);
+
+CREATE FUNCTION rdf_fdw_describe(server text, query text, raw_literal boolean DEFAULT true, base_uri text DEFAULT '')
+RETURNS SETOF rdf_fdw_triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+COMMENT ON FUNCTION rdf_fdw_describe(text,text,boolean,text) IS 'Gateway for DESCRIBE SPARQL queries';
+
 CREATE FOREIGN DATA WRAPPER rdf_fdw
 HANDLER rdf_fdw_handler
 VALIDATOR rdf_fdw_validator;

@@ -17,6 +17,7 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
   - [version](#version)
+  - [rdf_fdw_describe](#rdf_fdw_describe)
   - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
 - [Pushdown](#pushdown)
   - [LIMIT](#limit)
@@ -43,17 +44,19 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
 
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
+* [librdf](https://librdf.org/): version 1.0.17 or higher.
+* [pkg-config](https://linux.die.net/man/1/pkg-config): pkg-config 0.29.2 or higher.
 * [PostgreSQL](https://www.postgresql.org): version 9.6 or higher.
 * [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to compile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
 
 ```shell
-apt install -y make gcc postgresql-server-dev-16 libxml2-dev libcurl4-openssl-dev
+apt-get install -y make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 ```
 
 > [!NOTE]  
-> `postgresql-server-dev-16` only installs the libraries for PostgreSQL 16. Change it if you're using another PostgreSQL version.
+> `postgresql-server-dev-17` only installs the libraries for PostgreSQL 17. Change it if you're using another PostgreSQL version.
 
 ## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
 
@@ -277,12 +280,78 @@ Shows the version of the installed `rdf_fdw` and its main libraries.
 **Usage**
 
 ```sql
-SELECT * FROM rdf_fdw_version();
-                                                                                             rdf_fdw_version
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- rdf_fdw = 1.3.0, libxml/2.9.14 libcurl/7.88.1 OpenSSL/3.0.14 zlib/1.2.13 brotli/1.0.9 zstd/1.5.4 libidn2/2.3.3 libpsl/0.21.2 (+libidn2/2.3.3) libssh2/1.10.0 nghttp2/1.52.0 librtmp/2.3 OpenLDAP/2.5.13
+SELECT rdf_fdw_version();
+                                                                                                      rdf_fdw_version
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw = 1.4.0, libxml/2.9.14, librdf/1.0.17, libcurl/7.88.1 GnuTLS/3.7.9 zlib/1.2.13 brotli/1.0.9 zstd/1.5.4 libidn2/2.3.3 libpsl/0.21.2 (+libidn2/2.3.3) libssh2/1.10.0 nghttp2/1.52.0 librtmp/2.3 OpenLDAP/2.5.13
 (1 row)
 ```
+
+### [rdf_fdw_describe](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_describe)
+**Synopsis**
+```
+void rdf_fdw_describe(
+  server text,
+  query text,
+  raw_literal boolean,
+  base_uri text
+)
+```
+**Availability**: 1.4.0
+
+**Description**
+
+The `rdf_fdw_describe` function executes a SPARQL `DESCRIBE` query against a specified RDF triplestore `SERVER`. It retrieves RDF triples describing a resource (or resources) identified by the query and returns them as a table with three columns: subject, predicate, and object. This function is useful for exploring RDF data by fetching detailed descriptions of resources from a triplestore.
+The function leverages the Redland RDF library (librdf) to parse the `RDF/XML` response from the triplestore into triples, which are then returned as rows in the result set.
+
+**Parameters**
+
+`server` **(required)**: The name of the foreign server (defined via `CREATE SERVER`) that specifies the SPARQL endpoint to query. This must correspond to an existing `rdf_fdw` server configuration. Cannot be empty or `NULL`.
+
+`describe_query` **(required)**: A valid SPARQL `DESCRIBE` query string (e.g., `DESCRIBE <http://example.org/resource>`). Cannot be empty or `NULL`.
+
+`raw_literal`: Controls how literal values in the object column are formatted (default `true`):
+* **true**: Preserves the full RDF literal syntax, including datatype (e.g., `"123"^^<http://www.w3.org/2001/XMLSchema#integer>`) or language tags (e.g., `"hello"@en`).
+* **false**: Strips datatype and language tags, returning only the literal value (e.g., `"123"` or `"hello"`).
+
+`base_uri`: The base URI used to resolve relative URIs in the `RDF/XML` response from the triplestore. If empty, defaults to "http://rdf_fdw.postgresql.org/". Useful for ensuring correct URI resolution in the parsed triples.
+
+
+**Return Value**
+
+Returns a table with the following columns:
+* subject (text): The subject of each RDF triple, typically a URI or blank node identifier.
+* predicate (text): The predicate (property) of each RDF triple, always a URI.
+* object (text): The object of each RDF triple, which may be a URI, blank node, or literal value (formatted based on `raw_literal`).
+
+**Usage Example**
+
+```sql
+CREATE SERVER wikidata
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (endpoint 'https://query.wikidata.org/sparql');
+
+SELECT subject, predicate, object
+FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true);
+
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+DESCRIBE <http://www.wikidata.org/entity/Q61308849>
+
+
+                 subject                  |                 predicate                  |                               object
+------------------------------------------+--------------------------------------------+------------------------------------------------------------------------------
+ http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P3999  | "2015-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ http://www.wikidata.org/entity/Q61308849 | http://schema.org/dateModified             | "2024-05-01T21:36:41Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ http://www.wikidata.org/entity/Q61308849 | http://schema.org/version                  | "2142303130"^^<http://www.w3.org/2001/XMLSchema#integer>
+ http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P127   | http://www.wikidata.org/entity/Q349450
+...
+ http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P625   | "Point(-133.03 69.43)"^^<http://www.opengis.net/ont/geosparql#wktLiteral>
+(37 rows)
+```
+
+
+
 ### [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table)
 **Synopsis**
 ```
@@ -1023,13 +1092,13 @@ Afer that set the geometery column and identifier, and hit **Save**. Finally, fi
 
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
-To deploy `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 15 should look like this (minimal example):
+To deploy `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 17 should look like this (minimal example):
 
 ```dockerfile
-FROM postgres:15
+FROM postgres:17
 
 RUN apt-get update && \
-    apt-get install -y make gcc postgresql-server-dev-15 libxml2-dev libcurl4-openssl-dev
+    apt-get install -y make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 RUN mkdir /extensions
 COPY ./rdf_fdw-1.0.0.tar.gz /extensions/
@@ -1067,10 +1136,10 @@ Dockerfile
 
 
 ```dockerfile
-FROM postgres:15
+FROM postgres:17
 
 RUN apt-get update && \
-    apt-get install -y git make gcc postgresql-server-dev-15 libxml2-dev libcurl4-openssl-dev
+    apt-get install -y git make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 WORKDIR /
 

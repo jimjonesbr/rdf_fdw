@@ -55,7 +55,7 @@ sort_order: 'ASC'
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
 INFO:  [10 - 15]: 3 records inserted
-SELECT * FROM public.t1;
+SELECT * FROM public.t1 ORDER BY city_name COLLATE "C";
  id |      city_name      | c1_null |                            uri                            | c2_null 
 ----+---------------------+---------+-----------------------------------------------------------+---------
   1 | Aachen              |         | http://dbpedia.org/resource/Aachen                        | 
@@ -109,7 +109,7 @@ INFO:  [2 - 4]: 2 records inserted
 INFO:  [4 - 6]: 2 records inserted
 INFO:  [6 - 8]: 2 records inserted
 INFO:  [8 - 10]: 1 records inserted
-SELECT * FROM public.t2;
+SELECT * FROM public.t2 ORDER BY city_name COLLATE "C";
  id | foo | bar |   city_name   
 ----+-----+-----+---------------
   1 |     |     | Aachen
@@ -157,22 +157,22 @@ sort_order: 'DESC'
 INFO:  [0 - 5]: 5 records inserted
 INFO:  [5 - 10]: 5 records inserted
 INFO:  [10 - 15]: 3 records inserted
-SELECT * FROM public.t3;
+SELECT * FROM public.t3 ORDER BY city_name COLLATE "C";
                             uri                            |      city_name      | elevation 
 -----------------------------------------------------------+---------------------+-----------
- http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
  http://dbpedia.org/resource/Aachen                        | Aachen              |     173.0
  http://dbpedia.org/resource/Bielefeld                     | Bielefeld           |     118.0
- http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
  http://dbpedia.org/resource/Dortmund                      | Dortmund            |      86.0
- http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
- http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
- http://dbpedia.org/resource/Gelsenkirchen                 | Gelsenkirchen       |      60.0
- http://dbpedia.org/resource/Münster                       | Münster             |      60.0
- http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
  http://dbpedia.org/resource/Düsseldorf                    | Düsseldorf          |      38.0
+ http://dbpedia.org/resource/Gelsenkirchen                 | Gelsenkirchen       |      60.0
+ http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
  http://dbpedia.org/resource/Hamm                          | Hamm                |      37.7
+ http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
+ http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
+ http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
  http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
+ http://dbpedia.org/resource/Münster                       | Münster             |      60.0
+ http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
 (13 rows)
 
 /*----------------------------------------------------------------------------------------------------------*/
@@ -217,24 +217,24 @@ CALL
         fetch_size => 4,
         max_records => 15
     );
-SELECT * FROM public.heap1;
+SELECT * FROM public.heap1 ORDER BY name COLLATE "C";
  id | foo | runtime | bar |             name              |  released  
 ----+-----+---------+-----+-------------------------------+------------
-  1 |     |       2 |     | Nervy Nat Kisses the Bride    | 09-30-1904
-  2 |     |       1 |     | When Knights Were Bold        | 05-20-1908
-  3 |     |       1 |     | Pippa Passes                  | 10-04-1909
-  4 |     |       1 |     | Briton and Boer               | 10-25-1909
-  5 |     |      12 |     | Twelfth Night                 | 02-05-1910
-  6 |     |       1 |     | In the Season of Buds         | 06-02-1910
+ 15 |     |    2500 |     | A Tale of the Australian Bush | 03-15-1911
+ 10 |     |       1 |     | A Tin-Type Romance            | 12-06-1910
   7 |     |       1 |     | An Engineer's Sweetheart      | 06-14-1910
+ 14 |     |       1 |     | Artful Kate                   | 02-23-1911
+ 11 |     |       1 |     | Baseball and Bloomers         | 01-06-1911
+  4 |     |       1 |     | Briton and Boer               | 10-25-1909
+ 13 |     |       1 |     | Fisher Folks                  | 02-16-1911
+  6 |     |       1 |     | In the Season of Buds         | 06-02-1910
+ 12 |     |       1 |     | Jean Rescues                  | 01-31-1911
+  1 |     |       2 |     | Nervy Nat Kisses the Bride    | 09-30-1904
+  3 |     |       1 |     | Pippa Passes                  | 10-04-1909
   8 |     |       1 |     | The Fire Chief's Daughter     | 06-30-1910
   9 |     |       1 |     | The Merry Wives of Windsor    | 11-24-1910
- 10 |     |       1 |     | A Tin-Type Romance            | 12-06-1910
- 11 |     |       1 |     | Baseball and Bloomers         | 01-06-1911
- 12 |     |       1 |     | Jean Rescues                  | 01-31-1911
- 13 |     |       1 |     | Fisher Folks                  | 02-16-1911
- 14 |     |       1 |     | Artful Kate                   | 02-23-1911
- 15 |     |    2500 |     | A Tale of the Australian Bush | 03-15-1911
+  5 |     |      12 |     | Twelfth Night                 | 02-05-1910
+  2 |     |       1 |     | When Knights Were Bold        | 05-20-1908
 (15 rows)
 
 /*
@@ -250,24 +250,24 @@ CALL
         fetch_size => 4,
         max_records => 15
     );
-SELECT runtime,name,released FROM public.heap2;
+SELECT runtime,name,released FROM public.heap2 ORDER BY name COLLATE "C";;
  runtime |             name              |  released  
 ---------+-------------------------------+------------
-       2 | Nervy Nat Kisses the Bride    | 09-30-1904
-       1 | When Knights Were Bold        | 05-20-1908
-       1 | Pippa Passes                  | 10-04-1909
-       1 | Briton and Boer               | 10-25-1909
-      12 | Twelfth Night                 | 02-05-1910
-       1 | In the Season of Buds         | 06-02-1910
+    2500 | A Tale of the Australian Bush | 03-15-1911
+       1 | A Tin-Type Romance            | 12-06-1910
        1 | An Engineer's Sweetheart      | 06-14-1910
+       1 | Artful Kate                   | 02-23-1911
+       1 | Baseball and Bloomers         | 01-06-1911
+       1 | Briton and Boer               | 10-25-1909
+       1 | Fisher Folks                  | 02-16-1911
+       1 | In the Season of Buds         | 06-02-1910
+       1 | Jean Rescues                  | 01-31-1911
+       2 | Nervy Nat Kisses the Bride    | 09-30-1904
+       1 | Pippa Passes                  | 10-04-1909
        1 | The Fire Chief's Daughter     | 06-30-1910
        1 | The Merry Wives of Windsor    | 11-24-1910
-       1 | A Tin-Type Romance            | 12-06-1910
-       1 | Baseball and Bloomers         | 01-06-1911
-       1 | Jean Rescues                  | 01-31-1911
-       1 | Fisher Folks                  | 02-16-1911
-       1 | Artful Kate                   | 02-23-1911
-    2500 | A Tale of the Australian Bush | 03-15-1911
+      12 | Twelfth Night                 | 02-05-1910
+       1 | When Knights Were Bold        | 05-20-1908
 (15 rows)
 
 /* 
@@ -317,16 +317,16 @@ INFO:  [10 - 12]: 2 records inserted
 INFO:  [12 - 14]: 2 records inserted
 INFO:  [14 - 16]: 2 records inserted
 INFO:  [16 - 18]: 1 records inserted
-SELECT runtime,name,released FROM public.heap3;
+SELECT runtime,name,released FROM public.heap3 ORDER BY name COLLATE "C";
  runtime |             name              |  released  
 ---------+-------------------------------+------------
-       1 | Baseball and Bloomers         | 01-06-1911
-       1 | Jean Rescues                  | 01-31-1911
-       1 | Fisher Folks                  | 02-16-1911
-       1 | Artful Kate                   | 02-23-1911
     2500 | A Tale of the Australian Bush | 03-15-1911
-       1 | Monsieur                      | 04-04-1911
+       1 | Artful Kate                   | 02-23-1911
+       1 | Baseball and Bloomers         | 01-06-1911
+       1 | Fisher Folks                  | 02-16-1911
        1 | How Spriggins Took Lodgers    | 04-19-1911
+       1 | Jean Rescues                  | 01-31-1911
+       1 | Monsieur                      | 04-04-1911
 (7 rows)
 
 /*

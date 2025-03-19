@@ -32,7 +32,6 @@ SERVER dbpedia OPTIONS (
             dbp:name ?name ;
             dbp:released ?released ;
             dbp:runtime ?runtime .
-      FILTER (LANG ( ?abstract ) = "en")
       FILTER (datatype(?released) = xsd:date)
       FILTER (datatype(?runtime) = xsd:integer)
      }
@@ -237,8 +236,7 @@ FETCH FIRST 5 ROWS ONLY;
 
 SELECT name, birthdate, party
 FROM politicians
-WHERE lower(country) = 'germany' AND 
-      birthdate > '1995-12-31'
+WHERE lower(country) = 'germany'
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 

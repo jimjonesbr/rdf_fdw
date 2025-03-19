@@ -82,6 +82,8 @@
 #include "optimizer/optimizer.h"
 #include "access/heapam.h"
 #endif
+#include <funcapi.h>
+#include <librdf.h>
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
@@ -107,6 +109,8 @@
 #define RDF_DEFAULT_MAXRETRY 3
 #define RDF_KEYWORD_NOT_FOUND -1
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
+#define RDF_RDFXML_FORMAT "application/rdf+xml"
+#define RDF_DEFAULT_BASE_URI "http://rdf_fdw.postgresql.org/"
 #define RDF_DEFAULT_QUERY_PARAM "query"
 #define RDF_DEFAULT_FETCH_SIZE 100
 #define RDF_ORDINARY_TABLE_CODE "r"
@@ -129,6 +133,7 @@
 #define RDF_SERVER_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
 #define RDF_SERVER_OPTION_QUERY_PARAM "query_param"
 #define RDF_SERVER_OPTION_FETCH_SIZE "fetch_size"
+#define RDF_SERVER_OPTION_BASE_URI "base_uri"
 
 #define RDF_TABLE_OPTION_SPARQL "sparql"
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
@@ -143,10 +148,13 @@
 #define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
 #define RDF_COLUMN_OPTION_LANGUAGE "language"
 
+#define RDF_SPARQL_TYPE_SELECT "SELECT"
+#define RDF_SPARQL_TYPE_DESCRIBE "DESCRIBE"
 #define RDF_SPARQL_KEYWORD_FROM "FROM"
 #define RDF_SPARQL_KEYWORD_NAMED "NAMED"
 #define RDF_SPARQL_KEYWORD_PREFIX "PREFIX"
 #define RDF_SPARQL_KEYWORD_SELECT "SELECT"
+#define RDF_SPARQL_KEYWORD_DESCRIBE "DESCRIBE"
 #define RDF_SPARQL_KEYWORD_GROUPBY "GROUP BY"
 #define RDF_SPARQL_KEYWORD_ORDERBY "ORDER BY"
 #define RDF_SPARQL_KEYWORD_HAVING "HAVING"
@@ -184,6 +192,12 @@
 
 PG_MODULE_MAGIC;
 
+typedef enum RDFfdwQueryType
+{
+	SPARQL_SELECT,
+	SPARQL_DESCRIBE
+} RDFfdwQueryType;
+
 typedef struct RDFfdwState
 {
 	int numcols;                 /* Total number of columns in the foreign table. */
@@ -199,6 +213,7 @@ typedef struct RDFfdwState
 	char *sparql_filter;         /* SPARQL FILTER clauses based on SQL WHERE conditions */
 	char *sparql_orderby;        /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
 	char *sparql_limit;          /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
+	char *sparql_resultset;      /* Raw string containing the result of a SPARQL query */
 	char *raw_sparql;            /* Raw SPARQL query set in the CREATE TABLE statement */
 	char *endpoint;              /* SPARQL endpoint set in the CREATE SERVER statement*/
 	char *query_param;           /* SPARQL query POST parameter used by the endpoint */
@@ -208,11 +223,13 @@ typedef struct RDFfdwState
 	char *proxy_user;            /* User name for proxy authentication. */
 	char *proxy_user_password;   /* Password for proxy authentication. */
 	char *custom_params;         /* Custom parameters used to compose the request URL */
+	char *base_uri;              /* Base URI for possible relative references */
 	bool request_redirect;       /* Enables or disables URL redirecting. */
 	bool enable_pushdown;        /* Enables or disables pushdown of SQL commands */
 	bool is_sparql_parsable;     /* Marks the query is or not for pushdown*/
 	bool log_sparql;             /* Enables or disables logging SPARQL queries as NOTICE */
 	bool has_unparsable_conds;   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
+	bool keep_raw_literal;       /* Flag to determine if a literal should be serialized with its data type/language or not*/
 	long request_max_redirect;   /* Limit of how many times the URL redirection (jump) may occur. */
 	long connect_timeout;        /* Timeout for SPARQL queries */
 	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
@@ -225,8 +242,9 @@ typedef struct RDFfdwState
 	ForeignServer *server;       /* FOREIGN SERVER to connect to the RDF triplestore */
 	ForeignTable *foreign_table; /* FOREIGN TABLE containing the graph pattern (SPARQL Query) and column / variable mapping */
 	UserMapping *mapping;        /* USER MAPPING to enable http basic authentication for a given postgres user */
-	MemoryContext rdfctxt;       /* Memory Context for data manipulation. */
-	CURL *curl;					 /* CURL request handler */
+	MemoryContext rdfctxt;       /* Memory Context for data manipulation */
+	CURL *curl;                  /* CURL request handler */
+	RDFfdwQueryType sparql_query_type;  /* SPARQL Query type: SELECT, DESCRIBE */
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
@@ -298,6 +316,7 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_SERVER_OPTION_ENABLE_PUSHDOWN, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_QUERY_PARAM, ForeignServerRelationId, false, false},
 	{RDF_SERVER_OPTION_FETCH_SIZE, ForeignServerRelationId, false, false},
+	{RDF_SERVER_OPTION_BASE_URI, ForeignServerRelationId, false, false},
 	/* Foreign Tables */
 	{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 	{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
@@ -316,15 +335,24 @@ static struct RDFfdwOption valid_options[] =
 	{NULL, InvalidOid, false, false}
 };
 
+typedef struct RDFfdwTriple
+{
+	char *subject;	 /* RDF triple subject */
+	char *predicate; /* RDF triple predicate */
+	char *object;	 /* RDF triple object */
+} RDFfdwTriple;
+
 extern Datum rdf_fdw_handler(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_version(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_describe(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
 PG_FUNCTION_INFO_V1(rdf_fdw_version);
 PG_FUNCTION_INFO_V1(rdf_fdw_clone_table);
+PG_FUNCTION_INFO_V1(rdf_fdw_describe);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -337,6 +365,8 @@ static void rdfEndForeignScan(ForeignScanState *node);
 //static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 //static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 
+static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value);
+static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
 static void LoadRDFUserMapping(RDFfdwState *state);
@@ -377,7 +407,6 @@ static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static bool IsSPARQLStringFunction(char *funcname);
 static char *FormatSQLExtractField(char *field);
-//static bool getBoolVal(DefElem *def);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -392,7 +421,6 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	//fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
 	//fdwroutine->ExecForeignUpdate = rdfExecForeignUpdate;
 	//fdwroutine->ExecForeignDelete = rdfExecForeignDelete;
-	
 	PG_RETURN_POINTER(fdwroutine);
 }
 
@@ -402,10 +430,345 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	initStringInfo(&buffer);
 
 	appendStringInfo(&buffer, "rdf_fdw = %s,", FDW_VERSION);
-	appendStringInfo(&buffer, " libxml/%s", LIBXML_DOTTED_VERSION);
+	appendStringInfo(&buffer, " libxml/%s,", LIBXML_DOTTED_VERSION);
+	appendStringInfo(&buffer, " librdf/%s,", librdf_version_string);
 	appendStringInfo(&buffer, " %s", curl_version());
 
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
+}
+
+/*
+ * CreateDatum
+ * ----------
+ *
+ * Creates a Datum from a given value based on the postgres types and modifiers.
+ *
+ * tuple: a Heaptuple
+ * pgtype: postgres type
+ * pgtypemod: postgres type modifier
+ * value: value to be converted
+ *
+ * returns Datum
+ */
+static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value)
+{
+	regproc typinput;
+
+	elog(DEBUG3, "%s called", __func__);
+
+	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
+
+	if (!HeapTupleIsValid(tuple))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
+				 errmsg("cache lookup failed for type %u (osm_id)", pgtype)));
+	}
+
+	typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
+	ReleaseSysCache(tuple);
+
+	if (pgtype == FLOAT4OID ||
+		pgtype == FLOAT8OID ||
+		pgtype == NUMERICOID ||
+		pgtype == TIMESTAMPOID ||
+		pgtype == TIMESTAMPTZOID ||
+		pgtype == VARCHAROID)
+		return OidFunctionCall3(
+			typinput,
+			CStringGetDatum(value),
+			ObjectIdGetDatum(InvalidOid),
+			Int32GetDatum(pgtypmod));
+	else
+		return OidFunctionCall1(typinput, CStringGetDatum(value));
+}
+
+/*
+ * DescribeIRI
+ * -----------------
+ *
+ * Executes a DESCRIBE SPARQL query and return the result set as as truples
+ * in a List*. It returns a list of RDFfdwTriple* with all triples returned
+ * from the DESCRIBE SPARQL query.
+ *
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ */
+static List *DescribeIRI(RDFfdwState *state)
+{
+	List *result = NIL;
+	librdf_world *world = librdf_new_world();
+	librdf_storage *storage = librdf_new_storage(world, "memory", NULL, NULL);
+	librdf_model *model = librdf_new_model(world, storage, NULL);
+	librdf_parser *parser = librdf_new_parser(world, "rdfxml", NULL, NULL);
+	librdf_uri *uri = librdf_new_uri(world, (const unsigned char *)state->base_uri);
+	librdf_stream *stream = NULL;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	librdf_world_open(world);
+
+	PG_TRY();
+	{
+		LoadRDFData(state);
+
+		if (strcmp(state->base_uri, RDF_DEFAULT_BASE_URI) != 0)
+			elog(DEBUG1, "%s: parsing RDF/XML result set (base '%s')", __func__, state->base_uri);
+
+		if (librdf_parser_parse_string_into_model(parser, (const unsigned char *)state->sparql_resultset, uri, model))
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("unable to parse RDF/XML"),
+					 errhint("base URI: %s", state->base_uri)));
+
+		stream = librdf_model_as_stream(model);
+
+		while (!librdf_stream_end(stream))
+		{
+			RDFfdwTriple *triple = (RDFfdwTriple *) palloc0(sizeof(RDFfdwTriple));
+			librdf_statement *statement = librdf_stream_get_object(stream);
+
+			if (librdf_node_is_resource(statement->subject))
+				triple->subject = pstrdup((char *) librdf_uri_as_string(librdf_node_get_uri(statement->subject)));
+			else if (librdf_node_is_blank(statement->subject))
+				triple->subject = pstrdup((char *) librdf_node_get_blank_identifier(statement->subject));
+			else
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_ERROR),
+						 errmsg("unsupported subject node type")));
+
+			triple->predicate = pstrdup((char *) librdf_uri_as_string(librdf_node_get_uri(statement->predicate)));
+
+			if (librdf_node_is_resource(statement->object))
+				triple->object = pstrdup((char *) librdf_uri_as_string(librdf_node_get_uri(statement->object)));
+			else if (librdf_node_is_literal(statement->object))
+			{
+				const char *value = (char *) librdf_node_get_literal_value(statement->object);
+				StringInfoData literal;
+				initStringInfo(&literal);
+
+				if (state->keep_raw_literal)
+				{
+					const char *language = librdf_node_get_literal_value_language(statement->object);
+					librdf_uri *datatype = librdf_node_get_literal_value_datatype_uri(statement->object);
+
+					if (datatype)
+						appendStringInfo(&literal, "\"%s\"^^<%s>", value, librdf_uri_as_string(datatype));
+					else if (language)
+						appendStringInfo(&literal, "\"%s\"@%s", value, language);
+					else
+						appendStringInfo(&literal, "\"%s\"", value);
+				}
+				else
+					appendStringInfo(&literal, "%s", value);
+
+				triple->object = pstrdup(literal.data);
+				pfree(literal.data);
+			}
+			else if (librdf_node_is_blank(statement->object))
+				triple->object = pstrdup((char *) librdf_node_get_blank_identifier(statement->object));
+			else
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_ERROR),
+						 errmsg("unsupported object node type")));
+
+			result = lappend(result, triple);
+
+			librdf_stream_next(stream);
+		}
+	}
+	PG_CATCH();
+	{
+		if (stream)
+			librdf_free_stream(stream);
+		if (model)
+			librdf_free_model(model);
+		if (storage)
+			librdf_free_storage(storage);
+		if (parser)
+			librdf_free_parser(parser);
+		if (uri)
+			librdf_free_uri(uri);
+		if (world)
+			librdf_free_world(world);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+
+	librdf_free_stream(stream);
+	librdf_free_model(model);
+	librdf_free_storage(storage);
+	librdf_free_parser(parser);
+	librdf_free_uri(uri);
+	librdf_free_world(world);
+
+	return result;
+}
+
+/*
+ * rdf_fdw_describe
+ * -----------------
+ *
+ * Analog to DESCRIBE SPARQL queries. This function expects at least two
+ * arguments, namely 'server' and 'query', which are passed in positions
+ * 1 and 2, respectivelly. Optionally, the arguments 'raw_literal' and
+ * 'base_uri' can determine if the literals from result set should be
+ * returned with their language/data type, and the base URI for possible
+ * relative references, respectivelly.
+ */
+Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
+{
+	struct RDFfdwState *state = (struct RDFfdwState *) palloc0(sizeof(RDFfdwState));
+	text *srvname_arg = PG_GETARG_TEXT_P(0);
+	text *iri_arg = PG_GETARG_TEXT_P(1);
+	bool keep_raw_literal =  PG_GETARG_BOOL(2);
+	text *base_uri_arg = PG_GETARG_TEXT_P(3);
+	char *srvname;
+	char *describe_query;
+	char *base_uri;
+
+	MemoryContext oldcontext;
+	FuncCallContext *funcctx;
+	AttInMetadata *attinmeta;
+	TupleDesc tupdesc;
+	int call_cntr;
+	int max_calls;
+
+	if (SRF_IS_FIRSTCALL())
+	{
+		List *triples;
+		funcctx = SRF_FIRSTCALL_INIT();
+		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+
+		elog(DEBUG1, "%s called (SRF_IS_FIRSTCALL)", __func__);
+
+		if (VARSIZE_ANY_EXHDR(srvname_arg) == 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("SERVER cannot be empty")));
+
+		if (VARSIZE_ANY_EXHDR(iri_arg) == 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("DESCRIBE pattern cannot be empty")));
+
+		srvname = text_to_cstring(srvname_arg);
+		describe_query = text_to_cstring(iri_arg);
+		state->keep_raw_literal = keep_raw_literal;
+		base_uri = text_to_cstring(base_uri_arg);
+
+		if (*describe_query && strspn(describe_query, " \t\n\r") == strlen(describe_query))
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("a DESCRIBE pattern cannot contain only whitespace characters")));
+
+		if(LocateKeyword(describe_query, " \n\t>", "DESCRIBE"," *?\n\t<", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
+			ereport(ERROR,
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+				errmsg("invalid DESCRIBE query:\n\n%s\n", describe_query)));
+
+		if (*srvname && strspn(srvname, " \t\n\r") == strlen(srvname))
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("a SERVER cannot contain only whitespace characters")));
+
+		/*
+		 * Setting session's default values.
+		 */
+		state->enable_pushdown = true;
+		state->log_sparql = true;
+		state->has_unparsable_conds = false;
+		state->query_param = RDF_DEFAULT_QUERY_PARAM;
+		state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+		state->max_retries = RDF_DEFAULT_MAXRETRY;
+		state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
+		state->sparql_query_type = SPARQL_DESCRIBE;
+		state->base_uri = RDF_DEFAULT_BASE_URI;
+
+		elog(DEBUG1, "%s loading server name: %s", __func__, srvname);
+		state->server = GetForeignServerByName(srvname, true);
+
+		if (!state->server)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("invalid SERVER: %s", quote_identifier(srvname))));
+
+		/*
+		* Loading SERVER OPTIONS
+		*/
+		LoadRDFServerInfo(state);
+
+		/*
+		 * Here we force the output format to RDF/XML, as by default no other format
+		 * is expected from DESCRIBE requests.
+		 */
+		state->format = RDF_RDFXML_FORMAT;
+		state->sparql = describe_query;
+
+		/* We set a different base URI if it was provided in the function call */
+		if (strlen(base_uri) != 0)
+			state->base_uri = base_uri;
+
+		/*
+		 * Loading USER MAPPING (if any)
+		 */
+		LoadRDFUserMapping(state);
+
+		triples = DescribeIRI(state);
+		funcctx->user_fctx = triples;
+
+		if (triples)
+			funcctx->max_calls = triples->length;
+		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
+			ereport(ERROR, (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+							errmsg("function returning record called in context that cannot accept type record")));
+
+		attinmeta = TupleDescGetAttInMetadata(tupdesc);
+		funcctx->attinmeta = attinmeta;
+
+		MemoryContextSwitchTo(oldcontext);
+	}
+
+	funcctx = SRF_PERCALL_SETUP();
+
+	call_cntr = funcctx->call_cntr;
+	max_calls = funcctx->max_calls;
+	attinmeta = funcctx->attinmeta;
+
+	if (call_cntr < max_calls)
+	{
+		Datum values[3];
+		bool nulls[3];
+		HeapTuple tuple;
+		Datum result;
+		RDFfdwTriple *triple = (RDFfdwTriple *)list_nth((List *)funcctx->user_fctx, call_cntr);
+
+		memset(nulls, 0, sizeof(nulls));
+
+		for (size_t i = 0; i < funcctx->attinmeta->tupdesc->natts; i++)
+		{
+			Form_pg_attribute att = TupleDescAttr(funcctx->attinmeta->tupdesc, i);
+
+			if (strcmp(NameStr(att->attname), "subject") == 0)
+				values[i] = CreateDatum(tuple, att->atttypid, att->atttypmod, triple->subject);
+			else if (strcmp(NameStr(att->attname), "predicate") == 0)
+				values[i] = CreateDatum(tuple, att->atttypid, att->atttypmod, triple->predicate);
+			else if (strcmp(NameStr(att->attname), "object") == 0)
+				values[i] = CreateDatum(tuple, att->atttypid, att->atttypmod, triple->object);
+			else
+				nulls[i] = true;
+		}
+
+		elog(DEBUG2, "  %s: creating heap tuple", __func__);
+
+		tuple = heap_form_tuple(funcctx->attinmeta->tupdesc, values, nulls);
+		result = HeapTupleGetDatum(tuple);
+
+		SRF_RETURN_NEXT(funcctx, result);
+	}
+	else
+	{
+		SRF_RETURN_DONE(funcctx);
+	}
 }
 
 /*
@@ -1607,6 +1970,9 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 
 			else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 				state->query_param = defGetString(def);
+
+			else if (strcmp(RDF_SERVER_OPTION_BASE_URI, def->defname) == 0)
+				state->base_uri = defGetString(def);
 		}
 	}
 }
@@ -1988,6 +2354,8 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	char *ptr;
 	char *sparqlxml = "content-type: application/sparql-results+xml";
 	char *sparqlxmlutf8 = "content-type: application/sparql-results+xml; charset=utf-8";
+	char *rdfxml = "content-type: application/rdf+xml";
+	char *rdfxmlutf8 = "content-type: application/rdf+xml;charset=utf-8";
 
 	Assert(contents);
 
@@ -1996,7 +2364,9 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	{
 
 		if (strncasecmp(contents, sparqlxml, strlen(sparqlxml)) != 0 &&
-			strncasecmp(contents, sparqlxmlutf8, strlen(sparqlxmlutf8)) != 0)
+			strncasecmp(contents, sparqlxmlutf8, strlen(sparqlxmlutf8)) != 0 &&
+			strncasecmp(contents, rdfxml, strlen(rdfxml)) != 0 &&
+			strncasecmp(contents, rdfxmlutf8, strlen(rdfxmlutf8)) != 0)
 		{
 			/* remove crlf */
 			contents[strlen(contents) - 2] = '\0';
@@ -2132,6 +2502,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
+	state->sparql_query_type = SPARQL_SELECT;
+
 	/*
 	 * Loading SERVER OPTIONS
 	 */
@@ -2274,8 +2646,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	initStringInfo(&accept_header);
 	appendStringInfo(&accept_header, "Accept: %s", state->format);
 
-	if(state->log_sparql)
-		elog(INFO,"SPARQL query sent to '%s':\n\n%s\n",state->endpoint,state->sparql);
+	if (state->log_sparql)
+		elog(INFO, "SPARQL query sent to '%s':\n\n%s\n", state->endpoint, state->sparql);
 
 	initStringInfo(&url_buffer);
 	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
@@ -2449,9 +2821,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		else
 		{
 			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
-			elog(DEBUG3, "  %s: xml document \n\n%s", __func__, chunk.memory);
-			state->xmldoc = xmlReadMemory(chunk.memory, chunk.size, NULL, NULL, XML_PARSE_NOBLANKS);
+			state->sparql_resultset = pstrdup(chunk.memory);
 
+			elog(DEBUG3, "  %s: xml document \n\n%s", __func__, chunk.memory);
 			elog(DEBUG2, "  %s: http response code = %ld", __func__, response_code);
 			elog(DEBUG2, "  %s: http response size = %ld", __func__, chunk.size);
 			elog(DEBUG2, "  %s: http response header = \n%s", __func__, chunk_header.memory);
@@ -2468,7 +2840,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	/*
 	 * We thrown an error in case the SPARQL endpoint returns an empty XML doc
 	 */
-	if(!state->xmldoc)
+	if(!state->sparql_resultset)
 		return REQUEST_FAIL;
 
 	return REQUEST_SUCCESS;
@@ -2489,35 +2861,37 @@ static void LoadRDFData(RDFfdwState *state)
 	state->rowcount = 0;
 	state->records = NIL;
 
-	elog(DEBUG1, "%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
 		elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
 
-	Assert(state->xmldoc);
+	elog(DEBUG2, "  %s: loading 'xmlroot'", __func__);
 
-	elog(DEBUG2, "  %s: loading 'xmlroot'",__func__);	
-	root = xmlDocGetRootElement(state->xmldoc);
-
-	for (results = root->children; results != NULL; results = results->next)
+	if (state->sparql_query_type == SPARQL_SELECT)
 	{
-		if (xmlStrcmp(results->name, (xmlChar *)"results") == 0)
+		state->xmldoc = xmlReadMemory(state->sparql_resultset, strlen(state->sparql_resultset), NULL, NULL, XML_PARSE_NOBLANKS);
+		root = xmlDocGetRootElement(state->xmldoc);
+
+		for (results = root->children; results != NULL; results = results->next)
 		{
-			xmlNodePtr record;
-
-			for (record = results->children; record != NULL; record = record->next)
+			if (xmlStrcmp(results->name, (xmlChar *)"results") == 0)
 			{
-				if (xmlStrcmp(record->name, (xmlChar *)"result") == 0)
-				{
-					state->records = lappend(state->records, record);
-					state->pagesize++;
+				xmlNodePtr record;
 
-					elog(DEBUG2, "  %s: appending record %d", __func__, state->pagesize);
+				for (record = results->children; record != NULL; record = record->next)
+				{
+					if (xmlStrcmp(record->name, (xmlChar *)"result") == 0)
+					{
+						state->records = lappend(state->records, record);
+						state->pagesize++;
+
+						elog(DEBUG2, "  %s: appending record %d", __func__, state->pagesize);
+					}
 				}
 			}
 		}
 	}
-
 }
 
 /*
@@ -2977,7 +3351,8 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 	 * in the beginning of the string.
 	 */
 	if (((strcasecmp(keyword, RDF_SPARQL_KEYWORD_SELECT) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_SELECT, strlen(RDF_SPARQL_KEYWORD_SELECT)) == 0) ||
-		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0)) &&
+		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0) ||
+		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_DESCRIBE) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_DESCRIBE, strlen(RDF_SPARQL_KEYWORD_DESCRIBE)) == 0)) &&
 		 start_position == 0)
 	{
 		elog(DEBUG1, "%s%s: nothing before SELECT. Setting keyword_position to 0.", NameStr(idt), __func__);

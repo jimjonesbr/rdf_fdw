@@ -1,15 +1,20 @@
 # Release Notes
 
 ## 1.4.0
-Release date: **YYY-MM-DD**
+Release date: **YYYY-MM-DD**
 
 ### Enhancements
 
 * Support for PostgreSQL 18 (in development as of this release)
+* Support for `DESCRIBE` SPARQL queries via the support function `rdf_fdw_describe()`.
 
 ### Bug Fixes
 
 * Fix query cancellation: this adds CHECK_FOR_INTERRUPTS() calls in key execution points of `rdf_fdw` to allow PostgreSQL backends to detect user-initiated query cancellations (e.g., Ctrl+C).
+
+### External Libraries
+
+ * This release adds the dependency of the Redland RDF library `librdf`.
 
 ## 1.3.0
 Release date: **2024-09-30**

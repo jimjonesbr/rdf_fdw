@@ -41,7 +41,7 @@ CALL
         commit_page => false
     );
 
-SELECT * FROM public.t1;
+SELECT * FROM public.t1 ORDER BY city_name COLLATE "C";
 
 /*
  * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
@@ -61,7 +61,7 @@ CALL
         commit_page => true
     );
 
-SELECT * FROM public.t2;
+SELECT * FROM public.t2 ORDER BY city_name COLLATE "C";
 
 /* 
  * 't3' does not exist. it will be created by the function due to
@@ -77,7 +77,7 @@ CALL
         verbose => true
     );
 
-SELECT * FROM public.t3;
+SELECT * FROM public.t3 ORDER BY city_name COLLATE "C";
 
 
 /*----------------------------------------------------------------------------------------------------------*/
@@ -125,7 +125,7 @@ CALL
         max_records => 15
     );
 
-SELECT * FROM public.heap1;
+SELECT * FROM public.heap1 ORDER BY name COLLATE "C";
 
 /*
  * 'public.heap2' does not exist.
@@ -141,7 +141,7 @@ CALL
         max_records => 15
     );
 
-SELECT runtime,name,released FROM public.heap2;
+SELECT runtime,name,released FROM public.heap2 ORDER BY name COLLATE "C";;
 
 /* 
  * the matching columns of 'public.heap1' and 'public.heap2' 
@@ -166,7 +166,7 @@ CALL
         verbose => true
     );
 
-SELECT runtime,name,released FROM public.heap3;
+SELECT runtime,name,released FROM public.heap3 ORDER BY name COLLATE "C";
 
 /*
  * clean up the mess
