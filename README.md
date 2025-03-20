@@ -290,7 +290,7 @@ SELECT rdf_fdw_version();
 ### [rdf_fdw_describe](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_describe)
 **Synopsis**
 ```
-void rdf_fdw_describe(
+rdf_fdw_triple rdf_fdw_describe(
   server text,
   query text,
   raw_literal boolean,
