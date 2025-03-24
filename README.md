@@ -512,47 +512,43 @@ Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~
 
 #### String Functions
 
-**Availability**: 1.2.0
-
 The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
 
-| SQL | SPARQL|
-| -- | --- |
-| `LENGTH()` |[`STRLEN()`](https://www.w3.org/TR/sparql11-query/#func-strlen) |
-| `STARTS_WITH()` |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) |
-| `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) |
-| `UPPER()` | [`UCASE()`](https://www.w3.org/TR/sparql11-query/#func-ucase)|
-| `LOWER()` |[`LCASE()`](https://www.w3.org/TR/sparql11-query/#func-lcase) |
-| `MD5()` |[`MD5()`](https://www.w3.org/TR/sparql11-query/#func-md5) |
+| SQL | SPARQL| Availability |
+| -- | --- | --- |
+| `LENGTH()` |[`STRLEN()`](https://www.w3.org/TR/sparql11-query/#func-strlen) | 1.2+|
+| `STARTS_WITH()` |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.2+|
+| `ENDS_WITH()` *|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
+| `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
+| `UPPER()` | [`UCASE()`](https://www.w3.org/TR/sparql11-query/#func-ucase)| 1.2+|
+| `LOWER()` |[`LCASE()`](https://www.w3.org/TR/sparql11-query/#func-lcase) | 1.2+|
+| `MD5()` |[`MD5()`](https://www.w3.org/TR/sparql11-query/#func-md5) | 1.2+|
 
+\* Function is not available in vanilla PostgreSQL, as of this release.
 
 #### Mathematical Functions
 
-**Availability**: 1.2.0
-
 The following [mathematical functions](https://www.postgresql.org/docs/current/functions-math.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
 
-| SQL | SPARQL|
-| -- | --- |
-| `ABS()` | [`ABS()`](https://www.w3.org/TR/sparql11-query/#func-abs)|
-| `CEIL()` |[`CEIL()`](https://www.w3.org/TR/sparql11-query/#func-ceil) |
-| `FLOOR()` |[`FLOOR()`](https://www.w3.org/TR/sparql11-query/#func-floor) |
-| `ROUND()` |[`ROUND()`](https://www.w3.org/TR/sparql11-query/#func-round) |
+| SQL | SPARQL| Availability |
+| -- | --- | --- |
+| `ABS()` | [`ABS()`](https://www.w3.org/TR/sparql11-query/#func-abs)| 1.2+|
+| `CEIL()` |[`CEIL()`](https://www.w3.org/TR/sparql11-query/#func-ceil) | 1.2+|
+| `FLOOR()` |[`FLOOR()`](https://www.w3.org/TR/sparql11-query/#func-floor) | 1.2+|
+| `ROUND()` |[`ROUND()`](https://www.w3.org/TR/sparql11-query/#func-round) | 1.2+|
 
 #### Date Time Functions
 
-**Availability**: 1.2.0
-
 The following [date/time functions](https://www.postgresql.org/docs/current/functions-math.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
 
-| SQL | SPARQL|
-| -- | --- |
-| `EXTRACT(YEAR FROM x)`, `DATE_PART('year', x)` | [`YEAR(x)`](https://www.w3.org/TR/sparql11-query/#func-year)|
-| `EXTRACT(MONTH FROM x)`, `DATE_PART('month', x)` | [`MONTH(x)`](https://www.w3.org/TR/sparql11-query/#func-month)|
-| `EXTRACT(DAY FROM x)`, `DATE_PART('day', x)` | [`DAY(x)`](https://www.w3.org/TR/sparql11-query/#func-day)|
-| `EXTRACT(HOUR FROM x)`, `DATE_PART('hour', x)` | [`HOURS(x)`](https://www.w3.org/TR/sparql11-query/#func-hours)|
-| `EXTRACT(MINUTE FROM x)`, `DATE_PART('minute', x)` | [`MINUTES(x)`](https://www.w3.org/TR/sparql11-query/#func-minutes)|
-| `EXTRACT(SECOND FROM x)`, `DATE_PART('second', x)` | [`SECONDS(x)`](https://www.w3.org/TR/sparql11-query/#func-seconds)|
+| SQL | SPARQL| Availability |
+| -- | --- | --- |
+| `EXTRACT(YEAR FROM x)`, `DATE_PART('year', x)` | [`YEAR(x)`](https://www.w3.org/TR/sparql11-query/#func-year)|1.2+|
+| `EXTRACT(MONTH FROM x)`, `DATE_PART('month', x)` | [`MONTH(x)`](https://www.w3.org/TR/sparql11-query/#func-month)|1.2+|
+| `EXTRACT(DAY FROM x)`, `DATE_PART('day', x)` | [`DAY(x)`](https://www.w3.org/TR/sparql11-query/#func-day)|1.2+|
+| `EXTRACT(HOUR FROM x)`, `DATE_PART('hour', x)` | [`HOURS(x)`](https://www.w3.org/TR/sparql11-query/#func-hours)|1.2+|
+| `EXTRACT(MINUTE FROM x)`, `DATE_PART('minute', x)` | [`MINUTES(x)`](https://www.w3.org/TR/sparql11-query/#func-minutes)|1.2+|
+| `EXTRACT(SECOND FROM x)`, `DATE_PART('second', x)` | [`SECONDS(x)`](https://www.w3.org/TR/sparql11-query/#func-seconds)|1.2+|
 
 ### Pushdown Examples
 

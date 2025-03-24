@@ -7,6 +7,7 @@ Release date: **YYYY-MM-DD**
 
 * Support for PostgreSQL 18 (in development as of this release)
 * Support for `DESCRIBE` SPARQL queries via the support function `rdf_fdw_describe()`.
+* Adds the SQL function `ends_with(text,text)` as the opposite of the existing `starts_with(text,text)`. This new function is pushed down in SPARQL AS `strends`.
 
 ### Bug Fixes
 

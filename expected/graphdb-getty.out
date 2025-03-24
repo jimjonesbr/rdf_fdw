@@ -72,7 +72,9 @@ ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 
 SELECT uri, lon, lat
 FROM getty_places
-WHERE name = 'West Flanders, Flanders, Belgium, Europe, World'
+WHERE
+  name = 'West Flanders, Flanders, Belgium, Europe, World' AND
+  ends_with(namec, 'WORLD')
 ORDER BY lon
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
@@ -83,7 +85,7 @@ INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
  PREFIX schema: <http://schema.org/>
 
-SELECT ?place ?name ?lon ?lat 
+SELECT ?place ?name (UCASE(?name) AS ?namecapital) ?lon ?lat 
 {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
@@ -92,7 +94,8 @@ SELECT ?place ?name ?lon ?lat
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
     geo:long ?lon
-   FILTER(?name = "West Flanders, Flanders, Belgium, Europe, World")
+   FILTER(STRENDS(STR(UCASE(?name)), "WORLD"))
+ FILTER(?name = "West Flanders, Flanders, Belgium, Europe, World")
 }
 ORDER BY  ASC (?lon)
 LIMIT 3

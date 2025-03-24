@@ -50,4 +50,10 @@ BEGIN
         IS 'materialize rdf_fdw foreign tables into heap tables';
     EXCEPTION WHEN OTHERS THEN
         RAISE NOTICE 'The PROCEDURE rdf_fdw_clone_table cannot be created.';
-END; $$
+END; $$;
+
+CREATE FUNCTION ends_with(text, text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_ends_with'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION ends_with(text,text) IS 'Checks if a given string ends with a certain substring';

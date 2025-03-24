@@ -347,12 +347,14 @@ extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_version(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_describe(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_ends_with(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
 PG_FUNCTION_INFO_V1(rdf_fdw_version);
 PG_FUNCTION_INFO_V1(rdf_fdw_clone_table);
 PG_FUNCTION_INFO_V1(rdf_fdw_describe);
+PG_FUNCTION_INFO_V1(rdf_fdw_ends_with);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -435,6 +437,36 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	appendStringInfo(&buffer, " %s", curl_version());
 
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
+}
+
+/*
+ * rdf_fdw_ends_with
+ * ----------
+ *
+ * This function implements the opposite of the PostgreSQL's core
+ * function 'starts_with'.
+ */
+Datum rdf_fdw_ends_with(PG_FUNCTION_ARGS)
+{
+    text *str = PG_GETARG_TEXT_PP(0);
+    text *suffix = PG_GETARG_TEXT_PP(1);
+
+    int str_len = VARSIZE_ANY_EXHDR(str);
+    int suffix_len = VARSIZE_ANY_EXHDR(suffix);
+    char *str_data = VARDATA_ANY(str);
+    char *suffix_data = VARDATA_ANY(suffix);
+
+    if (suffix_len > str_len)
+        PG_RETURN_BOOL(false);
+
+    /* Compare characters from the end */
+    for (int i = 0; i < suffix_len; i++)
+    {
+        if (str_data[str_len - suffix_len + i] != suffix_data[i])
+            PG_RETURN_BOOL(false);
+    }
+
+    PG_RETURN_BOOL(true);
 }
 
 /*
@@ -4280,8 +4312,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
 		ReleaseSysCache(tuple);
 
-		/* ignore functions in other than the pg_catalog schema */
-		if (schema != PG_CATALOG_NAMESPACE)
+		elog(DEBUG1,"  %s (T_FuncExpr): opername = %s",__func__, opername);
+
+		/*
+		 * ignore functions that are not in the pg_catalog schema and are
+		 * not pushable.
+		 */
+		if (schema != PG_CATALOG_NAMESPACE && !IsFunctionPushable(opername))
 			return NULL;
 
 		if (IsFunctionPushable(opername))
@@ -4381,6 +4418,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "CEIL(%s)", NameStr(args));
 			else if(strcmp(opername, "starts_with") == 0)
 				appendStringInfo(&result, "STRSTARTS(%s)", NameStr(args));
+			else if(strcmp(opername, "ends_with") == 0)
+				appendStringInfo(&result, "STRENDS(%s)", NameStr(args));
 			else if(strcmp(opername, "substring") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
@@ -5005,6 +5044,7 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
+		strcmp(funcname, "ends_with") == 0 ||
 		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
@@ -5027,6 +5067,7 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "lower") == 0 ||
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
+		strcmp(funcname, "ends_with") == 0 ||
 		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
