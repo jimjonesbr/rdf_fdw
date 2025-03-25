@@ -74,7 +74,9 @@ SELECT uri, lon, lat
 FROM getty_places
 WHERE
   name = 'West Flanders, Flanders, Belgium, Europe, World' AND
-  ends_with(namec, 'WORLD')
+  strends(namec, 'WORLD') AND
+  strbefore(name, 'Flanders') = 'West ' AND
+  strafter(name, 'Belgium, Europe, ') = 'World'
 ORDER BY lon
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
@@ -96,6 +98,8 @@ SELECT ?place ?name (UCASE(?name) AS ?namecapital) ?lon ?lat
     geo:long ?lon
    FILTER(STRENDS(STR(UCASE(?name)), "WORLD"))
  FILTER(?name = "West Flanders, Flanders, Belgium, Europe, World")
+ FILTER(STRBEFORE(STR(?name), "Flanders") = "West ")
+ FILTER(STRAFTER(STR(?name), "Belgium, Europe, ") = "World")
 }
 ORDER BY  ASC (?lon)
 LIMIT 3

@@ -12,7 +12,7 @@ ifndef MAJORVERSION
 MAJORVERSION := $(basename $(VERSION))
 endif
 
-REGRESS = describe virtuoso-dbpedia graphdb-getty blazegraph-wikidata $(if $(findstring $(MAJORVERSION),11 12 13 14 15 16 17 18),exceptions table-clone,)
+REGRESS = describe functions virtuoso-dbpedia graphdb-getty blazegraph-wikidata $(if $(findstring $(MAJORVERSION),11 12 13 14 15 16 17 18),exceptions table-clone,)
 
 SHLIB_LINK := $(shell $(CURL_CONFIG) --libs) \
 	$(shell $(RDF_CONFIG) --libs raptor2) \

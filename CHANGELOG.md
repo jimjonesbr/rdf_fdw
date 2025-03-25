@@ -5,13 +5,14 @@ Release date: **YYYY-MM-DD**
 
 ### Enhancements
 
-* Support for PostgreSQL 18 (in development as of this release)
-* Support for `DESCRIBE` SPARQL queries via the support function `rdf_fdw_describe()`.
-* Adds the SQL function `ends_with(text,text)` as the opposite of the existing `starts_with(text,text)`. This new function is pushed down in SPARQL AS `strends`.
+* Added support for PostgreSQL 18 (currently in development).
+* Added support for `DESCRIBE` SPARQL queries via the `rdf_fdw_describe()` support function.
+* Added the SQL functions `strstarts(text, text)` and `strends(text, text)`, which check if a string starts or ends with a given substring. These functions can be used in SQL queries and are automatically translated to `STRSTARTS` and `STRENDS` in SPARQL when pushed down.
+* Added the SQL functions `strbefore(text, text)` and `strafter(text, text)`, which replicate the behavior of SPARQL’s `STRBEFORE` and `STRAFTER`. These functions are translated to their SPARQL equivalents when pushed down to the foreign data wrapper.
 
 ### Bug Fixes
 
-* Fix query cancellation: this adds CHECK_FOR_INTERRUPTS() calls in key execution points of `rdf_fdw` to allow PostgreSQL backends to detect user-initiated query cancellations (e.g., Ctrl+C).
+* Fix query cancellation: this adds `CHECK_FOR_INTERRUPTS()` calls in key execution points of `rdf_fdw` to allow PostgreSQL backends to detect user-initiated query cancellations (e.g., Ctrl+C).
 
 ### External Libraries
 

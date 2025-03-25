@@ -347,14 +347,20 @@ extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_version(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_describe(PG_FUNCTION_ARGS);
-extern Datum rdf_fdw_ends_with(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_strends(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_strafter(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
 PG_FUNCTION_INFO_V1(rdf_fdw_version);
 PG_FUNCTION_INFO_V1(rdf_fdw_clone_table);
 PG_FUNCTION_INFO_V1(rdf_fdw_describe);
-PG_FUNCTION_INFO_V1(rdf_fdw_ends_with);
+PG_FUNCTION_INFO_V1(rdf_fdw_strstarts);
+PG_FUNCTION_INFO_V1(rdf_fdw_strends);
+PG_FUNCTION_INFO_V1(rdf_fdw_strbefore);
+PG_FUNCTION_INFO_V1(rdf_fdw_strafter);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -440,13 +446,92 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 }
 
 /*
- * rdf_fdw_ends_with
+ * rdf_fdw_strbefore
  * ----------
  *
- * This function implements the opposite of the PostgreSQL's core
- * function 'starts_with'.
+ * This function implements the SPARQL function STRBEFORE() as
+ * described in the SPARQL 1.1 Standard.
  */
-Datum rdf_fdw_ends_with(PG_FUNCTION_ARGS)
+Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
+{
+    text *input = PG_GETARG_TEXT_PP(0);
+    text *delimiter = PG_GETARG_TEXT_PP(1);
+    char *input_str = text_to_cstring(input);
+    char *delimiter_str = text_to_cstring(delimiter);
+    char *pos;
+
+    if ((pos = strstr(input_str, delimiter_str)) != NULL)
+    {
+        int before_len = pos - input_str;
+        PG_RETURN_TEXT_P(cstring_to_text_with_len(input_str, before_len));
+    }
+
+    PG_RETURN_TEXT_P(cstring_to_text(""));
+}
+
+/*
+ * rdf_fdw_strafter
+ * ----------
+ *
+ * This function implements the SPARQL function STRAFTER() as
+ * described in the SPARQL 1.1 Standard.
+ */
+Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
+{
+    text *input = PG_GETARG_TEXT_PP(0);
+    text *delimiter = PG_GETARG_TEXT_PP(1);
+    char *input_str = text_to_cstring(input);
+    char *delimiter_str = text_to_cstring(delimiter);
+    char *pos;
+
+	if ((pos = strstr(input_str, delimiter_str)) != NULL)
+	{
+		pos += strlen(delimiter_str); // Move past the delimiter
+		PG_RETURN_TEXT_P(cstring_to_text(pos));
+	}
+
+	PG_RETURN_TEXT_P(cstring_to_text(""));
+}
+
+
+/*
+ * rdf_fdw_strstarts
+ * ----------
+ *
+ * This function implements the SPARQL function STRSTARTS() as
+ * described in the SPARQL 1.1 Standard.
+ */
+Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
+{
+    text *str = PG_GETARG_TEXT_PP(0);
+    text *prefix = PG_GETARG_TEXT_PP(1);
+
+    int str_len = VARSIZE_ANY_EXHDR(str);
+    int prefix_len = VARSIZE_ANY_EXHDR(prefix);
+    char *str_data = VARDATA_ANY(str);
+    char *prefix_data = VARDATA_ANY(prefix);
+
+    if (prefix_len > str_len)
+        PG_RETURN_BOOL(false);
+
+    /* Compare characters from the beginning */
+    for (int i = 0; i < prefix_len; i++)
+    {
+        if (str_data[i] != prefix_data[i])
+            PG_RETURN_BOOL(false);
+    }
+
+    PG_RETURN_BOOL(true);
+}
+
+/*
+ * rdf_fdw_strends
+ * ----------
+ *
+ * This function implements the SPARQL function STRENDS() as
+ * described in the SPARQL 1.1 Standard.
+ */
+Datum rdf_fdw_strends(PG_FUNCTION_ARGS)
 {
     text *str = PG_GETARG_TEXT_PP(0);
     text *suffix = PG_GETARG_TEXT_PP(1);
@@ -4381,7 +4466,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						}
 
 						/* Return NULLL if the EXTRACT field cannot be converted to SPARQL */
-						if(strcmp(opername, "extract") == 0 && initarg && !arg)
+						if (strcmp(opername, "extract") == 0 && initarg && !arg)
 						{
 							elog(DEBUG1, "  %s (T_FuncExpr): EXTRACT field cannot be converted to SPARQL: '%s'", __func__, arg);
 							pfree(opername);
@@ -4416,10 +4501,14 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "FLOOR(%s)", NameStr(args));
 			else if(strcmp(opername, "ceil") == 0)
 				appendStringInfo(&result, "CEIL(%s)", NameStr(args));
-			else if(strcmp(opername, "starts_with") == 0)
+			else if(strcmp(opername, "strstarts") == 0 || strcmp(opername, "starts_with") == 0)
 				appendStringInfo(&result, "STRSTARTS(%s)", NameStr(args));
-			else if(strcmp(opername, "ends_with") == 0)
+			else if(strcmp(opername, "strends") == 0)
 				appendStringInfo(&result, "STRENDS(%s)", NameStr(args));
+			else if(strcmp(opername, "strbefore") == 0)
+				appendStringInfo(&result, "STRBEFORE(%s)", NameStr(args));
+			else if(strcmp(opername, "strafter") == 0)
+				appendStringInfo(&result, "STRAFTER(%s)", NameStr(args));
 			else if(strcmp(opername, "substring") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
@@ -5044,7 +5133,10 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
-		strcmp(funcname, "ends_with") == 0 ||
+		strcmp(funcname, "strstarts") == 0 ||
+		strcmp(funcname, "strends") == 0 ||
+		strcmp(funcname, "strbefore") == 0 ||
+		strcmp(funcname, "strafter") == 0 ||
 		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
@@ -5067,7 +5159,10 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "lower") == 0 ||
 		strcmp(funcname, "length") == 0 ||
 		strcmp(funcname, "starts_with") == 0 ||
-		strcmp(funcname, "ends_with") == 0 ||
+		strcmp(funcname, "strstarts") == 0 ||
+		strcmp(funcname, "strends") == 0 ||
+		strcmp(funcname, "strbefore") == 0 ||
+		strcmp(funcname, "strafter") == 0 ||
 		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }

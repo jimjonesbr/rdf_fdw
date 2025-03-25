@@ -488,7 +488,7 @@ The `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, 
 
 ### WHERE
 
-The `rdf_fdw` will attempt to translate RDF literals to the data type of the mapped column, which can be quite tricky! RDF literals can be pretty much everything, as often they have no explicit data type declarations - for example, `"wwu"` and `"wwu"^^xsd:string` are equivalent. The contents of literals are often also not validated by the RDF triplestores, but PostgreSQL will validate them in query time. So, if a retrieved literal cannot be translated to declared column type, the query will fail. SQL `WHERE` conditions are translated into SPARQL `FILTER` expressions, provided that the involved column data types and operators are supported as described below. 
+The `rdf_fdw` attempts to translate RDF literals to the corresponding data type of the mapped column, which can be challenging due to the flexible nature of RDF literals. Since RDF literals often lack explicit data type declarations, they can represent a wide range of values - for instance, `"wwu"` and `"wwu"^^xsd:string` are considered equivalent. Additionally, RDF triplestores usually don't validate the contents of literals, whereas PostgreSQL performs validation at query time. As a result, queries will fail if a retrieved literal can't be translated to the declared column type. When translating SQL `WHERE` conditions to SPARQL `FILTER` expressions, the rdf_fdw supports the column data types and operators outlined below.
 
 
 #### Supported Data Types and Operators
@@ -512,19 +512,26 @@ Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~
 
 #### String Functions
 
-The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are supported by `rdf_fdw` and are pushed down to SPARQL as `FILTER` expressions when possible:
 
 | SQL | SPARQL| Availability |
 | -- | --- | --- |
 | `LENGTH()` |[`STRLEN()`](https://www.w3.org/TR/sparql11-query/#func-strlen) | 1.2+|
-| `STARTS_WITH()` |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.2+|
-| `ENDS_WITH()` *|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
-| `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
 | `UPPER()` | [`UCASE()`](https://www.w3.org/TR/sparql11-query/#func-ucase)| 1.2+|
 | `LOWER()` |[`LCASE()`](https://www.w3.org/TR/sparql11-query/#func-lcase) | 1.2+|
 | `MD5()` |[`MD5()`](https://www.w3.org/TR/sparql11-query/#func-md5) | 1.2+|
+| `STRBEFORE()` <sup>1</sup>|[`STRBEFORE()`](https://www.w3.org/TR/sparql11-query/#func-strbefore) | 1.4+|
+| `STRAFTER()` <sup>1</sup>|[`STRAFTER()`](https://www.w3.org/TR/sparql11-query/#func-strafter) | 1.4+|
+| `STRSTARTS()` <sup>1,2</sup> |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.4+|
+| `STRENDS()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
+| `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
 
-\* Function is not available in vanilla PostgreSQL, as of this release.
+<sup>1</sup>  These functions are not part of PostgreSQL’s core but are implemented in `rdf_fdw`.
+
+<sup>2</sup>  The PostgreSQL core function `starts_with(text, text)` provides similar functionality to `STRSTARTS()`.
+
+> [!NOTE]
+> Unlike SPARQL, which does not return `NULL` in its functions, SQL allows `NULL` values to propagate in expressions. The string functions provided by `rdf_fdw` are **STRICT**, meaning they return `NULL` if any of their arguments are `NULL`. However, when pushed down to SPARQL, they will behave according to SPARQL semantics, which do not involve `NULL` values. Handle NULL values with care and use `COALESCE()` if necessary to avoid unexpected results.
 
 #### Mathematical Functions
 

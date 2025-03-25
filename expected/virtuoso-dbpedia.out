@@ -800,13 +800,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-          name           | birthdate  |                     party                     |      country       
--------------------------+------------+-----------------------------------------------+--------------------
- Conor McGinn            | 07-31-1984 | Labour Party                                  | the United Kingdom
- Vandolph Quizon         | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
- Vandolph Quizon         | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Ilya Valeryevich Yashin | 06-29-1983 | Jabloko                                       | Russia
- Ilya Valeryevich Yashin | 06-29-1983 | Solidarnost                                   | Russia
+      name       | birthdate  |                   party                   |      country      
+-----------------+------------+-------------------------------------------+-------------------
+ Bob Evnen       | 11-29-2022 | National Republican Party                 | United States
+ Bob Evnen       | 11-29-2022 | Republikanische Partei                    | United States
+ Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
+ Bob Drewel      | 12-13-2013 | Demokratische Partei (Vereinigte Staaten) | the United States
+ Nicholas Smith  | 03-14-2012 | Demokratische Partei (Vereinigte Staaten) | the United States
 (5 rows)
 
 /*
@@ -838,13 +838,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-     name      | birthdate  |           party            |  country  
----------------+------------+----------------------------+-----------
- Clare O'Neil  | 09-12-1980 | Australian Labor Party     | Australia
- Roslyn Dundas | 07-28-1978 | Australian Democrats       | Australia
- Kate Ellis    | 09-22-1977 | Australian Labor Party     | Australia
- Alex Hawke    | 07-09-1977 | Liberal Party of Australia | Australia
- Kathryn Hay   | 11-24-1975 | Australian Labor Party     | Australia
+        name        | birthdate  |            party             |  country  
+--------------------+------------+------------------------------+-----------
+ Neil Symes         | 12-11-1988 | Pauline Hanson’s One Nation  | Australia
+ Inês de Sousa Real | 06-06-1980 | Pessoas – Animais – Natureza | Portugal
+ George Christensen | 06-30-1978 | Pauline Hanson’s One Nation  | Australia
+ Bruno Nunes        | 11-16-1976 | Partido Popular Monárquico   | Portugal
+ Shaun Nelson       | 03-22-1973 | Pauline Hanson’s One Nation  | Australia
 (5 rows)
 
 /* 
@@ -876,13 +876,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-            name            | birthdate  |            party             | country 
-----------------------------+------------+------------------------------+---------
- Adam Bielan                | 09-12-1974 | Akcja Wyborcza Solidarność   | Poland
- Adam Bielan                | 09-12-1974 | Polska Jest Najważniejsza    | Poland
- Adam Bielan                | 09-12-1974 | Polska Razem                 | Poland
- Adam Bielan                | 09-12-1974 | Prawo i Sprawiedliwość       | Poland
- Wojciech Michał Olejniczak | 04-10-1974 | Sojusz Lewicy Demokratycznej | Poland
+        name         | birthdate  |            party             | country 
+---------------------+------------+------------------------------+---------
+ Jan Ziobro          | 09-04-1989 | Zjednoczona Prawica          | Poland
+ Patryk Jaki         | 05-11-1985 | Solidarna Polska             | Poland
+ Krzysztof Gawkowski | 04-11-1980 | Sojusz Lewicy Demokratycznej | Poland
+ Dariusz Joński      | 01-12-1979 | Sojusz Lewicy Demokratycznej | Poland
+ Dariusz Joński      | 01-12-1979 | Zjednoczona Lewica           | Poland
 (5 rows)
 
 /* 
@@ -914,13 +914,13 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-          name           | birthdate  |                     party                     |     country     
--------------------------+------------+-----------------------------------------------+-----------------
- Vandolph Quizon         | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
- Vandolph Quizon         | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Ilya Valeryevich Yashin | 06-29-1983 | Jabloko                                       | Russia
- Ilya Valeryevich Yashin | 06-29-1983 | Solidarnost                                   | Russia
- Anna Lührmann           | 06-14-1983 | Bündnis 90/Die Grünen                         | Germany
+       name        | birthdate  |                   party                   |  country  
+-------------------+------------+-------------------------------------------+-----------
+ Miran Charuka     | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
+ Filip Brusselmans | 10-30-1997 | Vlaams Belang                             | Belgium
+ Sam Oosterhoff    | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
+ Chiara Barchiesi  | 12-22-1996 | Republikanische Partei (Chile)            | Chile
+ Fernando Holiday  | 09-22-1996 | Democratas                                | Brazil
 (5 rows)
 
 /*
@@ -1968,11 +1968,9 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
-              name               |  released  | runtime 
----------------------------------+------------+---------
- The Life of Adam Lindsay Gordon | 09-04-1916 |       5
- The Life of Adam Lindsay Gordon | 08-17-1916 |       5
-(2 rows)
+ name | released | runtime 
+------+----------+---------
+(0 rows)
 
 SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters;
  name | birthdate | party | country 

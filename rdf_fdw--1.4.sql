@@ -52,8 +52,26 @@ BEGIN
         RAISE NOTICE 'The PROCEDURE rdf_fdw_clone_table cannot be created.';
 END; $$;
 
-CREATE FUNCTION ends_with(text, text) RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_fdw_ends_with'
+CREATE FUNCTION strstarts(text, text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_strstarts'
 LANGUAGE C IMMUTABLE STRICT;
 
-COMMENT ON FUNCTION ends_with(text,text) IS 'Checks if a given string ends with a certain substring';
+COMMENT ON FUNCTION strstarts(text,text) IS 'Checks if a given string starts with a certain substring';
+
+CREATE FUNCTION strends(text, text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_strends'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION strends(text,text) IS 'Checks if a given string ends with a certain substring';
+
+CREATE FUNCTION strbefore(text, text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_strbefore'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION strbefore(text,text) IS 'Returns a substring containing all characters before the position of a given argument';
+
+CREATE FUNCTION strafter(text, text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_strafter'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION strafter(text,text) IS 'Returns a substring containing all characters after the position of a given argument';

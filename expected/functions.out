@@ -1,0 +1,234 @@
+\pset null NULL
+SELECT strstarts('foobar','foo');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('foobar','xyz');
+ strstarts 
+-----------
+ f
+(1 row)
+
+SELECT strstarts('foobar','');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('','xyz');
+ strstarts 
+-----------
+ f
+(1 row)
+
+SELECT strstarts('foobar',NULL);
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT strstarts(NULL,'xyz');
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT strstarts(NULL, NULL);
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT strends('foobar','bar');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('foobar','xyz');
+ strends 
+---------
+ f
+(1 row)
+
+SELECT strends('foobar','');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('','xyz');
+ strends 
+---------
+ f
+(1 row)
+
+SELECT strends('foobar',NULL);
+ strends 
+---------
+ NULL
+(1 row)
+
+SELECT strends(NULL,'xyz');
+ strends 
+---------
+ NULL
+(1 row)
+
+SELECT strends(NULL, NULL);
+ strends 
+---------
+ NULL
+(1 row)
+
+SELECT strbefore('abc','b');
+ strbefore 
+-----------
+ a
+(1 row)
+
+SELECT strbefore('abc','xyz');
+ strbefore 
+-----------
+ 
+(1 row)
+
+SELECT strbefore('abc', NULL);
+ strbefore 
+-----------
+ NULL
+(1 row)
+
+SELECT strbefore(NULL, 'xyz');
+ strbefore 
+-----------
+ NULL
+(1 row)
+
+SELECT strbefore(NULL, NULL);
+ strbefore 
+-----------
+ NULL
+(1 row)
+
+SELECT strbefore('abc', '');
+ strbefore 
+-----------
+ 
+(1 row)
+
+SELECT strbefore('', 'xyz');
+ strbefore 
+-----------
+ 
+(1 row)
+
+SELECT strbefore('', '');
+ strbefore 
+-----------
+ 
+(1 row)
+
+SELECT strafter('abc','b');
+ strafter 
+----------
+ c
+(1 row)
+
+SELECT strafter('abc','xyz');
+ strafter 
+----------
+ 
+(1 row)
+
+SELECT strafter('abc', NULL);
+ strafter 
+----------
+ NULL
+(1 row)
+
+SELECT strafter(NULL, 'xyz');
+ strafter 
+----------
+ NULL
+(1 row)
+
+SELECT strafter(NULL, NULL);
+ strafter 
+----------
+ NULL
+(1 row)
+
+SELECT strafter('abc', '');
+ strafter 
+----------
+ abc
+(1 row)
+
+SELECT strafter('', 'xyz');
+ strafter 
+----------
+ 
+(1 row)
+
+SELECT strafter('', '');
+ strafter 
+----------
+ 
+(1 row)
+
+CREATE SERVER wikidata
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://query.wikidata.org/sparql');
+CREATE FOREIGN TABLE ft (
+  o text    OPTIONS (variable '?o', language 'de')
+)
+SERVER wikidata OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {
+    wd:Q192490 rdfs:label ?o
+  }
+'); 
+SELECT DISTINCT o FROM ft
+WHERE
+  strbefore(o, 'SQL') = 'Postgre' AND
+  strbefore(o, '') = '' AND
+  strbefore('', '') = '' AND
+  strbefore(o, 'SQL') <> 'My' AND
+  strafter(o, 'Postgre') = 'SQL' AND
+  strafter(o, '') = 'PostgreSQL' AND
+  strafter('', '') = '' AND 
+  strafter(o, 'Postgre') <> 's' AND
+  
+  strends(o, 'SQL') AND
+  strends(o, '') AND
+  strstarts(o, 'Postgre') AND
+  strstarts(o, '');
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+
+SELECT DISTINCT ?o 
+{
+    wd:Q192490 rdfs:label ?o
+   FILTER(STRBEFORE(STR(?o), "SQL") != "My")
+ FILTER(STRAFTER(STR(?o), "Postgre") != "s")
+ FILTER(STRENDS(STR(?o), "SQL"))
+ FILTER(STRENDS(STR(?o), ""))
+ FILTER(STRSTARTS(STR(?o), "Postgre"))
+ FILTER(STRSTARTS(STR(?o), ""))
+ FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
+ FILTER(STRBEFORE(STR(?o), "") = "")
+ FILTER(STRAFTER(STR(?o), "Postgre") = "SQL")
+ FILTER(STRAFTER(STR(?o), "") = "PostgreSQL")
+}
+ORDER BY  ASC (?o)
+
+     o      
+------------
+ PostgreSQL
+(1 row)
+
+DROP SERVER wikidata CASCADE;
+NOTICE:  drop cascades to foreign table ft
