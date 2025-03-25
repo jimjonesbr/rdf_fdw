@@ -34,6 +34,12 @@ SELECT strafter('abc', '');
 SELECT strafter('', 'xyz');
 SELECT strafter('', '');
 
+SELECT contains('foobar', 'oob');
+SELECT contains('foobar', '');
+SELECT contains('', 'foo');
+SELECT contains('foobar', NULL);
+SELECT contains(NULL, 'foo');
+SELECT contains(NULL, NULL);
 
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -65,6 +71,10 @@ WHERE
   strends(o, '') AND
 
   strstarts(o, 'Postgre') AND
-  strstarts(o, '');
+  strstarts(o, '') AND
+  
+  contains(o,'ostg') AND
+  contains(o,'') AND
+  NOT contains(o,'Oracle');
 
 DROP SERVER wikidata CASCADE;

@@ -351,6 +351,7 @@ extern Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strends(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strafter(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_contains(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -361,6 +362,7 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strstarts);
 PG_FUNCTION_INFO_V1(rdf_fdw_strends);
 PG_FUNCTION_INFO_V1(rdf_fdw_strbefore);
 PG_FUNCTION_INFO_V1(rdf_fdw_strafter);
+PG_FUNCTION_INFO_V1(rdf_fdw_contains);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -443,6 +445,44 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	appendStringInfo(&buffer, " %s", curl_version());
 
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
+}
+
+/*
+ * rdf_fdw_contains
+ * ----------
+ *
+ * This function implements the SPARQL function CONTAINS() as
+ * described in the SPARQL 1.1 Standard.
+ */
+Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
+{
+    text *str = PG_GETARG_TEXT_PP(0);
+    text *substr = PG_GETARG_TEXT_PP(1);
+
+    int str_len = VARSIZE_ANY_EXHDR(str);
+    int substr_len = VARSIZE_ANY_EXHDR(substr);
+    char *str_data = VARDATA_ANY(str);
+    char *substr_data = VARDATA_ANY(substr);
+
+    if (substr_len == 0)
+        PG_RETURN_BOOL(true);  /* Empty substring is always found */
+
+    if (substr_len > str_len)
+        PG_RETURN_BOOL(false); /* Cannot find a longer substring in a shorter string */
+
+    for (int i = 0; i <= str_len - substr_len; i++)
+    {
+        int j;
+        for (j = 0; j < substr_len; j++)
+        {
+            if (str_data[i + j] != substr_data[j])
+                break;
+        }
+        if (j == substr_len)
+            PG_RETURN_BOOL(true);
+    }
+
+    PG_RETURN_BOOL(false);
 }
 
 /*
@@ -4511,6 +4551,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "STRAFTER(%s)", NameStr(args));
 			else if(strcmp(opername, "substring") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
+			else if(strcmp(opername, "contains") == 0)
+				appendStringInfo(&result, "CONTAINS(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
 			else if(strcmp(opername, "extract") == 0)
@@ -5137,6 +5179,7 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "strends") == 0 ||
 		strcmp(funcname, "strbefore") == 0 ||
 		strcmp(funcname, "strafter") == 0 ||
+		strcmp(funcname, "contains") == 0 ||
 		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
@@ -5163,6 +5206,7 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "strends") == 0 ||
 		strcmp(funcname, "strbefore") == 0 ||
 		strcmp(funcname, "strafter") == 0 ||
+		strcmp(funcname, "contains") == 0 ||
 		strcmp(funcname, "md5") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }

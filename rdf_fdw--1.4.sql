@@ -75,3 +75,9 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_strafter'
 LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION strafter(text,text) IS 'Returns a substring containing all characters after the position of a given argument';
+
+CREATE FUNCTION contains(text, text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_contains'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION contains(text,text) IS 'Checks if a string contains a given substring';

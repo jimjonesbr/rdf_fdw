@@ -179,6 +179,42 @@ SELECT strafter('', '');
  
 (1 row)
 
+SELECT contains('foobar', 'oob');
+ contains 
+----------
+ t
+(1 row)
+
+SELECT contains('foobar', '');
+ contains 
+----------
+ t
+(1 row)
+
+SELECT contains('', 'foo');
+ contains 
+----------
+ f
+(1 row)
+
+SELECT contains('foobar', NULL);
+ contains 
+----------
+ NULL
+(1 row)
+
+SELECT contains(NULL, 'foo');
+ contains 
+----------
+ NULL
+(1 row)
+
+SELECT contains(NULL, NULL);
+ contains 
+----------
+ NULL
+(1 row)
+
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://query.wikidata.org/sparql');
@@ -205,7 +241,11 @@ WHERE
   strends(o, 'SQL') AND
   strends(o, '') AND
   strstarts(o, 'Postgre') AND
-  strstarts(o, '');
+  strstarts(o, '') AND
+  
+  contains(o,'ostg') AND
+  contains(o,'') AND
+  NOT contains(o,'Oracle');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
@@ -218,6 +258,8 @@ SELECT DISTINCT ?o
  FILTER(STRENDS(STR(?o), ""))
  FILTER(STRSTARTS(STR(?o), "Postgre"))
  FILTER(STRSTARTS(STR(?o), ""))
+ FILTER(CONTAINS(STR(?o), "ostg"))
+ FILTER(CONTAINS(STR(?o), ""))
  FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
  FILTER(STRBEFORE(STR(?o), "") = "")
  FILTER(STRAFTER(STR(?o), "Postgre") = "SQL")

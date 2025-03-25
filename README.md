@@ -524,6 +524,7 @@ The following [string functions](https://www.postgresql.org/docs/current/functio
 | `STRAFTER()` <sup>1</sup>|[`STRAFTER()`](https://www.w3.org/TR/sparql11-query/#func-strafter) | 1.4+|
 | `STRSTARTS()` <sup>1,2</sup> |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.4+|
 | `STRENDS()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
+| `CONTAINS()` <sup>1</sup>|[`CONTAINS()`](https://www.w3.org/TR/sparql11-query/#func-contains) | 1.4+|
 | `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
 
 <sup>1</sup>  These functions are not part of PostgreSQL’s core but are implemented in `rdf_fdw`.
