@@ -41,6 +41,11 @@ SELECT contains('foobar', NULL);
 SELECT contains(NULL, 'foo');
 SELECT contains(NULL, NULL);
 
+SELECT encode_for_uri('foo! *''();:@&=+$,/?#[]');
+SELECT encode_for_uri('foo');
+SELECT encode_for_uri('');
+SELECT encode_for_uri(NULL);
+
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://query.wikidata.org/sparql');
@@ -75,6 +80,8 @@ WHERE
   
   contains(o,'ostg') AND
   contains(o,'') AND
-  NOT contains(o,'Oracle');
+  NOT contains(o,'Oracle') AND
+
+  encode_for_uri(o) = 'PostgreSQL';
 
 DROP SERVER wikidata CASCADE;

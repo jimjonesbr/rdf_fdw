@@ -81,3 +81,9 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_contains'
 LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION contains(text,text) IS 'Checks if a string contains a given substring';
+
+CREATE FUNCTION encode_for_uri(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_encode_for_uri'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION encode_for_uri(text) IS 'Returns a simple literal with the lexical form obtained from the lexical form of its input after translating reserved characters according to the fn:encode-for-uri function';

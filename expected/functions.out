@@ -215,6 +215,30 @@ SELECT contains(NULL, NULL);
  NULL
 (1 row)
 
+SELECT encode_for_uri('foo! *''();:@&=+$,/?#[]');
+                        encode_for_uri                        
+--------------------------------------------------------------
+ foo%21%20%2A%27%28%29%3B%3A%40%26%3D%2B%24%2C%2F%3F%23%5B%5D
+(1 row)
+
+SELECT encode_for_uri('foo');
+ encode_for_uri 
+----------------
+ foo
+(1 row)
+
+SELECT encode_for_uri('');
+ encode_for_uri 
+----------------
+ 
+(1 row)
+
+SELECT encode_for_uri(NULL);
+ encode_for_uri 
+----------------
+ NULL
+(1 row)
+
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://query.wikidata.org/sparql');
@@ -245,7 +269,8 @@ WHERE
   
   contains(o,'ostg') AND
   contains(o,'') AND
-  NOT contains(o,'Oracle');
+  NOT contains(o,'Oracle') AND
+  encode_for_uri(o) = 'PostgreSQL';
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
@@ -264,6 +289,7 @@ SELECT DISTINCT ?o
  FILTER(STRBEFORE(STR(?o), "") = "")
  FILTER(STRAFTER(STR(?o), "Postgre") = "SQL")
  FILTER(STRAFTER(STR(?o), "") = "PostgreSQL")
+ FILTER(ENCODE_FOR_URI(STR(?o)) = "PostgreSQL")
 }
 ORDER BY  ASC (?o)
 

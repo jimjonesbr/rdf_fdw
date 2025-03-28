@@ -8,7 +8,7 @@ Release date: **YYYY-MM-DD**
 * Added support for PostgreSQL 18 (currently in development).
 * Added support for `DESCRIBE` SPARQL queries via the `rdf_fdw_describe()` support function.
 * Added the SQL functions `strstarts(text, text)` and `strends(text, text)`, which check if a string starts or ends with a given substring. These functions can be used in SQL queries and are automatically translated to `STRSTARTS` and `STRENDS` in SPARQL when pushed down.
-* Added the SQL functions `contains(text, text)`, `strbefore(text, text)` and `strafter(text, text)`, which replicate the behavior of SPARQL’s `CONTAINS`, `STRBEFORE` and `STRAFTER`. These functions are translated to their SPARQL equivalents when pushed down to the foreign data wrapper.
+* Added the SQL functions `encode_for_uri(text)`, `contains(text, text)`, `strbefore(text, text)` and `strafter(text, text)`, which replicate the behavior of SPARQL’s `ENCODE_FOR_URI`, `CONTAINS`, `STRBEFORE`, and `STRAFTER`. These functions are translated to their SPARQL equivalents when pushed down to the foreign data wrapper.
 
 ### Bug Fixes
 
@@ -50,7 +50,7 @@ Release date: **2024-04-10**
 
 * [`USER MAPPING`](https://github.com/jimjonesbr/rdf_fdw?tab=readme-ov-file#create-user-mapping) support: This feature defines a mapping of a PostgreSQL user to an user in the target triplestore - `user` and `password`, so that the user can be authenticated. Requested by [Matt Goldberg](https://github.com/mgberg). 
 
-* Pushdown suuport for [`pattern matching operators`](https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE) `LIKE` and `ILIKE`: these operators are now translated into SPARQL FILTER expressions as REGEX and pushed down.
+* Pushdown suuport for [`pattern matching operators`](https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-LIKE) `LIKE` and `ILIKE`: these operators are now translated into SPARQL `FILTER` expressions as `REGEX` and pushed down.
 
 * Enables usage of non-pushable data types in `FOREIGN TABLE` columns: This disables a check that raised an excepetion when data types that cannot be pushed down were used. This includes non-standard data types, such as `geometry` or `geography` from PostGIS.
 

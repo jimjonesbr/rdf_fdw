@@ -525,14 +525,18 @@ The following [string functions](https://www.postgresql.org/docs/current/functio
 | `STRSTARTS()` <sup>1,2</sup> |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.4+|
 | `STRENDS()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
 | `CONTAINS()` <sup>1</sup>|[`CONTAINS()`](https://www.w3.org/TR/sparql11-query/#func-contains) | 1.4+|
+| `ENCODE_FOR_URI()` <sup>1</sup>|[`ENCODE_FOR_URI()`](https://www.w3.org/TR/sparql11-query/#func-encode) | 1.4+|
 | `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
 
 <sup>1</sup>  These functions are not part of PostgreSQL’s core but are implemented in `rdf_fdw`.
 
 <sup>2</sup>  The PostgreSQL core function `starts_with(text, text)` provides similar functionality to `STRSTARTS()`.
 
-> [!NOTE]
+> [!IMPORTANT]
 > Unlike SPARQL, which does not return `NULL` in its functions, SQL allows `NULL` values to propagate in expressions. The string functions provided by `rdf_fdw` are **STRICT**, meaning they return `NULL` if any of their arguments are `NULL`. However, when pushed down to SPARQL, they will behave according to SPARQL semantics, which do not involve `NULL` values. Handle NULL values with care and use `COALESCE()` if necessary to avoid unexpected results.
+
+> [!IMPORTANT]
+> The `ENCODE_FOR_URI()` function *percent-encodes* a given string according to **RFC 3986**, ensuring that it is safe for use in URIs. This function is designed to match the behaviour of the SPARQL 1.1 `ENCODE_FOR_URI()` function and is automatically pushed down when executing SPARQL queries via `rdf_fdw`. However, some triplestore vendors may allow characters like `*` or `@` in unencoded form, which could lead to unexpected behaviour when using this function in the `WHERE` clause. If your target SPARQL endpoint does not strictly enforce **RFC 3986** encoding, consider testing query behaviour to ensure compatibility.
 
 #### Mathematical Functions
 

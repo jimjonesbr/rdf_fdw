@@ -352,6 +352,7 @@ extern Datum rdf_fdw_strends(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strafter(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_contains(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_encode_for_uri(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -363,6 +364,7 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strends);
 PG_FUNCTION_INFO_V1(rdf_fdw_strbefore);
 PG_FUNCTION_INFO_V1(rdf_fdw_strafter);
 PG_FUNCTION_INFO_V1(rdf_fdw_contains);
+PG_FUNCTION_INFO_V1(rdf_fdw_encode_for_uri);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -447,6 +449,42 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
 }
 
+Datum
+rdf_fdw_encode_for_uri(PG_FUNCTION_ARGS)
+{
+    text *input = PG_GETARG_TEXT_PP(0);
+    int in_len = VARSIZE_ANY_EXHDR(input);
+    char *in_str = VARDATA_ANY(input);
+
+    /* RFC 3986 unreserved characters */
+    const char *unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
+
+    /* Worst case: every char is encoded (3x original size) */
+    char *out_str = palloc(in_len * 3 + 1);
+    char *p = out_str;
+
+    for (int i = 0; i < in_len; i++)
+    {
+        unsigned char c = (unsigned char) in_str[i];
+
+        /* Keep unreserved characters as is */
+        if (strchr(unreserved, c))
+        {
+            *p++ = c;
+        }
+        else
+        {
+            /* Encode other characters as %HH */
+            snprintf(p, 4, "%%%02X", c);
+            p += 3;
+        }
+    }
+
+    *p = '\0'; /* Null-terminate */
+
+    /* Return as a text object */
+    PG_RETURN_TEXT_P(cstring_to_text(out_str));
+}
 /*
  * rdf_fdw_contains
  * ----------
@@ -4553,6 +4591,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
 			else if(strcmp(opername, "contains") == 0)
 				appendStringInfo(&result, "CONTAINS(%s)", NameStr(args));
+			else if(strcmp(opername, "encode_for_uri") == 0)
+				appendStringInfo(&result, "ENCODE_FOR_URI(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
 			else if(strcmp(opername, "extract") == 0)
@@ -5181,6 +5221,7 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "strafter") == 0 ||
 		strcmp(funcname, "contains") == 0 ||
 		strcmp(funcname, "extract") == 0 ||
+		strcmp(funcname, "encode_for_uri") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
 
@@ -5208,6 +5249,7 @@ static bool IsSPARQLStringFunction(char *funcname)
 		strcmp(funcname, "strafter") == 0 ||
 		strcmp(funcname, "contains") == 0 ||
 		strcmp(funcname, "md5") == 0 ||
+		strcmp(funcname, "encode_for_uri") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
 
