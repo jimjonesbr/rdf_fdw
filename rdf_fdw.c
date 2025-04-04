@@ -3421,8 +3421,8 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 
 	elog(DEBUG1, "%s called",__func__);
 
-	if(state->sparql_filter) 
-		appendStringInfo(&where_graph,"{%s%s}",pstrdup(state->sparql_where),pstrdup(state->sparql_filter));
+	if(state->sparql_filter && strlen(state->sparql_filter) > 0)
+		appendStringInfo(&where_graph,"{%s\n ## rdf_fdw pushdown conditions ##\n%s}", pstrdup(state->sparql_where), pstrdup(state->sparql_filter));
 	else
 		appendStringInfo(&where_graph,"{%s}",pstrdup(state->sparql_where));
 	/* 
@@ -4562,7 +4562,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				}
 				
 				initarg = false;
-
 			}
 
 			if(strcmp(opername, "upper") == 0)

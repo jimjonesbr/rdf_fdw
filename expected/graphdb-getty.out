@@ -96,7 +96,9 @@ SELECT ?place ?name (UCASE(?name) AS ?namecapital) ?lon ?lat
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
     geo:long ?lon
-   FILTER(STRENDS(STR(UCASE(?name)), "WORLD"))
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STRENDS(STR(UCASE(?name)), "WORLD"))
  FILTER(?name = "West Flanders, Flanders, Belgium, Europe, World")
  FILTER(STRBEFORE(STR(?name), "Flanders") = "West ")
  FILTER(STRAFTER(STR(?name), "Belgium, Europe, ") = "World")
@@ -134,7 +136,9 @@ SELECT ?name ?lon ?lat
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
     geo:long ?lon
-   FILTER(?lat >= 52.50)
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?lat >= 52.50)
  FILTER(?lat <= 52.60)
  FILTER(?lon >= 4.81)
  FILTER(?lon <= 4.82)

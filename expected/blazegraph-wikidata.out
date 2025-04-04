@@ -118,6 +118,8 @@ SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location
     ?place wdt:P625 ?location.    
     FILTER(LANG(?label)="en")
     SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
+
+ ## rdf_fdw pushdown conditions ##
  FILTER(STR(?place) = "http://www.wikidata.org/entity/Q61308849")
 }
 LIMIT 5
@@ -189,7 +191,9 @@ SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?la
     wd:Q458 wdt:P150 ?country.
     OPTIONAL { ?country wdt:P1705 ?nativename }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-   FILTER(LANG(?nativename) != "en"^^xsd:string)
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANG(?nativename) != "en"^^xsd:string)
  FILTER(LANG(?nativename) IN ("de"^^xsd:string, "en"^^xsd:string))
  FILTER(LANG(?nativename) NOT IN ("es"^^xsd:string, "pt"^^xsd:string))
  FILTER(STRLEN(?nativename) <= 10)
@@ -234,7 +238,9 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
     wd:Q458 wdt:P150 ?country.
     OPTIONAL { ?country wdt:P1705 ?nativename }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-   FILTER(STRENDS(STR(?country),"http") = "false"^^xsd:boolean)
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STRENDS(STR(?country),"http") = "false"^^xsd:boolean)
  FILTER(STRENDS(STR(?country),"http") != "true"^^xsd:boolean)
  FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)
  FILTER(STRSTARTS(STR(?country),"http") != "false"^^xsd:boolean)
@@ -262,7 +268,9 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
     wd:Q458 wdt:P150 ?country.
     OPTIONAL { ?country wdt:P1705 ?nativename }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-   FILTER(STRENDS(STR(?country),"http") = "false"^^xsd:boolean)
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STRENDS(STR(?country),"http") = "false"^^xsd:boolean)
  FILTER(STRENDS(STR(?country),"http") != "true"^^xsd:boolean)
  FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)
  FILTER(STRSTARTS(STR(?country),"http") != "false"^^xsd:boolean)
@@ -293,7 +301,9 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
     wd:Q458 wdt:P150 ?country.
     OPTIONAL { ?country wdt:P1705 ?nativename }
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-   FILTER(STR(?nativename) = "Luxembourg")
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STR(?nativename) = "Luxembourg")
 }
 
                 uri                 | nativename 

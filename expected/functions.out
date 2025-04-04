@@ -277,7 +277,9 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 SELECT DISTINCT ?o 
 {
     wd:Q192490 rdfs:label ?o
-   FILTER(STRBEFORE(STR(?o), "SQL") != "My")
+  
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STRBEFORE(STR(?o), "SQL") != "My")
  FILTER(STRAFTER(STR(?o), "Postgre") != "s")
  FILTER(STRENDS(STR(?o), "SQL"))
  FILTER(STRENDS(STR(?o), ""))
