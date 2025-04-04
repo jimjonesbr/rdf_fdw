@@ -9,6 +9,7 @@ Release date: **YYYY-MM-DD**
 * Added support for `DESCRIBE` SPARQL queries via the `rdf_fdw_describe()` support function.
 * Added the SQL functions `strstarts(text, text)` and `strends(text, text)`, which check if a string starts or ends with a given substring. These functions can be used in SQL queries and are automatically translated to `STRSTARTS` and `STRENDS` in SPARQL when pushed down.
 * Added the SQL functions `encode_for_uri(text)`, `contains(text, text)`, `strbefore(text, text)` and `strafter(text, text)`, which replicate the behavior of SPARQL’s `ENCODE_FOR_URI`, `CONTAINS`, `STRBEFORE`, and `STRAFTER`. These functions are translated to their SPARQL equivalents when pushed down to the foreign data wrapper.
+* Added the colum option `literal_format` to display the literal's values with their language / data type, or just with their contents.
 
 ### Bug Fixes
 

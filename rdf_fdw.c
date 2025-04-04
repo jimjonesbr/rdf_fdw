@@ -105,6 +105,9 @@
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
+#define RDF_SPARQL_RESULT_LITERAL "literal"
+#define RDF_SPARQL_RESULT_LITERAL_DATATYPE "datatype"
+#define RDF_SPARQL_RESULT_LITERAL_LANG "lang"
 #define RDF_DEFAULT_CONNECTTIMEOUT 300
 #define RDF_DEFAULT_MAXRETRY 3
 #define RDF_KEYWORD_NOT_FOUND -1
@@ -147,6 +150,11 @@
 #define RDF_COLUMN_OPTION_NODETYPE_IRI "iri"
 #define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
 #define RDF_COLUMN_OPTION_LANGUAGE "language"
+#define RDF_COLUMN_OPTION_LITERAL_TYPE "literal_type"
+#define RDF_COLUMN_OPTION_LITERAL_FORMAT "literal_format"
+
+#define RDF_COLUMN_OPTION_VALUE_LITERAL_RAW "raw"
+#define RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT "content"
 
 #define RDF_SPARQL_TYPE_SELECT "SELECT"
 #define RDF_SPARQL_TYPE_DESCRIBE "DESCRIBE"
@@ -269,6 +277,7 @@ typedef struct RDFfdwColumn
 	char *sparqlvar;             /* Column OPTION 'variable' - SPARQL variable */
 	char *expression;            /* Column OPTION 'expression' - SPARQL expression*/
 	char *literaltype;           /* Column OPTION 'type' - literal data type */
+	char *literal_fomat;         /*  */
 	char *nodetype;              /* Column OPTION 'nodetype' - node data type */
 	char *language;              /* Column OPTION 'language' - RDF language tag for literals */
 	Oid  pgtype;                 /* PostgreSQL data type */
@@ -326,6 +335,8 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_COLUMN_OPTION_VARIABLE, AttributeRelationId, true, false},
 	{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
+	{RDF_COLUMN_OPTION_LITERAL_TYPE, AttributeRelationId, false, false},
+	{RDF_COLUMN_OPTION_LITERAL_FORMAT, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
 	/* User Mapping */
@@ -2007,6 +2018,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->pushable = true;
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 		state->rdfTable->cols[i]->used = false;
+		state->rdfTable->cols[i]->literal_fomat = RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT;
 
 		foreach (lc, options)
 		{
@@ -2025,13 +2037,18 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 				elog(DEBUG1,"  %s: (%d) is expression pushable? > '%s'",__func__,i,
 					state->rdfTable->cols[i]->pushable ? "true" : "false");
 			}
-			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0)
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0 )
 			{
 				StringInfoData literaltype;
 				initStringInfo(&literaltype);
 				appendStringInfo(&literaltype, "^^%s", defGetString(def));
 				elog(DEBUG1,"  %s: (%d) adding sparql literal data type > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->literaltype = pstrdup(literaltype.data);
+			}
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0 )
+			{
+				elog(DEBUG1,"  %s: (%d) adding sparql node format > '%s'",__func__,i,defGetString(def));
+				state->rdfTable->cols[i]->literal_fomat = pstrdup(defGetString(def));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_NODETYPE) == 0)
 			{
@@ -2344,6 +2361,9 @@ static List *SerializePlanData(RDFfdwState *state)
 		elog(DEBUG2,"%s: literaltype '%s'",__func__, state->rdfTable->cols[i]->literaltype);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literaltype));
 
+		elog(DEBUG2,"%s: literal_format '%s'",__func__, state->rdfTable->cols[i]->literal_fomat);
+		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literal_fomat));
+
 		elog(DEBUG2,"%s: nodetype '%s'",__func__, state->rdfTable->cols[i]->nodetype);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->nodetype));
 
@@ -2494,6 +2514,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 		cell = list_next(list, cell);
 
 		state->rdfTable->cols[i]->literaltype = ConstToCString(lfirst(cell));
+		cell = list_next(list, cell);
+
+		state->rdfTable->cols[i]->literal_fomat = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
 
 		state->rdfTable->cols[i]->nodetype = ConstToCString(lfirst(cell));
@@ -3637,6 +3660,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 		Oid pgtype = state->rdfTable->cols[i]->pgtype;
 		char *sparqlvar = state->rdfTable->cols[i]->sparqlvar;
 		char *colname = state->rdfTable->cols[i]->name;
+		char *literal_format = state->rdfTable->cols[i]->literal_fomat;
 		int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
 
 		for (result = record->children; result != NULL; result = result->next)
@@ -3656,12 +3680,33 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 				{
 					HeapTuple tuple;
 					Datum datum;
-
+					StringInfoData literal_value;
 					xmlBufferPtr buffer = xmlBufferCreate();
+					xmlChar *datatype = xmlGetProp(value, (xmlChar *) RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+					xmlChar *lang = xmlGetProp(value, (xmlChar *) RDF_SPARQL_RESULT_LITERAL_LANG);
 
+					initStringInfo(&literal_value);
 					xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
 
-					datum = CStringGetDatum((char*) buffer->content);
+					if (datatype && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
+					{
+						elog(DEBUG2, "  %s: setting raw literal data type for '%s' > '%s'",__func__, sparqlvar, (char *) datatype);
+						appendStringInfo(&literal_value, "\"%s\"^^<%s>", (char *) buffer->content, (char *) datatype);
+					}
+					else if (lang && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
+					{
+						elog(DEBUG2, "  %s: setting raw literal language for '%s' > '%s'",__func__, sparqlvar, (char *) lang);
+						appendStringInfo(&literal_value, "\"%s\"@%s", (char *) buffer->content, (char *) lang);
+					}
+					else if (!lang && !datatype && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
+					{
+						elog(DEBUG2, "  %s: setting raw literal without language or data type for '%s'",__func__, sparqlvar);
+						appendStringInfo(&literal_value, "\"%s\"", (char *) buffer->content);
+					}
+					else
+						appendStringInfo(&literal_value, "%s", (char *) buffer->content);
+
+					datum = CStringGetDatum(literal_value.data);
 					slot->tts_isnull[i] = false;
 
 					elog(DEBUG2, "  %s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'",__func__, colname, pgtype, sparqlvar);
