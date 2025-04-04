@@ -264,6 +264,15 @@ CREATE FOREIGN TABLE t15 (
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 ERROR:  invalid fetch_size: '-1'
 HINT:  expected values are positive integers
+/* invalid 'format_literal' */
+CREATE FOREIGN TABLE t16 (s text OPTIONS (variable '?a', literal_format 'foo')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid literal_format: 'foo'
+HINT:  this parameter can only be 'raw' or 'content'
+CREATE FOREIGN TABLE t17 (s text OPTIONS (variable '?a', nodetype 'iri', literal_format 'raw')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid literal_format: 'raw'
+HINT:  raw columns can only be of nodetype 'literal'
 /*
  empty user name
 */

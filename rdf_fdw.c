@@ -1607,6 +1607,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	ListCell *cell;
 	struct RDFfdwOption *opt;
 	bool hasliteralatt = false;
+	bool is_iri = false;
 	
 	/* Initialize found state to not found */
 	for (opt = valid_options; opt->optname; opt++)
@@ -1631,7 +1632,9 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 							 errmsg("empty value in option '%s'", opt->optname)));
 				}
 
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENDPOINT) == 0 || strcmp(opt->optname, RDF_SERVER_OPTION_HTTP_PROXY) == 0 || strcmp(opt->optname, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENDPOINT) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_HTTP_PROXY) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
 				{
 
 					int return_code = CheckURL(defGetString(def));
@@ -1703,7 +1706,6 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_SPARQL) == 0)
 				{
-
 					char *sparql = defGetString(def);
 					int where_position = -1;
 					int where_size = -1;
@@ -1758,6 +1760,9 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
 								 errhint("this parameter expects node types ('iri' or 'literal')")));
+					
+					if(strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+						is_iri = true;
 				}
 
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0)
@@ -1775,7 +1780,6 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
 							errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LITERALTYPE)));
-
 				}
 
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
@@ -1784,7 +1788,9 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							 errhint("the parameters '%s' and '%s' cannot be combined",RDF_COLUMN_OPTION_LITERALTYPE, RDF_COLUMN_OPTION_LANGUAGE)));
+							 errhint("the parameters '%s' and '%s' cannot be combined",
+								RDF_COLUMN_OPTION_LITERALTYPE,
+								RDF_COLUMN_OPTION_LANGUAGE)));
 					
 					hasliteralatt = true;
 
@@ -1792,7 +1798,30 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LANGUAGE)));
+							errhint("whitespaces are not allwoed in '%s' option",
+								RDF_COLUMN_OPTION_LANGUAGE)));
+				}
+
+				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0)
+				{
+					char *literal_format = defGetString(def);
+
+					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) != 0 && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT) != 0)
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+								 errmsg("invalid %s: '%s'", def->defname, literal_format),
+								 errhint("this parameter can only be '%s' or '%s'",
+										 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
+										 RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT)));
+
+					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && is_iri)
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, literal_format),
+								 errhint("%s columns can only be of %s '%s'",
+										 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
+										 RDF_COLUMN_OPTION_NODETYPE,
+										 RDF_COLUMN_OPTION_NODETYPE_LITERAL)));
 				}
 
 				break;

@@ -223,6 +223,13 @@ CREATE FOREIGN TABLE t15 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 
+/* invalid 'format_literal' */
+CREATE FOREIGN TABLE t16 (s text OPTIONS (variable '?a', literal_format 'foo')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+CREATE FOREIGN TABLE t17 (s text OPTIONS (variable '?a', nodetype 'iri', literal_format 'raw')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
 /*
  empty user name
 */
