@@ -107,7 +107,7 @@ FETCH FIRST 3 ROWS ONLY;
 SELECT name, released, runtime
 FROM film
 WHERE 
-  lower(name) = 'the life of adam lindsay gordon' AND 
+  lower(str(name)) = 'the life of adam lindsay gordon' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released
@@ -122,7 +122,7 @@ FETCH FIRST 3 ROWS ONLY;
 SELECT name, released, runtime
 FROM film
 WHERE 
-  upper(name) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
+  upper(str(name)) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released
@@ -236,7 +236,7 @@ FETCH FIRST 5 ROWS ONLY;
 
 SELECT name, birthdate, party
 FROM politicians
-WHERE lower(country) = 'germany'
+WHERE lower(str(country)) = 'germany'
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 
@@ -314,9 +314,9 @@ FETCH FIRST 5 ROWS ONLY;
  */
 SELECT uri, name, name_upper FROM politicians 
 WHERE 
-  upper(name) = 'WILL' || ' BOND' AND 
-  'will bond' = lower(name) AND
-  lower(name_upper) = lower(name)
+  upper(str(name)) = 'WILL' || ' BOND' AND 
+  'will bond' = lower(str(name)) AND
+  lower(str(name_upper)) = lower(str(name))
 FETCH FIRST ROW ONLY;
 
 /*
@@ -381,10 +381,10 @@ FETCH FIRST ROW ONLY;
 SELECT uri, name, name_upper FROM politicians 
 WHERE
   47035308 = wikiid AND 
-  SUBstring(name,1,4) = 'Will' AND
-  'Bond' = subSTRING(name, 6,4) AND
-  lower(SUBstring(name,1,4)) = 'will' AND
-  SUBSTRING(lower(name_upper),1,4) = 'will'
+  SUBstring(str(name),1,4) = 'Will' AND
+  'Bond' = subSTRING(str(name), 6,4) AND
+  lower(SUBstring(str(name),1,4)) = 'will' AND
+  SUBSTRING(lower(str(name_upper)),1,4) = 'will'
 FETCH FIRST ROW ONLY;
 
 /*

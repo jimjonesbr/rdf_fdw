@@ -87,3 +87,57 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_encode_for_uri'
 LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION encode_for_uri(text) IS 'Returns a simple literal with the lexical form obtained from the lexical form of its input after translating reserved characters according to the fn:encode-for-uri function';
+
+CREATE FUNCTION strlang(text,text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_strlang'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION strlang(text,text) IS 'Creates an RDF literal with a given language';
+
+CREATE FUNCTION strdt(text,text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_strdt'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION strlang(text,text) IS 'Creates an RDF literal with a given data type';
+
+CREATE FUNCTION str(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_str'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION strlang(text,text) IS 'Returns the lexical form of a literal or IRI';
+
+CREATE FUNCTION lang(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_lang'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION lang(text) IS 'Returns the language tag from a literal';
+
+CREATE FUNCTION datatype(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_datatype'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION lang(text) IS 'Returns the datatype from a literal';
+
+CREATE FUNCTION rdf_fdw_arguments_compatible(text,text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_arguments_compatible'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION iri(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION uri(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION isIRI(text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION isURI(text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION langmatches(text,text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_langmatches'
+LANGUAGE C IMMUTABLE STRICT;

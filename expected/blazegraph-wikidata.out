@@ -68,6 +68,8 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 }
 
 
+INFO:  SPARQL returned 11 records.
+
                       atmid                      | bankname |            atmwkt            
 -------------------------------------------------+----------+------------------------------
  http://linkedgeodata.org/triplify/node418977189 | BBBank   | POINT(11.5558547 48.1592738)
@@ -124,6 +126,8 @@ SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location
 }
 LIMIT 5
 
+INFO:  SPARQL returned 1 records.
+
                wikidata_id                |     label     |         wkt          
 ------------------------------------------+---------------+----------------------
  http://www.wikidata.org/entity/Q61308849 | TUKTOYAKTUK A | Point(-133.03 69.43)
@@ -134,20 +138,20 @@ LIMIT 5
  * STRAFTER, CONCAT, STRSTARTS, STRENDS and LANG
  */
 CREATE FOREIGN TABLE european_countries (
-  uri text        OPTIONS (variable '?country', literaltype 'xsd:string'),
+  uri text        OPTIONS (variable '?country', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
   label text      OPTIONS (variable '?label', literaltype '*'),
   nativename name OPTIONS (variable '?nativename', language '*'),
   len_label int   OPTIONS (variable '?1len2', expression 'STRLEN(?nativename)'),
   uname text      OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
   lname text      OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
-  language text   OPTIONS (variable '?language', expression 'LANG(?nativename)', literaltype 'xsd:string'),
-  base_url text   OPTIONS (variable '?b4se', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'xsd:string'),
-  qid text        OPTIONS (variable '?q1d', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'xsd:string'),
+  language text   OPTIONS (variable '?language', expression 'LANG(?nativename)', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
+  base_url text   OPTIONS (variable '?b4se', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
+  qid text        OPTIONS (variable '?q1d', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
   ctlang text     OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))'),
-  dt date         OPTIONS (variable '?det', expression '"2002-03-08"^^xsd:date', literaltype 'xsd:date'),
-  ts timestamp    OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'xsd:dateTime'),
-  bt boolean      OPTIONS (variable '?but', expression 'STRSTARTS(STR(?country),"http")', literaltype 'xsd:boolean'),
-  bf boolean      OPTIONS (variable '?buf', expression 'STRENDS(STR(?country),"http")', literaltype 'xsd:boolean')
+  dt date         OPTIONS (variable '?det', expression '"2002-03-08"^^xsd:date', literaltype 'http://www.w3.org/2001/XMLSchema#date'),
+  ts timestamp    OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'http://www.w3.org/2001/XMLSchema#dateTime'),
+  bt boolean      OPTIONS (variable '?but', expression 'STRSTARTS(STR(?country),"http")', literaltype 'http://www.w3.org/2001/XMLSchema#boolean'),
+  bf boolean      OPTIONS (variable '?buf', expression 'STRENDS(STR(?country),"http")', literaltype 'http://www.w3.org/2001/XMLSchema#boolean')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -193,26 +197,28 @@ SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?la
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   
  ## rdf_fdw pushdown conditions ##
- FILTER(LANG(?nativename) != "en"^^xsd:string)
- FILTER(LANG(?nativename) IN ("de"^^xsd:string, "en"^^xsd:string))
- FILTER(LANG(?nativename) NOT IN ("es"^^xsd:string, "pt"^^xsd:string))
+ FILTER(LANG(?nativename) != "en"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER(LANG(?nativename) IN ("de"^^<http://www.w3.org/2001/XMLSchema#string>, "en"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(LANG(?nativename) NOT IN ("es"^^<http://www.w3.org/2001/XMLSchema#string>, "pt"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(STRLEN(?nativename) <= 10)
  FILTER(STRLEN(?nativename) IN (8, 9))
  FILTER(STRLEN(?nativename) NOT IN (10, 11))
- FILTER("2002-03-08"^^xsd:date NOT IN ("2000-01-01"^^xsd:date, "2000-01-02"^^xsd:date))
- FILTER("2002-03-08"^^xsd:date IN ("2002-03-08"^^xsd:date, "2000-01-02"^^xsd:date))
- FILTER("2002-03-08"^^xsd:date != "2002-03-10"^^xsd:date)
- FILTER("2002-03-08T14:33:42"^^xsd:dateTime NOT IN ("2002-03-08T12:00:00.000000"^^xsd:dateTime, "2002-03-08T13:00:00.000000"^^xsd:dateTime))
- FILTER("2002-03-08T14:33:42"^^xsd:dateTime IN ("2002-03-08T14:33:42.000000"^^xsd:dateTime, "2002-03-08T13:00:00.000000"^^xsd:dateTime))
- FILTER("2002-03-08T14:33:42"^^xsd:dateTime != "2002-03-08T11:30:00.000000"^^xsd:dateTime)
- FILTER(STRAFTER(STR(?country),"entity/") IN ("Q32"^^xsd:string, "Q35"^^xsd:string))
- FILTER(STRAFTER(STR(?country),"entity/") NOT IN ("foo"^^xsd:string, "bar"^^xsd:string))
- FILTER(LANG(?nativename) = "de"^^xsd:string)
- FILTER("2002-03-08"^^xsd:date = "2002-03-08"^^xsd:date)
- FILTER("2002-03-08T14:33:42"^^xsd:dateTime = "2002-03-08T14:33:42.000000"^^xsd:dateTime)
- FILTER(STRBEFORE(STR(?country),"Q") = "http://www.wikidata.org/entity/"^^xsd:string)
+ FILTER("2002-03-08"^^xsd:date NOT IN ("2000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>, "2000-01-02"^^<http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2002-03-08"^^xsd:date IN ("2002-03-08"^^<http://www.w3.org/2001/XMLSchema#date>, "2000-01-02"^^<http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2002-03-08"^^xsd:date != "2002-03-10"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER("2002-03-08T14:33:42"^^xsd:dateTime NOT IN ("2002-03-08T12:00:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>, "2002-03-08T13:00:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER("2002-03-08T14:33:42"^^xsd:dateTime IN ("2002-03-08T14:33:42.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>, "2002-03-08T13:00:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER("2002-03-08T14:33:42"^^xsd:dateTime != "2002-03-08T11:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(STRAFTER(STR(?country),"entity/") IN ("Q32"^^<http://www.w3.org/2001/XMLSchema#string>, "Q35"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRAFTER(STR(?country),"entity/") NOT IN ("foo"^^<http://www.w3.org/2001/XMLSchema#string>, "bar"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(LANG(?nativename) = "de"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER("2002-03-08"^^xsd:date = "2002-03-08"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER("2002-03-08T14:33:42"^^xsd:dateTime = "2002-03-08T14:33:42.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(STRBEFORE(STR(?country),"Q") = "http://www.wikidata.org/entity/"^^<http://www.w3.org/2001/XMLSchema#string>)
  FILTER(CONCAT(STR(?country),UCASE(?nativename)) = "http://www.wikidata.org/entity/Q32LUXEMBURG")
 }
+
+INFO:  SPARQL returned 1 records.
 
                 uri                 | label | language | bf | bt 
 ------------------------------------+-------+----------+----+----
@@ -240,12 +246,14 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   
  ## rdf_fdw pushdown conditions ##
- FILTER(STRENDS(STR(?country),"http") = "false"^^xsd:boolean)
- FILTER(STRENDS(STR(?country),"http") != "true"^^xsd:boolean)
- FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)
- FILTER(STRSTARTS(STR(?country),"http") != "false"^^xsd:boolean)
+ FILTER(STRENDS(STR(?country),"http") = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(STRENDS(STR(?country),"http") != "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(STRSTARTS(STR(?country),"http") = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(STRSTARTS(STR(?country),"http") != "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
  FILTER(STR(?nativename) = "Luxembourg")
 }
+
+INFO:  SPARQL returned 1 records.
 
                 uri                 | nativename 
 ------------------------------------+------------
@@ -270,12 +278,14 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   
  ## rdf_fdw pushdown conditions ##
- FILTER(STRENDS(STR(?country),"http") = "false"^^xsd:boolean)
- FILTER(STRENDS(STR(?country),"http") != "true"^^xsd:boolean)
- FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)
- FILTER(STRSTARTS(STR(?country),"http") != "false"^^xsd:boolean)
+ FILTER(STRENDS(STR(?country),"http") = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(STRENDS(STR(?country),"http") != "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(STRSTARTS(STR(?country),"http") = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(STRSTARTS(STR(?country),"http") != "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
  FILTER(STR(?nativename) = "Luxembourg")
 }
+
+INFO:  SPARQL returned 1 records.
 
                 uri                 | nativename 
 ------------------------------------+------------
@@ -306,6 +316,8 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
  FILTER(STR(?nativename) = "Luxembourg")
 }
 
+INFO:  SPARQL returned 1 records.
+
                 uri                 | nativename 
 ------------------------------------+------------
  http://www.wikidata.org/entity/Q32 | Luxembourg
@@ -330,6 +342,8 @@ SELECT ?country ?nativename
   }
 ORDER BY  ASC (?nativename)
 LIMIT 5
+
+INFO:  SPARQL returned 5 records.
 
 SELECT * FROM tmp_eu_countries;
                  uri                 |     nativename     
@@ -379,6 +393,8 @@ SELECT ?country ?nativename
 ORDER BY  ASC (?country)
 LIMIT 5
 
+INFO:  SPARQL returned 5 records.
+
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
@@ -391,6 +407,8 @@ SELECT ?country ?nativename
 ORDER BY  ASC (?country)
 LIMIT 10
 
+INFO:  SPARQL returned 10 records.
+
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
@@ -402,6 +420,8 @@ SELECT ?country ?nativename
   }
 ORDER BY  ASC (?country)
 LIMIT 15
+
+INFO:  SPARQL returned 15 records.
 
 /* Compare the stored records from the loop with a
  * single query with a LIMIT 'max' */
@@ -423,6 +443,8 @@ SELECT ?country ?nativename
   }
 ORDER BY  ASC (?country)
 LIMIT 15
+
+INFO:  SPARQL returned 15 records.
 
  id | name 
 ----+------

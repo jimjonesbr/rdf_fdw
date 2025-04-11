@@ -202,10 +202,10 @@ The following example creates a `FOREIGN TABLE` connected to the server `dbpedia
 ```sql
 CREATE FOREIGN TABLE film (
   film_id text    OPTIONS (variable '?film',     nodetype 'iri'),
-  name text       OPTIONS (variable '?name',     nodetype 'literal', literaltype 'xsd:string'),
-  released date   OPTIONS (variable '?released', nodetype 'literal', literaltype 'xsd:date'),
-  runtime int     OPTIONS (variable '?runtime',  nodetype 'literal', literaltype 'xsd:integer'),
-  abstract text   OPTIONS (variable '?abstract', nodetype 'literal', literaltype 'xsd:string')
+  name text       OPTIONS (variable '?name',     nodetype 'literal', literal_type 'xsd:string'),
+  released date   OPTIONS (variable '?released', nodetype 'literal', literal_type 'xsd:date'),
+  runtime int     OPTIONS (variable '?runtime',  nodetype 'literal', literal_type 'xsd:integer'),
+  abstract text   OPTIONS (variable '?abstract', nodetype 'literal', literal_type 'xsd:string')
 )
 SERVER dbpedia OPTIONS (
   sparql '
@@ -409,8 +409,8 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE public.dbpedia_cities (
   uri text           OPTIONS (variable '?city', nodetype 'iri'),
-  city_name text     OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string'),
-  elevation numeric  OPTIONS (variable '?elevation', nodetype 'literal', literaltype 'xsd:integer')
+  city_name text     OPTIONS (variable '?name', nodetype 'literal', literal_type 'xsd:string'),
+  elevation numeric  OPTIONS (variable '?elevation', nodetype 'literal', literal_type 'xsd:integer')
 )
 SERVER dbpedia OPTIONS (
   sparql '
@@ -513,7 +513,7 @@ Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~
 
 #### String Functions
 
-The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are supported by `rdf_fdw` and are pushed down to SPARQL as `FILTER` expressions when possible:
+The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are supported by `rdf_fdw` and are pushed down to SPARQL as `FILTER` expressions if whenever possible:
 
 | SQL | SPARQL| Availability |
 | -- | --- | --- |
@@ -525,6 +525,10 @@ The following [string functions](https://www.postgresql.org/docs/current/functio
 | `STRAFTER()` <sup>1</sup>|[`STRAFTER()`](https://www.w3.org/TR/sparql11-query/#func-strafter) | 1.4+|
 | `STRSTARTS()` <sup>1,2</sup> |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.4+|
 | `STRENDS()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
+| `STRLANG()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strlang) | 1.4+|
+| `STRDT()` <sup>1</sup>|[`STR()`](https://www.w3.org/TR/sparql11-query/#func-strdt) | 1.4+|
+| `STR()` <sup>1</sup>|[`STR()`](https://www.w3.org/TR/sparql11-query/#func-str) | 1.4+|
+| `DATATYPE()` <sup>1</sup>|[`DATATYPE()`](https://www.w3.org/TR/sparql11-query/#func-datatype) | 1.4+|
 | `CONTAINS()` <sup>1</sup>|[`CONTAINS()`](https://www.w3.org/TR/sparql11-query/#func-contains) | 1.4+|
 | `ENCODE_FOR_URI()` <sup>1</sup>|[`ENCODE_FOR_URI()`](https://www.w3.org/TR/sparql11-query/#func-encode) | 1.4+|
 | `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
@@ -565,7 +569,7 @@ The following [date/time functions](https://www.postgresql.org/docs/current/func
 
 ### Pushdown Examples
 
- Foreign table columns with the option `literaltype`
+ Foreign table columns with the option `literal_type`
 
 | PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL FILTER (pushdown)                                                                              |
 |------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
@@ -635,9 +639,9 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE politicians (
   uri text        OPTIONS (variable '?person',     nodetype 'iri'),
-  name text       OPTIONS (variable '?personname', nodetype 'literal', literaltype 'xsd:string'),
-  birthdate date  OPTIONS (variable '?birthdate',  nodetype 'literal', literaltype 'xsd:date'),
-  party text      OPTIONS (variable '?partyname',  nodetype 'literal', literaltype 'xsd:string'),
+  name text       OPTIONS (variable '?personname', nodetype 'literal', literal_type 'xsd:string'),
+  birthdate date  OPTIONS (variable '?birthdate',  nodetype 'literal', literal_type 'xsd:date'),
+  party text      OPTIONS (variable '?partyname',  nodetype 'literal', literal_type 'xsd:string'),
   country text    OPTIONS (variable '?country',    nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (

@@ -82,20 +82,20 @@ FETCH FIRST 5 ROWS ONLY;
  * STRAFTER, CONCAT, STRSTARTS, STRENDS and LANG
  */
 CREATE FOREIGN TABLE european_countries (
-  uri text        OPTIONS (variable '?country', literaltype 'xsd:string'),
+  uri text        OPTIONS (variable '?country', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
   label text      OPTIONS (variable '?label', literaltype '*'),
   nativename name OPTIONS (variable '?nativename', language '*'),
   len_label int   OPTIONS (variable '?1len2', expression 'STRLEN(?nativename)'),
   uname text      OPTIONS (variable '?ucase_nativename', expression 'UCASE(?nativename)'),
   lname text      OPTIONS (variable '?lcase_nativename', expression 'LCASE(?nativename)'),
-  language text   OPTIONS (variable '?language', expression 'LANG(?nativename)', literaltype 'xsd:string'),
-  base_url text   OPTIONS (variable '?b4se', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'xsd:string'),
-  qid text        OPTIONS (variable '?q1d', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'xsd:string'),
+  language text   OPTIONS (variable '?language', expression 'LANG(?nativename)', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
+  base_url text   OPTIONS (variable '?b4se', expression 'STRBEFORE(STR(?country),"Q")', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
+  qid text        OPTIONS (variable '?q1d', expression 'STRAFTER(STR(?country),"entity/")', literaltype 'http://www.w3.org/2001/XMLSchema#string'),
   ctlang text     OPTIONS (variable '?ct', expression 'CONCAT(STR(?country),UCASE(?nativename))'),
-  dt date         OPTIONS (variable '?det', expression '"2002-03-08"^^xsd:date', literaltype 'xsd:date'),
-  ts timestamp    OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'xsd:dateTime'),
-  bt boolean      OPTIONS (variable '?but', expression 'STRSTARTS(STR(?country),"http")', literaltype 'xsd:boolean'),
-  bf boolean      OPTIONS (variable '?buf', expression 'STRENDS(STR(?country),"http")', literaltype 'xsd:boolean')
+  dt date         OPTIONS (variable '?det', expression '"2002-03-08"^^xsd:date', literaltype 'http://www.w3.org/2001/XMLSchema#date'),
+  ts timestamp    OPTIONS (variable '?ts', expression '"2002-03-08T14:33:42"^^xsd:dateTime', literaltype 'http://www.w3.org/2001/XMLSchema#dateTime'),
+  bt boolean      OPTIONS (variable '?but', expression 'STRSTARTS(STR(?country),"http")', literaltype 'http://www.w3.org/2001/XMLSchema#boolean'),
+  bf boolean      OPTIONS (variable '?buf', expression 'STRENDS(STR(?country),"http")', literaltype 'http://www.w3.org/2001/XMLSchema#boolean')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',

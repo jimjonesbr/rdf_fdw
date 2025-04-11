@@ -56,6 +56,8 @@ SELECT DISTINCT ?name ?lon ?lat
   }
 ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 
+INFO:  SPARQL returned 19666 records.
+
                        name                       |   lon    |    lat    
 --------------------------------------------------+----------+-----------
  Limburg, Flanders, Belgium, Europe, World        |  5.44198 | 50.787231
@@ -73,10 +75,7 @@ ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 SELECT uri, lon, lat
 FROM getty_places
 WHERE
-  name = 'West Flanders, Flanders, Belgium, Europe, World' AND
-  strends(namec, 'WORLD') AND
-  strbefore(name, 'Flanders') = 'West ' AND
-  strafter(name, 'Belgium, Europe, ') = 'World'
+  name = 'West Flanders, Flanders, Belgium, Europe, World'
 ORDER BY lon
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
@@ -87,7 +86,7 @@ INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
  PREFIX schema: <http://schema.org/>
 
-SELECT ?place ?name (UCASE(?name) AS ?namecapital) ?lon ?lat 
+SELECT ?place ?name ?lon ?lat 
 {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
@@ -98,13 +97,12 @@ SELECT ?place ?name (UCASE(?name) AS ?namecapital) ?lon ?lat
     geo:long ?lon
   
  ## rdf_fdw pushdown conditions ##
- FILTER(STRENDS(STR(UCASE(?name)), "WORLD"))
  FILTER(?name = "West Flanders, Flanders, Belgium, Europe, World")
- FILTER(STRBEFORE(STR(?name), "Flanders") = "West ")
- FILTER(STRAFTER(STR(?name), "Belgium, Europe, ") = "World")
 }
 ORDER BY  ASC (?lon)
 LIMIT 3
+
+INFO:  SPARQL returned 3 records.
 
                 uri                 |   lon    |    lat    
 ------------------------------------+----------+-----------
@@ -144,6 +142,8 @@ SELECT ?name ?lon ?lat
  FILTER(?lon <= 4.82)
 }
 ORDER BY  ASC (?name)
+
+INFO:  SPARQL returned 6 records.
 
                    name                    |   lon    | lat  
 -------------------------------------------+----------+------
@@ -216,6 +216,8 @@ INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
   FILTER(?facet in (ulan:500000003, ulan:500000002))}
   FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
   
+
+INFO:  SPARQL returned 174 records.
 
                 name                 |                                  bio                                  | birth 
 -------------------------------------+-----------------------------------------------------------------------+-------

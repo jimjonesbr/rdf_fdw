@@ -101,6 +101,8 @@ SELECT ?foo
 {?s ?p ?o}
 LIMIT 3
 
+INFO:  SPARQL returned 3 records.
+
  name 
 ------
  
@@ -211,7 +213,7 @@ HINT:  this parameter expects node types ('iri' or 'literal')
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', literaltype ' xsd:string')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid literaltype: ' xsd:string'
-HINT:  whitespaces are not allwoed in 'literaltype' option
+HINT:  whitespaces are not allwoed in 'literal_type' option
 /* invalid language - contains whitespaces  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', language 'de ')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
@@ -221,7 +223,7 @@ HINT:  whitespaces are not allwoed in 'language' option
 CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', language 'es')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid language: 'es'
-HINT:  the parameters 'literaltype' and 'language' cannot be combined
+HINT:  the parameters 'literal_type' and 'language' cannot be combined
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t9 (s text OPTIONS (variable 's', expression 'now()')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
@@ -269,10 +271,21 @@ CREATE FOREIGN TABLE t16 (s text OPTIONS (variable '?a', literal_format 'foo')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid literal_format: 'foo'
 HINT:  this parameter can only be 'raw' or 'content'
+/* invalid nodetype for literal_format 'raw' */
 CREATE FOREIGN TABLE t17 (s text OPTIONS (variable '?a', nodetype 'iri', literal_format 'raw')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid literal_format: 'raw'
 HINT:  raw columns can only be of nodetype 'literal'
+/* 'language' not allowed with 'literal_format' */
+CREATE FOREIGN TABLE t18 (s text OPTIONS (variable '?a', language 'de', literal_format 'raw')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid literal_format: 'raw'
+HINT:  the parameter 'literal_format' cannot be combined with 'language' or 'literal_type'
+/* 'literal_type' not allowed with 'literal_format' */
+CREATE FOREIGN TABLE t19 (s text OPTIONS (variable '?a', literal_type 'xsd:string', literal_format 'raw')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ERROR:  invalid literal_format: 'raw'
+HINT:  the parameter 'literal_format' cannot be combined with 'language' or 'literal_type'
 /*
  empty user name
 */

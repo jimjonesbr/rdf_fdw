@@ -59,6 +59,8 @@ SELECT DISTINCT ?film ?name ?released ?runtime
 ORDER BY  DESC (?released)  ASC (?film)
 LIMIT 5
 
+INFO:  SPARQL returned 5 records.
+
                                id                               |         name          | runtime |    rel     
 ----------------------------------------------------------------+-----------------------+---------+------------
  http://dbpedia.org/resource/Blade_of_the_47_Ronin              | Blade of the 47 Ronin |     106 | 10-25-2022
@@ -91,6 +93,8 @@ SELECT DISTINCT ?runtime
       FILTER (datatype(?runtime) = xsd:integer)
      }
 
+INFO:  SPARQL returned 101 records.
+
  count |         avg          
 -------+----------------------
    101 | 337.4752475247524752
@@ -121,6 +125,8 @@ SELECT DISTINCT ?name ?released
      }
 ORDER BY  DESC (?released)  ASC (?name)
 LIMIT 15
+
+INFO:  SPARQL returned 15 records.
 
             name             |  released  
 -----------------------------+------------
@@ -162,6 +168,8 @@ SELECT DISTINCT ?name ?released
 ORDER BY  DESC (?released)  ASC (?name)
 LIMIT 15
 
+INFO:  SPARQL returned 15 records.
+
             name             |  released  
 -----------------------------+------------
  Sagardwipey Jawker Dhan     | 12-06-2019
@@ -201,6 +209,8 @@ SELECT DISTINCT ?name ?released
      }
 ORDER BY  DESC (?released)  ASC (?name)
 
+INFO:  SPARQL returned 803 records.
+
             name             |  released  
 -----------------------------+------------
  Sagardwipey Jawker Dhan     | 12-06-2019
@@ -239,6 +249,8 @@ SELECT DISTINCT ?name ?released
       FILTER (datatype(?runtime) = xsd:integer)
      }
 ORDER BY  DESC (?released)  ASC (?name)
+
+INFO:  SPARQL returned 803 records.
 
              name             |  released  
 ------------------------------+------------
@@ -284,10 +296,12 @@ SELECT DISTINCT ?name ?released ?runtime
      
  ## rdf_fdw pushdown conditions ##
  FILTER(?runtime < 10)
- FILTER(?released < "1930-03-25"^^xsd:date)
+ FILTER(?released < "1930-03-25"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?name = "The Life of Adam Lindsay Gordon"@en)
 }
 LIMIT 3
+
+INFO:  SPARQL returned 2 records.
 
               name               |  released  | runtime 
 ---------------------------------+------------+---------
@@ -303,7 +317,7 @@ LIMIT 3
 SELECT name, released, runtime
 FROM film
 WHERE 
-  lower(name) = 'the life of adam lindsay gordon' AND 
+  lower(str(name)) = 'the life of adam lindsay gordon' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released
@@ -326,17 +340,17 @@ SELECT DISTINCT ?name ?released ?runtime
      
  ## rdf_fdw pushdown conditions ##
  FILTER(?runtime < 10)
- FILTER(?released < "1930-03-25"^^xsd:date)
+ FILTER(?released < "1930-03-25"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(LCASE(STR(?name)) = "the life of adam lindsay gordon")
 }
 ORDER BY  ASC (?released)
 LIMIT 3
 
-              name               |  released  | runtime 
----------------------------------+------------+---------
- The Life of Adam Lindsay Gordon | 08-17-1916 |       5
- The Life of Adam Lindsay Gordon | 09-04-1916 |       5
-(2 rows)
+INFO:  SPARQL returned 2 records.
+
+ name | released | runtime 
+------+----------+---------
+(0 rows)
 
 /*
   All three conditions in the WHERE clause are pushed down.
@@ -346,7 +360,7 @@ LIMIT 3
 SELECT name, released, runtime
 FROM film
 WHERE 
-  upper(name) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
+  upper(str(name)) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released
@@ -369,17 +383,17 @@ SELECT DISTINCT ?name ?released ?runtime
      
  ## rdf_fdw pushdown conditions ##
  FILTER(?runtime < 10)
- FILTER(?released < "1930-03-25"^^xsd:date)
+ FILTER(?released < "1930-03-25"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(UCASE(STR(?name)) = "THE LIFE OF ADAM LINDSAY GORDON")
 }
 ORDER BY  ASC (?released)
 LIMIT 3
 
-              name               |  released  | runtime 
----------------------------------+------------+---------
- The Life of Adam Lindsay Gordon | 08-17-1916 |       5
- The Life of Adam Lindsay Gordon | 09-04-1916 |       5
-(2 rows)
+INFO:  SPARQL returned 2 records.
+
+ name | released | runtime 
+------+----------+---------
+(0 rows)
 
 /*
  IS NOT NULL isn't supported in SPARQL.
@@ -410,6 +424,8 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (datatype(?runtime) = xsd:integer)
      }
 ORDER BY  ASC (?released)  DESC (?name)
+
+INFO:  SPARQL returned 885 records.
 
             name            |  released  | runtime 
 ----------------------------+------------+---------
@@ -443,9 +459,11 @@ SELECT DISTINCT ?name ?released ?runtime
       FILTER (datatype(?runtime) = xsd:integer)
      
  ## rdf_fdw pushdown conditions ##
- FILTER(?released != "1930-03-25"^^xsd:date)
+ FILTER(?released != "1930-03-25"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?name = "The Life of Adam Lindsay Gordon"@en)
 }
+
+INFO:  SPARQL returned 2 records.
 
               name               |  released  | runtime 
 ---------------------------------+------------+---------
@@ -523,6 +541,8 @@ SELECT DISTINCT ?personname ?birthdate ?partyname ?country
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)  ASC (?personname)
 
+INFO:  SPARQL returned 1898 records.
+
        name        | birthdate  |                  party                  | country 
 -------------------+------------+-----------------------------------------+---------
  Klara Schedlich   | 01-04-2000 | Bündnis 90/Die Grünen                   | Germany
@@ -566,6 +586,8 @@ SELECT ?personname ?birthdate ?country
 }
 ORDER BY  ASC (?birthdate)
 
+INFO:  SPARQL returned 1898 records.
+
          name         | birthdate  
 ----------------------+------------
  Lewin Louis Aronsohn | 10-18-1850
@@ -603,11 +625,13 @@ SELECT ?personname ?birthdate ?partyname ?country
         FILTER(LANG(?partyname) = "de")
       
  ## rdf_fdw pushdown conditions ##
- FILTER(?birthdate > "1995-12-31"^^xsd:date)
+ FILTER(?birthdate > "1995-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?country = "Germany"@en)
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
+
+INFO:  SPARQL returned 5 records.
 
        name        | birthdate  |                  party                  
 -------------------+------------+-----------------------------------------
@@ -627,7 +651,7 @@ LIMIT 5
  */
 SELECT name, birthdate, party
 FROM politicians
-WHERE lower(country) = 'germany'
+WHERE lower(str(country)) = 'germany'
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
@@ -655,14 +679,11 @@ SELECT ?personname ?birthdate ?partyname ?country
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
 
-       name        | birthdate  |                  party                  
--------------------+------------+-----------------------------------------
- Klara Schedlich   | 01-04-2000 | Bündnis 90/Die Grünen
- Niklas Wagener    | 04-16-1998 | Bündnis 90/Die Grünen
- Jakob Blankenburg | 08-05-1997 | Sozialdemokratische Partei Deutschlands
- Fabian Funke      | 07-25-1997 | Sozialdemokratische Partei Deutschlands
- Max Lucks         | 04-19-1997 | Bündnis 90/Die Grünen
-(5 rows)
+INFO:  SPARQL returned 5 records.
+
+ name | birthdate | party 
+------+-----------+-------
+(0 rows)
 
 /*
  * "WHERE country IN " is going to be pushed down in a 
@@ -697,6 +718,8 @@ SELECT ?personname ?birthdate ?partyname ?country
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
+
+INFO:  SPARQL returned 5 records.
 
         name        | birthdate  |         party          
 --------------------+------------+------------------------
@@ -741,6 +764,8 @@ SELECT ?personname ?birthdate ?partyname ?country
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
 
+INFO:  SPARQL returned 5 records.
+
       name       | birthdate  |            party             |    country    
 -----------------+------------+------------------------------+---------------
  Bob Evnen       | 11-29-2022 | National Republican Party    | United States
@@ -784,6 +809,8 @@ SELECT ?personname ?birthdate ?partyname ?country
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
 
+INFO:  SPARQL returned 5 records.
+
         name        | birthdate  |         party          
 --------------------+------------+------------------------
  Louis Boyard       | 08-26-2000 | La France insoumise
@@ -822,13 +849,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-      name       | birthdate  |                   party                   |      country      
------------------+------------+-------------------------------------------+-------------------
- Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
- Bob Drewel      | 12-13-2013 | Demokratische Partei (Vereinigte Staaten) | the United States
- Nicholas Smith  | 03-14-2012 | Demokratische Partei (Vereinigte Staaten) | the United States
- Sharon Dowey    | 11-20-2010 | Scottish Conservative Party               | Scotland
- Tony Labranche  | 11-11-2001 | Demokratische Partei (Vereinigte Staaten) | the United States
+INFO:  SPARQL returned 10000 records.
+
+       name       | birthdate  |                   party                   |      country       
+------------------+------------+-------------------------------------------+--------------------
+ Oliver Smith     | 02-20-1993 | Liberal Democrats                         | the United Kingdom
+ Anthony Gonzalez | 09-18-1984 | National Republican Party                 | United States
+ Anthony Gonzalez | 09-18-1984 | Republikanische Partei                    | United States
+ Conor McGinn     | 07-31-1984 | Labour Party                              | the United Kingdom
+ Raj Mukherji     | 07-15-1984 | Demokratische Partei (Vereinigte Staaten) | the United States
 (5 rows)
 
 /*
@@ -860,13 +889,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-        name        | birthdate  |            party            |  country  
---------------------+------------+-----------------------------+-----------
- Neil Symes         | 12-11-1988 | Pauline Hanson’s One Nation | Australia
- George Christensen | 06-30-1978 | Pauline Hanson’s One Nation | Australia
- Shaun Nelson       | 03-22-1973 | Pauline Hanson’s One Nation | Australia
- Charles Smith      | 10-04-1970 | Pauline Hanson’s One Nation | Australia
- Stephen Andrew     | 12-09-1968 | Pauline Hanson’s One Nation | Australia
+INFO:  SPARQL returned 10000 records.
+
+       name       | birthdate  |           party            |  country  
+------------------+------------+----------------------------+-----------
+ Clare O'Neil     | 09-12-1980 | Australian Labor Party     | Australia
+ Roslyn Dundas    | 07-28-1978 | Australian Democrats       | Australia
+ Amanda Rishworth | 07-10-1978 | Australian Labor Party     | Australia
+ Kate Ellis       | 09-22-1977 | Australian Labor Party     | Australia
+ Alex Hawke       | 07-09-1977 | Liberal Party of Australia | Australia
 (5 rows)
 
 /* 
@@ -898,13 +929,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-            name            | birthdate  |            party             | country 
-----------------------------+------------+------------------------------+---------
- Krzysztof Gawkowski        | 04-11-1980 | Sojusz Lewicy Demokratycznej | Poland
- Dariusz Joński             | 01-12-1979 | Sojusz Lewicy Demokratycznej | Poland
- Robert Biedroń             | 04-13-1976 | Sojusz Lewicy Demokratycznej | Poland
- Krzysztof Matyjaszczyk     | 05-27-1974 | Sojusz Lewicy Demokratycznej | Poland
- Wojciech Michał Olejniczak | 04-10-1974 | Sojusz Lewicy Demokratycznej | Poland
+INFO:  SPARQL returned 10000 records.
+
+          name           | birthdate  |           party           | country 
+-------------------------+------------+---------------------------+---------
+ Krzysztof Bosak         | 06-13-1982 | Liga Polskich Rodzin      | Poland
+ Krzysztof Bosak         | 06-13-1982 | Ruch Narodowy             | Poland
+ Paweł Bartosz Olszewski | 12-11-1979 | Platforma Obywatelska     | Poland
+ Piotr Ślusarczyk        | 08-24-1979 | Liga Polskich Rodzin      | Poland
+ Lucjan Karasiewicz      | 07-10-1979 | Polska Jest Najważniejsza | Poland
 (5 rows)
 
 /* 
@@ -936,13 +969,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-       name       | birthdate  |                   party                   |  country  
-------------------+------------+-------------------------------------------+-----------
- Miran Charuka    | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
- Sam Oosterhoff   | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
- Fernando Holiday | 09-22-1996 | Democratas                                | Brazil
- Fernando Holiday | 09-22-1996 | Patriota (Brasilien)                      | Brazil
- Luísa Canziani   | 04-11-1996 | Partido Trabalhista Brasileiro            | Brazil
+INFO:  SPARQL returned 10000 records.
+
+          name           | birthdate  |                     party                     |     country     
+-------------------------+------------+-----------------------------------------------+-----------------
+ Vandolph Quizon         | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
+ Vandolph Quizon         | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Ilya Valeryevich Yashin | 06-29-1983 | Jabloko                                       | Russia
+ Ilya Valeryevich Yashin | 06-29-1983 | Solidarnost                                   | Russia
+ Anna Lührmann           | 06-14-1983 | Bündnis 90/Die Grünen                         | Germany
 (5 rows)
 
 /*
@@ -950,9 +985,9 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
  */
 SELECT uri, name, name_upper FROM politicians 
 WHERE 
-  upper(name) = 'WILL' || ' BOND' AND 
-  'will bond' = lower(name) AND
-  lower(name_upper) = lower(name)
+  upper(str(name)) = 'WILL' || ' BOND' AND 
+  'will bond' = lower(str(name)) AND
+  lower(str(name_upper)) = lower(str(name))
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -980,10 +1015,11 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase)
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper 
----------------------------------------+-----------+------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
-(1 row)
+INFO:  SPARQL returned 1 records.
+
+ uri | name | name_upper 
+-----+------+------------
+(0 rows)
 
 /*
  * Pushdown test for LENGTH
@@ -1018,13 +1054,13 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?pageid ?country
         FILTER(LANG(?partyname) = "de")
       
  ## rdf_fdw pushdown conditions ##
- FILTER(STRLEN(STR(?personname)) < 10)
- FILTER(STRLEN(STR(UCASE(?personname))) < 42)
- FILTER(13 <= STRLEN(STR(?country)))
- FILTER(5 < STRLEN(STR(UCASE(?personname))))
- FILTER(STRLEN(STR(?personname)) <= STRLEN(STR(?country)))
+ FILTER(STRLEN(?personname) < 10)
+ FILTER(STRLEN(UCASE(?personname)) < 42)
+ FILTER(13 <= STRLEN(?country))
+ FILTER(5 < STRLEN(UCASE(?personname)))
+ FILTER(STRLEN(?personname) <= STRLEN(?country))
  FILTER(47035308 = ?pageid)
- FILTER(STRLEN(STR(?personname)) = 9)
+ FILTER(STRLEN(?personname) = 9)
 }
 LIMIT 1
 
@@ -1075,6 +1111,8 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
+INFO:  SPARQL returned 1 records.
+
                   uri                  |   name    | name_len 
 ---------------------------------------+-----------+----------
  http://dbpedia.org/resource/Will_Bond | Will Bond |        9
@@ -1114,6 +1152,8 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
  FILTER(CEIL(?pageid) = 47035308)
 }
 LIMIT 1
+
+INFO:  SPARQL returned 1 records.
 
                   uri                  |   name    | name_len 
 ---------------------------------------+-----------+----------
@@ -1155,6 +1195,8 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
+INFO:  SPARQL returned 1 records.
+
                   uri                  |   name    | name_len 
 ---------------------------------------+-----------+----------
  http://dbpedia.org/resource/Will_Bond | Will Bond |        9
@@ -1195,6 +1237,8 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
+INFO:  SPARQL returned 1 records.
+
                   uri                  |   name    | name_len 
 ---------------------------------------+-----------+----------
  http://dbpedia.org/resource/Will_Bond | Will Bond |        9
@@ -1206,10 +1250,10 @@ LIMIT 1
 SELECT uri, name, name_upper FROM politicians 
 WHERE
   47035308 = wikiid AND 
-  SUBstring(name,1,4) = 'Will' AND
-  'Bond' = subSTRING(name, 6,4) AND
-  lower(SUBstring(name,1,4)) = 'will' AND
-  SUBSTRING(lower(name_upper),1,4) = 'will'
+  SUBstring(str(name),1,4) = 'Will' AND
+  'Bond' = subSTRING(str(name), 6,4) AND
+  lower(SUBstring(str(name),1,4)) = 'will' AND
+  SUBSTRING(lower(str(name_upper)),1,4) = 'will'
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -1239,10 +1283,11 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?pageid
 }
 LIMIT 1
 
-                  uri                  |   name    | name_upper 
----------------------------------------+-----------+------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | WILL BOND
-(1 row)
+INFO:  SPARQL returned 1 records.
+
+ uri | name | name_upper 
+-----+------+------------
+(0 rows)
 
 /*
  * Pushdown test for EXTRACT
@@ -1287,6 +1332,8 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
  FILTER(SECONDS("2002-03-08T14:33:42"^^xsd:dateTime) = 42)
 }
 LIMIT 1
+
+INFO:  SPARQL returned 1 records.
 
                   uri                  |   name    | birthdate  |              ts              
 ---------------------------------------+-----------+------------+------------------------------
@@ -1337,6 +1384,8 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
+INFO:  SPARQL returned 1 records.
+
                   uri                  |   name    | birthdate  |              ts              
 ---------------------------------------+-----------+------------+------------------------------
  http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
@@ -1385,6 +1434,8 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
  FILTER(SECONDS("2002-03-08T14:33:42"^^xsd:dateTime) = 42)
 }
 LIMIT 1
+
+INFO:  SPARQL returned 1 records.
 
                   uri                  |   name    | birthdate  |              ts              
 ---------------------------------------+-----------+------------+------------------------------
@@ -1435,6 +1486,8 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
+INFO:  SPARQL returned 1 records.
+
                   uri                  |   name    | birthdate  |              ts              
 ---------------------------------------+-----------+------------+------------------------------
  http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
@@ -1469,11 +1522,13 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
         FILTER(LANG(?partyname) = "de")
       
  ## rdf_fdw pushdown conditions ##
- FILTER("foo" != MD5(STR(?personname)))
+ FILTER("foo" != MD5(?personname))
  FILTER(47035308 = ?pageid)
- FILTER(MD5(STR(?personname)) = "dd16aacc7f77cec7ed83139f81704577")
+ FILTER(MD5(?personname) = "dd16aacc7f77cec7ed83139f81704577")
 }
 LIMIT 1
+
+INFO:  SPARQL returned 1 records.
 
                   uri                  |   name    | birthdate  |              ts              
 ---------------------------------------+-----------+------------+------------------------------
@@ -1536,6 +1591,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
   ORDER BY DESC (?qt)
 
 
+INFO:  SPARQL returned 4253 records.
+
         party         | nmembers 
 ----------------------+----------
  Mec Vannin           |        1
@@ -1595,6 +1652,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
     } 
 
 
+INFO:  SPARQL returned 2 records.
+
       name      |                 party                 | birthdate  
 ----------------+---------------------------------------+------------
  Markus Söder   | Christian Social Union in Bavaria     | 01-05-1967
@@ -1652,6 +1711,8 @@ SELECT ?name ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt)
 ORDER BY  DESC (?lat)
 LIMIT 10
 
+INFO:  SPARQL returned 10 records.
+
                 name                |                    wkt                     
 ------------------------------------+--------------------------------------------
  Europa Universität Flensburg       | POINT(9.451999664306641 54.7760009765625)
@@ -1698,6 +1759,8 @@ SELECT ?uri ?name ?lon ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt)
  FILTER(CONCAT("POINT(",?lon," ",?lat,")") = "POINT(8.49305534362793 52.03777694702148)")
 }
 
+INFO:  SPARQL returned 1 records.
+
          name         |                    wkt                    
 ----------------------+-------------------------------------------
  Bielefeld University | POINT(8.49305534362793 52.03777694702148)
@@ -1731,6 +1794,8 @@ SELECT ?uri ?name ?lon ?lat
  FILTER(?uri != "")
  FILTER(?lon < 9)
 }
+
+INFO:  SPARQL returned 23 records.
 
              name              | ?column? | ?column? 
 -------------------------------+----------+----------
@@ -1773,6 +1838,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
     LIMIT 1
   
 
+INFO:  SPARQL returned 1 records.
+
  birthdate 
 -----------
 (0 rows)
@@ -1810,6 +1877,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
     } 
     ORDER BY DESC(?birthdate)
   
+
+INFO:  SPARQL returned 10000 records.
 
  birthdate 
 -----------
@@ -1849,6 +1918,8 @@ SELECT ?person ?birthdate
  FILTER(?person != "")
 }
 LIMIT 5
+
+INFO:  SPARQL returned 5 records.
 
  birthdate  
 ------------
@@ -1919,10 +1990,12 @@ SELECT DISTINCT ?name ?released ?runtime
      
  ## rdf_fdw pushdown conditions ##
  FILTER(?runtime < 10)
- FILTER(?released < "1930-03-25"^^xsd:date)
+ FILTER(?released < "1930-03-25"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?name = "The Life of Adam Lindsay Gordon"@en)
 }
 LIMIT 3
+
+INFO:  SPARQL returned 2 records.
 
 CREATE TABLE t_politicians_remotefilters AS
 SELECT DISTINCT 
@@ -1954,9 +2027,11 @@ SELECT DISTINCT ?personname ?birthdate ?partyname ?country
         FILTER(STR(?country) = "Germany")
       
  ## rdf_fdw pushdown conditions ##
- FILTER(?birthdate > "1990-12-01"^^xsd:date)
+ FILTER(?birthdate > "1990-12-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)  ASC (?personname)  ASC (?country)
+
+INFO:  SPARQL returned 0 records.
 
 /* Disabling enable_pushdown OPTION */
 ALTER FOREIGN TABLE film                OPTIONS (ADD enable_pushdown 'false');
@@ -1990,6 +2065,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
      }
 
 
+INFO:  SPARQL returned 1955 records.
+
 CREATE TABLE t_politicians_localfilters AS
 SELECT DISTINCT 
   name, 
@@ -2022,6 +2099,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
         FILTER(STR(?country) = "Germany")
       } 
 
+
+INFO:  SPARQL returned 1898 records.
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
  name | released | runtime 
@@ -2071,6 +2150,8 @@ SELECT ?name
   }
 LIMIT 2
 
+INFO:  SPARQL returned 2 records.
+
         name         
 ---------------------
  ''Farol de Cacilhas
@@ -2117,6 +2198,8 @@ SELECT ?name
 ORDER BY  DESC (?name)
 LIMIT 2
 
+INFO:  SPARQL returned 2 records.
+
         name         
 ---------------------
  Jefferson Seal Flag
@@ -2161,6 +2244,8 @@ SELECT DISTINCT ?name
   }
 ORDER BY  ASC (?name)
 
+INFO:  SPARQL returned 15 records.
+
  name 
 ------
  1957
@@ -2204,6 +2289,8 @@ SELECT ?name
   }
 LIMIT 1
 
+INFO:  SPARQL returned 1 records.
+
      name      
 ---------------
  Only for Love
@@ -2240,6 +2327,8 @@ SELECT REDUCED ?name
       dbp:name ?name
   }
 LIMIT 10
+
+INFO:  SPARQL returned 10 records.
 
       name      
 ----------------
@@ -2300,6 +2389,8 @@ FROM <http://abc.def>
 }
 LIMIT 10
 
+INFO:  SPARQL returned 1 records.
+
     name     
 -------------
  Isle of Man
@@ -2343,6 +2434,8 @@ FROM <http://dbpedia.org>
  FILTER(?s = IRI("http://dbpedia.org/resource/Brazil"))
 }
 LIMIT 10
+
+INFO:  SPARQL returned 1 records.
 
    name   
 ----------
@@ -2392,6 +2485,8 @@ FROM NAMED <http://xyz.abc>
 }
 LIMIT 10
 
+INFO:  SPARQL returned 1 records.
+
  name  
 -------
  Japón
@@ -2435,6 +2530,8 @@ FROM NAMED <http://xyz.abc>
 }
 LIMIT 10
 
+INFO:  SPARQL returned 1 records.
+
  name  
 -------
  Japón
@@ -2463,6 +2560,8 @@ SELECT ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(REGEX(?o,".*\\^...2reGeX\\$$","i"))
 }
+
+INFO:  SPARQL returned 1 records.
 
      txt     
 -------------
@@ -2509,6 +2608,8 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*wITh.MAC..\\.$","i"))
 }
 
+INFO:  SPARQL returned 1 records.
+
       name       
 -----------------
  Call-A.P.P.L.E.
@@ -2536,6 +2637,8 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*\\(IT\\).*"))
  FILTER(REGEX(STR(?abs),".*\\(ABBREVIATED AS cw\\).*","i"))
 }
+
+INFO:  SPARQL returned 1 records.
 
      name      
 ---------------
@@ -2566,6 +2669,8 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(?name,"^Your..."))
 }
 
+INFO:  SPARQL returned 1 records.
+
   name   
 ---------
  Your 64
@@ -2593,6 +2698,8 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*\"went digital\\.\".*"))
  FILTER(REGEX(STR(?abs),".*cOuNtRy's.*","i"))
 }
+
+INFO:  SPARQL returned 1 records.
 
      name      
 ---------------

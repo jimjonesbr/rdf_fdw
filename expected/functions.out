@@ -1,14 +1,845 @@
 \pset null NULL
-SELECT strstarts('foobar','foo');
+CREATE SERVER dbpedia 
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://dbpedia.org/sparql');
+CREATE FOREIGN TABLE ftdbp (
+  p text    OPTIONS (variable '?p', literal_format 'raw'),
+  o text    OPTIONS (variable '?o', literal_format 'raw')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE { <http://dbpedia.org/resource/PostgreSQL> ?p ?o }');
+SELECT rdf_fdw_arguments_compatible('"abc"','"b"');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"','"b"^^<xsd:string>');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"^^<xsd:string>');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"@en','"b"');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"@en','"b"^^xsd:string');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"@en','"b"@en');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ t
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"@fr','"b"@ja');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ f
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"','"b"@ja');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ f
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"','"b"@en');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ f
+(1 row)
+
+SELECT rdf_fdw_arguments_compatible('"abc"^^xsd:string','"b"@en');
+ rdf_fdw_arguments_compatible 
+------------------------------
+ f
+(1 row)
+
+/* STRDT */
+SELECT strdt(NULL, 'http://www.w3.org/2001/XMLSchema#string');
+ strdt 
+-------
+ NULL
+(1 row)
+
+SELECT strdt('foo', NULL);
+ strdt 
+-------
+ NULL
+(1 row)
+
+SELECT strdt('', '<http://example.org/type>');
+             strdt             
+-------------------------------
+ ""^^<http://example.org/type>
+(1 row)
+
+SELECT strdt('foo', '');
+ERROR:  datatype IRI cannot be empty
+SELECT strdt('foo', ' ');
+ERROR:  datatype IRI cannot contain whitespaces
+SELECT strdt('foo', ' xsd:boolean ');
+ERROR:  datatype IRI cannot contain whitespaces
+SELECT strdt('foo', 'http://www.w3.org/2001/XMLSchema#string');
+                      strdt                       
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strdt('f"oo', 'http://example.org/type');
+               strdt                
+------------------------------------
+ "f\"oo"^^<http://example.org/type>
+(1 row)
+
+SELECT strdt('"foo"@en', 'http://www.w3.org/2001/XMLSchema#int');
+                     strdt                     
+-----------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT strdt('"f\"oo"^^xsd:string', 'http://example.org/newtype');
+                 strdt                 
+---------------------------------------
+ "f\"oo"^^<http://example.org/newtype>
+(1 row)
+
+SELECT strdt('foo', '<http://example.org/type>');
+              strdt               
+----------------------------------
+ "foo"^^<http://example.org/type>
+(1 row)
+
+SELECT strdt('foo', 'foo:bar');
+      strdt       
+------------------
+ "foo"^^<foo:bar>
+(1 row)
+
+SELECT strdt('foo', 'xsd:string');
+                      strdt                       
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strdt('foo', '<nonsense>');
+       strdt       
+-------------------
+ "foo"^^<nonsense>
+(1 row)
+
+SELECT p, o, strdt(o,'xsd:string')
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  strdt(o,'xsd:string') = strdt('PostgreSQL','xsd:string') AND
+  langmatches(lang(o),'en');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "en"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>) = "PostgreSQL"^^<http://www.w3.org/2001/XMLSchema#string>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        |                          strdt                          
+----------------------------------------------+-----------------+---------------------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en | "PostgreSQL"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+/* STRLANG */
+SELECT strlang('foo',NULL);
+ strlang 
+---------
+ NULL
+(1 row)
+
+SELECT strlang(NULL,'de');
+ strlang 
+---------
+ NULL
+(1 row)
+
+SELECT strlang('','es');
+ strlang 
+---------
+ ""@es
+(1 row)
+
+SELECT strlang(' ','en');
+ strlang 
+---------
+ " "@en
+(1 row)
+
+SELECT strlang('foo','pt');
+ strlang  
+----------
+ "foo"@pt
+(1 row)
+
+SELECT strlang('"foo"@en','fr');
+ strlang  
+----------
+ "foo"@fr
+(1 row)
+
+SELECT strlang('"foo"','it');
+ strlang  
+----------
+ "foo"@it
+(1 row)
+
+SELECT strlang('"foo"^^xsd:string','pt');
+ strlang  
+----------
+ "foo"@pt
+(1 row)
+
+SELECT strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#string>','es');
+ strlang  
+----------
+ "foo"@es
+(1 row)
+
+SELECT strlang(strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#string>','es'),'de');
+ strlang  
+----------
+ "foo"@de
+(1 row)
+
+SELECT strlang(strlang('f"o"o','en'),'de');
+   strlang    
+--------------
+ "f\"o\"o"@de
+(1 row)
+
+SELECT strlang(strlang('x\"y','pl'),'it');
+  strlang  
+-----------
+ "x\"y"@it
+(1 row)
+
+SELECT strlang('foo', 'xyz');
+  strlang  
+-----------
+ "foo"@xyz
+(1 row)
+
+SELECT p, o, strlang(o,'fr')
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'de') AND
+  lang(strlang(o,'fr')) = 'fr';
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANG(STRLANG(?o, "fr")) = "fr")
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        |     strlang     
+----------------------------------------------+-----------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | "PostgreSQL"@fr
+(1 row)
+
+/* STR */
+SELECT str('foo');
+  str  
+-------
+ "foo"
+(1 row)
+
+SELECT str('"foo"');
+  str  
+-------
+ "foo"
+(1 row)
+
+SELECT str('"foo"@en');
+  str  
+-------
+ "foo"
+(1 row)
+
+SELECT str('"foo"^^xsd:string');
+  str  
+-------
+ "foo"
+(1 row)
+
+SELECT str('f"oo');
+   str   
+---------
+ "f\"oo"
+(1 row)
+
+SELECT str('"f\"oo"');
+   str   
+---------
+ "f\"oo"
+(1 row)
+
+SELECT str('<http://example.org/foo>');
+           str            
+--------------------------
+ "http://example.org/foo"
+(1 row)
+
+SELECT str('');
+ str 
+-----
+ ""
+(1 row)
+
+SELECT str(' ');
+ str 
+-----
+ " "
+(1 row)
+
+SELECT str(NULL);
+ str  
+------
+ NULL
+(1 row)
+
+SELECT p, o, str(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'es') AND
+  str(o) = str('PostgreSQL') AND str(o) = '"PostgreSQL"';
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STR(?o) = "PostgreSQL")
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        |     str      
+----------------------------------------------+-----------------+--------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "PostgreSQL"
+(1 row)
+
+/* LANG */
+SELECT lang('"foo"@en');
+ lang 
+------
+ en
+(1 row)
+
+SELECT lang(strlang('foo','fr'));
+ lang 
+------
+ fr
+(1 row)
+
+SELECT lang(strdt('foo','xsd:string'));
+ lang 
+------
+ 
+(1 row)
+
+SELECT lang('"f"oo"@it');
+ lang 
+------
+ it
+(1 row)
+
+SELECT lang('');
+ lang 
+------
+ 
+(1 row)
+
+SELECT lang(' ');
+ lang 
+------
+ 
+(1 row)
+
+SELECT lang(NULL);
+ lang 
+------
+ NULL
+(1 row)
+
+SELECT lang('<http://example.org>'); 
+ lang 
+------
+ 
+(1 row)
+
+SELECT p, o, lang(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  lang(o) = 'es';
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANG(?o) = "es")
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        | lang 
+----------------------------------------------+-----------------+------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | es
+(1 row)
+
+/* DATATYPE */
+SELECT datatype('"foo"^^xsd:string');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT datatype('"foo"^^<http://www.w3.org/2001/XMLSchema#string>');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT datatype(strdt('foo','xsd:string'));
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT datatype('"42"^^<xsd:int>');
+                datatype                
+----------------------------------------
+ <http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT datatype(strdt('foo','bar:xyz'));
+ datatype  
+-----------
+ <bar:xyz>
+(1 row)
+
+SELECT datatype('"foo"@es');
+                        datatype                         
+---------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+(1 row)
+
+SELECT datatype('');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT datatype(' ');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT datatype('"foo"^<xsd:string>');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT datatype('"foo"^^xsd:string>');
+ datatype 
+----------
+ 
+(1 row)
+
+SELECT datatype('"foo"^^<xsd:string');
+   datatype    
+---------------
+ <<xsd:string>
+(1 row)
+
+SELECT datatype(NULL);
+ datatype 
+----------
+ NULL
+(1 row)
+
+SELECT p, o, datatype(o)
+FROM ftdbp 
+WHERE 
+  datatype(o) = iri('http://www.w3.org/2001/XMLSchema#nonNegativeInteger') AND
+  datatype(o) = iri('"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"') AND
+  datatype(o) = '<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>';
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |                               o                                |                       datatype                        
+----------------------------------------------+----------------------------------------------------------------+-------------------------------------------------------
+ <http://dbpedia.org/ontology/wikiPageLength> | "91177"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> | <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>
+(1 row)
+
+/* ENCODES_FOR_URI */
+SELECT encode_for_uri('"Los Angeles"');
+ encode_for_uri  
+-----------------
+ "Los%20Angeles"
+(1 row)
+
+SELECT encode_for_uri('"Los Angeles"@en');
+ encode_for_uri  
+-----------------
+ "Los%20Angeles"
+(1 row)
+
+SELECT encode_for_uri('"Los Angeles"^^xsd:string');
+ encode_for_uri  
+-----------------
+ "Los%20Angeles"
+(1 row)
+
+SELECT encode_for_uri('"Los Angeles"^^<xsd:string>');
+ encode_for_uri  
+-----------------
+ "Los%20Angeles"
+(1 row)
+
+SELECT encode_for_uri('"Los Angeles"^^<http://www.w3.org/2001/XMLSchema#string>');
+ encode_for_uri  
+-----------------
+ "Los%20Angeles"
+(1 row)
+
+SELECT encode_for_uri('foo! *''();:@&=+$,/?#[]');
+                         encode_for_uri                         
+----------------------------------------------------------------
+ "foo%21%20%2A%27%28%29%3B%3A%40%26%3D%2B%24%2C%2F%3F%23%5B%5D"
+(1 row)
+
+SELECT encode_for_uri('foo');
+ encode_for_uri 
+----------------
+ "foo"
+(1 row)
+
+SELECT encode_for_uri('');
+ encode_for_uri 
+----------------
+ ""
+(1 row)
+
+SELECT encode_for_uri(NULL);
+ encode_for_uri 
+----------------
+ NULL
+(1 row)
+
+SELECT p, o, encode_for_uri(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://dbpedia.org/property/developer') AND
+  encode_for_uri(o) = encode_for_uri('PostgreSQL Global Development Group') AND
+  encode_for_uri(o) = encode_for_uri(strlang('PostgreSQL Global Development Group','de'));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/developer>)
+ FILTER(ENCODE_FOR_URI(?o) = "PostgreSQL%20Global%20Development%20Group")
+}
+
+INFO:  SPARQL returned 1 records.
+
+                    p                    |                    o                     |               encode_for_uri                
+-----------------------------------------+------------------------------------------+---------------------------------------------
+ <http://dbpedia.org/property/developer> | "PostgreSQL Global Development Group"@en | "PostgreSQL%20Global%20Development%20Group"
+(1 row)
+
+/* IRI / URI */
+SELECT iri('"http://example/"'), iri('http://example/'), iri('<http://example/>');
+        iri        |        iri        |        iri        
+-------------------+-------------------+-------------------
+ <http://example/> | <http://example/> | <http://example/>
+(1 row)
+
+SELECT iri('"mailto:foo@example.com"'), iri('mailto:foo@example.com'), iri('<mailto:foo@example.com>');
+           iri            |           iri            |           iri            
+--------------------------+--------------------------+--------------------------
+ <mailto:foo@example.com> | <mailto:foo@example.com> | <mailto:foo@example.com>
+(1 row)
+
+SELECT iri('"urn:uuid:123e4567-e89b-12d3-a456-426614174000"'), iri('urn:uuid:123e4567-e89b-12d3-a456-426614174000'), iri('<urn:uuid:123e4567-e89b-12d3-a456-426614174000>');
+                       iri                       |                       iri                       |                       iri                       
+-------------------------------------------------+-------------------------------------------------+-------------------------------------------------
+ <urn:uuid:123e4567-e89b-12d3-a456-426614174000> | <urn:uuid:123e4567-e89b-12d3-a456-426614174000> | <urn:uuid:123e4567-e89b-12d3-a456-426614174000>
+(1 row)
+
+SELECT iri('"file://etc/passwd"'), iri('file://etc/passwd'), iri('<file://etc/passwd>');
+         iri         |         iri         |         iri         
+---------------------+---------------------+---------------------
+ <file://etc/passwd> | <file://etc/passwd> | <file://etc/passwd>
+(1 row)
+
+SELECT iri('"foo:bar"'), iri('foo:bar'), iri('<foo:bar>');
+    iri    |    iri    |    iri    
+-----------+-----------+-----------
+ <foo:bar> | <foo:bar> | <foo:bar>
+(1 row)
+
+SELECT iri('"foo"'), iri('foo'), iri('<foo>');
+  iri  |  iri  |   iri   
+-------+-------+---------
+ <foo> | <foo> | <<foo>>
+(1 row)
+
+SELECT iri('"a:b:c"'), iri('a:b:c'), iri('<a:b:c>');
+   iri   |   iri   |   iri   
+---------+---------+---------
+ <a:b:c> | <a:b:c> | <a:b:c>
+(1 row)
+
+SELECT iri('"http:/not-a-scheme"'), iri('http:/not-a-scheme'), iri('<http:/not-a-scheme>');
+         iri          |         iri          |         iri          
+----------------------+----------------------+----------------------
+ <http:/not-a-scheme> | <http:/not-a-scheme> | <http:/not-a-scheme>
+(1 row)
+
+SELECT iri('"foo"@en');
+  iri  
+-------
+ <foo>
+(1 row)
+
+SELECT iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
+ iri  
+------
+ <42>
+(1 row)
+
+SELECT p, o, iri(p) FROM ftdbp 
+WHERE 
+  iri(p) = iri('http://dbpedia.org/property/released') AND
+  iri(p) = iri('"http://dbpedia.org/property/released"') AND
+  iri(p) = iri('"http://dbpedia.org/property/released"@en') AND
+  iri(p) = iri('"http://dbpedia.org/property/released"^^xsd:string');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                   p                    |                           o                           |                  iri                   
+----------------------------------------+-------------------------------------------------------+----------------------------------------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> | <http://dbpedia.org/property/released>
+(1 row)
+
+/* isIRI / isURI */
+SELECT isIRI('<https://example/>'); 
+ isiri 
+-------
+ t
+(1 row)
+
+SELECT isIRI('<mailto:foo@example.com>');
+ isiri 
+-------
+ t
+(1 row)
+
+SELECT isIRI('http://example/');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('"http://example/"');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('path');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('"path"');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('"foo"^^xsd:string');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('"foo"^^<http://www.w3.org/2001/XMLSchema#string>'); 
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI(strdt('foo', 'xsd:string'));
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('"foo"@en');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI('');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isIRI(NULL);
+ isiri 
+-------
+ NULL
+(1 row)
+
+SELECT isIRI('<not-an-iri');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT isURI('<http://example/>');
+ isuri 
+-------
+ t
+(1 row)
+
+SELECT isURI('path');
+ isuri 
+-------
+ f
+(1 row)
+
+SELECT p, o, isiri(p) FROM ftdbp 
+WHERE 
+  iri(p) = iri('http://dbpedia.org/property/released') AND
+  isiri(p);
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(isIRI(?p))
+ FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                   p                    |                           o                           | isiri 
+----------------------------------------+-------------------------------------------------------+-------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> | t
+(1 row)
+
+/* STRSTARTS */
+SELECT strstarts('"foobar"','"foo"'), strstarts('foobar','foo');
+ strstarts | strstarts 
+-----------+-----------
+ t         | t
+(1 row)
+
+SELECT strstarts('"foobar"@en','"foo"@en');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('foobar','xyz');
+SELECT strstarts('"foobar"^^<xsd:string>','"foo"^^<xsd:string>');
  strstarts 
 -----------
- f
+ t
+(1 row)
+
+SELECT strstarts('"foobar"^^<xsd:string>','"foo"');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('"foobar"','"foo"^^<xsd:string>');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('"foobar"@en','"foo"');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('"foobar"@en','"foo"^^<xsd:string>');
+ strstarts 
+-----------
+ t
 (1 row)
 
 SELECT strstarts('foobar','');
@@ -41,7 +872,126 @@ SELECT strstarts(NULL, NULL);
  NULL
 (1 row)
 
-SELECT strends('foobar','bar');
+SELECT strstarts(strlang('foobar','en'),'"foo"@fr');
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT strstarts(strlang('foobar','en'), strlang('foo','fr'));
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT strstarts(strlang('foobar','en'), '"foo"^^<xsd:string>');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts(strlang('foobar','en'), strdt('foo','xsd:string'));
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('foobar', strdt('foo','xsd:string'));
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('foobar','"foo"^^<xsd:string>');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT strstarts('foobar', strlang('foo','it'));
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT strstarts('foobar','"foo"@de');
+ strstarts 
+-----------
+ NULL
+(1 row)
+
+SELECT p, o, strstarts(o,str('Postgre'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'pt') AND
+  strstarts(o,'Postgre') AND
+  strstarts(o, '"Postgre"') AND
+  strstarts(o,'"Postgre"^^xsd:string') AND
+  strstarts(o, strdt('Postgre','xsd:string')) AND
+  strstarts(o, '"Postgre"@pt') AND
+  strstarts(o, strlang('Postgre','pt'));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
+ FILTER(STRSTARTS(?o, "Postgre"))
+ FILTER(STRSTARTS(?o, "Postgre"))
+ FILTER(STRSTARTS(?o, "Postgre"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRSTARTS(?o, "Postgre"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRSTARTS(?o, "Postgre"@pt))
+ FILTER(STRSTARTS(?o, "Postgre"@pt))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        | strstarts 
+----------------------------------------------+-----------------+-----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | t
+(1 row)
+
+/* STRENDS */
+SELECT strends('"foobar"','"bar"'), strends('foobar','bar');
+ strends | strends 
+---------+---------
+ t       | t
+(1 row)
+
+SELECT strends('"foobar"@en','"bar"@en');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('"foobar"^^xsd:string', '"bar"');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('"foobar"', '"bar"^^xsd:string');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('"foobar"@en', '"bar"');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('"foobar"@en', '"bar"^^xsd:string');
  strends 
 ---------
  t
@@ -83,16 +1033,179 @@ SELECT strends(NULL, NULL);
  NULL
 (1 row)
 
-SELECT strbefore('abc','b');
- strbefore 
------------
- a
+SELECT strends('"foobar"@en','"bar"@fr');
+ strends 
+---------
+ NULL
 (1 row)
 
-SELECT strbefore('abc','xyz');
+SELECT strends(strlang('foobar','en'),'"bar"@fr');
+ strends 
+---------
+ NULL
+(1 row)
+
+SELECT strends(strlang('foobar','en'), '"bar"^^<xsd:string>');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends(strlang('foobar','en'), strdt('bar','xsd:string'));
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('foobar', strdt('bar','xsd:string'));
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('foobar','"bar"^^<xsd:string>');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT strends('foobar','"bar"@de');
+ strends 
+---------
+ NULL
+(1 row)
+
+SELECT p, o, strends(o,str('SQL'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'es') AND
+  strends(o,'SQL') AND
+  strends(o, '"SQL"') AND
+  strends(o,'"SQL"^^xsd:string') AND
+  strends(o, strdt('SQL','xsd:string'));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(STRENDS(?o, "SQL"))
+ FILTER(STRENDS(?o, "SQL"))
+ FILTER(STRENDS(?o, "SQL"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRENDS(?o, "SQL"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        | strends 
+----------------------------------------------+-----------------+---------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | t
+(1 row)
+
+/* STRBEFORE */
+SELECT strbefore('abc','b'), strbefore('"abc"','"b"');
+ strbefore | strbefore 
+-----------+-----------
+ "a"       | "a"
+(1 row)
+
+SELECT strbefore('"abc"@en','bc');
  strbefore 
 -----------
- 
+ "a"@en
+(1 row)
+
+SELECT strbefore('"abc"@en','"b"@cy');
+ strbefore 
+-----------
+ NULL
+(1 row)
+
+SELECT strbefore('"abc"^^xsd:string',''), strbefore('"abc"^^xsd:string','""');
+                   strbefore                   |                   strbefore                   
+-----------------------------------------------+-----------------------------------------------
+ ""^^<http://www.w3.org/2001/XMLSchema#string> | ""^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strbefore('abc','xyz'), strbefore('"abc"','"xyz"');
+ strbefore | strbefore 
+-----------+-----------
+ ""        | ""
+(1 row)
+
+SELECT strbefore('"abc"@en', '"z"@en');
+ strbefore 
+-----------
+ ""
+(1 row)
+
+SELECT strbefore('"abc"@en', '"z"'), strbefore('"abc"@en', 'z');
+ strbefore | strbefore 
+-----------+-----------
+ ""        | ""
+(1 row)
+
+SELECT strbefore('"abc"@en', '""@en');
+ strbefore 
+-----------
+ ""@en
+(1 row)
+
+SELECT strbefore('"abc"@en', '""');
+ strbefore 
+-----------
+ ""@en
+(1 row)
+
+SELECT strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','c');
+                    strbefore                    
+-------------------------------------------------
+ "ab"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
+                    strbefore                    
+-------------------------------------------------
+ "ab"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^^xsd:string');
+                    strbefore                    
+-------------------------------------------------
+ "ab"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strbefore('"abc"^^http://www.w3.org/2001/XMLSchema#string','"c"^^<xsd:string>');
+                    strbefore                    
+-------------------------------------------------
+ "ab"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strbefore('"abc"^^xsd:string','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
+                    strbefore                    
+-------------------------------------------------
+ "ab"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strbefore('"abc"@fr','"b"^^xsd:string');
+ strbefore 
+-----------
+ "a"@fr
+(1 row)
+
+SELECT strbefore('"abc"^^<xsd:string>','"b"@de');
+ strbefore 
+-----------
+ NULL
+(1 row)
+
+SELECT strbefore('"abc"@en','"b"^^<foo:bar>');
+ strbefore 
+-----------
+ NULL
 (1 row)
 
 SELECT strbefore('abc', NULL);
@@ -116,31 +1229,159 @@ SELECT strbefore(NULL, NULL);
 SELECT strbefore('abc', '');
  strbefore 
 -----------
- 
+ ""
+(1 row)
+
+SELECT strbefore('"abc"', '');
+ strbefore 
+-----------
+ ""
 (1 row)
 
 SELECT strbefore('', 'xyz');
  strbefore 
 -----------
- 
+ ""
 (1 row)
 
 SELECT strbefore('', '');
  strbefore 
 -----------
- 
+ ""
+(1 row)
+
+SELECT strbefore('""','""');
+ strbefore 
+-----------
+ ""
+(1 row)
+
+SELECT p, o, strbefore(o, strlang('SQL','fr')), strbefore(o, strdt('SQL','xsd:string'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  strbefore(o, '"SQL"@fr') = '"Postgre"@fr' AND
+  strbefore(o, '"SQL"@fr') = strlang('Postgre','fr') AND
+  strbefore(str(o), 'SQL') = str('Postgre');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STRBEFORE(?o, "SQL"@fr) = "Postgre"@fr)
+ FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        |  strbefore   |  strbefore   
+----------------------------------------------+-----------------+--------------+--------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "Postgre"@fr | "Postgre"@fr
+(1 row)
+
+/* STRAFTER */
+SELECT strafter('"abc"','"b"');
+ strafter 
+----------
+ "c"
+(1 row)
+
+SELECT strafter('"abc"@en','ab');
+ strafter 
+----------
+ "c"@en
+(1 row)
+
+SELECT strafter('"abc"@en','"b"@cy');
+ strafter 
+----------
+ NULL
+(1 row)
+
+SELECT strafter('"abc"^^xsd:string','""');
+                     strafter                     
+--------------------------------------------------
+ "abc"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','b');
+                    strafter                    
+------------------------------------------------
+ "c"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
+                    strafter                    
+------------------------------------------------
+ "c"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^xsd:string');
+                    strafter                    
+------------------------------------------------
+ "c"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strafter('"abc"^^http://www.w3.org/2001/XMLSchema#string','"b"^^<xsd:string>');
+                    strafter                    
+------------------------------------------------
+ "c"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strafter('"abc"^^xsd:string','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
+                    strafter                    
+------------------------------------------------
+ "c"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT strafter('"abc"@fr','"b"^^xsd:string');
+ strafter 
+----------
+ "c"@fr
+(1 row)
+
+SELECT strafter('"abc"','"xyz"');
+ strafter 
+----------
+ ""
+(1 row)
+
+SELECT strafter('"abc"@en', '"z"@en');
+ strafter 
+----------
+ ""
+(1 row)
+
+SELECT strafter('"abc"@en', '"z"');
+ strafter 
+----------
+ ""
+(1 row)
+
+SELECT strafter('"abc"@en', '""@en');
+ strafter 
+----------
+ "abc"@en
+(1 row)
+
+SELECT strafter('"abc"@en', '""');
+ strafter 
+----------
+ "abc"@en
 (1 row)
 
 SELECT strafter('abc','b');
  strafter 
 ----------
- c
+ "c"
 (1 row)
 
 SELECT strafter('abc','xyz');
  strafter 
 ----------
- 
+ ""
 (1 row)
 
 SELECT strafter('abc', NULL);
@@ -164,49 +1405,111 @@ SELECT strafter(NULL, NULL);
 SELECT strafter('abc', '');
  strafter 
 ----------
- abc
+ "abc"
 (1 row)
 
 SELECT strafter('', 'xyz');
  strafter 
 ----------
- 
+ ""
 (1 row)
 
 SELECT strafter('', '');
  strafter 
 ----------
- 
+ ""
 (1 row)
 
-SELECT contains('foobar', 'oob');
+SELECT p, o, strafter(o, strlang('Postgre','fr')), strafter(o, strdt('Postgre','xsd:string'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'fr') AND
+  strafter(o, '"Postgre"@fr') = '"SQL"@fr' AND
+  strafter(o, '"Postgre"@fr') = strlang('SQL','fr');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "fr"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STRAFTER(?o, "Postgre"@fr) = "SQL"@fr)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        | strafter | strafter 
+----------------------------------------------+-----------------+----------+----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "SQL"@fr | "SQL"@fr
+(1 row)
+
+/* CONTAINS */
+SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
+ contains | contains 
+----------+----------
+ t        | t
+(1 row)
+
+SELECT contains('"foobar"@en', '"foo"@en'), contains(strlang('"foobar"','en'), strlang('foo','en'));
+ contains | contains 
+----------+----------
+ t        | t
+(1 row)
+
+SELECT contains('"foobar"^^xsd:string', '"bar"^^xsd:string'), contains(strdt('"foobar"','xsd:string'), strdt('"bar"','xsd:string'));
+ contains | contains 
+----------+----------
+ t        | t
+(1 row)
+
+SELECT contains('"foobar"^^xsd:string', '"foo"'), contains('"foobar"^^xsd:string', 'foo');
+ contains | contains 
+----------+----------
+ t        | t
+(1 row)
+
+SELECT contains('"foobar"', '"bar"^^xsd:string'), contains('foobar', '"bar"^^xsd:string');
+ contains | contains 
+----------+----------
+ t        | t
+(1 row)
+
+SELECT contains('"foobar"@en', '"foo"'), contains('"foobar"@en', 'foo');
+ contains | contains 
+----------+----------
+ t        | t
+(1 row)
+
+SELECT contains('"foobar"@en', '"bar"^^xsd:string');
  contains 
 ----------
  t
 (1 row)
 
-SELECT contains('foobar', '');
- contains 
-----------
- t
+SELECT contains('"foobar"', '""'), contains('foobar', '');
+ contains | contains 
+----------+----------
+ t        | f
 (1 row)
 
-SELECT contains('', 'foo');
- contains 
-----------
- f
+SELECT contains('""', '"foo"'), contains('', 'foo');
+ contains | contains 
+----------+----------
+ f        | f
 (1 row)
 
-SELECT contains('foobar', NULL);
- contains 
-----------
- NULL
+SELECT contains('"foobar"', NULL), contains('foobar', NULL);
+ contains | contains 
+----------+----------
+ NULL     | NULL
 (1 row)
 
-SELECT contains(NULL, 'foo');
- contains 
-----------
- NULL
+SELECT contains(NULL, '"foo"'), contains(NULL, 'foo');
+ contains | contains 
+----------+----------
+ NULL     | NULL
 (1 row)
 
 SELECT contains(NULL, NULL);
@@ -215,90 +1518,219 @@ SELECT contains(NULL, NULL);
  NULL
 (1 row)
 
-SELECT encode_for_uri('foo! *''();:@&=+$,/?#[]');
-                        encode_for_uri                        
---------------------------------------------------------------
- foo%21%20%2A%27%28%29%3B%3A%40%26%3D%2B%24%2C%2F%3F%23%5B%5D
+SELECT contains('"foobar"@en', '"foo"@fr');
+ contains 
+----------
+ t
 (1 row)
 
-SELECT encode_for_uri('foo');
- encode_for_uri 
-----------------
- foo
+SELECT contains('"123"^^<http://example.com/int>', '"2"');
+ contains 
+----------
+ t
 (1 row)
 
-SELECT encode_for_uri('');
- encode_for_uri 
-----------------
- 
+SELECT contains('"abc"', '"def"@en');
+ contains 
+----------
+ f
 (1 row)
 
-SELECT encode_for_uri(NULL);
- encode_for_uri 
-----------------
- NULL
-(1 row)
-
-CREATE SERVER wikidata
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://query.wikidata.org/sparql');
-CREATE FOREIGN TABLE ft (
-  o text    OPTIONS (variable '?o', language 'de')
-)
-SERVER wikidata OPTIONS (
-  log_sparql 'true',
-  sparql 'SELECT * WHERE {
-    wd:Q192490 rdfs:label ?o
-  }
-'); 
-SELECT DISTINCT o FROM ft
-WHERE
-  strbefore(o, 'SQL') = 'Postgre' AND
-  strbefore(o, '') = '' AND
-  strbefore('', '') = '' AND
-  strbefore(o, 'SQL') <> 'My' AND
-  strafter(o, 'Postgre') = 'SQL' AND
-  strafter(o, '') = 'PostgreSQL' AND
-  strafter('', '') = '' AND 
-  strafter(o, 'Postgre') <> 's' AND
-  
-  strends(o, 'SQL') AND
-  strends(o, '') AND
-  strstarts(o, 'Postgre') AND
-  strstarts(o, '') AND
-  
+SELECT p, o, contains(o,'"ostg"@fr'), contains(o,'"ostg"^^xsd:string')
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'fr') AND
   contains(o,'ostg') AND
-  contains(o,'') AND
-  NOT contains(o,'Oracle') AND
-  encode_for_uri(o) = 'PostgreSQL';
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+  contains(o,'"ostg"@fr') AND
+  contains(o, strlang('ostg','fr')) AND
+  contains(o, strdt('ostg','xsd:string'));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
-SELECT DISTINCT ?o 
-{
-    wd:Q192490 rdfs:label ?o
-  
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(STRBEFORE(STR(?o), "SQL") != "My")
- FILTER(STRAFTER(STR(?o), "Postgre") != "s")
- FILTER(STRENDS(STR(?o), "SQL"))
- FILTER(STRENDS(STR(?o), ""))
- FILTER(STRSTARTS(STR(?o), "Postgre"))
- FILTER(STRSTARTS(STR(?o), ""))
- FILTER(CONTAINS(STR(?o), "ostg"))
- FILTER(CONTAINS(STR(?o), ""))
- FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
- FILTER(STRBEFORE(STR(?o), "") = "")
- FILTER(STRAFTER(STR(?o), "Postgre") = "SQL")
- FILTER(STRAFTER(STR(?o), "") = "PostgreSQL")
- FILTER(ENCODE_FOR_URI(STR(?o)) = "PostgreSQL")
+ FILTER(LANGMATCHES(LANG(?o), "fr"))
+ FILTER(CONTAINS(?o, "ostg"))
+ FILTER(CONTAINS(?o, "ostg"@fr))
+ FILTER(CONTAINS(?o, "ostg"@fr))
+ FILTER(CONTAINS(?o, "ostg"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
-ORDER BY  ASC (?o)
 
-     o      
-------------
- PostgreSQL
+INFO:  SPARQL returned 1 records.
+
+                      p                       |        o        | contains | contains 
+----------------------------------------------+-----------------+----------+----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | t        | t
 (1 row)
 
-DROP SERVER wikidata CASCADE;
-NOTICE:  drop cascades to foreign table ft
+/* LANGMATCHES */
+SELECT langmatches(lang('"hello"@en'), '"en"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@EN-US'), '"en-us"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@fr'), '"FR"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en'), '"*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@fr-ca'), '"*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en-us'), '"en-*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en'), '"en-*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@fr-ca'), '"fr-*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@fr'), '"en"');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches(lang('"hello"@en-us'), '"fr-*"');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches(lang('"hello"@en'), '"en-us-*"');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches(lang('"hello"'), '"en"');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches(lang('"hello"'), '"*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('""@en'), '"en"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('""'), '"*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"^^xsd:string'), '"en"');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches(lang('"hello"^^xsd:string'), '"*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en'), '"en"^^xsd:string');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en'), '"*"^^xsd:string');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en-us'), '"EN-*"^^xsd:string');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches('', '"en"');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches('en', '"en"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT langmatches(lang('"hello"@en'), '');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT langmatches('', '"*"');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT p, o, langmatches(lang(o),'*')
+FROM ftdbp 
+WHERE langmatches(lang(o),'pt');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
+}
+
+INFO:  SPARQL returned 3 records.
+
+                       p                        |                                                                o                                                                 | langmatches 
+------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+-------------
+ <http://www.w3.org/2000/01/rdf-schema#label>   | "PostgreSQL"@pt                                                                                                                  | t
+ <http://www.w3.org/2000/01/rdf-schema#comment> | "PostgreSQL é um sistema gerenciador de banco de dados objeto relacional (SGBD), desenvolvido como projeto de código aberto."@pt | t
+ <http://dbpedia.org/ontology/abstract>         | "PostgreSQL é um sistema gerenciador de banco de dados objeto relacional (SGBD), desenvolvido como projeto de código aberto."@pt | t
+(3 rows)
+
+DROP SERVER dbpedia CASCADE;
+NOTICE:  drop cascades to foreign table ftdbp

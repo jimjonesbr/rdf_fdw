@@ -44,10 +44,7 @@ LIMIT 10;
 SELECT uri, lon, lat
 FROM getty_places
 WHERE
-  name = 'West Flanders, Flanders, Belgium, Europe, World' AND
-  strends(namec, 'WORLD') AND
-  strbefore(name, 'Flanders') = 'West ' AND
-  strafter(name, 'Belgium, Europe, ') = 'World'
+  name = 'West Flanders, Flanders, Belgium, Europe, World'
 ORDER BY lon
 LIMIT 3;
 

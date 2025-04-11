@@ -227,7 +227,16 @@ CREATE FOREIGN TABLE t15 (
 CREATE FOREIGN TABLE t16 (s text OPTIONS (variable '?a', literal_format 'foo')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 
+/* invalid nodetype for literal_format 'raw' */
 CREATE FOREIGN TABLE t17 (s text OPTIONS (variable '?a', nodetype 'iri', literal_format 'raw')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* 'language' not allowed with 'literal_format' */
+CREATE FOREIGN TABLE t18 (s text OPTIONS (variable '?a', language 'de', literal_format 'raw')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* 'literal_type' not allowed with 'literal_format' */
+CREATE FOREIGN TABLE t19 (s text OPTIONS (variable '?a', literal_type 'xsd:string', literal_format 'raw')
 ) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 
 /*
