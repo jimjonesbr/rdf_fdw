@@ -851,13 +851,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-       name       | birthdate  |                   party                   |      country       
-------------------+------------+-------------------------------------------+--------------------
- Oliver Smith     | 02-20-1993 | Liberal Democrats                         | the United Kingdom
- Anthony Gonzalez | 09-18-1984 | National Republican Party                 | United States
- Anthony Gonzalez | 09-18-1984 | Republikanische Partei                    | United States
- Conor McGinn     | 07-31-1984 | Labour Party                              | the United Kingdom
- Raj Mukherji     | 07-15-1984 | Demokratische Partei (Vereinigte Staaten) | the United States
+           name           | birthdate  |                     party                     |      country       
+--------------------------+------------+-----------------------------------------------+--------------------
+ Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
+ Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
+ Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
+ Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
 (5 rows)
 
 /*
@@ -891,13 +891,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-       name       | birthdate  |           party            |  country  
-------------------+------------+----------------------------+-----------
- Clare O'Neil     | 09-12-1980 | Australian Labor Party     | Australia
- Roslyn Dundas    | 07-28-1978 | Australian Democrats       | Australia
- Amanda Rishworth | 07-10-1978 | Australian Labor Party     | Australia
- Kate Ellis       | 09-22-1977 | Australian Labor Party     | Australia
- Alex Hawke       | 07-09-1977 | Liberal Party of Australia | Australia
+        name        | birthdate  |         party          |  country  
+--------------------+------------+------------------------+-----------
+ Sarah Hanson-Young | 12-23-1981 | Australian Greens      | Australia
+ Andrew Cripps      | 02-05-1981 | Liberal National Party | Australia
+ Clare O'Neil       | 09-12-1980 | Australian Labor Party | Australia
+ Roslyn Dundas      | 07-28-1978 | Australian Democrats   | Australia
+ Amanda Rishworth   | 07-10-1978 | Australian Labor Party | Australia
 (5 rows)
 
 /* 
@@ -971,13 +971,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-          name           | birthdate  |                     party                     |     country     
--------------------------+------------+-----------------------------------------------+-----------------
- Vandolph Quizon         | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
- Vandolph Quizon         | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Ilya Valeryevich Yashin | 06-29-1983 | Jabloko                                       | Russia
- Ilya Valeryevich Yashin | 06-29-1983 | Solidarnost                                   | Russia
- Anna Lührmann           | 06-14-1983 | Bündnis 90/Die Grünen                         | Germany
+           name           | birthdate  |                     party                     |     country     
+--------------------------+------------+-----------------------------------------------+-----------------
+ Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
+ Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
+ Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
+ Vandolph Quizon          | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
 (5 rows)
 
 /*

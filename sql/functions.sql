@@ -377,4 +377,24 @@ SELECT p, o, langmatches(lang(o),'*')
 FROM ftdbp 
 WHERE langmatches(lang(o),'pt');
 
+/* ISBLANK */
+SELECT isblank('_:b1');
+SELECT isblank('_:node123');
+SELECT isblank('<http://example.org/a>');
+SELECT isblank('"hello"');
+SELECT isblank('"hello"@en');
+SELECT isblank('"42"^^xsd:integer');
+SELECT isblank('_notblank');
+SELECT isblank('');
+SELECT isblank('b1');
+SELECT isblank('_:');
+SELECT isblank('_');
+SELECT isblank(' ');
+SELECT isblank('');
+SELECT isblank(NULL);
+
+SELECT p, o, isblank(o)
+FROM ftdbp 
+WHERE isblank(o);
+
 DROP SERVER dbpedia CASCADE;

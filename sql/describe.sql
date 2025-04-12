@@ -24,18 +24,18 @@ FROM rdf_fdw_describe('wikidata','
     FILTER(STR(?d) = "British astronomer")   
   }')
 WHERE 
-  predicate = 'http://www.w3.org/2000/01/rdf-schema#label' AND
+  predicate = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   object = '"Harold Spencer Jones"@en'
 ORDER BY object COLLATE "C";
 
 SELECT subject, predicate, object
 FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', false)
-WHERE predicate IN ('http://www.w3.org/2000/01/rdf-schema#label','http://schema.org/dateModified')
+WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
 ORDER BY object COLLATE "C";
 
 SELECT subject, predicate, object
 FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true)
-WHERE predicate IN ('http://www.w3.org/2000/01/rdf-schema#label','http://schema.org/dateModified')
+WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
 ORDER BY object COLLATE "C";
 
 SELECT subject, predicate, object
@@ -44,7 +44,7 @@ FROM rdf_fdw_describe(
     server => 'wikidata', 
     base_uri => 'http://test.base.uri/',
     raw_literal => false)
-WHERE predicate = 'http://www.w3.org/2000/01/rdf-schema#label'
+WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
 ORDER BY object COLLATE "C";
 
 -- empty server

@@ -1732,5 +1732,108 @@ INFO:  SPARQL returned 3 records.
  <http://dbpedia.org/ontology/abstract>         | "PostgreSQL é um sistema gerenciador de banco de dados objeto relacional (SGBD), desenvolvido como projeto de código aberto."@pt | t
 (3 rows)
 
+/* ISBLANK */
+SELECT isblank('_:b1');
+ isblank 
+---------
+ t
+(1 row)
+
+SELECT isblank('_:node123');
+ isblank 
+---------
+ t
+(1 row)
+
+SELECT isblank('<http://example.org/a>');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('"hello"');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('"hello"@en');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('"42"^^xsd:integer');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('_notblank');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('b1');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('_:');
+ isblank 
+---------
+ t
+(1 row)
+
+SELECT isblank('_');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank(' ');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank('');
+ isblank 
+---------
+ f
+(1 row)
+
+SELECT isblank(NULL);
+ isblank 
+---------
+ NULL
+(1 row)
+
+SELECT p, o, isblank(o)
+FROM ftdbp 
+WHERE isblank(o);
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(ISBLANK(?o))
+}
+
+INFO:  SPARQL returned 0 records.
+
+ p | o | isblank 
+---+---+---------
+(0 rows)
+
 DROP SERVER dbpedia CASCADE;
 NOTICE:  drop cascades to foreign table ftdbp

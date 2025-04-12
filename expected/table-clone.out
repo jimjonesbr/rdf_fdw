@@ -322,10 +322,10 @@ SELECT runtime,name,released FROM public.heap3 ORDER BY name COLLATE "C";
 ---------+-------------------------------+------------
     2500 | A Tale of the Australian Bush | 03-15-1911
        1 | Artful Kate                   | 02-23-1911
-       1 | Baseball and Bloomers         | 01-06-1911
+       1 | Behind the Stockade           | 06-12-1911
+       1 | Captain Nell                  | 05-23-1911
        1 | Fisher Folks                  | 02-16-1911
        1 | How Spriggins Took Lodgers    | 04-19-1911
-       1 | Jean Rescues                  | 01-31-1911
        1 | Monsieur                      | 04-04-1911
 (7 rows)
 

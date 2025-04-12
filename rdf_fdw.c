@@ -377,6 +377,7 @@ extern Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -398,6 +399,7 @@ PG_FUNCTION_INFO_V1(rdf_fdw_arguments_compatible);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri);
 PG_FUNCTION_INFO_V1(rdf_fdw_isIRI);
 PG_FUNCTION_INFO_V1(rdf_fdw_langmatches);
+PG_FUNCTION_INFO_V1(rdf_fdw_isBlank);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -463,6 +465,7 @@ static bool strstarts(char *str, char *substr);
 static bool strends(char *str, char *substr);
 static char *iri(char *input);
 static bool isIRI(char *input);
+static bool langmatches(char *lang_tag, char *pattern);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -1866,6 +1869,56 @@ Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS)
 }
 
 /*
+ * isBlank
+ * -------
+ *
+ * Mimics SPARQL's isBlank function. Checks if the input is a blank node.
+ * Returns true if the term starts with "_:", false otherwise.
+ *
+ * term: Null-terminated C string, an RDF term (e.g., "_:b1", "<http://ex.com>", "\"hello\"")
+ *
+ * returns: Boolean (true if blank node, false otherwise)
+ */
+static bool isBlank(char *term)
+{
+	bool result;
+	elog(DEBUG1, "%s called with term '%s'", __func__, term);
+
+	/* Handle NULL or empty input */
+	if (!term || strlen(term) == 0)
+	{
+		elog(DEBUG1, "  %s returning false (invalid input)", __func__);
+		return false;
+	}
+
+	/* Check if term starts with "_:" */
+	result = (strncmp(term, "_:", 2) == 0);
+
+	elog(DEBUG1, "  %s returning > %s", __func__, result ? "true" : "false");
+	return result;
+}
+
+/*
+ * rdf_fdw_isBlank
+ * ---------------
+ *
+ * PostgreSQL function wrapper for isBlank(). Takes a text input, checks if it's
+ * a blank node, and returns a PostgreSQL boolean.
+ *
+ * term_text: PostgreSQL text type (e.g., "_:b1", "<http://ex.com>")
+ *
+ * returns: PostgreSQL boolean
+ */
+Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS)
+{
+	text *term_text = PG_GETARG_TEXT_PP(0);
+	char *term = text_to_cstring(term_text);
+	bool result = isBlank(term);
+
+	PG_RETURN_BOOL(result);
+}
+
+/*
  * CreateDatum
  * ----------
  *
@@ -1956,7 +2009,7 @@ static List *DescribeIRI(RDFfdwState *state)
 			librdf_statement *statement = librdf_stream_get_object(stream);
 
 			if (librdf_node_is_resource(statement->subject))
-				triple->subject = pstrdup((char *) librdf_uri_as_string(librdf_node_get_uri(statement->subject)));
+				triple->subject = pstrdup(iri((char *) librdf_uri_as_string(librdf_node_get_uri(statement->subject))));
 			else if (librdf_node_is_blank(statement->subject))
 				triple->subject = pstrdup((char *) librdf_node_get_blank_identifier(statement->subject));
 			else
@@ -1964,10 +2017,14 @@ static List *DescribeIRI(RDFfdwState *state)
 						(errcode(ERRCODE_FDW_ERROR),
 						 errmsg("unsupported subject node type")));
 
-			triple->predicate = pstrdup((char *) librdf_uri_as_string(librdf_node_get_uri(statement->predicate)));
+			if (librdf_node_is_blank(statement->predicate))
+				triple->predicate = strdup((char *) librdf_node_get_blank_identifier(statement->predicate));
+			else
+				triple->predicate = pstrdup(iri((char *) librdf_uri_as_string(librdf_node_get_uri(statement->predicate))));
+
 
 			if (librdf_node_is_resource(statement->object))
-				triple->object = pstrdup((char *) librdf_uri_as_string(librdf_node_get_uri(statement->object)));
+				triple->object = pstrdup(iri((char *) librdf_uri_as_string(librdf_node_get_uri(statement->object))));
 			else if (librdf_node_is_literal(statement->object))
 			{
 				char *value = (char *) librdf_node_get_literal_value(statement->object);
@@ -1980,14 +2037,14 @@ static List *DescribeIRI(RDFfdwState *state)
 					librdf_uri *datatype = librdf_node_get_literal_value_datatype_uri(statement->object);
 
 					if (datatype)
-						appendStringInfo(&literal, "\"%s\"^^<%s>", value, librdf_uri_as_string(datatype));
+						appendStringInfo(&literal, "%s", strdt(value, (char *) librdf_uri_as_string(datatype)));
 					else if (language)
 						appendStringInfo(&literal, "%s", strlang(value, language));
 					else
 						appendStringInfo(&literal, "%s", CstringToRDFLiteral(value));
 				}
 				else
-					appendStringInfo(&literal, "%s", value);
+					appendStringInfo(&literal, "%s", CstringToRDFLiteral(value));
 
 				triple->object = pstrdup(literal.data);
 				pfree(literal.data);
@@ -5907,6 +5964,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "CONTAINS(%s)", NameStr(args));
 			else if(strcmp(opername, "encode_for_uri") == 0)
 				appendStringInfo(&result, "ENCODE_FOR_URI(%s)", NameStr(args));
+			else if(strcmp(opername, "isblank") == 0)
+				appendStringInfo(&result, "ISBLANK(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
 			else if(strcmp(opername, "extract") == 0)
@@ -6544,6 +6603,7 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "contains") == 0 ||
 		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "encode_for_uri") == 0 ||
+		strcmp(funcname, "isblank") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
 
