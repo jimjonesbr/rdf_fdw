@@ -378,6 +378,10 @@ extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_isLiteral(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_bnode(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_uuid(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -400,6 +404,10 @@ PG_FUNCTION_INFO_V1(rdf_fdw_iri);
 PG_FUNCTION_INFO_V1(rdf_fdw_isIRI);
 PG_FUNCTION_INFO_V1(rdf_fdw_langmatches);
 PG_FUNCTION_INFO_V1(rdf_fdw_isBlank);
+PG_FUNCTION_INFO_V1(rdf_fdw_isNumeric);
+PG_FUNCTION_INFO_V1(rdf_fdw_isLiteral);
+PG_FUNCTION_INFO_V1(rdf_fdw_bnode);
+PG_FUNCTION_INFO_V1(rdf_fdw_uuid);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -1916,6 +1924,430 @@ Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS)
 	bool result = isBlank(term);
 
 	PG_RETURN_BOOL(result);
+}
+
+/*
+ * isNumeric
+ * ---------
+ *
+ * Checks if an RDF term is numeric per SPARQL spec. Returns true if the term is a
+ * bare number (e.g., "12") or a literal with a numeric datatype (e.g., xsd:integer,
+ * xsd:nonNegativeInteger) and valid numeric lexical form. Returns false otherwise.
+ *
+ * term: Null-terminated C string representing an RDF term (e.g., "12", "12"^^xsd:integer)
+ *
+ * returns: Boolean indicating if the term is numeric
+ */
+static bool isNumeric(char *term)
+{
+	char *lexical;
+	char *datatype_uri;
+	bool is_bare_number = false;
+	char *endptr;
+
+	if (!term || strlen(term) == 0)
+		return false;
+
+	/* Check if term is a bare number (e.g., "12") */
+	if (term[0] != '"' && !strstr(term, "^^") && !strstr(term, "@"))
+	{
+		lexical = term;
+		is_bare_number = true;
+	}
+	else
+	{
+		/* Extract lexical value using datatype’s helper */
+		lexical = ExtractRDFLexicalValue(term); /* From datatype/strdt codebase */
+	}
+
+	/* Validate lexical form as numeric (integers, decimals, or scientific notation) */
+	if (!lexical || strlen(lexical) == 0)
+		return false;
+	strtod(lexical, &endptr);
+	if (*endptr != '\0') /* Not a valid number, e.g., "abc" */
+		return false;
+
+	/* Bare numbers are numeric */
+	if (is_bare_number)
+		return true;
+
+	/* Get datatype using datatype function */
+	datatype_uri = datatype(term);
+	if (strlen(datatype_uri) == 0)
+		return false; /* No datatype or invalid literal (e.g., "12") */
+
+	/* Check for numeric datatypes */
+	if (strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#integer>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#positiveInteger>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#negativeInteger>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#nonPositiveInteger>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#long>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#int>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#short>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedLong>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedInt>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedShort>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedByte>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#double>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#float>") == 0 ||
+		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#decimal>") == 0)
+	{
+		/* Special case for xsd:byte: SPARQL requires values to be integers between -128 and 127.
+		 * For example, isNumeric("1200"^^xsd:byte) returns false because 1200 exceeds 127.
+		 * We parse the lexical value to ensure it’s a valid integer and check its range. */
+		if (strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#byte>") == 0)
+		{
+			long val = strtol(lexical, &endptr, 10); /* Parse as integer */
+			/* Ensure the entire string is a valid integer and within xsd:byte range */
+			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
+				return false;
+			if (val < -128 || val > 127) /* Outside xsd:byte range, e.g., 1200 */
+				return false;
+			return true; /* Valid xsd:byte, e.g., "100" */
+		}
+		/* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
+		 * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
+		 * Accept them as numeric. */
+		return true;
+	}
+
+	return false;
+}
+
+/*
+ * rdf_fdw_isNumeric
+ * -----------------
+ *
+ * PostgreSQL function wrapper for isNumeric. Checks if an RDF term provided as a
+ * PostgreSQL text argument is numeric.
+ *
+ * input_text: PostgreSQL text type representing the RDF term
+ *
+ * returns: PostgreSQL boolean type
+ */
+Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS)
+{
+	text *input_text = PG_GETARG_TEXT_PP(0);
+	bool result = isNumeric(text_to_cstring(input_text));
+	PG_RETURN_BOOL(result);
+}
+
+/*
+ * isLiteral
+ * ---------
+ *
+ * Checks if an RDF term is a literal per SPARQL spec. Returns true if the term is a
+ * simple literal (e.g., "\"hello\""), a language-tagged literal (e.g., "\"hello\"@en"),
+ * or a datatype-tagged literal (e.g., "\"12\"^^xsd:integer"). Returns false for IRIs
+ * (e.g., "<http://example.org>"), blank nodes (e.g., "_:bnode"), bare numbers (e.g., "123"),
+ * or invalid inputs.
+ *
+ * term: Null-terminated C string representing an RDF term
+ *
+ * returns: Boolean indicating if the term is a literal
+ */
+static bool isLiteral(char *term)
+{
+	StringInfoData buf;
+	char *datatype_uri;
+
+	if (!term || strlen(term) == 0)
+		return false;
+
+	/* Bare numbers (e.g., "123") are not literals in SPARQL */
+	if (term[0] != '"' && !strstr(term, "^^") && !strstr(term, "@"))
+		return false;
+
+	/* Normalize input for datatype function to ensure proper literal format */
+	initStringInfo(&buf);
+	if (strstr(term, "^^") && term[0] != '"')
+	{
+		/* Add quotes around lexical part, e.g., "12^^xsd:int" → "\"12\"^^xsd:int" */
+		char *datatype_part = strstr(term, "^^");
+		if (datatype_part)
+		{
+			appendStringInfoChar(&buf, '"');
+			appendBinaryStringInfo(&buf, term, datatype_part - term);
+			appendStringInfoChar(&buf, '"');
+			appendStringInfoString(&buf, datatype_part);
+		}
+		else
+		{
+			appendStringInfoString(&buf, term);
+		}
+	}
+	else
+	{
+		appendStringInfoString(&buf, term);
+	}
+
+	/* Use datatype function to check if it’s a literal */
+	datatype_uri = datatype(buf.data);
+
+	/* A non-empty datatype URI indicates a literal (simple, language-tagged, or datatype-tagged) */
+	if (strlen(datatype_uri) > 0)
+		return true;
+
+	/* Non-literals (e.g., IRIs, malformed inputs) return empty string */
+	return false;
+}
+
+/*
+ * rdf_fdw_isLiteral
+ * -----------------
+ *
+ * PostgreSQL function wrapper for isLiteral. Checks if an RDF term provided as a
+ * PostgreSQL text argument is a literal.
+ *
+ * input_text: PostgreSQL text type representing the RDF term
+ *
+ * returns: PostgreSQL boolean type
+ */
+Datum rdf_fdw_isLiteral(PG_FUNCTION_ARGS)
+{
+	text *input_text = PG_GETARG_TEXT_PP(0);
+	bool result = isLiteral(text_to_cstring(input_text));
+	PG_RETURN_BOOL(result);
+}
+
+/*
+ * bnode
+ * -----
+ *
+ * Implements SPARQL’s BNODE function. Without arguments (input = NULL), generates
+ * a unique blank node (e.g., "_:b123"). With a string argument, returns a blank node
+ * based on the lexical form of the input (e.g., BNODE("xyz") → "_:xyz"). Invalid
+ * inputs (e.g., IRIs, blank nodes, empty strings) return NULL.
+ *
+ * input: Null-terminated C string (literal or bare string) for BNODE(str), or NULL for BNODE().
+ *
+ * returns: Null-terminated C string representing a blank node (e.g., "_:xyz"), or NULL for invalid inputs.
+ */
+static char *bnode(char *input)
+{
+	StringInfoData buf;
+	static uint64 counter = 0; /* Ensure uniqueness for BNODE() */
+	char *result;
+	char *datatype_uri;
+	char *lexical;
+
+	initStringInfo(&buf);
+
+	if (input == NULL)
+	{
+		/* BNODE(): Generate unique blank node using timestamp and counter */
+		TimestampTz ts = GetCurrentTimestamp();
+		uint64 unique_id = counter++ ^ (uint64)ts;
+		appendStringInfo(&buf, "_:b%llu", (unsigned long long)unique_id);
+	}
+	else
+	{
+		/* BNODE(str): Use lexical form prefixed with "_:" */
+		StringInfoData input_buf;
+		char *normalized_input;
+
+		/* Reject IRIs and blank nodes explicitly */
+		if (input[0] == '<' && input[strlen(input) - 1] == '>')
+		{
+			pfree(buf.data);
+			return NULL; /* Invalid: IRI */
+		}
+		if (strncmp(input, "_:", 2) == 0)
+		{
+			pfree(buf.data);
+			return NULL; /* Invalid: blank node */
+		}
+
+		/* Normalize input for datatype validation */
+		initStringInfo(&input_buf);
+		if (input[0] != '"' && !strstr(input, "^^") && !strstr(input, "@"))
+		{
+			/* Bare string (e.g., "xyz") → treat as literal */
+			appendStringInfoChar(&input_buf, '"');
+			appendStringInfoString(&input_buf, input);
+			appendStringInfoChar(&input_buf, '"');
+		}
+		else
+		{
+			appendStringInfoString(&input_buf, input);
+		}
+		normalized_input = input_buf.data;
+
+		/* Validate input is a literal */
+		datatype_uri = datatype(normalized_input);
+		if (strlen(datatype_uri) == 0)
+		{
+			pfree(input_buf.data);
+			pfree(buf.data);
+			pfree(datatype_uri);
+			return NULL;
+		}
+		pfree(datatype_uri);
+
+		/* Extract lexical form */
+		lexical = ExtractRDFLexicalValue(normalized_input);
+		if (!lexical || strlen(lexical) == 0)
+		{
+			pfree(input_buf.data);
+			pfree(buf.data);
+			pfree(lexical);
+			return NULL;
+		}
+
+		/* Create blank node ID, sanitizing lexical form (alphanumeric or underscore) */
+		appendStringInfoString(&buf, "_:");
+		for (char *p = lexical; *p; p++)
+		{
+			if (isalnum((unsigned char)*p))
+				appendStringInfoChar(&buf, *p);
+			else
+				appendStringInfoChar(&buf, '_'); /* Replace spaces, special chars */
+		}
+
+		pfree(lexical);
+		pfree(input_buf.data);
+	}
+
+	/* Return the blank node ID */
+	result = pstrdup(buf.data);
+	pfree(buf.data);
+	return result;
+}
+
+/*
+ * rdf_fdw_bnode
+ * -------------
+ *
+ * PostgreSQL function wrapper for SPARQL’s BNODE function. Generates a unique
+ * blank node if called with no arguments (BNODE()), or a deterministic blank node
+ * based on the input string’s lexical form (BNODE(str)). Returns NULL for NULL input.
+ *
+ * input_text: PostgreSQL text type (e.g., "xyz", "\"xyz\""), or none for BNODE()
+ *
+ * returns: PostgreSQL text type (e.g., "_:xyz" or "_:b123")
+ */
+Datum rdf_fdw_bnode(PG_FUNCTION_ARGS)
+{
+	char *result;
+	text *input_text;
+
+	/* Check number of arguments to distinguish BNODE() vs BNODE(str) */
+	if (fcinfo->nargs == 0)
+	{
+		/* BNODE(): No arguments, generate unique blank node */
+		result = bnode(NULL);
+	}
+	else
+	{
+		/* BNODE(str): String argument, check for NULL */
+		if (PG_ARGISNULL(0))
+			PG_RETURN_NULL();
+
+		input_text = PG_GETARG_TEXT_PP(0);
+		result = bnode(text_to_cstring(input_text));
+	}
+
+	if (result == NULL)
+		PG_RETURN_NULL();
+
+	PG_RETURN_TEXT_P(cstring_to_text(result));
+}
+
+/*
+ * generate_uuid_v4
+ * Generates a version 4 (random) UUID per RFC 4122. Returns a lowercase string
+ * in the format xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx, where y is 8, 9, A, or B.
+ * Uses timestamp and counter for entropy, no external dependencies.
+ *
+ * Returns: Null-terminated C string (e.g., "123e4567-e89b-12d3-a456-426614174000")
+ */
+static char *
+generate_uuid_v4(void)
+{
+	StringInfoData buf;
+	static uint64 counter = 0;
+	uint64 seed;
+	uint8_t bytes[16];
+	char *result;
+	int i;
+
+	initStringInfo(&buf);
+
+	/* Use timestamp and counter for pseudo-randomness */
+	seed = (uint64)GetCurrentTimestamp() ^ counter++;
+
+	/* Generate 16 bytes of pseudo-random data */
+	for (i = 0; i < 16; i++)
+	{
+		seed = (seed * 1103515245 + 12345) & 0x7fffffff; /* Linear congruential generator */
+		bytes[i] = (uint8_t)(seed >> 16);
+	}
+
+	/* Set version (4) and variant (y = 8, 9, A, B) */
+	bytes[6] = (bytes[6] & 0x0F) | 0x40; /* Version 4 */
+	bytes[8] = (bytes[8] & 0x3F) | 0x80; /* Variant: 10xx */
+
+	/* Format as xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx */
+	appendStringInfo(&buf, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+					 bytes[0], bytes[1], bytes[2], bytes[3],
+					 bytes[4], bytes[5],
+					 bytes[6], bytes[7],
+					 bytes[8], bytes[9],
+					 bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+
+	result = pstrdup(buf.data);
+	pfree(buf.data);
+	return result;
+}
+
+/*
+ * rdf_fdw_uuid
+ * PostgreSQL function wrapper for SPARQL’s UUID and STRUUID functions.
+ * - UUID(): Returns an IRI (<urn:uuid:<uuid>>).
+ * - STRUUID(): Returns a string literal (<uuid>).
+ * Expects no arguments, enforced by SQL declaration.
+ *
+ * Uses fn_extra to store whether it’s UUID (1) or STRUUID (0).
+ *
+ * Returns: PostgreSQL text type (e.g., "<urn:uuid:123e4567-e89b-12d3-a456-426614174000>" or "123e4567-e89b-12d3-a456-426614174000")
+ */
+Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
+{
+	StringInfoData buf;
+	char *uuid_str;
+	char *result;
+	char *funcname;
+	int *is_uuid_ptr;
+	int is_uuid;
+
+	/* Initialize or retrieve function type from fn_extra */
+	if (fcinfo->flinfo->fn_extra == NULL)
+	{
+		funcname = get_func_name(fcinfo->flinfo->fn_oid);
+		is_uuid_ptr = palloc(sizeof(int));
+		*is_uuid_ptr = (strcmp(funcname, "uuid") == 0) ? 1 : 0;
+		fcinfo->flinfo->fn_extra = is_uuid_ptr;
+		pfree(funcname);
+	}
+	is_uuid = *(int *)fcinfo->flinfo->fn_extra;
+
+	/* Generate UUID */
+	uuid_str = generate_uuid_v4();
+
+	/* Format output based on function */
+	initStringInfo(&buf);
+	if (is_uuid)
+		appendStringInfo(&buf, "<urn:uuid:%s>", uuid_str);
+	else
+		appendStringInfoString(&buf, uuid_str);
+
+	pfree(uuid_str);
+
+	/* Return as text */
+	result = pstrdup(buf.data);
+	pfree(buf.data);
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -5508,7 +5940,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						}  
 						else if (left_column->literaltype)
 							appendStringInfo(&right_filter_arg, "%s", strdt(right, left_column->literaltype));
-						else if (isIRI(right)) /* REVISAR!!!*/
+						else if (isIRI(right) || isBlank(right)) /* REVISAR!!!*/
 							appendStringInfo(&right_filter_arg, "%s", right);
 						else
 							appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
@@ -5966,6 +6398,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "ENCODE_FOR_URI(%s)", NameStr(args));
 			else if(strcmp(opername, "isblank") == 0)
 				appendStringInfo(&result, "ISBLANK(%s)", NameStr(args));
+			else if(strcmp(opername, "isnumeric") == 0)
+				appendStringInfo(&result, "ISNUMERIC(%s)", NameStr(args));
+			else if(strcmp(opername, "isliteral") == 0)
+				appendStringInfo(&result, "ISLITERAL(%s)", NameStr(args));
+			else if(strcmp(opername, "bnode") == 0)
+				appendStringInfo(&result, "BNODE(%s)", NameStr(args));				
 			else if(strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
 			else if(strcmp(opername, "extract") == 0)
@@ -6604,6 +7042,9 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "extract") == 0 ||
 		strcmp(funcname, "encode_for_uri") == 0 ||
 		strcmp(funcname, "isblank") == 0 ||
+		strcmp(funcname, "isnumeric") == 0 ||
+		strcmp(funcname, "isliteral") == 0 ||		
+		strcmp(funcname, "bnode") == 0 ||		
 		strcmp(funcname, "substring") == 0;
 }
 

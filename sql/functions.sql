@@ -397,4 +397,88 @@ SELECT p, o, isblank(o)
 FROM ftdbp 
 WHERE isblank(o);
 
+/* ISNUMERIC */
+
+SELECT isnumeric('12');
+SELECT isnumeric('"12"');
+SELECT isnumeric('"12"^^xsd:nonNegativeInteger');
+SELECT isnumeric('"1200"^^xsd:byte');
+SELECT isnumeric('<http://example/>');
+SELECT isnumeric('"12"^^xsd:integer');
+SELECT isnumeric('"12"^^xsd:positiveInteger');
+SELECT isnumeric('"12"^^xsd:negativeInteger');
+SELECT isnumeric('"12"^^xsd:nonPositiveInteger');
+SELECT isnumeric('"12"^^xsd:long');
+SELECT isnumeric('"12"^^xsd:int');
+SELECT isnumeric('"12"^^xsd:short');
+SELECT isnumeric('"12"^^xsd:unsignedLong');
+SELECT isnumeric('"12"^^xsd:unsignedInt');
+SELECT isnumeric('"12"^^xsd:unsignedShort');
+SELECT isnumeric('"12"^^xsd:unsignedByte');
+SELECT isnumeric('"12"^^xsd:double');
+SELECT isnumeric('"12"^^xsd:float');
+SELECT isnumeric('"12"^^xsd:decimal');
+SELECT isnumeric('');
+SELECT isnumeric(' ');
+SELECT isnumeric('""');
+SELECT isnumeric('" "');
+SELECT isnumeric(NULL);
+
+SELECT p, o, isnumeric(o), isnumeric(p)
+FROM ftdbp
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageLength') AND
+  isnumeric(o);
+
+/* ISLITERAL */
+SELECT isliteral('"hello"');
+SELECT isliteral('"123"');
+SELECT isliteral('"12"^^xsd:integer');
+SELECT isliteral('"12"^^xsd:nonNegativeInteger');
+SELECT isliteral('"12.34"^^xsd:double');
+SELECT isliteral('"true"^^xsd:boolean');
+SELECT isliteral('"abc"^^<http://example.org/custom>'); -- true
+SELECT isliteral('"hello"@en');
+SELECT isliteral('"bonjour"@fr');
+SELECT isliteral('12');
+SELECT isliteral('<http://example.org>');
+SELECT isliteral('_:bnode');
+SELECT isliteral('');
+SELECT isliteral('" "');
+SELECT isliteral('""');
+SELECT isliteral(NULL);
+
+SELECT p, o, isliteral(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  isliteral(o) AND 
+  NOT isliteral(p);
+
+/* BNODE */
+SELECT isblank(bnode());
+SELECT bnode('xyz');
+SELECT bnode('xyz');
+SELECT bnode('"xyz"');
+SELECT bnode('"xyz"@en');
+SELECT bnode('"xyz"^^xsd:string');
+SELECT bnode('hello world');
+SELECT bnode('123!');
+SELECT bnode('<http://example.org>');
+SELECT bnode('_:bnode');
+SELECT bnode('');
+SELECT bnode(NULL);
+
+SELECT *
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  isblank(bnode(o));
+
+/* UUID (not pushable) */
+SELECT uuid() ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
+
+/* STRUUID() (not pushable) */
+SELECT struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+
 DROP SERVER dbpedia CASCADE;

@@ -1438,12 +1438,11 @@ SELECT ?p ?o
  FILTER(STRAFTER(?o, "Postgre"@fr) = "SQL"@fr)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 0 records.
 
-                      p                       |        o        | strafter | strafter 
-----------------------------------------------+-----------------+----------+----------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "SQL"@fr | "SQL"@fr
-(1 row)
+ p | o | strafter | strafter 
+---+---+----------+----------
+(0 rows)
 
 /* CONTAINS */
 SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
@@ -1834,6 +1833,442 @@ INFO:  SPARQL returned 0 records.
  p | o | isblank 
 ---+---+---------
 (0 rows)
+
+/* ISNUMERIC */
+SELECT isnumeric('12');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:nonNegativeInteger');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"1200"^^xsd:byte');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric('<http://example/>');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:integer');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:positiveInteger');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:negativeInteger');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:nonPositiveInteger');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:long');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:int');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:short');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:unsignedLong');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:unsignedInt');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:unsignedShort');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:unsignedByte');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:double');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:float');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('"12"^^xsd:decimal');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT isnumeric('');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric(' ');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric('""');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric('" "');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT isnumeric(NULL);
+ isnumeric 
+-----------
+ NULL
+(1 row)
+
+SELECT p, o, isnumeric(o), isnumeric(p)
+FROM ftdbp
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageLength') AND
+  isnumeric(o);
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(ISNUMERIC(?o))
+ FILTER(?p = <http://dbpedia.org/ontology/wikiPageLength>)
+}
+
+INFO:  SPARQL returned 1 records.
+
+                      p                       |                               o                                | isnumeric | isnumeric 
+----------------------------------------------+----------------------------------------------------------------+-----------+-----------
+ <http://dbpedia.org/ontology/wikiPageLength> | "91177"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> | t         | f
+(1 row)
+
+/* ISLITERAL */
+SELECT isliteral('"hello"');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"123"');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"12"^^xsd:integer');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"12"^^xsd:nonNegativeInteger');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"12.34"^^xsd:double');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"true"^^xsd:boolean');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"abc"^^<http://example.org/custom>'); -- true
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"hello"@en');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('"bonjour"@fr');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('12');
+ isliteral 
+-----------
+ f
+(1 row)
+
+SELECT isliteral('<http://example.org>');
+ isliteral 
+-----------
+ f
+(1 row)
+
+SELECT isliteral('_:bnode');
+ isliteral 
+-----------
+ f
+(1 row)
+
+SELECT isliteral('');
+ isliteral 
+-----------
+ f
+(1 row)
+
+SELECT isliteral('" "');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral('""');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT isliteral(NULL);
+ isliteral 
+-----------
+ NULL
+(1 row)
+
+SELECT p, o, isliteral(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  isliteral(o) AND 
+  NOT isliteral(p);
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(ISLITERAL(?o))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 21 records.
+
+                      p                       |           o            | isliteral 
+----------------------------------------------+------------------------+-----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ca        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@cs        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@el        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eo        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eu        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@in        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ja        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@nl        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pl        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ru        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@sv        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@uk        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh        | t
+(21 rows)
+
+/* BNODE */
+SELECT isblank(bnode());
+ isblank 
+---------
+ t
+(1 row)
+
+SELECT bnode('xyz');
+ bnode 
+-------
+ _:xyz
+(1 row)
+
+SELECT bnode('xyz');
+ bnode 
+-------
+ _:xyz
+(1 row)
+
+SELECT bnode('"xyz"');
+ bnode 
+-------
+ _:xyz
+(1 row)
+
+SELECT bnode('"xyz"@en');
+ bnode 
+-------
+ _:xyz
+(1 row)
+
+SELECT bnode('"xyz"^^xsd:string');
+ bnode 
+-------
+ _:xyz
+(1 row)
+
+SELECT bnode('hello world');
+     bnode     
+---------------
+ _:hello_world
+(1 row)
+
+SELECT bnode('123!');
+ bnode  
+--------
+ _:123_
+(1 row)
+
+SELECT bnode('<http://example.org>');
+ bnode 
+-------
+ NULL
+(1 row)
+
+SELECT bnode('_:bnode');
+ bnode 
+-------
+ NULL
+(1 row)
+
+SELECT bnode('');
+ bnode 
+-------
+ NULL
+(1 row)
+
+SELECT bnode(NULL);
+ bnode 
+-------
+ NULL
+(1 row)
+
+SELECT *
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  isblank(bnode(o));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(ISBLANK(BNODE(?o)))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 21 records.
+
+                      p                       |           o            
+----------------------------------------------+------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ca
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@cs
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@el
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eo
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eu
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@in
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ja
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@nl
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pl
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ru
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@sv
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@uk
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh
+(21 rows)
+
+/* UUID (not pushable) */
+SELECT uuid() ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
+ ?column? 
+----------
+ t
+(1 row)
+
+/* STRUUID() (not pushable) */
+SELECT struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+ struuid_format 
+----------------
+ t
+(1 row)
 
 DROP SERVER dbpedia CASCADE;
 NOTICE:  drop cascades to foreign table ftdbp
