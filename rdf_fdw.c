@@ -43,6 +43,9 @@
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
 #include "nodes/pg_list.h"
+#if PG_VERSION_NUM < 180000
+#include "nodes/bitmapset.h"  // Needed for bms_is_empty in versions where it's inline
+#endif
 #include "optimizer/cost.h"
 #include "optimizer/pathnode.h"
 #include "optimizer/planmain.h"
@@ -6645,13 +6648,14 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 			/* create orderedquery */
 			appendStringInfoString(&orderedquery, delim);
 
+#if PG_VERSION_NUM >= 180000
+			if (pathkey->pk_cmptype == COMPARE_LT)
+#else
 			if (pathkey->pk_strategy == BTLessStrategyNumber)
+#endif  /* PG_VERSION_NUM */
 				appendStringInfo(&orderedquery, " ASC (%s)", (GetRDFColumn(state,sort_clause))->sparqlvar);
 			else
 				appendStringInfo(&orderedquery, " DESC (%s)", (GetRDFColumn(state,sort_clause))->sparqlvar);
-
-			//delim = ", ";
-
 		}
 		else
 		{
