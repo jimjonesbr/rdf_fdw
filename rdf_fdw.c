@@ -5391,10 +5391,27 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 /*
  * CreateTuple
  * -----------
- * Creates tuple with data (or NULLs) to return to the client
- * 
- * slot : Tuple slot
- * state: SPARQL, SERVER and FOREIGN TABLE info
+ * Populates a TupleTableSlot with values extracted from a single SPARQL
+ * result binding (an <result> XML node).
+ *
+ * The function performs the following steps:
+ *   - Iterates over columns defined in the foreign table.
+ *   - Matches each column with the corresponding SPARQL variable (e.g., "?foo").
+ *   - Extracts RDF term content, datatype, language tag, and node type from the XML.
+ *   - Converts the RDF term to a PostgreSQL Datum using the appropriate input function.
+ *   - Handles language-tagged literals, typed literals, IRIs, or plain strings.
+ *   - Applies RDF-specific formatting if requested via the column's literal_format.
+ *   - Handles type coercion using the PostgreSQL typinput function for each column.
+ *
+ * Memory allocations are performed in a temporary context and cleaned up before returning.
+ * Any unmatched columns are set to NULL in the tuple slot.
+ *
+ * Parameters:
+ *   slot  - Tuple slot to be filled and returned to the executor.
+ *   state - Foreign scan state, including column metadata and result document pointer.
+ *
+ * The function assumes that FetchNextBinding(state) returns a pointer to the next
+ * <result> node in the SPARQL XML result set.
  */
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 {
@@ -5411,7 +5428,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 	record = FetchNextBinding(state);
 
-	elog(DEBUG2,"%s called ",__func__);
+	elog(DEBUG2, "%s called ", __func__);
 
 	for (int i = 0; i < state->numcols; i++)
 	{
@@ -5429,7 +5446,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 			initStringInfo(&name);
 			appendStringInfo(&name, "?%s", (char *)prop);
-			
+
 			if (strcmp(sparqlvar, name.data) == 0)
 			{
 				xmlNodePtr value;
@@ -5440,27 +5457,25 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					HeapTuple tuple;
 					Datum datum;
 					StringInfoData literal_value;
-					xmlBufferPtr buffer = xmlBufferCreate();
-					char *datatype = (char *) xmlGetProp(value, (xmlChar *) RDF_SPARQL_RESULT_LITERAL_DATATYPE);
-					char *lang = (char *) xmlGetProp(value, (xmlChar *) RDF_SPARQL_RESULT_LITERAL_LANG);
-					char *node_type = (char *) value->name;
+					xmlChar *datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+					xmlChar *lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
+					xmlChar *content = xmlNodeGetContent(value->children);
+					const xmlChar *node_type = value->name;
 					char *node_value;
 
 					initStringInfo(&literal_value);
-					xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
-
-					node_value = (char *) buffer->content;
+					node_value = (char *)content;
 
 					elog(DEBUG2, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
-						__func__, (char*) buffer->content, lang, datatype, node_type);
+						 __func__, (char *)content, (char *)lang, (char *)datatype, node_type);
 
 					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
 					{
 						if (datatype)
-							appendStringInfo(&literal_value, "%s", strdt(node_value, datatype));
+							appendStringInfo(&literal_value, "%s", strdt(node_value, (char *)datatype));
 						else if (lang)
-							appendStringInfo(&literal_value, "%s", strlang(node_value, lang));
-						else if (strcmp(node_type, "uri") == 0)
+							appendStringInfo(&literal_value, "%s", strlang(node_value, (char *)lang));
+						else if (xmlStrcmp(node_type, (xmlChar *)"uri") == 0)
 							appendStringInfo(&literal_value, "%s", iri(node_value));
 						else
 							appendStringInfo(&literal_value, "%s", CstringToRDFLiteral(node_value));
@@ -5471,61 +5486,61 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					datum = CStringGetDatum(literal_value.data);
 					slot->tts_isnull[i] = false;
 
-					elog(DEBUG2, "  %s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'",__func__, colname, pgtype, sparqlvar);
-					elog(DEBUG3, "    %s: value > '%s'",__func__, (char *)buffer->content);
+					elog(DEBUG2, "  %s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
+					elog(DEBUG3, "    %s: value > '%s'", __func__, (char *)content);
 
 					/* find the appropriate conversion function */
 					tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
 
-					if (!HeapTupleIsValid(tuple)) 
+					if (!HeapTupleIsValid(tuple))
 					{
-						ereport(ERROR, 
-							(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-								errmsg("cache lookup failed for type %u > column '%s(%s)'", pgtype, name.data,sparqlvar)));
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
+								 errmsg("cache lookup failed for type %u > column '%s(%s)'", pgtype, name.data, sparqlvar)));
 					}
 
 					typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
 					ReleaseSysCache(tuple);
 
-					if(pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
+					if (pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
 					{
 
 						slot->tts_values[i] = OidFunctionCall3(
-												typinput,
-												datum,
-												ObjectIdGetDatum(InvalidOid),
-												Int32GetDatum(pgtypmod));
+							typinput,
+							datum,
+							ObjectIdGetDatum(InvalidOid),
+							Int32GetDatum(pgtypmod));
 					}
 					else
 					{
 						slot->tts_values[i] = OidFunctionCall1(typinput, datum);
 					}
 
-					xmlBufferFree(buffer);
-
+					if (content)
+						xmlFree(content);
+					if (lang)
+						xmlFree(lang);
+					if (datatype)
+						xmlFree(datatype);
 				}
-
 			}
 
 			pfree(name.data);
 
-			if(prop)
+			if (prop)
 				xmlFree(prop);
-
 		}
 
-		if(!match) 
+		if (!match)
 		{
-			elog(DEBUG2, "    %s: setting NULL for column '%s' (%s)",__func__, colname, sparqlvar);
+			elog(DEBUG2, "    %s: setting NULL for column '%s' (%s)", __func__, colname, sparqlvar);
 			slot->tts_isnull[i] = true;
 			slot->tts_values[i] = PointerGetDatum(NULL);
 		}
-
 	}
 
 	MemoryContextSwitchTo(old_cxt);
 	MemoryContextDelete(tmp_cxt);
-
 }
 
 /*
