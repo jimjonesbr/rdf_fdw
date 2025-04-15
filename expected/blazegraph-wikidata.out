@@ -126,7 +126,7 @@ SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location
 }
 LIMIT 5
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                wikidata_id                |     label     |         wkt          
 ------------------------------------------+---------------+----------------------
@@ -218,7 +218,7 @@ SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?la
  FILTER(CONCAT(STR(?country),UCASE(?nativename)) = "http://www.wikidata.org/entity/Q32LUXEMBURG")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                 uri                 | label | language | bf | bt 
 ------------------------------------+-------+----------+----+----
@@ -253,7 +253,7 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
  FILTER(STR(?nativename) = "Luxembourg")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                 uri                 | nativename 
 ------------------------------------+------------
@@ -285,7 +285,7 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
  FILTER(STR(?nativename) = "Luxembourg")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                 uri                 | nativename 
 ------------------------------------+------------
@@ -316,7 +316,7 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
  FILTER(STR(?nativename) = "Luxembourg")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                 uri                 | nativename 
 ------------------------------------+------------

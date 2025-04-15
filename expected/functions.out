@@ -165,7 +165,7 @@ SELECT ?p ?o
  FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>) = "PostgreSQL"^^<http://www.w3.org/2001/XMLSchema#string>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        |                          strdt                          
 ----------------------------------------------+-----------------+---------------------------------------------------------
@@ -268,7 +268,7 @@ SELECT ?p ?o
  FILTER(LANG(STRLANG(?o, "fr")) = "fr")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        |     strlang     
 ----------------------------------------------+-----------------+-----------------
@@ -353,7 +353,7 @@ SELECT ?p ?o
  FILTER(STR(?o) = "PostgreSQL")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        |     str      
 ----------------------------------------------+-----------------+--------------
@@ -424,7 +424,7 @@ SELECT ?p ?o
  FILTER(LANG(?o) = "es")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        | lang 
 ----------------------------------------------+-----------------+------
@@ -463,27 +463,27 @@ SELECT datatype(strdt('foo','bar:xyz'));
 (1 row)
 
 SELECT datatype('"foo"@es');
-                        datatype                         
----------------------------------------------------------
- <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+ datatype 
+----------
+ 
 (1 row)
 
 SELECT datatype('');
-                 datatype                  
--------------------------------------------
- <http://www.w3.org/2001/XMLSchema#string>
+ datatype 
+----------
+ 
 (1 row)
 
 SELECT datatype(' ');
-                 datatype                  
--------------------------------------------
- <http://www.w3.org/2001/XMLSchema#string>
+ datatype 
+----------
+ 
 (1 row)
 
 SELECT datatype('"foo"^<xsd:string>');
-                 datatype                  
--------------------------------------------
- <http://www.w3.org/2001/XMLSchema#string>
+ datatype 
+----------
+ 
 (1 row)
 
 SELECT datatype('"foo"^^xsd:string>');
@@ -493,9 +493,9 @@ SELECT datatype('"foo"^^xsd:string>');
 (1 row)
 
 SELECT datatype('"foo"^^<xsd:string');
-   datatype    
----------------
- <<xsd:string>
+ datatype 
+----------
+ 
 (1 row)
 
 SELECT datatype(NULL);
@@ -519,7 +519,7 @@ SELECT ?p ?o
  FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |                               o                                |                       datatype                        
 ----------------------------------------------+----------------------------------------------------------------+-------------------------------------------------------
@@ -597,7 +597,7 @@ SELECT ?p ?o
  FILTER(ENCODE_FOR_URI(?o) = "PostgreSQL%20Global%20Development%20Group")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                     p                    |                    o                     |               encode_for_uri                
 -----------------------------------------+------------------------------------------+---------------------------------------------
@@ -680,7 +680,7 @@ SELECT ?p ?o
  FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                    p                    |                           o                           |                  iri                   
 ----------------------------------------+-------------------------------------------------------+----------------------------------------
@@ -792,7 +792,7 @@ SELECT ?p ?o
  FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                    p                    |                           o                           | isiri 
 ----------------------------------------+-------------------------------------------------------+-------
@@ -947,7 +947,7 @@ SELECT ?p ?o
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        | strstarts 
 ----------------------------------------------+-----------------+-----------
@@ -1098,7 +1098,7 @@ SELECT ?p ?o
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        | strends 
 ----------------------------------------------+-----------------+---------
@@ -1274,7 +1274,7 @@ SELECT ?p ?o
  FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        |  strbefore   |  strbefore   
 ----------------------------------------------+-----------------+--------------+--------------
@@ -1438,11 +1438,12 @@ SELECT ?p ?o
  FILTER(STRAFTER(?o, "Postgre"@fr) = "SQL"@fr)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- p | o | strafter | strafter 
----+---+----------+----------
-(0 rows)
+                      p                       |        o        | strafter | strafter 
+----------------------------------------------+-----------------+----------+----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "SQL"@fr | "SQL"@fr
+(1 row)
 
 /* CONTAINS */
 SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
@@ -1558,7 +1559,7 @@ SELECT ?p ?o
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |        o        | contains | contains 
 ----------------------------------------------+-----------------+----------+----------
@@ -1994,7 +1995,7 @@ SELECT ?p ?o
  FILTER(?p = <http://dbpedia.org/ontology/wikiPageLength>)
 }
 
-INFO:  SPARQL returned 1 records.
+INFO:  SPARQL returned 1 record.
 
                       p                       |                               o                                | isnumeric | isnumeric 
 ----------------------------------------------+----------------------------------------------------------------+-----------+-----------
@@ -2268,6 +2269,869 @@ SELECT struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
  struuid_format 
 ----------------
  t
+(1 row)
+
+/* LCASE */
+SELECT lcase('BAR');
+ lcase 
+-------
+ "bar"
+(1 row)
+
+SELECT lcase('"BAR"');
+ lcase 
+-------
+ "bar"
+(1 row)
+
+SELECT lcase('"BAR"@en'), lcase(strlang('BAR','en'));
+  lcase   |  lcase   
+----------+----------
+ "bar"@en | "bar"@en
+(1 row)
+
+SELECT lcase('"BAR"^^xsd:string'), lcase(strdt('BAR','xsd:string'));
+                      lcase                       |                      lcase                       
+--------------------------------------------------+--------------------------------------------------
+ "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT lcase('<http://example.org>');
+ERROR:  LCASE does not allow IRIs: <http://example.org>
+SELECT lcase('_:xyz');
+ERROR:  LCASE does not allow blank nodes: _:xyz
+SELECT lcase(bnode('foo'));
+ERROR:  LCASE does not allow blank nodes: _:foo
+SELECT lcase('123');
+ lcase 
+-------
+ "123"
+(1 row)
+
+SELECT lcase('"123"');
+ lcase 
+-------
+ "123"
+(1 row)
+
+SELECT lcase('"123"^^xsd:integer');
+ERROR:  LCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
+SELECT lcase('"1990-10-03"^^xsd:date');
+ERROR:  LCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#date>
+SELECT lcase('"!§$%&/()?ß}{}[]°^|<>*"');
+          lcase          
+-------------------------
+ "!§$%&/()?ß}{}[]°^|<>*"
+(1 row)
+
+SELECT lcase(NULL);
+ lcase 
+-------
+ NULL
+(1 row)
+
+SELECT lcase('');
+ lcase 
+-------
+ ""
+(1 row)
+
+SELECT lcase('""');
+ lcase 
+-------
+ ""
+(1 row)
+
+SELECT lcase('" "');
+ lcase 
+-------
+ " "
+(1 row)
+
+SELECT lcase(' ');
+ lcase 
+-------
+ " "
+(1 row)
+
+SELECT p, o, lcase(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
+  lcase(o) = lcase('"PostgreSQL"@en') AND
+  lcase(o) = lcase(strlang('PostgreSQL','en'));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LCASE(?o) = "postgresql"@en)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ p | o | lcase 
+---+---+-------
+(0 rows)
+
+SELECT p, o, lcase(strdt(o,'xsd:string'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
+  strstarts(lcase(strdt(o,'xsd:string')), lcase(strdt('POSTGRE','xsd:string')));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STRSTARTS(LCASE(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)), "postgre"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 20 records.
+
+                      p                       |        o        |                          lcase                          
+----------------------------------------------+-----------------+---------------------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ca | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@cs | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@el | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eo | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eu | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@in | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ja | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@nl | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pl | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ru | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@sv | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@uk | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh | "postgresql"^^<http://www.w3.org/2001/XMLSchema#string>
+(20 rows)
+
+/* UCASE */
+SELECT ucase('bar');
+ ucase 
+-------
+ "BAR"
+(1 row)
+
+SELECT ucase('"bar"');
+ ucase 
+-------
+ "BAR"
+(1 row)
+
+SELECT ucase('"bar"@en'), ucase(strlang('bar','en'));
+  ucase   |  ucase   
+----------+----------
+ "BAR"@en | "BAR"@en
+(1 row)
+
+SELECT ucase('"bar"^^xsd:string'), ucase(strdt('bar','xsd:string'));
+                      ucase                       |                      ucase                       
+--------------------------------------------------+--------------------------------------------------
+ "BAR"^^<http://www.w3.org/2001/XMLSchema#string> | "BAR"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT ucase('<http://example.org>');
+ERROR:  UCASE does not allow IRIs: <http://example.org>
+SELECT ucase('_:xyz');
+ERROR:  UCASE does not allow blank nodes: _:xyz
+SELECT ucase(bnode('foo'));
+ERROR:  UCASE does not allow blank nodes: _:foo
+SELECT ucase('123');
+ ucase 
+-------
+ "123"
+(1 row)
+
+SELECT ucase('"123"');
+ ucase 
+-------
+ "123"
+(1 row)
+
+SELECT ucase('"123"^^xsd:integer');
+ERROR:  UCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
+SELECT ucase('"1990-10-03"^^xsd:date');
+ERROR:  UCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#date>
+SELECT ucase('"!§$%&/()?ß}{}[]°^|<>*"');
+          ucase          
+-------------------------
+ "!§$%&/()?ß}{}[]°^|<>*"
+(1 row)
+
+SELECT ucase(NULL);
+ ucase 
+-------
+ NULL
+(1 row)
+
+SELECT ucase('');
+ ucase 
+-------
+ ""
+(1 row)
+
+SELECT ucase('""');
+ ucase 
+-------
+ ""
+(1 row)
+
+SELECT ucase('" "');
+ ucase 
+-------
+ " "
+(1 row)
+
+SELECT ucase(' ');
+ ucase 
+-------
+ " "
+(1 row)
+
+SELECT p, o, ucase(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
+  ucase(o) = ucase('"PostgreSQL"@es') AND
+  ucase(o) = ucase(strlang('PostgreSQL','es'));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(UCASE(?o) = "POSTGRESQL"@es)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        |      ucase      
+----------------------------------------------+-----------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "POSTGRESQL"@es
+(1 row)
+
+SELECT p, o, ucase(strdt(o,'xsd:string'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  strstarts(ucase(strdt(o,'xsd:string')), ucase(strdt('postgre','xsd:string')));
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(STRSTARTS(UCASE(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)), "POSTGRE"^^<http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 20 records.
+
+                      p                       |        o        |                          ucase                          
+----------------------------------------------+-----------------+---------------------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ca | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@cs | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@el | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eo | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eu | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@in | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ja | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@nl | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pl | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ru | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@sv | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@uk | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
+(20 rows)
+
+/* STRLEN */
+SELECT strlen('chat'), strlen('"chat"');
+ strlen | strlen 
+--------+--------
+      4 |      4
+(1 row)
+
+SELECT strlen('"chat"@en'), strlen(strlang('chat','en'));
+ strlen | strlen 
+--------+--------
+      4 |      4
+(1 row)
+
+SELECT strlen('"chat"^^xsd:string'), strlen(strdt('chat','xsd:string'));
+ strlen | strlen 
+--------+--------
+      4 |      4
+(1 row)
+
+SELECT strlen('""'), strlen('');
+ strlen | strlen 
+--------+--------
+      0 |      0
+(1 row)
+
+SELECT strlen('" "'), strlen(' ');
+ strlen | strlen 
+--------+--------
+      1 |      1
+(1 row)
+
+SELECT strlen('"łø"'), strlen('łø');
+ strlen | strlen 
+--------+--------
+      2 |      2
+(1 row)
+
+SELECT strlen(NULL);
+ strlen 
+--------
+   NULL
+(1 row)
+
+SELECT p, o, strlen(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'de') AND
+  strlen(o) = strlen('"PostgreSQL"@de');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STRLEN(?o) = 10)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        | strlen 
+----------------------------------------------+-----------------+--------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de |     10
+(1 row)
+
+/* SUBSTR */
+SELECT substr_rdf('"foobar"', 4), substr_rdf('foobar', 4);
+ substr_rdf | substr_rdf 
+------------+------------
+ "bar"      | "bar"
+(1 row)
+
+SELECT substr_rdf('"foobar"@en', 4), substr_rdf(strlang('foobar','en'), 4);
+ substr_rdf | substr_rdf 
+------------+------------
+ "bar"@en   | "bar"@en
+(1 row)
+
+SELECT substr_rdf('"foobar"^^xsd:string', 4), substr_rdf(strdt('foobar','xsd:string'), 4);
+                    substr_rdf                    |                    substr_rdf                    
+--------------------------------------------------+--------------------------------------------------
+ "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT substr_rdf('"foobar"', 4, 1), substr_rdf('foobar', 4, 1);
+ substr_rdf | substr_rdf 
+------------+------------
+ "b"        | "b"
+(1 row)
+
+SELECT substr_rdf('"foobar"@en', 4, 1), substr_rdf(strlang('foobar','en'), 4, 1);
+ substr_rdf | substr_rdf 
+------------+------------
+ "b"@en     | "b"@en
+(1 row)
+
+SELECT substr_rdf('"foobar"^^xsd:string', 4, 1), substr_rdf(strdt('foobar','xsd:string'), 4, 1);
+                   substr_rdf                   |                   substr_rdf                   
+------------------------------------------------+------------------------------------------------
+ "b"^^<http://www.w3.org/2001/XMLSchema#string> | "b"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT substr_rdf('""', 42);
+ substr_rdf 
+------------
+ ""
+(1 row)
+
+SELECT substr_rdf('', 42);
+ substr_rdf 
+------------
+ ""
+(1 row)
+
+SELECT substr_rdf(NULL, 42);
+ substr_rdf 
+------------
+ NULL
+(1 row)
+
+SELECT substr_rdf('"foo"', NULL);
+ substr_rdf 
+------------
+ NULL
+(1 row)
+
+SELECT p, o, substr_rdf(o, 7, 3), substr_rdf(strdt(o,'xsd:string'), 7, 3) 
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  substr_rdf(o, 7, 3) = substr_rdf('"PostgreSQL"@es', 7, 3) AND
+  substr_rdf(strdt(o,'xsd:string'), 7, 3) = substr_rdf(strdt('PostgreSQL','xsd:string'), 7, 3) AND
+  substr_rdf(o, 7) = substr_rdf('"PostgreSQL"@es', 7) AND
+  substr_rdf(strlang(o,'es'), 7, 3) = substr_rdf(strlang('PostgreSQL','es'), 7, 3) AND
+  langmatches(lang(o), 'es');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(SUBSTR(?o, 7, 3) = "eSQ"@es)
+ FILTER(SUBSTR(STRLANG(?o, "es"), 7, 3) = "eSQ"@es)
+ FILTER(SUBSTR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>), 7, 3) = "eSQ"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER(SUBSTR(?o, 7) = "eSQL"@es)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        | substr_rdf |                    substr_rdf                    
+----------------------------------------------+-----------------+------------+--------------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "eSQ"@es   | "eSQ"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+/* CONCAT */
+SELECT concat_rdf('"foo"', '"bar"'), concat_rdf('foo', 'bar');
+ concat_rdf | concat_rdf 
+------------+------------
+ "foobar"   | "foobar"
+(1 row)
+
+SELECT concat_rdf('"foo"@en', '"bar"@en'), concat_rdf(strlang('foo','en'), strlang('bar','en'));
+ concat_rdf  | concat_rdf  
+-------------+-------------
+ "foobar"@en | "foobar"@en
+(1 row)
+
+SELECT concat_rdf('"foo"^^xsd:string', '"bar"^^xsd:string'), concat_rdf(strdt('foo','xsd:string'), strdt('bar','xsd:string'));
+                     concat_rdf                      |                     concat_rdf                      
+-----------------------------------------------------+-----------------------------------------------------
+ "foobar"^^<http://www.w3.org/2001/XMLSchema#string> | "foobar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT concat_rdf('"foo"', '"bar"^^xsd:string'), concat_rdf('foo', strdt('bar','xsd:string'));
+ concat_rdf | concat_rdf 
+------------+------------
+ "foobar"   | "foobar"
+(1 row)
+
+SELECT concat_rdf('"foo"@en', '"bar"'), concat_rdf(strlang('foo','en'), 'bar');
+ concat_rdf | concat_rdf 
+------------+------------
+ "foobar"   | "foobar"
+(1 row)
+
+SELECT concat_rdf('"foo"@en', '"bar"^^xsd:string'), concat_rdf(strlang('foo','en'), strdt('bar','xsd:string'));
+ concat_rdf | concat_rdf 
+------------+------------
+ "foobar"   | "foobar"
+(1 row)
+
+SELECT concat_rdf(NULL, 'bar'), concat_rdf('foo', NULL), concat_rdf(NULL, NULL);
+ concat_rdf | concat_rdf | concat_rdf 
+------------+------------+------------
+ NULL       | NULL       | NULL
+(1 row)
+
+SELECT concat_rdf('foo', ''), concat_rdf('', 'bar'), concat_rdf('', ''), concat_rdf('""', '""');
+ concat_rdf | concat_rdf | concat_rdf | concat_rdf 
+------------+------------+------------+------------
+ "foo"      | "bar"      | ""         | ""
+(1 row)
+
+SELECT concat_rdf('"foo"^^foo:bar', 'bar'), concat_rdf('"foo"', '"bar"^^foo:bar');
+ERROR:  CONCAT arguments must be simple literals or 'xsd:string'
+SELECT p, o, concat_rdf(o,strlang(' Global','pt')), concat_rdf(o,strdt(' Global','xsd:string'))
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'pt') AND
+  concat_rdf(o,'') = str('PostgreSQL');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(CONCAT(?o, "") = "PostgreSQL")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        |       concat_rdf       |     concat_rdf      
+----------------------------------------------+-----------------+------------------------+---------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | "PostgreSQL Global"@pt | "PostgreSQL Global"
+(1 row)
+
+/* REPLACE */
+SELECT replace_rdf('"abcd"', '"b"', '"Z"'), replace_rdf('abcd', 'b', 'Z');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZcd"      | "aZcd"
+(1 row)
+
+SELECT replace_rdf('"abab"', '"B"', '"Z"','"i"'), replace_rdf('abab', 'B', 'Z','i');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZaZ"      | "aZaZ"
+(1 row)
+
+SELECT replace_rdf('"abab"', '"B."', '"Z"','"i"'), replace_rdf('abab', 'B.', 'Z','i');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZb"       | "aZb"
+(1 row)
+
+SELECT replace_rdf('"abcd"@en', '"b"', '"Z"'), replace_rdf(strlang('abcd','en'), 'b', 'Z');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZcd"      | "aZcd"
+(1 row)
+
+SELECT replace_rdf('"abab"^^xsd:string', '"B"', '"Z"','"i"'), replace_rdf(strdt('abab','xsd:string'), 'B', 'Z','i');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZaZ"      | "aZaZ"
+(1 row)
+
+SELECT replace_rdf('"abcd"', '"b"@en', '"Z"'), replace_rdf('abcd', strlang('b','en'), 'Z');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZcd"      | "aZcd"
+(1 row)
+
+SELECT replace_rdf('"abab"', '"B"^^xsd:string', '"Z"','"i"'), replace_rdf('abab', strdt('B','xsd:string'), 'Z','i');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZaZ"      | "aZaZ"
+(1 row)
+
+SELECT replace_rdf('""', '"b"', '"Z"'), replace_rdf('', 'b', 'Z');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ ""          | ""
+(1 row)
+
+SELECT replace_rdf('"abcd"', '""', '"Z"'), replace_rdf('abcd', '', 'Z');
+ERROR:  pattern cannot be empty in REPLACE
+CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
+SELECT replace_rdf('"abcd"', '"b"', '""'), replace_rdf('abcd', 'b', '');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "acd"       | "acd"
+(1 row)
+
+SELECT replace_rdf('"ab\"cd"', '"b"', '"Z"'), replace_rdf('ab\"cd', 'b', 'Z');
+ replace_rdf | replace_rdf 
+-------------+-------------
+ "aZ\"cd"    | "aZ\"cd"
+(1 row)
+
+SELECT replace_rdf(NULL, 'b', 'Z'), replace_rdf('abcd', NULL, 'Z'), replace_rdf('abcd', 'b', NULL), replace_rdf('abcd', 'b', 'Z', NULL);
+ replace_rdf | replace_rdf | replace_rdf | replace_rdf 
+-------------+-------------+-------------+-------------
+ NULL        | NULL        | NULL        | NULL
+(1 row)
+
+SELECT replace_rdf('', 'a', 'Z');                -- Empty input string
+ replace_rdf 
+-------------
+ ""
+(1 row)
+
+SELECT replace_rdf('abcd', '', 'Z');             -- Empty pattern
+ERROR:  pattern cannot be empty in REPLACE
+CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
+SELECT replace_rdf('abcd', 'a', '');             -- Empty replacement
+ replace_rdf 
+-------------
+ "bcd"
+(1 row)
+
+SELECT replace_rdf('', '', 'Z');                 -- Empty pattern and replacement
+ERROR:  pattern cannot be empty in REPLACE
+CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
+SELECT replace_rdf('abcd', 'a', 'Z');            -- Pattern at the beginning
+ replace_rdf 
+-------------
+ "Zbcd"
+(1 row)
+
+SELECT replace_rdf('abcd', 'd', 'Z');            -- Pattern at the end
+ replace_rdf 
+-------------
+ "abcZ"
+(1 row)
+
+SELECT replace_rdf('abcd', 'bc', 'Z');           -- Pattern in the middle
+ replace_rdf 
+-------------
+ "aZd"
+(1 row)
+
+SELECT replace_rdf('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
+ replace_rdf 
+-------------
+ "aaZZcc"
+(1 row)
+
+SELECT replace_rdf('Abcd', 'a', 'Z');            -- Case mismatch pattern
+ replace_rdf 
+-------------
+ "Abcd"
+(1 row)
+
+SELECT replace_rdf('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
+ replace_rdf 
+-------------
+ "abcd"
+(1 row)
+
+SELECT replace_rdf('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
+ replace_rdf 
+-------------
+ "Zbcd"
+(1 row)
+
+SELECT replace_rdf('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
+ replace_rdf 
+-------------
+ "aZcd"
+(1 row)
+
+SELECT replace_rdf('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
+ replace_rdf 
+-------------
+ "ab\cd"
+(1 row)
+
+SELECT replace_rdf('ab"cd', '"b"', '"Z"');       -- Quotes in the input
+ replace_rdf 
+-------------
+ "aZ\"cd"
+(1 row)
+
+SELECT replace_rdf('ab"cd', 'b"', 'Z');          -- Quotes in pattern
+ replace_rdf 
+-------------
+ "aZcd"
+(1 row)
+
+SELECT replace_rdf('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
+ replace_rdf 
+-------------
+ "aZYdef"
+(1 row)
+
+SELECT replace_rdf('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
+ replace_rdf 
+-------------
+ "XYZ XYZ"
+(1 row)
+
+SELECT replace_rdf('abcd', 'a', 'Z');            -- Pattern at the start
+ replace_rdf 
+-------------
+ "Zbcd"
+(1 row)
+
+SELECT replace_rdf('abcd', 'd', 'Z');            -- Pattern at the end
+ replace_rdf 
+-------------
+ "abcZ"
+(1 row)
+
+SELECT replace_rdf('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
+ replace_rdf 
+-------------
+ "XYZXYZ"
+(1 row)
+
+SELECT replace_rdf(NULL, 'a', 'Z');              -- Input is NULL
+ replace_rdf 
+-------------
+ NULL
+(1 row)
+
+SELECT replace_rdf('abcd', NULL, 'Z');           -- Pattern is NULL
+ replace_rdf 
+-------------
+ NULL
+(1 row)
+
+SELECT replace_rdf('abcd', 'a', NULL);           -- Replacement is NULL
+ replace_rdf 
+-------------
+ NULL
+(1 row)
+
+SELECT replace_rdf(NULL, NULL, NULL);             -- All NULLs
+ replace_rdf 
+-------------
+ NULL
+(1 row)
+
+SELECT replace_rdf('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
+ replace_rdf 
+-------------
+ "aZ\"cd"
+(1 row)
+
+SELECT replace_rdf('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
+ replace_rdf 
+-------------
+ "aZ\"cd"
+(1 row)
+
+SELECT replace_rdf('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
+ replace_rdf 
+-------------
+ "Zbcd"
+(1 row)
+
+SELECT replace_rdf('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
+ replace_rdf 
+-------------
+ "Zbcd"
+(1 row)
+
+SELECT replace_rdf('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
+ replace_rdf 
+-------------
+ "Zbcd"
+(1 row)
+
+SELECT replace_rdf('ababab', 'ab', 'XY', 'g');   -- Global replacement
+ replace_rdf 
+-------------
+ "XYXYXY"
+(1 row)
+
+SELECT replace_rdf('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
+ replace_rdf 
+-------------
+ "XYXYXY"
+(1 row)
+
+SELECT replace_rdf('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
+ERROR:  pattern cannot be empty in REPLACE
+CONTEXT:  PL/pgSQL function replace_rdf(text,text,text,text) line 4 at RAISE
+SELECT replace_rdf('abcd', '', 'Z');              -- Empty pattern without global flag
+ERROR:  pattern cannot be empty in REPLACE
+CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
+SELECT replace_rdf('abcd', 'z', 'Z');             -- No pattern match
+ replace_rdf 
+-------------
+ "abcd"
+(1 row)
+
+SELECT replace_rdf('abcd', 'xy', 'Z');            -- No match for multi-character pattern
+ replace_rdf 
+-------------
+ "abcd"
+(1 row)
+
+SELECT replace_rdf('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 replace_rdf                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ "aZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZc"
+(1 row)
+
+SELECT replace_rdf('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
+ replace_rdf 
+-------------
+ "XYZ"
+(1 row)
+
+SELECT replace_rdf('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
+ replace_rdf 
+-------------
+ "XYZXYZ"
+(1 row)
+
+SELECT replace_rdf('""', '"b"', '"Z"');           -- Empty literal as input
+ replace_rdf 
+-------------
+ ""
+(1 row)
+
+SELECT replace_rdf('"b"', '""', '"Z"');            -- Empty pattern in replacement
+ERROR:  pattern cannot be empty in REPLACE
+CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
+SELECT replace_rdf('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
+ replace_rdf 
+-------------
+ "abcd"
+(1 row)
+
+SELECT replace_rdf('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
+ replace_rdf 
+-------------
+ "ZZcd"
+(1 row)
+
+SELECT replace_rdf('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
+ replace_rdf 
+-------------
+ "Zcd"
+(1 row)
+
+SELECT p, o
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'es') AND
+  replace_rdf(o,'Postgre','My') = replace_rdf(strlang('PostgreSQL','es'),'Postgre','My');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(REPLACE(?o, "Postgre", "My") = "MySQL")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        
+----------------------------------------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
 (1 row)
 
 DROP SERVER dbpedia CASCADE;
