@@ -75,6 +75,55 @@ SELECT rdf_fdw_arguments_compatible('"abc"^^xsd:string','"b"@en');
  f
 (1 row)
 
+/* LEX */  
+SELECT lex('"foo"');
+ lex 
+-----
+ foo
+(1 row)
+
+SELECT lex('foo');
+ lex 
+-----
+ foo
+(1 row)
+
+SELECT lex('"foo"@en');
+ lex 
+-----
+ foo
+(1 row)
+
+SELECT lex('"foo"^^xsd:string');
+ lex 
+-----
+ foo
+(1 row)
+
+SELECT lex(''); 
+ lex 
+-----
+ 
+(1 row)
+
+SELECT lex('""');
+ lex 
+-----
+ 
+(1 row)
+
+SELECT lex('"\""');
+ lex 
+-----
+ \"
+(1 row)
+
+SELECT lex(NULL);
+ lex  
+------
+ NULL
+(1 row)
+
 /* STRDT */
 SELECT strdt(NULL, 'http://www.w3.org/2001/XMLSchema#string');
  strdt 
@@ -1438,12 +1487,11 @@ SELECT ?p ?o
  FILTER(STRAFTER(?o, "Postgre"@fr) = "SQL"@fr)
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-                      p                       |        o        | strafter | strafter 
-----------------------------------------------+-----------------+----------+----------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "SQL"@fr | "SQL"@fr
-(1 row)
+ p | o | strafter | strafter 
+---+---+----------+----------
+(0 rows)
 
 /* CONTAINS */
 SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
@@ -2370,11 +2418,12 @@ SELECT ?p ?o
  FILTER(LCASE(?o) = "postgresql"@en)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- p | o | lcase 
----+---+-------
-(0 rows)
+                      p                       |        o        |      lcase      
+----------------------------------------------+-----------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en | "postgresql"@en
+(1 row)
 
 SELECT p, o, lcase(strdt(o,'xsd:string'))
 FROM ftdbp
@@ -3110,12 +3159,13 @@ SELECT replace_rdf('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
  "Zcd"
 (1 row)
 
-SELECT p, o
+SELECT p, o, replace_rdf(o,'Postgre','My'), replace_rdf(o,'"Postgre"@de','')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'es') AND
-  replace_rdf(o,'Postgre','My') = replace_rdf(strlang('PostgreSQL','es'),'Postgre','My');
+  replace_rdf(o,'Postgre','My') = replace_rdf(strlang('PostgreSQL','es'),'Postgre','My') AND
+  replace_rdf(o, 'POSTGRE', 'My','i') = replace_rdf('"PostgreSQL"@es', 'POSTGRE', 'My','i');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3125,6 +3175,109 @@ SELECT ?p ?o
  FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(REPLACE(?o, "Postgre", "My") = "MySQL")
+ FILTER(REPLACE(?o, "POSTGRE", "My", "i") = "MySQL")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        | replace_rdf | replace_rdf 
+----------------------------------------------+-----------------+-------------+-------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "MySQL"     | "SQL"
+(1 row)
+
+/* REGEX */
+SELECT regex('"abcd"', '"bc"');
+ regex 
+-------
+ t
+(1 row)
+
+SELECT regex('"abcd"', '"xy"');
+ regex 
+-------
+ f
+(1 row)
+
+SELECT regex('"abcd"', '"BC"', '"i"');
+ regex 
+-------
+ t
+(1 row)
+
+SELECT regex('"abcd"', '"^bc"');
+ regex 
+-------
+ f
+(1 row)
+
+SELECT regex('"abcd"', '"^ab"');
+ regex 
+-------
+ t
+(1 row)
+
+SELECT regex('"abc\ndef"', '"^def$"', '"m"');
+ERROR:  Unsupported regex flags: m (only "i" is supported)
+CONTEXT:  PL/pgSQL function regex(text,text,text) line 8 at RAISE
+SELECT regex('"abc\ndef"', '"c.d"', '"s"');
+ERROR:  Unsupported regex flags: s (only "i" is supported)
+CONTEXT:  PL/pgSQL function regex(text,text,text) line 8 at RAISE
+SELECT regex('"abcd"@en', '"bc"');
+ regex 
+-------
+ t
+(1 row)
+
+SELECT regex('"123"^^xsd:int', '"23"');
+ regex 
+-------
+ t
+(1 row)
+
+SELECT regex('""', '"a"');
+ regex 
+-------
+ f
+(1 row)
+
+SELECT regex('""', '"(.*)"');
+ regex 
+-------
+ t
+(1 row)
+
+SELECT regex('"abcd"', '""');
+ regex 
+-------
+ f
+(1 row)
+
+SELECT regex(NULL, '"a"'), regex('"abcd"', NULL), regex('"abcd"', '"a"', NULL);
+ regex | regex | regex 
+-------+-------+-------
+ NULL  | NULL  | NULL
+(1 row)
+
+SELECT regex('"abcd"', '"[a"');
+ERROR:  invalid regular expression: brackets [] not balanced
+CONTEXT:  PL/pgSQL function regex(text,text) line 6 at RETURN
+SELECT p, o
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'es') AND
+  regex(o, ucase('postgres'), 'i') AND 
+  regex(o, '^pOs','i') ;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(REGEX(?o, "POSTGRES", "i"))
+ FILTER(REGEX(?o, "^pOs", "i"))
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
 INFO:  SPARQL returned 1 record.
