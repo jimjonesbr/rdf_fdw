@@ -291,6 +291,7 @@ SELECT p, o, strbefore(o, strlang('SQL','fr')), strbefore(o, strdt('SQL','xsd:st
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'fr') AND
   strbefore(o, '"SQL"@fr') = '"Postgre"@fr' AND
   strbefore(o, '"SQL"@fr') = strlang('Postgre','fr') AND
   strbefore(str(o), 'SQL') = str('Postgre');
@@ -349,10 +350,10 @@ SELECT p, o, contains(o,'"ostg"@fr'), contains(o,'"ostg"^^xsd:string')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'fr') AND
+  langmatches(lang(o),'de') AND
   contains(o,'ostg') AND
-  contains(o,'"ostg"@fr') AND
-  contains(o, strlang('ostg','fr')) AND
+  contains(o,'"ostg"@de') AND
+  contains(o, strlang('ostg','de')) AND
   contains(o, strdt('ostg','xsd:string'));
 
 /* LANGMATCHES */
@@ -510,9 +511,10 @@ SELECT lcase(' ');
 SELECT p, o, lcase(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
-  lcase(o) = lcase('"PostgreSQL"@en') AND
-  lcase(o) = lcase(strlang('PostgreSQL','en'));
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'de') AND  
+  lcase(o) = lcase('"PostgreSQL"@de') AND
+  lcase(o) = lcase(strlang('PostgreSQL','de'));
 
 SELECT p, o, lcase(strdt(o,'xsd:string'))
 FROM ftdbp
@@ -542,13 +544,14 @@ SELECT ucase(' ');
 SELECT p, o, ucase(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'es') AND
   ucase(o) = ucase('"PostgreSQL"@es') AND
   ucase(o) = ucase(strlang('PostgreSQL','es'));
 
 SELECT p, o, ucase(strdt(o,'xsd:string'))
 FROM ftdbp
-WHERE 
+WHERE
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   strstarts(ucase(strdt(o,'xsd:string')), ucase(strdt('postgre','xsd:string')));
 

@@ -1309,6 +1309,7 @@ SELECT p, o, strbefore(o, strlang('SQL','fr')), strbefore(o, strdt('SQL','xsd:st
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'fr') AND
   strbefore(o, '"SQL"@fr') = '"Postgre"@fr' AND
   strbefore(o, '"SQL"@fr') = strlang('Postgre','fr') AND
   strbefore(str(o), 'SQL') = str('Postgre');
@@ -1318,6 +1319,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "fr"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(STRBEFORE(?o, "SQL"@fr) = "Postgre"@fr)
  FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
@@ -1487,11 +1489,12 @@ SELECT ?p ?o
  FILTER(STRAFTER(?o, "Postgre"@fr) = "SQL"@fr)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- p | o | strafter | strafter 
----+---+----------+----------
-(0 rows)
+                      p                       |        o        | strafter | strafter 
+----------------------------------------------+-----------------+----------+----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "SQL"@fr | "SQL"@fr
+(1 row)
 
 /* CONTAINS */
 SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
@@ -1588,10 +1591,10 @@ SELECT p, o, contains(o,'"ostg"@fr'), contains(o,'"ostg"^^xsd:string')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'fr') AND
+  langmatches(lang(o),'de') AND
   contains(o,'ostg') AND
-  contains(o,'"ostg"@fr') AND
-  contains(o, strlang('ostg','fr')) AND
+  contains(o,'"ostg"@de') AND
+  contains(o, strlang('ostg','de')) AND
   contains(o, strdt('ostg','xsd:string'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -1599,10 +1602,10 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "fr"))
+ FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(CONTAINS(?o, "ostg"))
- FILTER(CONTAINS(?o, "ostg"@fr))
- FILTER(CONTAINS(?o, "ostg"@fr))
+ FILTER(CONTAINS(?o, "ostg"@de))
+ FILTER(CONTAINS(?o, "ostg"@de))
  FILTER(CONTAINS(?o, "ostg"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
@@ -1611,7 +1614,7 @@ INFO:  SPARQL returned 1 record.
 
                       p                       |        o        | contains | contains 
 ----------------------------------------------+-----------------+----------+----------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | t        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | t        | t
 (1 row)
 
 /* LANGMATCHES */
@@ -2405,24 +2408,26 @@ SELECT lcase(' ');
 SELECT p, o, lcase(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
-  lcase(o) = lcase('"PostgreSQL"@en') AND
-  lcase(o) = lcase(strlang('PostgreSQL','en'));
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'de') AND  
+  lcase(o) = lcase('"PostgreSQL"@de') AND
+  lcase(o) = lcase(strlang('PostgreSQL','de'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LCASE(?o) = "postgresql"@en)
+ FILTER(LCASE(?o) = "postgresql"@de)
 }
 
 INFO:  SPARQL returned 1 record.
 
                       p                       |        o        |      lcase      
 ----------------------------------------------+-----------------+-----------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en | "postgresql"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | "postgresql"@de
 (1 row)
 
 SELECT p, o, lcase(strdt(o,'xsd:string'))
@@ -2552,7 +2557,8 @@ SELECT ucase(' ');
 SELECT p, o, ucase(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'es') AND
   ucase(o) = ucase('"PostgreSQL"@es') AND
   ucase(o) = ucase(strlang('PostgreSQL','es'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
@@ -2561,6 +2567,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(UCASE(?o) = "POSTGRESQL"@es)
 }
@@ -2574,7 +2581,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT p, o, ucase(strdt(o,'xsd:string'))
 FROM ftdbp
-WHERE 
+WHERE
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   strstarts(ucase(strdt(o,'xsd:string')), ucase(strdt('postgre','xsd:string')));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':

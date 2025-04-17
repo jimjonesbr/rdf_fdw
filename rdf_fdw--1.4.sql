@@ -278,16 +278,17 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE FUNCTION regex(text, text, text)
 RETURNS boolean AS $$
 BEGIN
-    IF lex($2) = '' THEN
-        RETURN FALSE;
-    END IF;
-    -- Restrict flags to 'i'
-    IF lex($3) != 'i' THEN
-        RAISE EXCEPTION 'Unsupported regex flags: % (only "i" is supported)', lex($3);
-    END IF;
-    RETURN regexp_like(lex($1), lex($2), lex($3));
+  IF lex($2) = '' THEN
+    RETURN FALSE;
+  END IF;
+  -- Restrict flags to 'i'
+  IF lex($3) != 'i' THEN
+    RAISE EXCEPTION 'Unsupported regex flags: % (only "i" is supported)', lex($3);
+  END IF;
+  RETURN lex($1) ~* lex($2);
 EXCEPTION
-    WHEN invalid_regular_expression THEN
-        RAISE EXCEPTION 'Invalid regex pattern: %', lex($2);
+  WHEN invalid_regular_expression THEN
+    RAISE EXCEPTION 'Invalid regex pattern: %', lex($2);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
