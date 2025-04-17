@@ -547,6 +547,78 @@ SELECT datatype('"foo"^^<xsd:string');
  
 (1 row)
 
+SELECT datatype(cast('2018-05-01' AS date));
+                datatype                 
+-----------------------------------------
+ <http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT datatype(cast('2018-05-01 11:30:00' AS timestamp without time zone));
+                  datatype                   
+---------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT datatype(cast('2018-05-01 11:30:00' AS timestamp with time zone));
+                  datatype                   
+---------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT datatype(cast('11:30:00' AS time));
+                datatype                 
+-----------------------------------------
+ <http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT datatype(42);
+                  datatype                  
+--------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT datatype(42.73);
+                  datatype                  
+--------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT datatype(cast(42 AS smallint));
+                  datatype                  
+--------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT datatype(cast(42 AS bigint));
+                  datatype                  
+--------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT datatype(cast(42.73 AS double precision));
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT datatype(cast(42.73 AS numeric));
+                  datatype                  
+--------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT datatype(cast(42.73 AS real));
+                 datatype                 
+------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT datatype(true);
+                  datatype                  
+--------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
 SELECT datatype(NULL);
  datatype 
 ----------

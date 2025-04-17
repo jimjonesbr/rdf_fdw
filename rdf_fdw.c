@@ -353,6 +353,27 @@ static struct RDFfdwOption valid_options[] =
 	{NULL, InvalidOid, false, false}
 };
 
+typedef struct
+{
+	Oid type_oid;
+	const char *xsd_datatype;
+} TypeXSDMap;
+
+static const TypeXSDMap type_map[] = {
+	{INT2OID, "integer"},
+	{INT4OID, "integer"},
+	{INT8OID, "integer"},
+	{NUMERICOID, "decimal"},
+	{FLOAT8OID, "double"},
+	{FLOAT4OID, "float"},
+	{BOOLOID, "boolean"},
+	{TIMESTAMPOID, "dateTime"},
+	{DATEOID, "date"},
+	{TIMEOID, "time"},
+	{TEXTOID, "string"},
+	{TIMESTAMPTZOID, "dateTime"},
+	{InvalidOid, NULL}};
+
 typedef struct RDFfdwTriple
 {
 	char *subject;	 /* RDF triple subject */
@@ -375,7 +396,8 @@ extern Datum rdf_fdw_strlang(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strdt(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_str(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lang(PG_FUNCTION_ARGS);
-extern Datum rdf_fdw_datatype(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS);
@@ -407,7 +429,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strlang);
 PG_FUNCTION_INFO_V1(rdf_fdw_strdt);
 PG_FUNCTION_INFO_V1(rdf_fdw_str);
 PG_FUNCTION_INFO_V1(rdf_fdw_lang);
-PG_FUNCTION_INFO_V1(rdf_fdw_datatype);
+PG_FUNCTION_INFO_V1(rdf_fdw_datatype_text);
+PG_FUNCTION_INFO_V1(rdf_fdw_datatype_poly);
 PG_FUNCTION_INFO_V1(rdf_fdw_arguments_compatible);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri);
 PG_FUNCTION_INFO_V1(rdf_fdw_isIRI);
@@ -481,6 +504,7 @@ static char *ExtractRDFLexicalValue(char *input);
 static bool LiteralsCompatible(char *literal1, char *literal2);
 static char *ExpandDatatypePrefix(char *str);
 static bool IsRDFStringLiteral(char *str_datatype);
+static char *MapSPARQLDatatype(Oid pgtype);
 static char *strdt(char *literal, char *datatype);
 static char *lang(char *input);
 static char *datatype(char *input);
@@ -1158,8 +1182,7 @@ Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS)
  *
  * returns: Null-terminated C string representing the datatype URI (e.g., "http://www.w3.org/2001/XMLSchema#int")
  */
-static char *
-datatype(char *input)
+static char *datatype(char *input)
 {
     StringInfoData buf;
     const char *ptr;
@@ -1256,6 +1279,15 @@ datatype(char *input)
     return "";
 }
 
+static char *MapSPARQLDatatype(Oid pgtype)
+{
+	for (int i = 0; type_map[i].type_oid != InvalidOid; i++)
+	{
+		if (pgtype == type_map[i].type_oid)
+			return type_map[i].xsd_datatype;
+	}
+	return NULL; // Unsupported type
+}
 /*
  * rdf_fdw_datatype
  * ----------------
@@ -1267,13 +1299,32 @@ datatype(char *input)
  *
  * returns: PostgreSQL text type representing the datatype URI
  */
-Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
+Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS)
 {
-	text *str_arg = PG_GETARG_TEXT_PP(0);
-	char *str = text_to_cstring(str_arg);
-	char *result = datatype(str);
+    text *str_arg = PG_GETARG_TEXT_PP(0);
+    char *str = text_to_cstring(str_arg);
+    char *result = datatype(str);
+    pfree(str);
+    PG_RETURN_TEXT_P(cstring_to_text(result));
+}
 
-	PG_RETURN_TEXT_P(cstring_to_text(result));
+Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS)
+{
+    Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
+    char *xsd_type = MapSPARQLDatatype(argtype);
+
+    if (xsd_type)
+    {
+        StringInfoData buf;
+        initStringInfo(&buf);
+        appendStringInfoString(&buf, RDF_XSD_BASE_URI);
+        appendStringInfoString(&buf, xsd_type);
+        PG_RETURN_TEXT_P(cstring_to_text(iri(buf.data)));
+    }
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("Unsupported input type for rdf_fdw_datatype: %u", argtype)));
 }
 
 /*

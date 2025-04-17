@@ -112,11 +112,18 @@ LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION lang(text) IS 'Extracts the language tag from the input literal.';
 
-CREATE FUNCTION datatype(text) RETURNS text
-AS 'MODULE_PATHNAME', 'rdf_fdw_datatype'
+CREATE FUNCTION datatype(text)
+RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_datatype_text'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION datatype(anyelement)
+RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_datatype_poly'
 LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION datatype(text) IS 'Extracts the datatype URI from the input literal.';
+COMMENT ON FUNCTION datatype(anyelement) IS 'Extracts the datatype URI from the input literal.';
 
 CREATE FUNCTION rdf_fdw_arguments_compatible(text,text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_arguments_compatible'
@@ -291,4 +298,18 @@ EXCEPTION
     RAISE EXCEPTION 'Invalid regex pattern: %', lex($2);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+/* mathematical functions */
+
+CREATE FUNCTION rand() RETURNS numeric AS $$
+BEGIN
+  RETURN random();
+END;
+$$ LANGUAGE plpgsql PARALLEL RESTRICTED STRICT;
+
+CREATE FUNCTION now_rdf() RETURNS text AS $$
+BEGIN
+  RETURN strdt(now()::text, 'xsd:dateTime');
+END;
+$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
 

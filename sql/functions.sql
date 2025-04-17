@@ -126,6 +126,21 @@ SELECT datatype(' ');
 SELECT datatype('"foo"^<xsd:string>');
 SELECT datatype('"foo"^^xsd:string>');
 SELECT datatype('"foo"^^<xsd:string');
+SELECT datatype(cast('2018-05-01' AS date));
+SELECT datatype(cast('2018-05-01 11:30:00' AS timestamp without time zone));
+SELECT datatype(cast('2018-05-01 11:30:00' AS timestamp with time zone));
+SELECT datatype(cast('11:30:00' AS time));
+SELECT datatype(42);
+SELECT datatype(42.73);
+SELECT datatype(cast(42 AS smallint));
+SELECT datatype(cast(42 AS bigint));
+SELECT datatype(cast(42.73 AS double precision));
+SELECT datatype(cast(42.73 AS numeric));
+SELECT datatype(cast(42.73 AS real));
+SELECT datatype(true);
+
+
+
 SELECT datatype(NULL);
 
 SELECT p, o, datatype(o)
