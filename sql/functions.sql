@@ -1,5 +1,7 @@
 \pset null NULL
 
+SET search_path TO sparql, pg_catalog;
+
 CREATE SERVER dbpedia 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
@@ -302,13 +304,11 @@ SELECT strbefore('', 'xyz');
 SELECT strbefore('', '');
 SELECT strbefore('""','""');
 
-SELECT p, o, strbefore(o, strlang('SQL','fr')), strbefore(o, strdt('SQL','xsd:string'))
+SELECT p, o, strbefore(str(o), 'SQL')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'fr') AND
-  strbefore(o, '"SQL"@fr') = '"Postgre"@fr' AND
-  strbefore(o, '"SQL"@fr') = strlang('Postgre','fr') AND
+  langmatches(lang(o),'de') AND
   strbefore(str(o), 'SQL') = str('Postgre');
 
 /* STRAFTER */
@@ -341,8 +341,7 @@ FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'fr') AND
-  strafter(o, '"Postgre"@fr') = '"SQL"@fr' AND
-  strafter(o, '"Postgre"@fr') = strlang('SQL','fr');
+  strafter(str(o), 'Postgre') = str('SQL');
 
 /* CONTAINS */
 SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
@@ -587,109 +586,109 @@ WHERE
   strlen(o) = strlen('"PostgreSQL"@de');
 
 /* SUBSTR */
-SELECT substr_rdf('"foobar"', 4), substr_rdf('foobar', 4);
-SELECT substr_rdf('"foobar"@en', 4), substr_rdf(strlang('foobar','en'), 4);
-SELECT substr_rdf('"foobar"^^xsd:string', 4), substr_rdf(strdt('foobar','xsd:string'), 4);
-SELECT substr_rdf('"foobar"', 4, 1), substr_rdf('foobar', 4, 1);
-SELECT substr_rdf('"foobar"@en', 4, 1), substr_rdf(strlang('foobar','en'), 4, 1);
-SELECT substr_rdf('"foobar"^^xsd:string', 4, 1), substr_rdf(strdt('foobar','xsd:string'), 4, 1);
-SELECT substr_rdf('""', 42);
-SELECT substr_rdf('', 42);
-SELECT substr_rdf(NULL, 42);
-SELECT substr_rdf('"foo"', NULL);
+SELECT substr('"foobar"', 4), substr('foobar', 4);
+SELECT substr('"foobar"@en', 4), substr(strlang('foobar','en'), 4);
+SELECT substr('"foobar"^^xsd:string', 4), substr(strdt('foobar','xsd:string'), 4);
+SELECT substr('"foobar"', 4, 1), substr('foobar', 4, 1);
+SELECT substr('"foobar"@en', 4, 1), substr(strlang('foobar','en'), 4, 1);
+SELECT substr('"foobar"^^xsd:string', 4, 1), substr(strdt('foobar','xsd:string'), 4, 1);
+SELECT substr('""', 42);
+SELECT substr('', 42);
+SELECT substr(NULL, 42);
+SELECT substr('"foo"', NULL);
 
-SELECT p, o, substr_rdf(o, 7, 3), substr_rdf(strdt(o,'xsd:string'), 7, 3) 
+SELECT p, o, substr(o, 7, 3), substr(strdt(o,'xsd:string'), 7, 3) 
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  substr_rdf(o, 7, 3) = substr_rdf('"PostgreSQL"@es', 7, 3) AND
-  substr_rdf(strdt(o,'xsd:string'), 7, 3) = substr_rdf(strdt('PostgreSQL','xsd:string'), 7, 3) AND
-  substr_rdf(o, 7) = substr_rdf('"PostgreSQL"@es', 7) AND
-  substr_rdf(strlang(o,'es'), 7, 3) = substr_rdf(strlang('PostgreSQL','es'), 7, 3) AND
+  substr(o, 7, 3) = substr('"PostgreSQL"@es', 7, 3) AND
+  substr(strdt(o,'xsd:string'), 7, 3) = substr(strdt('PostgreSQL','xsd:string'), 7, 3) AND
+  substr(o, 7) = substr('"PostgreSQL"@es', 7) AND
+  substr(strlang(o,'es'), 7, 3) = substr(strlang('PostgreSQL','es'), 7, 3) AND
   langmatches(lang(o), 'es');
 
 /* CONCAT */
-SELECT concat_rdf('"foo"', '"bar"'), concat_rdf('foo', 'bar');
-SELECT concat_rdf('"foo"@en', '"bar"@en'), concat_rdf(strlang('foo','en'), strlang('bar','en'));
-SELECT concat_rdf('"foo"^^xsd:string', '"bar"^^xsd:string'), concat_rdf(strdt('foo','xsd:string'), strdt('bar','xsd:string'));
-SELECT concat_rdf('"foo"', '"bar"^^xsd:string'), concat_rdf('foo', strdt('bar','xsd:string'));
-SELECT concat_rdf('"foo"@en', '"bar"'), concat_rdf(strlang('foo','en'), 'bar');
-SELECT concat_rdf('"foo"@en', '"bar"^^xsd:string'), concat_rdf(strlang('foo','en'), strdt('bar','xsd:string'));
-SELECT concat_rdf(NULL, 'bar'), concat_rdf('foo', NULL), concat_rdf(NULL, NULL);
-SELECT concat_rdf('foo', ''), concat_rdf('', 'bar'), concat_rdf('', ''), concat_rdf('""', '""');
-SELECT concat_rdf('"foo"^^foo:bar', 'bar'), concat_rdf('"foo"', '"bar"^^foo:bar');
+SELECT concat('"foo"', '"bar"'), concat('foo', 'bar');
+SELECT concat('"foo"@en', '"bar"@en'), concat(strlang('foo','en'), strlang('bar','en'));
+SELECT concat('"foo"^^xsd:string', '"bar"^^xsd:string'), concat(strdt('foo','xsd:string'), strdt('bar','xsd:string'));
+SELECT concat('"foo"', '"bar"^^xsd:string'), concat('foo', strdt('bar','xsd:string'));
+SELECT concat('"foo"@en', '"bar"'), concat(strlang('foo','en'), 'bar');
+SELECT concat('"foo"@en', '"bar"^^xsd:string'), concat(strlang('foo','en'), strdt('bar','xsd:string'));
+SELECT concat(NULL, 'bar'), concat('foo', NULL), concat(NULL, NULL);
+SELECT concat('foo', ''), concat('', 'bar'), concat('', ''), concat('""', '""');
+SELECT concat('"foo"^^foo:bar', 'bar'), concat('"foo"', '"bar"^^foo:bar');
 
-SELECT p, o, concat_rdf(o,strlang(' Global','pt')), concat_rdf(o,strdt(' Global','xsd:string'))
+SELECT p, o, concat(o,strlang(' Global','pt')), concat(o,strdt(' Global','xsd:string'))
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'pt') AND
-  concat_rdf(o,'') = str('PostgreSQL');
+  concat(o,'') = str('PostgreSQL');
 
 /* REPLACE */
-SELECT replace_rdf('"abcd"', '"b"', '"Z"'), replace_rdf('abcd', 'b', 'Z');
-SELECT replace_rdf('"abab"', '"B"', '"Z"','"i"'), replace_rdf('abab', 'B', 'Z','i');
-SELECT replace_rdf('"abab"', '"B."', '"Z"','"i"'), replace_rdf('abab', 'B.', 'Z','i');
-SELECT replace_rdf('"abcd"@en', '"b"', '"Z"'), replace_rdf(strlang('abcd','en'), 'b', 'Z');
-SELECT replace_rdf('"abab"^^xsd:string', '"B"', '"Z"','"i"'), replace_rdf(strdt('abab','xsd:string'), 'B', 'Z','i');
-SELECT replace_rdf('"abcd"', '"b"@en', '"Z"'), replace_rdf('abcd', strlang('b','en'), 'Z');
-SELECT replace_rdf('"abab"', '"B"^^xsd:string', '"Z"','"i"'), replace_rdf('abab', strdt('B','xsd:string'), 'Z','i');
-SELECT replace_rdf('""', '"b"', '"Z"'), replace_rdf('', 'b', 'Z');
-SELECT replace_rdf('"abcd"', '""', '"Z"'), replace_rdf('abcd', '', 'Z');
-SELECT replace_rdf('"abcd"', '"b"', '""'), replace_rdf('abcd', 'b', '');
-SELECT replace_rdf('"ab\"cd"', '"b"', '"Z"'), replace_rdf('ab\"cd', 'b', 'Z');
-SELECT replace_rdf(NULL, 'b', 'Z'), replace_rdf('abcd', NULL, 'Z'), replace_rdf('abcd', 'b', NULL), replace_rdf('abcd', 'b', 'Z', NULL);
-SELECT replace_rdf('', 'a', 'Z');                -- Empty input string
-SELECT replace_rdf('abcd', '', 'Z');             -- Empty pattern
-SELECT replace_rdf('abcd', 'a', '');             -- Empty replacement
-SELECT replace_rdf('', '', 'Z');                 -- Empty pattern and replacement
-SELECT replace_rdf('abcd', 'a', 'Z');            -- Pattern at the beginning
-SELECT replace_rdf('abcd', 'd', 'Z');            -- Pattern at the end
-SELECT replace_rdf('abcd', 'bc', 'Z');           -- Pattern in the middle
-SELECT replace_rdf('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
-SELECT replace_rdf('Abcd', 'a', 'Z');            -- Case mismatch pattern
-SELECT replace_rdf('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
-SELECT replace_rdf('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
-SELECT replace_rdf('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
-SELECT replace_rdf('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
-SELECT replace_rdf('ab"cd', '"b"', '"Z"');       -- Quotes in the input
-SELECT replace_rdf('ab"cd', 'b"', 'Z');          -- Quotes in pattern
-SELECT replace_rdf('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
-SELECT replace_rdf('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
-SELECT replace_rdf('abcd', 'a', 'Z');            -- Pattern at the start
-SELECT replace_rdf('abcd', 'd', 'Z');            -- Pattern at the end
-SELECT replace_rdf('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
-SELECT replace_rdf(NULL, 'a', 'Z');              -- Input is NULL
-SELECT replace_rdf('abcd', NULL, 'Z');           -- Pattern is NULL
-SELECT replace_rdf('abcd', 'a', NULL);           -- Replacement is NULL
-SELECT replace_rdf(NULL, NULL, NULL);             -- All NULLs
-SELECT replace_rdf('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
-SELECT replace_rdf('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
-SELECT replace_rdf('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
-SELECT replace_rdf('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
-SELECT replace_rdf('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
-SELECT replace_rdf('ababab', 'ab', 'XY', 'g');   -- Global replacement
-SELECT replace_rdf('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
-SELECT replace_rdf('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
-SELECT replace_rdf('abcd', '', 'Z');              -- Empty pattern without global flag
-SELECT replace_rdf('abcd', 'z', 'Z');             -- No pattern match
-SELECT replace_rdf('abcd', 'xy', 'Z');            -- No match for multi-character pattern
-SELECT replace_rdf('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
-SELECT replace_rdf('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
-SELECT replace_rdf('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
-SELECT replace_rdf('""', '"b"', '"Z"');           -- Empty literal as input
-SELECT replace_rdf('"b"', '""', '"Z"');            -- Empty pattern in replacement
-SELECT replace_rdf('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
-SELECT replace_rdf('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
-SELECT replace_rdf('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
+SELECT replace('"abcd"', '"b"', '"Z"'), replace('abcd', 'b', 'Z');
+SELECT replace('"abab"', '"B"', '"Z"','"i"'), replace('abab', 'B', 'Z','i');
+SELECT replace('"abab"', '"B."', '"Z"','"i"'), replace('abab', 'B.', 'Z','i');
+SELECT replace('"abcd"@en', '"b"', '"Z"'), replace(strlang('abcd','en'), 'b', 'Z');
+SELECT replace('"abab"^^xsd:string', '"B"', '"Z"','"i"'), replace(strdt('abab','xsd:string'), 'B', 'Z','i');
+SELECT replace('"abcd"', '"b"@en', '"Z"'), replace('abcd', strlang('b','en'), 'Z');
+SELECT replace('"abab"', '"B"^^xsd:string', '"Z"','"i"'), replace('abab', strdt('B','xsd:string'), 'Z','i');
+SELECT replace('""', '"b"', '"Z"'), replace('', 'b', 'Z');
+SELECT replace('"abcd"', '""', '"Z"'), replace('abcd', '', 'Z');
+SELECT replace('"abcd"', '"b"', '""'), replace('abcd', 'b', '');
+SELECT replace('"ab\"cd"', '"b"', '"Z"'), replace('ab\"cd', 'b', 'Z');
+SELECT replace(NULL, 'b', 'Z'), replace('abcd', NULL, 'Z'), replace('abcd', 'b', NULL), replace('abcd', 'b', 'Z', NULL);
+SELECT replace('', 'a', 'Z');                -- Empty input string
+SELECT replace('abcd', '', 'Z');             -- Empty pattern
+SELECT replace('abcd', 'a', '');             -- Empty replacement
+SELECT replace('', '', 'Z');                 -- Empty pattern and replacement
+SELECT replace('abcd', 'a', 'Z');            -- Pattern at the beginning
+SELECT replace('abcd', 'd', 'Z');            -- Pattern at the end
+SELECT replace('abcd', 'bc', 'Z');           -- Pattern in the middle
+SELECT replace('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
+SELECT replace('Abcd', 'a', 'Z');            -- Case mismatch pattern
+SELECT replace('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
+SELECT replace('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
+SELECT replace('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
+SELECT replace('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
+SELECT replace('ab"cd', '"b"', '"Z"');       -- Quotes in the input
+SELECT replace('ab"cd', 'b"', 'Z');          -- Quotes in pattern
+SELECT replace('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
+SELECT replace('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
+SELECT replace('abcd', 'a', 'Z');            -- Pattern at the start
+SELECT replace('abcd', 'd', 'Z');            -- Pattern at the end
+SELECT replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
+SELECT replace(NULL, 'a', 'Z');              -- Input is NULL
+SELECT replace('abcd', NULL, 'Z');           -- Pattern is NULL
+SELECT replace('abcd', 'a', NULL);           -- Replacement is NULL
+SELECT replace(NULL, NULL, NULL);             -- All NULLs
+SELECT replace('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
+SELECT replace('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
+SELECT replace('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
+SELECT replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
+SELECT replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
+SELECT replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
+SELECT replace('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
+SELECT replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
+SELECT replace('abcd', '', 'Z');              -- Empty pattern without global flag
+SELECT replace('abcd', 'z', 'Z');             -- No pattern match
+SELECT replace('abcd', 'xy', 'Z');            -- No match for multi-character pattern
+SELECT replace('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
+SELECT replace('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
+SELECT replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
+SELECT replace('""', '"b"', '"Z"');           -- Empty literal as input
+SELECT replace('"b"', '""', '"Z"');            -- Empty pattern in replacement
+SELECT replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
+SELECT replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
+SELECT replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
 
-SELECT p, o, replace_rdf(o,'Postgre','My'), replace_rdf(o,'"Postgre"@de','')
+SELECT p, o, replace(o,'Postgre','My'), replace(o,'"Postgre"@de','')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'es') AND
-  replace_rdf(o,'Postgre','My') = replace_rdf(strlang('PostgreSQL','es'),'Postgre','My') AND
-  replace_rdf(o, 'POSTGRE', 'My','i') = replace_rdf('"PostgreSQL"@es', 'POSTGRE', 'My','i');
+  replace(o,'Postgre','My') = replace(strlang('PostgreSQL','es'),'Postgre','My') AND
+  replace(o, 'POSTGRE', 'My','i') = replace('"PostgreSQL"@es', 'POSTGRE', 'My','i');
 
 /* REGEX */
 SELECT regex('"abcd"', '"bc"');
@@ -715,4 +714,85 @@ WHERE
   regex(o, ucase('postgres'), 'i') AND 
   regex(o, '^pOs','i') ;
 
+/* ABS */
+SELECT abs('"-1"^^xsd:int');
+SELECT abs('"-1.42"^^xsd:double');
+SELECT abs(strdt('-1.42','xsd:double'));
+SELECT abs(strdt('-1.4223874294774098098485038','xsd:double'));
+SELECT abs('');
+SELECT abs(' ');
+SELECT abs(NULL);
+SELECT abs(CAST(-1.42 AS numeric));
+SELECT abs(CAST(-1.42 AS double precision));
+SELECT abs(CAST(-1.42 AS real));
+SELECT abs(CAST(-1 AS bigint));
+SELECT abs(CAST(-1 AS smallint));
+SELECT abs(CAST(-1 AS int));
+
+SELECT p, o, abs(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  abs(o) = 23824;
+
+/* ROUND */
+SELECT round('"2.4999"^^xsd:double');
+SELECT round('"2.5"^^xsd:double');
+SELECT round('"-2.5"^^xsd:int');
+SELECT round('');
+SELECT round('""');
+SELECT round(' ');
+SELECT round('" "');
+SELECT round(NULL);
+SELECT round(CAST(2.49999 AS numeric));
+SELECT round(CAST(2.5 AS double precision));
+SELECT round(CAST(-2.5 AS real));
+SELECT round(CAST(42 AS bigint));
+SELECT round(CAST(42 AS smallint));
+SELECT round(CAST(42 AS int));
+
+SELECT p, o, round(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  round(o) = round('"23824"^^xsd:int');
+
+/* CEIL */
+SELECT ceil('"10.5"^^xsd:double');
+SELECT ceil('"-10.5"^^:xsd:decimal');
+SELECT ceil(NULL);
+SELECT ceil(CAST(10.5 AS numeric));
+SELECT ceil(CAST(-10.5 AS double precision));
+SELECT ceil(CAST(10.5 AS real));
+SELECT ceil(CAST(-42 AS bigint));
+SELECT ceil(CAST(42 AS smallint));
+SELECT ceil(CAST(-42 AS int));
+
+SELECT p, o, ceil(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  ceil(o) = ceil('"23823.5"^^xsd:int') AND
+  ceil(o) = ceil(23823.5);
+
+/* FLOOR */
+SELECT floor('"10.5"^^xsd:double');
+SELECT floor('"-10.5"^^xsd:decimal');
+SELECT floor(CAST(10.5 AS numeric));
+SELECT floor(CAST(-10.5 AS double precision));
+SELECT floor(CAST(10.5 AS real));
+SELECT floor(CAST(-42 AS bigint));
+SELECT floor(CAST(42 AS smallint));
+SELECT floor(CAST(-42 AS int));
+
+SELECT p, o, ceil(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  floor(o) = floor('"23824.5"^^xsd:int') AND
+  floor(o) = floor(23824.5);
+
+/* RAND */
+SELECT setseed(0.42);
+SELECT rand();
 DROP SERVER dbpedia CASCADE;

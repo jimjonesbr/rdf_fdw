@@ -52,264 +52,407 @@ BEGIN
         RAISE NOTICE 'The PROCEDURE rdf_fdw_clone_table cannot be created.';
 END; $$;
 
-CREATE FUNCTION strstarts(text, text) RETURNS boolean
+/* Custom rdf_fdw Data Types */
+CREATE FUNCTION rdf_fdw_iri_in(cstring) RETURNS rdfiri
+AS 'MODULE_PATHNAME', 'rdf_fdw_iri_in'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdf_fdw_iri_out(rdfiri) RETURNS cstring
+AS 'MODULE_PATHNAME', 'rdf_fdw_iri_out'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE TYPE rdfiri (
+    INPUT = rdf_fdw_iri_in,
+    OUTPUT = rdf_fdw_iri_out,
+    STORAGE = extended
+);
+
+CREATE CAST (text AS rdfiri)
+WITH INOUT AS IMPLICIT;
+
+CREATE FUNCTION rdf_fdw_rdfiri_eq(rdfiri, rdfiri) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_rdfiri_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdf_fdw_rdfiri_text_eq(rdfiri, text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_rdfiri_text_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdf_fdw_rdfiri_text_eq(text, rdfiri) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_rdfiri_text_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    PROCEDURE = rdf_fdw_rdfiri_eq,
+    LEFTARG = rdfiri,
+    RIGHTARG = rdfiri,
+    COMMUTATOR = =,
+    NEGATOR = <>
+);
+
+CREATE OPERATOR = (
+    PROCEDURE = rdf_fdw_rdfiri_text_eq,
+    LEFTARG = rdfiri,
+    RIGHTARG = text,
+    COMMUTATOR = =,
+    NEGATOR = <>
+);
+
+CREATE OPERATOR = (
+    PROCEDURE = rdf_fdw_rdfiri_text_eq,
+    LEFTARG = text,
+    RIGHTARG = rdfiri,
+    COMMUTATOR = =,
+    NEGATOR = <>
+);
+
+CREATE SCHEMA sparql;
+
+/* SPARQL 17.4.3  Functions on Strings */
+CREATE FUNCTION sparql.strstarts(text, text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_strstarts'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.strstarts(text, text) IS 'Checks if the first text starts with the second text.';
 
-COMMENT ON FUNCTION strstarts(text, text) IS 'Checks if the first text starts with the second text.';
-
-CREATE FUNCTION strends(text, text) RETURNS boolean
+CREATE FUNCTION sparql.strends(text, text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_strends'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.strends(text, text) IS 'Checks if the first text ends with the second text.';
 
-COMMENT ON FUNCTION strends(text, text) IS 'Checks if the first text ends with the second text.';
-
-CREATE FUNCTION strbefore(text, text) RETURNS text
+CREATE FUNCTION sparql.strbefore(text, text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_strbefore'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.strbefore(text, text) IS 'Returns the substring of the first text before the second text.';
 
-COMMENT ON FUNCTION strbefore(text, text) IS 'Returns the substring of the first text before the second text.';
-
-CREATE FUNCTION strafter(text, text) RETURNS text
+CREATE FUNCTION sparql.strafter(text, text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_strafter'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.strafter(text, text) IS 'Returns the substring of the first text after the second text.';
 
-COMMENT ON FUNCTION strafter(text, text) IS 'Returns the substring of the first text after the second text.';
-
-CREATE FUNCTION contains(text, text) RETURNS boolean
+CREATE FUNCTION sparql.contains(text, text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_contains'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.contains(text, text) IS 'Checks if the first text contains the second text.';
 
-COMMENT ON FUNCTION contains(text, text) IS 'Checks if the first text contains the second text.';
-
-CREATE FUNCTION encode_for_uri(text) RETURNS text
+CREATE FUNCTION sparql.encode_for_uri(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_encode_for_uri'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.encode_for_uri(text) IS 'Encodes the input text for use in a URI.';
 
-COMMENT ON FUNCTION encode_for_uri(text) IS 'Encodes the input text for use in a URI.';
-
-CREATE FUNCTION strlang(text,text) RETURNS text
+CREATE FUNCTION sparql.strlang(text,text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_strlang'
 LANGUAGE C IMMUTABLE STRICT;
 
-COMMENT ON FUNCTION strlang(text, text) IS 'Combines text with a language tag.';
+COMMENT ON FUNCTION sparql.strlang(text, text) IS 'Combines text with a language tag.';
 
-CREATE FUNCTION strdt(text,text) RETURNS text
+CREATE FUNCTION sparql.strdt(text,text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_strdt'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.strdt(text, text) IS 'Combines text with a datatype URI.';
 
-COMMENT ON FUNCTION strdt(text, text) IS 'Combines text with a datatype URI.';
-
-CREATE FUNCTION str(text) RETURNS text
+CREATE FUNCTION sparql.str(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_str'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.str(text) IS 'Converts the input to a simple literal string.';
 
-COMMENT ON FUNCTION str(text) IS 'Converts the input to a simple literal string.';
-
-CREATE FUNCTION lang(text) RETURNS text
+CREATE FUNCTION sparql.lang(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_lang'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.lang(text) IS 'Extracts the language tag from the input literal.';
 
-COMMENT ON FUNCTION lang(text) IS 'Extracts the language tag from the input literal.';
-
-CREATE FUNCTION datatype(text)
+CREATE FUNCTION sparql.datatype(text)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_datatype_text'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION datatype(anyelement)
+CREATE FUNCTION sparql.datatype(anyelement)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_datatype_poly'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.datatype(text) IS 'Extracts the datatype URI from the input literal.';
+COMMENT ON FUNCTION sparql.datatype(anyelement) IS 'Extracts the datatype URI from the input literal.';
 
-COMMENT ON FUNCTION datatype(text) IS 'Extracts the datatype URI from the input literal.';
-COMMENT ON FUNCTION datatype(anyelement) IS 'Extracts the datatype URI from the input literal.';
-
-CREATE FUNCTION rdf_fdw_arguments_compatible(text,text) RETURNS boolean
+CREATE FUNCTION sparql.rdf_fdw_arguments_compatible(text,text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_arguments_compatible'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.rdf_fdw_arguments_compatible(text, text) IS 'Checks if two arguments are compatible for RDF processing.';
 
-COMMENT ON FUNCTION rdf_fdw_arguments_compatible(text, text) IS 'Checks if two arguments are compatible for RDF processing.';
-
-CREATE FUNCTION iri(text) RETURNS text
+CREATE FUNCTION sparql.iri(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.iri(text) IS 'Converts the input text to an IRI.';
 
-COMMENT ON FUNCTION iri(text) IS 'Converts the input text to an IRI.';
-
-CREATE FUNCTION uri(text) RETURNS text
+CREATE FUNCTION sparql.uri(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.uri(text) IS 'Converts the input text to a URI (alias for iri).';
 
-COMMENT ON FUNCTION uri(text) IS 'Converts the input text to a URI (alias for iri).';
-
-CREATE FUNCTION isIRI(text) RETURNS boolean
+CREATE FUNCTION sparql.isIRI(text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.isIRI(text) IS 'Checks if the input text is a valid IRI.';
 
-COMMENT ON FUNCTION isIRI(text) IS 'Checks if the input text is a valid IRI.';
-
-CREATE FUNCTION isURI(text) RETURNS boolean
+CREATE FUNCTION sparql.isURI(text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.isURI(text) IS 'Checks if the input text is a valid URI (alias for isIRI).';
 
-COMMENT ON FUNCTION isURI(text) IS 'Checks if the input text is a valid URI (alias for isIRI).';
-
-CREATE FUNCTION langmatches(text,text) RETURNS boolean
+CREATE FUNCTION sparql.langmatches(text,text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_langmatches'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.langmatches(text, text) IS 'Checks if the language tag matches the given pattern.';
 
-COMMENT ON FUNCTION langmatches(text, text) IS 'Checks if the language tag matches the given pattern.';
-
-CREATE FUNCTION isblank(text) RETURNS boolean
+CREATE FUNCTION sparql.isblank(text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isBlank'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.isblank(text) IS 'Checks if the input text is a blank node.';
 
-COMMENT ON FUNCTION isblank(text) IS 'Checks if the input text is a blank node.';
-
-CREATE FUNCTION isnumeric(text) RETURNS boolean
+CREATE FUNCTION sparql.isnumeric(text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isNumeric'
 LANGUAGE C IMMUTABLE STRICT;
 
-COMMENT ON FUNCTION isnumeric(text) IS 'Checks if the input text is numeric.';
+COMMENT ON FUNCTION sparql.isnumeric(text) IS 'Checks if the input text is numeric.';
 
-CREATE FUNCTION isliteral(text) RETURNS boolean
+CREATE FUNCTION sparql.isliteral(text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isLiteral'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.isliteral(text) IS 'Checks if the input text is a literal.';
 
-COMMENT ON FUNCTION isliteral(text) IS 'Checks if the input text is a literal.';
-
-CREATE FUNCTION bnode(text) RETURNS text
+CREATE FUNCTION sparql.bnode(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_bnode'
 LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.bnode(text) IS 'Creates a blank node from the input text.';
 
-COMMENT ON FUNCTION bnode(text) IS 'Creates a blank node from the input text.';
-
-CREATE FUNCTION bnode() RETURNS text
+CREATE FUNCTION sparql.bnode() RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_bnode'
 LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.bnode() IS 'Generates a new blank node identifier.';
 
-COMMENT ON FUNCTION bnode() IS 'Generates a new blank node identifier.';
-
-CREATE FUNCTION uuid() RETURNS text
+CREATE FUNCTION sparql.uuid() RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_uuid'
 LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.uuid() IS 'Generates a UUID string.';
 
-COMMENT ON FUNCTION uuid() IS 'Generates a UUID string.';
-
-CREATE FUNCTION struuid() RETURNS text
+CREATE FUNCTION sparql.struuid() RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_uuid'
 LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.struuid() IS 'Generates a UUID string.';
 
-COMMENT ON FUNCTION struuid() IS 'Generates a UUID string.';
-
-CREATE FUNCTION lcase(text) RETURNS text
+CREATE FUNCTION sparql.lcase(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_lcase'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.lcase(text) IS 'Converts the input literal to lowercase.';
 
-COMMENT ON FUNCTION lcase(text) IS 'Converts the input literal to lowercase.';
-
-CREATE FUNCTION ucase(text) RETURNS text
+CREATE FUNCTION sparql.ucase(text) RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_ucase'
 LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION ucase(text) IS 'Converts the input literal to uppercase.';
+COMMENT ON FUNCTION sparql.ucase(text) IS 'Converts the input literal to uppercase.';
 
-CREATE FUNCTION strlen(text)
+CREATE FUNCTION sparql.strlen(text)
 RETURNS int AS $$
 BEGIN
   RETURN length(lex($1));
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
-COMMENT ON FUNCTION strlen(text) IS 'Returns the length of the literal text.';
+COMMENT ON FUNCTION sparql.strlen(text) IS 'Returns the length of the literal text.';
 
-CREATE FUNCTION substr_rdf(text, int, int)
+CREATE FUNCTION sparql.substr(text, int, int)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_substr'
 LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.substr(text, int, int) IS 'Extracts a substring from the input literal with start and length.';
 
-COMMENT ON FUNCTION substr_rdf(text, int, int) IS 'Extracts a substring from the input literal with start and length.';
-
-CREATE FUNCTION substr_rdf(text, int)
+CREATE FUNCTION sparql.substr(text, int)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_substr'
 LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.substr(text, int) IS 'Extracts a substring from the input literal starting at the given position.';
 
-COMMENT ON FUNCTION substr_rdf(text, int) IS 'Extracts a substring from the input literal starting at the given position.';
-
-CREATE FUNCTION concat_rdf(text, text)
+CREATE FUNCTION sparql.concat(text, text)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_concat'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.concat(text, text) IS 'Concatenates two literals inputs for RDF processing.';
 
-COMMENT ON FUNCTION concat_rdf(text, text) IS 'Concatenates two literals inputs for RDF processing.';
-
-CREATE FUNCTION lex(text)
+CREATE FUNCTION sparql.lex(text)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_lex'
 LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.lex(text) IS 'Extracts the lexical value of an RDF literal';
 
-COMMENT ON FUNCTION lex(text) IS 'Extracts the lexical value of an RDF literal';
-
-CREATE FUNCTION replace_rdf(text, text, text)
+CREATE FUNCTION sparql.replace(text, text, text)
 RETURNS text AS $$
 BEGIN
-  IF lex($2) = '' THEN
+  IF sparql.lex($2) = '' THEN
     RAISE EXCEPTION 'pattern cannot be empty in REPLACE';
   END IF;
-  RETURN str(replace(lex($1), lex($2), lex($3)));
+  RETURN sparql.str(pg_catalog.replace(sparql.lex($1), sparql.lex($2), sparql.lex($3)));
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION replace_rdf(text, text, text, text)
+CREATE FUNCTION sparql.replace(text, text, text, text)
 RETURNS text
 AS $$
 BEGIN
-  IF lex($2) = '' THEN
+  IF sparql.lex($2) = '' THEN
      RAISE EXCEPTION 'pattern cannot be empty in REPLACE';
   END IF;
-  RETURN str(regexp_replace(lex($1), lex($2), lex($3), lex($4) || 'g'));
+  RETURN sparql.str(pg_catalog.regexp_replace(sparql.lex($1), sparql.lex($2), sparql.lex($3), sparql.lex($4) || 'g'));
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION regex(text, text)
+CREATE FUNCTION sparql.regex(text, text)
 RETURNS boolean AS $$
 BEGIN
-  IF lex($2) = '' THEN
+  IF sparql.lex($2) = '' THEN
     RETURN FALSE; -- SPARQL: empty pattern matches nothing
   END IF;
-  RETURN lex($1) ~ lex($2);
+  RETURN sparql.lex($1) ~ sparql.lex($2);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 
-CREATE FUNCTION regex(text, text, text)
+CREATE FUNCTION sparql.regex(text, text, text)
 RETURNS boolean AS $$
 BEGIN
-  IF lex($2) = '' THEN
+  IF sparql.lex($2) = '' THEN
     RETURN FALSE;
   END IF;
   -- Restrict flags to 'i'
-  IF lex($3) != 'i' THEN
-    RAISE EXCEPTION 'Unsupported regex flags: % (only "i" is supported)', lex($3);
+  IF sparql.lex($3) != 'i' THEN
+    RAISE EXCEPTION 'Unsupported regex flags: % (only "i" is supported)', sparql.lex($3);
   END IF;
-  RETURN lex($1) ~* lex($2);
+  RETURN sparql.lex($1) ~* sparql.lex($2);
 EXCEPTION
   WHEN invalid_regular_expression THEN
-    RAISE EXCEPTION 'Invalid regex pattern: %', lex($2);
+    RAISE EXCEPTION 'Invalid regex pattern: %', sparql.lex($2);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 /* mathematical functions */
-
-CREATE FUNCTION rand() RETURNS numeric AS $$
+CREATE FUNCTION sparql.abs(text) RETURNS double precision  AS $$
 BEGIN
-  RETURN random();
+  RETURN pg_catalog.abs(sparql.lex($1)::double precision);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.abs(smallint) RETURNS double precision  AS $$
+BEGIN
+  RETURN pg_catalog.abs($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.abs(int) RETURNS double precision  AS $$
+BEGIN
+  RETURN pg_catalog.abs($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.abs(bigint) RETURNS double precision  AS $$
+BEGIN
+  RETURN pg_catalog.abs($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.abs(double precision) RETURNS double precision  AS $$
+BEGIN
+  RETURN pg_catalog.abs($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.abs(numeric) RETURNS double precision  AS $$
+BEGIN
+  RETURN pg_catalog.abs($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.abs(real) RETURNS double precision  AS $$
+BEGIN
+  RETURN pg_catalog.abs($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.round(text) RETURNS numeric AS $$
+BEGIN
+  IF sparql.lex($1)::numeric > 0 THEN
+    RETURN pg_catalog.floor(sparql.lex($1)::numeric + 0.5);
+  ELSE
+    RETURN pg_catalog.ceil(sparql.lex($1)::numeric + 0.5);
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.round(numeric) RETURNS numeric AS $$
+BEGIN
+  IF $1 > 0 THEN
+    RETURN pg_catalog.floor($1 + 0.5);
+  ELSE
+    RETURN pg_catalog.ceil($1 + 0.5);
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.round(double precision) RETURNS double precision AS $$
+BEGIN
+  IF $1 > 0 THEN
+    RETURN pg_catalog.floor($1 + 0.5);
+  ELSE
+    RETURN pg_catalog.ceil($1 + 0.5);
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.ceil(text) 
+RETURNS numeric AS $$
+BEGIN
+  RETURN pg_catalog.ceil(sparql.lex($1)::numeric);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.ceil(numeric) 
+RETURNS numeric AS $$
+BEGIN
+  RETURN pg_catalog.ceil($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.ceil(double precision) 
+RETURNS double precision AS $$
+BEGIN
+  RETURN pg_catalog.ceil($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.floor(text) 
+RETURNS numeric AS $$
+BEGIN
+  RETURN pg_catalog.floor(sparql.lex($1)::numeric);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.floor(numeric) 
+RETURNS numeric AS $$
+BEGIN
+  RETURN pg_catalog.floor($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.floor(double precision) 
+RETURNS double precision AS $$
+BEGIN
+  RETURN pg_catalog.floor($1);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.rand() RETURNS text AS $$
+BEGIN
+  RETURN sparql.strdt(random()::text,'xsd:double');
 END;
 $$ LANGUAGE plpgsql PARALLEL RESTRICTED STRICT;
 
-CREATE FUNCTION now_rdf() RETURNS text AS $$
+CREATE FUNCTION sparql.now() RETURNS text AS $$
 BEGIN
-  RETURN strdt(now()::text, 'xsd:dateTime');
+  RETURN sparql.strdt(pg_catalog.now()::text, 'xsd:dateTime');
 END;
 $$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
 

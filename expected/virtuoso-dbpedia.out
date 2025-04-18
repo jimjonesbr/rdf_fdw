@@ -93,11 +93,11 @@ SELECT DISTINCT ?runtime
       FILTER (datatype(?runtime) = xsd:integer)
      }
 
-INFO:  SPARQL returned 72 records.
+INFO:  SPARQL returned 101 records.
 
  count |         avg          
 -------+----------------------
-    72 | 231.5555555555555556
+   101 | 337.4752475247524752
 (1 row)
 
 -- OFFSET x ROWS + FETCH FIRST x ROWS ONLY are pushed down. 
@@ -317,7 +317,7 @@ INFO:  SPARQL returned 2 records.
 SELECT name, released, runtime
 FROM film
 WHERE 
-  lower(str(name)) = 'the life of adam lindsay gordon' AND 
+  lower(sparql.str(name)) = 'the life of adam lindsay gordon' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released
@@ -360,7 +360,7 @@ INFO:  SPARQL returned 2 records.
 SELECT name, released, runtime
 FROM film
 WHERE 
-  upper(str(name)) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
+  upper(sparql.str(name)) = 'THE LIFE OF ADAM LINDSAY GORDON' AND 
   runtime < 10 AND
   released < '1930-03-25'
 ORDER BY released
@@ -651,7 +651,7 @@ INFO:  SPARQL returned 5 records.
  */
 SELECT name, birthdate, party
 FROM politicians
-WHERE lower(str(country)) = 'germany'
+WHERE lower(sparql.str(country)) = 'germany'
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
@@ -854,10 +854,10 @@ INFO:  SPARQL returned 10000 records.
            name           | birthdate  |                     party                     |      country       
 --------------------------+------------+-----------------------------------------------+--------------------
  Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
+ Emily Benn               | 10-04-1989 | Labour Party                                  | the United Kingdom
  Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
  Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
  Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
- Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
 (5 rows)
 
 /*
@@ -977,7 +977,7 @@ INFO:  SPARQL returned 10000 records.
  Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
  Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
  Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
- Vandolph Quizon          | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
+ Jason Abalos             | 01-14-1985 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
 (5 rows)
 
 /*
@@ -985,9 +985,9 @@ INFO:  SPARQL returned 10000 records.
  */
 SELECT uri, name, name_upper FROM politicians 
 WHERE 
-  upper(str(name)) = 'WILL' || ' BOND' AND 
-  'will bond' = lower(str(name)) AND
-  lower(str(name_upper)) = lower(str(name))
+  upper(sparql.str(name)) = 'WILL' || ' BOND' AND 
+  'will bond' = lower(sparql.str(name)) AND
+  lower(sparql.str(name_upper)) = lower(sparql.str(name))
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -1250,10 +1250,10 @@ INFO:  SPARQL returned 1 record.
 SELECT uri, name, name_upper FROM politicians 
 WHERE
   47035308 = wikiid AND 
-  SUBstring(str(name),1,4) = 'Will' AND
-  'Bond' = subSTRING(str(name), 6,4) AND
-  lower(SUBstring(str(name),1,4)) = 'will' AND
-  SUBSTRING(lower(str(name_upper)),1,4) = 'will'
+  SUBstring(sparql.str(name),1,4) = 'Will' AND
+  'Bond' = subSTRING(sparql.str(name), 6,4) AND
+  lower(SUBstring(sparql.str(name),1,4)) = 'will' AND
+  SUBSTRING(lower(sparql.str(name_upper)),1,4) = 'will'
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -2100,7 +2100,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
       } 
 
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 1118 records.
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
  name | released | runtime 

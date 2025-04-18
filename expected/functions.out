@@ -1,4 +1,5 @@
 \pset null NULL
+SET search_path TO sparql, pg_catalog;
 CREATE SERVER dbpedia 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
@@ -1377,13 +1378,11 @@ SELECT strbefore('""','""');
  ""
 (1 row)
 
-SELECT p, o, strbefore(o, strlang('SQL','fr')), strbefore(o, strdt('SQL','xsd:string'))
+SELECT p, o, strbefore(str(o), 'SQL')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'fr') AND
-  strbefore(o, '"SQL"@fr') = '"Postgre"@fr' AND
-  strbefore(o, '"SQL"@fr') = strlang('Postgre','fr') AND
+  langmatches(lang(o),'de') AND
   strbefore(str(o), 'SQL') = str('Postgre');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -1391,17 +1390,16 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "fr"))
+ FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(STRBEFORE(?o, "SQL"@fr) = "Postgre"@fr)
  FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
 }
 
 INFO:  SPARQL returned 1 record.
 
-                      p                       |        o        |  strbefore   |  strbefore   
-----------------------------------------------+-----------------+--------------+--------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr | "Postgre"@fr | "Postgre"@fr
+                      p                       |        o        | strbefore 
+----------------------------------------------+-----------------+-----------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | "Postgre"
 (1 row)
 
 /* STRAFTER */
@@ -1548,8 +1546,7 @@ FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'fr') AND
-  strafter(o, '"Postgre"@fr') = '"SQL"@fr' AND
-  strafter(o, '"Postgre"@fr') = strlang('SQL','fr');
+  strafter(str(o), 'Postgre') = str('SQL');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1558,7 +1555,7 @@ SELECT ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(LANGMATCHES(LANG(?o), "fr"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(STRAFTER(?o, "Postgre"@fr) = "SQL"@fr)
+ FILTER(STRAFTER(STR(?o), "Postgre") = "SQL")
 }
 
 INFO:  SPARQL returned 1 record.
@@ -2760,74 +2757,74 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* SUBSTR */
-SELECT substr_rdf('"foobar"', 4), substr_rdf('foobar', 4);
- substr_rdf | substr_rdf 
-------------+------------
- "bar"      | "bar"
+SELECT substr('"foobar"', 4), substr('foobar', 4);
+ substr | substr 
+--------+--------
+ "bar"  | "bar"
 (1 row)
 
-SELECT substr_rdf('"foobar"@en', 4), substr_rdf(strlang('foobar','en'), 4);
- substr_rdf | substr_rdf 
-------------+------------
- "bar"@en   | "bar"@en
+SELECT substr('"foobar"@en', 4), substr(strlang('foobar','en'), 4);
+  substr  |  substr  
+----------+----------
+ "bar"@en | "bar"@en
 (1 row)
 
-SELECT substr_rdf('"foobar"^^xsd:string', 4), substr_rdf(strdt('foobar','xsd:string'), 4);
-                    substr_rdf                    |                    substr_rdf                    
+SELECT substr('"foobar"^^xsd:string', 4), substr(strdt('foobar','xsd:string'), 4);
+                      substr                      |                      substr                      
 --------------------------------------------------+--------------------------------------------------
  "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT substr_rdf('"foobar"', 4, 1), substr_rdf('foobar', 4, 1);
- substr_rdf | substr_rdf 
-------------+------------
- "b"        | "b"
+SELECT substr('"foobar"', 4, 1), substr('foobar', 4, 1);
+ substr | substr 
+--------+--------
+ "b"    | "b"
 (1 row)
 
-SELECT substr_rdf('"foobar"@en', 4, 1), substr_rdf(strlang('foobar','en'), 4, 1);
- substr_rdf | substr_rdf 
-------------+------------
- "b"@en     | "b"@en
+SELECT substr('"foobar"@en', 4, 1), substr(strlang('foobar','en'), 4, 1);
+ substr | substr 
+--------+--------
+ "b"@en | "b"@en
 (1 row)
 
-SELECT substr_rdf('"foobar"^^xsd:string', 4, 1), substr_rdf(strdt('foobar','xsd:string'), 4, 1);
-                   substr_rdf                   |                   substr_rdf                   
+SELECT substr('"foobar"^^xsd:string', 4, 1), substr(strdt('foobar','xsd:string'), 4, 1);
+                     substr                     |                     substr                     
 ------------------------------------------------+------------------------------------------------
  "b"^^<http://www.w3.org/2001/XMLSchema#string> | "b"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT substr_rdf('""', 42);
- substr_rdf 
-------------
+SELECT substr('""', 42);
+ substr 
+--------
  ""
 (1 row)
 
-SELECT substr_rdf('', 42);
- substr_rdf 
-------------
+SELECT substr('', 42);
+ substr 
+--------
  ""
 (1 row)
 
-SELECT substr_rdf(NULL, 42);
- substr_rdf 
-------------
+SELECT substr(NULL, 42);
+ substr 
+--------
  NULL
 (1 row)
 
-SELECT substr_rdf('"foo"', NULL);
- substr_rdf 
-------------
+SELECT substr('"foo"', NULL);
+ substr 
+--------
  NULL
 (1 row)
 
-SELECT p, o, substr_rdf(o, 7, 3), substr_rdf(strdt(o,'xsd:string'), 7, 3) 
+SELECT p, o, substr(o, 7, 3), substr(strdt(o,'xsd:string'), 7, 3) 
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  substr_rdf(o, 7, 3) = substr_rdf('"PostgreSQL"@es', 7, 3) AND
-  substr_rdf(strdt(o,'xsd:string'), 7, 3) = substr_rdf(strdt('PostgreSQL','xsd:string'), 7, 3) AND
-  substr_rdf(o, 7) = substr_rdf('"PostgreSQL"@es', 7) AND
-  substr_rdf(strlang(o,'es'), 7, 3) = substr_rdf(strlang('PostgreSQL','es'), 7, 3) AND
+  substr(o, 7, 3) = substr('"PostgreSQL"@es', 7, 3) AND
+  substr(strdt(o,'xsd:string'), 7, 3) = substr(strdt('PostgreSQL','xsd:string'), 7, 3) AND
+  substr(o, 7) = substr('"PostgreSQL"@es', 7) AND
+  substr(strlang(o,'es'), 7, 3) = substr(strlang('PostgreSQL','es'), 7, 3) AND
   langmatches(lang(o), 'es');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -2845,68 +2842,68 @@ SELECT ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-                      p                       |        o        | substr_rdf |                    substr_rdf                    
-----------------------------------------------+-----------------+------------+--------------------------------------------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "eSQ"@es   | "eSQ"^^<http://www.w3.org/2001/XMLSchema#string>
+                      p                       |        o        |  substr  |                      substr                      
+----------------------------------------------+-----------------+----------+--------------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "eSQ"@es | "eSQ"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 /* CONCAT */
-SELECT concat_rdf('"foo"', '"bar"'), concat_rdf('foo', 'bar');
- concat_rdf | concat_rdf 
-------------+------------
- "foobar"   | "foobar"
+SELECT concat('"foo"', '"bar"'), concat('foo', 'bar');
+  concat  |  concat  
+----------+----------
+ "foobar" | "foobar"
 (1 row)
 
-SELECT concat_rdf('"foo"@en', '"bar"@en'), concat_rdf(strlang('foo','en'), strlang('bar','en'));
- concat_rdf  | concat_rdf  
+SELECT concat('"foo"@en', '"bar"@en'), concat(strlang('foo','en'), strlang('bar','en'));
+   concat    |   concat    
 -------------+-------------
  "foobar"@en | "foobar"@en
 (1 row)
 
-SELECT concat_rdf('"foo"^^xsd:string', '"bar"^^xsd:string'), concat_rdf(strdt('foo','xsd:string'), strdt('bar','xsd:string'));
-                     concat_rdf                      |                     concat_rdf                      
+SELECT concat('"foo"^^xsd:string', '"bar"^^xsd:string'), concat(strdt('foo','xsd:string'), strdt('bar','xsd:string'));
+                       concat                        |                       concat                        
 -----------------------------------------------------+-----------------------------------------------------
  "foobar"^^<http://www.w3.org/2001/XMLSchema#string> | "foobar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT concat_rdf('"foo"', '"bar"^^xsd:string'), concat_rdf('foo', strdt('bar','xsd:string'));
- concat_rdf | concat_rdf 
-------------+------------
- "foobar"   | "foobar"
+SELECT concat('"foo"', '"bar"^^xsd:string'), concat('foo', strdt('bar','xsd:string'));
+  concat  |  concat  
+----------+----------
+ "foobar" | "foobar"
 (1 row)
 
-SELECT concat_rdf('"foo"@en', '"bar"'), concat_rdf(strlang('foo','en'), 'bar');
- concat_rdf | concat_rdf 
-------------+------------
- "foobar"   | "foobar"
+SELECT concat('"foo"@en', '"bar"'), concat(strlang('foo','en'), 'bar');
+  concat  |  concat  
+----------+----------
+ "foobar" | "foobar"
 (1 row)
 
-SELECT concat_rdf('"foo"@en', '"bar"^^xsd:string'), concat_rdf(strlang('foo','en'), strdt('bar','xsd:string'));
- concat_rdf | concat_rdf 
-------------+------------
- "foobar"   | "foobar"
+SELECT concat('"foo"@en', '"bar"^^xsd:string'), concat(strlang('foo','en'), strdt('bar','xsd:string'));
+  concat  |  concat  
+----------+----------
+ "foobar" | "foobar"
 (1 row)
 
-SELECT concat_rdf(NULL, 'bar'), concat_rdf('foo', NULL), concat_rdf(NULL, NULL);
- concat_rdf | concat_rdf | concat_rdf 
-------------+------------+------------
- NULL       | NULL       | NULL
+SELECT concat(NULL, 'bar'), concat('foo', NULL), concat(NULL, NULL);
+ concat | concat | concat 
+--------+--------+--------
+ NULL   | NULL   | NULL
 (1 row)
 
-SELECT concat_rdf('foo', ''), concat_rdf('', 'bar'), concat_rdf('', ''), concat_rdf('""', '""');
- concat_rdf | concat_rdf | concat_rdf | concat_rdf 
-------------+------------+------------+------------
- "foo"      | "bar"      | ""         | ""
+SELECT concat('foo', ''), concat('', 'bar'), concat('', ''), concat('""', '""');
+ concat | concat | concat | concat 
+--------+--------+--------+--------
+ "foo"  | "bar"  | ""     | ""
 (1 row)
 
-SELECT concat_rdf('"foo"^^foo:bar', 'bar'), concat_rdf('"foo"', '"bar"^^foo:bar');
+SELECT concat('"foo"^^foo:bar', 'bar'), concat('"foo"', '"bar"^^foo:bar');
 ERROR:  CONCAT arguments must be simple literals or 'xsd:string'
-SELECT p, o, concat_rdf(o,strlang(' Global','pt')), concat_rdf(o,strdt(' Global','xsd:string'))
+SELECT p, o, concat(o,strlang(' Global','pt')), concat(o,strdt(' Global','xsd:string'))
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'pt') AND
-  concat_rdf(o,'') = str('PostgreSQL');
+  concat(o,'') = str('PostgreSQL');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2920,331 +2917,331 @@ SELECT ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-                      p                       |        o        |       concat_rdf       |     concat_rdf      
+                      p                       |        o        |         concat         |       concat        
 ----------------------------------------------+-----------------+------------------------+---------------------
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | "PostgreSQL Global"@pt | "PostgreSQL Global"
 (1 row)
 
 /* REPLACE */
-SELECT replace_rdf('"abcd"', '"b"', '"Z"'), replace_rdf('abcd', 'b', 'Z');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZcd"      | "aZcd"
+SELECT replace('"abcd"', '"b"', '"Z"'), replace('abcd', 'b', 'Z');
+ replace | replace 
+---------+---------
+ "aZcd"  | "aZcd"
 (1 row)
 
-SELECT replace_rdf('"abab"', '"B"', '"Z"','"i"'), replace_rdf('abab', 'B', 'Z','i');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZaZ"      | "aZaZ"
+SELECT replace('"abab"', '"B"', '"Z"','"i"'), replace('abab', 'B', 'Z','i');
+ replace | replace 
+---------+---------
+ "aZaZ"  | "aZaZ"
 (1 row)
 
-SELECT replace_rdf('"abab"', '"B."', '"Z"','"i"'), replace_rdf('abab', 'B.', 'Z','i');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZb"       | "aZb"
+SELECT replace('"abab"', '"B."', '"Z"','"i"'), replace('abab', 'B.', 'Z','i');
+ replace | replace 
+---------+---------
+ "aZb"   | "aZb"
 (1 row)
 
-SELECT replace_rdf('"abcd"@en', '"b"', '"Z"'), replace_rdf(strlang('abcd','en'), 'b', 'Z');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZcd"      | "aZcd"
+SELECT replace('"abcd"@en', '"b"', '"Z"'), replace(strlang('abcd','en'), 'b', 'Z');
+ replace | replace 
+---------+---------
+ "aZcd"  | "aZcd"
 (1 row)
 
-SELECT replace_rdf('"abab"^^xsd:string', '"B"', '"Z"','"i"'), replace_rdf(strdt('abab','xsd:string'), 'B', 'Z','i');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZaZ"      | "aZaZ"
+SELECT replace('"abab"^^xsd:string', '"B"', '"Z"','"i"'), replace(strdt('abab','xsd:string'), 'B', 'Z','i');
+ replace | replace 
+---------+---------
+ "aZaZ"  | "aZaZ"
 (1 row)
 
-SELECT replace_rdf('"abcd"', '"b"@en', '"Z"'), replace_rdf('abcd', strlang('b','en'), 'Z');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZcd"      | "aZcd"
+SELECT replace('"abcd"', '"b"@en', '"Z"'), replace('abcd', strlang('b','en'), 'Z');
+ replace | replace 
+---------+---------
+ "aZcd"  | "aZcd"
 (1 row)
 
-SELECT replace_rdf('"abab"', '"B"^^xsd:string', '"Z"','"i"'), replace_rdf('abab', strdt('B','xsd:string'), 'Z','i');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZaZ"      | "aZaZ"
+SELECT replace('"abab"', '"B"^^xsd:string', '"Z"','"i"'), replace('abab', strdt('B','xsd:string'), 'Z','i');
+ replace | replace 
+---------+---------
+ "aZaZ"  | "aZaZ"
 (1 row)
 
-SELECT replace_rdf('""', '"b"', '"Z"'), replace_rdf('', 'b', 'Z');
- replace_rdf | replace_rdf 
--------------+-------------
- ""          | ""
+SELECT replace('""', '"b"', '"Z"'), replace('', 'b', 'Z');
+ replace | replace 
+---------+---------
+ ""      | ""
 (1 row)
 
-SELECT replace_rdf('"abcd"', '""', '"Z"'), replace_rdf('abcd', '', 'Z');
+SELECT replace('"abcd"', '""', '"Z"'), replace('abcd', '', 'Z');
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
-SELECT replace_rdf('"abcd"', '"b"', '""'), replace_rdf('abcd', 'b', '');
- replace_rdf | replace_rdf 
--------------+-------------
- "acd"       | "acd"
+CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
+SELECT replace('"abcd"', '"b"', '""'), replace('abcd', 'b', '');
+ replace | replace 
+---------+---------
+ "acd"   | "acd"
 (1 row)
 
-SELECT replace_rdf('"ab\"cd"', '"b"', '"Z"'), replace_rdf('ab\"cd', 'b', 'Z');
- replace_rdf | replace_rdf 
--------------+-------------
- "aZ\"cd"    | "aZ\"cd"
+SELECT replace('"ab\"cd"', '"b"', '"Z"'), replace('ab\"cd', 'b', 'Z');
+ replace  | replace  
+----------+----------
+ "aZ\"cd" | "aZ\"cd"
 (1 row)
 
-SELECT replace_rdf(NULL, 'b', 'Z'), replace_rdf('abcd', NULL, 'Z'), replace_rdf('abcd', 'b', NULL), replace_rdf('abcd', 'b', 'Z', NULL);
- replace_rdf | replace_rdf | replace_rdf | replace_rdf 
--------------+-------------+-------------+-------------
- NULL        | NULL        | NULL        | NULL
+SELECT replace(NULL, 'b', 'Z'), replace('abcd', NULL, 'Z'), replace('abcd', 'b', NULL), replace('abcd', 'b', 'Z', NULL);
+ replace | replace | replace | replace 
+---------+---------+---------+---------
+ NULL    | NULL    | NULL    | NULL
 (1 row)
 
-SELECT replace_rdf('', 'a', 'Z');                -- Empty input string
- replace_rdf 
--------------
+SELECT replace('', 'a', 'Z');                -- Empty input string
+ replace 
+---------
  ""
 (1 row)
 
-SELECT replace_rdf('abcd', '', 'Z');             -- Empty pattern
+SELECT replace('abcd', '', 'Z');             -- Empty pattern
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
-SELECT replace_rdf('abcd', 'a', '');             -- Empty replacement
- replace_rdf 
--------------
+CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
+SELECT replace('abcd', 'a', '');             -- Empty replacement
+ replace 
+---------
  "bcd"
 (1 row)
 
-SELECT replace_rdf('', '', 'Z');                 -- Empty pattern and replacement
+SELECT replace('', '', 'Z');                 -- Empty pattern and replacement
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
-SELECT replace_rdf('abcd', 'a', 'Z');            -- Pattern at the beginning
- replace_rdf 
--------------
+CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
+SELECT replace('abcd', 'a', 'Z');            -- Pattern at the beginning
+ replace 
+---------
  "Zbcd"
 (1 row)
 
-SELECT replace_rdf('abcd', 'd', 'Z');            -- Pattern at the end
- replace_rdf 
--------------
+SELECT replace('abcd', 'd', 'Z');            -- Pattern at the end
+ replace 
+---------
  "abcZ"
 (1 row)
 
-SELECT replace_rdf('abcd', 'bc', 'Z');           -- Pattern in the middle
- replace_rdf 
--------------
+SELECT replace('abcd', 'bc', 'Z');           -- Pattern in the middle
+ replace 
+---------
  "aZd"
 (1 row)
 
-SELECT replace_rdf('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
- replace_rdf 
--------------
+SELECT replace('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
+ replace  
+----------
  "aaZZcc"
 (1 row)
 
-SELECT replace_rdf('Abcd', 'a', 'Z');            -- Case mismatch pattern
- replace_rdf 
--------------
+SELECT replace('Abcd', 'a', 'Z');            -- Case mismatch pattern
+ replace 
+---------
  "Abcd"
 (1 row)
 
-SELECT replace_rdf('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
- replace_rdf 
--------------
+SELECT replace('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
+ replace 
+---------
  "abcd"
 (1 row)
 
-SELECT replace_rdf('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
- replace_rdf 
--------------
+SELECT replace('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
+ replace 
+---------
  "Zbcd"
 (1 row)
 
-SELECT replace_rdf('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
- replace_rdf 
--------------
+SELECT replace('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
+ replace 
+---------
  "aZcd"
 (1 row)
 
-SELECT replace_rdf('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
- replace_rdf 
--------------
+SELECT replace('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
+ replace 
+---------
  "ab\cd"
 (1 row)
 
-SELECT replace_rdf('ab"cd', '"b"', '"Z"');       -- Quotes in the input
- replace_rdf 
--------------
+SELECT replace('ab"cd', '"b"', '"Z"');       -- Quotes in the input
+ replace  
+----------
  "aZ\"cd"
 (1 row)
 
-SELECT replace_rdf('ab"cd', 'b"', 'Z');          -- Quotes in pattern
- replace_rdf 
--------------
+SELECT replace('ab"cd', 'b"', 'Z');          -- Quotes in pattern
+ replace 
+---------
  "aZcd"
 (1 row)
 
-SELECT replace_rdf('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
- replace_rdf 
--------------
+SELECT replace('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
+ replace  
+----------
  "aZYdef"
 (1 row)
 
-SELECT replace_rdf('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
- replace_rdf 
--------------
+SELECT replace('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
+  replace  
+-----------
  "XYZ XYZ"
 (1 row)
 
-SELECT replace_rdf('abcd', 'a', 'Z');            -- Pattern at the start
- replace_rdf 
--------------
+SELECT replace('abcd', 'a', 'Z');            -- Pattern at the start
+ replace 
+---------
  "Zbcd"
 (1 row)
 
-SELECT replace_rdf('abcd', 'd', 'Z');            -- Pattern at the end
- replace_rdf 
--------------
+SELECT replace('abcd', 'd', 'Z');            -- Pattern at the end
+ replace 
+---------
  "abcZ"
 (1 row)
 
-SELECT replace_rdf('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
- replace_rdf 
--------------
+SELECT replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
+ replace  
+----------
  "XYZXYZ"
 (1 row)
 
-SELECT replace_rdf(NULL, 'a', 'Z');              -- Input is NULL
- replace_rdf 
--------------
+SELECT replace(NULL, 'a', 'Z');              -- Input is NULL
+ replace 
+---------
  NULL
 (1 row)
 
-SELECT replace_rdf('abcd', NULL, 'Z');           -- Pattern is NULL
- replace_rdf 
--------------
+SELECT replace('abcd', NULL, 'Z');           -- Pattern is NULL
+ replace 
+---------
  NULL
 (1 row)
 
-SELECT replace_rdf('abcd', 'a', NULL);           -- Replacement is NULL
- replace_rdf 
--------------
+SELECT replace('abcd', 'a', NULL);           -- Replacement is NULL
+ replace 
+---------
  NULL
 (1 row)
 
-SELECT replace_rdf(NULL, NULL, NULL);             -- All NULLs
- replace_rdf 
--------------
+SELECT replace(NULL, NULL, NULL);             -- All NULLs
+ replace 
+---------
  NULL
 (1 row)
 
-SELECT replace_rdf('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
- replace_rdf 
--------------
+SELECT replace('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
+ replace  
+----------
  "aZ\"cd"
 (1 row)
 
-SELECT replace_rdf('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
- replace_rdf 
--------------
+SELECT replace('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
+ replace  
+----------
  "aZ\"cd"
 (1 row)
 
-SELECT replace_rdf('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
- replace_rdf 
--------------
+SELECT replace('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
+ replace 
+---------
  "Zbcd"
 (1 row)
 
-SELECT replace_rdf('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
- replace_rdf 
--------------
+SELECT replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
+ replace 
+---------
  "Zbcd"
 (1 row)
 
-SELECT replace_rdf('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
- replace_rdf 
--------------
+SELECT replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
+ replace 
+---------
  "Zbcd"
 (1 row)
 
-SELECT replace_rdf('ababab', 'ab', 'XY', 'g');   -- Global replacement
- replace_rdf 
--------------
+SELECT replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
+ replace  
+----------
  "XYXYXY"
 (1 row)
 
-SELECT replace_rdf('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
- replace_rdf 
--------------
+SELECT replace('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
+ replace  
+----------
  "XYXYXY"
 (1 row)
 
-SELECT replace_rdf('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
+SELECT replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace_rdf(text,text,text,text) line 4 at RAISE
-SELECT replace_rdf('abcd', '', 'Z');              -- Empty pattern without global flag
+CONTEXT:  PL/pgSQL function replace(text,text,text,text) line 4 at RAISE
+SELECT replace('abcd', '', 'Z');              -- Empty pattern without global flag
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
-SELECT replace_rdf('abcd', 'z', 'Z');             -- No pattern match
- replace_rdf 
--------------
+CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
+SELECT replace('abcd', 'z', 'Z');             -- No pattern match
+ replace 
+---------
  "abcd"
 (1 row)
 
-SELECT replace_rdf('abcd', 'xy', 'Z');            -- No match for multi-character pattern
- replace_rdf 
--------------
+SELECT replace('abcd', 'xy', 'Z');            -- No match for multi-character pattern
+ replace 
+---------
  "abcd"
 (1 row)
 
-SELECT replace_rdf('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 replace_rdf                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+SELECT replace('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   replace                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  "aZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZc"
 (1 row)
 
-SELECT replace_rdf('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
- replace_rdf 
--------------
+SELECT replace('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
+ replace 
+---------
  "XYZ"
 (1 row)
 
-SELECT replace_rdf('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
- replace_rdf 
--------------
+SELECT replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
+ replace  
+----------
  "XYZXYZ"
 (1 row)
 
-SELECT replace_rdf('""', '"b"', '"Z"');           -- Empty literal as input
- replace_rdf 
--------------
+SELECT replace('""', '"b"', '"Z"');           -- Empty literal as input
+ replace 
+---------
  ""
 (1 row)
 
-SELECT replace_rdf('"b"', '""', '"Z"');            -- Empty pattern in replacement
+SELECT replace('"b"', '""', '"Z"');            -- Empty pattern in replacement
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace_rdf(text,text,text) line 4 at RAISE
-SELECT replace_rdf('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
- replace_rdf 
--------------
+CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
+SELECT replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
+ replace 
+---------
  "abcd"
 (1 row)
 
-SELECT replace_rdf('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
- replace_rdf 
--------------
+SELECT replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
+ replace 
+---------
  "ZZcd"
 (1 row)
 
-SELECT replace_rdf('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
- replace_rdf 
--------------
+SELECT replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
+ replace 
+---------
  "Zcd"
 (1 row)
 
-SELECT p, o, replace_rdf(o,'Postgre','My'), replace_rdf(o,'"Postgre"@de','')
+SELECT p, o, replace(o,'Postgre','My'), replace(o,'"Postgre"@de','')
 FROM ftdbp
 WHERE 
   p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   langmatches(lang(o),'es') AND
-  replace_rdf(o,'Postgre','My') = replace_rdf(strlang('PostgreSQL','es'),'Postgre','My') AND
-  replace_rdf(o, 'POSTGRE', 'My','i') = replace_rdf('"PostgreSQL"@es', 'POSTGRE', 'My','i');
+  replace(o,'Postgre','My') = replace(strlang('PostgreSQL','es'),'Postgre','My') AND
+  replace(o, 'POSTGRE', 'My','i') = replace('"PostgreSQL"@es', 'POSTGRE', 'My','i');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3259,9 +3256,9 @@ SELECT ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-                      p                       |        o        | replace_rdf | replace_rdf 
-----------------------------------------------+-----------------+-------------+-------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "MySQL"     | "SQL"
+                      p                       |        o        | replace | replace 
+----------------------------------------------+-----------------+---------+---------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "MySQL" | "SQL"
 (1 row)
 
 /* REGEX */
@@ -3364,6 +3361,359 @@ INFO:  SPARQL returned 1 record.
                       p                       |        o        
 ----------------------------------------------+-----------------
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+(1 row)
+
+/* ABS */
+SELECT abs('"-1"^^xsd:int');
+ abs 
+-----
+   1
+(1 row)
+
+SELECT abs('"-1.42"^^xsd:double');
+ abs  
+------
+ 1.42
+(1 row)
+
+SELECT abs(strdt('-1.42','xsd:double'));
+ abs  
+------
+ 1.42
+(1 row)
+
+SELECT abs(strdt('-1.4223874294774098098485038','xsd:double'));
+        abs         
+--------------------
+ 1.4223874294774097
+(1 row)
+
+SELECT abs('');
+ERROR:  invalid input syntax for type double precision: ""
+CONTEXT:  PL/pgSQL function abs(text) line 3 at RETURN
+SELECT abs(' ');
+ERROR:  invalid input syntax for type double precision: " "
+CONTEXT:  PL/pgSQL function abs(text) line 3 at RETURN
+SELECT abs(NULL);
+ abs  
+------
+ NULL
+(1 row)
+
+SELECT abs(CAST(-1.42 AS numeric));
+ abs  
+------
+ 1.42
+(1 row)
+
+SELECT abs(CAST(-1.42 AS double precision));
+ abs  
+------
+ 1.42
+(1 row)
+
+SELECT abs(CAST(-1.42 AS real));
+        abs         
+--------------------
+ 1.4199999570846558
+(1 row)
+
+SELECT abs(CAST(-1 AS bigint));
+ abs 
+-----
+   1
+(1 row)
+
+SELECT abs(CAST(-1 AS smallint));
+ abs 
+-----
+   1
+(1 row)
+
+SELECT abs(CAST(-1 AS int));
+ abs 
+-----
+   1
+(1 row)
+
+SELECT p, o, abs(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  abs(o) = 23824;
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/ontology/wikiPageID>)
+ FILTER(ABS(?o) = 23824)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                    p                     |                          o                          |  abs  
+------------------------------------------+-----------------------------------------------------+-------
+ <http://dbpedia.org/ontology/wikiPageID> | "23824"^^<http://www.w3.org/2001/XMLSchema#integer> | 23824
+(1 row)
+
+/* ROUND */
+SELECT round('"2.4999"^^xsd:double');
+ round 
+-------
+     2
+(1 row)
+
+SELECT round('"2.5"^^xsd:double');
+ round 
+-------
+     3
+(1 row)
+
+SELECT round('"-2.5"^^xsd:int');
+ round 
+-------
+    -2
+(1 row)
+
+SELECT round('');
+ERROR:  invalid input syntax for type numeric: ""
+CONTEXT:  PL/pgSQL function round(text) line 3 at IF
+SELECT round('""');
+ERROR:  invalid input syntax for type numeric: ""
+CONTEXT:  PL/pgSQL function round(text) line 3 at IF
+SELECT round(' ');
+ERROR:  invalid input syntax for type numeric: " "
+CONTEXT:  PL/pgSQL function round(text) line 3 at IF
+SELECT round('" "');
+ERROR:  invalid input syntax for type numeric: " "
+CONTEXT:  PL/pgSQL function round(text) line 3 at IF
+SELECT round(NULL);
+ round 
+-------
+  NULL
+(1 row)
+
+SELECT round(CAST(2.49999 AS numeric));
+ round 
+-------
+     2
+(1 row)
+
+SELECT round(CAST(2.5 AS double precision));
+ round 
+-------
+     3
+(1 row)
+
+SELECT round(CAST(-2.5 AS real));
+ round 
+-------
+    -2
+(1 row)
+
+SELECT round(CAST(42 AS bigint));
+ round 
+-------
+    42
+(1 row)
+
+SELECT round(CAST(42 AS smallint));
+ round 
+-------
+    42
+(1 row)
+
+SELECT round(CAST(42 AS int));
+ round 
+-------
+    42
+(1 row)
+
+SELECT p, o, round(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  round(o) = round('"23824"^^xsd:int');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/ontology/wikiPageID>)
+ FILTER(ROUND(?o) = 23824)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                    p                     |                          o                          | round 
+------------------------------------------+-----------------------------------------------------+-------
+ <http://dbpedia.org/ontology/wikiPageID> | "23824"^^<http://www.w3.org/2001/XMLSchema#integer> | 23824
+(1 row)
+
+/* CEIL */
+SELECT ceil('"10.5"^^xsd:double');
+ ceil 
+------
+   11
+(1 row)
+
+SELECT ceil('"-10.5"^^:xsd:decimal');
+ ceil 
+------
+  -10
+(1 row)
+
+SELECT ceil(NULL);
+ ceil 
+------
+ NULL
+(1 row)
+
+SELECT ceil(CAST(10.5 AS numeric));
+ ceil 
+------
+   11
+(1 row)
+
+SELECT ceil(CAST(-10.5 AS double precision));
+ ceil 
+------
+  -10
+(1 row)
+
+SELECT ceil(CAST(10.5 AS real));
+ ceil 
+------
+   11
+(1 row)
+
+SELECT ceil(CAST(-42 AS bigint));
+ ceil 
+------
+  -42
+(1 row)
+
+SELECT ceil(CAST(42 AS smallint));
+ ceil 
+------
+   42
+(1 row)
+
+SELECT ceil(CAST(-42 AS int));
+ ceil 
+------
+  -42
+(1 row)
+
+SELECT p, o, ceil(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  ceil(o) = ceil('"23823.5"^^xsd:int') AND
+  ceil(o) = ceil(23823.5);
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/ontology/wikiPageID>)
+ FILTER(CEIL(?o) = 23824)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                    p                     |                          o                          | ceil  
+------------------------------------------+-----------------------------------------------------+-------
+ <http://dbpedia.org/ontology/wikiPageID> | "23824"^^<http://www.w3.org/2001/XMLSchema#integer> | 23824
+(1 row)
+
+/* FLOOR */
+SELECT floor('"10.5"^^xsd:double');
+ floor 
+-------
+    10
+(1 row)
+
+SELECT floor('"-10.5"^^xsd:decimal');
+ floor 
+-------
+   -11
+(1 row)
+
+SELECT floor(CAST(10.5 AS numeric));
+ floor 
+-------
+    10
+(1 row)
+
+SELECT floor(CAST(-10.5 AS double precision));
+ floor 
+-------
+   -11
+(1 row)
+
+SELECT floor(CAST(10.5 AS real));
+ floor 
+-------
+    10
+(1 row)
+
+SELECT floor(CAST(-42 AS bigint));
+ floor 
+-------
+   -42
+(1 row)
+
+SELECT floor(CAST(42 AS smallint));
+ floor 
+-------
+    42
+(1 row)
+
+SELECT floor(CAST(-42 AS int));
+ floor 
+-------
+   -42
+(1 row)
+
+SELECT p, o, ceil(o)
+FROM ftdbp 
+WHERE 
+  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
+  floor(o) = floor('"23824.5"^^xsd:int') AND
+  floor(o) = floor(23824.5);
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/ontology/wikiPageID>)
+ FILTER(FLOOR(?o) = 23824)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                    p                     |                          o                          | ceil  
+------------------------------------------+-----------------------------------------------------+-------
+ <http://dbpedia.org/ontology/wikiPageID> | "23824"^^<http://www.w3.org/2001/XMLSchema#integer> | 23824
+(1 row)
+
+/* RAND */
+SELECT setseed(0.42);
+ setseed 
+---------
+ 
+(1 row)
+
+SELECT rand();
+                              rand                              
+----------------------------------------------------------------
+ "0.742944875302392"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 DROP SERVER dbpedia CASCADE;

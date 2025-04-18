@@ -186,7 +186,7 @@
 
 #define IntToConst(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
 #define OidToConst(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
-
+#define IRI_SIZE(len) (VARHDRSZ + (len) + 1)
 /*
  * This macro is used by DeparseExpr to identify PostgreSQL
  * types that can be translated to SPARQL
@@ -194,7 +194,8 @@
 #define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID \
 			|| (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID \
 			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
-			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID)
+			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID \
+			|| (x) == RDFIRIOID)
 
 /* list API has changed in v13 */
 #if PG_VERSION_NUM < 130000
@@ -373,13 +374,19 @@ static const TypeXSDMap type_map[] = {
 	{TEXTOID, "string"},
 	{TIMESTAMPTZOID, "dateTime"},
 	{InvalidOid, NULL}};
-
 typedef struct RDFfdwTriple
 {
 	char *subject;	 /* RDF triple subject */
 	char *predicate; /* RDF triple predicate */
 	char *object;	 /* RDF triple object */
 } RDFfdwTriple;
+
+typedef struct {
+    int32 vl_len_;
+    char data[FLEXIBLE_ARRAY_MEMBER];
+} RDFIRIDatum;
+
+static Oid RDFIRIOID = InvalidOid;
 
 extern Datum rdf_fdw_handler(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
@@ -400,6 +407,10 @@ extern Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_iri_in(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_iri_out(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_rdfiri_eq(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_rdfiri_text_eq(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS);
@@ -433,6 +444,10 @@ PG_FUNCTION_INFO_V1(rdf_fdw_datatype_text);
 PG_FUNCTION_INFO_V1(rdf_fdw_datatype_poly);
 PG_FUNCTION_INFO_V1(rdf_fdw_arguments_compatible);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri);
+PG_FUNCTION_INFO_V1(rdf_fdw_iri_in);
+PG_FUNCTION_INFO_V1(rdf_fdw_iri_out);
+PG_FUNCTION_INFO_V1(rdf_fdw_rdfiri_eq);
+PG_FUNCTION_INFO_V1(rdf_fdw_rdfiri_text_eq);
 PG_FUNCTION_INFO_V1(rdf_fdw_isIRI);
 PG_FUNCTION_INFO_V1(rdf_fdw_langmatches);
 PG_FUNCTION_INFO_V1(rdf_fdw_isBlank);
@@ -505,6 +520,7 @@ static bool LiteralsCompatible(char *literal1, char *literal2);
 static char *ExpandDatatypePrefix(char *str);
 static bool IsRDFStringLiteral(char *str_datatype);
 static char *MapSPARQLDatatype(Oid pgtype);
+static Oid get_rdfiri_oid(void);
 static char *strdt(char *literal, char *datatype);
 static char *lang(char *input);
 static char *datatype(char *input);
@@ -1096,6 +1112,55 @@ static char *iri(char *input)
     return buf.data;
 }
 
+Datum rdf_fdw_iri_in(PG_FUNCTION_ARGS)
+{
+	char *input = PG_GETARG_CSTRING(0);
+	StringInfoData buf;
+	RDFIRIDatum *result;
+	size_t len = strlen(input);
+
+	if (!isIRI(input))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("invalid IRI: %s", input)));
+
+	initStringInfo(&buf);
+	appendStringInfoString(&buf, input);
+
+	result = (RDFIRIDatum *)palloc(IRI_SIZE(len));
+	SET_VARSIZE(result, IRI_SIZE(len));
+	memcpy(result->data, buf.data, len + 1); // Copy null-terminated string
+
+	pfree(buf.data);
+	PG_RETURN_POINTER(result);
+}
+
+Datum rdf_fdw_iri_out(PG_FUNCTION_ARGS)
+{
+	RDFIRIDatum *iri = (RDFIRIDatum *)PG_GETARG_VARLENA_P(0);
+	PG_RETURN_CSTRING(pstrdup(iri->data));
+}
+
+Datum rdf_fdw_rdfiri_eq(PG_FUNCTION_ARGS)
+{
+    RDFIRIDatum *a = (RDFIRIDatum *)PG_GETARG_VARLENA_P(0);
+    RDFIRIDatum *b = (RDFIRIDatum *)PG_GETARG_VARLENA_P(1);
+
+    bool result = strcmp(a->data, b->data) == 0;
+    PG_RETURN_BOOL(result);
+}
+
+Datum rdf_fdw_rdfiri_text_eq(PG_FUNCTION_ARGS)
+{
+    RDFIRIDatum *a = (RDFIRIDatum *)PG_GETARG_VARLENA_P(0);
+    text *b = PG_GETARG_TEXT_PP(1);
+    char *b_str = text_to_cstring(b);
+
+    bool result = strcmp(a->data, b_str) == 0;
+    pfree(b_str);
+    PG_RETURN_BOOL(result);
+}
+
 /*
  * rdf_fdw_iri
  * -----------
@@ -1284,7 +1349,7 @@ static char *MapSPARQLDatatype(Oid pgtype)
 	for (int i = 0; type_map[i].type_oid != InvalidOid; i++)
 	{
 		if (pgtype == type_map[i].type_oid)
-			return type_map[i].xsd_datatype;
+			return (char*) type_map[i].xsd_datatype;
 	}
 	return NULL; // Unsupported type
 }
@@ -4136,7 +4201,7 @@ static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 	/* estimate total cost as startup cost + 10 * (returned rows) */
 	state->total_cost = state->startup_cost + baserel->rows * 10.0;
 
-	InitSession(state, baserel, root);
+	//InitSession(state, baserel, root);
 
 	baserel->fdw_private = state;
 }
@@ -4168,9 +4233,26 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)baserel->fdw_private;
 	List *fdw_private = NIL;
+	ListCell *cell;
 
 	elog(DEBUG1,"%s called",__func__);
+
+	foreach (cell, scan_clauses)
+	{
+		Node *node = (Node *)lfirst(cell);
+		elog(DEBUG1, "%s: original scan_clauses nodeTag=%u", __func__, nodeTag(node));
+	}
+
 	scan_clauses = extract_actual_clauses(scan_clauses, false);
+
+	/* Debug extracted scan_clauses */
+	foreach (cell, scan_clauses)
+	{
+		Expr *clause = (Expr *)lfirst(cell);
+		elog(DEBUG1, "%s: extracted expr_clauses clause nodeTag=%u", __func__, nodeTag(clause));
+	}
+
+	InitSession(state, baserel, root);
 
 	if(!state->enable_pushdown) 
 	{
@@ -5012,6 +5094,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	StringInfoData select;
 
 	elog(DEBUG1,"%s called",__func__);
+
+	RDFIRIOID = get_rdfiri_oid();
 
 	/*
 	 * Setting session's default values.
@@ -6283,9 +6367,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	if (expr == NULL)
 		return NULL;
 
-	switch (expr->type)
+	switch (nodeTag(expr))
 	{
 	case T_Const:
+		elog(DEBUG1, "%s (T_Const): called > %u", __func__, expr->type);
 		constant = (Const *)expr;
 		if (constant->constisnull)
 		{
@@ -6316,6 +6401,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 		break;
 	case T_Var:
+
+		elog(DEBUG1, "%s (T_Var): called > %u", __func__, expr->type);
 		variable = (Var *)expr;
 
 		if (variable->vartype == BOOLOID)
@@ -6980,11 +7067,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "UCASE(%s)", NameStr(args));
 			else if(strcmp(opername, "strlen") == 0)
 				appendStringInfo(&result, "STRLEN(%s)", NameStr(args));
-			else if(strcmp(opername, "substr_rdf") == 0)
+			else if(strcmp(opername, "substr") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
-			else if(strcmp(opername, "concat_rdf") == 0)
+			else if(strcmp(opername, "concat") == 0)
 				appendStringInfo(&result, "CONCAT(%s)", NameStr(args));
-			else if(strcmp(opername, "replace_rdf") == 0)
+			else if(strcmp(opername, "replace") == 0)
 				appendStringInfo(&result, "REPLACE(%s)", NameStr(args));
 			else if(strcmp(opername, "regex") == 0)
 				appendStringInfo(&result, "REGEX(%s)", NameStr(args));
@@ -7633,9 +7720,9 @@ static bool IsFunctionPushable(char *funcname)
 		strcmp(funcname, "lcase") == 0 ||
 		strcmp(funcname, "ucase") == 0 ||
 		strcmp(funcname, "strlen") == 0 ||
-		strcmp(funcname, "substr_rdf") == 0 ||
-		strcmp(funcname, "concat_rdf") == 0 ||
-		strcmp(funcname, "replace_rdf") == 0 ||
+		strcmp(funcname, "substr") == 0 ||
+		strcmp(funcname, "concat") == 0 ||
+		strcmp(funcname, "replace") == 0 ||
 		strcmp(funcname, "regex") == 0 ||
 		strcmp(funcname, "substring") == 0;
 }
@@ -7672,4 +7759,26 @@ static char *FormatSQLExtractField(char *field)
 		res = NULL;
 
 	return res;
+}
+
+
+static Oid get_rdfiri_oid(void)
+{
+    Oid rdfiri_oid = InvalidOid;
+    HeapTuple tuple;
+
+	elog(DEBUG1,"%s called", __func__);
+
+    tuple = SearchSysCache1(TYPENAMENSP, CStringGetDatum("rdfiri"));
+    if (HeapTupleIsValid(tuple))
+    {
+        rdfiri_oid = ((Form_pg_type)GETSTRUCT(tuple))->oid;
+        ReleaseSysCache(tuple);
+    }
+    else
+    {
+        elog(ERROR, "could not find type 'rdfiri' in pg_type");
+    }
+
+    return rdfiri_oid;
 }
