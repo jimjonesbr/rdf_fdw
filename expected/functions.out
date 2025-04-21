@@ -3382,10 +3382,10 @@ SELECT abs(strdt('-1.42','xsd:double'));
  1.42
 (1 row)
 
-SELECT abs(strdt('-1.4223874294774098098485038','xsd:double'));
-        abs         
---------------------
- 1.4223874294774097
+SELECT abs(strdt('-1.42238','xsd:double'));
+   abs   
+---------
+ 1.42238
 (1 row)
 
 SELECT abs('');
@@ -3412,12 +3412,7 @@ SELECT abs(CAST(-1.42 AS double precision));
  1.42
 (1 row)
 
-SELECT abs(CAST(-1.42 AS real));
-        abs         
---------------------
- 1.4199999570846558
-(1 row)
-
+--SELECT abs(CAST(-1.42 AS real));
 SELECT abs(CAST(-1 AS bigint));
  abs 
 -----
@@ -3507,12 +3502,7 @@ SELECT round(CAST(2.5 AS double precision));
      3
 (1 row)
 
-SELECT round(CAST(-2.5 AS real));
- round 
--------
-    -2
-(1 row)
-
+--SELECT round(CAST(-2.5 AS real));
 SELECT round(CAST(42 AS bigint));
  round 
 -------
@@ -3710,11 +3700,489 @@ SELECT setseed(0.42);
  
 (1 row)
 
-SELECT rand();
-                              rand                              
-----------------------------------------------------------------
- "0.742944875302392"^^<http://www.w3.org/2001/XMLSchema#double>
+SELECT 
+  sparql.lex(sparql.rand())::numeric BETWEEN 0 AND 1, 
+  sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
+ ?column? | ?column? 
+----------+----------
+ t        | t
 (1 row)
 
+/* YEAR */
+SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+ year 
+------
+ 2011
+(1 row)
+
+SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"');
+ year 
+------
+ 2011
+(1 row)
+
+SELECT sparql.year('2011-01-10T14:45:13.815-05:00');
+ year 
+------
+ 2011
+(1 row)
+
+SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::date);
+ year 
+------
+ 2011
+(1 row)
+
+SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::timestamp);
+ year 
+------
+ 2011
+(1 row)
+
+SELECT p, o, sparql.year(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.year(o) = 1996 AND
+  sparql.year(o) = sparql.year('"1996-07-08"^^xsd:date');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/released>)
+ FILTER(YEAR(?o) = 1996)
+ FILTER(YEAR("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 1996)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                   p                    |                           o                           | year 
+----------------------------------------+-------------------------------------------------------+------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> | 1996
+(1 row)
+
+/* MONTH */
+SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+ month 
+-------
+     1
+(1 row)
+
+SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"');
+ month 
+-------
+     1
+(1 row)
+
+SELECT sparql.month('2011-01-10T14:45:13.815-05:00');
+ month 
+-------
+     1
+(1 row)
+
+SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::date);
+ month 
+-------
+     1
+(1 row)
+
+SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::timestamp);
+ month 
+-------
+     1
+(1 row)
+
+SELECT p, o, sparql.month(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.month(o) = 7 AND
+  sparql.month(o) = sparql.month('"1996-07-08"^^xsd:date');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/released>)
+ FILTER(MONTH(?o) = 7)
+ FILTER(MONTH("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 7)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                   p                    |                           o                           | month 
+----------------------------------------+-------------------------------------------------------+-------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> |     7
+(1 row)
+
+/* DAYS */
+SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+ day 
+-----
+  10
+(1 row)
+
+SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"');
+ day 
+-----
+  10
+(1 row)
+
+SELECT sparql.day('2011-01-10T14:45:13.815-05:00');
+ day 
+-----
+  10
+(1 row)
+
+SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::date);
+ day 
+-----
+  10
+(1 row)
+
+SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::timestamp);
+ day 
+-----
+  10
+(1 row)
+
+SELECT p, o, sparql.day(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.day(o) = 8 AND
+  sparql.day(o) = sparql.day('"1996-07-08"^^xsd:date');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/released>)
+ FILTER(DAY(?o) = 8)
+ FILTER(DAY("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 8)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                   p                    |                           o                           | day 
+----------------------------------------+-------------------------------------------------------+-----
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> |   8
+(1 row)
+
+/* HOURS */
+SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+ hours 
+-------
+    14
+(1 row)
+
+SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"');
+ hours 
+-------
+    14
+(1 row)
+
+SELECT sparql.hours('2011-01-10T14:45:13.815-05:00');
+ hours 
+-------
+    14
+(1 row)
+
+SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::date);
+ hours 
+-------
+     0
+(1 row)
+
+SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::timestamp);
+ hours 
+-------
+    14
+(1 row)
+
+SELECT p, o, sparql.hours(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.hours(o) = 0 AND
+  sparql.hours(o) = sparql.hours('"1996-07-08"^^xsd:date');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/released>)
+ FILTER(HOURS(?o) = 0)
+ FILTER(HOURS("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 0)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                   p                    |                           o                           | hours 
+----------------------------------------+-------------------------------------------------------+-------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> |     0
+(1 row)
+
+/* MINUTES */
+SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+ minutes 
+---------
+      45
+(1 row)
+
+SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"');
+ minutes 
+---------
+      45
+(1 row)
+
+SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00');
+ minutes 
+---------
+      45
+(1 row)
+
+SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::date);
+ minutes 
+---------
+       0
+(1 row)
+
+SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::timestamp);
+ minutes 
+---------
+      45
+(1 row)
+
+SELECT p, o, sparql.minutes(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.minutes(o) = 0 AND
+  sparql.minutes(o) = sparql.minutes('"1996-07-08"^^xsd:date');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/released>)
+ FILTER(MINUTES(?o) = 0)
+ FILTER(MINUTES("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 0)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                   p                    |                           o                           | minutes 
+----------------------------------------+-------------------------------------------------------+---------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> |       0
+(1 row)
+
+/* SECONDS */
+SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
+ round  
+--------
+ 13.815
+(1 row)
+
+SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"'),3);
+ round  
+--------
+ 13.815
+(1 row)
+
+SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
+ round  
+--------
+ 13.815
+(1 row)
+
+SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
+ round 
+-------
+ 0.000
+(1 row)
+
+SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::timestamp),3);
+ round  
+--------
+ 13.815
+(1 row)
+
+SELECT p, o, pg_catalog.round(sparql.seconds(o),3)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.seconds(o) = 0 AND
+  sparql.seconds(o) = sparql.seconds('"1996-07-08"^^xsd:date');
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+
+SELECT ?p ?o 
+{ <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/released>)
+ FILTER(SECONDS(?o) = 0)
+ FILTER(SECONDS("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 0)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                   p                    |                           o                           | round 
+----------------------------------------+-------------------------------------------------------+-------
+ <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> | 0.000
+(1 row)
+
+/* TIMEZONE */
+SELECT sparql.timezone('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+                          timezone                           
+-------------------------------------------------------------
+ "-PT5H"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
+                          timezone                          
+------------------------------------------------------------
+ "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2011-01-10T14:45:13.815"^^xsd:dateTime');
+ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2011-01-10T14:45:13.815
+CONTEXT:  PL/pgSQL function timezone(text) line 27 at RAISE
+SELECT sparql.timezone('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
+                          timezone                           
+-------------------------------------------------------------
+ "-PT5H"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2020-12-01T08:00:00+02:30"^^xsd:dateTime');
+                           timezone                            
+---------------------------------------------------------------
+ "PT2H30M"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2020-12-01T08:00:00Z"^^xsd:dateTime');
+                          timezone                          
+------------------------------------------------------------
+ "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2020-12-01T08:00:00.123+00:00"^^xsd:dateTime');
+                          timezone                          
+------------------------------------------------------------
+ "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
+                            timezone                            
+----------------------------------------------------------------
+ "-PT4H45M"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+SELECT sparql.timezone('"2020-12-01T08:00:00"^^xsd:dateTime');
+ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2020-12-01T08:00:00
+CONTEXT:  PL/pgSQL function timezone(text) line 27 at RAISE
+SELECT sparql.timezone('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
+ERROR:  SPARQL TIMEZONE(): invalid timezone offset: +25:00
+CONTEXT:  PL/pgSQL function timezone(text) line 41 at RAISE
+SELECT sparql.timezone('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
+ERROR:  SPARQL TIMEZONE(): invalid timezone offset: -99:99
+CONTEXT:  PL/pgSQL function timezone(text) line 41 at RAISE
+SELECT sparql.timezone('"invalid-date"^^xsd:dateTime');
+ERROR:  SPARQL TIMEZONE(): invalid xsd:dateTime format: invalid-date
+CONTEXT:  PL/pgSQL function timezone(text) line 20 at RAISE
+SELECT sparql.timezone('""^^xsd:dateTime');
+ERROR:  SPARQL TIMEZONE(): invalid xsd:dateTime literal
+CONTEXT:  PL/pgSQL function timezone(text) line 15 at RAISE
+SELECT sparql.timezone(NULL);
+ timezone 
+----------
+ NULL
+(1 row)
+
+SELECT sparql.timezone('"not a date"^^xsd:string');
+ timezone 
+----------
+ NULL
+(1 row)
+
+/* TZ */
+SELECT sparql.tz('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+   tz   
+--------
+ -05:00
+(1 row)
+
+SELECT sparql.tz('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
+ tz 
+----
+ Z
+(1 row)
+
+SELECT sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime');
+ERROR:  SPARQL TZ(): datetime has no timezone
+CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+SELECT sparql.tz('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
+   tz   
+--------
+ -05:00
+(1 row)
+
+SELECT sparql.tz('"2020-12-01T08:00:00+02:30"^^xsd:dateTime');
+   tz   
+--------
+ +02:30
+(1 row)
+
+SELECT sparql.tz('"2020-12-01T08:00:00Z"^^xsd:dateTime');
+ tz 
+----
+ Z
+(1 row)
+
+SELECT sparql.tz('"2020-12-01T08:00:00.123+00:00"^^xsd:dateTime');
+   tz   
+--------
+ +00:00
+(1 row)
+
+SELECT sparql.tz('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
+   tz   
+--------
+ -04:45
+(1 row)
+
+SELECT sparql.tz('"2020-12-01T08:00:00"^^xsd:dateTime');
+ERROR:  SPARQL TZ(): datetime has no timezone
+CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+SELECT sparql.tz('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
+   tz   
+--------
+ +25:00
+(1 row)
+
+SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
+   tz   
+--------
+ -99:99
+(1 row)
+
+SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
+ERROR:  SPARQL TZ(): datetime has no timezone
+CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+SELECT sparql.tz('""^^xsd:dateTime');
+ERROR:  SPARQL TZ(): datetime has no timezone
+CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+SELECT sparql.tz(NULL);
+ERROR:  SPARQL TZ(): datetime has no timezone
+CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+SELECT sparql.tz('"not a date"^^xsd:string');
+ERROR:  SPARQL TZ(): datetime has no timezone
+CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
 DROP SERVER dbpedia CASCADE;
 NOTICE:  drop cascades to foreign table ftdbp

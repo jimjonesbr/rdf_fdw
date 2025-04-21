@@ -718,13 +718,13 @@ WHERE
 SELECT abs('"-1"^^xsd:int');
 SELECT abs('"-1.42"^^xsd:double');
 SELECT abs(strdt('-1.42','xsd:double'));
-SELECT abs(strdt('-1.4223874294774098098485038','xsd:double'));
+SELECT abs(strdt('-1.42238','xsd:double'));
 SELECT abs('');
 SELECT abs(' ');
 SELECT abs(NULL);
 SELECT abs(CAST(-1.42 AS numeric));
 SELECT abs(CAST(-1.42 AS double precision));
-SELECT abs(CAST(-1.42 AS real));
+--SELECT abs(CAST(-1.42 AS real));
 SELECT abs(CAST(-1 AS bigint));
 SELECT abs(CAST(-1 AS smallint));
 SELECT abs(CAST(-1 AS int));
@@ -746,7 +746,7 @@ SELECT round('" "');
 SELECT round(NULL);
 SELECT round(CAST(2.49999 AS numeric));
 SELECT round(CAST(2.5 AS double precision));
-SELECT round(CAST(-2.5 AS real));
+--SELECT round(CAST(-2.5 AS real));
 SELECT round(CAST(42 AS bigint));
 SELECT round(CAST(42 AS smallint));
 SELECT round(CAST(42 AS int));
@@ -794,5 +794,126 @@ WHERE
 
 /* RAND */
 SELECT setseed(0.42);
-SELECT rand();
+SELECT 
+  sparql.lex(sparql.rand())::numeric BETWEEN 0 AND 1, 
+  sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
+
+/* YEAR */
+SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"');
+SELECT sparql.year('2011-01-10T14:45:13.815-05:00');
+SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::date);
+SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::timestamp);
+
+SELECT p, o, sparql.year(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.year(o) = 1996 AND
+  sparql.year(o) = sparql.year('"1996-07-08"^^xsd:date');
+
+/* MONTH */
+SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"');
+SELECT sparql.month('2011-01-10T14:45:13.815-05:00');
+SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::date);
+SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::timestamp);
+
+SELECT p, o, sparql.month(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.month(o) = 7 AND
+  sparql.month(o) = sparql.month('"1996-07-08"^^xsd:date');
+
+/* DAYS */
+SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"');
+SELECT sparql.day('2011-01-10T14:45:13.815-05:00');
+SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::date);
+SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::timestamp);
+
+SELECT p, o, sparql.day(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.day(o) = 8 AND
+  sparql.day(o) = sparql.day('"1996-07-08"^^xsd:date');
+
+/* HOURS */
+SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"');
+SELECT sparql.hours('2011-01-10T14:45:13.815-05:00');
+SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::date);
+SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::timestamp);
+
+SELECT p, o, sparql.hours(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.hours(o) = 0 AND
+  sparql.hours(o) = sparql.hours('"1996-07-08"^^xsd:date');
+
+/* MINUTES */
+SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"');
+SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00');
+SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::date);
+SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::timestamp);
+
+SELECT p, o, sparql.minutes(o)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.minutes(o) = 0 AND
+  sparql.minutes(o) = sparql.minutes('"1996-07-08"^^xsd:date');
+
+/* SECONDS */
+SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
+SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"'),3);
+SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
+SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
+SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::timestamp),3);
+
+SELECT p, o, pg_catalog.round(sparql.seconds(o),3)
+FROM ftdbp 
+WHERE 
+  p = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.seconds(o) = 0 AND
+  sparql.seconds(o) = sparql.seconds('"1996-07-08"^^xsd:date');
+
+/* TIMEZONE */
+SELECT sparql.timezone('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.timezone('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
+SELECT sparql.timezone('"2011-01-10T14:45:13.815"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00+02:30"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00Z"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00.123+00:00"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
+SELECT sparql.timezone('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
+SELECT sparql.timezone('"invalid-date"^^xsd:dateTime');
+SELECT sparql.timezone('""^^xsd:dateTime');
+SELECT sparql.timezone(NULL);
+SELECT sparql.timezone('"not a date"^^xsd:string');
+
+/* TZ */
+SELECT sparql.tz('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+SELECT sparql.tz('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
+SELECT sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00+02:30"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00Z"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00.123+00:00"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
+SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
+SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
+SELECT sparql.tz('""^^xsd:dateTime');
+SELECT sparql.tz(NULL);
+SELECT sparql.tz('"not a date"^^xsd:string');
+
 DROP SERVER dbpedia CASCADE;

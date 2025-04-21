@@ -854,10 +854,10 @@ INFO:  SPARQL returned 10000 records.
            name           | birthdate  |                     party                     |      country       
 --------------------------+------------+-----------------------------------------------+--------------------
  Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
- Emily Benn               | 10-04-1989 | Labour Party                                  | the United Kingdom
  Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
  Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
+ Anthony Gonzalez         | 09-18-1984 | National Republican Party                     | United States
+ Anthony Gonzalez         | 09-18-1984 | Republikanische Partei                        | United States
 (5 rows)
 
 /*
@@ -891,13 +891,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-        name        | birthdate  |         party          |  country  
---------------------+------------+------------------------+-----------
- Sarah Hanson-Young | 12-23-1981 | Australian Greens      | Australia
- Andrew Cripps      | 02-05-1981 | Liberal National Party | Australia
- Clare O'Neil       | 09-12-1980 | Australian Labor Party | Australia
- Roslyn Dundas      | 07-28-1978 | Australian Democrats   | Australia
- Amanda Rishworth   | 07-10-1978 | Australian Labor Party | Australia
+       name       | birthdate  |           party            |  country  
+------------------+------------+----------------------------+-----------
+ Clare O'Neil     | 09-12-1980 | Australian Labor Party     | Australia
+ Roslyn Dundas    | 07-28-1978 | Australian Democrats       | Australia
+ Amanda Rishworth | 07-10-1978 | Australian Labor Party     | Australia
+ Kate Ellis       | 09-22-1977 | Australian Labor Party     | Australia
+ Alex Hawke       | 07-09-1977 | Liberal Party of Australia | Australia
 (5 rows)
 
 /* 
@@ -975,9 +975,9 @@ INFO:  SPARQL returned 10000 records.
 --------------------------+------------+-----------------------------------------------+-----------------
  Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
  Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
- Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
- Jason Abalos             | 01-14-1985 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Vandolph Quizon          | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
+ Vandolph Quizon          | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Ilya Valeryevich Yashin  | 06-29-1983 | Jabloko                                       | Russia
 (5 rows)
 
 /*
@@ -2100,7 +2100,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
       } 
 
 
-INFO:  SPARQL returned 1118 records.
+INFO:  SPARQL returned 3 records.
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
  name | released | runtime 

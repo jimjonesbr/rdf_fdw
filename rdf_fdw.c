@@ -194,8 +194,7 @@
 #define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID \
 			|| (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID \
 			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
-			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID \
-			|| (x) == RDFIRIOID)
+			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID)
 
 /* list API has changed in v13 */
 #if PG_VERSION_NUM < 130000
@@ -386,7 +385,7 @@ typedef struct {
     char data[FLEXIBLE_ARRAY_MEMBER];
 } RDFIRIDatum;
 
-static Oid RDFIRIOID = InvalidOid;
+//static Oid RDFIRIOID = InvalidOid;
 
 extern Datum rdf_fdw_handler(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
@@ -520,7 +519,6 @@ static bool LiteralsCompatible(char *literal1, char *literal2);
 static char *ExpandDatatypePrefix(char *str);
 static bool IsRDFStringLiteral(char *str_datatype);
 static char *MapSPARQLDatatype(Oid pgtype);
-static Oid get_rdfiri_oid(void);
 static char *strdt(char *literal, char *datatype);
 static char *lang(char *input);
 static char *datatype(char *input);
@@ -5095,7 +5093,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 	elog(DEBUG1,"%s called",__func__);
 
-	RDFIRIOID = get_rdfiri_oid();
+	//TODO: create function to retrieve the OID of custom data types for 9.6+
+	//RDFIRIOID = get_rdfiri_oid();
 
 	/*
 	 * Setting session's default values.
@@ -7075,6 +7074,22 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "REPLACE(%s)", NameStr(args));
 			else if(strcmp(opername, "regex") == 0)
 				appendStringInfo(&result, "REGEX(%s)", NameStr(args));
+			else if(strcmp(opername, "year") == 0)
+				appendStringInfo(&result, "YEAR(%s)", NameStr(args));
+			else if(strcmp(opername, "month") == 0)
+				appendStringInfo(&result, "MONTH(%s)", NameStr(args));
+			else if(strcmp(opername, "day") == 0)
+				appendStringInfo(&result, "DAY(%s)", NameStr(args));
+			else if(strcmp(opername, "hours") == 0)
+				appendStringInfo(&result, "HOURS(%s)", NameStr(args));
+			else if(strcmp(opername, "minutes") == 0)
+				appendStringInfo(&result, "MINUTES(%s)", NameStr(args));
+			else if(strcmp(opername, "seconds") == 0)
+				appendStringInfo(&result, "SECONDS(%s)", NameStr(args));
+			else if(strcmp(opername, "timezone") == 0)
+				appendStringInfo(&result, "TIMEZONE(%s)", NameStr(args));
+			else if(strcmp(opername, "tz") == 0)
+				appendStringInfo(&result, "TZ(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
 			else if(strcmp(opername, "extract") == 0)
@@ -7084,7 +7099,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			
 			pfree(args.data);
 		}
-		/* In PostgreSQL 11 EXTRACT is internally called as DATE_PART */
+		/* in PostgreSQL 11 EXTRACT is internally called as DATE_PART */
 		else if(strcmp(opername, "date_part") == 0)
 		{
 			Expr *field = linitial(func->args);
@@ -7688,43 +7703,50 @@ static bool IsStringDataType(Oid type)
  */
 static bool IsFunctionPushable(char *funcname)
 {
-	return 
-		strcmp(funcname, "abs") == 0 ||
-		strcmp(funcname, "ceil") == 0 ||
-		strcmp(funcname, "floor") == 0 ||
-		strcmp(funcname, "round") == 0 ||
-		strcmp(funcname, "upper") == 0 ||
-		strcmp(funcname, "lower") == 0 ||
-		strcmp(funcname, "length") == 0 ||
-		strcmp(funcname, "md5") == 0 ||
-		strcmp(funcname, "starts_with") == 0 ||
-		strcmp(funcname, "strstarts") == 0 ||
-		strcmp(funcname, "strends") == 0 ||
-		strcmp(funcname, "strbefore") == 0 ||
-		strcmp(funcname, "strafter") == 0 ||
-		strcmp(funcname, "strlang") == 0 ||
-		strcmp(funcname, "langmatches") == 0 ||
-		strcmp(funcname, "strdt") == 0 ||
-		strcmp(funcname, "str") == 0 ||
-		strcmp(funcname, "iri") == 0 ||
-		strcmp(funcname, "isiri") == 0 ||
-		strcmp(funcname, "lang") == 0 ||
-		strcmp(funcname, "datatype") == 0 ||
-		strcmp(funcname, "contains") == 0 ||
-		strcmp(funcname, "extract") == 0 ||
-		strcmp(funcname, "encode_for_uri") == 0 ||
-		strcmp(funcname, "isblank") == 0 ||
-		strcmp(funcname, "isnumeric") == 0 ||
-		strcmp(funcname, "isliteral") == 0 ||
-		strcmp(funcname, "bnode") == 0 ||
-		strcmp(funcname, "lcase") == 0 ||
-		strcmp(funcname, "ucase") == 0 ||
-		strcmp(funcname, "strlen") == 0 ||
-		strcmp(funcname, "substr") == 0 ||
-		strcmp(funcname, "concat") == 0 ||
-		strcmp(funcname, "replace") == 0 ||
-		strcmp(funcname, "regex") == 0 ||
-		strcmp(funcname, "substring") == 0;
+	return strcmp(funcname, "abs") == 0 ||
+		   strcmp(funcname, "ceil") == 0 ||
+		   strcmp(funcname, "floor") == 0 ||
+		   strcmp(funcname, "round") == 0 ||
+		   strcmp(funcname, "upper") == 0 ||
+		   strcmp(funcname, "lower") == 0 ||
+		   strcmp(funcname, "length") == 0 ||
+		   strcmp(funcname, "md5") == 0 ||
+		   strcmp(funcname, "starts_with") == 0 ||
+		   strcmp(funcname, "strstarts") == 0 ||
+		   strcmp(funcname, "strends") == 0 ||
+		   strcmp(funcname, "strbefore") == 0 ||
+		   strcmp(funcname, "strafter") == 0 ||
+		   strcmp(funcname, "strlang") == 0 ||
+		   strcmp(funcname, "langmatches") == 0 ||
+		   strcmp(funcname, "strdt") == 0 ||
+		   strcmp(funcname, "str") == 0 ||
+		   strcmp(funcname, "iri") == 0 ||
+		   strcmp(funcname, "isiri") == 0 ||
+		   strcmp(funcname, "lang") == 0 ||
+		   strcmp(funcname, "datatype") == 0 ||
+		   strcmp(funcname, "contains") == 0 ||
+		   strcmp(funcname, "extract") == 0 ||
+		   strcmp(funcname, "encode_for_uri") == 0 ||
+		   strcmp(funcname, "isblank") == 0 ||
+		   strcmp(funcname, "isnumeric") == 0 ||
+		   strcmp(funcname, "isliteral") == 0 ||
+		   strcmp(funcname, "bnode") == 0 ||
+		   strcmp(funcname, "lcase") == 0 ||
+		   strcmp(funcname, "ucase") == 0 ||
+		   strcmp(funcname, "strlen") == 0 ||
+		   strcmp(funcname, "substr") == 0 ||
+		   strcmp(funcname, "concat") == 0 ||
+		   strcmp(funcname, "replace") == 0 ||
+		   strcmp(funcname, "regex") == 0 ||
+		   strcmp(funcname, "year") == 0 ||
+		   strcmp(funcname, "month") == 0 ||
+		   strcmp(funcname, "day") == 0 ||
+		   strcmp(funcname, "hours") == 0 ||
+		   strcmp(funcname, "minutes") == 0 ||
+		   strcmp(funcname, "seconds") == 0 ||
+		   strcmp(funcname, "timezone") == 0 ||
+		   strcmp(funcname, "tz") == 0 ||
+		   strcmp(funcname, "substring") == 0;
 }
 
 /*
@@ -7761,18 +7783,18 @@ static char *FormatSQLExtractField(char *field)
 	return res;
 }
 
-
+/*
 static Oid get_rdfiri_oid(void)
 {
     Oid rdfiri_oid = InvalidOid;
     HeapTuple tuple;
 
-	elog(DEBUG1,"%s called", __func__);
+    elog(DEBUG1, "%s called", __func__);
 
     tuple = SearchSysCache1(TYPENAMENSP, CStringGetDatum("rdfiri"));
     if (HeapTupleIsValid(tuple))
     {
-        rdfiri_oid = ((Form_pg_type)GETSTRUCT(tuple))->oid;
+        rdfiri_oid = HeapTupleGetOid(tuple);
         ReleaseSysCache(tuple);
     }
     else
@@ -7782,3 +7804,4 @@ static Oid get_rdfiri_oid(void)
 
     return rdfiri_oid;
 }
+	*/
