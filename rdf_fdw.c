@@ -87,6 +87,7 @@
 #endif
 #include <funcapi.h>
 #include <librdf.h>
+#include <common/md5.h>
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
@@ -423,6 +424,7 @@ extern Datum rdf_fdw_strlen(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_substr(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_concat(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lex(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_md5(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -460,6 +462,7 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strlen);
 PG_FUNCTION_INFO_V1(rdf_fdw_substr);
 PG_FUNCTION_INFO_V1(rdf_fdw_concat);
 PG_FUNCTION_INFO_V1(rdf_fdw_lex);
+PG_FUNCTION_INFO_V1(rdf_fdw_md5);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -2964,6 +2967,30 @@ Datum rdf_fdw_lex(PG_FUNCTION_ARGS)
 	char *result = ExtractRDFLexicalValue(literal);
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
+}
+
+/* MD5 produces a 16 byte (128 bit) hash; double it for hex */
+#define MD5_HASH_LEN 32
+Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
+{
+	text *in_text = PG_GETARG_TEXT_PP(0);
+	size_t len;
+	char hexsum[MD5_HASH_LEN + 1];
+	const char *errstr = NULL;
+	char *cstr = ExtractRDFLexicalValue(text_to_cstring(in_text));
+
+	elog(DEBUG1, "%s: called str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
+	/* Calculate the length of the buffer using varlena metadata */
+
+	len = strlen(cstr);
+
+	if (pg_md5_hash(cstr, len, hexsum, &errstr) == false)
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("could not compute %s hash: %s", "MD5",
+						errstr)));
+
+	PG_RETURN_TEXT_P(cstring_to_text(str(hexsum)));
 }
 
 /*

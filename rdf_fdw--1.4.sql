@@ -108,7 +108,6 @@ CREATE OPERATOR = (
 
 CREATE SCHEMA sparql;
 
-
 CREATE FUNCTION sparql.lex(text)
 RETURNS text
 AS 'MODULE_PATHNAME', 'rdf_fdw_lex'
@@ -619,3 +618,8 @@ BEGIN
   RETURN tz_offset;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+/* SPARQL 17.4.6 Hash Functions */
+CREATE FUNCTION sparql.md5(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_md5'
+LANGUAGE C IMMUTABLE STRICT;

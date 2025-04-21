@@ -916,4 +916,27 @@ SELECT sparql.tz('""^^xsd:dateTime');
 SELECT sparql.tz(NULL);
 SELECT sparql.tz('"not a date"^^xsd:string');
 
+/* MD5 */
+SELECT sparql.md5('abc');
+SELECT sparql.md5('"abc"');
+SELECT sparql.md5('"abc"^^xsd:string');
+SELECT sparql.md5('"abc"^^xsd:string') = md5('abc');
+SELECT sparql.md5('"abc"@en') = sparql.md5('"abc"');
+SELECT sparql.md5('"abc"^^xsd:normalizedString');
+SELECT sparql.md5('"abc"^^xsd:anyURI');
+SELECT sparql.md5('123');  -- xsd:integer
+SELECT sparql.md5('"2020-01-01T00:00:00Z"^^xsd:dateTime');
+SELECT sparql.md5('"not_a_uri"^^xsd:anyURI');
+SELECT sparql.md5('""');
+SELECT sparql.md5(NULL);
+SELECT sparql.md5('"Münster"');
+SELECT sparql.md5(repeat('a', 10000));
+
+SELECT p, o, sparql.md5(o)
+FROM ftdbp
+WHERE 
+  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  langmatches(lang(o),'pt') AND
+  sparql.md5(o) = sparql.md5('"PostgreSQL"@pt');
+
 DROP SERVER dbpedia CASCADE;
