@@ -85,9 +85,13 @@
 #include "optimizer/optimizer.h"
 #include "access/heapam.h"
 #endif
-#include <funcapi.h>
-#include <librdf.h>
-#include <common/md5.h>
+#include "funcapi.h"
+#include "librdf.h"
+#if PG_VERSION_NUM >= 100000
+#include "common/md5.h"
+#else
+#include "libpq/md5.h"
+#endif
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
@@ -425,6 +429,9 @@ extern Datum rdf_fdw_substr(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_concat(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lex(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_md5(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_bound(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -463,6 +470,9 @@ PG_FUNCTION_INFO_V1(rdf_fdw_substr);
 PG_FUNCTION_INFO_V1(rdf_fdw_concat);
 PG_FUNCTION_INFO_V1(rdf_fdw_lex);
 PG_FUNCTION_INFO_V1(rdf_fdw_md5);
+PG_FUNCTION_INFO_V1(rdf_fdw_bound);
+PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
+PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -2969,28 +2979,101 @@ Datum rdf_fdw_lex(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
-/* MD5 produces a 16 byte (128 bit) hash; double it for hex */
+/* MD5 produces a 16 byte (128 bit) hash */
 #define MD5_HASH_LEN 32
 Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
 {
 	text *in_text = PG_GETARG_TEXT_PP(0);
-	size_t len;
 	char hexsum[MD5_HASH_LEN + 1];
-	const char *errstr = NULL;
 	char *cstr = ExtractRDFLexicalValue(text_to_cstring(in_text));
+	size_t len = strlen(cstr);
+#if PG_VERSION_NUM >= 150000
+	const char *errstr = NULL;
 
 	elog(DEBUG1, "%s: called str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
-	/* Calculate the length of the buffer using varlena metadata */
-
-	len = strlen(cstr);
 
 	if (pg_md5_hash(cstr, len, hexsum, &errstr) == false)
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("could not compute %s hash: %s", "MD5",
-						errstr)));
+				 errmsg("could not compute md5 hash: %s", errstr)));
+#else
+	elog(DEBUG1, "%s: called str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
+	if (pg_md5_hash(cstr, len, hexsum) == false)
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("could not compute md5 hash")));
+#endif
 
 	PG_RETURN_TEXT_P(cstring_to_text(str(hexsum)));
+}
+
+Datum rdf_fdw_bound(PG_FUNCTION_ARGS)
+{
+	if (PG_ARGISNULL(0))
+		PG_RETURN_BOOL(false);
+	else
+		PG_RETURN_BOOL(true);
+}
+
+Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS)
+{
+	text *a = PG_GETARG_TEXT_PP(0);
+	text *b = PG_GETARG_TEXT_PP(1);
+	char *a_str = text_to_cstring(a);
+	char *b_str = text_to_cstring(b);
+	bool result;
+
+	elog(DEBUG1, "sameterm: a='%s' b='%s'", a_str, b_str);
+
+	result = strcmp(a_str, b_str) == 0;
+
+	PG_RETURN_BOOL(result);
+}
+
+Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
+{
+	ArrayType *arr = PG_GETARG_ARRAYTYPE_P(0);
+	Oid element_type = ARR_ELEMTYPE(arr);
+	int nelems;
+	Datum *elems;
+	bool *nulls;
+
+	/* deconstruct the array into individual elements */
+	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);
+
+	/* loop over each element to find the first non-null one */
+	for (int i = 0; i < nelems; i++)
+	{
+		if (!nulls[i])
+		{
+			/* convert the Datum to a cstring (assuming text) */
+			char *el = DatumToString(elems[i], TEXTOID);
+			char *rdf_literal;
+			text *result;
+			Datum res;
+
+			if (isIRI(el) || isBlank(el))
+				rdf_literal = el;
+			else if (isLiteral(el))
+			{
+				char *dt = datatype(el);
+
+				if (strlen(dt) != 0)
+					rdf_literal = strdt(el, dt);
+				else
+					rdf_literal = el;
+			}
+			else
+				rdf_literal = CstringToRDFLiteral(el);
+
+			result = cstring_to_text(rdf_literal);
+			res = PointerGetDatum(result);
+
+			PG_RETURN_DATUM(res);
+		}
+	}
+
+	PG_RETURN_NULL();
 }
 
 /*
@@ -6978,15 +7061,15 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					return NULL;
 				}
 
-				if(!initarg)
+				if (!initarg)
 				{
-					/* 
+					/*
 					 * We discard any further parameters of ROUND, as its equivalent
 					 * in SPARQL expects a single parameter.
 					 */
-					if(strcmp(opername, "round") == 0)
+					if (strcmp(opername, "round") == 0)
 						break;
-					else if(strcmp(opername, "extract") != 0)
+					else if (strcmp(opername, "extract") != 0)
 						appendStringInfo(&args, "%s", ", ");
 				}
 
@@ -7022,6 +7105,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						}
 						else if(IsStringDataType(ct->consttype) && strcmp(opername,"strdt") == 0)
 							appendStringInfo(&args, "%s", ExpandDatatypePrefix(arg));
+						else if(IsStringDataType(ct->consttype) && isIRI(arg))
+							appendStringInfo(&args, "%s", arg);
 						else if(IsStringDataType(ct->consttype))
 							appendStringInfo(&args, "%s", CstringToRDFLiteral(arg));
 						else
@@ -7029,9 +7114,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					}
 					else
 						appendStringInfo(&args, "%s", arg);
-
 				}
-				
+
 				initarg = false;
 			}
 
@@ -7119,6 +7203,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "TZ(%s)", NameStr(args));
 			else if(strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
+			else if(strcmp(opername, "bound") == 0)
+				appendStringInfo(&result, "BOUND(%s)", NameStr(args));
+			else if(strcmp(opername, "sameterm") == 0)
+				appendStringInfo(&result, "SAMETERM(%s)", NameStr(args));
+			else if(strcmp(opername, "coalesce") == 0)
+				appendStringInfo(&result, "COALESCE(%s)", NameStr(args));				
 			else if(strcmp(opername, "extract") == 0)
 				appendStringInfo(&result, "%s(%s)", extract_type, NameStr(args));
 			else
@@ -7149,12 +7239,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			if(date_part_type)
 			{
 				char * val;
-				
+
 				elog(DEBUG1, "  %s (T_FuncExpr): deparsing VALUE for '%s'", __func__, opername);
 				val = DeparseExpr(state, foreignrel, lsecond(func->args));
-
 				col = GetRDFColumn(state, val);
-
 
 				initStringInfo(&result);
 
@@ -7192,6 +7280,52 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		pfree(opername);
+		break;
+	case T_ArrayExpr:
+		/* this is exclusively for SPARQL COALESCE */
+		array = (ArrayExpr *)expr;
+		elog(DEBUG2, "  %s (T_ArrayExpr): function called", __func__);
+		initStringInfo(&result);
+
+		/* loop the array arguments */
+		first_arg = true;
+		foreach (cell, array->elements)
+		{
+			Expr *element_expr = (Expr *)lfirst(cell);
+			char *element = DeparseExpr(state, foreignrel, element_expr);
+
+			/* if any element cannot be converted, give up */
+			if (element == NULL)
+				return NULL;
+
+			col = GetRDFColumn(state, element);
+
+			if (col)
+				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", col->sparqlvar);
+			else if (nodeTag(element_expr) == T_Const && isLiteral(element))
+			{
+				/* 
+				 * this seems unnecessary, but it is important to expand
+				 * possible prefixed XSD predicates into their full URI.
+				 */
+				char *dt = datatype(element);
+
+				if (strlen(dt) != 0)
+					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", strdt(element, dt));
+				else
+					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", element);
+			}
+			else if (nodeTag(element_expr) == T_Const)
+				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", str(element));
+			else
+				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", element);
+
+			first_arg = false;
+		}
+
+		if (first_arg)
+			return NULL;
+
 		break;
 	default:
 		elog(DEBUG1, "  %s: expression not supported > %u", __func__, expr->type);
@@ -7773,6 +7907,9 @@ static bool IsFunctionPushable(char *funcname)
 		   strcmp(funcname, "seconds") == 0 ||
 		   strcmp(funcname, "timezone") == 0 ||
 		   strcmp(funcname, "tz") == 0 ||
+		   strcmp(funcname, "bound") == 0 ||
+		   strcmp(funcname, "sameterm") == 0 ||
+		   strcmp(funcname, "coalesce") == 0 ||
 		   strcmp(funcname, "substring") == 0;
 }
 

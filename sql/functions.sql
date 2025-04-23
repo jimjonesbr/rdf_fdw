@@ -916,6 +916,73 @@ SELECT sparql.tz('""^^xsd:dateTime');
 SELECT sparql.tz(NULL);
 SELECT sparql.tz('"not a date"^^xsd:string');
 
+/*BOUND */
+SELECT sparql.bound(NULL);
+SELECT sparql.bound('abc');
+
+CREATE FOREIGN TABLE ft (
+  s text    OPTIONS (variable '?s', literal_format 'raw'),
+  p text    OPTIONS (variable '?p', literal_format 'raw'),
+  o text    OPTIONS (variable '?o', literal_format 'raw'),
+  x text    OPTIONS (variable '?x', literal_format 'raw')
+)
+SERVER dbpedia OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE { ?s ?p ?o OPTIONAL { ?s <http://foo.bar> ?x } }');
+
+SELECT s, p, o, x, sparql.bound(x)
+FROM ft
+WHERE 
+  s = sparql.iri('http://dbpedia.org/resource/PostgreSQL') AND
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'en') AND
+  NOT sparql.bound(x) AND
+  sparql.bound(s);
+
+/* SAMETERM */
+
+SELECT sparql.sameterm('"abc"', '"abc"');
+SELECT sparql.sameterm('"abc"@en', '"abc"@en');
+SELECT sparql.sameterm('"abc"@en', '"abc"');
+SELECT sparql.sameterm('"abc"^^xsd:string', '"abc"');
+SELECT sparql.sameterm(NULL, '"abc"');
+SELECT sparql.sameterm(NULL, NULL);
+
+SELECT p, o, sparql.sameterm(o,'"PostgreSQL"@pt')
+FROM ftdbp
+WHERE 
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'pt') AND
+  sparql.sameterm(o,'"PostgreSQL"@pt');
+
+SELECT p, o, sparql.sameterm(o,'"PostgreSQL"@pt')
+FROM ftdbp
+WHERE 
+  sparql.sameterm(p, '<http://www.w3.org/2000/01/rdf-schema#label>');
+
+/* COALESCE */
+SELECT sparql.coalesce(NULL, NULL, 'foo');
+SELECT sparql.coalesce(NULL, NULL, '"foo"');
+SELECT sparql.coalesce(NULL, NULL, '"foo"^^xsd:string');
+SELECT sparql.coalesce(NULL, NULL, '"foo"@fr');
+SELECT sparql.coalesce(NULL, NULL, '<http://example/>');
+SELECT sparql.coalesce(NULL, NULL, sparql.iri('"http://example/"'));
+SELECT sparql.coalesce(NULL, NULL, sparql.bnode('foo'));
+
+SELECT s, p, o, x,sparql.coalesce(x, o)
+FROM ft
+WHERE 
+  s = sparql.iri('http://dbpedia.org/resource/PostgreSQL') AND
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'en') AND
+  sparql.coalesce(x, o) = sparql.strlang('PostgreSQL','en') AND
+  sparql.coalesce(x, x, x, o) = sparql.strlang('PostgreSQL','en') AND
+  sparql.coalesce(x, p) = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.coalesce(x, x, p) = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.coalesce(x, '"PostgreSQL"') = sparql.str('PostgreSQL') AND
+  sparql.coalesce(x, sparql.str(o)) = sparql.str('PostgreSQL') AND
+  sparql.coalesce(x, sparql.strdt(o,'xsd:string')) = sparql.strdt('PostgreSQL','xsd:string');
+
 /* MD5 */
 SELECT sparql.md5('abc');
 SELECT sparql.md5('"abc"');

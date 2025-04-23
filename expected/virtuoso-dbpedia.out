@@ -851,13 +851,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-           name           | birthdate  |                     party                     |      country       
---------------------------+------------+-----------------------------------------------+--------------------
- Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
- Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
- Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Anthony Gonzalez         | 09-18-1984 | National Republican Party                     | United States
- Anthony Gonzalez         | 09-18-1984 | Republikanische Partei                        | United States
+      name       | birthdate  |                   party                   |      country      
+-----------------+------------+-------------------------------------------+-------------------
+ Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
+ Bob Drewel      | 12-13-2013 | Demokratische Partei (Vereinigte Staaten) | the United States
+ Nicholas Smith  | 03-14-2012 | Demokratische Partei (Vereinigte Staaten) | the United States
+ Sharon Dowey    | 11-20-2010 | Scottish Conservative Party               | Scotland
+ Tony Labranche  | 11-11-2001 | Demokratische Partei (Vereinigte Staaten) | the United States
 (5 rows)
 
 /*
@@ -891,14 +891,9 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-       name       | birthdate  |           party            |  country  
-------------------+------------+----------------------------+-----------
- Clare O'Neil     | 09-12-1980 | Australian Labor Party     | Australia
- Roslyn Dundas    | 07-28-1978 | Australian Democrats       | Australia
- Amanda Rishworth | 07-10-1978 | Australian Labor Party     | Australia
- Kate Ellis       | 09-22-1977 | Australian Labor Party     | Australia
- Alex Hawke       | 07-09-1977 | Liberal Party of Australia | Australia
-(5 rows)
+ name | birthdate | party | country 
+------+-----------+-------+---------
+(0 rows)
 
 /* 
  * "~~ ANY(ARRAY[])" is not going to be pushed down! 
@@ -931,13 +926,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-          name           | birthdate  |           party           | country 
--------------------------+------------+---------------------------+---------
- Krzysztof Bosak         | 06-13-1982 | Liga Polskich Rodzin      | Poland
- Krzysztof Bosak         | 06-13-1982 | Ruch Narodowy             | Poland
- Paweł Bartosz Olszewski | 12-11-1979 | Platforma Obywatelska     | Poland
- Piotr Ślusarczyk        | 08-24-1979 | Liga Polskich Rodzin      | Poland
- Lucjan Karasiewicz      | 07-10-1979 | Polska Jest Najważniejsza | Poland
+            name            | birthdate  |            party             | country 
+----------------------------+------------+------------------------------+---------
+ Krzysztof Gawkowski        | 04-11-1980 | Sojusz Lewicy Demokratycznej | Poland
+ Dariusz Joński             | 01-12-1979 | Sojusz Lewicy Demokratycznej | Poland
+ Robert Biedroń             | 04-13-1976 | Sojusz Lewicy Demokratycznej | Poland
+ Krzysztof Matyjaszczyk     | 05-27-1974 | Sojusz Lewicy Demokratycznej | Poland
+ Wojciech Michał Olejniczak | 04-10-1974 | Sojusz Lewicy Demokratycznej | Poland
 (5 rows)
 
 /* 
@@ -971,13 +966,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-           name           | birthdate  |                     party                     |     country     
---------------------------+------------+-----------------------------------------------+-----------------
- Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
- Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Vandolph Quizon          | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
- Vandolph Quizon          | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Ilya Valeryevich Yashin  | 06-29-1983 | Jabloko                                       | Russia
+       name       | birthdate  |                   party                   |  country  
+------------------+------------+-------------------------------------------+-----------
+ Miran Charuka    | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
+ Sam Oosterhoff   | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
+ Fernando Holiday | 09-22-1996 | Democratas                                | Brazil
+ Luísa Canziani   | 04-11-1996 | Partido Trabalhista Brasileiro            | Brazil
+ Kim Kataguiri    | 01-28-1996 | Democratas                                | Brazil
 (5 rows)
 
 /*
@@ -2100,7 +2095,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
       } 
 
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 4 records.
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
  name | released | runtime 

@@ -124,6 +124,20 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
 LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.uri(text) IS 'Converts the input text to a URI (alias for iri).';
 
+/* SPARQL 17.4.1 Functional Forms*/
+CREATE FUNCTION sparql.bound(text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_bound'
+LANGUAGE C IMMUTABLE;
+COMMENT ON FUNCTION sparql.bound(text) IS 'Returns true if the argument is bound (non-NULL). Returns false otherwise. This function is used to test whether a SPARQL variable has a value in the current solution.';
+
+CREATE FUNCTION sparql.sameterm(text, text) RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_fdw_sameterm'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION sparql.coalesce(VARIADIC text[]) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_coalesce'
+LANGUAGE C STABLE;
+
 /* SPARQL 17.4.2 Functions on RDF Terms */
 CREATE FUNCTION sparql.isIRI(text) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
