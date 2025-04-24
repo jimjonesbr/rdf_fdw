@@ -1,5 +1,5 @@
 \pset null NULL
-SET search_path TO sparql, pg_catalog;
+--SET search_path TO sparql, pg_catalog;
 CREATE SERVER dbpedia 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
@@ -10,200 +10,200 @@ CREATE FOREIGN TABLE ftdbp (
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
   sparql 'SELECT * WHERE { <http://dbpedia.org/resource/PostgreSQL> ?p ?o }');
-SELECT rdf_fdw_arguments_compatible('"abc"','"b"');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"','"b"^^<xsd:string>');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"^^<xsd:string>');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"^^<xsd:string>');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"^^<xsd:string>');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"@en','"b"');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en','"b"');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"@en','"b"^^xsd:string');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en','"b"^^xsd:string');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"@en','"b"@en');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en','"b"@en');
  rdf_fdw_arguments_compatible 
 ------------------------------
  t
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"@fr','"b"@ja');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@fr','"b"@ja');
  rdf_fdw_arguments_compatible 
 ------------------------------
  f
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"','"b"@ja');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"@ja');
  rdf_fdw_arguments_compatible 
 ------------------------------
  f
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"','"b"@en');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"@en');
  rdf_fdw_arguments_compatible 
 ------------------------------
  f
 (1 row)
 
-SELECT rdf_fdw_arguments_compatible('"abc"^^xsd:string','"b"@en');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"^^xsd:string','"b"@en');
  rdf_fdw_arguments_compatible 
 ------------------------------
  f
 (1 row)
 
 /* LEX */  
-SELECT lex('"foo"');
+SELECT sparql.lex('"foo"');
  lex 
 -----
  foo
 (1 row)
 
-SELECT lex('foo');
+SELECT sparql.lex('foo');
  lex 
 -----
  foo
 (1 row)
 
-SELECT lex('"foo"@en');
+SELECT sparql.lex('"foo"@en');
  lex 
 -----
  foo
 (1 row)
 
-SELECT lex('"foo"^^xsd:string');
+SELECT sparql.lex('"foo"^^xsd:string');
  lex 
 -----
  foo
 (1 row)
 
-SELECT lex(''); 
+SELECT sparql.lex(''); 
  lex 
 -----
  
 (1 row)
 
-SELECT lex('""');
+SELECT sparql.lex('""');
  lex 
 -----
  
 (1 row)
 
-SELECT lex('"\""');
+SELECT sparql.lex('"\""');
  lex 
 -----
  \"
 (1 row)
 
-SELECT lex(NULL);
+SELECT sparql.lex(NULL);
  lex  
 ------
  NULL
 (1 row)
 
 /* STRDT */
-SELECT strdt(NULL, 'http://www.w3.org/2001/XMLSchema#string');
+SELECT sparql.strdt(NULL, 'http://www.w3.org/2001/XMLSchema#string');
  strdt 
 -------
  NULL
 (1 row)
 
-SELECT strdt('foo', NULL);
+SELECT sparql.strdt('foo', NULL);
  strdt 
 -------
  NULL
 (1 row)
 
-SELECT strdt('', '<http://example.org/type>');
+SELECT sparql.strdt('', '<http://example.org/type>');
              strdt             
 -------------------------------
  ""^^<http://example.org/type>
 (1 row)
 
-SELECT strdt('foo', '');
+SELECT sparql.strdt('foo', '');
 ERROR:  datatype IRI cannot be empty
-SELECT strdt('foo', ' ');
+SELECT sparql.strdt('foo', ' ');
 ERROR:  datatype IRI cannot contain whitespaces
-SELECT strdt('foo', ' xsd:boolean ');
+SELECT sparql.strdt('foo', ' xsd:boolean ');
 ERROR:  datatype IRI cannot contain whitespaces
-SELECT strdt('foo', 'http://www.w3.org/2001/XMLSchema#string');
+SELECT sparql.strdt('foo', 'http://www.w3.org/2001/XMLSchema#string');
                       strdt                       
 --------------------------------------------------
  "foo"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strdt('f"oo', 'http://example.org/type');
+SELECT sparql.strdt('f"oo', 'http://example.org/type');
                strdt                
 ------------------------------------
  "f\"oo"^^<http://example.org/type>
 (1 row)
 
-SELECT strdt('"foo"@en', 'http://www.w3.org/2001/XMLSchema#int');
+SELECT sparql.strdt('"foo"@en', 'http://www.w3.org/2001/XMLSchema#int');
                      strdt                     
 -----------------------------------------------
  "foo"^^<http://www.w3.org/2001/XMLSchema#int>
 (1 row)
 
-SELECT strdt('"f\"oo"^^xsd:string', 'http://example.org/newtype');
+SELECT sparql.strdt('"f\"oo"^^xsd:string', 'http://example.org/newtype');
                  strdt                 
 ---------------------------------------
  "f\"oo"^^<http://example.org/newtype>
 (1 row)
 
-SELECT strdt('foo', '<http://example.org/type>');
+SELECT sparql.strdt('foo', '<http://example.org/type>');
               strdt               
 ----------------------------------
  "foo"^^<http://example.org/type>
 (1 row)
 
-SELECT strdt('foo', 'foo:bar');
+SELECT sparql.strdt('foo', 'foo:bar');
       strdt       
 ------------------
  "foo"^^<foo:bar>
 (1 row)
 
-SELECT strdt('foo', 'xsd:string');
+SELECT sparql.strdt('foo', 'xsd:string');
                       strdt                       
 --------------------------------------------------
  "foo"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strdt('foo', '<nonsense>');
+SELECT sparql.strdt('foo', '<nonsense>');
        strdt       
 -------------------
  "foo"^^<nonsense>
 (1 row)
 
-SELECT p, o, strdt(o,'xsd:string')
+SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  strdt(o,'xsd:string') = strdt('PostgreSQL','xsd:string') AND
-  langmatches(lang(o),'en');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.strdt(o,'xsd:string') = sparql.strdt('PostgreSQL','xsd:string') AND
+  sparql.langmatches(sparql.lang(o),'en');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -223,90 +223,90 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* STRLANG */
-SELECT strlang('foo',NULL);
+SELECT sparql.strlang('foo',NULL);
  strlang 
 ---------
  NULL
 (1 row)
 
-SELECT strlang(NULL,'de');
+SELECT sparql.strlang(NULL,'de');
  strlang 
 ---------
  NULL
 (1 row)
 
-SELECT strlang('','es');
+SELECT sparql.strlang('','es');
  strlang 
 ---------
  ""@es
 (1 row)
 
-SELECT strlang(' ','en');
+SELECT sparql.strlang(' ','en');
  strlang 
 ---------
  " "@en
 (1 row)
 
-SELECT strlang('foo','pt');
+SELECT sparql.strlang('foo','pt');
  strlang  
 ----------
  "foo"@pt
 (1 row)
 
-SELECT strlang('"foo"@en','fr');
+SELECT sparql.strlang('"foo"@en','fr');
  strlang  
 ----------
  "foo"@fr
 (1 row)
 
-SELECT strlang('"foo"','it');
+SELECT sparql.strlang('"foo"','it');
  strlang  
 ----------
  "foo"@it
 (1 row)
 
-SELECT strlang('"foo"^^xsd:string','pt');
+SELECT sparql.strlang('"foo"^^xsd:string','pt');
  strlang  
 ----------
  "foo"@pt
 (1 row)
 
-SELECT strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#string>','es');
+SELECT sparql.strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#string>','es');
  strlang  
 ----------
  "foo"@es
 (1 row)
 
-SELECT strlang(strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#string>','es'),'de');
+SELECT sparql.strlang(sparql.strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#string>','es'),'de');
  strlang  
 ----------
  "foo"@de
 (1 row)
 
-SELECT strlang(strlang('f"o"o','en'),'de');
+SELECT sparql.strlang(sparql.strlang('f"o"o','en'),'de');
    strlang    
 --------------
  "f\"o\"o"@de
 (1 row)
 
-SELECT strlang(strlang('x\"y','pl'),'it');
+SELECT sparql.strlang(sparql.strlang('x\"y','pl'),'it');
   strlang  
 -----------
  "x\"y"@it
 (1 row)
 
-SELECT strlang('foo', 'xyz');
+SELECT sparql.strlang('foo', 'xyz');
   strlang  
 -----------
  "foo"@xyz
 (1 row)
 
-SELECT p, o, strlang(o,'fr')
+SELECT p, o, sparql.strlang(o,'fr')
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'de') AND
-  lang(strlang(o,'fr')) = 'fr';
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.lang(sparql.strlang(o,'fr')) = 'fr';
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -326,72 +326,72 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* STR */
-SELECT str('foo');
+SELECT sparql.str('foo');
   str  
 -------
  "foo"
 (1 row)
 
-SELECT str('"foo"');
+SELECT sparql.str('"foo"');
   str  
 -------
  "foo"
 (1 row)
 
-SELECT str('"foo"@en');
+SELECT sparql.str('"foo"@en');
   str  
 -------
  "foo"
 (1 row)
 
-SELECT str('"foo"^^xsd:string');
+SELECT sparql.str('"foo"^^xsd:string');
   str  
 -------
  "foo"
 (1 row)
 
-SELECT str('f"oo');
+SELECT sparql.str('f"oo');
    str   
 ---------
  "f\"oo"
 (1 row)
 
-SELECT str('"f\"oo"');
+SELECT sparql.str('"f\"oo"');
    str   
 ---------
  "f\"oo"
 (1 row)
 
-SELECT str('<http://example.org/foo>');
+SELECT sparql.str('<http://example.org/foo>');
            str            
 --------------------------
  "http://example.org/foo"
 (1 row)
 
-SELECT str('');
+SELECT sparql.str('');
  str 
 -----
  ""
 (1 row)
 
-SELECT str(' ');
+SELECT sparql.str(' ');
  str 
 -----
  " "
 (1 row)
 
-SELECT str(NULL);
+SELECT sparql.str(NULL);
  str  
 ------
  NULL
 (1 row)
 
-SELECT p, o, str(o)
+SELECT p, o, sparql.str(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'es') AND
-  str(o) = str('PostgreSQL') AND str(o) = '"PostgreSQL"';
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.str(o) = sparql.str('PostgreSQL') AND sparql.str(o) = '"PostgreSQL"';
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -411,59 +411,59 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* LANG */
-SELECT lang('"foo"@en');
+SELECT sparql.lang('"foo"@en');
  lang 
 ------
  en
 (1 row)
 
-SELECT lang(strlang('foo','fr'));
+SELECT sparql.lang(sparql.strlang('foo','fr'));
  lang 
 ------
  fr
 (1 row)
 
-SELECT lang(strdt('foo','xsd:string'));
+SELECT sparql.lang(sparql.strdt('foo','xsd:string'));
  lang 
 ------
  
 (1 row)
 
-SELECT lang('"f"oo"@it');
+SELECT sparql.lang('"f"oo"@it');
  lang 
 ------
  it
 (1 row)
 
-SELECT lang('');
+SELECT sparql.lang('');
  lang 
 ------
  
 (1 row)
 
-SELECT lang(' ');
+SELECT sparql.lang(' ');
  lang 
 ------
  
 (1 row)
 
-SELECT lang(NULL);
+SELECT sparql.lang(NULL);
  lang 
 ------
  NULL
 (1 row)
 
-SELECT lang('<http://example.org>'); 
+SELECT sparql.lang('<http://example.org>'); 
  lang 
 ------
  
 (1 row)
 
-SELECT p, o, lang(o)
+SELECT p, o, sparql.lang(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  lang(o) = 'es';
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.lang(o) = 'es';
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -482,156 +482,156 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* DATATYPE */
-SELECT datatype('"foo"^^xsd:string');
+SELECT sparql.datatype('"foo"^^xsd:string');
                  datatype                  
 -------------------------------------------
  <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT datatype('"foo"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.datatype('"foo"^^<http://www.w3.org/2001/XMLSchema#string>');
                  datatype                  
 -------------------------------------------
  <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT datatype(strdt('foo','xsd:string'));
+SELECT sparql.datatype(sparql.strdt('foo','xsd:string'));
                  datatype                  
 -------------------------------------------
  <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT datatype('"42"^^<xsd:int>');
+SELECT sparql.datatype('"42"^^<xsd:int>');
                 datatype                
 ----------------------------------------
  <http://www.w3.org/2001/XMLSchema#int>
 (1 row)
 
-SELECT datatype(strdt('foo','bar:xyz'));
+SELECT sparql.datatype(sparql.strdt('foo','bar:xyz'));
  datatype  
 -----------
  <bar:xyz>
 (1 row)
 
-SELECT datatype('"foo"@es');
+SELECT sparql.datatype('"foo"@es');
  datatype 
 ----------
  
 (1 row)
 
-SELECT datatype('');
+SELECT sparql.datatype('');
  datatype 
 ----------
  
 (1 row)
 
-SELECT datatype(' ');
+SELECT sparql.datatype(' ');
  datatype 
 ----------
  
 (1 row)
 
-SELECT datatype('"foo"^<xsd:string>');
+SELECT sparql.datatype('"foo"^<xsd:string>');
  datatype 
 ----------
  
 (1 row)
 
-SELECT datatype('"foo"^^xsd:string>');
+SELECT sparql.datatype('"foo"^^xsd:string>');
  datatype 
 ----------
  
 (1 row)
 
-SELECT datatype('"foo"^^<xsd:string');
+SELECT sparql.datatype('"foo"^^<xsd:string');
  datatype 
 ----------
  
 (1 row)
 
-SELECT datatype(cast('2018-05-01' AS date));
+SELECT sparql.datatype(cast('2018-05-01' AS date));
                 datatype                 
 -----------------------------------------
  <http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
-SELECT datatype(cast('2018-05-01 11:30:00' AS timestamp without time zone));
+SELECT sparql.datatype(cast('2018-05-01 11:30:00' AS timestamp without time zone));
                   datatype                   
 ---------------------------------------------
  <http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
-SELECT datatype(cast('2018-05-01 11:30:00' AS timestamp with time zone));
+SELECT sparql.datatype(cast('2018-05-01 11:30:00' AS timestamp with time zone));
                   datatype                   
 ---------------------------------------------
  <http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
-SELECT datatype(cast('11:30:00' AS time));
+SELECT sparql.datatype(cast('11:30:00' AS time));
                 datatype                 
 -----------------------------------------
  <http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
-SELECT datatype(42);
+SELECT sparql.datatype(42);
                   datatype                  
 --------------------------------------------
  <http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
-SELECT datatype(42.73);
+SELECT sparql.datatype(42.73);
                   datatype                  
 --------------------------------------------
  <http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
-SELECT datatype(cast(42 AS smallint));
+SELECT sparql.datatype(cast(42 AS smallint));
                   datatype                  
 --------------------------------------------
  <http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
-SELECT datatype(cast(42 AS bigint));
+SELECT sparql.datatype(cast(42 AS bigint));
                   datatype                  
 --------------------------------------------
  <http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
-SELECT datatype(cast(42.73 AS double precision));
+SELECT sparql.datatype(cast(42.73 AS double precision));
                  datatype                  
 -------------------------------------------
  <http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
-SELECT datatype(cast(42.73 AS numeric));
+SELECT sparql.datatype(cast(42.73 AS numeric));
                   datatype                  
 --------------------------------------------
  <http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
-SELECT datatype(cast(42.73 AS real));
+SELECT sparql.datatype(cast(42.73 AS real));
                  datatype                 
 ------------------------------------------
  <http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
-SELECT datatype(true);
+SELECT sparql.datatype(true);
                   datatype                  
 --------------------------------------------
  <http://www.w3.org/2001/XMLSchema#boolean>
 (1 row)
 
-SELECT datatype(NULL);
+SELECT sparql.datatype(NULL);
  datatype 
 ----------
  NULL
 (1 row)
 
-SELECT p, o, datatype(o)
+SELECT p, o, sparql.datatype(o)
 FROM ftdbp 
 WHERE 
-  datatype(o) = iri('http://www.w3.org/2001/XMLSchema#nonNegativeInteger') AND
-  datatype(o) = iri('"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"') AND
-  datatype(o) = '<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>';
+  sparql.datatype(o) = sparql.iri('http://www.w3.org/2001/XMLSchema#nonNegativeInteger') AND
+  sparql.datatype(o) = sparql.iri('"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"') AND
+  sparql.datatype(o) = '<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>';
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -649,66 +649,66 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* ENCODES_FOR_URI */
-SELECT encode_for_uri('"Los Angeles"');
+SELECT sparql.encode_for_uri('"Los Angeles"');
  encode_for_uri  
 -----------------
  "Los%20Angeles"
 (1 row)
 
-SELECT encode_for_uri('"Los Angeles"@en');
+SELECT sparql.encode_for_uri('"Los Angeles"@en');
  encode_for_uri  
 -----------------
  "Los%20Angeles"
 (1 row)
 
-SELECT encode_for_uri('"Los Angeles"^^xsd:string');
+SELECT sparql.encode_for_uri('"Los Angeles"^^xsd:string');
  encode_for_uri  
 -----------------
  "Los%20Angeles"
 (1 row)
 
-SELECT encode_for_uri('"Los Angeles"^^<xsd:string>');
+SELECT sparql.encode_for_uri('"Los Angeles"^^<xsd:string>');
  encode_for_uri  
 -----------------
  "Los%20Angeles"
 (1 row)
 
-SELECT encode_for_uri('"Los Angeles"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.encode_for_uri('"Los Angeles"^^<http://www.w3.org/2001/XMLSchema#string>');
  encode_for_uri  
 -----------------
  "Los%20Angeles"
 (1 row)
 
-SELECT encode_for_uri('foo! *''();:@&=+$,/?#[]');
+SELECT sparql.encode_for_uri('foo! *''();:@&=+$,/?#[]');
                          encode_for_uri                         
 ----------------------------------------------------------------
  "foo%21%20%2A%27%28%29%3B%3A%40%26%3D%2B%24%2C%2F%3F%23%5B%5D"
 (1 row)
 
-SELECT encode_for_uri('foo');
+SELECT sparql.encode_for_uri('foo');
  encode_for_uri 
 ----------------
  "foo"
 (1 row)
 
-SELECT encode_for_uri('');
+SELECT sparql.encode_for_uri('');
  encode_for_uri 
 ----------------
  ""
 (1 row)
 
-SELECT encode_for_uri(NULL);
+SELECT sparql.encode_for_uri(NULL);
  encode_for_uri 
 ----------------
  NULL
 (1 row)
 
-SELECT p, o, encode_for_uri(o)
+SELECT p, o, sparql.encode_for_uri(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://dbpedia.org/property/developer') AND
-  encode_for_uri(o) = encode_for_uri('PostgreSQL Global Development Group') AND
-  encode_for_uri(o) = encode_for_uri(strlang('PostgreSQL Global Development Group','de'));
+  p = sparql.iri('http://dbpedia.org/property/developer') AND
+  sparql.encode_for_uri(o) = sparql.encode_for_uri('PostgreSQL Global Development Group') AND
+  sparql.encode_for_uri(o) = sparql.encode_for_uri(sparql.strlang('PostgreSQL Global Development Group','de'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -727,72 +727,72 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* IRI / URI */
-SELECT iri('"http://example/"'), iri('http://example/'), iri('<http://example/>');
+SELECT sparql.iri('"http://example/"'), sparql.iri('http://example/'), sparql.iri('<http://example/>');
         iri        |        iri        |        iri        
 -------------------+-------------------+-------------------
  <http://example/> | <http://example/> | <http://example/>
 (1 row)
 
-SELECT iri('"mailto:foo@example.com"'), iri('mailto:foo@example.com'), iri('<mailto:foo@example.com>');
+SELECT sparql.iri('"mailto:foo@example.com"'), sparql.iri('mailto:foo@example.com'), sparql.iri('<mailto:foo@example.com>');
            iri            |           iri            |           iri            
 --------------------------+--------------------------+--------------------------
  <mailto:foo@example.com> | <mailto:foo@example.com> | <mailto:foo@example.com>
 (1 row)
 
-SELECT iri('"urn:uuid:123e4567-e89b-12d3-a456-426614174000"'), iri('urn:uuid:123e4567-e89b-12d3-a456-426614174000'), iri('<urn:uuid:123e4567-e89b-12d3-a456-426614174000>');
+SELECT sparql.iri('"urn:uuid:123e4567-e89b-12d3-a456-426614174000"'), sparql.iri('urn:uuid:123e4567-e89b-12d3-a456-426614174000'), sparql.iri('<urn:uuid:123e4567-e89b-12d3-a456-426614174000>');
                        iri                       |                       iri                       |                       iri                       
 -------------------------------------------------+-------------------------------------------------+-------------------------------------------------
  <urn:uuid:123e4567-e89b-12d3-a456-426614174000> | <urn:uuid:123e4567-e89b-12d3-a456-426614174000> | <urn:uuid:123e4567-e89b-12d3-a456-426614174000>
 (1 row)
 
-SELECT iri('"file://etc/passwd"'), iri('file://etc/passwd'), iri('<file://etc/passwd>');
+SELECT sparql.iri('"file://etc/passwd"'), sparql.iri('file://etc/passwd'), sparql.iri('<file://etc/passwd>');
          iri         |         iri         |         iri         
 ---------------------+---------------------+---------------------
  <file://etc/passwd> | <file://etc/passwd> | <file://etc/passwd>
 (1 row)
 
-SELECT iri('"foo:bar"'), iri('foo:bar'), iri('<foo:bar>');
+SELECT sparql.iri('"foo:bar"'), sparql.iri('foo:bar'), sparql.iri('<foo:bar>');
     iri    |    iri    |    iri    
 -----------+-----------+-----------
  <foo:bar> | <foo:bar> | <foo:bar>
 (1 row)
 
-SELECT iri('"foo"'), iri('foo'), iri('<foo>');
+SELECT sparql.iri('"foo"'), sparql.iri('foo'), sparql.iri('<foo>');
   iri  |  iri  |   iri   
 -------+-------+---------
  <foo> | <foo> | <<foo>>
 (1 row)
 
-SELECT iri('"a:b:c"'), iri('a:b:c'), iri('<a:b:c>');
+SELECT sparql.iri('"a:b:c"'), sparql.iri('a:b:c'), sparql.iri('<a:b:c>');
    iri   |   iri   |   iri   
 ---------+---------+---------
  <a:b:c> | <a:b:c> | <a:b:c>
 (1 row)
 
-SELECT iri('"http:/not-a-scheme"'), iri('http:/not-a-scheme'), iri('<http:/not-a-scheme>');
+SELECT sparql.iri('"http:/not-a-scheme"'), sparql.iri('http:/not-a-scheme'), sparql.iri('<http:/not-a-scheme>');
          iri          |         iri          |         iri          
 ----------------------+----------------------+----------------------
  <http:/not-a-scheme> | <http:/not-a-scheme> | <http:/not-a-scheme>
 (1 row)
 
-SELECT iri('"foo"@en');
+SELECT sparql.iri('"foo"@en');
   iri  
 -------
  <foo>
 (1 row)
 
-SELECT iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
+SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
  iri  
 ------
  <42>
 (1 row)
 
-SELECT p, o, iri(p) FROM ftdbp 
+SELECT p, o, sparql.iri(p) FROM ftdbp 
 WHERE 
-  iri(p) = iri('http://dbpedia.org/property/released') AND
-  iri(p) = iri('"http://dbpedia.org/property/released"') AND
-  iri(p) = iri('"http://dbpedia.org/property/released"@en') AND
-  iri(p) = iri('"http://dbpedia.org/property/released"^^xsd:string');
+  sparql.iri(p) = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"') AND
+  sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"@en') AND
+  sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"^^xsd:string');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -810,100 +810,100 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* isIRI / isURI */
-SELECT isIRI('<https://example/>'); 
+SELECT sparql.isIRI('<https://example/>'); 
  isiri 
 -------
  t
 (1 row)
 
-SELECT isIRI('<mailto:foo@example.com>');
+SELECT sparql.isIRI('<mailto:foo@example.com>');
  isiri 
 -------
  t
 (1 row)
 
-SELECT isIRI('http://example/');
+SELECT sparql.isIRI('http://example/');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('"http://example/"');
+SELECT sparql.isIRI('"http://example/"');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('path');
+SELECT sparql.isIRI('path');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('"path"');
+SELECT sparql.isIRI('"path"');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('"foo"^^xsd:string');
+SELECT sparql.isIRI('"foo"^^xsd:string');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('"foo"^^<http://www.w3.org/2001/XMLSchema#string>'); 
+SELECT sparql.isIRI('"foo"^^<http://www.w3.org/2001/XMLSchema#string>'); 
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI(strdt('foo', 'xsd:string'));
+SELECT sparql.isIRI(sparql.strdt('foo', 'xsd:string'));
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('"foo"@en');
+SELECT sparql.isIRI('"foo"@en');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI('');
+SELECT sparql.isIRI('');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isIRI(NULL);
+SELECT sparql.isIRI(NULL);
  isiri 
 -------
  NULL
 (1 row)
 
-SELECT isIRI('<not-an-iri');
+SELECT sparql.isIRI('<not-an-iri');
  isiri 
 -------
  f
 (1 row)
 
-SELECT isURI('<http://example/>');
+SELECT sparql.isURI('<http://example/>');
  isuri 
 -------
  t
 (1 row)
 
-SELECT isURI('path');
+SELECT sparql.isURI('path');
  isuri 
 -------
  f
 (1 row)
 
-SELECT p, o, isiri(p) FROM ftdbp 
+SELECT p, o, sparql.isIRI(p) FROM ftdbp 
 WHERE 
-  iri(p) = iri('http://dbpedia.org/property/released') AND
-  isiri(p);
+  sparql.iri(p) = sparql.iri('http://dbpedia.org/property/released') AND
+  sparql.isIRI(p);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -922,137 +922,137 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* STRSTARTS */
-SELECT strstarts('"foobar"','"foo"'), strstarts('foobar','foo');
+SELECT sparql.strstarts('"foobar"','"foo"'), sparql.strstarts('foobar','foo');
  strstarts | strstarts 
 -----------+-----------
  t         | t
 (1 row)
 
-SELECT strstarts('"foobar"@en','"foo"@en');
+SELECT sparql.strstarts('"foobar"@en','"foo"@en');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('"foobar"^^<xsd:string>','"foo"^^<xsd:string>');
+SELECT sparql.strstarts('"foobar"^^<xsd:string>','"foo"^^<xsd:string>');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('"foobar"^^<xsd:string>','"foo"');
+SELECT sparql.strstarts('"foobar"^^<xsd:string>','"foo"');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('"foobar"','"foo"^^<xsd:string>');
+SELECT sparql.strstarts('"foobar"','"foo"^^<xsd:string>');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('"foobar"@en','"foo"');
+SELECT sparql.strstarts('"foobar"@en','"foo"');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('"foobar"@en','"foo"^^<xsd:string>');
+SELECT sparql.strstarts('"foobar"@en','"foo"^^<xsd:string>');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('foobar','');
+SELECT sparql.strstarts('foobar','');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('','xyz');
+SELECT sparql.strstarts('','xyz');
  strstarts 
 -----------
  f
 (1 row)
 
-SELECT strstarts('foobar',NULL);
+SELECT sparql.strstarts('foobar',NULL);
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT strstarts(NULL,'xyz');
+SELECT sparql.strstarts(NULL,'xyz');
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT strstarts(NULL, NULL);
+SELECT sparql.strstarts(NULL, NULL);
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT strstarts(strlang('foobar','en'),'"foo"@fr');
+SELECT sparql.strstarts(sparql.strlang('foobar','en'),'"foo"@fr');
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT strstarts(strlang('foobar','en'), strlang('foo','fr'));
+SELECT sparql.strstarts(sparql.strlang('foobar','en'), sparql.strlang('foo','fr'));
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT strstarts(strlang('foobar','en'), '"foo"^^<xsd:string>');
+SELECT sparql.strstarts(sparql.strlang('foobar','en'), '"foo"^^<xsd:string>');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts(strlang('foobar','en'), strdt('foo','xsd:string'));
+SELECT sparql.strstarts(sparql.strlang('foobar','en'), sparql.strdt('foo','xsd:string'));
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('foobar', strdt('foo','xsd:string'));
+SELECT sparql.strstarts('foobar', sparql.strdt('foo','xsd:string'));
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('foobar','"foo"^^<xsd:string>');
+SELECT sparql.strstarts('foobar','"foo"^^<xsd:string>');
  strstarts 
 -----------
  t
 (1 row)
 
-SELECT strstarts('foobar', strlang('foo','it'));
+SELECT sparql.strstarts('foobar', sparql.strlang('foo','it'));
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT strstarts('foobar','"foo"@de');
+SELECT sparql.strstarts('foobar','"foo"@de');
  strstarts 
 -----------
  NULL
 (1 row)
 
-SELECT p, o, strstarts(o,str('Postgre'))
+SELECT p, o, sparql.strstarts(o, sparql.str('Postgre'))
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'pt') AND
-  strstarts(o,'Postgre') AND
-  strstarts(o, '"Postgre"') AND
-  strstarts(o,'"Postgre"^^xsd:string') AND
-  strstarts(o, strdt('Postgre','xsd:string')) AND
-  strstarts(o, '"Postgre"@pt') AND
-  strstarts(o, strlang('Postgre','pt'));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'pt') AND
+  sparql.strstarts(o,'Postgre') AND
+  sparql.strstarts(o, '"Postgre"') AND
+  sparql.strstarts(o,'"Postgre"^^xsd:string') AND
+  sparql.strstarts(o, sparql.strdt('Postgre','xsd:string')) AND
+  sparql.strstarts(o, '"Postgre"@pt') AND
+  sparql.strstarts(o, sparql.strlang('Postgre','pt'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1077,135 +1077,135 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* STRENDS */
-SELECT strends('"foobar"','"bar"'), strends('foobar','bar');
+SELECT sparql.strends('"foobar"','"bar"'), sparql.strends('foobar','bar');
  strends | strends 
 ---------+---------
  t       | t
 (1 row)
 
-SELECT strends('"foobar"@en','"bar"@en');
+SELECT sparql.strends('"foobar"@en','"bar"@en');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
+SELECT sparql.strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('"foobar"^^xsd:string', '"bar"');
+SELECT sparql.strends('"foobar"^^xsd:string', '"bar"');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('"foobar"', '"bar"^^xsd:string');
+SELECT sparql.strends('"foobar"', '"bar"^^xsd:string');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('"foobar"@en', '"bar"');
+SELECT sparql.strends('"foobar"@en', '"bar"');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('"foobar"@en', '"bar"^^xsd:string');
+SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('foobar','xyz');
+SELECT sparql.strends('foobar','xyz');
  strends 
 ---------
  f
 (1 row)
 
-SELECT strends('foobar','');
+SELECT sparql.strends('foobar','');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('','xyz');
+SELECT sparql.strends('','xyz');
  strends 
 ---------
  f
 (1 row)
 
-SELECT strends('foobar',NULL);
+SELECT sparql.strends('foobar',NULL);
  strends 
 ---------
  NULL
 (1 row)
 
-SELECT strends(NULL,'xyz');
+SELECT sparql.strends(NULL,'xyz');
  strends 
 ---------
  NULL
 (1 row)
 
-SELECT strends(NULL, NULL);
+SELECT sparql.strends(NULL, NULL);
  strends 
 ---------
  NULL
 (1 row)
 
-SELECT strends('"foobar"@en','"bar"@fr');
+SELECT sparql.strends('"foobar"@en','"bar"@fr');
  strends 
 ---------
  NULL
 (1 row)
 
-SELECT strends(strlang('foobar','en'),'"bar"@fr');
+SELECT sparql.strends(sparql.strlang('foobar','en'),'"bar"@fr');
  strends 
 ---------
  NULL
 (1 row)
 
-SELECT strends(strlang('foobar','en'), '"bar"^^<xsd:string>');
+SELECT sparql.strends(sparql.strlang('foobar','en'), '"bar"^^<xsd:string>');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends(strlang('foobar','en'), strdt('bar','xsd:string'));
+SELECT sparql.strends(sparql.strlang('foobar','en'), sparql.strdt('bar','xsd:string'));
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('foobar', strdt('bar','xsd:string'));
+SELECT sparql.strends('foobar', sparql.strdt('bar','xsd:string'));
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('foobar','"bar"^^<xsd:string>');
+SELECT sparql.strends('foobar','"bar"^^<xsd:string>');
  strends 
 ---------
  t
 (1 row)
 
-SELECT strends('foobar','"bar"@de');
+SELECT sparql.strends('foobar','"bar"@de');
  strends 
 ---------
  NULL
 (1 row)
 
-SELECT p, o, strends(o,str('SQL'))
+SELECT p, o, sparql.strends(o, sparql.str('SQL'))
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'es') AND
-  strends(o,'SQL') AND
-  strends(o, '"SQL"') AND
-  strends(o,'"SQL"^^xsd:string') AND
-  strends(o, strdt('SQL','xsd:string'));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.strends(o,'SQL') AND
+  sparql.strends(o, '"SQL"') AND
+  sparql.strends(o,'"SQL"^^xsd:string') AND
+  sparql.strends(o, sparql.strdt('SQL','xsd:string'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1228,162 +1228,162 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* STRBEFORE */
-SELECT strbefore('abc','b'), strbefore('"abc"','"b"');
+SELECT sparql.strbefore('abc','b'), sparql.strbefore('"abc"','"b"');
  strbefore | strbefore 
 -----------+-----------
  "a"       | "a"
 (1 row)
 
-SELECT strbefore('"abc"@en','bc');
+SELECT sparql.strbefore('"abc"@en','bc');
  strbefore 
 -----------
  "a"@en
 (1 row)
 
-SELECT strbefore('"abc"@en','"b"@cy');
+SELECT sparql.strbefore('"abc"@en','"b"@cy');
  strbefore 
 -----------
  NULL
 (1 row)
 
-SELECT strbefore('"abc"^^xsd:string',''), strbefore('"abc"^^xsd:string','""');
+SELECT sparql.strbefore('"abc"^^xsd:string',''), sparql.strbefore('"abc"^^xsd:string','""');
                    strbefore                   |                   strbefore                   
 -----------------------------------------------+-----------------------------------------------
  ""^^<http://www.w3.org/2001/XMLSchema#string> | ""^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strbefore('abc','xyz'), strbefore('"abc"','"xyz"');
+SELECT sparql.strbefore('abc','xyz'), sparql.strbefore('"abc"','"xyz"');
  strbefore | strbefore 
 -----------+-----------
  ""        | ""
 (1 row)
 
-SELECT strbefore('"abc"@en', '"z"@en');
+SELECT sparql.strbefore('"abc"@en', '"z"@en');
  strbefore 
 -----------
  ""
 (1 row)
 
-SELECT strbefore('"abc"@en', '"z"'), strbefore('"abc"@en', 'z');
+SELECT sparql.strbefore('"abc"@en', '"z"'), sparql.strbefore('"abc"@en', 'z');
  strbefore | strbefore 
 -----------+-----------
  ""        | ""
 (1 row)
 
-SELECT strbefore('"abc"@en', '""@en');
+SELECT sparql.strbefore('"abc"@en', '""@en');
  strbefore 
 -----------
  ""@en
 (1 row)
 
-SELECT strbefore('"abc"@en', '""');
+SELECT sparql.strbefore('"abc"@en', '""');
  strbefore 
 -----------
  ""@en
 (1 row)
 
-SELECT strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','c');
+SELECT sparql.strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','c');
                     strbefore                    
 -------------------------------------------------
  "ab"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
                     strbefore                    
 -------------------------------------------------
  "ab"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^^xsd:string');
+SELECT sparql.strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^^xsd:string');
                     strbefore                    
 -------------------------------------------------
  "ab"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strbefore('"abc"^^http://www.w3.org/2001/XMLSchema#string','"c"^^<xsd:string>');
+SELECT sparql.strbefore('"abc"^^http://www.w3.org/2001/XMLSchema#string','"c"^^<xsd:string>');
                     strbefore                    
 -------------------------------------------------
  "ab"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strbefore('"abc"^^xsd:string','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.strbefore('"abc"^^xsd:string','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
                     strbefore                    
 -------------------------------------------------
  "ab"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strbefore('"abc"@fr','"b"^^xsd:string');
+SELECT sparql.strbefore('"abc"@fr','"b"^^xsd:string');
  strbefore 
 -----------
  "a"@fr
 (1 row)
 
-SELECT strbefore('"abc"^^<xsd:string>','"b"@de');
+SELECT sparql.strbefore('"abc"^^<xsd:string>','"b"@de');
  strbefore 
 -----------
  NULL
 (1 row)
 
-SELECT strbefore('"abc"@en','"b"^^<foo:bar>');
+SELECT sparql.strbefore('"abc"@en','"b"^^<foo:bar>');
  strbefore 
 -----------
  NULL
 (1 row)
 
-SELECT strbefore('abc', NULL);
+SELECT sparql.strbefore('abc', NULL);
  strbefore 
 -----------
  NULL
 (1 row)
 
-SELECT strbefore(NULL, 'xyz');
+SELECT sparql.strbefore(NULL, 'xyz');
  strbefore 
 -----------
  NULL
 (1 row)
 
-SELECT strbefore(NULL, NULL);
+SELECT sparql.strbefore(NULL, NULL);
  strbefore 
 -----------
  NULL
 (1 row)
 
-SELECT strbefore('abc', '');
+SELECT sparql.strbefore('abc', '');
  strbefore 
 -----------
  ""
 (1 row)
 
-SELECT strbefore('"abc"', '');
+SELECT sparql.strbefore('"abc"', '');
  strbefore 
 -----------
  ""
 (1 row)
 
-SELECT strbefore('', 'xyz');
+SELECT sparql.strbefore('', 'xyz');
  strbefore 
 -----------
  ""
 (1 row)
 
-SELECT strbefore('', '');
+SELECT sparql.strbefore('', '');
  strbefore 
 -----------
  ""
 (1 row)
 
-SELECT strbefore('""','""');
+SELECT sparql.strbefore('""','""');
  strbefore 
 -----------
  ""
 (1 row)
 
-SELECT p, o, strbefore(str(o), 'SQL')
+SELECT p, o, sparql.strbefore(sparql.str(o), 'SQL')
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'de') AND
-  strbefore(str(o), 'SQL') = str('Postgre');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.strbefore(sparql.str(o), 'SQL') = sparql.str('Postgre');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1403,150 +1403,150 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* STRAFTER */
-SELECT strafter('"abc"','"b"');
+SELECT sparql.strafter('"abc"','"b"');
  strafter 
 ----------
  "c"
 (1 row)
 
-SELECT strafter('"abc"@en','ab');
+SELECT sparql.strafter('"abc"@en','ab');
  strafter 
 ----------
  "c"@en
 (1 row)
 
-SELECT strafter('"abc"@en','"b"@cy');
+SELECT sparql.strafter('"abc"@en','"b"@cy');
  strafter 
 ----------
  NULL
 (1 row)
 
-SELECT strafter('"abc"^^xsd:string','""');
+SELECT sparql.strafter('"abc"^^xsd:string','""');
                      strafter                     
 --------------------------------------------------
  "abc"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','b');
+SELECT sparql.strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','b');
                     strafter                    
 ------------------------------------------------
  "c"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
                     strafter                    
 ------------------------------------------------
  "c"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^xsd:string');
+SELECT sparql.strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^xsd:string');
                     strafter                    
 ------------------------------------------------
  "c"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strafter('"abc"^^http://www.w3.org/2001/XMLSchema#string','"b"^^<xsd:string>');
+SELECT sparql.strafter('"abc"^^http://www.w3.org/2001/XMLSchema#string','"b"^^<xsd:string>');
                     strafter                    
 ------------------------------------------------
  "c"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strafter('"abc"^^xsd:string','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.strafter('"abc"^^xsd:string','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
                     strafter                    
 ------------------------------------------------
  "c"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT strafter('"abc"@fr','"b"^^xsd:string');
+SELECT sparql.strafter('"abc"@fr','"b"^^xsd:string');
  strafter 
 ----------
  "c"@fr
 (1 row)
 
-SELECT strafter('"abc"','"xyz"');
+SELECT sparql.strafter('"abc"','"xyz"');
  strafter 
 ----------
  ""
 (1 row)
 
-SELECT strafter('"abc"@en', '"z"@en');
+SELECT sparql.strafter('"abc"@en', '"z"@en');
  strafter 
 ----------
  ""
 (1 row)
 
-SELECT strafter('"abc"@en', '"z"');
+SELECT sparql.strafter('"abc"@en', '"z"');
  strafter 
 ----------
  ""
 (1 row)
 
-SELECT strafter('"abc"@en', '""@en');
+SELECT sparql.strafter('"abc"@en', '""@en');
  strafter 
 ----------
  "abc"@en
 (1 row)
 
-SELECT strafter('"abc"@en', '""');
+SELECT sparql.strafter('"abc"@en', '""');
  strafter 
 ----------
  "abc"@en
 (1 row)
 
-SELECT strafter('abc','b');
+SELECT sparql.strafter('abc','b');
  strafter 
 ----------
  "c"
 (1 row)
 
-SELECT strafter('abc','xyz');
+SELECT sparql.strafter('abc','xyz');
  strafter 
 ----------
  ""
 (1 row)
 
-SELECT strafter('abc', NULL);
+SELECT sparql.strafter('abc', NULL);
  strafter 
 ----------
  NULL
 (1 row)
 
-SELECT strafter(NULL, 'xyz');
+SELECT sparql.strafter(NULL, 'xyz');
  strafter 
 ----------
  NULL
 (1 row)
 
-SELECT strafter(NULL, NULL);
+SELECT sparql.strafter(NULL, NULL);
  strafter 
 ----------
  NULL
 (1 row)
 
-SELECT strafter('abc', '');
+SELECT sparql.strafter('abc', '');
  strafter 
 ----------
  "abc"
 (1 row)
 
-SELECT strafter('', 'xyz');
+SELECT sparql.strafter('', 'xyz');
  strafter 
 ----------
  ""
 (1 row)
 
-SELECT strafter('', '');
+SELECT sparql.strafter('', '');
  strafter 
 ----------
  ""
 (1 row)
 
-SELECT p, o, strafter(o, strlang('Postgre','fr')), strafter(o, strdt('Postgre','xsd:string'))
+SELECT p, o, sparql.strafter(o, sparql.strlang('Postgre','fr')), sparql.strafter(o, sparql.strdt('Postgre','xsd:string'))
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'fr') AND
-  strafter(str(o), 'Postgre') = str('SQL');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'fr') AND
+  sparql.strafter(sparql.str(o), 'Postgre') = sparql.str('SQL');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1566,105 +1566,105 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* CONTAINS */
-SELECT contains('"foobar"', '"bar"'), contains('foobar', 'bar');
+SELECT sparql.contains('"foobar"', '"bar"'), sparql.contains('foobar', 'bar');
  contains | contains 
 ----------+----------
  t        | t
 (1 row)
 
-SELECT contains('"foobar"@en', '"foo"@en'), contains(strlang('"foobar"','en'), strlang('foo','en'));
+SELECT sparql.contains('"foobar"@en', '"foo"@en'), sparql.contains(sparql.strlang('"foobar"','en'), sparql.strlang('foo','en'));
  contains | contains 
 ----------+----------
  t        | t
 (1 row)
 
-SELECT contains('"foobar"^^xsd:string', '"bar"^^xsd:string'), contains(strdt('"foobar"','xsd:string'), strdt('"bar"','xsd:string'));
+SELECT sparql.contains('"foobar"^^xsd:string', '"bar"^^xsd:string'), sparql.contains(sparql.strdt('"foobar"','xsd:string'), sparql.strdt('"bar"','xsd:string'));
  contains | contains 
 ----------+----------
  t        | t
 (1 row)
 
-SELECT contains('"foobar"^^xsd:string', '"foo"'), contains('"foobar"^^xsd:string', 'foo');
+SELECT sparql.contains('"foobar"^^xsd:string', '"foo"'), sparql.contains('"foobar"^^xsd:string', 'foo');
  contains | contains 
 ----------+----------
  t        | t
 (1 row)
 
-SELECT contains('"foobar"', '"bar"^^xsd:string'), contains('foobar', '"bar"^^xsd:string');
+SELECT sparql.contains('"foobar"', '"bar"^^xsd:string'), sparql.contains('foobar', '"bar"^^xsd:string');
  contains | contains 
 ----------+----------
  t        | t
 (1 row)
 
-SELECT contains('"foobar"@en', '"foo"'), contains('"foobar"@en', 'foo');
+SELECT sparql.contains('"foobar"@en', '"foo"'), sparql.contains('"foobar"@en', 'foo');
  contains | contains 
 ----------+----------
  t        | t
 (1 row)
 
-SELECT contains('"foobar"@en', '"bar"^^xsd:string');
+SELECT sparql.contains('"foobar"@en', '"bar"^^xsd:string');
  contains 
 ----------
  t
 (1 row)
 
-SELECT contains('"foobar"', '""'), contains('foobar', '');
+SELECT sparql.contains('"foobar"', '""'), sparql.contains('foobar', '');
  contains | contains 
 ----------+----------
  t        | f
 (1 row)
 
-SELECT contains('""', '"foo"'), contains('', 'foo');
+SELECT sparql.contains('""', '"foo"'), sparql.contains('', 'foo');
  contains | contains 
 ----------+----------
  f        | f
 (1 row)
 
-SELECT contains('"foobar"', NULL), contains('foobar', NULL);
+SELECT sparql.contains('"foobar"', NULL), sparql.contains('foobar', NULL);
  contains | contains 
 ----------+----------
  NULL     | NULL
 (1 row)
 
-SELECT contains(NULL, '"foo"'), contains(NULL, 'foo');
+SELECT sparql.contains(NULL, '"foo"'), sparql.contains(NULL, 'foo');
  contains | contains 
 ----------+----------
  NULL     | NULL
 (1 row)
 
-SELECT contains(NULL, NULL);
+SELECT sparql.contains(NULL, NULL);
  contains 
 ----------
  NULL
 (1 row)
 
-SELECT contains('"foobar"@en', '"foo"@fr');
+SELECT sparql.contains('"foobar"@en', '"foo"@fr');
  contains 
 ----------
  t
 (1 row)
 
-SELECT contains('"123"^^<http://example.com/int>', '"2"');
+SELECT sparql.contains('"123"^^<http://example.com/int>', '"2"');
  contains 
 ----------
  t
 (1 row)
 
-SELECT contains('"abc"', '"def"@en');
+SELECT sparql.contains('"abc"', '"def"@en');
  contains 
 ----------
  f
 (1 row)
 
-SELECT p, o, contains(o,'"ostg"@fr'), contains(o,'"ostg"^^xsd:string')
+SELECT p, o, sparql.contains(o,'"ostg"@fr'), sparql.contains(o,'"ostg"^^xsd:string')
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'de') AND
-  contains(o,'ostg') AND
-  contains(o,'"ostg"@de') AND
-  contains(o, strlang('ostg','de')) AND
-  contains(o, strdt('ostg','xsd:string'));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.contains(o,'ostg') AND
+  sparql.contains(o,'"ostg"@de') AND
+  sparql.contains(o, sparql.strlang('ostg','de')) AND
+  sparql.contains(o, sparql.strdt('ostg','xsd:string'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1687,153 +1687,153 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* LANGMATCHES */
-SELECT langmatches(lang('"hello"@en'), '"en"');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@EN-US'), '"en-us"');
+SELECT sparql.langmatches(sparql.lang('"hello"@EN-US'), '"en-us"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@fr'), '"FR"');
+SELECT sparql.langmatches(sparql.lang('"hello"@fr'), '"FR"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en'), '"*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@fr-ca'), '"*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@fr-ca'), '"*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en-us'), '"en-*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@en-us'), '"en-*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en'), '"en-*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en-*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@fr-ca'), '"fr-*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@fr-ca'), '"fr-*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@fr'), '"en"');
+SELECT sparql.langmatches(sparql.lang('"hello"@fr'), '"en"');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches(lang('"hello"@en-us'), '"fr-*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@en-us'), '"fr-*"');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches(lang('"hello"@en'), '"en-us-*"');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en-us-*"');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches(lang('"hello"'), '"en"');
+SELECT sparql.langmatches(sparql.lang('"hello"'), '"en"');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches(lang('"hello"'), '"*"');
+SELECT sparql.langmatches(sparql.lang('"hello"'), '"*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('""@en'), '"en"');
+SELECT sparql.langmatches(sparql.lang('""@en'), '"en"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('""'), '"*"');
+SELECT sparql.langmatches(sparql.lang('""'), '"*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"^^xsd:string'), '"en"');
+SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"en"');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches(lang('"hello"^^xsd:string'), '"*"');
+SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en'), '"en"^^xsd:string');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en"^^xsd:string');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en'), '"*"^^xsd:string');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"*"^^xsd:string');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en-us'), '"EN-*"^^xsd:string');
+SELECT sparql.langmatches(sparql.lang('"hello"@en-us'), '"EN-*"^^xsd:string');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches('', '"en"');
+SELECT sparql.langmatches('', '"en"');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches('en', '"en"');
+SELECT sparql.langmatches('en', '"en"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT langmatches(lang('"hello"@en'), '');
+SELECT sparql.langmatches(sparql.lang('"hello"@en'), '');
  langmatches 
 -------------
  f
 (1 row)
 
-SELECT langmatches('', '"*"');
+SELECT sparql.langmatches('', '"*"');
  langmatches 
 -------------
  t
 (1 row)
 
-SELECT p, o, langmatches(lang(o),'*')
+SELECT p, o, sparql.langmatches(sparql.lang(o),'*')
 FROM ftdbp 
-WHERE langmatches(lang(o),'pt');
+WHERE sparql.langmatches(sparql.lang(o),'pt');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1853,93 +1853,93 @@ INFO:  SPARQL returned 3 records.
 (3 rows)
 
 /* ISBLANK */
-SELECT isblank('_:b1');
+SELECT sparql.isblank('_:b1');
  isblank 
 ---------
  t
 (1 row)
 
-SELECT isblank('_:node123');
+SELECT sparql.isblank('_:node123');
  isblank 
 ---------
  t
 (1 row)
 
-SELECT isblank('<http://example.org/a>');
+SELECT sparql.isblank('<http://example.org/a>');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('"hello"');
+SELECT sparql.isblank('"hello"');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('"hello"@en');
+SELECT sparql.isblank('"hello"@en');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('"42"^^xsd:integer');
+SELECT sparql.isblank('"42"^^xsd:integer');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('_notblank');
+SELECT sparql.isblank('_notblank');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('');
+SELECT sparql.isblank('');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('b1');
+SELECT sparql.isblank('b1');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('_:');
+SELECT sparql.isblank('_:');
  isblank 
 ---------
  t
 (1 row)
 
-SELECT isblank('_');
+SELECT sparql.isblank('_');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank(' ');
+SELECT sparql.isblank(' ');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank('');
+SELECT sparql.isblank('');
  isblank 
 ---------
  f
 (1 row)
 
-SELECT isblank(NULL);
+SELECT sparql.isblank(NULL);
  isblank 
 ---------
  NULL
 (1 row)
 
-SELECT p, o, isblank(o)
+SELECT p, o, sparql.isblank(o)
 FROM ftdbp 
-WHERE isblank(o);
+WHERE sparql.isblank(o);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -1956,155 +1956,155 @@ INFO:  SPARQL returned 0 records.
 (0 rows)
 
 /* ISNUMERIC */
-SELECT isnumeric('12');
+SELECT sparql.isnumeric('12');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"');
+SELECT sparql.isnumeric('"12"');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:nonNegativeInteger');
+SELECT sparql.isnumeric('"12"^^xsd:nonNegativeInteger');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"1200"^^xsd:byte');
+SELECT sparql.isnumeric('"1200"^^xsd:byte');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric('<http://example/>');
+SELECT sparql.isnumeric('<http://example/>');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:integer');
+SELECT sparql.isnumeric('"12"^^xsd:integer');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:positiveInteger');
+SELECT sparql.isnumeric('"12"^^xsd:positiveInteger');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:negativeInteger');
+SELECT sparql.isnumeric('"12"^^xsd:negativeInteger');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:nonPositiveInteger');
+SELECT sparql.isnumeric('"12"^^xsd:nonPositiveInteger');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:long');
+SELECT sparql.isnumeric('"12"^^xsd:long');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:int');
+SELECT sparql.isnumeric('"12"^^xsd:int');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:short');
+SELECT sparql.isnumeric('"12"^^xsd:short');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:unsignedLong');
+SELECT sparql.isnumeric('"12"^^xsd:unsignedLong');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:unsignedInt');
+SELECT sparql.isnumeric('"12"^^xsd:unsignedInt');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:unsignedShort');
+SELECT sparql.isnumeric('"12"^^xsd:unsignedShort');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:unsignedByte');
+SELECT sparql.isnumeric('"12"^^xsd:unsignedByte');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:double');
+SELECT sparql.isnumeric('"12"^^xsd:double');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:float');
+SELECT sparql.isnumeric('"12"^^xsd:float');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('"12"^^xsd:decimal');
+SELECT sparql.isnumeric('"12"^^xsd:decimal');
  isnumeric 
 -----------
  t
 (1 row)
 
-SELECT isnumeric('');
+SELECT sparql.isnumeric('');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric(' ');
+SELECT sparql.isnumeric(' ');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric('""');
+SELECT sparql.isnumeric('""');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric('" "');
+SELECT sparql.isnumeric('" "');
  isnumeric 
 -----------
  f
 (1 row)
 
-SELECT isnumeric(NULL);
+SELECT sparql.isnumeric(NULL);
  isnumeric 
 -----------
  NULL
 (1 row)
 
-SELECT p, o, isnumeric(o), isnumeric(p)
+SELECT p, o, sparql.isnumeric(o), sparql.isnumeric(p)
 FROM ftdbp
 WHERE 
-  p = iri('http://dbpedia.org/ontology/wikiPageLength') AND
-  isnumeric(o);
+  p = sparql.iri('http://dbpedia.org/ontology/wikiPageLength') AND
+  sparql.isnumeric(o);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2123,108 +2123,108 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* ISLITERAL */
-SELECT isliteral('"hello"');
+SELECT sparql.isliteral('"hello"');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"123"');
+SELECT sparql.isliteral('"123"');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"12"^^xsd:integer');
+SELECT sparql.isliteral('"12"^^xsd:integer');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"12"^^xsd:nonNegativeInteger');
+SELECT sparql.isliteral('"12"^^xsd:nonNegativeInteger');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"12.34"^^xsd:double');
+SELECT sparql.isliteral('"12.34"^^xsd:double');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"true"^^xsd:boolean');
+SELECT sparql.isliteral('"true"^^xsd:boolean');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"abc"^^<http://example.org/custom>'); -- true
+SELECT sparql.isliteral('"abc"^^<http://example.org/custom>'); -- true
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"hello"@en');
+SELECT sparql.isliteral('"hello"@en');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('"bonjour"@fr');
+SELECT sparql.isliteral('"bonjour"@fr');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('12');
+SELECT sparql.isliteral('12');
  isliteral 
 -----------
  f
 (1 row)
 
-SELECT isliteral('<http://example.org>');
+SELECT sparql.isliteral('<http://example.org>');
  isliteral 
 -----------
  f
 (1 row)
 
-SELECT isliteral('_:bnode');
+SELECT sparql.isliteral('_:bnode');
  isliteral 
 -----------
  f
 (1 row)
 
-SELECT isliteral('');
+SELECT sparql.isliteral('');
  isliteral 
 -----------
  f
 (1 row)
 
-SELECT isliteral('" "');
+SELECT sparql.isliteral('" "');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral('""');
+SELECT sparql.isliteral('""');
  isliteral 
 -----------
  t
 (1 row)
 
-SELECT isliteral(NULL);
+SELECT sparql.isliteral(NULL);
  isliteral 
 -----------
  NULL
 (1 row)
 
-SELECT p, o, isliteral(o)
+SELECT p, o, sparql.isliteral(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  isliteral(o) AND 
-  NOT isliteral(p);
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.isliteral(o) AND 
+  NOT sparql.isliteral(p);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2263,83 +2263,83 @@ INFO:  SPARQL returned 21 records.
 (21 rows)
 
 /* BNODE */
-SELECT isblank(bnode());
+SELECT sparql.isblank(sparql.bnode());
  isblank 
 ---------
  t
 (1 row)
 
-SELECT bnode('xyz');
+SELECT sparql.bnode('xyz');
  bnode 
 -------
  _:xyz
 (1 row)
 
-SELECT bnode('xyz');
+SELECT sparql.bnode('xyz');
  bnode 
 -------
  _:xyz
 (1 row)
 
-SELECT bnode('"xyz"');
+SELECT sparql.bnode('"xyz"');
  bnode 
 -------
  _:xyz
 (1 row)
 
-SELECT bnode('"xyz"@en');
+SELECT sparql.bnode('"xyz"@en');
  bnode 
 -------
  _:xyz
 (1 row)
 
-SELECT bnode('"xyz"^^xsd:string');
+SELECT sparql.bnode('"xyz"^^xsd:string');
  bnode 
 -------
  _:xyz
 (1 row)
 
-SELECT bnode('hello world');
+SELECT sparql.bnode('hello world');
      bnode     
 ---------------
  _:hello_world
 (1 row)
 
-SELECT bnode('123!');
+SELECT sparql.bnode('123!');
  bnode  
 --------
  _:123_
 (1 row)
 
-SELECT bnode('<http://example.org>');
+SELECT sparql.bnode('<http://example.org>');
  bnode 
 -------
  NULL
 (1 row)
 
-SELECT bnode('_:bnode');
+SELECT sparql.bnode('_:bnode');
  bnode 
 -------
  NULL
 (1 row)
 
-SELECT bnode('');
+SELECT sparql.bnode('');
  bnode 
 -------
  NULL
 (1 row)
 
-SELECT bnode(NULL);
+SELECT sparql.bnode(NULL);
  bnode 
 -------
  NULL
 (1 row)
 
-SELECT *
+SELECT p, o
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  isblank(bnode(o));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.isblank(sparql.bnode(o));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2378,109 +2378,109 @@ INFO:  SPARQL returned 21 records.
 (21 rows)
 
 /* UUID (not pushable) */
-SELECT uuid() ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
+SELECT sparql.uuid() ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
  ?column? 
 ----------
  t
 (1 row)
 
 /* STRUUID() (not pushable) */
-SELECT struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+SELECT sparql.struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
  struuid_format 
 ----------------
  t
 (1 row)
 
 /* LCASE */
-SELECT lcase('BAR');
+SELECT sparql.lcase('BAR');
  lcase 
 -------
  "bar"
 (1 row)
 
-SELECT lcase('"BAR"');
+SELECT sparql.lcase('"BAR"');
  lcase 
 -------
  "bar"
 (1 row)
 
-SELECT lcase('"BAR"@en'), lcase(strlang('BAR','en'));
+SELECT sparql.lcase('"BAR"@en'), sparql.lcase(sparql.strlang('BAR','en'));
   lcase   |  lcase   
 ----------+----------
  "bar"@en | "bar"@en
 (1 row)
 
-SELECT lcase('"BAR"^^xsd:string'), lcase(strdt('BAR','xsd:string'));
+SELECT sparql.lcase('"BAR"^^xsd:string'), sparql.lcase(sparql.strdt('BAR','xsd:string'));
                       lcase                       |                      lcase                       
 --------------------------------------------------+--------------------------------------------------
  "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT lcase('<http://example.org>');
+SELECT sparql.lcase('<http://example.org>');
 ERROR:  LCASE does not allow IRIs: <http://example.org>
-SELECT lcase('_:xyz');
+SELECT sparql.lcase('_:xyz');
 ERROR:  LCASE does not allow blank nodes: _:xyz
-SELECT lcase(bnode('foo'));
+SELECT sparql.lcase(sparql.bnode('foo'));
 ERROR:  LCASE does not allow blank nodes: _:foo
-SELECT lcase('123');
+SELECT sparql.lcase('123');
  lcase 
 -------
  "123"
 (1 row)
 
-SELECT lcase('"123"');
+SELECT sparql.lcase('"123"');
  lcase 
 -------
  "123"
 (1 row)
 
-SELECT lcase('"123"^^xsd:integer');
+SELECT sparql.lcase('"123"^^xsd:integer');
 ERROR:  LCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
-SELECT lcase('"1990-10-03"^^xsd:date');
+SELECT sparql.lcase('"1990-10-03"^^xsd:date');
 ERROR:  LCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#date>
-SELECT lcase('"!§$%&/()?ß}{}[]°^|<>*"');
+SELECT sparql.lcase('"!§$%&/()?ß}{}[]°^|<>*"');
           lcase          
 -------------------------
  "!§$%&/()?ß}{}[]°^|<>*"
 (1 row)
 
-SELECT lcase(NULL);
+SELECT sparql.lcase(NULL);
  lcase 
 -------
  NULL
 (1 row)
 
-SELECT lcase('');
+SELECT sparql.lcase('');
  lcase 
 -------
  ""
 (1 row)
 
-SELECT lcase('""');
+SELECT sparql.lcase('""');
  lcase 
 -------
  ""
 (1 row)
 
-SELECT lcase('" "');
+SELECT sparql.lcase('" "');
  lcase 
 -------
  " "
 (1 row)
 
-SELECT lcase(' ');
+SELECT sparql.lcase(' ');
  lcase 
 -------
  " "
 (1 row)
 
-SELECT p, o, lcase(o)
+SELECT p, o, sparql.lcase(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'de') AND  
-  lcase(o) = lcase('"PostgreSQL"@de') AND
-  lcase(o) = lcase(strlang('PostgreSQL','de'));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'de') AND  
+  sparql.lcase(o) = sparql.lcase('"PostgreSQL"@de') AND
+  sparql.lcase(o) = sparql.lcase(sparql.strlang('PostgreSQL','de'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2499,11 +2499,11 @@ INFO:  SPARQL returned 1 record.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | "postgresql"@de
 (1 row)
 
-SELECT p, o, lcase(strdt(o,'xsd:string'))
+SELECT p, o, sparql.lcase(sparql.strdt(o,'xsd:string'))
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
-  strstarts(lcase(strdt(o,'xsd:string')), lcase(strdt('POSTGRE','xsd:string')));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
+  sparql.strstarts(sparql.lcase(sparql.strdt(o,'xsd:string')), sparql.lcase(sparql.strdt('POSTGRE','xsd:string')));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2541,95 +2541,95 @@ INFO:  SPARQL returned 20 records.
 (20 rows)
 
 /* UCASE */
-SELECT ucase('bar');
+SELECT sparql.ucase('bar');
  ucase 
 -------
  "BAR"
 (1 row)
 
-SELECT ucase('"bar"');
+SELECT sparql.ucase('"bar"');
  ucase 
 -------
  "BAR"
 (1 row)
 
-SELECT ucase('"bar"@en'), ucase(strlang('bar','en'));
+SELECT sparql.ucase('"bar"@en'), sparql.ucase(sparql.strlang('bar','en'));
   ucase   |  ucase   
 ----------+----------
  "BAR"@en | "BAR"@en
 (1 row)
 
-SELECT ucase('"bar"^^xsd:string'), ucase(strdt('bar','xsd:string'));
+SELECT sparql.ucase('"bar"^^xsd:string'), sparql.ucase(sparql.strdt('bar','xsd:string'));
                       ucase                       |                      ucase                       
 --------------------------------------------------+--------------------------------------------------
  "BAR"^^<http://www.w3.org/2001/XMLSchema#string> | "BAR"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT ucase('<http://example.org>');
+SELECT sparql.ucase('<http://example.org>');
 ERROR:  UCASE does not allow IRIs: <http://example.org>
-SELECT ucase('_:xyz');
+SELECT sparql.ucase('_:xyz');
 ERROR:  UCASE does not allow blank nodes: _:xyz
-SELECT ucase(bnode('foo'));
+SELECT sparql.ucase(sparql.bnode('foo'));
 ERROR:  UCASE does not allow blank nodes: _:foo
-SELECT ucase('123');
+SELECT sparql.ucase('123');
  ucase 
 -------
  "123"
 (1 row)
 
-SELECT ucase('"123"');
+SELECT sparql.ucase('"123"');
  ucase 
 -------
  "123"
 (1 row)
 
-SELECT ucase('"123"^^xsd:integer');
+SELECT sparql.ucase('"123"^^xsd:integer');
 ERROR:  UCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
-SELECT ucase('"1990-10-03"^^xsd:date');
+SELECT sparql.ucase('"1990-10-03"^^xsd:date');
 ERROR:  UCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#date>
-SELECT ucase('"!§$%&/()?ß}{}[]°^|<>*"');
+SELECT sparql.ucase('"!§$%&/()?ß}{}[]°^|<>*"');
           ucase          
 -------------------------
  "!§$%&/()?ß}{}[]°^|<>*"
 (1 row)
 
-SELECT ucase(NULL);
+SELECT sparql.ucase(NULL);
  ucase 
 -------
  NULL
 (1 row)
 
-SELECT ucase('');
+SELECT sparql.ucase('');
  ucase 
 -------
  ""
 (1 row)
 
-SELECT ucase('""');
+SELECT sparql.ucase('""');
  ucase 
 -------
  ""
 (1 row)
 
-SELECT ucase('" "');
+SELECT sparql.ucase('" "');
  ucase 
 -------
  " "
 (1 row)
 
-SELECT ucase(' ');
+SELECT sparql.ucase(' ');
  ucase 
 -------
  " "
 (1 row)
 
-SELECT p, o, ucase(o)
+SELECT p, o, sparql.ucase(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'es') AND
-  ucase(o) = ucase('"PostgreSQL"@es') AND
-  ucase(o) = ucase(strlang('PostgreSQL','es'));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.ucase(o) = sparql.ucase('"PostgreSQL"@es') AND
+  sparql.ucase(o) = sparql.ucase(sparql.strlang('PostgreSQL','es'));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2648,11 +2648,11 @@ INFO:  SPARQL returned 1 record.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | "POSTGRESQL"@es
 (1 row)
 
-SELECT p, o, ucase(strdt(o,'xsd:string'))
+SELECT p, o, sparql.ucase(sparql.strdt(o,'xsd:string'))
 FROM ftdbp
 WHERE
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  strstarts(ucase(strdt(o,'xsd:string')), ucase(strdt('postgre','xsd:string')));
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.strstarts(sparql.ucase(sparql.strdt(o,'xsd:string')), sparql.ucase(sparql.strdt('postgre','xsd:string')));
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2690,54 +2690,54 @@ INFO:  SPARQL returned 20 records.
 (20 rows)
 
 /* STRLEN */
-SELECT strlen('chat'), strlen('"chat"');
+SELECT sparql.strlen('chat'), sparql.strlen('"chat"');
  strlen | strlen 
 --------+--------
       4 |      4
 (1 row)
 
-SELECT strlen('"chat"@en'), strlen(strlang('chat','en'));
+SELECT sparql.strlen('"chat"@en'), sparql.strlen(sparql.strlang('chat','en'));
  strlen | strlen 
 --------+--------
       4 |      4
 (1 row)
 
-SELECT strlen('"chat"^^xsd:string'), strlen(strdt('chat','xsd:string'));
+SELECT sparql.strlen('"chat"^^xsd:string'), sparql.strlen(sparql.strdt('chat','xsd:string'));
  strlen | strlen 
 --------+--------
       4 |      4
 (1 row)
 
-SELECT strlen('""'), strlen('');
+SELECT sparql.strlen('""'), sparql.strlen('');
  strlen | strlen 
 --------+--------
       0 |      0
 (1 row)
 
-SELECT strlen('" "'), strlen(' ');
+SELECT sparql.strlen('" "'), sparql.strlen(' ');
  strlen | strlen 
 --------+--------
       1 |      1
 (1 row)
 
-SELECT strlen('"łø"'), strlen('łø');
+SELECT sparql.strlen('"łø"'), sparql.strlen('łø');
  strlen | strlen 
 --------+--------
       2 |      2
 (1 row)
 
-SELECT strlen(NULL);
+SELECT sparql.strlen(NULL);
  strlen 
 --------
    NULL
 (1 row)
 
-SELECT p, o, strlen(o)
+SELECT p, o, sparql.strlen(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'de') AND
-  strlen(o) = strlen('"PostgreSQL"@de');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.strlen(o) = sparql.strlen('"PostgreSQL"@de');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2757,75 +2757,75 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* SUBSTR */
-SELECT substr('"foobar"', 4), substr('foobar', 4);
+SELECT sparql.substr('"foobar"', 4), sparql.substr('foobar', 4);
  substr | substr 
 --------+--------
  "bar"  | "bar"
 (1 row)
 
-SELECT substr('"foobar"@en', 4), substr(strlang('foobar','en'), 4);
+SELECT sparql.substr('"foobar"@en', 4), sparql.substr(sparql.strlang('foobar','en'), 4);
   substr  |  substr  
 ----------+----------
  "bar"@en | "bar"@en
 (1 row)
 
-SELECT substr('"foobar"^^xsd:string', 4), substr(strdt('foobar','xsd:string'), 4);
+SELECT sparql.substr('"foobar"^^xsd:string', 4), sparql.substr(sparql.strdt('foobar','xsd:string'), 4);
                       substr                      |                      substr                      
 --------------------------------------------------+--------------------------------------------------
  "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT substr('"foobar"', 4, 1), substr('foobar', 4, 1);
+SELECT sparql.substr('"foobar"', 4, 1), sparql.substr('foobar', 4, 1);
  substr | substr 
 --------+--------
  "b"    | "b"
 (1 row)
 
-SELECT substr('"foobar"@en', 4, 1), substr(strlang('foobar','en'), 4, 1);
+SELECT sparql.substr('"foobar"@en', 4, 1), sparql.substr(sparql.strlang('foobar','en'), 4, 1);
  substr | substr 
 --------+--------
  "b"@en | "b"@en
 (1 row)
 
-SELECT substr('"foobar"^^xsd:string', 4, 1), substr(strdt('foobar','xsd:string'), 4, 1);
+SELECT sparql.substr('"foobar"^^xsd:string', 4, 1), sparql.substr(sparql.strdt('foobar','xsd:string'), 4, 1);
                      substr                     |                     substr                     
 ------------------------------------------------+------------------------------------------------
  "b"^^<http://www.w3.org/2001/XMLSchema#string> | "b"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT substr('""', 42);
+SELECT sparql.substr('""', 42);
  substr 
 --------
  ""
 (1 row)
 
-SELECT substr('', 42);
+SELECT sparql.substr('', 42);
  substr 
 --------
  ""
 (1 row)
 
-SELECT substr(NULL, 42);
+SELECT sparql.substr(NULL, 42);
  substr 
 --------
  NULL
 (1 row)
 
-SELECT substr('"foo"', NULL);
+SELECT sparql.substr('"foo"', NULL);
  substr 
 --------
  NULL
 (1 row)
 
-SELECT p, o, substr(o, 7, 3), substr(strdt(o,'xsd:string'), 7, 3) 
+SELECT p, o, sparql.substr(o, 7, 3), sparql.substr(sparql.strdt(o,'xsd:string'), 7, 3) 
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  substr(o, 7, 3) = substr('"PostgreSQL"@es', 7, 3) AND
-  substr(strdt(o,'xsd:string'), 7, 3) = substr(strdt('PostgreSQL','xsd:string'), 7, 3) AND
-  substr(o, 7) = substr('"PostgreSQL"@es', 7) AND
-  substr(strlang(o,'es'), 7, 3) = substr(strlang('PostgreSQL','es'), 7, 3) AND
-  langmatches(lang(o), 'es');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.substr(o, 7, 3) = sparql.substr('"PostgreSQL"@es', 7, 3) AND
+  sparql.substr(sparql.strdt(o,'xsd:string'), 7, 3) = sparql.substr(sparql.strdt('PostgreSQL','xsd:string'), 7, 3) AND
+  sparql.substr(o, 7) = sparql.substr('"PostgreSQL"@es', 7) AND
+  sparql.substr(sparql.strlang(o,'es'), 7, 3) = sparql.substr(sparql.strlang('PostgreSQL','es'), 7, 3) AND
+  sparql.langmatches(sparql.lang(o), 'es');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2848,62 +2848,62 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* CONCAT */
-SELECT concat('"foo"', '"bar"'), concat('foo', 'bar');
+SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');
   concat  |  concat  
 ----------+----------
  "foobar" | "foobar"
 (1 row)
 
-SELECT concat('"foo"@en', '"bar"@en'), concat(strlang('foo','en'), strlang('bar','en'));
+SELECT sparql.concat('"foo"@en', '"bar"@en'), sparql.concat(sparql.strlang('foo','en'), sparql.strlang('bar','en'));
    concat    |   concat    
 -------------+-------------
  "foobar"@en | "foobar"@en
 (1 row)
 
-SELECT concat('"foo"^^xsd:string', '"bar"^^xsd:string'), concat(strdt('foo','xsd:string'), strdt('bar','xsd:string'));
+SELECT sparql.concat('"foo"^^xsd:string', '"bar"^^xsd:string'), sparql.concat(sparql.strdt('foo','xsd:string'), sparql.strdt('bar','xsd:string'));
                        concat                        |                       concat                        
 -----------------------------------------------------+-----------------------------------------------------
  "foobar"^^<http://www.w3.org/2001/XMLSchema#string> | "foobar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT concat('"foo"', '"bar"^^xsd:string'), concat('foo', strdt('bar','xsd:string'));
+SELECT sparql.concat('"foo"', '"bar"^^xsd:string'), sparql.concat('foo', sparql.strdt('bar','xsd:string'));
   concat  |  concat  
 ----------+----------
  "foobar" | "foobar"
 (1 row)
 
-SELECT concat('"foo"@en', '"bar"'), concat(strlang('foo','en'), 'bar');
+SELECT sparql.concat('"foo"@en', '"bar"'), sparql.concat(sparql.strlang('foo','en'), 'bar');
   concat  |  concat  
 ----------+----------
  "foobar" | "foobar"
 (1 row)
 
-SELECT concat('"foo"@en', '"bar"^^xsd:string'), concat(strlang('foo','en'), strdt('bar','xsd:string'));
+SELECT sparql.concat('"foo"@en', '"bar"^^xsd:string'), sparql.concat(sparql.strlang('foo','en'), sparql.strdt('bar','xsd:string'));
   concat  |  concat  
 ----------+----------
  "foobar" | "foobar"
 (1 row)
 
-SELECT concat(NULL, 'bar'), concat('foo', NULL), concat(NULL, NULL);
+SELECT sparql.concat(NULL, 'bar'), sparql.concat('foo', NULL), sparql.concat(NULL, NULL);
  concat | concat | concat 
 --------+--------+--------
  NULL   | NULL   | NULL
 (1 row)
 
-SELECT concat('foo', ''), concat('', 'bar'), concat('', ''), concat('""', '""');
+SELECT sparql.concat('foo', ''), sparql.concat('', 'bar'), sparql.concat('', ''), sparql.concat('""', '""');
  concat | concat | concat | concat 
 --------+--------+--------+--------
  "foo"  | "bar"  | ""     | ""
 (1 row)
 
-SELECT concat('"foo"^^foo:bar', 'bar'), concat('"foo"', '"bar"^^foo:bar');
+SELECT sparql.concat('"foo"^^foo:bar', 'bar'), sparql.concat('"foo"', '"bar"^^foo:bar');
 ERROR:  CONCAT arguments must be simple literals or 'xsd:string'
-SELECT p, o, concat(o,strlang(' Global','pt')), concat(o,strdt(' Global','xsd:string'))
+SELECT p, o, sparql.concat(o,sparql.strlang(' Global','pt')), sparql.concat(o,sparql.strdt(' Global','xsd:string'))
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'pt') AND
-  concat(o,'') = str('PostgreSQL');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'pt') AND
+  sparql.concat(o,'') = sparql.str('PostgreSQL');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -2923,325 +2923,325 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* REPLACE */
-SELECT replace('"abcd"', '"b"', '"Z"'), replace('abcd', 'b', 'Z');
+SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
  replace | replace 
 ---------+---------
  "aZcd"  | "aZcd"
 (1 row)
 
-SELECT replace('"abab"', '"B"', '"Z"','"i"'), replace('abab', 'B', 'Z','i');
+SELECT sparql.replace('"abab"', '"B"', '"Z"','"i"'), sparql.replace('abab', 'B', 'Z','i');
  replace | replace 
 ---------+---------
  "aZaZ"  | "aZaZ"
 (1 row)
 
-SELECT replace('"abab"', '"B."', '"Z"','"i"'), replace('abab', 'B.', 'Z','i');
+SELECT sparql.replace('"abab"', '"B."', '"Z"','"i"'), sparql.replace('abab', 'B.', 'Z','i');
  replace | replace 
 ---------+---------
  "aZb"   | "aZb"
 (1 row)
 
-SELECT replace('"abcd"@en', '"b"', '"Z"'), replace(strlang('abcd','en'), 'b', 'Z');
+SELECT sparql.replace('"abcd"@en', '"b"', '"Z"'), sparql.replace(sparql.strlang('abcd','en'), 'b', 'Z');
  replace | replace 
 ---------+---------
  "aZcd"  | "aZcd"
 (1 row)
 
-SELECT replace('"abab"^^xsd:string', '"B"', '"Z"','"i"'), replace(strdt('abab','xsd:string'), 'B', 'Z','i');
+SELECT sparql.replace('"abab"^^xsd:string', '"B"', '"Z"','"i"'), sparql.replace(sparql.strdt('abab','xsd:string'), 'B', 'Z','i');
  replace | replace 
 ---------+---------
  "aZaZ"  | "aZaZ"
 (1 row)
 
-SELECT replace('"abcd"', '"b"@en', '"Z"'), replace('abcd', strlang('b','en'), 'Z');
+SELECT sparql.replace('"abcd"', '"b"@en', '"Z"'), sparql.replace('abcd', sparql.strlang('b','en'), 'Z');
  replace | replace 
 ---------+---------
  "aZcd"  | "aZcd"
 (1 row)
 
-SELECT replace('"abab"', '"B"^^xsd:string', '"Z"','"i"'), replace('abab', strdt('B','xsd:string'), 'Z','i');
+SELECT sparql.replace('"abab"', '"B"^^xsd:string', '"Z"','"i"'), sparql.replace('abab', sparql.strdt('B','xsd:string'), 'Z','i');
  replace | replace 
 ---------+---------
  "aZaZ"  | "aZaZ"
 (1 row)
 
-SELECT replace('""', '"b"', '"Z"'), replace('', 'b', 'Z');
+SELECT sparql.replace('""', '"b"', '"Z"'), sparql.replace('', 'b', 'Z');
  replace | replace 
 ---------+---------
  ""      | ""
 (1 row)
 
-SELECT replace('"abcd"', '""', '"Z"'), replace('abcd', '', 'Z');
+SELECT sparql.replace('"abcd"', '""', '"Z"'), sparql.replace('abcd', '', 'Z');
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
-SELECT replace('"abcd"', '"b"', '""'), replace('abcd', 'b', '');
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+SELECT sparql.replace('"abcd"', '"b"', '""'), sparql.replace('abcd', 'b', '');
  replace | replace 
 ---------+---------
  "acd"   | "acd"
 (1 row)
 
-SELECT replace('"ab\"cd"', '"b"', '"Z"'), replace('ab\"cd', 'b', 'Z');
+SELECT sparql.replace('"ab\"cd"', '"b"', '"Z"'), sparql.replace('ab\"cd', 'b', 'Z');
  replace  | replace  
 ----------+----------
  "aZ\"cd" | "aZ\"cd"
 (1 row)
 
-SELECT replace(NULL, 'b', 'Z'), replace('abcd', NULL, 'Z'), replace('abcd', 'b', NULL), replace('abcd', 'b', 'Z', NULL);
+SELECT sparql.replace(NULL, 'b', 'Z'), sparql.replace('abcd', NULL, 'Z'), sparql.replace('abcd', 'b', NULL), sparql.replace('abcd', 'b', 'Z', NULL);
  replace | replace | replace | replace 
 ---------+---------+---------+---------
  NULL    | NULL    | NULL    | NULL
 (1 row)
 
-SELECT replace('', 'a', 'Z');                -- Empty input string
+SELECT sparql.replace('', 'a', 'Z');                -- Empty input string
  replace 
 ---------
  ""
 (1 row)
 
-SELECT replace('abcd', '', 'Z');             -- Empty pattern
+SELECT sparql.replace('abcd', '', 'Z');             -- Empty pattern
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
-SELECT replace('abcd', 'a', '');             -- Empty replacement
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+SELECT sparql.replace('abcd', 'a', '');             -- Empty replacement
  replace 
 ---------
  "bcd"
 (1 row)
 
-SELECT replace('', '', 'Z');                 -- Empty pattern and replacement
+SELECT sparql.replace('', '', 'Z');                 -- Empty pattern and replacement
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
-SELECT replace('abcd', 'a', 'Z');            -- Pattern at the beginning
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+SELECT sparql.replace('abcd', 'a', 'Z');            -- Pattern at the beginning
  replace 
 ---------
  "Zbcd"
 (1 row)
 
-SELECT replace('abcd', 'd', 'Z');            -- Pattern at the end
+SELECT sparql.replace('abcd', 'd', 'Z');            -- Pattern at the end
  replace 
 ---------
  "abcZ"
 (1 row)
 
-SELECT replace('abcd', 'bc', 'Z');           -- Pattern in the middle
+SELECT sparql.replace('abcd', 'bc', 'Z');           -- Pattern in the middle
  replace 
 ---------
  "aZd"
 (1 row)
 
-SELECT replace('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
+SELECT sparql.replace('aabbcc', 'b', 'Z');          -- Multiple occurrences of the pattern
  replace  
 ----------
  "aaZZcc"
 (1 row)
 
-SELECT replace('Abcd', 'a', 'Z');            -- Case mismatch pattern
+SELECT sparql.replace('Abcd', 'a', 'Z');            -- Case mismatch pattern
  replace 
 ---------
  "Abcd"
 (1 row)
 
-SELECT replace('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
+SELECT sparql.replace('abcd', 'A', 'Z');            -- Case mismatch pattern (uppercase in input)
  replace 
 ---------
  "abcd"
 (1 row)
 
-SELECT replace('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
+SELECT sparql.replace('abcd', 'A', 'Z','i');        -- Case-insensitive replacement
  replace 
 ---------
  "Zbcd"
 (1 row)
 
-SELECT replace('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
+SELECT sparql.replace('"abcd"', '"b"', '"Z"');      -- Special characters inside quotes
  replace 
 ---------
  "aZcd"
 (1 row)
 
-SELECT replace('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
+SELECT sparql.replace('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
  replace 
 ---------
  "ab\cd"
 (1 row)
 
-SELECT replace('ab"cd', '"b"', '"Z"');       -- Quotes in the input
+SELECT sparql.replace('ab"cd', '"b"', '"Z"');       -- Quotes in the input
  replace  
 ----------
  "aZ\"cd"
 (1 row)
 
-SELECT replace('ab"cd', 'b"', 'Z');          -- Quotes in pattern
+SELECT sparql.replace('ab"cd', 'b"', 'Z');          -- Quotes in pattern
  replace 
 ---------
  "aZcd"
 (1 row)
 
-SELECT replace('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
+SELECT sparql.replace('abcdef', 'bc', 'ZY');        -- Multi-character pattern in the middle
  replace  
 ----------
  "aZYdef"
 (1 row)
 
-SELECT replace('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
+SELECT sparql.replace('abc abc', 'abc', 'XYZ');     -- Multiple occurrences of a multi-character pattern
   replace  
 -----------
  "XYZ XYZ"
 (1 row)
 
-SELECT replace('abcd', 'a', 'Z');            -- Pattern at the start
+SELECT sparql.replace('abcd', 'a', 'Z');            -- Pattern at the start
  replace 
 ---------
  "Zbcd"
 (1 row)
 
-SELECT replace('abcd', 'd', 'Z');            -- Pattern at the end
+SELECT sparql.replace('abcd', 'd', 'Z');            -- Pattern at the end
  replace 
 ---------
  "abcZ"
 (1 row)
 
-SELECT replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
+SELECT sparql.replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern at the start and repeated
  replace  
 ----------
  "XYZXYZ"
 (1 row)
 
-SELECT replace(NULL, 'a', 'Z');              -- Input is NULL
+SELECT sparql.replace(NULL, 'a', 'Z');              -- Input is NULL
  replace 
 ---------
  NULL
 (1 row)
 
-SELECT replace('abcd', NULL, 'Z');           -- Pattern is NULL
+SELECT sparql.replace('abcd', NULL, 'Z');           -- Pattern is NULL
  replace 
 ---------
  NULL
 (1 row)
 
-SELECT replace('abcd', 'a', NULL);           -- Replacement is NULL
+SELECT sparql.replace('abcd', 'a', NULL);           -- Replacement is NULL
  replace 
 ---------
  NULL
 (1 row)
 
-SELECT replace(NULL, NULL, NULL);             -- All NULLs
+SELECT sparql.replace(NULL, NULL, NULL);             -- All NULLs
  replace 
 ---------
  NULL
 (1 row)
 
-SELECT replace('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
+SELECT sparql.replace('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
  replace  
 ----------
  "aZ\"cd"
 (1 row)
 
-SELECT replace('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
+SELECT sparql.replace('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
  replace  
 ----------
  "aZ\"cd"
 (1 row)
 
-SELECT replace('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
+SELECT sparql.replace('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
  replace 
 ---------
  "Zbcd"
 (1 row)
 
-SELECT replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
+SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
  replace 
 ---------
  "Zbcd"
 (1 row)
 
-SELECT replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
+SELECT sparql.replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
  replace 
 ---------
  "Zbcd"
 (1 row)
 
-SELECT replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
+SELECT sparql.replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
  replace  
 ----------
  "XYXYXY"
 (1 row)
 
-SELECT replace('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
+SELECT sparql.replace('ababab', 'ab', 'XY');         -- Non-global replacement (should only replace first occurrence)
  replace  
 ----------
  "XYXYXY"
 (1 row)
 
-SELECT replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
+SELECT sparql.replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace(text,text,text,text) line 4 at RAISE
-SELECT replace('abcd', '', 'Z');              -- Empty pattern without global flag
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text,text) line 4 at RAISE
+SELECT sparql.replace('abcd', '', 'Z');              -- Empty pattern without global flag
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
-SELECT replace('abcd', 'z', 'Z');             -- No pattern match
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+SELECT sparql.replace('abcd', 'z', 'Z');             -- No pattern match
  replace 
 ---------
  "abcd"
 (1 row)
 
-SELECT replace('abcd', 'xy', 'Z');            -- No match for multi-character pattern
+SELECT sparql.replace('abcd', 'xy', 'Z');            -- No match for multi-character pattern
  replace 
 ---------
  "abcd"
 (1 row)
 
-SELECT replace('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
+SELECT sparql.replace('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    replace                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  "aZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZc"
 (1 row)
 
-SELECT replace('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
+SELECT sparql.replace('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
  replace 
 ---------
  "XYZ"
 (1 row)
 
-SELECT replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
+SELECT sparql.replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
  replace  
 ----------
  "XYZXYZ"
 (1 row)
 
-SELECT replace('""', '"b"', '"Z"');           -- Empty literal as input
+SELECT sparql.replace('""', '"b"', '"Z"');           -- Empty literal as input
  replace 
 ---------
  ""
 (1 row)
 
-SELECT replace('"b"', '""', '"Z"');            -- Empty pattern in replacement
+SELECT sparql.replace('"b"', '""', '"Z"');            -- Empty pattern in replacement
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function replace(text,text,text) line 4 at RAISE
-SELECT replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+SELECT sparql.replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
  replace 
 ---------
  "abcd"
 (1 row)
 
-SELECT replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
+SELECT sparql.replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
  replace 
 ---------
  "ZZcd"
 (1 row)
 
-SELECT replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
+SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
  replace 
 ---------
  "Zcd"
 (1 row)
 
-SELECT p, o, replace(o,'Postgre','My'), replace(o,'"Postgre"@de','')
+SELECT p, o, sparql.replace(o,'Postgre','My'), sparql.replace(o,'"Postgre"@de','')
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'es') AND
-  replace(o,'Postgre','My') = replace(strlang('PostgreSQL','es'),'Postgre','My') AND
-  replace(o, 'POSTGRE', 'My','i') = replace('"PostgreSQL"@es', 'POSTGRE', 'My','i');
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.replace(o,'Postgre','My') = sparql.replace(sparql.strlang('PostgreSQL','es'),'Postgre','My') AND
+  sparql.replace(o, 'POSTGRE', 'My','i') = sparql.replace('"PostgreSQL"@es', 'POSTGRE', 'My','i');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3262,88 +3262,88 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* REGEX */
-SELECT regex('"abcd"', '"bc"');
+SELECT sparql.regex('"abcd"', '"bc"');
  regex 
 -------
  t
 (1 row)
 
-SELECT regex('"abcd"', '"xy"');
+SELECT sparql.regex('"abcd"', '"xy"');
  regex 
 -------
  f
 (1 row)
 
-SELECT regex('"abcd"', '"BC"', '"i"');
+SELECT sparql.regex('"abcd"', '"BC"', '"i"');
  regex 
 -------
  t
 (1 row)
 
-SELECT regex('"abcd"', '"^bc"');
+SELECT sparql.regex('"abcd"', '"^bc"');
  regex 
 -------
  f
 (1 row)
 
-SELECT regex('"abcd"', '"^ab"');
+SELECT sparql.regex('"abcd"', '"^ab"');
  regex 
 -------
  t
 (1 row)
 
-SELECT regex('"abc\ndef"', '"^def$"', '"m"');
+SELECT sparql.regex('"abc\ndef"', '"^def$"', '"m"');
 ERROR:  Unsupported regex flags: m (only "i" is supported)
-CONTEXT:  PL/pgSQL function regex(text,text,text) line 8 at RAISE
-SELECT regex('"abc\ndef"', '"c.d"', '"s"');
+CONTEXT:  PL/pgSQL function sparql.regex(text,text,text) line 8 at RAISE
+SELECT sparql.regex('"abc\ndef"', '"c.d"', '"s"');
 ERROR:  Unsupported regex flags: s (only "i" is supported)
-CONTEXT:  PL/pgSQL function regex(text,text,text) line 8 at RAISE
-SELECT regex('"abcd"@en', '"bc"');
+CONTEXT:  PL/pgSQL function sparql.regex(text,text,text) line 8 at RAISE
+SELECT sparql.regex('"abcd"@en', '"bc"');
  regex 
 -------
  t
 (1 row)
 
-SELECT regex('"123"^^xsd:int', '"23"');
+SELECT sparql.regex('"123"^^xsd:int', '"23"');
  regex 
 -------
  t
 (1 row)
 
-SELECT regex('""', '"a"');
+SELECT sparql.regex('""', '"a"');
  regex 
 -------
  f
 (1 row)
 
-SELECT regex('""', '"(.*)"');
+SELECT sparql.regex('""', '"(.*)"');
  regex 
 -------
  t
 (1 row)
 
-SELECT regex('"abcd"', '""');
+SELECT sparql.regex('"abcd"', '""');
  regex 
 -------
  f
 (1 row)
 
-SELECT regex(NULL, '"a"'), regex('"abcd"', NULL), regex('"abcd"', '"a"', NULL);
+SELECT sparql.regex(NULL, '"a"'), sparql.regex('"abcd"', NULL), sparql.regex('"abcd"', '"a"', NULL);
  regex | regex | regex 
 -------+-------+-------
  NULL  | NULL  | NULL
 (1 row)
 
-SELECT regex('"abcd"', '"[a"');
+SELECT sparql.regex('"abcd"', '"[a"');
 ERROR:  invalid regular expression: brackets [] not balanced
-CONTEXT:  PL/pgSQL function regex(text,text) line 6 at RETURN
+CONTEXT:  PL/pgSQL function sparql.regex(text,text) line 6 at RETURN
 SELECT p, o
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'es') AND
-  regex(o, ucase('postgres'), 'i') AND 
-  regex(o, '^pOs','i') ;
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.regex(o, sparql.ucase('postgres'), 'i') AND 
+  sparql.regex(o, '^pOs','i') ;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3364,78 +3364,78 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* ABS */
-SELECT abs('"-1"^^xsd:int');
+SELECT sparql.abs('"-1"^^xsd:int');
  abs 
 -----
    1
 (1 row)
 
-SELECT abs('"-1.42"^^xsd:double');
+SELECT sparql.abs('"-1.42"^^xsd:double');
  abs  
 ------
  1.42
 (1 row)
 
-SELECT abs(strdt('-1.42','xsd:double'));
+SELECT sparql.abs(sparql.strdt('-1.42','xsd:double'));
  abs  
 ------
  1.42
 (1 row)
 
-SELECT abs(strdt('-1.42238','xsd:double'));
+SELECT sparql.abs(sparql.strdt('-1.42238','xsd:double'));
    abs   
 ---------
  1.42238
 (1 row)
 
-SELECT abs('');
+SELECT sparql.abs('');
 ERROR:  invalid input syntax for type double precision: ""
-CONTEXT:  PL/pgSQL function abs(text) line 3 at RETURN
-SELECT abs(' ');
+CONTEXT:  PL/pgSQL function sparql.abs(text) line 3 at RETURN
+SELECT sparql.abs(' ');
 ERROR:  invalid input syntax for type double precision: " "
-CONTEXT:  PL/pgSQL function abs(text) line 3 at RETURN
-SELECT abs(NULL);
+CONTEXT:  PL/pgSQL function sparql.abs(text) line 3 at RETURN
+SELECT sparql.abs(NULL);
  abs  
 ------
  NULL
 (1 row)
 
-SELECT abs(CAST(-1.42 AS numeric));
+SELECT sparql.abs(CAST(-1.42 AS numeric));
  abs  
 ------
  1.42
 (1 row)
 
-SELECT abs(CAST(-1.42 AS double precision));
+SELECT sparql.abs(CAST(-1.42 AS double precision));
  abs  
 ------
  1.42
 (1 row)
 
---SELECT abs(CAST(-1.42 AS real));
-SELECT abs(CAST(-1 AS bigint));
+--SELECT sparql.abs(CAST(-1.42 AS real));
+SELECT sparql.abs(CAST(-1 AS bigint));
  abs 
 -----
    1
 (1 row)
 
-SELECT abs(CAST(-1 AS smallint));
+SELECT sparql.abs(CAST(-1 AS smallint));
  abs 
 -----
    1
 (1 row)
 
-SELECT abs(CAST(-1 AS int));
+SELECT sparql.abs(CAST(-1 AS int));
  abs 
 -----
    1
 (1 row)
 
-SELECT p, o, abs(o)
+SELECT p, o, sparql.abs(o)
 FROM ftdbp 
 WHERE 
-  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
-  abs(o) = 23824;
+  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
+  sparql.abs(o) = 23824;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3454,78 +3454,78 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* ROUND */
-SELECT round('"2.4999"^^xsd:double');
+SELECT sparql.round('"2.4999"^^xsd:double');
  round 
 -------
      2
 (1 row)
 
-SELECT round('"2.5"^^xsd:double');
+SELECT sparql.round('"2.5"^^xsd:double');
  round 
 -------
      3
 (1 row)
 
-SELECT round('"-2.5"^^xsd:int');
+SELECT sparql.round('"-2.5"^^xsd:int');
  round 
 -------
     -2
 (1 row)
 
-SELECT round('');
+SELECT sparql.round('');
 ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function round(text) line 3 at IF
-SELECT round('""');
+CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+SELECT sparql.round('""');
 ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function round(text) line 3 at IF
-SELECT round(' ');
+CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+SELECT sparql.round(' ');
 ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function round(text) line 3 at IF
-SELECT round('" "');
+CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+SELECT sparql.round('" "');
 ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function round(text) line 3 at IF
-SELECT round(NULL);
+CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+SELECT sparql.round(NULL);
  round 
 -------
   NULL
 (1 row)
 
-SELECT round(CAST(2.49999 AS numeric));
+SELECT sparql.round(CAST(2.49999 AS numeric));
  round 
 -------
      2
 (1 row)
 
-SELECT round(CAST(2.5 AS double precision));
+SELECT sparql.round(CAST(2.5 AS double precision));
  round 
 -------
      3
 (1 row)
 
---SELECT round(CAST(-2.5 AS real));
-SELECT round(CAST(42 AS bigint));
+--SELECT sparql.round(CAST(-2.5 AS real));
+SELECT sparql.round(CAST(42 AS bigint));
  round 
 -------
     42
 (1 row)
 
-SELECT round(CAST(42 AS smallint));
+SELECT sparql.round(CAST(42 AS smallint));
  round 
 -------
     42
 (1 row)
 
-SELECT round(CAST(42 AS int));
+SELECT sparql.round(CAST(42 AS int));
  round 
 -------
     42
 (1 row)
 
-SELECT p, o, round(o)
+SELECT p, o, sparql.round(o)
 FROM ftdbp 
 WHERE 
-  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
-  round(o) = round('"23824"^^xsd:int');
+  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
+  sparql.round(o) = sparql.round('"23824"^^xsd:int');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3544,66 +3544,66 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* CEIL */
-SELECT ceil('"10.5"^^xsd:double');
+SELECT sparql.ceil('"10.5"^^xsd:double');
  ceil 
 ------
    11
 (1 row)
 
-SELECT ceil('"-10.5"^^:xsd:decimal');
+SELECT sparql.ceil('"-10.5"^^:xsd:decimal');
  ceil 
 ------
   -10
 (1 row)
 
-SELECT ceil(NULL);
+SELECT sparql.ceil(NULL);
  ceil 
 ------
  NULL
 (1 row)
 
-SELECT ceil(CAST(10.5 AS numeric));
+SELECT sparql.ceil(CAST(10.5 AS numeric));
  ceil 
 ------
    11
 (1 row)
 
-SELECT ceil(CAST(-10.5 AS double precision));
+SELECT sparql.ceil(CAST(-10.5 AS double precision));
  ceil 
 ------
   -10
 (1 row)
 
-SELECT ceil(CAST(10.5 AS real));
+SELECT sparql.ceil(CAST(10.5 AS real));
  ceil 
 ------
    11
 (1 row)
 
-SELECT ceil(CAST(-42 AS bigint));
+SELECT sparql.ceil(CAST(-42 AS bigint));
  ceil 
 ------
   -42
 (1 row)
 
-SELECT ceil(CAST(42 AS smallint));
+SELECT sparql.ceil(CAST(42 AS smallint));
  ceil 
 ------
    42
 (1 row)
 
-SELECT ceil(CAST(-42 AS int));
+SELECT sparql.ceil(CAST(-42 AS int));
  ceil 
 ------
   -42
 (1 row)
 
-SELECT p, o, ceil(o)
+SELECT p, o, sparql.ceil(o)
 FROM ftdbp 
 WHERE 
-  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
-  ceil(o) = ceil('"23823.5"^^xsd:int') AND
-  ceil(o) = ceil(23823.5);
+  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
+  sparql.ceil(o) = sparql.ceil('"23823.5"^^xsd:int') AND
+  sparql.ceil(o) = sparql.ceil(23823.5);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3622,60 +3622,60 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* FLOOR */
-SELECT floor('"10.5"^^xsd:double');
+SELECT sparql.floor('"10.5"^^xsd:double');
  floor 
 -------
     10
 (1 row)
 
-SELECT floor('"-10.5"^^xsd:decimal');
+SELECT sparql.floor('"-10.5"^^xsd:decimal');
  floor 
 -------
    -11
 (1 row)
 
-SELECT floor(CAST(10.5 AS numeric));
+SELECT sparql.floor(CAST(10.5 AS numeric));
  floor 
 -------
     10
 (1 row)
 
-SELECT floor(CAST(-10.5 AS double precision));
+SELECT sparql.floor(CAST(-10.5 AS double precision));
  floor 
 -------
    -11
 (1 row)
 
-SELECT floor(CAST(10.5 AS real));
+SELECT sparql.floor(CAST(10.5 AS real));
  floor 
 -------
     10
 (1 row)
 
-SELECT floor(CAST(-42 AS bigint));
+SELECT sparql.floor(CAST(-42 AS bigint));
  floor 
 -------
    -42
 (1 row)
 
-SELECT floor(CAST(42 AS smallint));
+SELECT sparql.floor(CAST(42 AS smallint));
  floor 
 -------
     42
 (1 row)
 
-SELECT floor(CAST(-42 AS int));
+SELECT sparql.floor(CAST(-42 AS int));
  floor 
 -------
    -42
 (1 row)
 
-SELECT p, o, ceil(o)
+SELECT p, o, sparql.floor(o)
 FROM ftdbp 
 WHERE 
-  p = iri('http://dbpedia.org/ontology/wikiPageID') AND
-  floor(o) = floor('"23824.5"^^xsd:int') AND
-  floor(o) = floor(23824.5);
+  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
+  sparql.floor(o) = sparql.floor('"23824.5"^^xsd:int') AND
+  sparql.floor(o) = sparql.floor(23824.5);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
 
@@ -3688,7 +3688,7 @@ SELECT ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-                    p                     |                          o                          | ceil  
+                    p                     |                          o                          | floor 
 ------------------------------------------+-----------------------------------------------------+-------
  <http://dbpedia.org/ontology/wikiPageID> | "23824"^^<http://www.w3.org/2001/XMLSchema#integer> | 23824
 (1 row)
@@ -4053,7 +4053,7 @@ SELECT sparql.timezone('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
 
 SELECT sparql.timezone('"2011-01-10T14:45:13.815"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2011-01-10T14:45:13.815
-CONTEXT:  PL/pgSQL function timezone(text) line 27 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 27 at RAISE
 SELECT sparql.timezone('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
                           timezone                           
 -------------------------------------------------------------
@@ -4086,19 +4086,19 @@ SELECT sparql.timezone('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
 
 SELECT sparql.timezone('"2020-12-01T08:00:00"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2020-12-01T08:00:00
-CONTEXT:  PL/pgSQL function timezone(text) line 27 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 27 at RAISE
 SELECT sparql.timezone('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): invalid timezone offset: +25:00
-CONTEXT:  PL/pgSQL function timezone(text) line 41 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 41 at RAISE
 SELECT sparql.timezone('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): invalid timezone offset: -99:99
-CONTEXT:  PL/pgSQL function timezone(text) line 41 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 41 at RAISE
 SELECT sparql.timezone('"invalid-date"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): invalid xsd:dateTime format: invalid-date
-CONTEXT:  PL/pgSQL function timezone(text) line 20 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 20 at RAISE
 SELECT sparql.timezone('""^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): invalid xsd:dateTime literal
-CONTEXT:  PL/pgSQL function timezone(text) line 15 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 15 at RAISE
 SELECT sparql.timezone(NULL);
  timezone 
 ----------
@@ -4126,7 +4126,7 @@ SELECT sparql.tz('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
 
 SELECT sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
 SELECT sparql.tz('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
    tz   
 --------
@@ -4159,7 +4159,7 @@ SELECT sparql.tz('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
 
 SELECT sparql.tz('"2020-12-01T08:00:00"^^xsd:dateTime');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
 SELECT sparql.tz('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
    tz   
 --------
@@ -4174,16 +4174,16 @@ SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 
 SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
 SELECT sparql.tz('""^^xsd:dateTime');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
 SELECT sparql.tz(NULL);
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
 SELECT sparql.tz('"not a date"^^xsd:string');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
 /*BOUND */
 SELECT sparql.bound(NULL);
  bound 
@@ -4413,7 +4413,7 @@ SELECT sparql.md5('"abc"^^xsd:string');
  "900150983cd24fb0d6963f7d28e17f72"
 (1 row)
 
-SELECT sparql.md5('"abc"^^xsd:string') = md5('abc');
+SELECT sparql.md5('"abc"^^xsd:string') = sparql.md5('abc');
  ?column? 
 ----------
  t
@@ -4482,8 +4482,8 @@ SELECT sparql.md5(repeat('a', 10000));
 SELECT p, o, sparql.md5(o)
 FROM ftdbp
 WHERE 
-  p = iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  langmatches(lang(o),'pt') AND
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o),'pt') AND
   sparql.md5(o) = sparql.md5('"PostgreSQL"@pt');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 

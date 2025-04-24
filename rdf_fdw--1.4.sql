@@ -224,7 +224,7 @@ COMMENT ON FUNCTION sparql.struuid() IS 'Generates a UUID string.';
 /* SPARQL 17.4.3  Functions on Strings */
 CREATE FUNCTION sparql.strlen(text) RETURNS int AS $$
 BEGIN
-  RETURN length(lex($1));
+  RETURN length(sparql.lex($1));
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.strlen(text) IS 'Returns the length of the literal text.';
