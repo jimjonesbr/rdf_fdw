@@ -527,7 +527,7 @@ static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static char *FormatSQLExtractField(char *field);
 static char *CstringToRDFLiteral(char *input);
-static char *ExtractRDFLexicalValue(char *input);
+static char *lex(char *input);
 static bool LiteralsCompatible(char *literal1, char *literal2);
 static char *ExpandDatatypePrefix(char *str);
 static bool IsRDFStringLiteral(char *str_datatype);
@@ -541,6 +541,10 @@ static bool strends(char *str, char *substr);
 static char *iri(char *input);
 static bool isIRI(char *input);
 static bool langmatches(char *lang_tag, char *pattern);
+static bool isLiteral(char *term);
+static char *bnode(char *input);
+static char *generate_uuid_v4(void);
+static char *rdf_concat(char *left, char *right);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -591,8 +595,13 @@ static char *CstringToRDFLiteral(char *input)
 	const char *end;
 	int len;
 
+	elog(DEBUG1,"%s called: input='%s'", __func__, input);
+
 	if (!input || strlen(input) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning empty literal '\"\"'", __func__);
 		return "\"\""; /* empty input becomes empty literal */
+	}
 
 	start = input;
 	len = strlen(start);
@@ -611,6 +620,7 @@ static char *CstringToRDFLiteral(char *input)
 
 			if (tag && tag > start + 1 && *(tag - 1) == '"')
 			{
+				elog(DEBUG1,"%s exit: returning => '%s'", __func__, input);
 				/* complete literal with lang or type, return as-is */
 				return input;
 			}
@@ -645,6 +655,7 @@ static char *CstringToRDFLiteral(char *input)
 	/* add closing quote */
 	appendStringInfoChar(&buf, '"');
 
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
 	return buf.data;
 }
 
@@ -661,7 +672,7 @@ static char *CstringToRDFLiteral(char *input)
  *
  * returns: Null-terminated C string representing the lexical value (e.g., "abc", "123")
  */
-static char *ExtractRDFLexicalValue(char *input)
+static char *lex(char *input)
 {
 	const char *start;
 	const char *end;
@@ -669,7 +680,7 @@ static char *ExtractRDFLexicalValue(char *input)
 	int len;
 	StringInfoData output;
 
-	elog(DEBUG1, "%s called for > '%s'", __func__, input);
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	start = input;
 	is_quoted = (*start == '"');
@@ -734,7 +745,7 @@ static char *ExtractRDFLexicalValue(char *input)
 			appendStringInfoString(&output, start);
 	}
 
-	elog(DEBUG1, "  %s returning > '%s'", __func__, output.data);
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, output.data);
 
 	return output.data;
 }
@@ -756,12 +767,12 @@ static char *lang(char *input)
 	const char *ptr;
 	char *lexical_form;
 
-	elog(DEBUG1, "%s called with literal '%s'", __func__, input);
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	if (!input || strlen(input) == 0)
 		return "";
 
-	lexical_form = ExtractRDFLexicalValue(input);
+	lexical_form = lex(input);
 	ptr = input;
 
 	/* find the end of the lexical form in the original input */
@@ -787,12 +798,12 @@ static char *lang(char *input)
 			tag_end++;
 
 		initStringInfo(&buf);
-		appendBinaryStringInfo(&buf, tag_start, tag_end - tag_start);
-		elog(DEBUG1, "%s returning > '%s'", __func__, buf.data);
+		appendBinaryStringInfo(&buf, tag_start, tag_end - tag_start);		
+		elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
 		return buf.data;
 	}
 
-	elog(DEBUG1, "%s returning empty string", __func__);
+	elog(DEBUG1,"%s exit: returning empty string", __func__);
 	return "";
 }
 
@@ -832,23 +843,21 @@ static char *strlang(char *literal, char *language)
 {
 	StringInfoData buf;
 
-	elog(DEBUG1, "%s called for literal='%s', language='%s'", __func__, literal, language);
+	elog(DEBUG1, "%s called: literal='%s', language='%s'", __func__, literal, language);
 
 	if (strlen(language) == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("language tag cannot be empty")));
 
-	elog(DEBUG1, "  %s: literal = '%s', language = '%s'", __func__, literal, language);
-
 	initStringInfo(&buf);
 
 	if (strlen(literal) == 0)
 		appendStringInfo(&buf, "\"\"@%s", language);
 	else
-		appendStringInfo(&buf, "\"%s\"@%s", ExtractRDFLexicalValue(literal), language);
+		appendStringInfo(&buf, "\"%s\"@%s", lex(literal), language);
 
-	elog(DEBUG1, "%s: returning > '%s'", __func__, buf.data);
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 
 	return buf.data;
 }
@@ -898,6 +907,8 @@ static char *ExpandDatatypePrefix(char *str)
 	char *stripped_str = str;
 	size_t len;
 
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+
 	if (!str || strlen(str) == 0)
 		return ""; // Empty input returns empty string
 
@@ -922,6 +933,8 @@ static char *ExpandDatatypePrefix(char *str)
 
 		if (stripped_str != str)
 			pfree(stripped_str);
+	
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 
 		return buf.data;
 	}
@@ -932,8 +945,13 @@ static char *ExpandDatatypePrefix(char *str)
 		initStringInfo(&buf);
 		appendStringInfoString(&buf, stripped_str);
 		pfree(stripped_str);
+
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+
 		return buf.data;
 	}
+
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, str);
 
 	return str;
 }
@@ -957,6 +975,8 @@ static char *strdt(char *literal, char *datatype)
 	char *lexical;
 	char *expanded_datatype;
 
+	elog(DEBUG1, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
+
 	if (!datatype || strlen(datatype) == 0)
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						errmsg("datatype IRI cannot be empty")));
@@ -965,7 +985,7 @@ static char *strdt(char *literal, char *datatype)
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						errmsg("datatype IRI cannot contain whitespaces")));
 
-	lexical = ExtractRDFLexicalValue(literal);
+	lexical = lex(literal);
 	expanded_datatype = ExpandDatatypePrefix(datatype);
 	initStringInfo(&buf);
 
@@ -974,6 +994,8 @@ static char *strdt(char *literal, char *datatype)
 		appendStringInfo(&buf, "%s^^%s", CstringToRDFLiteral(lexical), expanded_datatype);
 	else
 		appendStringInfo(&buf, "%s^^<%s>", CstringToRDFLiteral(lexical), expanded_datatype);
+
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 
 	return buf.data;
 }
@@ -994,8 +1016,11 @@ Datum rdf_fdw_strdt(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
 	text *data_type = PG_GETARG_TEXT_PP(1);
+	char *literal;
 
-	char *literal = strdt(
+	elog(DEBUG1, "%s called", __func__);
+
+	literal = strdt(
 		text_to_cstring(input_text),
 		text_to_cstring(data_type));
 
@@ -1018,10 +1043,13 @@ static char *str(char *input)
 	StringInfoData buf;
 	char *result;
 
-	elog(DEBUG1, "%s called", __func__);
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	if (!input || strlen(input) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning empty literal", __func__);
 		return CstringToRDFLiteral(""); /* empty input returns empty string */
+	}
 
 	/* Check if input looks like an IRI (starts with <, ends with >) */
 	if (input[0] == '<' && input[strlen(input) - 1] == '>' && strlen(input) > 2)
@@ -1030,10 +1058,16 @@ static char *str(char *input)
 		appendStringInfoString(&buf, input + 1); /* Skip opening < */
 		buf.len--;								 /* Remove closing > */
 		buf.data[buf.len] = '\0';				 /* Null-terminate */
+
+		elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
+
 		return CstringToRDFLiteral(buf.data);
 	}
 
-	result = ExtractRDFLexicalValue(input);
+	result = lex(input);
+
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, CstringToRDFLiteral(result));
+
 	return CstringToRDFLiteral(result);
 }
 
@@ -1074,7 +1108,7 @@ static char *iri(char *input)
     StringInfoData buf;
     const char *start, *end;
 
-    elog(DEBUG1, "%s called with input '%s'", __func__, input);
+    elog(DEBUG1, "%s called: input '%s'", __func__, input);
 
     /* Handle empty or NULL input */
     if (!input || strlen(input) == 0)
@@ -1086,7 +1120,7 @@ static char *iri(char *input)
     if (isIRI(input))
     {
         appendStringInfoString(&buf, input);
-        elog(DEBUG1, "  %s returning existing IRI > '%s'", __func__, buf.data);
+        elog(DEBUG1, "%s exit: returning existing IRI => '%s'", __func__, buf.data);
         return buf.data;
     }
 
@@ -1119,7 +1153,8 @@ static char *iri(char *input)
     else
         appendBinaryStringInfo(&buf, start, end - start);  /* Unquoted or malformed */
     appendStringInfo(&buf, ">");
-    elog(DEBUG1, "  %s returning wrapped IRI > '%s'", __func__, buf.data);
+
+    elog(DEBUG1, "%s exit: returning wrapped IRI => '%s'", __func__, buf.data);
     return buf.data;
 }
 
@@ -1205,24 +1240,37 @@ static bool isIRI(char *input)
 	const char *inner;
 	size_t len = strlen(input);
 
-	elog(DEBUG1, "%s called with input '%s'", __func__, input);
+	elog(DEBUG1, "%s called: input '%s'", __func__, input);
 
 	if (strlen(input) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning => 'false' (NULL or empty)", __func__);
 		return false; /* NULL or empty isn’t an IRI */
+	}
 
 	/* Must be enclosed in < > */
 	if (input[0] != '<' || input[len - 1] != '>' || len < 3)
+	{
+		elog(DEBUG1,"%s exit: returning => 'false' (must be closed in)", __func__);
 		return false;
+	}
 
 	/* Check for a scheme (basic IRI check) */
 	if (strncmp(input, "<http://", 7) == 0 || strncmp(input, "<https://", 8) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning => 'true' (has a basic http or https scheme)", __func__);
 		return true;
+	}
 
 	/* Allow other schemes (e.g., <mailto:>, <urn:>) but require some prefix */
 	inner = input + 1; /* Skip < */
 	if (strchr(inner, ':') && strchr(inner, '>') && strchr(inner, ':') < strchr(inner, '>'))
+	{
+		elog(DEBUG1,"%s exit: returning => 'true' (other schemes (e.g., <mailto:>, <urn:>)", __func__);
 		return true;
+	}
 
+	elog(DEBUG1,"%s exit: returning => 'false' (no scheme or malformed)", __func__);
 	return false; /* No scheme or malformed */
 }
 
@@ -1264,11 +1312,11 @@ static char *datatype(char *input)
     const char *ptr;
     int len;
 
-    elog(DEBUG1, "%s called with literal '%s'", __func__, input ? input : "(null)");
+    elog(DEBUG1, "%s called: input='%s'", __func__, input ? input : "(null)");
 
     if (input == NULL || *input == '\0')
     {
-        elog(DEBUG1, "%s: returning empty string for NULL or empty input", __func__);
+        elog(DEBUG1, "%s exit: returning empty string for NULL or empty input", __func__);
         return "";
     }
 
@@ -1296,7 +1344,7 @@ static char *datatype(char *input)
                     dt_end++;
                 if (*dt_end != '>') /* Ensure proper closing */
                 {
-                    elog(DEBUG1, "%s: malformed datatype IRI, missing '>'", __func__);
+                    elog(DEBUG1, "%s exit: returning empty string (malformed datatype IRI, missing '>')", __func__);
                     return "";
                 }
                 dt_end++; /* include > */
@@ -1309,6 +1357,7 @@ static char *datatype(char *input)
 
             if (dt_start < dt_end)
             {
+				char *res = "";
                 /* Handle xsd: prefix */
                 if (strncmp(dt_start, "xsd:", 4) == 0 && dt_end - dt_start > 4)
                 {
@@ -1333,35 +1382,44 @@ static char *datatype(char *input)
                 /* Ensure no trailing junk */
                 if (*dt_end != '\0')
                 {
-                    elog(DEBUG1, "%s: Trailing chars after datatype, invalid", __func__);
-                    return "";
+                    elog(DEBUG1, "%s exit: returning empty string (trailing chars after datatype)", __func__);
+                    return res;
                 }
 
-                elog(DEBUG1, "%s returning > '%s'", __func__, buf.data);
-                return iri(buf.data);
+                res = iri(buf.data);
+
+				elog(DEBUG1, "%s exit: returning => '%s'", __func__, res);
+                return res;
             }
         }
         /* Simple or language-tagged literal */
         if ((lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"') ||
             (len >= 1 && (ptr[len - 1] == '"' || len == 1)))
         {
-            elog(DEBUG1, "%s: returning empty string for simple/language-tagged literal", __func__);
+            elog(DEBUG1, "%s exit: returning empty string (simple/language-tagged literal)", __func__);
             return "";
         }
     }
 
     /* Not a valid literal */
-    elog(DEBUG1, "%s: returning empty string", __func__);
+    elog(DEBUG1, "%s exit: returning empty string (not a valid literal)", __func__);
     return "";
 }
 
 static char *MapSPARQLDatatype(Oid pgtype)
 {
+	elog(DEBUG1, "%s called: input='%u'", __func__, pgtype);
+
 	for (int i = 0; type_map[i].type_oid != InvalidOid; i++)
 	{
 		if (pgtype == type_map[i].type_oid)
-			return (char*) type_map[i].xsd_datatype;
+		{
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, (char *)type_map[i].xsd_datatype);
+			return (char *)type_map[i].xsd_datatype;
+		}
 	}
+
+	elog(DEBUG1,"%s exit: returning NULL (unsupported type)", __func__);
 	return NULL; // Unsupported type
 }
 /*
@@ -1388,6 +1446,8 @@ Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS)
 {
     Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
     char *xsd_type = MapSPARQLDatatype(argtype);
+
+	elog(DEBUG1,"%s called: xsd_type='%s'", __func__, xsd_type);
 
     if (xsd_type)
     {
@@ -1420,17 +1480,19 @@ static char *encode_for_uri(char *str)
 {
 	const char *unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
 	size_t in_len;
+	char *res;
+
 	StringInfoData buf;
 	initStringInfo(&buf);
 
-	elog(DEBUG1, "%s called: raw string '%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	/* if it starts with a quote, treat as RDF literal; otherwise, use raw string */
 	if (str[0] == '"')
-		str = ExtractRDFLexicalValue(str);
+		str = lex(str);
 
 	in_len = strlen(str);
-	elog(DEBUG1, "%s: encoding string: '%s', length: %zu", __func__, str, in_len);
+	elog(DEBUG2, "%s: encoding string: '%s', length: %zu", __func__, str, in_len);
 
 	for (size_t i = 0; i < in_len; i++)
 	{
@@ -1441,7 +1503,10 @@ static char *encode_for_uri(char *str)
 			appendStringInfo(&buf, "%%%02X", c);
 	}
 
-	return CstringToRDFLiteral(buf.data);
+	res = CstringToRDFLiteral(buf.data);
+
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, res);
+	return res;
 }
 
 /*
@@ -1484,23 +1549,23 @@ static bool contains(char *str, char *substr)
 	char *substr_lexical;
 	bool result;
 
-	elog(DEBUG1, "%s called with str '%s', substr '%s'", __func__, str, substr);
+	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
 	/* handle NULL or empty inputs */
 	if (!str || !substr || strlen(str) == 0 || strlen(substr) == 0)
 	{
-		elog(DEBUG1, "  %s: returning false (invalid input)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
 		return false;
 	}
 
 	/* extract lexical values (strips quotes, tags, etc.) */
-	str_lexical = ExtractRDFLexicalValue(str);
-	substr_lexical = ExtractRDFLexicalValue(substr);
+	str_lexical = lex(str);
+	substr_lexical = lex(substr);
 
 	/* check if substr is in str using strstr */
 	result = (strstr(str_lexical, substr_lexical) != NULL);
 
-	elog(DEBUG1, "  %s: returning > %s (str_lexical='%s', substr_lexical='%s')",
+	elog(DEBUG1, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
 		 __func__, result ? "true" : "false", str_lexical, substr_lexical);
 
 	return result;
@@ -1547,15 +1612,23 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
  */
 static bool LiteralsCompatible(char *literal1, char *literal2)
 {
-	char *lang1 = lang(literal1);
-	char *lang2 = lang(literal2);
-	char *dt1 = datatype(literal1);
-	char *dt2 = datatype(literal2);
+	char *lang1;
+	char *lang2;
+	char *dt1;
+	char *dt2;
 
 	elog(DEBUG1, "%s called: literal1='%s', literal2='%s'", __func__, literal1, literal2);
 
+	lang1 = lang(literal1);
+	lang2 = lang(literal2);
+	dt1 = datatype(literal1);
+	dt2 = datatype(literal2);
+
 	if (!literal1 || !literal2)
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (one of the arguments is NULL)", __func__);
 		return false;
+	}
 
 	/*TODO: check if RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED is needed, as the prefix is expaded elsewhere */
 
@@ -1563,18 +1636,28 @@ static bool LiteralsCompatible(char *literal1, char *literal2)
 	if (strlen(lang1) == 0 && strlen(lang2) == 0 &&
 		(strlen(dt1) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0) &&
 		(strlen(dt2) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+	{
+		elog(DEBUG1,"%s exit: returning 'true' (both simple literals or xsd:string)", __func__);
 		return true;
+	}
 
 	/* both plain literals with identical language tags */
 	if (strlen(lang1) > 0 && strlen(lang2) > 0 && strcmp(lang1, lang2) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning 'true' (both plain literals with identical language tags)", __func__);
 		return true;
+	}
 
 	/* arg1 has language tag, arg2 is simple or xsd:string */
 	if (strlen(lang1) > 0 && strlen(lang2) == 0 &&
 		(strlen(dt2) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+	{
+		elog(DEBUG1,"%s exit: returning 'true' (arg1 has language tag, arg2 is simple or xsd:string)", __func__);
 		return true;
+	}
 
 	/* incompatible otherwise (e.g., arg1 xsd:string, arg2 language-tagged) */
+	elog(DEBUG1,"%s exit: returning 'false' (incompatible)", __func__);
 	return false;
 }
 
@@ -1617,24 +1700,34 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 	text *delimiter_arg = PG_GETARG_TEXT_PP(1);
 	char *str_arg_cstr = text_to_cstring(str_arg);
 	char *delimiter_arg_cstr = text_to_cstring(delimiter_arg);
-	char *str_lexical = ExtractRDFLexicalValue(str_arg_cstr);			  // Lexical form of arg1
-	char *delimiter_lexical = ExtractRDFLexicalValue(delimiter_arg_cstr); // Lexical form of arg2
-	char *lang1 = lang(str_arg_cstr);									  // Language tag of arg1
+	char *str_lexical;
+	char *delimiter_lexical;
+	char *lang1;
 	char *dt1 = "";														  // Datatype of arg1
 	char *pos;
+	char *result;
 	//bool has_explicit_datatype = false;
+
+	elog(DEBUG1,"%s called: str='%s', delimiter='%s", __func__, str_arg_cstr, delimiter_arg_cstr);
+
+	str_lexical = lex(str_arg_cstr);			  // Lexical form of arg1
+	delimiter_lexical = lex(delimiter_arg_cstr); // Lexical form of arg2
+	lang1 = lang(str_arg_cstr);									  // Language tag of arg1
 
 	/* extract datatypes if no language tags */
 	if (strlen(lang1) == 0)
 		dt1 = datatype(str_arg_cstr);
 
 	if (!LiteralsCompatible(str_arg_cstr, delimiter_arg_cstr))
+	{
+		elog(DEBUG1,"%s exit: returning NULL (literals no compatible)", __func__);
 		PG_RETURN_NULL();
+	}
 
 	if ((pos = strstr(str_lexical, delimiter_lexical)) != NULL)
 	{
 		size_t before_len = pos - str_lexical;
-		char *result;
+		//char *result;
 		StringInfoData buf;
 		initStringInfo(&buf);
 
@@ -1642,7 +1735,8 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 		{
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
 			result = strlang(buf.data, lang1);
-			//pfree(buf.data);
+
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else if (strlen(dt1) > 0 && /* only for explicit ^^ */
@@ -1654,7 +1748,8 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 			{
 				result = strdt(buf.data, dt1);
 			}
-			//pfree(buf.data);
+
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else
@@ -1662,7 +1757,8 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 			/* simple literal or implicit xsd:string */
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
 			result = CstringToRDFLiteral(buf.data);
-			//pfree(buf.data);
+
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 	}
@@ -1671,7 +1767,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 	if (strlen(dt1) > 0 &&
 		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		char *result = CstringToRDFLiteral("");
+		result = CstringToRDFLiteral("");
 		if (strstr(result, "^^") == NULL)
 		{
 			StringInfoData typed_buf;
@@ -1679,10 +1775,15 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 			appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
 			result = typed_buf.data;
 		}
+
+		elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 
-	PG_RETURN_TEXT_P(cstring_to_text(CstringToRDFLiteral("")));
+	result = CstringToRDFLiteral("");
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -1706,12 +1807,19 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 	text *delimiter_arg = PG_GETARG_TEXT_PP(1);
 	char *str_arg_cstr = text_to_cstring(str_arg);
 	char *delimiter_arg_cstr = text_to_cstring(delimiter_arg);
-	char *str = ExtractRDFLexicalValue(str_arg_cstr);
-	char *delimiter = ExtractRDFLexicalValue(delimiter_arg_cstr);
-	char *lang1 = lang(str_arg_cstr);
+	char *str;
+	char *delimiter;
+	char *lang1;
 	char *dt1 = "";
 	char *pos;
 	bool has_explicit_datatype = false;
+	char *result;
+
+	elog(DEBUG1,"%s called: str='%s', delimiter='%s'", __func__, str_arg_cstr, delimiter_arg_cstr);
+
+	str = lex(str_arg_cstr);
+	delimiter = lex(delimiter_arg_cstr);
+	lang1 = lang(str_arg_cstr);
 
 	/* extract datatype if no language tag */
 	if (strlen(lang1) == 0)
@@ -1722,14 +1830,17 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 		has_explicit_datatype = true;
 
 	if (!LiteralsCompatible(str_arg_cstr, delimiter_arg_cstr))
+	{
+		elog(DEBUG1,"%s exit: returning NULL (incompatible literals)", __func__);
 		PG_RETURN_NULL();
+	}
 
 	if ((pos = strstr(str, delimiter)) != NULL)
 	{
 		size_t delimiter_len = strlen(delimiter);
 		char *after_start = pos + delimiter_len;
 		size_t after_len = strlen(str) - (after_start - str);
-		char *result;
+		
 		StringInfoData buf;
 		initStringInfo(&buf);
 
@@ -1738,6 +1849,8 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 			appendBinaryStringInfo(&buf, after_start, after_len);
 			result = strlang(buf.data, lang1);
 			pfree(buf.data);
+
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else if (has_explicit_datatype && strlen(dt1) > 0 &&
@@ -1750,6 +1863,8 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 				result = strdt(buf.data, dt1);
 			}
 			pfree(buf.data);
+			
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else
@@ -1758,6 +1873,8 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 			appendBinaryStringInfo(&buf, after_start, after_len);
 			result = CstringToRDFLiteral(buf.data);
 			pfree(buf.data);
+
+			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 	}
@@ -1766,7 +1883,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 	if (has_explicit_datatype && strlen(dt1) > 0 &&
 		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		char *result = CstringToRDFLiteral("");
+		result = CstringToRDFLiteral("");
 		if (strstr(result, "^^") == NULL)
 		{
 			StringInfoData typed_buf;
@@ -1774,10 +1891,14 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 			appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
 			result = typed_buf.data;
 		}
+
+		elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 
-	PG_RETURN_TEXT_P(cstring_to_text(CstringToRDFLiteral("")));
+	result = CstringToRDFLiteral("");
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -1797,21 +1918,38 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
  */
 static bool strstarts(char *str, char *substr)
 {
-	char *str_lexical = ExtractRDFLexicalValue(str);
-	char *substr_lexical = ExtractRDFLexicalValue(substr);
+	char *str_lexical = lex(str);
+	char *substr_lexical = lex(substr);
 	size_t str_len = strlen(str_lexical);
 	size_t substr_len = strlen(substr_lexical);
+	int result;
+
+	elog(DEBUG1,"%s called: str='%s', substr='%s'", __func__, str, substr);
 
 	if (!LiteralsCompatible(str, substr))
-		return false; // Incompatible arguments return false
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (incompatible literals)", __func__);
+		return false;
+	}
 
 	if (substr_len == 0)
-		return true; // Empty substring is a prefix of any string
+	{
+		elog(DEBUG1,"%s exit: returning 'true' (empty substring is a prefix of any string)", __func__);
+		return true;
+	}
 
 	if (substr_len > str_len)
-		return false; // Substring longer than string cannot be a prefix
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (substring longer than string cannot be a prefix)", __func__);
+		return false;
+	}
 
-	return strncmp(str_lexical, substr_lexical, substr_len) == 0;
+	result = strncmp(str_lexical, substr_lexical, substr_len);
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__,
+		result == 0 ? "true" : "false");
+
+	return result == 0;
 }
 
 /*
@@ -1836,8 +1974,13 @@ Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
 	char *str = text_to_cstring(str_arg);
 	char *substr = text_to_cstring(substr_arg);
 
+	elog(DEBUG1,"%s called: str='%s', substr='%s'", __func__, str, substr);
+
 	if (!LiteralsCompatible(str, substr))
-		PG_RETURN_NULL(); // Incompatible arguments return NULL per SPARQL
+	{
+		elog(DEBUG1,"%s exit: returning NULL (incompatible literals)", __func__);
+		PG_RETURN_NULL();
+	}
 
 	PG_RETURN_BOOL(strstarts(str, substr));
 }
@@ -1859,21 +2002,37 @@ Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
  */
 static bool strends(char *str, char *substr)
 {
-    char *str_lexical = ExtractRDFLexicalValue(str);
-    char *substr_lexical = ExtractRDFLexicalValue(substr);
+    char *str_lexical = lex(str);
+    char *substr_lexical = lex(substr);
     size_t str_len = strlen(str_lexical);
     size_t substr_len = strlen(substr_lexical);
+	int result;
+
+	elog(DEBUG1,"%s called: str='%s', substr='%s'", __func__, str, substr);
 
     if (!LiteralsCompatible(str, substr))
-        return false;  // Incompatible arguments return false
+    {
+		elog(DEBUG1,"%s exit: returning 'false' (incompatible literals)", __func__);
+		return false;
+	}
 
     if (substr_len == 0)
-        return true;  // Empty substring is a suffix of any string
+    {
+		elog(DEBUG1,"%s exit: returning 'true' (an empty substring is a suffix of any string)", __func__);
+		return true;
+	}
 
     if (substr_len > str_len)
-        return false;  // Substring longer than string cannot be a suffix
+    {
+		elog(DEBUG1,"%s exit: returning 'false' (substring longer than string cannot be a suffix)", __func__);
+		return false;
+	}
 
-    return strncmp(str_lexical + (str_len - substr_len), substr_lexical, substr_len) == 0;
+	result = strncmp(str_lexical + (str_len - substr_len), substr_lexical, substr_len);
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
+
+    return result == 0;
 }
 
 /*
@@ -1923,12 +2082,12 @@ static bool langmatches(char *lang_tag, char *pattern)
 	char *pat;
 	bool result;
 
-	elog(DEBUG1, "%s called with lang_tag '%s', pattern '%s'", __func__, lang_tag, pattern);
+	elog(DEBUG1, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag, pattern);
 
 	/* Handle NULL inputs */
 	if (!lang_tag || !pattern)
 	{
-		elog(DEBUG1, "  %s returning false (invalid input)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
 		return false;
 	}
 
@@ -1936,7 +2095,7 @@ static bool langmatches(char *lang_tag, char *pattern)
 	tag = lang_tag; /* e.g., "en" from lang('"foo"@en') */
 	/* Handle pattern: bare string or quoted literal */
 	if (pattern[0] == '"' && strrchr(pattern, '"') > pattern)
-		pat = ExtractRDFLexicalValue(pattern); /* e.g., "\"en\"" -> "en" */
+		pat = lex(pattern); /* e.g., "\"en\"" -> "en" */
 	else
 		pat = pattern; /* e.g., "en" as-is */
 
@@ -1944,7 +2103,7 @@ static bool langmatches(char *lang_tag, char *pattern)
 	if (strlen(tag) == 0)
 	{
 		result = (strcasecmp(pat, "*") == 0);
-		elog(DEBUG1, "  %s returning > %s (empty tag, pattern='%s')",
+		elog(DEBUG1, "%s exit: returning '%s' (empty tag, pattern='%s')",
 			 __func__, result ? "true" : "false", pat);
 		return result;
 	}
@@ -1989,7 +2148,8 @@ static bool langmatches(char *lang_tag, char *pattern)
 		result = false;
 	}
 
-	elog(DEBUG1, "  %s returning > %s (tag='%s', pat='%s')", __func__, result ? "true" : "false", tag, pat);
+	elog(DEBUG1, "%s exit: returning '%s' (tag='%s', pat='%s')",
+		__func__, result ? "true" : "false", tag, pat);
 
 	return result;
 }
@@ -2031,19 +2191,19 @@ Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS)
 static bool isBlank(char *term)
 {
 	bool result;
-	elog(DEBUG1, "%s called with term '%s'", __func__, term);
+	elog(DEBUG1, "%s called: term='%s'", __func__, term);
 
 	/* Handle NULL or empty input */
 	if (!term || strlen(term) == 0)
 	{
-		elog(DEBUG1, "  %s returning false (invalid input)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
 		return false;
 	}
 
 	/* Check if term starts with "_:" */
 	result = (strncmp(term, "_:", 2) == 0);
 
-	elog(DEBUG1, "  %s returning > %s", __func__, result ? "true" : "false");
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result ? "true" : "false");
 	return result;
 }
 
@@ -2086,8 +2246,13 @@ static bool isNumeric(char *term)
 	bool is_bare_number = false;
 	char *endptr;
 
+	elog(DEBUG1,"%s called: term='%s'", __func__, term);
+
 	if (!term || strlen(term) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (term either NULL or an empty string)", __func__);
 		return false;
+	}
 
 	/* Check if term is a bare number (e.g., "12") */
 	if (term[0] != '"' && !strstr(term, "^^") && !strstr(term, "@"))
@@ -2098,24 +2263,37 @@ static bool isNumeric(char *term)
 	else
 	{
 		/* Extract lexical value using datatype’s helper */
-		lexical = ExtractRDFLexicalValue(term); /* From datatype/strdt codebase */
+		lexical = lex(term); /* From datatype/strdt codebase */
 	}
 
 	/* Validate lexical form as numeric (integers, decimals, or scientific notation) */
 	if (!lexical || strlen(lexical) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
 		return false;
+	}
+
 	strtod(lexical, &endptr);
-	if (*endptr != '\0') /* Not a valid number, e.g., "abc" */
+	if (*endptr != '\0') /* not a valid number, e.g., "abc" */
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (not a valid number)", __func__);
 		return false;
+	}
 
 	/* Bare numbers are numeric */
 	if (is_bare_number)
+	{
+		elog(DEBUG1,"%s exit: returning 'true' (bare numbers are numeric)", __func__);
 		return true;
+	}
 
 	/* Get datatype using datatype function */
 	datatype_uri = datatype(term);
 	if (strlen(datatype_uri) == 0)
-		return false; /* No datatype or invalid literal (e.g., "12") */
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (no datatype or invalid literal)", __func__);
+		return false;
+	} /* No datatype or invalid literal (e.g., "12") */
 
 	/* Check for numeric datatypes */
 	if (strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#integer>") == 0 ||
@@ -2142,17 +2320,28 @@ static bool isNumeric(char *term)
 			long val = strtol(lexical, &endptr, 10); /* Parse as integer */
 			/* Ensure the entire string is a valid integer and within xsd:byte range */
 			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
+			{
+				elog(DEBUG1,"%s exit: returning 'false' (not a pure integer)", __func__);
 				return false;
+			}
 			if (val < -128 || val > 127) /* Outside xsd:byte range, e.g., 1200 */
+			{
+				elog(DEBUG1,"%s exit: returning 'false' (outside xsd:byte range)", __func__);
 				return false;
+			}
+
+			elog(DEBUG1,"%s exit: returning 'true' (valid xsd:byte)", __func__);
 			return true; /* Valid xsd:byte, e.g., "100" */
 		}
 		/* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
 		 * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
 		 * Accept them as numeric. */
+
+		elog(DEBUG1,"%s exit: returning 'true'", __func__);
 		return true;
 	}
 
+	elog(DEBUG1,"%s exit: returning 'false'", __func__);
 	return false;
 }
 
@@ -2186,66 +2375,83 @@ Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS)
  *
  * term: Null-terminated C string representing an RDF term
  *
- * returns: Boolean (1 for literal, 0 otherwise, C90-compliant)
+ * returns: Boolean (1 for literal, 0 otherwise)
  */
-static bool
-isLiteral(char *term)
+static bool isLiteral(char *term)
 {
-    const char *ptr;
-    int len;
+	const char *ptr;
+	int len;
 
-    if (!term || *term == '\0')
-        return 0;
+	elog(DEBUG1, "%s called: term='%s'", __func__, term);
 
-    /* Exclude IRIs and blank nodes first */
-    if (isIRI(term) || isBlank(term))
-        return 0;
+	if (!term || *term == '\0')
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (term either NULL or has no '\\0')", __func__);
+		return false;
+	}
 
-    /* Bare strings (e.g., "12") are not literals */
-    if (*term != '"' && *term != '_' && *term != '<')
-        return 0;
+	/* Exclude IRIs and blank nodes first */
+	if (isIRI(term) || isBlank(term))
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (either an IRI or a blank node)", __func__);
+		return false;
+	}
 
-    /* Normalize input */
-    ptr = CstringToRDFLiteral(term);
-    len = strlen(ptr);
+	/* Bare strings (e.g., "12") are not literals */
+	if (*term != '"' && *term != '_' && *term != '<')
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (bare strings are not literals)", __func__);
+		return false;
+	}
 
-    /* Check for valid quoted literal */
-    if (*ptr == '"')
-    {
-        if (len >= 2)
-        {
-            const char *tag = strstr(ptr, "^^");
-            const char *lang_tag = strstr(ptr, "@");
+	/* Normalize input */
+	ptr = CstringToRDFLiteral(term);
+	len = strlen(ptr);
 
-            /* Typed literal: has ^^ followed by datatype */
-            if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
-                (!lang_tag || lang_tag > tag))
-            {
-                const char *dt_start = tag + 2;
-                if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
-                    return 1; /* Valid datatype */
-            }
-            /* Language-tagged literal: has @ with language tag */
-            else if (lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"' &&
-                     *(lang_tag + 1) != '\0')
-            {
-                return 1;
-            }
-            /* Simple literal: quoted string, no ^^ or @ */
-            else if (ptr[len - 1] == '"')
-            {
-                return 1;
-            }
-        }
-        else if (len == 1)
-        {
-            /* Empty quoted literal "" */
-            return 1;
-        }
-    }
+	/* Check for valid quoted literal */
+	if (*ptr == '"')
+	{
+		if (len >= 2)
+		{
+			const char *tag = strstr(ptr, "^^");
+			const char *lang_tag = strstr(ptr, "@");
 
-    /* Invalid or non-literal */
-    return 0;
+			/* Typed literal: has ^^ followed by datatype */
+			if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
+				(!lang_tag || lang_tag > tag))
+			{
+				const char *dt_start = tag + 2;
+				if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
+				{
+					elog(DEBUG1,"%s exit: returning 'true' (valid datatype)", __func__);
+					return true;
+				} /* Valid datatype */
+			}
+			/* Language-tagged literal: has @ with language tag */
+			else if (lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"' &&
+					 *(lang_tag + 1) != '\0')
+			{
+				elog(DEBUG1,"%s exit: returning 'true' (literal has a language tag)", __func__);
+				return true;
+			}
+			/* Simple literal: quoted string, no ^^ or @ */
+			else if (ptr[len - 1] == '"')
+			{
+				elog(DEBUG1,"%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
+				return true;
+			}
+		}
+		else if (len == 1)
+		{
+			/* Empty quoted literal "" */
+			elog(DEBUG1,"%s exit: returning 'true' (empty quoted literal)", __func__);
+			return true;
+		}
+	}
+
+	/* Invalid or non-literal */
+	elog(DEBUG1,"%s exit: returning 'false' (invalid or non-literal)", __func__);
+	return false;
 }
 
 /*
@@ -2296,6 +2502,8 @@ static char *bnode(char *input)
 	StringInfoData buf;
 	static uint64 counter = 0; /* Ensure uniqueness for BNODE() */
 
+	elog(DEBUG1,"%s called: input='%s'", __func__, input);
+
 	initStringInfo(&buf);
 
 	if (input == NULL)
@@ -2313,7 +2521,10 @@ static char *bnode(char *input)
 
 		/* Reject IRIs and blank nodes explicitly */
 		if (isIRI(input) || isBlank(input))
+		{
+			elog(DEBUG1,"%s exit: returning NULL (input eiter an IRI or a blank node)", __func__);
 			return NULL;
+		}
 
 		/* Normalize input: quote bare strings */
 		initStringInfo(&input_buf);
@@ -2332,12 +2543,18 @@ static char *bnode(char *input)
 
 		/* Validate input is a literal */
 		if (!isLiteral(normalized_input))
+		{
+			elog(DEBUG1,"%s exit: returning NULL (input is not a literal)", __func__);
 			return NULL;
+		}
 
 		/* Extract lexical form */
-		lexical = ExtractRDFLexicalValue(normalized_input);
+		lexical = lex(normalized_input);
 		if (!lexical || strlen(lexical) == 0)
+		{
+			elog(DEBUG1,"%s exit: returning NULL (lexical value either NULL or an empty string)", __func__);
 			return NULL;
+		}
 
 		/* Create blank node ID, sanitizing lexical form (alphanumeric or underscore) */
 		appendStringInfoString(&buf, "_:");
@@ -2350,6 +2567,7 @@ static char *bnode(char *input)
 		}
 	}
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, buf.data);
 	return buf.data;
 }
 
@@ -2400,8 +2618,7 @@ Datum rdf_fdw_bnode(PG_FUNCTION_ARGS)
  *
  * Returns: Null-terminated C string (e.g., "123e4567-e89b-12d3-a456-426614174000")
  */
-static char *
-generate_uuid_v4(void)
+static char *generate_uuid_v4(void)
 {
 	StringInfoData buf;
 	static uint64 counter = 0;
@@ -2409,6 +2626,8 @@ generate_uuid_v4(void)
 	uint8_t bytes[16];
 	char *result;
 	int i;
+
+	elog(DEBUG1,"%s called", __func__);
 
 	initStringInfo(&buf);
 
@@ -2436,6 +2655,8 @@ generate_uuid_v4(void)
 
 	result = pstrdup(buf.data);
 	pfree(buf.data);
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -2500,18 +2721,25 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
  * str_datatype: Null-terminated C string from datatype() (e.g., "", "http://www.w3.org/2001/XMLSchema#string")
  * str_language: Null-terminated C string from lang() (e.g., "", "en")
  */
-static bool IsRDFStringLiteral(char *str_datatype)
+static bool IsRDFStringLiteral(char *str)
 {
-	if (str_datatype == NULL)
+	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+
+	if (str == NULL)
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (NULL argument)", __func__);
 		return false;
+	}
 
-	if (strcmp(str_datatype, "") == 0 ||
-		strcmp(str_datatype, RDF_SIMPLE_LITERAL_DATATYPE) == 0 ||
-		strcmp(str_datatype, RDF_LANGUAGE_LITERAL_DATATYPE) == 0)
+	if (strcmp(str, "") == 0 ||
+		strcmp(str, RDF_SIMPLE_LITERAL_DATATYPE) == 0 ||
+		strcmp(str, RDF_LANGUAGE_LITERAL_DATATYPE) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning 'true'", __func__);
 		return true;
+	}
 
-	elog(DEBUG1, "%s: unsupported datatype '%s'", __func__, str_datatype);
-
+	elog(DEBUG1, "%s exit: returning 'false' (unsupported datatype '%s')", __func__, str);
 	return false;
 }
 
@@ -2538,7 +2766,7 @@ static char *lcase(char *str)
 	int i;
 	int len;
 
-	elog(DEBUG1, "%s called for '%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	if (!str)
 		ereport(ERROR,
@@ -2546,7 +2774,10 @@ static char *lcase(char *str)
 				 errmsg("LCASE cannot be NULL")));
 
 	if (strlen(str) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning empty literal (str is an empty string)", __func__);
 		return CstringToRDFLiteral("");
+	}
 
 	/* Check for IRIs or blank nodes */
 	if (isIRI(str))
@@ -2559,7 +2790,7 @@ static char *lcase(char *str)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("LCASE does not allow blank nodes: %s", str)));
 
-	lexical = ExtractRDFLexicalValue(str);
+	lexical = lex(str);
 
 	if (lexical == NULL)
 		ereport(ERROR,
@@ -2599,6 +2830,7 @@ static char *lcase(char *str)
 
 	pfree(buf.data);
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -2644,7 +2876,7 @@ static char *ucase(char *str)
 	int i;
 	int len;
 
-	elog(DEBUG1, "%s called for '%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	if (!str)
 		ereport(ERROR,
@@ -2652,7 +2884,10 @@ static char *ucase(char *str)
 				 errmsg("LCASE cannot be NULL")));
 
 	if (strlen(str) == 0)
+	{
+		elog(DEBUG1,"%s exit: returning empty literal (str is an empty string)", __func__);		
 		return CstringToRDFLiteral("");
+	}
 
 	/* Check for IRIs or blank nodes */
 	if (isIRI(str))
@@ -2665,7 +2900,7 @@ static char *ucase(char *str)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("UCASE does not allow blank nodes: %s", str)));
 
-	lexical = ExtractRDFLexicalValue(str);
+	lexical = lex(str);
 
 	if (lexical == NULL)
 		ereport(ERROR,
@@ -2684,7 +2919,7 @@ static char *ucase(char *str)
 
 	initStringInfo(&buf);
 
-	elog(DEBUG1, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+	elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
     /* Convert to uppercase (ASCII only) */
     len = strlen(lexical);
@@ -2705,6 +2940,7 @@ static char *ucase(char *str)
 
 	pfree(buf.data);
 
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 	return result;
 }
 
@@ -2734,10 +2970,12 @@ Datum rdf_fdw_ucase(PG_FUNCTION_ARGS)
  * Counts Unicode characters (code points) in a UTF-8 string.
  * Returns the number of characters, not bytes.
  */
-static int
-count_utf8_chars(const char *str)
+static int count_utf8_chars(const char *str)
 {
 	int char_count = 0;
+
+	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+
 	while (*str)
 	{
 		/* Skip continuation bytes (0x80-0xBF) */
@@ -2745,6 +2983,8 @@ count_utf8_chars(const char *str)
 			char_count++;
 		str++;
 	}
+
+	elog(DEBUG1,"%s exit: returning '%d'", __func__, char_count);
 	return char_count;
 }
 
@@ -2752,8 +2992,9 @@ static int strlen_rdf(char *str)
 {
 	char *lexical;
 	char *dt;
+	int result;
 
-	elog(DEBUG1, "%s called for '%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	if (!str)
 		ereport(ERROR,
@@ -2782,9 +3023,11 @@ static int strlen_rdf(char *str)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("STRLEN does not allow non-string literals: %s", dt)));
 
-	lexical = ExtractRDFLexicalValue(str);
-
-	return count_utf8_chars(lexical);
+	lexical = lex(str);
+	result = count_utf8_chars(lexical);
+	
+	elog(DEBUG1,"%s exit: returning '%d'", __func__, result);
+	return result;
 }
 
 Datum rdf_fdw_strlen(PG_FUNCTION_ARGS)
@@ -2823,7 +3066,7 @@ static char *substr_sparql(char *str, int start, int length)
 	char *result;
 	int str_len, i;
 
-	elog(DEBUG1, "%s called for '%s', start=%d, length=%d", __func__, str, start, length);
+	elog(DEBUG1, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
 
 	if (!str)
 		ereport(ERROR,
@@ -2840,7 +3083,7 @@ static char *substr_sparql(char *str, int start, int length)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("SUBSTR not allowed on IRI or blank node: %s", str)));
 
-	lexical = ExtractRDFLexicalValue(str);
+	lexical = lex(str);
 	str_datatype = datatype(str);
 	str_language = lang(str);
 	str_len = strlen(lexical);
@@ -2868,6 +3111,8 @@ static char *substr_sparql(char *str, int start, int length)
 		result = CstringToRDFLiteral(buf.data);
 
 	pfree(buf.data);
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -2917,15 +3162,18 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
  * NULL inputs yield NULL. Empty strings are allowed and result in valid RDF
  * literals.
  */
-static char * rdf_concat(char *left, char *right)
+static char *rdf_concat(char *left, char *right)
 {
-	char *lex1 = ExtractRDFLexicalValue(left);
-	char *lex2 = ExtractRDFLexicalValue(right);
+	char *lex1 = lex(left);
+	char *lex2 = lex(right);
 	char *dt1 = datatype(left);
 	char *dt2 = datatype(right);
 	char *lang1 = lang(left);
 	char *lang2 = lang(right);
+	char *result;
 	StringInfoData buf;
+
+	elog(DEBUG1,"%s called: left='%s', right='%s'", __func__, left, right);
 
 	initStringInfo(&buf);
 	appendStringInfoString(&buf, lex1);
@@ -2945,21 +3193,43 @@ static char * rdf_concat(char *left, char *right)
 
 	/* only one argument has a datatype */
 	if ((strlen(dt1) != 0 && strlen(dt2) == 0) || (strlen(dt1) == 0 && strlen(dt2) != 0))
-		return CstringToRDFLiteral(buf.data);
+	{
+		result = CstringToRDFLiteral(buf.data);
+		elog(DEBUG1,"%s exit: returning '%s' (only one argument has a datatype)", __func__, result);
+		return result;
+	}
 
 	/* only one argument has a language tag */
 	if ((strlen(lang1) != 0 && strlen(lang2) == 0) || (strlen(lang1) == 0 && strlen(lang2) != 0))
-		return CstringToRDFLiteral(buf.data);
+	{
+		result = CstringToRDFLiteral(buf.data);
+		elog(DEBUG1,"%s exit: returning '%s' (only one argument has a language tag)", __func__, result);
+		return result;
 
-	/* Re-wrap result appropriately */
+	}
+
+	/* re-wrap result appropriately */
 	if (strlen(lang1) != 0 || strlen(lang2) != 0)
-		return strlang(buf.data, strlen(lang1) > 0 ? lang1 : lang2);
+	{
+		result = strlang(buf.data, strlen(lang1) > 0 ? lang1 : lang2);
+		elog(DEBUG1,"%s exit: returning '%s' (re-wrapping result appropriately)", __func__, result);
+		return result;
+	}
 
 	if ((strlen(dt1) > 0 && strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0) ||
 		(strlen(dt2) > 0 && strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
-		return strdt(buf.data, RDF_SIMPLE_LITERAL_DATATYPE);
+	{
+		result = strdt(buf.data, RDF_SIMPLE_LITERAL_DATATYPE);
+		elog(DEBUG1,"%s exit: returning '%s' (either left or right argument has a simple literal data type - %s)",
+			__func__, result, RDF_SIMPLE_LITERAL_DATATYPE);
 
-	return CstringToRDFLiteral(buf.data);
+		return result;
+	}
+
+	result = CstringToRDFLiteral(buf.data);
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	return result;
 }
 
 Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
@@ -2974,7 +3244,7 @@ Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
 Datum rdf_fdw_lex(PG_FUNCTION_ARGS)
 {
 	char *literal = text_to_cstring(PG_GETARG_TEXT_PP(0));
-	char *result = ExtractRDFLexicalValue(literal);
+	char *result = lex(literal);
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
@@ -2985,12 +3255,12 @@ Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
 {
 	text *in_text = PG_GETARG_TEXT_PP(0);
 	char hexsum[MD5_HASH_LEN + 1];
-	char *cstr = ExtractRDFLexicalValue(text_to_cstring(in_text));
+	char *cstr = lex(text_to_cstring(in_text));
 	size_t len = strlen(cstr);
 #if PG_VERSION_NUM >= 150000
 	const char *errstr = NULL;
 
-	elog(DEBUG1, "%s: called str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
+	elog(DEBUG1, "%s called: str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
 
 	if (pg_md5_hash(cstr, len, hexsum, &errstr) == false)
 		ereport(ERROR,
@@ -3019,13 +3289,15 @@ Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS)
 {
 	text *a = PG_GETARG_TEXT_PP(0);
 	text *b = PG_GETARG_TEXT_PP(1);
-	char *a_str = text_to_cstring(a);
-	char *b_str = text_to_cstring(b);
+	char *term1 = text_to_cstring(a);
+	char *term2 = text_to_cstring(b);
 	bool result;
 
-	elog(DEBUG1, "sameterm: a='%s' b='%s'", a_str, b_str);
+	elog(DEBUG1, "%s called: term1='%s' term2='%s'", __func__, term1, term2);
 
-	result = strcmp(a_str, b_str) == 0;
+	result = strcmp(term1, term2) == 0;
+
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
 
 	PG_RETURN_BOOL(result);
 }
@@ -3040,6 +3312,8 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 
 	/* deconstruct the array into individual elements */
 	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);
+
+	elog(DEBUG1,"%s called: nelems='%d'", __func__, nelems);
 
 	/* loop over each element to find the first non-null one */
 	for (int i = 0; i < nelems; i++)
@@ -3073,6 +3347,7 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 		}
 	}
 
+	elog(DEBUG1,"%s exit: returning NULL", __func__);
 	PG_RETURN_NULL();
 }
 
@@ -3151,7 +3426,7 @@ static List *DescribeIRI(RDFfdwState *state)
 		LoadRDFData(state);
 
 		if (strcmp(state->base_uri, RDF_DEFAULT_BASE_URI) != 0)
-			elog(DEBUG1, "%s: parsing RDF/XML result set (base '%s')", __func__, state->base_uri);
+			elog(DEBUG2, "%s: parsing RDF/XML result set (base '%s')", __func__, state->base_uri);
 
 		if (librdf_parser_parse_string_into_model(parser, (const unsigned char *)state->sparql_resultset, uri, model))
 			ereport(ERROR,
@@ -3244,6 +3519,7 @@ static List *DescribeIRI(RDFfdwState *state)
 	librdf_free_uri(uri);
 	librdf_free_world(world);
 
+	elog(DEBUG1,"%s exit", __func__);
 	return result;
 }
 
@@ -3327,7 +3603,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		state->sparql_query_type = SPARQL_DESCRIBE;
 		state->base_uri = RDF_DEFAULT_BASE_URI;
 
-		elog(DEBUG1, "%s loading server name: %s", __func__, srvname);
+		elog(DEBUG2, "%s: loading server name '%s'", __func__, srvname);
 		state->server = GetForeignServerByName(srvname, true);
 
 		if (!state->server)
@@ -3410,6 +3686,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 	}
 	else
 	{
+		elog(DEBUG1,"%s exit", __func__);
 		SRF_RETURN_DONE(funcctx);
 	}
 }
@@ -3620,14 +3897,14 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 */	
 	tupdesc = state->target_table->rd_att;
 
-	elog(DEBUG1,"%s: checking if tables match",__func__);
+	elog(DEBUG2,"%s: checking if tables match",__func__);
 	for (size_t ftidx = 0; ftidx < state->numcols; ftidx++)
 	{
 		for (size_t ttidx = 0; ttidx < state->target_table->rd_att->natts; ttidx++)
 		{
 			Form_pg_attribute attr = TupleDescAttr(tupdesc, ttidx);
 
-			elog(DEBUG1,"%s: comparing %s - %s", __func__,
+			elog(DEBUG2,"%s: comparing %s - %s", __func__,
 				NameStr(attr->attname),
 				state->rdfTable->cols[ftidx]->name);
 
@@ -3657,7 +3934,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 
 
-	elog(DEBUG1,"%s: validating 'fetch_size' tables match",__func__);
+	elog(DEBUG2,"%s: validating 'fetch_size' tables match",__func__);
 	if(fetch_size == 0)
 	{
 		if(state->fetch_size != 0)
@@ -3670,9 +3947,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		}
 	}
 
-	elog(DEBUG1,"fetch_size = %d",fetch_size);
-	
-	elog(DEBUG1,"ordering_pgcolumn = '%s'", !orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
+	elog(DEBUG2,"fetch_size = %d",fetch_size);	
+	elog(DEBUG2,"ordering_pgcolumn = '%s'", !orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
 
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
@@ -3714,7 +3990,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	{
 		if (orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0 && state->rdfTable->cols[0]->sparqlvar)
 		{
-			elog(DEBUG1, "%s: setting ordering variable to '%s'", __func__, state->rdfTable->cols[0]->sparqlvar);
+			elog(DEBUG2, "%s: setting ordering variable to '%s'", __func__, state->rdfTable->cols[0]->sparqlvar);
 			orderby_variable = pstrdup(state->rdfTable->cols[0]->sparqlvar);
 		}
 
@@ -3726,20 +4002,20 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 							 state->ordering_pgcolumn,
 							 get_rel_name(state->foreigntableid))));
 
-		elog(DEBUG1, "orderby_variable = '%s'", orderby_variable);
+		elog(DEBUG2, "orderby_variable = '%s'", orderby_variable);
 	}
 
 	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
-	elog(DEBUG1,"sparql_prefixes = \n\n'%s'",state->sparql_prefixes);
+	elog(DEBUG2,"sparql_prefixes = \n\n'%s'",state->sparql_prefixes);
 
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
-	elog(DEBUG1,"sparql_from = \n\n'%s'",state->sparql_from);
+	elog(DEBUG2,"sparql_from = \n\n'%s'",state->sparql_from);
 
 	state->sparql_select = NameStr(select);
-	elog(DEBUG1,"sparql_select = \n\n'%s'",state->sparql_select);
+	elog(DEBUG2,"sparql_select = \n\n'%s'",state->sparql_select);
 
 	state->sparql_where = DeparseSPARQLWhereGraphPattern(state);
-	elog(DEBUG1,"sparql_where = \n\n'%s'",state->sparql_where);
+	elog(DEBUG2,"sparql_where = \n\n'%s'",state->sparql_where);
 
 	state->inserted_records = 0;
 	state->offset = begin_offset;
@@ -3765,7 +4041,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		/* stop iteration if the current offset is greater than max_records */
 		if(max_records != 0 && state->inserted_records >= max_records)
 		{
-			elog(DEBUG1,"%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  fetch size: %d\n",
+			elog(DEBUG2,"%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  fetch size: %d\n",
 						__func__,
 						max_records,
 						state->inserted_records,
@@ -3822,13 +4098,13 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		/* get out in case the SPARQL retrieves nothing */
 		if(state->pagesize == 0)
 		{
-			elog(DEBUG1,"%s: SPARQL query returned nothing",__func__);
+			elog(DEBUG2,"%s: SPARQL query returned nothing",__func__);
 			break;
 		}
 
 		ret = InsertRetrievedData(state,state->offset, state->offset + fetch_size);
 
-		elog(DEBUG1,"%s: InsertRetrievedData returned %d records",__func__, ret);
+		elog(DEBUG2,"%s: InsertRetrievedData returned %d records",__func__, ret);
 
 		state->inserted_records = state->inserted_records + ret;
 
@@ -3837,6 +4113,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		pfree(limit_clause.data);
 	}
 
+	elog(DEBUG1,"%s exit", __func__);
 	PG_RETURN_VOID();
 }
 
@@ -3862,6 +4139,8 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 	int ret = -1;
 	int processed_records = 0;
+
+	elog(DEBUG1,"%s called", __func__);
 
 	SPI_connect_ext(SPI_OPT_NONATOMIC);
 
@@ -3984,6 +4263,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 	SPI_finish();
 
+	elog(DEBUG1,"%s exit: returning '%d' (processed_records)", __func__, processed_records);
 	return processed_records;
 }
 
@@ -4002,6 +4282,8 @@ static Oid GetRelOidFromName(char *relname, char *code)
 	StringInfoData str;
 	Oid res = 0;
 	int ret;
+
+	elog(DEBUG1,"%s called: relname='%s', code='%s'", __func__, relname, code);
 
 	initStringInfo(&str);
 	appendStringInfo(&str,"SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
@@ -4032,6 +4314,7 @@ static Oid GetRelOidFromName(char *relname, char *code)
 				 errmsg("invalid relation: '%s' is not a %s",relname,
 					strcmp(code,RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table" )));
 
+	elog(DEBUG1,"%s exit: returning '%u'", __func__, res);
 	return res;
 
 }
@@ -4046,6 +4329,8 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	bool hasliteralatt = false;
 	bool is_iri = false;
 	
+	elog(DEBUG1,"%s called", __func__);
+
 	/* Initialize found state to not found */
 	for (opt = valid_options; opt->optname; opt++)
 		opt->optfound = false;
@@ -4295,6 +4580,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 		}
 	}
 
+	elog(DEBUG1,"%s exit", __func__);
 	PG_RETURN_VOID();
 }
 
@@ -4348,7 +4634,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	foreach (cell, scan_clauses)
 	{
 		Node *node = (Node *)lfirst(cell);
-		elog(DEBUG1, "%s: original scan_clauses nodeTag=%u", __func__, nodeTag(node));
+		elog(DEBUG2, "%s: original scan_clauses nodeTag=%u", __func__, nodeTag(node));
 	}
 
 	scan_clauses = extract_actual_clauses(scan_clauses, false);
@@ -4357,7 +4643,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	foreach (cell, scan_clauses)
 	{
 		Expr *clause = (Expr *)lfirst(cell);
-		elog(DEBUG1, "%s: extracted expr_clauses clause nodeTag=%u", __func__, nodeTag(clause));
+		elog(DEBUG2, "%s: extracted expr_clauses clause nodeTag=%u", __func__, nodeTag(clause));
 	}
 
 	InitSession(state, baserel, root);
@@ -4365,12 +4651,12 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	if(!state->enable_pushdown) 
 	{
 		state->sparql = state->raw_sparql;
-		elog(DEBUG1,"  %s: Pushdown feature disabled. SPARQL query won't be modified.",__func__);
+		elog(DEBUG2,"  %s: Pushdown feature disabled. SPARQL query won't be modified.",__func__);
 	} 
 	else if(!state->is_sparql_parsable) 
 	{
 		state->sparql = state->raw_sparql;
-		elog(DEBUG1,"  %s: SPARQL cannot be fully parsed. The raw SPARQL will be used and all filters will be applied locally.",__func__);
+		elog(DEBUG2,"  %s: SPARQL cannot be fully parsed. The raw SPARQL will be used and all filters will be applied locally.",__func__);
 	}
 	else 
 	{
@@ -4396,10 +4682,12 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 
 	if (eflags & EXEC_FLAG_EXPLAIN_ONLY)
 		return;
+	
+	elog(DEBUG1,"%s called",__func__);
 
 	state = DeserializePlanData(fs->fdw_private);
 
-	elog(DEBUG1,"%s: initializing XML parser",__func__);
+	elog(DEBUG2,"%s: initializing XML parser",__func__);
 	xmlInitParser();
 
 	LoadRDFData(state);
@@ -4412,23 +4700,23 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 	TupleTableSlot *slot = node->ss.ss_ScanTupleSlot;
 	struct RDFfdwState *state = (struct RDFfdwState *) node->fdw_state;
 
-	elog(DEBUG2,"%s called",__func__);
+	elog(DEBUG3,"%s called",__func__);
 
 	ExecClearTuple(slot);	
 
 	if (state->numcols == 0)
 	{
-		elog(DEBUG2,"  %s: no foreign column available in this table.",__func__);	
+		elog(DEBUG3,"  %s: no foreign column available in this table.",__func__);	
 		return slot;
 	}
 
-	elog(DEBUG2,"  %s: state->rowcount = %d | state->pagesize = %d",__func__,state->rowcount , state->pagesize);
+	elog(DEBUG3,"  %s: state->rowcount = %d | state->pagesize = %d",__func__,state->rowcount , state->pagesize);
 
 	if(state->rowcount < state->pagesize)
 	{		
 		CreateTuple(slot, state);
 		ExecStoreVirtualTuple(slot);
-		elog(DEBUG2,"  %s: virtual tuple stored (%d/%d)",__func__,state->rowcount , state->pagesize);
+		elog(DEBUG3,"  %s: virtual tuple stored (%d/%d)",__func__,state->rowcount , state->pagesize);
 		state->rowcount++;
 	} 
 	else 
@@ -4436,9 +4724,9 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 	   /*
 		* No further records to be retrieved. Let's clean up the XML parser before ending the query.
 		*/	
-		elog(DEBUG2,"  %s: no rows left (%d/%d)",__func__,state->rowcount , state->pagesize);
+		elog(DEBUG3,"  %s: no rows left (%d/%d)",__func__,state->rowcount , state->pagesize);
 
-		elog(DEBUG1,"%s: freeing xml parser",__func__);
+		elog(DEBUG3,"%s: freeing xml parser",__func__);
 		xmlCleanupParser();
 	}
 
@@ -4462,19 +4750,19 @@ static void rdfEndForeignScan(ForeignScanState *node)
 
 		if(state->xmldoc)
 		{
-			elog(DEBUG1,"%s: freeing xmldoc",__func__);
+			elog(DEBUG2,"%s: freeing xmldoc",__func__);
 			xmlFreeDoc(state->xmldoc);
 		}
 
 		if(state)
 		{
-			elog(DEBUG1,"%s: freeing rdf_fdw state",__func__);
+			elog(DEBUG2,"%s: freeing rdf_fdw state",__func__);
 			pfree(state);
 		}
 
 	}
 
-	elog(DEBUG1,"%s: so long .. \n",__func__);
+	elog(DEBUG1,"%s exit: so long .. \n",__func__);
 }
 
 static void LoadRDFTableInfo(RDFfdwState *state)
@@ -4520,15 +4808,15 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 
 			if (strcmp(def->defname, RDF_COLUMN_OPTION_VARIABLE) == 0)
 			{
-				elog(DEBUG1,"  %s: (%d) adding sparql variable > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2,"  %s: (%d) adding sparql variable > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->sparqlvar = pstrdup(defGetString(def));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_EXPRESSION) == 0)
 			{
-				elog(DEBUG1,"  %s: (%d) adding sparql expression > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2,"  %s: (%d) adding sparql expression > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->expression = pstrdup(defGetString(def));
 				state->rdfTable->cols[i]->pushable = IsExpressionPushable(defGetString(def));
-				elog(DEBUG1,"  %s: (%d) is expression pushable? > '%s'",__func__,i,
+				elog(DEBUG2,"  %s: (%d) is expression pushable? > '%s'",__func__,i,
 					state->rdfTable->cols[i]->pushable ? "true" : "false");
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0 )
@@ -4536,18 +4824,18 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 				// StringInfoData literaltype;
 				// initStringInfo(&literaltype);
 				// appendStringInfo(&literaltype, "^^%s", defGetString(def));
-				elog(DEBUG1,"  %s: (%d) adding sparql literal data type > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2,"  %s: (%d) adding sparql literal data type > '%s'",__func__,i,defGetString(def));
 				//state->rdfTable->cols[i]->literaltype = pstrdup(literaltype.data);
 				state->rdfTable->cols[i]->literaltype = pstrdup(defGetString(def));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0 )
 			{
-				elog(DEBUG1,"  %s: (%d) adding sparql node format > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2,"  %s: (%d) adding sparql node format > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->literal_fomat = pstrdup(defGetString(def));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_NODETYPE) == 0)
 			{
-				elog(DEBUG1,"  %s: (%d) adding sparql node data type > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2,"  %s: (%d) adding sparql node data type > '%s'",__func__,i,defGetString(def));
 				state->rdfTable->cols[i]->nodetype = pstrdup(defGetString(def));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LANGUAGE) == 0) 
@@ -4555,7 +4843,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 				// StringInfoData tag;
 				// initStringInfo(&tag);
 				// appendStringInfo(&tag, "@%s", defGetString(def));
-				elog(DEBUG1,"  %s: (%d) adding literal language tag > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2,"  %s: (%d) adding literal language tag > '%s'",__func__,i,defGetString(def));
 				//state->rdfTable->cols[i]->language = pstrdup(tag.data);
 				state->rdfTable->cols[i]->language = pstrdup(defGetString(def));
 			}
@@ -4605,6 +4893,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			//state->enable_pushdown = getBoolVal(def);
 	}
 
+	elog(DEBUG1,"%s exit", __func__);
 }
 
 static void LoadRDFServerInfo(RDFfdwState *state)
@@ -4683,6 +4972,8 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 				state->base_uri = defGetString(def);
 		}
 	}
+
+	elog(DEBUG1,"%s exit", __func__);
 }
 
 static void LoadRDFUserMapping(RDFfdwState *state)
@@ -4751,13 +5042,13 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_USER) == 0)
 				{
 					state->user = pstrdup(defGetString(def));
-					elog(DEBUG1, "%s: %s '%s'", __func__, def->defname, state->user);
+					elog(DEBUG2, "%s: %s '%s'", __func__, def->defname, state->user);
 				}
 
 				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PASSWORD) == 0)
 				{					
 					state->password = pstrdup(defGetString(def));
-					elog(DEBUG1, "%s: %s '*******'", __func__, def->defname);
+					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
 				}
 			}
 		}
@@ -4765,6 +5056,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 		ReleaseSysCache(tp);
 	}
 
+	elog(DEBUG1,"%s exit", __func__);
 }
 /*
  * CStringToConst
@@ -4842,7 +5134,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->max_retries));
 	result = lappend(result, OidToConst(state->foreigntableid));
 
-	elog(DEBUG1,"%s: serializing table with %d columns",__func__, state->numcols);
+	elog(DEBUG2,"%s: serializing table with %d columns",__func__, state->numcols);
 	for (int i = 0; i < state->numcols; ++i)
 	{
 		elog(DEBUG2,"%s: column name '%s'",__func__, state->rdfTable->cols[i]->name);
@@ -4882,6 +5174,7 @@ static List *SerializePlanData(RDFfdwState *state)
 		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pushable));
 	}
 
+	elog(DEBUG1,"%s exit", __func__);
 	return result;
 }
 
@@ -4991,7 +5284,7 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	state->foreigntableid = DatumGetObjectId(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	elog(DEBUG1,"  %s: deserializing table with %d columns",__func__, state->numcols);
+	elog(DEBUG2,"  %s: deserializing table with %d columns",__func__, state->numcols);
 	state->rdfTable = (struct RDFfdwTable *) palloc0(sizeof(struct RDFfdwTable));
 	state->rdfTable->cols = (struct RDFfdwColumn **) palloc0(sizeof(struct RDFfdwColumn*) * state->numcols);
 
@@ -5038,6 +5331,7 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 
 	}
 
+	elog(DEBUG1,"%s exit", __func__);
 	return state;
 }
 
@@ -5046,6 +5340,8 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 	char *ptr = repalloc(mem->memory, mem->size + realsize + 1);
+
+	elog(DEBUG1,"%s called", __func__);
 
 	if (!ptr)
 		ereport(ERROR,
@@ -5057,6 +5353,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
+	elog(DEBUG1,"%s exit: returning '%lu' (realsize)", __func__, realsize);
 	return realsize;
 }
 
@@ -5070,6 +5367,8 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	char *sparqlxmlutf8 = "content-type: application/sparql-results+xml; charset=utf-8";
 	char *rdfxml = "content-type: application/rdf+xml";
 	char *rdfxmlutf8 = "content-type: application/rdf+xml;charset=utf-8";
+
+	elog(DEBUG1,"%s called", __func__);
 
 	Assert(contents);
 
@@ -5103,6 +5402,7 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
+	elog(DEBUG1,"%s exit: returning '%lu' (realsize)", __func__, realsize);
 	return realsize;
 }
 
@@ -5138,20 +5438,21 @@ static int CheckURL(char *url)
 	CURLUcode code;
 	CURLU *handler = curl_url();
 
-	elog(DEBUG1, "%s called > '%s'", __func__, url);
+	elog(DEBUG1, "%s called: '%s'", __func__, url);
 
 	code = curl_url_set(handler, CURLUPART_URL, url, 0);
 
 	curl_url_cleanup(handler);
 
-	elog(DEBUG1, "  %s handler return code: %u", __func__, code);
+	elog(DEBUG2, "  %s handler return code: %u", __func__, code);
 
 	if (code != 0)
 	{
-		elog(DEBUG1, "%s: invalid URL (%u) > '%s'", __func__, code, url);
+		elog(DEBUG2, "%s: invalid URL (%u) > '%s'", __func__, code, url);
 		return code;
 	}
 
+	elog(DEBUG1,"%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
 	return REQUEST_SUCCESS;
 }
 
@@ -5167,18 +5468,24 @@ static int CheckURL(char *url)
  */
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname){
 
-	elog(DEBUG1,"%s called > column '%s'",__func__,columnname);
+	elog(DEBUG1,"%s called: column='%s'",__func__, columnname);
 
 	if(!columnname)
+	{
+		elog(DEBUG1,"%s exit: returning NULL (columnname is NULL)", __func__);
 		return NULL;
+	}
 
 	for (int i = 0; i < state->numcols; i++)
 	{
 		if (strcmp(state->rdfTable->cols[i]->name, columnname) == 0)
-			return state->rdfTable->cols[i];		
+		{
+			elog(DEBUG1,"%s exit: rerurning match for columname '%s'",__func__, columnname);
+			return state->rdfTable->cols[i];
+		}	
 	}
 
-	elog(DEBUG1,"%s: no match found for '%s'",__func__,columnname);
+	elog(DEBUG1,"%s exit: rerurning NULL (no match found for '%s')",__func__,columnname);
 	return NULL;
 }
 
@@ -5239,11 +5546,11 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	/* 
 	 * Marking columns used in the SQL query for SPARQL pushdown
 	 */
-	elog(DEBUG1, "%s: looking for columns in the SELECT entry list",__func__);
+	elog(DEBUG2, "%s: looking for columns in the SELECT entry list",__func__);
 	foreach(cell, columnlist)
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
-	elog(DEBUG1, "%s: looking for columns used in WHERE conditions",__func__);
+	elog(DEBUG2, "%s: looking for columns used in WHERE conditions",__func__);
 	foreach(cell, conditions)
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
@@ -5294,6 +5601,8 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 * deparse SPARQL FROM and FROM NAMED clauses, if any
 	 */
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
+
+	elog(DEBUG1,"%s exit", __func__);
 }
 
 /*
@@ -5311,18 +5620,18 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 	ListCell *cell;
 	xmlNodePtr res;
 
-	elog(DEBUG2, "  %s: called > rowcount = %d/%d", __func__, state->rowcount, state->pagesize);
+	elog(DEBUG3, "  %s: called > rowcount = %d/%d", __func__, state->rowcount, state->pagesize);
 
 	if (state->rowcount > state->pagesize)
 	{
-		elog(DEBUG1, "%s: EOF!", __func__);
+		elog(DEBUG3, "%s exit: returning NULL (EOF!)", __func__);
 		return NULL;
 	}
 
 	cell = list_nth_cell(state->records, state->rowcount);
 	res = (xmlNodePtr) lfirst(cell);
 
-	elog(DEBUG2,"  %s: returning %d",__func__,state->rowcount);
+	elog(DEBUG3,"  %s exit: returning %d",__func__,state->rowcount);
 	
 	return res;
 }
@@ -5372,7 +5681,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	if(state->custom_params)
 		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(state->curl, state->custom_params, 0));
 
-	elog(DEBUG1, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
+	elog(DEBUG2, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
 
 	if (state->curl)
 	{
@@ -5389,35 +5698,35 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_ERRORBUFFER, errbuf);
 
 		curl_easy_setopt(state->curl, CURLOPT_CONNECTTIMEOUT, state->connect_timeout);
-		elog(DEBUG1, "  %s: timeout > %ld", __func__, state->connect_timeout);
-		elog(DEBUG1, "  %s: max retry > %ld", __func__, state->max_retries);
+		elog(DEBUG2, "  %s: timeout > %ld", __func__, state->connect_timeout);
+		elog(DEBUG2, "  %s: max retry > %ld", __func__, state->max_retries);
 
 		if (state->proxy)
 		{
-			elog(DEBUG1, "  %s: proxy URL > '%s'", __func__, state->proxy);
+			elog(DEBUG2, "  %s: proxy URL > '%s'", __func__, state->proxy);
 
 			curl_easy_setopt(state->curl, CURLOPT_PROXY, state->proxy);
 
 			if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTP_PROXY) == 0)
 			{
-				elog(DEBUG1, "  %s: proxy protocol > 'HTTP'", __func__);
+				elog(DEBUG2, "  %s: proxy protocol > 'HTTP'", __func__);
 				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
 			}
 			else if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
 			{
-				elog(DEBUG1, "  %s: proxy protocol > 'HTTPS'", __func__);
+				elog(DEBUG2, "  %s: proxy protocol > 'HTTPS'", __func__);
 				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
 			}
 
 			if (state->proxy_user)
 			{
-				elog(DEBUG1, "  %s: entering proxy user ('%s').", __func__, state->proxy_user);
+				elog(DEBUG2, "  %s: entering proxy user ('%s').", __func__, state->proxy_user);
 				curl_easy_setopt(state->curl, CURLOPT_PROXYUSERNAME, state->proxy_user);
 			}
 
 			if (state->proxy_user_password)
 			{
-				elog(DEBUG1, "  %s: entering proxy user's password.", __func__);
+				elog(DEBUG2, "  %s: entering proxy user's password.", __func__);
 				curl_easy_setopt(state->curl, CURLOPT_PROXYUSERPWD, state->proxy_user_password);
 			}
 		}
@@ -5425,12 +5734,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		if (state->request_redirect == true)
 		{
 
-			elog(DEBUG1, "  %s: setting request redirect: %d", __func__, state->request_redirect);
+			elog(DEBUG2, "  %s: setting request redirect: %d", __func__, state->request_redirect);
 			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 			if (state->request_max_redirect)
 			{
-				elog(DEBUG1, "  %s: setting maxredirs: %ld", __func__, state->request_max_redirect);
+				elog(DEBUG2, "  %s: setting maxredirs: %ld", __func__, state->request_max_redirect);
 				curl_easy_setopt(state->curl, CURLOPT_MAXREDIRS, state->request_max_redirect);
 			}
 		}
@@ -5540,7 +5849,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 			state->sparql_resultset = pstrdup(chunk.memory);
 
-			elog(DEBUG3, "  %s: xml document \n\n%s", __func__, chunk.memory);
+			elog(DEBUG4, "  %s: xml document \n\n%s", __func__, chunk.memory);
 			elog(DEBUG2, "  %s: http response code = %ld", __func__, response_code);
 			elog(DEBUG2, "  %s: http response size = %ld", __func__, chunk.size);
 			elog(DEBUG2, "  %s: http response header = \n%s", __func__, chunk_header.memory);
@@ -5558,8 +5867,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	 * We thrown an error in case the SPARQL endpoint returns an empty XML doc
 	 */
 	if(!state->sparql_resultset)
+	{
+		elog(DEBUG1,"%s exit: REQUEST_FAIL", __func__);
 		return REQUEST_FAIL;
+	}
 
+	elog(DEBUG1,"%s exit: REQUEST_SUCCESS", __func__);
 	return REQUEST_SUCCESS;
 }
 
@@ -5612,6 +5925,8 @@ static void LoadRDFData(RDFfdwState *state)
 		if (state->log_sparql)
 			elog(INFO,"SPARQL returned %d %s.\n", state->pagesize, state->pagesize == 1 ? "record" : "records");
 	}
+
+	elog(DEBUG1,"%s exit", __func__);
 }
 
 /*
@@ -5628,7 +5943,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 	Var *variable;
 	ListCell *cell;
 
-	elog(DEBUG1, "%s called: expression > %d", __func__, expr->type);
+	elog(DEBUG1, "%s called: expression='%d'", __func__, expr->type);
 
 	switch (expr->type)
 	{
@@ -5670,7 +5985,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 			if (state->rdfTable->cols[i]->pgattnum == variable->varattno)
 			{
 				state->rdfTable->cols[i]->used = true;
-				elog(DEBUG1, "%s: column '%s' (%d) required in the SQL query", __func__, state->rdfTable->cols[i]->name, i);
+				elog(DEBUG2, "%s: column '%s' (%d) required in the SQL query", __func__, state->rdfTable->cols[i]->name, i);
 				break;
 			}
 		}
@@ -5869,6 +6184,8 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 				 errmsg("unknown node type found: %d.", expr->type)));
 		break;
 	}
+
+	elog(DEBUG1,"%s exit", __func__);
 }
 
 /*
@@ -5883,24 +6200,28 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
  * 
  * returns 'true' if the SPARQL query is safe to be parsed or 'false' otherwise
  */
-static bool IsSPARQLParsable(struct RDFfdwState *state) 
-{	
+static bool IsSPARQLParsable(struct RDFfdwState *state)
+{
 	int keyword_count = 0;
-	elog(DEBUG1,"%s called",__func__);
-	/* 
+	bool result;
+	elog(DEBUG1, "%s called", __func__);
+	/*
 	 * SPARQL Queries containing SUB SELECTS are not supported. So, if any number
 	 * other than 1 is returned from LocateKeyword, this query cannot be parsed.
 	 */
-	LocateKeyword(state->raw_sparql, "{\n\t> ", RDF_SPARQL_KEYWORD_SELECT," *?\n\t", &keyword_count, 0);
-	
-	elog(DEBUG1,"%s: SPARQL contains '%d' SELECT clauses.",__func__, keyword_count);
+	LocateKeyword(state->raw_sparql, "{\n\t> ", RDF_SPARQL_KEYWORD_SELECT, " *?\n\t", &keyword_count, 0);
 
-	return LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_GROUPBY," \n\t?", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-	       LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_ORDERBY," \n\t?DA", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_LIMIT," \n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_UNION," \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(state->raw_sparql, " \n\t",  RDF_SPARQL_KEYWORD_HAVING," \n\t(", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   keyword_count == 1;
+	elog(DEBUG2, "%s: SPARQL contains '%d' SELECT clauses.", __func__, keyword_count);
+
+	result = LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_GROUPBY, " \n\t?", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_ORDERBY, " \n\t?DA", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_LIMIT, " \n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_UNION, " \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(state->raw_sparql, " \n\t", RDF_SPARQL_KEYWORD_HAVING, " \n\t(", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 keyword_count == 1;
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, !result ? "false" : "true");	
+	return result;
 }
 
 /*
@@ -5913,18 +6234,24 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
  *
  * returns 'true' if the expression can be pushed down or 'false' otherwise
  */
-static bool IsExpressionPushable(char *expression) 
+static bool IsExpressionPushable(char *expression)
 {
 	char *open = " \n(";
 	char *close = " \n(";
+	bool result;
 
-	return LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_COUNT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-	       LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SUM, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_AVG, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MIN, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MAX, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SAMPLE, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
-		   LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_GROUPCONCAT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND;
+	elog(DEBUG1, "%s called: expression='%s'", __func__, expression);
+
+	result = LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_COUNT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SUM, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_AVG, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MIN, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_MAX, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_SAMPLE, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(expression, open, RDF_SPARQL_AGGREGATE_FUNCTION_GROUPCONCAT, close, NULL, 0) == RDF_KEYWORD_NOT_FOUND;
+
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
+	return result;
 }
 
 /*
@@ -5957,7 +6284,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	if (state->is_sparql_parsable == true && 		
 		LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
-		elog(DEBUG1, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
+		elog(DEBUG2, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
 		appendStringInfo(&sparql,"%s\nSELECT DISTINCT %s\n%s%s",
 			state->sparql_prefixes, 
 			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
@@ -5971,7 +6298,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	else if (state->is_sparql_parsable == true && 		
 		LocateKeyword(state->raw_sparql, " \n", "REDUCED"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
-		elog(DEBUG1, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
+		elog(DEBUG2, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
 		appendStringInfo(&sparql,"%s\nSELECT REDUCED %s\n%s%s",
 			state->sparql_prefixes, 
 			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
@@ -6007,7 +6334,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	 */
 	if(state->is_sparql_parsable && state->sparql_orderby) 
 	{
-		elog(DEBUG1, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, state->sparql_orderby);
+		elog(DEBUG2, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, state->sparql_orderby);
 		appendStringInfo(&sparql, "\nORDER BY%s", pstrdup(state->sparql_orderby));
 	}
 
@@ -6018,11 +6345,13 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	 */
 	if (state->sparql_limit)
 	{
-		elog(DEBUG1, "  %s: pushing down LIMIT clause > '%s'", __func__, state->sparql_limit);
+		elog(DEBUG2, "  %s: pushing down LIMIT clause > '%s'", __func__, state->sparql_limit);
 		appendStringInfo(&sparql, "\n%s", state->sparql_limit);
 	}
 
 	state->sparql = pstrdup(NameStr(sparql));
+
+	elog(DEBUG1,"%s exit", __func__);
 }
 
 /*
@@ -6075,7 +6404,7 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_DESCRIBE) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_DESCRIBE, strlen(RDF_SPARQL_KEYWORD_DESCRIBE)) == 0)) &&
 		 start_position == 0)
 	{
-		elog(DEBUG1, "%s%s: nothing before SELECT. Setting keyword_position to 0.", NameStr(idt), __func__);
+		elog(DEBUG2, "%s%s: nothing before SELECT. Setting keyword_position to 0.", NameStr(idt), __func__);
 		keyword_position = 0;
 	} 
 	else
@@ -6122,12 +6451,13 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 	if((count) && keyword_position != RDF_KEYWORD_NOT_FOUND)
 	{
 		(*count)++;		
-		elog(DEBUG1, "%s%s (%d): keyword '%s' found in position %d. Recalling %s ... ", NameStr(idt), __func__, *count, keyword, keyword_position, __func__);
+		elog(DEBUG2, "%s%s (%d): keyword '%s' found in position %d. Recalling %s ... ", NameStr(idt), __func__, *count, keyword, keyword_position, __func__);
 		LocateKeyword(str, start_chars, keyword, end_chars, count, keyword_position + 1);
 
-		elog(DEBUG1,"%s%s: '%s' search returning postition %d for start position %d", NameStr(idt), __func__, keyword, keyword_position, start_position);
+		elog(DEBUG2,"%s%s: '%s' search returning postition %d for start position %d", NameStr(idt), __func__, keyword, keyword_position, start_position);
 	} 
 
+	elog(DEBUG1,"%s exit: returning '%d' (keyword_position)", __func__, keyword_position);
 	return keyword_position;
 }
 
@@ -6171,7 +6501,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 */
 	record = FetchNextBinding(state);
 
-	elog(DEBUG2, "%s called ", __func__);
+	elog(DEBUG3, "%s called ", __func__);
 
 	for (int i = 0; i < state->numcols; i++)
 	{
@@ -6209,7 +6539,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					initStringInfo(&literal_value);
 					node_value = (char *)content;
 
-					elog(DEBUG2, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
+					elog(DEBUG3, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
 						 __func__, (char *)content, (char *)lang, (char *)datatype, node_type);
 
 					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
@@ -6229,7 +6559,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					datum = CStringGetDatum(literal_value.data);
 					slot->tts_isnull[i] = false;
 
-					elog(DEBUG2, "  %s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
+					elog(DEBUG3, "  %s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
 					elog(DEBUG3, "    %s: value > '%s'", __func__, (char *)content);
 
 					/* find the appropriate conversion function */
@@ -6277,7 +6607,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 		if (!match)
 		{
-			elog(DEBUG2, "    %s: setting NULL for column '%s' (%s)", __func__, colname, sparqlvar);
+			elog(DEBUG3, "    %s: setting NULL for column '%s' (%s)", __func__, colname, sparqlvar);
 			slot->tts_isnull[i] = true;
 			slot->tts_values[i] = PointerGetDatum(NULL);
 		}
@@ -6286,6 +6616,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 	MemoryContextSwitchTo(old_cxt);
 	MemoryContextDelete(tmp_cxt);
 	*/
+
+	elog(DEBUG3,"%s exit", __func__);
 }
 
 /*
@@ -6305,7 +6637,7 @@ static char *DatumToString(Datum datum, Oid type)
 	HeapTuple tuple;
 	char *str;
 
-	elog(DEBUG1,"%s called: type > %u ",__func__,type);
+	elog(DEBUG1,"%s called: type='%u' ",__func__,type);
 
 	/* get the type's output function */
 	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(type));
@@ -6353,6 +6685,7 @@ static char *DatumToString(Datum datum, Oid type)
 			return NULL;
 	}
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result.data);
 	return result.data;	
 }
 
@@ -6440,17 +6773,17 @@ static char *DeparseTimestamp(Datum datum, bool hasTimezone)
  * DeparseExpr
  * -----------
  * Deparses SQL expressions and converts them into SPARQL expressions
- * 
+ *
  * state     : SPARQL, SERVER and FOREIGN TABLE info
  * foreignrel: Conditions and columns used in the SQL query
  * expr      : Expression to be deparsed
  *
- * returns a string containing a SPARQL expression or NULL if not parseable 
+ * returns a string containing a SPARQL expression or NULL if not parseable
  */
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *arg, *opername, *left, *right, oprkind;
-	//char *literalatt = "";
+	// char *literalatt = "";
 	Const *constant;
 	OpExpr *oper;
 	ScalarArrayOpExpr *arrayoper;
@@ -6471,15 +6804,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	FuncExpr *func;
 	struct RDFfdwColumn *col = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
-	elog(DEBUG1, "%s called > %u", __func__, expr->type);
+	elog(DEBUG1, "%s called:  expr->type='%u'", __func__, expr->type);
 
 	if (expr == NULL)
+	{
+		elog(DEBUG1, "%s exit: returning NULL (expr is NULL)", __func__);
 		return NULL;
+	}
 
 	switch (nodeTag(expr))
 	{
 	case T_Const:
-		elog(DEBUG1, "%s (T_Const): called > %u", __func__, expr->type);
+		elog(DEBUG2, "%s (T_Const): called > %u", __func__, expr->type);
 		constant = (Const *)expr;
 		if (constant->constisnull)
 		{
@@ -6491,31 +6827,37 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			/* get a string representation of the value */
 			char *c = DatumToString(constant->constvalue, constant->consttype);
 			if (c == NULL)
+			{
+				elog(DEBUG1, "%s exit [T_Const]: returning NULL (DatumToString returned NULL)", __func__);
 				return NULL;
+			}
 			else
 			{
 				char *l = lang(c);
 				char *dt = datatype(c);
-				char *lex = ExtractRDFLexicalValue(c);
+				char *lex_str = lex(c);
 
 				initStringInfo(&result);
 
 				if (strlen(l) != 0)
-					appendStringInfo(&result, "%s", strlang(lex,l));
+					appendStringInfo(&result, "%s", strlang(lex_str, l));
 				else if (strstr(c, "\"^^"))
-					appendStringInfo(&result, "%s", strdt(lex,dt));
+					appendStringInfo(&result, "%s", strdt(lex_str, dt));
 				else
-					appendStringInfo(&result, "%s", lex);
+					appendStringInfo(&result, "%s", lex_str);
 			}
 		}
 		break;
 	case T_Var:
 
-		elog(DEBUG1, "%s (T_Var): called > %u", __func__, expr->type);
+		elog(DEBUG2, "%s [T_Var]: start (expr->type='%u')", __func__, expr->type);
 		variable = (Var *)expr;
 
 		if (variable->vartype == BOOLOID)
+		{
+			elog(DEBUG1, "%s exit [T_Var]: returning NULL (variable type is a BOOLOID)", __func__);
 			return NULL;
+		}
 
 		index = state->numcols - 1;
 
@@ -6524,15 +6866,20 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		/* if no foreign table column is found, return NULL */
 		if (index == -1)
+		{
+			elog(DEBUG1, "%s exit [T_Var]: returning NULL (no table column found)", __func__);
 			return NULL;
+		}
 
 		initStringInfo(&result);
 		appendStringInfo(&result, "%s", state->rdfTable->cols[index]->name);
 
-		elog(DEBUG1, "  %s (T_Var): index = %d, result = '%s'", __func__, index, state->rdfTable->cols[index]->name);
+		elog(DEBUG2, "  %s [T_Var]: index='%d', result='%s'", __func__,
+			 index, state->rdfTable->cols[index]->name);
 
 		break;
 	case T_OpExpr:
+		elog(DEBUG2, "%s [T_OpExpr]: start (expr->type='%u')", __func__, expr->type);
 		oper = (OpExpr *)expr;
 		initStringInfo(&result);
 
@@ -6576,13 +6923,14 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			if (strcmp(opername, "<>") == 0)
 				opername = "!=";
 
-			elog(DEBUG1,"  %s (T_OpExpr): deparsing operand of left expression", __func__);
+			elog(DEBUG2, "  %s [T_OpExpr]: deparsing operand of left expression", __func__);
 			left = DeparseExpr(state, foreignrel, linitial(oper->args));
-			elog(DEBUG1,"  %s (T_OpExpr): left operand returned => %s", __func__, left);
+			elog(DEBUG2, "  %s [T_OpExpr]: left operand returned => %s", __func__, left);
 
 			if (left == NULL)
 			{
 				pfree(opername);
+				elog(DEBUG1, "%s exit: returning NULL (left argument couldn't be deparsed)", __func__);
 				return NULL;
 			}
 
@@ -6592,40 +6940,47 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				StringInfoData right_filter_arg;
 				struct RDFfdwColumn *right_column = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 				struct RDFfdwColumn *left_column = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
-				
-				elog(DEBUG1,"  %s (T_OpExpr): deparsing left and right expressions", __func__);
+
+				elog(DEBUG2, "  %s [T_OpExpr]: deparsing left and right expressions", __func__);
 				leftexpr = linitial(oper->args);
 				rightexpr = lsecond(oper->args);
-				
-				elog(DEBUG1,"  %s (T_OpExpr): deparsing operand of right expression, type %u", __func__, rightexpr->type);
+
+				elog(DEBUG2, "  %s [T_OpExpr]: deparsing operand of right expression, type %u", __func__, rightexpr->type);
 				right = DeparseExpr(state, foreignrel, rightexpr);
-				
 
-				elog(DEBUG1,"  %s (T_OpExpr): [%s] left type %u, [%s] right type %u", __func__, left, leftexpr->type, right, rightexpr->type);
-
+				elog(DEBUG2, "  %s [T_OpExpr]: [%s] left type %u, [%s] right type %u", __func__, left, leftexpr->type, right, rightexpr->type);
 
 				if (right == NULL)
+				{
+					elog(DEBUG1, "%s exit: returning NULL (right argument couldn't be deparsed)", __func__);
 					return NULL;
+				}
 
 				initStringInfo(&left_filter_arg);
 				initStringInfo(&right_filter_arg);
 
 				left_column = GetRDFColumn(state, left);
 
-				if (leftexpr->type == T_Var && (!left_column || !left_column->pushable) )
+				if (leftexpr->type == T_Var && (!left_column || !left_column->pushable))
+				{
+					elog(DEBUG1, "%s exit [T_OpExpr]: returning NULL (column of left argument is invalid or not pushable)", __func__);
 					return NULL;
-				
-				elog(DEBUG1,"%s: getting right column based on '%s' ... ",__func__, right);
+				}
+
+				elog(DEBUG2, "%s: getting right column based on '%s' ... ", __func__, right);
 				right_column = GetRDFColumn(state, right);
 
-				if (rightexpr->type == T_Var && (!right_column || !right_column->pushable) )
+				if (rightexpr->type == T_Var && (!right_column || !right_column->pushable))
+				{
+					elog(DEBUG1, "%s exit [T_OpExpr]: returning NULL (column of right argument is invalid or not pushable)", __func__);
 					return NULL;
+				}
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
-				if(left_column && left_column->expression)
+				if (left_column && left_column->expression)
 				{
-					elog(DEBUG1,"%s: adding expression '%s' for left expression",__func__, left_column->expression);
-					appendStringInfo(&left_filter_arg,"%s",left_column->expression);
+					elog(DEBUG2, "%s: adding expression '%s' for left expression", __func__, left_column->expression);
+					appendStringInfo(&left_filter_arg, "%s", left_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
 				else if (IsStringDataType(leftargtype) && leftexpr->type == T_Const)
@@ -6654,44 +7009,41 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						appendStringInfo(&left_filter_arg, "%s", CstringToRDFLiteral(left));
 				}
 				/* check if the argument is a column */
-				else if(left_column && leftexpr->type == T_Var)
+				else if (left_column && leftexpr->type == T_Var)
 				{
-					/* 
+					/*
 					 * we wrap the column name (sparqlvar) with STR() if the column's language
 					 * is set to * (all languages)
 					 */
-					if(left_column->language && strcmp(left_column->language, "*") == 0)
-						appendStringInfo(&left_filter_arg,"STR(%s)",left_column->sparqlvar);
+					if (left_column->language && strcmp(left_column->language, "*") == 0)
+						appendStringInfo(&left_filter_arg, "STR(%s)", left_column->sparqlvar);
 					/* set the sparqlvar to the FILTER expression */
 					else
-						appendStringInfo(&left_filter_arg,"%s",left_column->sparqlvar);
+						appendStringInfo(&left_filter_arg, "%s", left_column->sparqlvar);
 				}
-				else if(leftexpr->type == T_FuncExpr)
+				else if (leftexpr->type == T_FuncExpr)
 				{
 					/* We try to resolve the column name <-> sparql variable one last time */
 					left_column = GetRDFColumn(state, left);
 
-					if(left_column)
+					if (left_column)
 						appendStringInfo(&left_filter_arg, "%s", left_column->sparqlvar);
 					else
 						appendStringInfo(&left_filter_arg, "%s", left);
-				} 
+				}
 				else
 				{
 					appendStringInfo(&left_filter_arg, "%s", left);
 				}
-					
-
-
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
-				if(right_column && right_column->expression)
+				if (right_column && right_column->expression)
 				{
-					elog(DEBUG1,"%s: adding expression '%s' for left expression",__func__, right_column->expression);
-					appendStringInfo(&right_filter_arg,"%s",right_column->expression);
+					elog(DEBUG1, "%s: adding expression '%s' for left expression", __func__, right_column->expression);
+					appendStringInfo(&right_filter_arg, "%s", right_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
-				else if(IsStringDataType(rightargtype) && rightexpr->type == T_Const)				
+				else if (IsStringDataType(rightargtype) && rightexpr->type == T_Const)
 				{
 					if (left_column)
 					{
@@ -6703,35 +7055,32 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 								appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
 							else
 								appendStringInfo(&right_filter_arg, "%s", strlang(right, left_column->language));
-						}  
+						}
 						else if (left_column->literaltype)
 							appendStringInfo(&right_filter_arg, "%s", strdt(right, left_column->literaltype));
 						else if (isIRI(right) || isBlank(right)) /* REVISAR!!!*/
 							appendStringInfo(&right_filter_arg, "%s", right);
 						else
 							appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
-
-
 					}
 					else if (isIRI(right))
 						appendStringInfo(&right_filter_arg, "%s", right);
 					else
 						appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
-
 				}
-				else if(rightexpr->type == T_Var)
+				else if (rightexpr->type == T_Var)
 				{
-					if(right_column && right_column->language && strcmp(right_column->language, "*") == 0)
+					if (right_column && right_column->language && strcmp(right_column->language, "*") == 0)
 						appendStringInfo(&right_filter_arg, "STR(%s)", right_column->sparqlvar);
 					else
-						appendStringInfo(&right_filter_arg,"%s", right_column->sparqlvar);
+						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
 				}
-				else if(rightexpr->type == T_FuncExpr)
-				{ 
+				else if (rightexpr->type == T_FuncExpr)
+				{
 					/* We try to resolve the column name <-> sparql variable one last time */
 					right_column = GetRDFColumn(state, right);
 
-					if(right_column)
+					if (right_column)
 						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
 					else
 						appendStringInfo(&right_filter_arg, "%s", right);
@@ -6739,56 +7088,58 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				else
 					appendStringInfo(&right_filter_arg, "%s", right);
 
- 
-				elog(DEBUG1,"  %s (T_OpExpr): left argument converted: '%s' => '%s'", __func__, left, NameStr(left_filter_arg));
-				elog(DEBUG1,"  %s (T_OpExpr): oper  => '%s'", __func__, opername);
-				elog(DEBUG1,"  %s (T_OpExpr): right argument converted: '%s' => '%s'", __func__, right,  NameStr(right_filter_arg));
-
+				elog(DEBUG2, "  %s [T_OpExpr]: left argument converted: '%s' => '%s'", __func__, left, NameStr(left_filter_arg));
+				elog(DEBUG2, "  %s [T_OpExpr]: oper  => '%s'", __func__, opername);
+				elog(DEBUG2, "  %s [T_OpExpr]: right argument converted: '%s' => '%s'", __func__, right, NameStr(right_filter_arg));
 
 				if (strcmp(opername, "~~") == 0 || strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~") == 0 || strcmp(opername, "!~~*") == 0)
 				{
-					/* 
-					 * If the left and right side arguments are not respectively T_Var and 
+					/*
+					 * If the left and right side arguments are not respectively T_Var and
 					 * T_Const it is not safe to push down the REGEX FILTER. We then let
 					 * the client to deal with it.
 					 */
-					if(leftexpr->type != T_Var && rightexpr->type != T_Const)
+					if (leftexpr->type != T_Var && rightexpr->type != T_Const)
+					{
+						elog(DEBUG1, "%s exit [T_OpExpr]: returning NULL (type of left expression is not a T_Var and the right expression is not a T_Const)", __func__);
 						return NULL;
+					}
 
 					appendStringInfo(&result, "%s(%s,\"%s\"%s)",
 									 opername[0] == '!' ? "!REGEX" : "REGEX",
 									 NameStr(left_filter_arg),
 									 CreateRegexString(right),
 									 strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
-				} 
+				}
 				else
 				{
-					appendStringInfo(&result, "%s %s %s", 
-						NameStr(left_filter_arg),
-						opername, 
-						NameStr(right_filter_arg));
+					appendStringInfo(&result, "%s %s %s",
+									 NameStr(left_filter_arg),
+									 opername,
+									 NameStr(right_filter_arg));
 				}
-
-
-
 			}
 			else
 			{
-				elog(DEBUG1, "  %s (T_OpExpr): unary operator not supported", __func__);
+				elog(DEBUG1, "  %s [T_OpExpr]: unary operator not supported", __func__);
 			}
 		}
 		else
 		{
-			elog(DEBUG1, "  %s (T_OpExpr): operator cannot be translated > '%s' ", __func__, opername);
+			elog(DEBUG1, "  %s exit [T_OpExpr]: returning NULL (operator cannot be translated '%s')", __func__, opername);
 			return NULL;
 		}
 
 		break;
 	case T_BooleanTest:
+		elog(DEBUG2, "%s [T_BooleanTest]: start (expr->type='%u')", __func__, expr->type);
 		btest = (BooleanTest *)expr;
 
 		if (btest->arg->type != T_Var)
+		{
+			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (argument type is not a T_Var)", __func__);
 			return NULL;
+		}
 
 		variable = (Var *)btest->arg;
 
@@ -6799,15 +7150,24 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		arg = state->rdfTable->cols[index]->name;
 
 		if (arg == NULL)
+		{
+			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (column name is not valid)", __func__);
 			return NULL;
+		}
 
 		col = GetRDFColumn(state, arg);
 
 		if (!col)
+		{
+			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (column not found)", __func__);
 			return NULL;
+		}
 
 		if (!col->pushable)
+		{
+			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (column name is not pushable)", __func__);
 			return NULL;
+		}
 
 		initStringInfo(&result);
 
@@ -6834,11 +7194,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 							 !col->literaltype ? "\"false\"" : strdt("false", col->literaltype));
 			break;
 		default:
+			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (unknown booltesttype)", __func__);
 			return NULL;
 		}
 
 		break;
 	case T_ScalarArrayOpExpr:
+		elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: start (expr->type='%u')", __func__, expr->type);
 		arrayoper = (ScalarArrayOpExpr *)expr;
 
 		/* get operator name, left argument type and schema */
@@ -6854,25 +7216,44 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		/* ignore operators in other than the pg_catalog schema */
 		if (schema != PG_CATALOG_NAMESPACE)
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (operator schema is not PG_CATALOG_NAMESPACE)", __func__);
 			return NULL;
+		}
 
 		/* don't try to push down anything but IN and NOT IN expressions */
 		if ((strcmp(opername, "=") != 0 || !arrayoper->useOr) && (strcmp(opername, "<>") != 0 || arrayoper->useOr))
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (expression in not IN or NOT IN)", __func__);
 			return NULL;
+		}
 
 		if (!canHandleType(leftargtype))
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot handle left argument's datatype)", __func__);
 			return NULL;
+		}
 
 		left = DeparseExpr(state, foreignrel, linitial(arrayoper->args));
 		if (left == NULL)
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
 			return NULL;
+		}
 
 		col = GetRDFColumn(state, left);
+
 		if (!col)
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column of left argument is not valid)", __func__);
 			return NULL;
+		}
 
 		if (!col->pushable)
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column is not pushable)", __func__);
 			return NULL;
+		}
 
 		initStringInfo(&result);
 
@@ -6895,7 +7276,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			 * by the absence of a relation
 			 */
 			if (constant->constisnull)
+			{
+				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (constant->constisnull)", __func__);
 				return NULL;
+			}
 			else
 			{
 				ArrayType *arr = DatumGetArrayTypeP(constant->constvalue);
@@ -6926,13 +7310,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					{
 						if (col->language)
 							appendStringInfo(&result, "%s%s",
-								first_arg ? "" : ", ", strlang(c, col->language));
+											 first_arg ? "" : ", ", strlang(c, col->language));
 						else if (col->literaltype)
 							appendStringInfo(&result, "%s%s",
-								first_arg ? "" : ", ", strdt(c, col->literaltype));
+											 first_arg ? "" : ", ", strdt(c, col->literaltype));
 						else
 							appendStringInfo(&result, "%s%s",
-											first_arg ? "" : ", ", CstringToRDFLiteral(c));
+											 first_arg ? "" : ", ", CstringToRDFLiteral(c));
 					}
 					else
 						appendStringInfo(&result, "%s%s",
@@ -6945,7 +7329,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				/* don't push down empty arrays, since the semantics for NOT x = ANY(<empty array>) differ */
 				if (first_arg)
+				{
+					elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot push empty arrays)", __func__);
 					return NULL;
+				}
 			}
 
 			break;
@@ -6959,11 +7346,16 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				return NULL;
 #else
 			if (arraycoerce->elemexpr && arraycoerce->elemexpr->type != T_RelabelType)
+			{
+				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (arraycoerce->elemexpr && arraycoerce->elemexpr->type != T_RelabelType)", __func__);
 				return NULL;
+			}
 #endif
-			/* punt on anything but ArrayExpr (e.g, parameters) */
 			if (arraycoerce->arg->type != T_ArrayExpr)
+			{
+				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (arraycoerce->arg->type != T_ArrayExpr)", __func__);
 				return NULL;
+			}
 
 			/* the actual array is here */
 			rightexpr = arraycoerce->arg;
@@ -6983,7 +7375,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				/* if any element cannot be converted, give up */
 				if (element == NULL)
+				{
+					elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (unable to deparse element of T_ArrayExpr)", __func__);
 					return NULL;
+				}
 
 				/* append the argument */
 				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", element);
@@ -6992,10 +7387,14 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			/* don't push down empty arrays, since the semantics for NOT x = ANY(<empty array>) differ */
 			if (first_arg)
+			{
+				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot push down empty arrays)", __func__);
 				return NULL;
+			}
 
 			break;
 		default:
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (rightexpr->type not supported)", __func__);
 			return NULL;
 		}
 
@@ -7004,41 +7403,45 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		break;
 	case T_FuncExpr:
-
+		elog(DEBUG2, "%s [T_FuncExpr]: start (expr->type='%u')", __func__, expr->type);
 		func = (FuncExpr *)expr;
-		
-		elog(DEBUG1,"  %s (T_FuncExpr): called",__func__);
 
 		if (!canHandleType(func->funcresulttype))
+		{
 			return NULL;
+		}
 
 		/* do nothing for implicit casts */
 		if (func->funcformat == COERCE_IMPLICIT_CAST)
 		{
-			elog(DEBUG1,"  %s (T_FuncExpr): implicit cast! ",__func__);
-			return DeparseExpr(state, foreignrel, linitial(func->args));
-			//return NULL;
+			char *impcast = DeparseExpr(state, foreignrel, linitial(func->args));
+			elog(DEBUG1, "%s exit [T_FuncExpr]: returning '%s' (implicit cast) ", __func__, impcast);
+			return impcast;
+			// return NULL;
 		}
 
 		/* get function name and schema */
 		tuple = SearchSysCache1(PROCOID, ObjectIdGetDatum(func->funcid));
 		if (!HeapTupleIsValid(tuple))
 		{
-			elog(ERROR, "%s (T_FuncExpr): cache lookup failed for function %u",__func__, func->funcid);
+			elog(ERROR, "%s [T_FuncExpr]: cache lookup failed for function %u", __func__, func->funcid);
 		}
 
 		opername = pstrdup(((Form_pg_proc)GETSTRUCT(tuple))->proname.data);
 		schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
 		ReleaseSysCache(tuple);
 
-		elog(DEBUG1,"  %s (T_FuncExpr): opername = %s",__func__, opername);
+		elog(DEBUG2, "  %s [T_FuncExpr]: opername = %s", __func__, opername);
 
 		/*
 		 * ignore functions that are not in the pg_catalog schema and are
 		 * not pushable.
 		 */
 		if (schema != PG_CATALOG_NAMESPACE && !IsFunctionPushable(opername))
+		{
+			elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
 			return NULL;
+		}
 
 		if (IsFunctionPushable(opername))
 		{
@@ -7051,12 +7454,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			foreach (cell, func->args)
 			{
 				Expr *ex = lfirst(cell);
-				elog(DEBUG1, "  %s (T_FuncExpr): deparsing arguments for '%s'", __func__, opername);
+				elog(DEBUG2, "%s [T_FuncExpr]: deparsing arguments for '%s'", __func__, opername);
 				arg = DeparseExpr(state, foreignrel, ex);
-				
-				if(!arg)
+
+				if (!arg)
 				{
-					elog(DEBUG1, "  %s (T_FuncExpr): arg is NULL (opername = %s)", __func__, opername);
+					elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (arg is NULL and opername = %s)", __func__, opername);
 					pfree(opername);
 					return NULL;
 				}
@@ -7075,15 +7478,15 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				col = GetRDFColumn(state, arg);
 
-				if(col)
+				if (col)
 				{
-					appendStringInfo(&args, "%s",  !col->expression ? col->sparqlvar : col->expression);
+					appendStringInfo(&args, "%s", !col->expression ? col->sparqlvar : col->expression);
 				}
 				else
 				{
 					if (ex->type == T_Const)
 					{
-				 		Const *ct = (Const *)ex;
+						Const *ct = (Const *)ex;
 
 						if (strcmp(opername, "extract") == 0 && initarg)
 						{
@@ -7099,15 +7502,15 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						/* Return NULLL if the EXTRACT field cannot be converted to SPARQL */
 						if (strcmp(opername, "extract") == 0 && initarg && !arg)
 						{
-							elog(DEBUG1, "  %s (T_FuncExpr): EXTRACT field cannot be converted to SPARQL: '%s'", __func__, arg);
+							elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (EXTRACT field cannot be converted to SPARQL: '%s')", __func__, arg);
 							pfree(opername);
 							return NULL;
 						}
-						else if(IsStringDataType(ct->consttype) && strcmp(opername,"strdt") == 0)
+						else if (IsStringDataType(ct->consttype) && strcmp(opername, "strdt") == 0)
 							appendStringInfo(&args, "%s", ExpandDatatypePrefix(arg));
-						else if(IsStringDataType(ct->consttype) && isIRI(arg))
+						else if (IsStringDataType(ct->consttype) && isIRI(arg))
 							appendStringInfo(&args, "%s", arg);
-						else if(IsStringDataType(ct->consttype))
+						else if (IsStringDataType(ct->consttype))
 							appendStringInfo(&args, "%s", CstringToRDFLiteral(arg));
 						else
 							appendStringInfo(&args, "%s", arg);
@@ -7119,172 +7522,179 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				initarg = false;
 			}
 
-			if(strcmp(opername, "upper") == 0)
+			if (strcmp(opername, "upper") == 0)
 				appendStringInfo(&result, "UCASE(%s)", NameStr(args));
-			else if(strcmp(opername, "lower") == 0)
+			else if (strcmp(opername, "lower") == 0)
 				appendStringInfo(&result, "LCASE(%s)", NameStr(args));
-			else if(strcmp(opername, "length") == 0)
+			else if (strcmp(opername, "length") == 0)
 				appendStringInfo(&result, "STRLEN(%s)", NameStr(args));
-			else if(strcmp(opername, "abs") == 0)
+			else if (strcmp(opername, "abs") == 0)
 				appendStringInfo(&result, "ABS(%s)", NameStr(args));
-			else if(strcmp(opername, "round") == 0)
+			else if (strcmp(opername, "round") == 0)
 				appendStringInfo(&result, "ROUND(%s)", NameStr(args));
-			else if(strcmp(opername, "floor") == 0)
+			else if (strcmp(opername, "floor") == 0)
 				appendStringInfo(&result, "FLOOR(%s)", NameStr(args));
-			else if(strcmp(opername, "ceil") == 0)
+			else if (strcmp(opername, "ceil") == 0)
 				appendStringInfo(&result, "CEIL(%s)", NameStr(args));
-			else if(strcmp(opername, "strstarts") == 0 || strcmp(opername, "starts_with") == 0)
+			else if (strcmp(opername, "strstarts") == 0 || strcmp(opername, "starts_with") == 0)
 				appendStringInfo(&result, "STRSTARTS(%s)", NameStr(args));
-			else if(strcmp(opername, "strends") == 0)
+			else if (strcmp(opername, "strends") == 0)
 				appendStringInfo(&result, "STRENDS(%s)", NameStr(args));
-			else if(strcmp(opername, "strbefore") == 0)
+			else if (strcmp(opername, "strbefore") == 0)
 				appendStringInfo(&result, "STRBEFORE(%s)", NameStr(args));
-			else if(strcmp(opername, "strafter") == 0)
+			else if (strcmp(opername, "strafter") == 0)
 				appendStringInfo(&result, "STRAFTER(%s)", NameStr(args));
-			else if(strcmp(opername, "strlang") == 0)
+			else if (strcmp(opername, "strlang") == 0)
 				appendStringInfo(&result, "STRLANG(%s)", NameStr(args));
-			else if(strcmp(opername, "strdt") == 0)
+			else if (strcmp(opername, "strdt") == 0)
 				appendStringInfo(&result, "STRDT(%s)", NameStr(args));
-			else if(strcmp(opername, "str") == 0)
+			else if (strcmp(opername, "str") == 0)
 				appendStringInfo(&result, "STR(%s)", NameStr(args));
-			else if(strcmp(opername, "iri") == 0)
+			else if (strcmp(opername, "iri") == 0)
 				appendStringInfo(&result, "IRI(%s)", NameStr(args));
-			else if(strcmp(opername, "isiri") == 0)
+			else if (strcmp(opername, "isiri") == 0)
 				appendStringInfo(&result, "isIRI(%s)", NameStr(args));
-			else if(strcmp(opername, "lang") == 0)
+			else if (strcmp(opername, "lang") == 0)
 				appendStringInfo(&result, "LANG(%s)", NameStr(args));
-			else if(strcmp(opername, "langmatches") == 0)
+			else if (strcmp(opername, "langmatches") == 0)
 				appendStringInfo(&result, "LANGMATCHES(%s)", NameStr(args));
-			else if(strcmp(opername, "datatype") == 0)
+			else if (strcmp(opername, "datatype") == 0)
 				appendStringInfo(&result, "DATATYPE(%s)", NameStr(args));
-			else if(strcmp(opername, "substring") == 0)
+			else if (strcmp(opername, "substring") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
-			else if(strcmp(opername, "contains") == 0)
+			else if (strcmp(opername, "contains") == 0)
 				appendStringInfo(&result, "CONTAINS(%s)", NameStr(args));
-			else if(strcmp(opername, "encode_for_uri") == 0)
+			else if (strcmp(opername, "encode_for_uri") == 0)
 				appendStringInfo(&result, "ENCODE_FOR_URI(%s)", NameStr(args));
-			else if(strcmp(opername, "isblank") == 0)
+			else if (strcmp(opername, "isblank") == 0)
 				appendStringInfo(&result, "ISBLANK(%s)", NameStr(args));
-			else if(strcmp(opername, "isnumeric") == 0)
+			else if (strcmp(opername, "isnumeric") == 0)
 				appendStringInfo(&result, "ISNUMERIC(%s)", NameStr(args));
-			else if(strcmp(opername, "isliteral") == 0)
+			else if (strcmp(opername, "isliteral") == 0)
 				appendStringInfo(&result, "ISLITERAL(%s)", NameStr(args));
-			else if(strcmp(opername, "bnode") == 0)
+			else if (strcmp(opername, "bnode") == 0)
 				appendStringInfo(&result, "BNODE(%s)", NameStr(args));
-			else if(strcmp(opername, "lcase") == 0)
+			else if (strcmp(opername, "lcase") == 0)
 				appendStringInfo(&result, "LCASE(%s)", NameStr(args));
-			else if(strcmp(opername, "ucase") == 0)
+			else if (strcmp(opername, "ucase") == 0)
 				appendStringInfo(&result, "UCASE(%s)", NameStr(args));
-			else if(strcmp(opername, "strlen") == 0)
+			else if (strcmp(opername, "strlen") == 0)
 				appendStringInfo(&result, "STRLEN(%s)", NameStr(args));
-			else if(strcmp(opername, "substr") == 0)
+			else if (strcmp(opername, "substr") == 0)
 				appendStringInfo(&result, "SUBSTR(%s)", NameStr(args));
-			else if(strcmp(opername, "concat") == 0)
+			else if (strcmp(opername, "concat") == 0)
 				appendStringInfo(&result, "CONCAT(%s)", NameStr(args));
-			else if(strcmp(opername, "replace") == 0)
+			else if (strcmp(opername, "replace") == 0)
 				appendStringInfo(&result, "REPLACE(%s)", NameStr(args));
-			else if(strcmp(opername, "regex") == 0)
+			else if (strcmp(opername, "regex") == 0)
 				appendStringInfo(&result, "REGEX(%s)", NameStr(args));
-			else if(strcmp(opername, "year") == 0)
+			else if (strcmp(opername, "year") == 0)
 				appendStringInfo(&result, "YEAR(%s)", NameStr(args));
-			else if(strcmp(opername, "month") == 0)
+			else if (strcmp(opername, "month") == 0)
 				appendStringInfo(&result, "MONTH(%s)", NameStr(args));
-			else if(strcmp(opername, "day") == 0)
+			else if (strcmp(opername, "day") == 0)
 				appendStringInfo(&result, "DAY(%s)", NameStr(args));
-			else if(strcmp(opername, "hours") == 0)
+			else if (strcmp(opername, "hours") == 0)
 				appendStringInfo(&result, "HOURS(%s)", NameStr(args));
-			else if(strcmp(opername, "minutes") == 0)
+			else if (strcmp(opername, "minutes") == 0)
 				appendStringInfo(&result, "MINUTES(%s)", NameStr(args));
-			else if(strcmp(opername, "seconds") == 0)
+			else if (strcmp(opername, "seconds") == 0)
 				appendStringInfo(&result, "SECONDS(%s)", NameStr(args));
-			else if(strcmp(opername, "timezone") == 0)
+			else if (strcmp(opername, "timezone") == 0)
 				appendStringInfo(&result, "TIMEZONE(%s)", NameStr(args));
-			else if(strcmp(opername, "tz") == 0)
+			else if (strcmp(opername, "tz") == 0)
 				appendStringInfo(&result, "TZ(%s)", NameStr(args));
-			else if(strcmp(opername, "md5") == 0)
+			else if (strcmp(opername, "md5") == 0)
 				appendStringInfo(&result, "MD5(%s)", NameStr(args));
-			else if(strcmp(opername, "bound") == 0)
+			else if (strcmp(opername, "bound") == 0)
 				appendStringInfo(&result, "BOUND(%s)", NameStr(args));
-			else if(strcmp(opername, "sameterm") == 0)
+			else if (strcmp(opername, "sameterm") == 0)
 				appendStringInfo(&result, "SAMETERM(%s)", NameStr(args));
-			else if(strcmp(opername, "coalesce") == 0)
-				appendStringInfo(&result, "COALESCE(%s)", NameStr(args));				
-			else if(strcmp(opername, "extract") == 0)
+			else if (strcmp(opername, "coalesce") == 0)
+				appendStringInfo(&result, "COALESCE(%s)", NameStr(args));
+			else if (strcmp(opername, "extract") == 0)
 				appendStringInfo(&result, "%s(%s)", extract_type, NameStr(args));
 			else
+			{
+				elog(DEBUG1, "%s [T_FuncExpr]: returning NULL (unknown opername '%s')", __func__, opername);
 				return NULL;
-			
+			}
+
 			pfree(args.data);
 		}
 		/* in PostgreSQL 11 EXTRACT is internally called as DATE_PART */
-		else if(strcmp(opername, "date_part") == 0)
+		else if (strcmp(opername, "date_part") == 0)
 		{
 			Expr *field = linitial(func->args);
 			char *date_part_type = "";
 
-			elog(DEBUG1, "  %s (T_FuncExpr): deparsing FIELD for '%s'", __func__, opername);
+			elog(DEBUG2, "%s [T_FuncExpr]: deparsing FIELD for '%s'", __func__, opername);
 			date_part_type = DeparseExpr(state, foreignrel, field);
-			
-			if(!date_part_type)
+
+			if (!date_part_type)
 			{
-				elog(DEBUG1, "  %s (T_FuncExpr): date_part_type is NULL (opername = %s)", __func__, opername);
+				elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (date_part_type is NULL and opername = '%s')", __func__, opername);
 				pfree(opername);
 				return NULL;
 			}
 
-			elog(DEBUG1, "  %s (T_FuncExpr): date_part FIELD '%s'", __func__, date_part_type);
+			elog(DEBUG2, "%s [T_FuncExpr]: date_part FIELD '%s'", __func__, date_part_type);
 
 			date_part_type = FormatSQLExtractField(date_part_type);
 
-			if(date_part_type)
+			if (date_part_type)
 			{
-				char * val;
+				char *val;
 
-				elog(DEBUG1, "  %s (T_FuncExpr): deparsing VALUE for '%s'", __func__, opername);
+				elog(DEBUG2, "%s [T_FuncExpr]: deparsing VALUE for '%s'", __func__, opername);
+
 				val = DeparseExpr(state, foreignrel, lsecond(func->args));
 				col = GetRDFColumn(state, val);
 
 				initStringInfo(&result);
 
-				if(col)
+				if (col)
 					appendStringInfo(&result, "%s(%s)", date_part_type, !col->expression ? col->sparqlvar : col->expression);
 				else
 					appendStringInfo(&result, "%s(\"%s\")", date_part_type, val);
 			}
 			else
-			{	
+			{
+				elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (date_part_type is NULL)", __func__);
 				pfree(opername);
 				return NULL;
 			}
-
 		}
-		else if(strcmp(opername, "timestamp") == 0)
+		else if (strcmp(opername, "timestamp") == 0)
 		{
 			char *value;
 			Expr *ex = linitial(func->args);
-			
+
 			value = DeparseExpr(state, foreignrel, ex);
 
-			if(!value)
+			if (!value)
+			{
+				elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (unable to deparse timestamp value)", __func__);
 				return NULL;
+			}
 
 			initStringInfo(&result);
-			appendStringInfo(&result, "%s",  value);
-
-			elog(DEBUG1, "  %s (T_FuncExpr): returning VALUE for '%s': '%s'", __func__, opername,NameStr(result));
+			appendStringInfo(&result, "%s", value);
 		}
 		else
 		{
-			elog(DEBUG1, "  %s (T_FuncExpr): function '%s' is not pushable", __func__, opername);
+			elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (unable to push function '%s')", __func__, opername);
 			return NULL;
 		}
 
 		pfree(opername);
 		break;
 	case T_ArrayExpr:
+		elog(DEBUG2, "%s [T_ArrayExpr]: start (expr->type='%u')", __func__, expr->type);
+
 		/* this is exclusively for SPARQL COALESCE */
 		array = (ArrayExpr *)expr;
-		elog(DEBUG2, "  %s (T_ArrayExpr): function called", __func__);
+		elog(DEBUG2, "%s [T_ArrayExpr]: function called", __func__);
 		initStringInfo(&result);
 
 		/* loop the array arguments */
@@ -7296,7 +7706,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			/* if any element cannot be converted, give up */
 			if (element == NULL)
+			{
+				elog(DEBUG1, "%s exit [T_ArrayExpr]: returning NULL (unable to deparse element of T_ArrayExpr)", __func__);
 				return NULL;
+			}
 
 			col = GetRDFColumn(state, element);
 
@@ -7304,7 +7717,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", col->sparqlvar);
 			else if (nodeTag(element_expr) == T_Const && isLiteral(element))
 			{
-				/* 
+				/*
 				 * this seems unnecessary, but it is important to expand
 				 * possible prefixed XSD predicates into their full URI.
 				 */
@@ -7324,16 +7737,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		if (first_arg)
+		{
+			elog(DEBUG1, "%s exit [T_ArrayExpr]: returning NULL (cannot push empty arrays)", __func__);
 			return NULL;
+		}
 
 		break;
 	default:
-		elog(DEBUG1, "  %s: expression not supported > %u", __func__, expr->type);
+		elog(DEBUG1, "%s exit: returning NULL (expression not supported '%u')", __func__, expr->type);
 		return NULL;
 	}
 
-	elog(DEBUG1,"\n");
-
+	elog(DEBUG1, "%s exit: returning '%s'\n", __func__, result.data);
 	return result.data;
 }
 
@@ -7379,6 +7794,7 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 
 	}
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, where_clause.data);
 	return where_clause.data;
 }
 
@@ -7387,6 +7803,10 @@ static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 {
 	int where_position = -1;
 	int where_size = -1;
+	char *result;
+
+	elog(DEBUG1,"%s called",__func__);
+
 	/*
 	 * Deparsing SPARQL WHERE clause
 	 *   'where_position = i + 1' to remove the surrounging curly braces {} as we are
@@ -7401,7 +7821,10 @@ static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 			where_size = i - where_position;
 	}
 
-	return pnstrdup(state->raw_sparql + where_position, where_size);
+	result = pnstrdup(state->raw_sparql + where_position, where_size);
+
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	return result;
 }
 
 /* 
@@ -7437,9 +7860,11 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 		bool can_pushdown;
 
 		/* ec_has_volatile saves some cycles */
-		
 		if (pathkey_ec->ec_has_volatile)
+		{
+			elog(DEBUG1,"%s exit: returning 'false' (pathkey_ec->ec_has_volatile)", __func__);
 			return false;
+		}
 
 		/*
 		 * Given an EquivalenceClass and a foreign relation, find an EC member
@@ -7470,7 +7895,10 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 		}
 
 		if (em == NULL)
+		{
+			elog(DEBUG1,"%s exit: returning 'false' (EquivalenceMember is NULL)", __func__);
 			return false;
+		}
 
 		em_expr = em->em_expr;
 		em_type = exprType((Node *)em_expr);
@@ -7520,10 +7948,13 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 	}
 
 	if (root->query_pathkeys != NIL && usable_pathkeys != NIL)
+	{
+		elog(DEBUG1,"%s exit: returning '%s'", __func__, orderedquery.data);
 		return orderedquery.data;
+	}
 	else
 	{
-		elog(DEBUG1,"  %s: unable to deparse ORDER BY clause ",__func__);
+		elog(DEBUG1,"%s exit: returning NULL (unable to deparse ORDER BY clause)",__func__);
 		return NULL;
 	}
 }
@@ -7543,6 +7974,8 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 	char *open_chars = ">)\n\t ";
 	char *close_chars = " <\n\t";
 	int nfrom = 0;
+
+	elog(DEBUG1,"%s called", __func__);
 
 	initStringInfo(&from);
 
@@ -7605,6 +8038,7 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 
 	}
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, from.data);
 	return from.data;
 }
 
@@ -7658,6 +8092,7 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
 		}
 	}
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, prefixes.data);
 	return prefixes.data;
 }
 
@@ -7682,13 +8117,13 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	/* don't push down LIMIT (OFFSET)  if the query has a GROUP BY clause or aggregates */
 	if (root->parse->groupClause != NULL || root->parse->hasAggs)
 	{
-		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains aggregators.",__func__);
+		elog(DEBUG1,"%s exit: returning NULL (LIMIT won't be pushed down, as SQL query contains aggregators)", __func__);
 		return NULL;
 	}
 
 	/* don't push down LIMIT (OFFSET) if the query contains DISTINCT */
 	if (root->parse->distinctClause != NULL) {
-		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as SQL query contains DISTINCT.",__func__);
+		elog(DEBUG1,"%s exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)", __func__);
 		return NULL;
 	}
 
@@ -7698,7 +8133,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	 */
 	if (state->has_unparsable_conds)
 	{
-		elog(DEBUG1,"  %s: LIMIT won't be pushed down, as there are WHERE conditions that could not be translated.",__func__);
+		elog(DEBUG1,"%s exit: returning NULL (LIMIT won't be pushed down, as there are WHERE conditions that could not be translated)", __func__);
 		return NULL;
 	}
 
@@ -7708,12 +8143,18 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 		Const *limit = (Const *)root->parse->limitCount;
 
 		if (limit->constisnull)
+		{
+			elog(DEBUG1,"%s exit: returning NULL (limit->constisnull)", __func__);
 			return NULL;
+		}
 
 		limit_val = DatumToString(limit->constvalue, limit->consttype);
 	}
 	else
+	{
+		elog(DEBUG1,"%s exit: returning NULL (constant is NULL)", __func__);
 		return NULL;
+	}
 
 	/* only consider OFFSETS that are non-NULL constants */
 	if (root->parse->limitOffset != NULL && IsA(root->parse->limitOffset, Const))
@@ -7735,6 +8176,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	else
 		appendStringInfo(&limit_clause, "LIMIT %s", limit_val);
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, NameStr(limit_clause));
 	return NameStr(limit_clause);
 
 }
@@ -7750,10 +8192,16 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
  */
 static bool ContainsWhitespaces(char *str)
 {
+	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+
 	for (int i = 0; str[i] != '\0'; i++)
 		if (isspace((unsigned char)str[i]))
+		{
+			elog(DEBUG1,"%s exit: returning 'true'", __func__);
 			return true;
+		}
 
+	elog(DEBUG1,"%s exit: returning 'false'", __func__);
 	return false;
 }
 
@@ -7770,13 +8218,22 @@ static bool ContainsWhitespaces(char *str)
  */
 static bool IsSPARQLVariableValid(const char* str) 
 {
+	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+
 	if (str[0] != '?' && str[0] != '$')
+	{
+		elog(DEBUG1,"%s exit: returning 'false' (str does not start with '?' or '$')", __func__);
 		return false;
+	}
 
 	for (int i = 1; str[i] != '\0'; i++)
 		if (!isalnum(str[i]) && str[i] != '_')
+		{
+			elog(DEBUG1,"%s exit: returning 'false' (invalid variable name)", __func__);
 			return false;
+		}
 
+	elog(DEBUG1,"%s exit: returning 'true'", __func__);
 	return true;
 }
 
@@ -7794,7 +8251,7 @@ static char* CreateRegexString(char* str)
 	StringInfoData res;
 	initStringInfo(&res);
 
-	elog(DEBUG1,"%s called with string => %s", __func__, str);
+	elog(DEBUG1,"%s called: str='%s'", __func__, str);
 
 	if(!str)
 		return NULL;
@@ -7823,7 +8280,7 @@ static char* CreateRegexString(char* str)
 		elog(DEBUG2, "%s loop => %c res => %s", __func__, str[i], NameStr(res));
 	}
 
-	elog(DEBUG1,"%s returning => %s",__func__,NameStr(res));
+	elog(DEBUG1,"%s exit: returning '%s'",__func__,NameStr(res));
 
 	return NameStr(res);
 }
@@ -7834,23 +8291,29 @@ static char* CreateRegexString(char* str)
  * Determines if a PostgreSQL data type is string or numeric type
  * so that we can know when to wrap the value with single quotes
  * or leave it as is.
- * 
+ *
  * type: PostgreSQL data type
- * 
- * returns true if the data type needs to be wrapped with quotes 
+ *
+ * returns true if the data type needs to be wrapped with quotes
  *         or false otherwise.
  */
 static bool IsStringDataType(Oid type)
 {
-	return 
-		type == TEXTOID ||
-		type == VARCHAROID ||
-		type == CHAROID ||
-		type == NAMEOID ||
-		type == DATEOID ||
-		type == TIMESTAMPOID ||
-		type == TIMESTAMPTZOID ||
-		type == NAMEOID;
+	bool result;
+
+	elog(DEBUG1, "%s called: type='%u'", __func__, type);
+
+	result = type == TEXTOID ||
+			 type == VARCHAROID ||
+			 type == CHAROID ||
+			 type == NAMEOID ||
+			 type == DATEOID ||
+			 type == TIMESTAMPOID ||
+			 type == TIMESTAMPTZOID ||
+			 type == NAMEOID;
+
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
+	return result;
 }
 
 /*
@@ -7864,53 +8327,61 @@ static bool IsStringDataType(Oid type)
  */
 static bool IsFunctionPushable(char *funcname)
 {
-	return strcmp(funcname, "abs") == 0 ||
-		   strcmp(funcname, "ceil") == 0 ||
-		   strcmp(funcname, "floor") == 0 ||
-		   strcmp(funcname, "round") == 0 ||
-		   strcmp(funcname, "upper") == 0 ||
-		   strcmp(funcname, "lower") == 0 ||
-		   strcmp(funcname, "length") == 0 ||
-		   strcmp(funcname, "md5") == 0 ||
-		   strcmp(funcname, "starts_with") == 0 ||
-		   strcmp(funcname, "strstarts") == 0 ||
-		   strcmp(funcname, "strends") == 0 ||
-		   strcmp(funcname, "strbefore") == 0 ||
-		   strcmp(funcname, "strafter") == 0 ||
-		   strcmp(funcname, "strlang") == 0 ||
-		   strcmp(funcname, "langmatches") == 0 ||
-		   strcmp(funcname, "strdt") == 0 ||
-		   strcmp(funcname, "str") == 0 ||
-		   strcmp(funcname, "iri") == 0 ||
-		   strcmp(funcname, "isiri") == 0 ||
-		   strcmp(funcname, "lang") == 0 ||
-		   strcmp(funcname, "datatype") == 0 ||
-		   strcmp(funcname, "contains") == 0 ||
-		   strcmp(funcname, "extract") == 0 ||
-		   strcmp(funcname, "encode_for_uri") == 0 ||
-		   strcmp(funcname, "isblank") == 0 ||
-		   strcmp(funcname, "isnumeric") == 0 ||
-		   strcmp(funcname, "isliteral") == 0 ||
-		   strcmp(funcname, "bnode") == 0 ||
-		   strcmp(funcname, "lcase") == 0 ||
-		   strcmp(funcname, "ucase") == 0 ||
-		   strcmp(funcname, "strlen") == 0 ||
-		   strcmp(funcname, "substr") == 0 ||
-		   strcmp(funcname, "concat") == 0 ||
-		   strcmp(funcname, "replace") == 0 ||
-		   strcmp(funcname, "regex") == 0 ||
-		   strcmp(funcname, "year") == 0 ||
-		   strcmp(funcname, "month") == 0 ||
-		   strcmp(funcname, "day") == 0 ||
-		   strcmp(funcname, "hours") == 0 ||
-		   strcmp(funcname, "minutes") == 0 ||
-		   strcmp(funcname, "seconds") == 0 ||
-		   strcmp(funcname, "timezone") == 0 ||
-		   strcmp(funcname, "tz") == 0 ||
-		   strcmp(funcname, "bound") == 0 ||
-		   strcmp(funcname, "sameterm") == 0 ||
-		   strcmp(funcname, "coalesce") == 0 ||
-		   strcmp(funcname, "substring") == 0;
+	bool result;
+
+	elog(DEBUG1, "%s called: funcname='%s'", __func__, funcname);
+
+	result = strcmp(funcname, "abs") == 0 ||
+			 strcmp(funcname, "ceil") == 0 ||
+			 strcmp(funcname, "floor") == 0 ||
+			 strcmp(funcname, "round") == 0 ||
+			 strcmp(funcname, "upper") == 0 ||
+			 strcmp(funcname, "lower") == 0 ||
+			 strcmp(funcname, "length") == 0 ||
+			 strcmp(funcname, "md5") == 0 ||
+			 strcmp(funcname, "starts_with") == 0 ||
+			 strcmp(funcname, "strstarts") == 0 ||
+			 strcmp(funcname, "strends") == 0 ||
+			 strcmp(funcname, "strbefore") == 0 ||
+			 strcmp(funcname, "strafter") == 0 ||
+			 strcmp(funcname, "strlang") == 0 ||
+			 strcmp(funcname, "langmatches") == 0 ||
+			 strcmp(funcname, "strdt") == 0 ||
+			 strcmp(funcname, "str") == 0 ||
+			 strcmp(funcname, "iri") == 0 ||
+			 strcmp(funcname, "isiri") == 0 ||
+			 strcmp(funcname, "lang") == 0 ||
+			 strcmp(funcname, "datatype") == 0 ||
+			 strcmp(funcname, "contains") == 0 ||
+			 strcmp(funcname, "extract") == 0 ||
+			 strcmp(funcname, "encode_for_uri") == 0 ||
+			 strcmp(funcname, "isblank") == 0 ||
+			 strcmp(funcname, "isnumeric") == 0 ||
+			 strcmp(funcname, "isliteral") == 0 ||
+			 strcmp(funcname, "bnode") == 0 ||
+			 strcmp(funcname, "lcase") == 0 ||
+			 strcmp(funcname, "ucase") == 0 ||
+			 strcmp(funcname, "strlen") == 0 ||
+			 strcmp(funcname, "substr") == 0 ||
+			 strcmp(funcname, "concat") == 0 ||
+			 strcmp(funcname, "replace") == 0 ||
+			 strcmp(funcname, "regex") == 0 ||
+			 strcmp(funcname, "year") == 0 ||
+			 strcmp(funcname, "month") == 0 ||
+			 strcmp(funcname, "day") == 0 ||
+			 strcmp(funcname, "hours") == 0 ||
+			 strcmp(funcname, "minutes") == 0 ||
+			 strcmp(funcname, "seconds") == 0 ||
+			 strcmp(funcname, "timezone") == 0 ||
+			 strcmp(funcname, "tz") == 0 ||
+			 strcmp(funcname, "bound") == 0 ||
+			 strcmp(funcname, "sameterm") == 0 ||
+			 strcmp(funcname, "coalesce") == 0 ||
+			 strcmp(funcname, "substring") == 0;
+
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
+
+	return result;
 }
 
 /*
@@ -7929,6 +8400,8 @@ static char *FormatSQLExtractField(char *field)
 {
 	char *res;
 
+	elog(DEBUG1,"%s called: field='%s'", __func__, field);
+
 	if (strcasecmp(field, "year") == 0 || strcasecmp(field, "years") == 0)
 		res = "YEAR";
 	else if (strcasecmp(field, "month") == 0 || strcasecmp(field, "months") == 0)
@@ -7942,8 +8415,12 @@ static char *FormatSQLExtractField(char *field)
 	else if (strcasecmp(field, "second") == 0 || strcasecmp(field, "seconds") == 0)
 		res = "SECONDS";
 	else
-		res = NULL;
+	{
+		elog(DEBUG1,"%s exit: returning NULL (field unknown)", __func__);
+		return NULL;
+	}
 
+	elog(DEBUG1,"%s exit: returning '%s'", __func__, res);
 	return res;
 }
 

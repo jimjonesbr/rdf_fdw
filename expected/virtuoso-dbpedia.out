@@ -851,13 +851,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-      name       | birthdate  |                   party                   |      country      
------------------+------------+-------------------------------------------+-------------------
- Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
- Bob Drewel      | 12-13-2013 | Demokratische Partei (Vereinigte Staaten) | the United States
- Nicholas Smith  | 03-14-2012 | Demokratische Partei (Vereinigte Staaten) | the United States
- Sharon Dowey    | 11-20-2010 | Scottish Conservative Party               | Scotland
- Tony Labranche  | 11-11-2001 | Demokratische Partei (Vereinigte Staaten) | the United States
+           name           | birthdate  |                     party                     |      country       
+--------------------------+------------+-----------------------------------------------+--------------------
+ Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
+ Ben Bradley              | 12-11-1989 | Conservative Party                            | the United Kingdom
+ Emily Benn               | 10-04-1989 | Labour Party                                  | the United Kingdom
+ Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
+ Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
 (5 rows)
 
 /*
@@ -891,9 +891,14 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
- name | birthdate | party | country 
-------+-----------+-------+---------
-(0 rows)
+        name        | birthdate  |         party          |  country  
+--------------------+------------+------------------------+-----------
+ Sarah Hanson-Young | 12-23-1981 | Australian Greens      | Australia
+ Andrew Cripps      | 02-05-1981 | Liberal National Party | Australia
+ Clare O'Neil       | 09-12-1980 | Australian Labor Party | Australia
+ Roslyn Dundas      | 07-28-1978 | Australian Democrats   | Australia
+ Amanda Rishworth   | 07-10-1978 | Australian Labor Party | Australia
+(5 rows)
 
 /* 
  * "~~ ANY(ARRAY[])" is not going to be pushed down! 
@@ -926,13 +931,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-            name            | birthdate  |            party             | country 
-----------------------------+------------+------------------------------+---------
- Krzysztof Gawkowski        | 04-11-1980 | Sojusz Lewicy Demokratycznej | Poland
- Dariusz Joński             | 01-12-1979 | Sojusz Lewicy Demokratycznej | Poland
- Robert Biedroń             | 04-13-1976 | Sojusz Lewicy Demokratycznej | Poland
- Krzysztof Matyjaszczyk     | 05-27-1974 | Sojusz Lewicy Demokratycznej | Poland
- Wojciech Michał Olejniczak | 04-10-1974 | Sojusz Lewicy Demokratycznej | Poland
+          name           | birthdate  |           party           | country 
+-------------------------+------------+---------------------------+---------
+ Krzysztof Bosak         | 06-13-1982 | Liga Polskich Rodzin      | Poland
+ Krzysztof Bosak         | 06-13-1982 | Ruch Narodowy             | Poland
+ Paweł Bartosz Olszewski | 12-11-1979 | Platforma Obywatelska     | Poland
+ Piotr Ślusarczyk        | 08-24-1979 | Liga Polskich Rodzin      | Poland
+ Lucjan Karasiewicz      | 07-10-1979 | Polska Jest Najważniejsza | Poland
 (5 rows)
 
 /* 
@@ -966,13 +971,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-       name       | birthdate  |                   party                   |  country  
-------------------+------------+-------------------------------------------+-----------
- Miran Charuka    | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
- Sam Oosterhoff   | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
- Fernando Holiday | 09-22-1996 | Democratas                                | Brazil
- Luísa Canziani   | 04-11-1996 | Partido Trabalhista Brasileiro            | Brazil
- Kim Kataguiri    | 01-28-1996 | Democratas                                | Brazil
+           name           | birthdate  |                     party                     |     country     
+--------------------------+------------+-----------------------------------------------+-----------------
+ Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
+ Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Kjell Ingolf Ropstad     | 06-01-1985 | Kristelig Folkeparti                          | Norway
+ Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
+ Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
 (5 rows)
 
 /*
@@ -2095,7 +2100,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
       } 
 
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 1898 records.
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
  name | released | runtime 
