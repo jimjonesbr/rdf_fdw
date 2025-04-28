@@ -792,7 +792,7 @@ WHERE
 /* RAND */
 SELECT setseed(0.42);
 SELECT 
-  sparql.lex(sparql.rand())::numeric BETWEEN 0 AND 1, 
+  sparql.lex(sparql.rand())::numeric BETWEEN 0.0 AND 1.0, 
   sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
 
 /* YEAR */
@@ -876,7 +876,7 @@ SELECT p, o, pg_catalog.round(sparql.seconds(o),3)
 FROM ftdbp 
 WHERE 
   p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.seconds(o) = 0 AND
+  sparql.seconds(o) = 0.0 AND
   sparql.seconds(o) = sparql.seconds('"1996-07-08"^^xsd:date');
 
 /* TIMEZONE */

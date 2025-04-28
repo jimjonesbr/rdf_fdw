@@ -3473,17 +3473,17 @@ SELECT sparql.round('"-2.5"^^xsd:int');
 (1 row)
 
 SELECT sparql.round('');
-ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+ERROR:  invalid RDF literal syntax: ""
+CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round('""');
 ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round(' ');
-ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+ERROR:  invalid RDF literal syntax: " "
+CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round('" "');
 ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function sparql.round(text) line 3 at IF
+CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round(NULL);
  round 
 -------
@@ -3701,7 +3701,7 @@ SELECT setseed(0.42);
 (1 row)
 
 SELECT 
-  sparql.lex(sparql.rand())::numeric BETWEEN 0 AND 1, 
+  sparql.lex(sparql.rand())::numeric BETWEEN 0.0 AND 1.0, 
   sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
  ?column? | ?column? 
 ----------+----------
@@ -4018,7 +4018,7 @@ SELECT p, o, pg_catalog.round(sparql.seconds(o),3)
 FROM ftdbp 
 WHERE 
   p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.seconds(o) = 0 AND
+  sparql.seconds(o) = 0.0 AND
   sparql.seconds(o) = sparql.seconds('"1996-07-08"^^xsd:date');
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -4027,8 +4027,8 @@ SELECT ?p ?o
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://dbpedia.org/property/released>)
- FILTER(SECONDS(?o) = 0)
- FILTER(SECONDS("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 0)
+ FILTER(SECONDS(?o) = 0.0)
+ FILTER(SECONDS("1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date>) = 0.0)
 }
 
 INFO:  SPARQL returned 1 record.

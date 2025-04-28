@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS rdf_fdw;
-
 --------------------------------- Wikidata (Blazegraph) ---------------------------------
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 

@@ -1,0 +1,1854 @@
+\pset null NULL
+CREATE EXTENSION IF NOT EXISTS rdf_fdw;
+SHOW datestyle;
+   DateStyle   
+---------------
+ Postgres, MDY
+(1 row)
+
+SHOW timezone;
+      TimeZone       
+---------------------
+ America/Los_Angeles
+(1 row)
+
+/* text <-> rdf_literal */
+SELECT '"foo"'::rdf_literal;
+ rdf_literal 
+-------------
+ "foo"
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdf_literal;
+    rdf_literal    
+-------------------
+ "foo"^^xsd:string
+(1 row)
+
+SELECT '"foo"@es'::rdf_literal;
+ rdf_literal 
+-------------
+ "foo"@es
+(1 row)
+
+SELECT '"foo"@es'::rdf_literal::text;
+   text   
+----------
+ "foo"@es
+(1 row)
+
+SELECT '"foo"@es'::rdf_literal::text::rdf_literal;
+ rdf_literal 
+-------------
+ "foo"@es
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdf_literal::text::rdf_literal;
+    rdf_literal    
+-------------------
+ "foo"^^xsd:string
+(1 row)
+
+--SELECT '"foo"^^xsd:string'::rdf_literal = '"foo"^^xsd:string'::text;
+--SELECT '"foo"^^xsd:string'::text = '"foo"^^xsd:string'::rdf_literal;
+/* numeric <-> rdf_literal*/
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
+       numeric        
+----------------------
+ 9223372036854775.807
+(1 row)
+
+SELECT '"-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
+        numeric        
+-----------------------
+ -9223372036854775.807
+(1 row)
+
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
+                            rdf_literal                             
+--------------------------------------------------------------------
+ "9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT '"-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
+                             rdf_literal                             
+---------------------------------------------------------------------
+ "-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal = 9223372036854775.807;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> 9223372036854775.807;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> -9223372036854775.807;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal != 9223372036854775.807;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"9223372036854776"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal > 9223372036854775.999;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"9223372036854776"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal < 9223372036854775.999;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.000000000000000000"^^xsd:decimal'::rdf_literal = 42::numeric;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"0.000000000000000001"^^xsd:decimal'::rdf_literal > 0::numeric;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-0.000000000000000001"^^xsd:decimal'::rdf_literal < 0::numeric;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-0.0"^^xsd:decimal'::rdf_literal = 0::numeric;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 9223372036854775.807 = '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -9223372036854775.807 = '"-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 9223372036854775.807 <> '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 9223372036854775.807 != '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 9223372036854775.999 > '"9223372036854776.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 9223372036854775.999 < '"9223372036854776.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::numeric = '"42.000000000000000000"^^xsd:decimal'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 0::numeric > '"0.000000000000000001"^^xsd:decimal'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 0::numeric < '"-0.000000000000000001"^^xsd:decimal'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 0::numeric ='"-0.0"^^xsd:decimal'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+/* double precision (float8) <-> rdf_literal */
+SELECT '"42.73"^^xsd:double'::rdf_literal::double precision;
+ float8 
+--------
+  42.73
+(1 row)
+
+SELECT '"-42.73"^^xsd:double'::rdf_literal::double precision;
+ float8 
+--------
+ -42.73
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdf_literal::double precision::rdf_literal;
+                    rdf_literal                     
+----------------------------------------------------
+ "42.73"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"-42.73"^^xsd:double'::rdf_literal::double precision::rdf_literal;
+                     rdf_literal                     
+-----------------------------------------------------
+ "-42.73"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"4.2E1"^^xsd:double'::rdf_literal::double precision; -- PostgreSQL limitation: scientific notation will be dropped
+ float8 
+--------
+     42
+(1 row)
+
+SELECT '"-4.2E1"^^xsd:double'::rdf_literal::double precision; -- PostgreSQL limitation: scientific notation will be dropped
+ float8 
+--------
+    -42
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdf_literal::double precision = 42.73000::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdf_literal::double precision <> 42.73000::double precision;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdf_literal::double precision > 42.999999::double precision;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdf_literal::double precision < 42.999999::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4.2E1"^^xsd:double'::rdf_literal = 42.0::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4.2000001E1"^^xsd:double'::rdf_literal > 42.0::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4.1999999E1"^^xsd:double'::rdf_literal < 42.0::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"0.0"^^xsd:double'::rdf_literal = '-0.0'::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdf_literal != 0::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"Infinity"^^xsd:double'::rdf_literal > 1e308::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-Infinity"^^xsd:double'::rdf_literal < -1e308::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42.73000::double precision = '"42.73"^^xsd:double'::rdf_literal::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42.73000::double precision <> '"42.73"^^xsd:double'::rdf_literal::double precision;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42.999999::double precision >'"42.73"^^xsd:double'::rdf_literal::double precision;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42.999999::double precision < '"42.73"^^xsd:double'::rdf_literal::double precision;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42.0::double precision = '"4.2E1"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42.0::double precision > '"4.2000001E1"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42.0::double precision < '"4.1999999E1"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '-0.0'::double precision = '"0.0"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 0::double precision != '"NaN"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 1e308::double precision > '"Infinity"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -1e308::double precision < '"-Infinity"^^xsd:double'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+/* real (float4) <-> rdf_literal */
+SELECT 42.73::real::rdf_literal;
+                    rdf_literal                    
+---------------------------------------------------
+ "42.73"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 42.73::real::rdf_literal::real;
+ float4 
+--------
+  42.73
+(1 row)
+
+SELECT (-42.73)::real::rdf_literal;
+                    rdf_literal                     
+----------------------------------------------------
+ "-42.73"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT (-42.73)::real::rdf_literal::real;
+ float4 
+--------
+ -42.73
+(1 row)
+
+SELECT 'INF'::real::rdf_literal;
+                     rdf_literal                      
+------------------------------------------------------
+ "Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 'INF'::real::rdf_literal::real;
+  float4  
+----------
+ Infinity
+(1 row)
+
+SELECT '-INF'::real::rdf_literal;
+                      rdf_literal                      
+-------------------------------------------------------
+ "-Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT '-INF'::real::rdf_literal::real;
+  float4   
+-----------
+ -Infinity
+(1 row)
+
+SELECT 'NaN'::real::rdf_literal;
+                   rdf_literal                   
+-------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 'NaN'::real::rdf_literal::real;
+ float4 
+--------
+    NaN
+(1 row)
+
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42.73::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = -42.73::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <> 42.73::real;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <> 42::real;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal > 43.00::real;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal > -43.00::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal < 43.00::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal < -43.00::real;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal >= 43.00::real;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal >= -43.00::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <= 43.00::real;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <= -43.00::real;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42.73::real = '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::real = '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::real = '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -42.73::real = '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42.73::real <> '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::real <>'"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 43.00::real > '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -43.00::real > '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 43.00::real < '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -43.00::real < '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 43.00::real >= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -43.00::real >= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 43.00::real <= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -43.00::real <= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+/* bigint (int8) <-> rdf_literal */
+SELECT 42::bigint::rdf_literal;
+                  rdf_literal                  
+-----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT 42::bigint::rdf_literal::bigint;
+ int8 
+------
+   42
+(1 row)
+
+SELECT (-42)::bigint::rdf_literal;
+                  rdf_literal                   
+------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT (-42)::bigint::rdf_literal::bigint;
+ int8 
+------
+  -42
+(1 row)
+
+SELECT 42746357267238767::bigint::rdf_literal;
+                         rdf_literal                          
+--------------------------------------------------------------
+ "42746357267238767"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT 42746357267238767::bigint::rdf_literal::bigint;
+       int8        
+-------------------
+ 42746357267238767
+(1 row)
+
+SELECT (-42746357267238767)::bigint::rdf_literal;
+                          rdf_literal                          
+---------------------------------------------------------------
+ "-42746357267238767"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT (-42746357267238767)::bigint::rdf_literal::bigint;
+        int8        
+--------------------
+ -42746357267238767
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = 42746357267238768;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = -42746357267238768;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <> 42746357267238768;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <> -42746357267238768;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal != 42746357267238768;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal != -42746357267238768;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal > 42746357267238799;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal > -42746357267238799;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal < 42746357267238799;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal < -42746357267238799;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal >= 42746357267238799;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal >= -42746357267238799;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <= 42746357267238799;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <= -42746357267238799;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42746357267238768 ='"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -42746357267238768 = '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42746357267238768 <> '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -42746357267238768 <> '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42746357267238768 != '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -42746357267238768 != '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42746357267238799 > '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -42746357267238799 > '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42746357267238799 < '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -42746357267238799 < '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42746357267238799 >= '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -42746357267238799 >= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42746357267238799 <= '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -42746357267238799 <= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+/* int (int4) <-> rdf_literal */
+SELECT 42::int::rdf_literal;
+                 rdf_literal                  
+----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT 42::int::rdf_literal::int;
+ int4 
+------
+   42
+(1 row)
+
+SELECT (-42)::int::rdf_literal;
+                  rdf_literal                  
+-----------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT (-42)::int::rdf_literal::int;
+ int4 
+------
+  -42
+(1 row)
+
+SELECT 427463::int::rdf_literal;
+                   rdf_literal                    
+--------------------------------------------------
+ "427463"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT 427463::int::rdf_literal::int;
+  int4  
+--------
+ 427463
+(1 row)
+
+SELECT (-427463)::int::rdf_literal;
+                    rdf_literal                    
+---------------------------------------------------
+ "-427463"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT (-427463)::int::rdf_literal::int;
+  int4   
+---------
+ -427463
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = 427463::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = -427463::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <> 427463::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <> -427463::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal != 427463::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal != -427463::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal > 427464::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal > -427464::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal < 427464::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal < -427464::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal >= 427464::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal >= -427464::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <= 427464::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <= -427464::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 427463::int = '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -427463::int = '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 427463::int <> '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -427463::int <> '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 427463::int != '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -427463::int != '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 427464::int > '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -427464::int > '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 427464::int <'"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -427464::int < '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 427464::int >= '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -427464::int >= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 427464::int <='"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -427464::int <= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2147483648"^^xsd:int'::rdf_literal::int; -- must fail: out of range for type integer
+ERROR:  value "2147483648" is out of range for type integer
+/* smallint (int2) <-> rdf_literal */
+SELECT 42::smallint::rdf_literal;
+                  rdf_literal                   
+------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT 42::smallint::rdf_literal::smallint;
+ int2 
+------
+   42
+(1 row)
+
+SELECT (-42)::smallint::rdf_literal;
+                   rdf_literal                   
+-------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT (-42)::smallint::rdf_literal::smallint;
+ int2 
+------
+  -42
+(1 row)
+
+SELECT 4273::smallint::rdf_literal;
+                   rdf_literal                    
+--------------------------------------------------
+ "4273"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT 4273::smallint::rdf_literal::smallint;
+ int2 
+------
+ 4273
+(1 row)
+
+SELECT (-4273)::smallint::rdf_literal;
+                    rdf_literal                    
+---------------------------------------------------
+ "-4273"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT (-4273)::smallint::rdf_literal::smallint;
+ int2  
+-------
+ -4273
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = 4273::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = -4273::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <> 4273::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <> -4273::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal != 4273::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal != -4273::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal > 4274::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal > -4274::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal < 4274::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal < -4274::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal >= 4274::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal >= -4274::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <= 4274::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <= -4274::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 4273::smallint = '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -4273::smallint = '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 4273::smallint <> '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -4273::smallint <> '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 4273::smallint != '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -4273::smallint != '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 4274::smallint > '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -4274::smallint > '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 4274::smallint <'"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -4274::smallint < '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 4274::smallint >= '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT -4274::smallint >= '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 4274::smallint <='"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT -4274::smallint <= '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"32767"^^xsd:short'::rdf_literal = 32767::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-32768"^^xsd:short'::rdf_literal = -32768::smallint;
+ERROR:  smallint out of range
+SELECT '"32768"^^xsd:short'::rdf_literal::smallint;
+ERROR:  value "32768" is out of range for type smallint
+/* timestamptz (timestamp with time zone) <-> rdf_literal */
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+                                rdf_literal                                 
+----------------------------------------------------------------------------
+ "2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal::timestamptz;
+             timestamptz             
+-------------------------------------
+ Fri Apr 25 11:44:38.149101 2025 PDT
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamptz::rdf_literal;
+                                rdf_literal                                 
+----------------------------------------------------------------------------
+ "2025-04-26T01:44:38.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamptz::rdf_literal::timestamptz;
+         timestamptz          
+------------------------------
+ Fri Apr 25 18:44:38 2025 PDT
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal = '2025-04-25 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal <> '2025-04-26 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal != '2025-04-26 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal > '2025-04-26 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal < '2025-04-26 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal >= '2025-04-26 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal <= '2025-04-26 18:44:38.149101+00'::timestamptz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz = '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <> '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz != '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz > '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz < '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz >= '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <= '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+/* timestamp (timestamp with time zone) <-> rdf_literal */
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal;
+                            rdf_literal                             
+--------------------------------------------------------------------
+ "2025-04-25T18:44:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal::timestamp;
+        timestamp         
+--------------------------
+ Fri Apr 25 18:44:38 2025
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal;
+                            rdf_literal                             
+--------------------------------------------------------------------
+ "2025-04-25T18:44:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal::timestamp;
+        timestamp         
+--------------------------
+ Fri Apr 25 18:44:38 2025
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal = '2025-04-25 18:44:38'::timestamp;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal <> '2025-04-26 18:44:38'::timestamp;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal != '2025-04-26 18:44:38'::timestamp;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal > '2025-04-26 18:44:38'::timestamp;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal < '2025-04-26 18:44:38'::timestamp;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal >= '2025-04-26 18:44:38'::timestamp;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal <= '2025-04-26 18:44:38'::timestamp;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp = '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38'::timestamp <> '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38'::timestamp != '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38'::timestamp > '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38'::timestamp < '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2025-04-26 18:44:38'::timestamp >= '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2025-04-26 18:44:38'::timestamp <= '2025-04-25 18:44:38'::timestamp::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+/* date <-> rdf_literal */
+SELECT '2020-05-12'::date::rdf_literal;
+                      rdf_literal                      
+-------------------------------------------------------
+ "2020-05-12"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal::date;
+    date    
+------------
+ 05-12-2020
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal = '2020-05-12'::date;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal <> '2020-05-12'::date;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal != '2020-05-12'::date;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal > '2020-05-13'::date;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal < '2020-05-13'::date;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal >= '2020-05-13'::date;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-12'::date::rdf_literal <= '2020-05-13'::date;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2020-05-12'::date = '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2020-05-12'::date <> '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-12'::date != '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-13'::date > '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2020-05-13'::date < '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '2020-05-13'::date >= '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '2020-05-13'::date <= '2020-05-12'::date::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"invalid"^^xsd:date'::rdf_literal::date;
+ERROR:  invalid input syntax for type date: "invalid"
+SELECT '"2020-13-01"^^xsd:date'::rdf_literal::date;
+ERROR:  date/time field value out of range: "2020-13-01"
+HINT:  Perhaps you need a different "datestyle" setting.
+SELECT '0001-01-01'::date::rdf_literal = '0001-01-01'::date;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '9999-12-31'::date::rdf_literal = '9999-12-31'::date;
+ ?column? 
+----------
+ f
+(1 row)
+
+/* time (without time zone) <-> rdf_literal */
+SELECT '18:44:38'::time::rdf_literal;
+                     rdf_literal                     
+-----------------------------------------------------
+ "18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal::time;
+   time   
+----------
+ 18:44:38
+(1 row)
+
+SELECT '00:00:00'::time::rdf_literal;
+                     rdf_literal                     
+-----------------------------------------------------
+ "00:00:00"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '00:00:00'::time::rdf_literal::time;
+   time   
+----------
+ 00:00:00
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal = '18:44:38'::time;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal <> '18:44:38'::time;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal != '18:44:38'::time;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal > '18:44:59'::time;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal < '18:44:59'::time;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal >= '18:44:59'::time;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:38'::time::rdf_literal <= '18:44:59'::time;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '18:44:38'::time = '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '18:44:38'::time <> '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:38'::time != '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:59'::time > '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '18:44:59'::time < '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '18:44:59'::time >= '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '18:44:59'::time <= '18:44:38'::time::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '-18:44:38'::time::rdf_literal;
+ERROR:  time zone displacement out of range: "-18:44:38"
+LINE 1: SELECT '-18:44:38'::time::rdf_literal;
+               ^
+SELECT 'invalid'::time::rdf_literal;
+ERROR:  invalid input syntax for type time: "invalid"
+LINE 1: SELECT 'invalid'::time::rdf_literal;
+               ^
+/* timetz (with time zone) <-> rdf_literal */
+SELECT '04:05:06-08:00'::timetz::rdf_literal;
+                      rdf_literal                       
+--------------------------------------------------------
+ "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz::rdf_literal::timetz;
+   timetz    
+-------------
+ 04:05:06-08
+(1 row)
+
+SELECT '04:05:06 PST'::timetz::rdf_literal;
+                      rdf_literal                       
+--------------------------------------------------------
+ "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '04:05:06 PST'::timetz::rdf_literal::timetz;
+   timetz    
+-------------
+ 04:05:06-08
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz::rdf_literal = '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz::rdf_literal <> '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz::rdf_literal != '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '12:05:06-08:00'::timetz::rdf_literal > '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '12:05:06-08:00'::timetz::rdf_literal < '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '12:05:06-08:00'::timetz::rdf_literal >= '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '12:05:06-08:00'::timetz::rdf_literal <= '04:05:06-08:00'::timetz;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz = '04:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz <> '04:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz != '04:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz > '12:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz < '12:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz >= '12:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz <= '12:05:06-08:00'::timetz::rdf_literal;
+ ?column? 
+----------
+ t
+(1 row)
+
+/* boolean <-> rdf_literal */
+SELECT true::rdf_literal;
+                    rdf_literal                     
+----------------------------------------------------
+ "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT false::rdf_literal;
+                     rdf_literal                     
+-----------------------------------------------------
+ "false"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT true::rdf_literal::boolean;
+ bool 
+------
+ t
+(1 row)
+
+SELECT false::rdf_literal::boolean;
+ bool 
+------
+ f
+(1 row)
+
+SELECT (1=1)::rdf_literal::boolean;
+ bool 
+------
+ t
+(1 row)
+
+SELECT (1<>1)::rdf_literal::boolean;
+ bool 
+------
+ f
+(1 row)
+

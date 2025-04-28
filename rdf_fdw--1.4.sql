@@ -106,6 +106,2268 @@ CREATE OPERATOR = (
     NEGATOR = <>
 );
 
+/* casts, functions, and operators */
+CREATE FUNCTION rdf_literal_in(cstring) RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'rdf_literal_in'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdf_literal_out(rdf_literal) RETURNS cstring
+AS 'MODULE_PATHNAME', 'rdf_literal_out'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE TYPE rdf_literal (
+  INTERNALLENGTH = VARIABLE,
+  INPUT = rdf_literal_in,
+  OUTPUT = rdf_literal_out,
+  STORAGE = EXTENDED
+);
+
+CREATE FUNCTION rdf_literal_eq(rdf_literal, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+  LEFTARG = rdf_literal,
+  RIGHTARG = rdf_literal,
+  PROCEDURE = rdf_literal_eq,
+  COMMUTATOR = '=',
+  NEGATOR = '<>',
+  RESTRICT = eqsel,
+  JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq(rdf_literal, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = rdf_literal_neq,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+
+/* rdf_literal OP numeric */
+CREATE FUNCTION rdf_literal_eq_numeric(rdf_literal, numeric)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = numeric,
+    PROCEDURE = rdf_literal_eq_numeric,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_numeric(rdf_literal, numeric)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = numeric,
+    PROCEDURE = rdf_literal_neq_numeric,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_numeric(rdf_literal, numeric)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = numeric,
+    PROCEDURE = rdf_literal_lt_numeric,
+    COMMUTATOR = '>',
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_numeric(rdf_literal, numeric)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = numeric,
+    PROCEDURE = rdf_literal_gt_numeric,
+    COMMUTATOR = '<',
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_numeric(rdf_literal, numeric)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = numeric,
+    PROCEDURE = rdf_literal_le_numeric,
+    COMMUTATOR = '>=',
+    RESTRICT = scalarltsel,
+    JOIN = scalarlejoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_numeric(rdf_literal, numeric)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = numeric,
+    PROCEDURE = rdf_literal_ge_numeric,
+    COMMUTATOR = '<=',
+    RESTRICT = scalargtsel,
+    JOIN = scalargejoinsel
+);
+
+CREATE FUNCTION rdf_literal_to_numeric(rdf_literal)
+RETURNS numeric
+AS 'MODULE_PATHNAME', 'rdf_literal_to_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS numeric) 
+WITH FUNCTION rdf_literal_to_numeric(rdf_literal);
+
+/* numeric OP rdf_literal */
+CREATE FUNCTION numeric_to_rdf_literal(numeric)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'numeric_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (numeric AS rdf_literal)
+WITH FUNCTION numeric_to_rdf_literal(numeric);
+
+CREATE FUNCTION numeric_eq_rdf_literal(numeric, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'numeric_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = numeric,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = numeric_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION numeric_neq_rdf_literal(numeric, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'numeric_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = numeric,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = numeric_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION numeric_lt_rdf_literal(numeric, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'numeric_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = numeric,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = numeric_lt_rdf_literal,
+    COMMUTATOR = '>',
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION numeric_gt_rdf_literal(numeric, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'numeric_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = numeric,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = numeric_gt_rdf_literal,
+    COMMUTATOR = '<',
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION numeric_le_rdf_literal(numeric, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'numeric_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = numeric,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = numeric_le_rdf_literal,
+    COMMUTATOR = '>=',
+    RESTRICT = scalarltsel,
+    JOIN = scalarlejoinsel
+);
+
+CREATE FUNCTION numeric_ge_rdf_literal(numeric, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'numeric_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = numeric,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = numeric_ge_rdf_literal,
+    COMMUTATOR = '<=',
+    RESTRICT = scalargtsel,
+    JOIN = scalargejoinsel
+);
+
+/* rdf_literal OP float8 (double precision) */
+CREATE FUNCTION rdf_literal_eq_float8(rdf_literal, float8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float8,
+    PROCEDURE = rdf_literal_eq_float8,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_float8(rdf_literal, float8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float8,
+    PROCEDURE = rdf_literal_neq_float8,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_float8(rdf_literal, float8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float8,
+    PROCEDURE = rdf_literal_lt_float8,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_float8(rdf_literal, float8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float8,
+    PROCEDURE = rdf_literal_gt_float8,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_float8(rdf_literal, float8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float8,
+    PROCEDURE = rdf_literal_le_float8,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_float8(rdf_literal, float8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float8,
+    PROCEDURE = rdf_literal_ge_float8,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_to_float8(rdf_literal)
+RETURNS float8
+AS 'MODULE_PATHNAME', 'rdf_literal_to_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS float8) 
+WITH FUNCTION rdf_literal_to_float8(rdf_literal);
+
+/* float8 OP rdf_literal  */
+CREATE FUNCTION float8_eq_rdf_literal(float8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float8_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = float8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float8_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION float8_neq_rdf_literal(float8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float8_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = float8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float8_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION float8_lt_rdf_literal(float8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float8_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = float8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float8_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION float8_gt_rdf_literal(float8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float8_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = float8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float8_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION float8_le_rdf_literal(float8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float8_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = float8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float8_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION float8_ge_rdf_literal(float8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float8_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = float8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float8_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION float8_to_rdf_literal(float8)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'float8_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (float8 AS rdf_literal) 
+WITH FUNCTION float8_to_rdf_literal(float8);
+
+/* rdf_literal OP float4 (real) */
+CREATE FUNCTION rdf_literal_to_float4(rdf_literal)
+RETURNS float4
+AS 'MODULE_PATHNAME', 'rdf_literal_to_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS float4) 
+WITH FUNCTION rdf_literal_to_float4(rdf_literal)
+AS IMPLICIT;
+
+CREATE FUNCTION rdf_literal_eq_float4(rdf_literal, float4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float4,
+    PROCEDURE = rdf_literal_eq_float4,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_float4(rdf_literal, float4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float4,
+    PROCEDURE = rdf_literal_neq_float4,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_float4(rdf_literal, float4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float4,
+    PROCEDURE = rdf_literal_lt_float4,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_float4(rdf_literal, float4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float4,
+    PROCEDURE = rdf_literal_gt_float4,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_float4(rdf_literal, float4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float4,
+    PROCEDURE = rdf_literal_le_float4,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_float4(rdf_literal, float4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = float4,
+    PROCEDURE = rdf_literal_ge_float4,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* float4 (real) OP rdf_literal */
+CREATE FUNCTION float4_to_rdf_literal(float4)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'float4_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (float4 AS rdf_literal) 
+WITH FUNCTION float4_to_rdf_literal(float4);
+
+CREATE FUNCTION float4_eq_rdf_literal(float4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float4_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = float4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float4_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION float4_neq_rdf_literal(float4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float4_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = float4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float4_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION float4_lt_rdf_literal(float4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float4_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = float4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float4_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION float4_gt_rdf_literal(float4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float4_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = float4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float4_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION float4_le_rdf_literal(float4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float4_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = float4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float4_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION float4_ge_rdf_literal(float4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'float4_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = float4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = float4_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* rdf_literal OP int8 (bigint) */
+CREATE FUNCTION rdf_literal_to_int8(rdf_literal)
+RETURNS bigint
+AS 'MODULE_PATHNAME', 'rdf_literal_to_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS bigint)
+WITH FUNCTION rdf_literal_to_int8(rdf_literal);
+
+CREATE FUNCTION rdf_literal_eq_int8(rdf_literal, int8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int8,
+    PROCEDURE = rdf_literal_eq_int8,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_int8(rdf_literal, int8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int8,
+    PROCEDURE = rdf_literal_neq_int8,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_int8(rdf_literal, int8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int8,
+    PROCEDURE = rdf_literal_lt_int8,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_int8(rdf_literal, int8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int8,
+    PROCEDURE = rdf_literal_gt_int8,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_int8(rdf_literal, int8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int8,
+    PROCEDURE = rdf_literal_le_int8,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_int8(rdf_literal, int8)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int8,
+    PROCEDURE = rdf_literal_ge_int8,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+/* int8 OP rdf_literal */
+
+CREATE FUNCTION int8_to_rdf_literal(bigint)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'int8_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (bigint AS rdf_literal)
+WITH FUNCTION int8_to_rdf_literal(bigint);
+
+CREATE FUNCTION int8_eq_rdf_literal(int8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int8_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = int8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int8_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION int8_neq_rdf_literal(int8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int8_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = int8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int8_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION int8_lt_rdf_literal(int8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int8_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = int8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int8_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION int8_gt_rdf_literal(int8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int8_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = int8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int8_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION int8_le_rdf_literal(int8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int8_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = int8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int8_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION int8_ge_rdf_literal(int8, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int8_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = int8,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int8_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* rdf_literal OP int4 (int) */
+CREATE FUNCTION rdf_literal_to_int4(rdf_literal)
+RETURNS int
+AS 'MODULE_PATHNAME', 'rdf_literal_to_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS int)
+WITH FUNCTION rdf_literal_to_int4(rdf_literal) 
+AS IMPLICIT;
+
+CREATE FUNCTION rdf_literal_eq_int4(rdf_literal, int4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int4,
+    PROCEDURE = rdf_literal_eq_int4,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_int4(rdf_literal, int4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int4,
+    PROCEDURE = rdf_literal_neq_int4,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_int4(rdf_literal, int4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int4,
+    PROCEDURE = rdf_literal_lt_int4,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_int4(rdf_literal, int4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int4,
+    PROCEDURE = rdf_literal_gt_int4,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_int4(rdf_literal, int4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int4,
+    PROCEDURE = rdf_literal_le_int4,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_int4(rdf_literal, int4)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int4,
+    PROCEDURE = rdf_literal_ge_int4,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+/* int4 (int) OP rdf_literal */
+CREATE FUNCTION int4_to_rdf_literal(int)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'int4_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (int AS rdf_literal)
+WITH FUNCTION int4_to_rdf_literal(int);
+
+CREATE FUNCTION int4_eq_rdf_literal(int4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int4_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = int4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int4_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION int4_neq_rdf_literal(int4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int4_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = int4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int4_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION int4_lt_rdf_literal(int4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int4_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = int4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int4_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION int4_gt_rdf_literal(int4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int4_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = int4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int4_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION int4_le_rdf_literal(int4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int4_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = int4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int4_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION int4_ge_rdf_literal(int4, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int4_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = int4,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int4_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* rdf_literal OP int2 (smallint) */
+CREATE FUNCTION rdf_literal_to_int2(rdf_literal)
+RETURNS smallint
+AS 'MODULE_PATHNAME', 'rdf_literal_to_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS smallint)
+WITH FUNCTION rdf_literal_to_int2(rdf_literal) 
+AS IMPLICIT;
+
+CREATE FUNCTION rdf_literal_eq_int2(rdf_literal, int2)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int2,
+    PROCEDURE = rdf_literal_eq_int2,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_int2(rdf_literal, int2)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int2,
+    PROCEDURE = rdf_literal_neq_int2,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_int2(rdf_literal, int2)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int2,
+    PROCEDURE = rdf_literal_lt_int2,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_int2(rdf_literal, int2)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int2,
+    PROCEDURE = rdf_literal_gt_int2,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_int2(rdf_literal, int2)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int2,
+    PROCEDURE = rdf_literal_le_int2,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_int2(rdf_literal, int2)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = int2,
+    PROCEDURE = rdf_literal_ge_int2,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+/* int2 (smallint) OP rdf_literal */
+CREATE FUNCTION int2_to_rdf_literal(smallint)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'int2_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (smallint AS rdf_literal)
+WITH FUNCTION int2_to_rdf_literal(smallint) 
+AS IMPLICIT;
+
+CREATE FUNCTION int2_eq_rdf_literal(int2, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int2_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = int2,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int2_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION int2_neq_rdf_literal(int2, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int2_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = int2,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int2_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION int2_lt_rdf_literal(int2, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int2_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = int2,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int2_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION int2_gt_rdf_literal(int2, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int2_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = int2,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int2_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION int2_le_rdf_literal(int2, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int2_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = int2,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int2_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION int2_ge_rdf_literal(int2, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'int2_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = int2,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = int2_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+-- rdf_literal OP timestamptz (timestamp with time zone)
+CREATE FUNCTION rdf_literal_to_timestamptz(rdf_literal)
+RETURNS timestamptz
+AS 'MODULE_PATHNAME', 'rdf_literal_to_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS timestamptz)
+WITH FUNCTION rdf_literal_to_timestamptz(rdf_literal);
+
+CREATE FUNCTION rdf_literal_lt_timestamptz(rdf_literal, timestamptz)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamptz($1) < $2; $$;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamptz,
+    PROCEDURE = rdf_literal_lt_timestamptz,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_timestamptz(rdf_literal, timestamptz)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamptz($1) > $2; $$;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamptz,
+    PROCEDURE = rdf_literal_gt_timestamptz,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_timestamptz(rdf_literal, timestamptz)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamptz($1) <= $2; $$;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamptz,
+    PROCEDURE = rdf_literal_le_timestamptz,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_timestamptz(rdf_literal, timestamptz)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamptz($1) >= $2; $$;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamptz,
+    PROCEDURE = rdf_literal_ge_timestamptz,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_eq_timestamptz(rdf_literal, timestamptz)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamptz($1) = $2; $$;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamptz,
+    PROCEDURE = rdf_literal_eq_timestamptz,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_timestamptz(rdf_literal, timestamptz)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamptz($1) <> $2; $$;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamptz,
+    PROCEDURE = rdf_literal_neq_timestamptz,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+
+-- timestamptz (timestamp with time zone) OP rdf_literal
+CREATE FUNCTION timestamptz_to_rdf_literal(timestamptz)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'timestamptz_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (timestamptz AS rdf_literal)
+WITH FUNCTION timestamptz_to_rdf_literal(timestamptz);
+
+CREATE FUNCTION timestamptz_lt_rdf_literal(timestamptz, rdf_literal)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 < rdf_literal_to_timestamptz($2); $$;
+
+CREATE OPERATOR < (
+    LEFTARG = timestamptz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamptz_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION timestamptz_gt_rdf_literal(timestamptz, rdf_literal)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 > rdf_literal_to_timestamptz($2); $$;
+
+CREATE OPERATOR > (
+    LEFTARG = timestamptz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamptz_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION timestamptz_le_rdf_literal(timestamptz, rdf_literal)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 <= rdf_literal_to_timestamptz($2); $$;
+
+CREATE OPERATOR <= (
+    LEFTARG = timestamptz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamptz_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION timestamptz_ge_rdf_literal(timestamptz, rdf_literal)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 >= rdf_literal_to_timestamptz($2); $$;
+
+CREATE OPERATOR >= (
+    LEFTARG = timestamptz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamptz_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION timestamptz_eq_rdf_literal(timestamptz, rdf_literal)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 = rdf_literal_to_timestamptz($2); $$;
+
+CREATE OPERATOR = (
+    LEFTARG = timestamptz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamptz_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION timestamptz_neq_rdf_literal(timestamptz, rdf_literal)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 <> rdf_literal_to_timestamptz($2); $$;
+
+CREATE OPERATOR <> (
+    LEFTARG = timestamptz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamptz_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+/* rdf_literal OP timestamp (without time zone) */
+CREATE FUNCTION rdf_literal_to_timestamp(rdf_literal)
+RETURNS timestamp
+AS 'MODULE_PATHNAME', 'rdf_literal_to_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS timestamp)
+WITH FUNCTION rdf_literal_to_timestamp(rdf_literal) 
+AS IMPLICIT;
+
+CREATE FUNCTION rdf_literal_eq_timestamp(rdf_literal, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamp,
+    PROCEDURE = rdf_literal_eq_timestamp,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_timestamp(rdf_literal, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamp,
+    PROCEDURE = rdf_literal_neq_timestamp,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_timestamp(rdf_literal, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamp,
+    PROCEDURE = rdf_literal_lt_timestamp,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_timestamp(rdf_literal, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamp,
+    PROCEDURE = rdf_literal_gt_timestamp,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_timestamp(rdf_literal, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamp,
+    PROCEDURE = rdf_literal_le_timestamp,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_timestamp(rdf_literal, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timestamp,
+    PROCEDURE = rdf_literal_ge_timestamp,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+/* timestamp (without time zone) OP rdf_literal */
+CREATE FUNCTION timestamp_to_rdf_literal(timestamp)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'timestamp_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (timestamp AS rdf_literal)
+WITH FUNCTION timestamp_to_rdf_literal(timestamp);
+
+CREATE FUNCTION timestamp_eq_rdf_literal(timestamp, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = timestamp,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamp_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION timestamp_neq_rdf_literal(timestamp, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = timestamp,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamp_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION timestamp_lt_rdf_literal(timestamp, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = timestamp,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamp_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION timestamp_gt_rdf_literal(timestamp, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = timestamp,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamp_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION timestamp_le_rdf_literal(timestamp, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = timestamp,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamp_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION timestamp_ge_rdf_literal(timestamp, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = timestamp,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timestamp_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* ## rdf_literal OP date ## */
+CREATE FUNCTION rdf_literal_to_date(rdf_literal)
+RETURNS date
+AS 'MODULE_PATHNAME', 'rdf_literal_to_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS date)
+WITH FUNCTION rdf_literal_to_date(rdf_literal);
+
+CREATE FUNCTION rdf_literal_eq_date(rdf_literal, date)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = date,
+    PROCEDURE = rdf_literal_eq_date,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_date(rdf_literal, date)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = date,
+    PROCEDURE = rdf_literal_neq_date,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_date(rdf_literal, date)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = date,
+    PROCEDURE = rdf_literal_lt_date,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_date(rdf_literal, date)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = date,
+    PROCEDURE = rdf_literal_gt_date,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_date(rdf_literal, date)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = date,
+    PROCEDURE = rdf_literal_le_date,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_date(rdf_literal, date)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_date'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = date,
+    PROCEDURE = rdf_literal_ge_date,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* date OP rdf_literal */
+CREATE FUNCTION date_to_rdf_literal(date)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'date_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (date AS rdf_literal)
+WITH FUNCTION date_to_rdf_literal(date);
+
+CREATE FUNCTION date_eq_rdf_literal(date, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'date_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = date,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = date_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION date_neq_rdf_literal(date, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'date_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = date,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = date_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION date_lt_rdf_literal(date, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'date_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = date,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = date_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION date_gt_rdf_literal(date, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'date_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = date,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = date_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION date_le_rdf_literal(date, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'date_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = date,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = date_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION date_ge_rdf_literal(date, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'date_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = date,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = date_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* ## rdf_literal OP time ## */
+CREATE FUNCTION rdf_literal_to_time(rdf_literal)
+RETURNS time
+AS 'MODULE_PATHNAME', 'rdf_literal_to_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS time)
+WITH FUNCTION rdf_literal_to_time(rdf_literal);
+
+CREATE FUNCTION rdf_literal_eq_time(rdf_literal, time)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = time,
+    PROCEDURE = rdf_literal_eq_time,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_time(rdf_literal, time)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = time,
+    PROCEDURE = rdf_literal_neq_time,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_time(rdf_literal, time)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = time,
+    PROCEDURE = rdf_literal_lt_time,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_time(rdf_literal, time)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = time,
+    PROCEDURE = rdf_literal_gt_time,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_time(rdf_literal, time)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = time,
+    PROCEDURE = rdf_literal_le_time,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_time(rdf_literal, time)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_time'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = time,
+    PROCEDURE = rdf_literal_ge_time,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* ## time OP rdf_literal ## */
+CREATE FUNCTION time_to_rdf_literal(time)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'time_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (time AS rdf_literal)
+WITH FUNCTION time_to_rdf_literal(time);
+
+CREATE FUNCTION time_eq_rdf_literal(time, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'time_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = time,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = time_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION time_neq_rdf_literal(time, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'time_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = time,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = time_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION time_lt_rdf_literal(time, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'time_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = time,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = time_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION time_gt_rdf_literal(time, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'time_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = time,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = time_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION time_le_rdf_literal(time, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'time_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = time,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = time_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION time_ge_rdf_literal(time, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'time_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = time,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = time_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+
+
+
+
+/* ## rdf_literal OP timetz ## */
+CREATE FUNCTION rdf_literal_to_timetz(rdf_literal)
+RETURNS timetz
+AS 'MODULE_PATHNAME', 'rdf_literal_to_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS timetz)
+WITH FUNCTION rdf_literal_to_timetz(rdf_literal);
+
+CREATE FUNCTION rdf_literal_eq_timetz(rdf_literal, timetz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timetz,
+    PROCEDURE = rdf_literal_eq_timetz,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_timetz(rdf_literal, timetz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timetz,
+    PROCEDURE = rdf_literal_neq_timetz,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_lt_timetz(rdf_literal, timetz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timetz,
+    PROCEDURE = rdf_literal_lt_timetz,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_timetz(rdf_literal, timetz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timetz,
+    PROCEDURE = rdf_literal_gt_timetz,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_timetz(rdf_literal, timetz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timetz,
+    PROCEDURE = rdf_literal_le_timetz,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_timetz(rdf_literal, timetz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_timetz'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = timetz,
+    PROCEDURE = rdf_literal_ge_timetz,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+/* ## time OP rdf_literal ## */
+CREATE FUNCTION timetz_to_rdf_literal(timetz)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'timetz_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (timetz AS rdf_literal)
+WITH FUNCTION timetz_to_rdf_literal(timetz);
+
+CREATE FUNCTION timetz_eq_rdf_literal(timetz, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timetz_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = timetz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timetz_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION timetz_neq_rdf_literal(timetz, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timetz_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = timetz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timetz_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION timetz_lt_rdf_literal(timetz, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timetz_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = timetz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timetz_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION timetz_gt_rdf_literal(timetz, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timetz_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = timetz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timetz_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION timetz_le_rdf_literal(timetz, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timetz_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = timetz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timetz_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION timetz_ge_rdf_literal(timetz, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timetz_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = timetz,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = timetz_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+
+
+
+
+-- boolean
+CREATE FUNCTION rdf_literal_to_boolean(rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_to_boolean'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS boolean)
+WITH FUNCTION rdf_literal_to_boolean(rdf_literal);
+
+CREATE FUNCTION boolean_to_rdf_literal(boolean)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'boolean_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (boolean AS rdf_literal)
+WITH FUNCTION boolean_to_rdf_literal(boolean);
+
+-- boolean
+CREATE FUNCTION rdf_literal_to_interval(rdf_literal)
+RETURNS interval
+AS 'MODULE_PATHNAME', 'rdf_literal_to_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdf_literal AS interval)
+WITH FUNCTION rdf_literal_to_interval(rdf_literal);
+
+CREATE FUNCTION interval_to_rdf_literal(interval)
+RETURNS rdf_literal
+AS 'MODULE_PATHNAME', 'interval_to_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (interval AS rdf_literal)
+WITH FUNCTION interval_to_rdf_literal(interval);
+
+
+/* SPARQL functions in rdf_fdw */
 CREATE SCHEMA sparql;
 
 CREATE FUNCTION sparql.lex(text)
@@ -386,7 +2648,8 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.round(text) RETURNS numeric AS $$
 BEGIN
-  IF sparql.lex($1)::numeric > 0 THEN
+  --IF sparql.lex($1)::numeric > 0 THEN
+  IF $1::rdf_literal > 0.0 THEN
     RETURN pg_catalog.floor(sparql.lex($1)::numeric + 0.5);
   ELSE
     RETURN pg_catalog.ceil(sparql.lex($1)::numeric + 0.5);
@@ -396,7 +2659,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.round(numeric) RETURNS numeric AS $$
 BEGIN
-  IF $1 > 0 THEN
+  IF $1 > 0.0 THEN
     RETURN pg_catalog.floor($1 + 0.5);
   ELSE
     RETURN pg_catalog.ceil($1 + 0.5);
@@ -406,7 +2669,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.round(double precision) RETURNS double precision AS $$
 BEGIN
-  IF $1 > 0 THEN
+  IF $1 > 0.0 THEN
     RETURN pg_catalog.floor($1 + 0.5);
   ELSE
     RETURN pg_catalog.ceil($1 + 0.5);

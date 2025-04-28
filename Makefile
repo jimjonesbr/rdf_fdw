@@ -23,7 +23,7 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
   if (v[1] < 10) printf("%d%02d", v[1], v[2]); \
   else print v[1] }')
 
-REGRESS = describe functions virtuoso-dbpedia graphdb-getty blazegraph-wikidata
+REGRESS = datatypes describe functions virtuoso-dbpedia graphdb-getty blazegraph-wikidata
 
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
 
