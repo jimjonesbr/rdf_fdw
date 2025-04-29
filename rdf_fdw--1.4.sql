@@ -2358,6 +2358,7 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE CAST (rdf_literal AS interval)
 WITH FUNCTION rdf_literal_to_interval(rdf_literal);
 
+/* interval */
 CREATE FUNCTION interval_to_rdf_literal(interval)
 RETURNS rdf_literal
 AS 'MODULE_PATHNAME', 'interval_to_rdf_literal'
@@ -2365,6 +2366,191 @@ LANGUAGE C IMMUTABLE STRICT;
 
 CREATE CAST (interval AS rdf_literal)
 WITH FUNCTION interval_to_rdf_literal(interval);
+
+
+CREATE FUNCTION rdf_literal_eq_interval(rdf_literal, interval)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_eq_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdf_literal,
+    RIGHTARG = interval,
+    PROCEDURE = rdf_literal_eq_interval,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION rdf_literal_neq_interval(rdf_literal, interval)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_neq_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_literal,
+    RIGHTARG = interval,
+    PROCEDURE = rdf_literal_neq_interval,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+
+CREATE FUNCTION rdf_literal_lt_interval(rdf_literal, interval)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_lt_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = rdf_literal,
+    RIGHTARG = interval,
+    PROCEDURE = rdf_literal_lt_interval,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_gt_interval(rdf_literal, interval)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_gt_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = rdf_literal,
+    RIGHTARG = interval,
+    PROCEDURE = rdf_literal_gt_interval,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rdf_literal_le_interval(rdf_literal, interval)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_le_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = interval,
+    PROCEDURE = rdf_literal_le_interval,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rdf_literal_ge_interval(rdf_literal, interval)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdf_literal_ge_interval'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = rdf_literal,
+    RIGHTARG = interval,
+    PROCEDURE = rdf_literal_ge_interval,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+
+/**/
+
+CREATE FUNCTION interval_eq_rdf_literal(interval, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'interval_eq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = interval,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = interval_eq_rdf_literal,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel
+);
+
+CREATE FUNCTION interval_neq_rdf_literal(interval, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'interval_neq_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = interval,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = interval_neq_rdf_literal,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel
+);
+
+CREATE FUNCTION interval_lt_rdf_literal(interval, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'interval_lt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+    LEFTARG = interval,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = interval_lt_rdf_literal,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION interval_gt_rdf_literal(interval, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'interval_gt_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+    LEFTARG = interval,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = interval_gt_rdf_literal,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION interval_le_rdf_literal(interval, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'interval_le_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+    LEFTARG = interval,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = interval_le_rdf_literal,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION interval_ge_rdf_literal(interval, rdf_literal)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'interval_ge_rdf_literal'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+    LEFTARG = interval,
+    RIGHTARG = rdf_literal,
+    PROCEDURE = interval_ge_rdf_literal,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel
+);
 
 
 /* SPARQL functions in rdf_fdw */
