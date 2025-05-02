@@ -1,5 +1,3 @@
-\pset null NULL
-CREATE EXTENSION IF NOT EXISTS rdf_fdw;
 SHOW datestyle;
    DateStyle   
 ---------------
@@ -12,45 +10,6 @@ SHOW timezone;
  America/Los_Angeles
 (1 row)
 
-/* text <-> rdf_literal */
-SELECT '"foo"'::rdf_literal;
- rdf_literal 
--------------
- "foo"
-(1 row)
-
-SELECT '"foo"^^xsd:string'::rdf_literal;
-    rdf_literal    
--------------------
- "foo"^^xsd:string
-(1 row)
-
-SELECT '"foo"@es'::rdf_literal;
- rdf_literal 
--------------
- "foo"@es
-(1 row)
-
-SELECT '"foo"@es'::rdf_literal::text;
-   text   
-----------
- "foo"@es
-(1 row)
-
-SELECT '"foo"@es'::rdf_literal::text::rdf_literal;
- rdf_literal 
--------------
- "foo"@es
-(1 row)
-
-SELECT '"foo"^^xsd:string'::rdf_literal::text::rdf_literal;
-    rdf_literal    
--------------------
- "foo"^^xsd:string
-(1 row)
-
---SELECT '"foo"^^xsd:string'::rdf_literal = '"foo"^^xsd:string'::text;
---SELECT '"foo"^^xsd:string'::text = '"foo"^^xsd:string'::rdf_literal;
 /* rdf_literal <-> rdf_literal */
 SELECT '""'::rdf_literal = '""'::rdf_literal;
  ?column? 
@@ -193,7 +152,7 @@ SELECT '"café"@fr'::rdf_literal = '"cafe"@fr'::rdf_literal; -- Should return f
 SELECT '"\u0020"^^xsd:string'::rdf_literal = '" "^^xsd:string'::rdf_literal; -- Should return t (Unicode space)
  ?column? 
 ----------
- f
+ t
 (1 row)
 
 SELECT '"foo"^^<http://example.org/custom>'::rdf_literal = '"foo"^^<http://example.org/custom>'::rdf_literal; -- Should return t (lexical comparison)
@@ -287,11 +246,9 @@ SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:string'::rdf_literal;
 (1 row)
 
 SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:date'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:date: "42"
+LINE 1: SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:date'::rdf_...
+                                              ^
 SELECT '"-0"^^xsd:int'::rdf_literal = '"0"^^xsd:int'::rdf_literal; -- Should return t (numeric zero)
  ?column? 
 ----------
@@ -335,7 +292,9 @@ SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-11"^^xsd:date'::rdf_lit
 (1 row)
 
 SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""^^xsd:date'::rdf_literal;
-ERROR:  invalid input syntax for type date: ""
+ERROR:  invalid lexical form for xsd:date: ""
+LINE 1: SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""^^xsd:date...
+                                                       ^
 SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""'::rdf_literal;
  ?column? 
 ----------
@@ -343,9 +302,11 @@ SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""'::rdf_literal;
 (1 row)
 
 SELECT '"2011-10-08"^^xsd:date'::rdf_literal = ''::rdf_literal;
-ERROR:  invalid RDF literal syntax: ""
-LINE 1: SELECT '"2011-10-08"^^xsd:date'::rdf_literal = ''::rdf_liter...
-                                                       ^
+ ?column? 
+----------
+ f
+(1 row)
+
 SELECT '"0001-01-01"^^xsd:date'::rdf_literal = '"0001-01-01"^^xsd:date'::rdf_literal; -- Should return t
  ?column? 
 ----------
@@ -364,7 +325,9 @@ SELECT '"1.0E308"^^xsd:double'::rdf_literal = '"1.0E308"^^xsd:double'::rdf_liter
 (1 row)
 
 SELECT '"invalid"^^xsd:dateTime'::rdf_literal = '"invalid"^^xsd:dateTime'::rdf_literal; -- Should error
-ERROR:  invalid input syntax for type timestamp with time zone: "invalid"
+ERROR:  invalid lexical form for xsd:dateTime: "invalid"
+LINE 1: SELECT '"invalid"^^xsd:dateTime'::rdf_literal = '"invalid"^^...
+               ^
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"18:44:38"^^xsd:time'::rdf_literal;
  ?column? 
 ----------
@@ -408,11 +371,9 @@ SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"foo"'::rdf_literal;
 (1 row)
 
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""^^xsd:time'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:time: ""
+LINE 1: SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""^^xsd:time':...
+                                                     ^
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""'::rdf_literal;
  ?column? 
 ----------
@@ -420,57 +381,47 @@ SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""'::rdf_literal;
 (1 row)
 
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = ''::rdf_literal;
-ERROR:  invalid RDF literal syntax: ""
-LINE 1: SELECT '"18:44:38"^^xsd:time'::rdf_literal = ''::rdf_literal...
-                                                     ^
+ ?column? 
+----------
+ f
+(1 row)
+
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal;
- ?column? 
-----------
- t
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-29 08:48:33"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^xsd:string'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '""^^xsd:dateTime'::rdf_literal;
-ERROR:  invalid input syntax for type timestamp with time zone: ""
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '""'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ''::rdf_literal;
-ERROR:  invalid RDF literal syntax: ""
-LINE 1: ...025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ''::rdf_li...
-                                                             ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
+LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
+               ^
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal;
  ?column? 
 ----------
@@ -520,9 +471,11 @@ SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '""'::rdf_li
 (1 row)
 
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = ''::rdf_literal;
-ERROR:  invalid RDF literal syntax: ""
-LINE 1: ...5T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = ''::rdf_li...
-                                                             ^
+ ?column? 
+----------
+ f
+(1 row)
+
 SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdf_literal; -- Should return t (missing timezone as UTC)
  ?column? 
 ----------
@@ -608,9 +561,11 @@ SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '""'::rdf_literal;
 (1 row)
 
 SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = ''::rdf_literal;
-ERROR:  invalid RDF literal syntax: ""
-LINE 1: ...T '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = ''::rdf_li...
-                                                             ^
+ ?column? 
+----------
+ f
+(1 row)
+
 SELECT '"P12M"^^xsd:duration'::rdf_literal = '"P1Y"^^xsd:duration'::rdf_literal;
  ?column? 
 ----------
@@ -781,42 +736,6 @@ SELECT 0::numeric ='"-0.0"^^xsd:decimal'::rdf_literal;
 (1 row)
 
 /* double precision (float8) <-> rdf_literal */
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision;
- float8 
---------
-  42.73
-(1 row)
-
-SELECT '"-42.73"^^xsd:double'::rdf_literal::double precision;
- float8 
---------
- -42.73
-(1 row)
-
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision::rdf_literal;
-                    rdf_literal                     
-----------------------------------------------------
- "42.73"^^<http://www.w3.org/2001/XMLSchema#double>
-(1 row)
-
-SELECT '"-42.73"^^xsd:double'::rdf_literal::double precision::rdf_literal;
-                     rdf_literal                     
------------------------------------------------------
- "-42.73"^^<http://www.w3.org/2001/XMLSchema#double>
-(1 row)
-
-SELECT '"4.2E1"^^xsd:double'::rdf_literal::double precision; -- PostgreSQL limitation: scientific notation will be dropped
- float8 
---------
-     42
-(1 row)
-
-SELECT '"-4.2E1"^^xsd:double'::rdf_literal::double precision; -- PostgreSQL limitation: scientific notation will be dropped
- float8 
---------
-    -42
-(1 row)
-
 SELECT '"42.73"^^xsd:double'::rdf_literal::double precision = 42.73000::double precision;
  ?column? 
 ----------
@@ -872,17 +791,13 @@ SELECT '"NaN"^^xsd:double'::rdf_literal != 0::double precision;
 (1 row)
 
 SELECT '"Infinity"^^xsd:double'::rdf_literal > 1e308::double precision;
- ?column? 
-----------
- t
-(1 row)
-
+ERROR:  invalid lexical form for xsd:double: "Infinity"
+LINE 1: SELECT '"Infinity"^^xsd:double'::rdf_literal > 1e308::double...
+               ^
 SELECT '"-Infinity"^^xsd:double'::rdf_literal < -1e308::double precision;
- ?column? 
-----------
- t
-(1 row)
-
+ERROR:  invalid lexical form for xsd:double: "-Infinity"
+LINE 1: SELECT '"-Infinity"^^xsd:double'::rdf_literal < -1e308::doub...
+               ^
 SELECT 42.73000::double precision = '"42.73"^^xsd:double'::rdf_literal::double precision;
  ?column? 
 ----------
@@ -938,78 +853,14 @@ SELECT 0::double precision != '"NaN"^^xsd:double'::rdf_literal;
 (1 row)
 
 SELECT 1e308::double precision > '"Infinity"^^xsd:double'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:double: "Infinity"
+LINE 1: SELECT 1e308::double precision > '"Infinity"^^xsd:double'::r...
+                                         ^
 SELECT -1e308::double precision < '"-Infinity"^^xsd:double'::rdf_literal;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid lexical form for xsd:double: "-Infinity"
+LINE 1: SELECT -1e308::double precision < '"-Infinity"^^xsd:double':...
+                                          ^
 /* real (float4) <-> rdf_literal */
-SELECT 42.73::real::rdf_literal;
-                    rdf_literal                    
----------------------------------------------------
- "42.73"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-
-SELECT 42.73::real::rdf_literal::real;
- float4 
---------
-  42.73
-(1 row)
-
-SELECT (-42.73)::real::rdf_literal;
-                    rdf_literal                     
-----------------------------------------------------
- "-42.73"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-
-SELECT (-42.73)::real::rdf_literal::real;
- float4 
---------
- -42.73
-(1 row)
-
-SELECT 'INF'::real::rdf_literal;
-                     rdf_literal                      
-------------------------------------------------------
- "Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-
-SELECT 'INF'::real::rdf_literal::real;
-  float4  
-----------
- Infinity
-(1 row)
-
-SELECT '-INF'::real::rdf_literal;
-                      rdf_literal                      
--------------------------------------------------------
- "-Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-
-SELECT '-INF'::real::rdf_literal::real;
-  float4   
------------
- -Infinity
-(1 row)
-
-SELECT 'NaN'::real::rdf_literal;
-                   rdf_literal                   
--------------------------------------------------
- "NaN"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-
-SELECT 'NaN'::real::rdf_literal::real;
- float4 
---------
-    NaN
-(1 row)
-
 SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42.73::real;
  ?column? 
 ----------
@@ -1179,54 +1030,6 @@ SELECT -43.00::real <= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf
 (1 row)
 
 /* bigint (int8) <-> rdf_literal */
-SELECT 42::bigint::rdf_literal;
-                  rdf_literal                  
------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#long>
-(1 row)
-
-SELECT 42::bigint::rdf_literal::bigint;
- int8 
-------
-   42
-(1 row)
-
-SELECT (-42)::bigint::rdf_literal;
-                  rdf_literal                   
-------------------------------------------------
- "-42"^^<http://www.w3.org/2001/XMLSchema#long>
-(1 row)
-
-SELECT (-42)::bigint::rdf_literal::bigint;
- int8 
-------
-  -42
-(1 row)
-
-SELECT 42746357267238767::bigint::rdf_literal;
-                         rdf_literal                          
---------------------------------------------------------------
- "42746357267238767"^^<http://www.w3.org/2001/XMLSchema#long>
-(1 row)
-
-SELECT 42746357267238767::bigint::rdf_literal::bigint;
-       int8        
--------------------
- 42746357267238767
-(1 row)
-
-SELECT (-42746357267238767)::bigint::rdf_literal;
-                          rdf_literal                          
----------------------------------------------------------------
- "-42746357267238767"^^<http://www.w3.org/2001/XMLSchema#long>
-(1 row)
-
-SELECT (-42746357267238767)::bigint::rdf_literal::bigint;
-        int8        
---------------------
- -42746357267238767
-(1 row)
-
 SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = 42746357267238768;
  ?column? 
 ----------
@@ -1396,54 +1199,6 @@ SELECT -42746357267238799 <= '"-42746357267238768"^^<http://www.w3.org/2001/XMLS
 (1 row)
 
 /* int (int4) <-> rdf_literal */
-SELECT 42::int::rdf_literal;
-                 rdf_literal                  
-----------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#int>
-(1 row)
-
-SELECT 42::int::rdf_literal::int;
- int4 
-------
-   42
-(1 row)
-
-SELECT (-42)::int::rdf_literal;
-                  rdf_literal                  
------------------------------------------------
- "-42"^^<http://www.w3.org/2001/XMLSchema#int>
-(1 row)
-
-SELECT (-42)::int::rdf_literal::int;
- int4 
-------
-  -42
-(1 row)
-
-SELECT 427463::int::rdf_literal;
-                   rdf_literal                    
---------------------------------------------------
- "427463"^^<http://www.w3.org/2001/XMLSchema#int>
-(1 row)
-
-SELECT 427463::int::rdf_literal::int;
-  int4  
---------
- 427463
-(1 row)
-
-SELECT (-427463)::int::rdf_literal;
-                    rdf_literal                    
----------------------------------------------------
- "-427463"^^<http://www.w3.org/2001/XMLSchema#int>
-(1 row)
-
-SELECT (-427463)::int::rdf_literal::int;
-  int4   
----------
- -427463
-(1 row)
-
 SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = 427463::int;
  ?column? 
 ----------
@@ -1615,54 +1370,6 @@ SELECT -427464::int <= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_
 SELECT '"2147483648"^^xsd:int'::rdf_literal::int; -- must fail: out of range for type integer
 ERROR:  value "2147483648" is out of range for type integer
 /* smallint (int2) <-> rdf_literal */
-SELECT 42::smallint::rdf_literal;
-                  rdf_literal                   
-------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#short>
-(1 row)
-
-SELECT 42::smallint::rdf_literal::smallint;
- int2 
-------
-   42
-(1 row)
-
-SELECT (-42)::smallint::rdf_literal;
-                   rdf_literal                   
--------------------------------------------------
- "-42"^^<http://www.w3.org/2001/XMLSchema#short>
-(1 row)
-
-SELECT (-42)::smallint::rdf_literal::smallint;
- int2 
-------
-  -42
-(1 row)
-
-SELECT 4273::smallint::rdf_literal;
-                   rdf_literal                    
---------------------------------------------------
- "4273"^^<http://www.w3.org/2001/XMLSchema#short>
-(1 row)
-
-SELECT 4273::smallint::rdf_literal::smallint;
- int2 
-------
- 4273
-(1 row)
-
-SELECT (-4273)::smallint::rdf_literal;
-                    rdf_literal                    
----------------------------------------------------
- "-4273"^^<http://www.w3.org/2001/XMLSchema#short>
-(1 row)
-
-SELECT (-4273)::smallint::rdf_literal::smallint;
- int2  
--------
- -4273
-(1 row)
-
 SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = 4273::smallint;
  ?column? 
 ----------
@@ -1842,30 +1549,6 @@ ERROR:  smallint out of range
 SELECT '"32768"^^xsd:short'::rdf_literal::smallint;
 ERROR:  value "32768" is out of range for type smallint
 /* timestamptz (timestamp with time zone) <-> rdf_literal */
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
-                                rdf_literal                                 
-----------------------------------------------------------------------------
- "2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal::timestamptz;
-             timestamptz             
--------------------------------------
- Fri Apr 25 11:44:38.149101 2025 PDT
-(1 row)
-
-SELECT '2025-04-25 18:44:38'::timestamptz::rdf_literal;
-                                rdf_literal                                 
-----------------------------------------------------------------------------
- "2025-04-26T01:44:38.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-
-SELECT '2025-04-25 18:44:38'::timestamptz::rdf_literal::timestamptz;
-         timestamptz          
-------------------------------
- Fri Apr 25 18:44:38 2025 PDT
-(1 row)
-
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal = '2025-04-25 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
@@ -1951,30 +1634,6 @@ SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <= '2025-04-25 18:44:38.1491
 (1 row)
 
 /* timestamp (timestamp with time zone) <-> rdf_literal */
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal;
-                            rdf_literal                             
---------------------------------------------------------------------
- "2025-04-25T18:44:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal::timestamp;
-        timestamp         
---------------------------
- Fri Apr 25 18:44:38 2025
-(1 row)
-
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal;
-                            rdf_literal                             
---------------------------------------------------------------------
- "2025-04-25T18:44:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal::timestamp;
-        timestamp         
---------------------------
- Fri Apr 25 18:44:38 2025
-(1 row)
-
 SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal = '2025-04-25 18:44:38'::timestamp;
  ?column? 
 ----------
@@ -2060,18 +1719,6 @@ SELECT '2025-04-26 18:44:38'::timestamp <= '2025-04-25 18:44:38'::timestamp::rdf
 (1 row)
 
 /* date <-> rdf_literal */
-SELECT '2020-05-12'::date::rdf_literal;
-                      rdf_literal                      
--------------------------------------------------------
- "2020-05-12"^^<http://www.w3.org/2001/XMLSchema#date>
-(1 row)
-
-SELECT '2020-05-12'::date::rdf_literal::date;
-    date    
-------------
- 05-12-2020
-(1 row)
-
 SELECT '2020-05-12'::date::rdf_literal = '2020-05-12'::date;
  ?column? 
 ----------
@@ -2157,10 +1804,13 @@ SELECT '2020-05-13'::date <= '2020-05-12'::date::rdf_literal;
 (1 row)
 
 SELECT '"invalid"^^xsd:date'::rdf_literal::date;
-ERROR:  invalid input syntax for type date: "invalid"
+ERROR:  invalid lexical form for xsd:date: "invalid"
+LINE 1: SELECT '"invalid"^^xsd:date'::rdf_literal::date;
+               ^
 SELECT '"2020-13-01"^^xsd:date'::rdf_literal::date;
-ERROR:  date/time field value out of range: "2020-13-01"
-HINT:  Perhaps you need a different "datestyle" setting.
+ERROR:  invalid lexical form for xsd:date: "2020-13-01"
+LINE 1: SELECT '"2020-13-01"^^xsd:date'::rdf_literal::date;
+               ^
 SELECT '0001-01-01'::date::rdf_literal = '0001-01-01'::date;
  ?column? 
 ----------
@@ -2174,30 +1824,6 @@ SELECT '9999-12-31'::date::rdf_literal = '9999-12-31'::date;
 (1 row)
 
 /* time (without time zone) <-> rdf_literal */
-SELECT '18:44:38'::time::rdf_literal;
-                     rdf_literal                     
------------------------------------------------------
- "18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>
-(1 row)
-
-SELECT '18:44:38'::time::rdf_literal::time;
-   time   
-----------
- 18:44:38
-(1 row)
-
-SELECT '00:00:00'::time::rdf_literal;
-                     rdf_literal                     
------------------------------------------------------
- "00:00:00"^^<http://www.w3.org/2001/XMLSchema#time>
-(1 row)
-
-SELECT '00:00:00'::time::rdf_literal::time;
-   time   
-----------
- 00:00:00
-(1 row)
-
 SELECT '18:44:38'::time::rdf_literal = '18:44:38'::time;
  ?column? 
 ----------
@@ -2291,30 +1917,6 @@ ERROR:  invalid input syntax for type time: "invalid"
 LINE 1: SELECT 'invalid'::time::rdf_literal;
                ^
 /* timetz (with time zone) <-> rdf_literal */
-SELECT '04:05:06-08:00'::timetz::rdf_literal;
-                      rdf_literal                       
---------------------------------------------------------
- "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
-(1 row)
-
-SELECT '04:05:06-08:00'::timetz::rdf_literal::timetz;
-   timetz    
--------------
- 04:05:06-08
-(1 row)
-
-SELECT '04:05:06 PST'::timetz::rdf_literal;
-                      rdf_literal                       
---------------------------------------------------------
- "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
-(1 row)
-
-SELECT '04:05:06 PST'::timetz::rdf_literal::timetz;
-   timetz    
--------------
- 04:05:06-08
-(1 row)
-
 SELECT '04:05:06-08:00'::timetz::rdf_literal = '04:05:06-08:00'::timetz;
  ?column? 
 ----------
@@ -2437,104 +2039,6 @@ SELECT (1<>1)::rdf_literal::boolean;
 (1 row)
 
 /* interval <-> rdf_literal */
-SELECT '1 day'::interval::rdf_literal;
-                    rdf_literal                     
-----------------------------------------------------
- "P1D"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '1 hour 30 minutes'::interval::rdf_literal;
-                      rdf_literal                       
---------------------------------------------------------
- "PT1H30M"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '2 years 3 months'::interval::rdf_literal;
-                     rdf_literal                      
-------------------------------------------------------
- "P2Y3M"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '5 days 12 hours'::interval::rdf_literal;
-                      rdf_literal                       
---------------------------------------------------------
- "P5DT12H"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdf_literal;
-                          rdf_literal                          
----------------------------------------------------------------
- "P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '5.123456 seconds'::interval::rdf_literal;
-                        rdf_literal                         
-------------------------------------------------------------
- "PT5.123456S"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '0.000001 seconds'::interval::rdf_literal;
-                        rdf_literal                         
-------------------------------------------------------------
- "PT0.000001S"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '1 minute 0.5 seconds'::interval::rdf_literal;
-                         rdf_literal                          
---------------------------------------------------------------
- "PT1M0.500000S"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '-1 year -2 months'::interval::rdf_literal;
-                      rdf_literal                      
--------------------------------------------------------
- "-P1Y2M"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '-3 days -4 hours'::interval::rdf_literal;
-                      rdf_literal                       
---------------------------------------------------------
- "-P3DT4H"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '0 seconds'::interval::rdf_literal;
-                     rdf_literal                     
------------------------------------------------------
- "PT0S"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdf_literal::interval;
-                   interval                   
-----------------------------------------------
- @ 1 year 2 mons 3 days 4 hours 5 mins 6 secs
-(1 row)
-
-SELECT '-1 year -2 months'::interval::rdf_literal::interval;
-ERROR:  invalid input syntax for type interval: "-P1Y2M"
-SELECT '5.123456 seconds'::interval::rdf_literal::interval;
-    interval     
------------------
- @ 5.123456 secs
-(1 row)
-
-SELECT '0 seconds'::interval::rdf_literal::interval;
- interval 
-----------
- @ 0
-(1 row)
-
-SELECT '0.000001 seconds'::interval::rdf_literal::interval;
-    interval     
------------------
- @ 0.000001 secs
-(1 row)
-
-SELECT '"P1"^^xsd:duration'::rdf_literal = '12 months'::interval;
- ?column? 
-----------
- t
-(1 row)
-
 SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------

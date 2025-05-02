@@ -851,13 +851,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-      name       | birthdate  |                   party                   |      country      
------------------+------------+-------------------------------------------+-------------------
- Bob Evnen       | 11-29-2022 | National Republican Party                 | United States
- Bob Evnen       | 11-29-2022 | Republikanische Partei                    | United States
- Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
- Bob Drewel      | 12-13-2013 | Demokratische Partei (Vereinigte Staaten) | the United States
- Nicholas Smith  | 03-14-2012 | Demokratische Partei (Vereinigte Staaten) | the United States
+           name           | birthdate  |                     party                     |      country       
+--------------------------+------------+-----------------------------------------------+--------------------
+ Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
+ Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
+ Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
+ Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
 (5 rows)
 
 /*
@@ -891,13 +891,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-        name        | birthdate  |            party             |  country  
---------------------+------------+------------------------------+-----------
- Neil Symes         | 12-11-1988 | Pauline Hanson’s One Nation  | Australia
- Inês de Sousa Real | 06-06-1980 | Pessoas – Animais – Natureza | Portugal
- George Christensen | 06-30-1978 | Pauline Hanson’s One Nation  | Australia
- Bruno Nunes        | 11-16-1976 | Partido Popular Monárquico   | Portugal
- Shaun Nelson       | 03-22-1973 | Pauline Hanson’s One Nation  | Australia
+        name        | birthdate  |         party          |  country  
+--------------------+------------+------------------------+-----------
+ Sarah Hanson-Young | 12-23-1981 | Australian Greens      | Australia
+ Andrew Cripps      | 02-05-1981 | Liberal National Party | Australia
+ Clare O'Neil       | 09-12-1980 | Australian Labor Party | Australia
+ Roslyn Dundas      | 07-28-1978 | Australian Democrats   | Australia
+ Amanda Rishworth   | 07-10-1978 | Australian Labor Party | Australia
 (5 rows)
 
 /* 
@@ -931,13 +931,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-            name            | birthdate  |            party             | country 
-----------------------------+------------+------------------------------+---------
- Krzysztof Gawkowski        | 04-11-1980 | Sojusz Lewicy Demokratycznej | Poland
- Dariusz Joński             | 01-12-1979 | Sojusz Lewicy Demokratycznej | Poland
- Robert Biedroń             | 04-13-1976 | Sojusz Lewicy Demokratycznej | Poland
- Krzysztof Matyjaszczyk     | 05-27-1974 | Sojusz Lewicy Demokratycznej | Poland
- Wojciech Michał Olejniczak | 04-10-1974 | Sojusz Lewicy Demokratycznej | Poland
+          name           | birthdate  |           party           | country 
+-------------------------+------------+---------------------------+---------
+ Krzysztof Bosak         | 06-13-1982 | Liga Polskich Rodzin      | Poland
+ Krzysztof Bosak         | 06-13-1982 | Ruch Narodowy             | Poland
+ Paweł Bartosz Olszewski | 12-11-1979 | Platforma Obywatelska     | Poland
+ Piotr Ślusarczyk        | 08-24-1979 | Liga Polskich Rodzin      | Poland
+ Lucjan Karasiewicz      | 07-10-1979 | Polska Jest Najważniejsza | Poland
 (5 rows)
 
 /* 
@@ -971,13 +971,13 @@ ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
 INFO:  SPARQL returned 10000 records.
 
-       name       | birthdate  |                   party                   |  country  
-------------------+------------+-------------------------------------------+-----------
- Miran Charuka    | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
- Sam Oosterhoff   | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
- Chiara Barchiesi | 12-22-1996 | Republikanische Partei (Chile)            | Chile
- Fernando Holiday | 09-22-1996 | Democratas                                | Brazil
- Fernando Holiday | 09-22-1996 | Patriota (Brasilien)                      | Brazil
+           name           | birthdate  |                     party                     |     country     
+--------------------------+------------+-----------------------------------------------+-----------------
+ Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
+ Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
+ Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
+ Vandolph Quizon          | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
 (5 rows)
 
 /*
@@ -2100,7 +2100,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
       } 
 
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 1898 records.
 
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
  name | released | runtime 

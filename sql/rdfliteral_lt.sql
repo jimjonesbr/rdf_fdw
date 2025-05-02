@@ -1,0 +1,51 @@
+-- Tests for less-than (<) operator on rdf_literal type
+\pset null NULL
+
+-- Numeric comparisons
+SELECT '"1"^^xsd:int'::rdf_literal < '"2"^^xsd:int'::rdf_literal; -- Returns t
+SELECT '"1"^^xsd:int'::rdf_literal < '"1"^^xsd:int'::rdf_literal; -- Returns t
+SELECT '"42.0"^^xsd:decimal'::rdf_literal < '"42.1"^^xsd:decimal'::rdf_literal; -- Returns t
+SELECT '"42.0"^^xsd:double'::rdf_literal < '"42.0"^^xsd:decimal'::rdf_literal; -- Returns t
+SELECT '"0.0"^^xsd:decimal'::rdf_literal < '"-0.0"^^xsd:decimal'::rdf_literal; -- Returns t
+SELECT '"1e308"^^xsd:double'::rdf_literal < '"INF"^^xsd:double'::rdf_literal; -- Returns t
+SELECT '"42"^^xsd:int'::rdf_literal < '"43"^^xsd:short'::rdf_literal; -- Returns t
+SELECT '"42"^^xsd:byte'::rdf_literal < '"42"^^xsd:int'::rdf_literal; -- Returns t
+
+-- Date and time
+SELECT '"2020-01-01"^^xsd:date'::rdf_literal < '"2021-01-01"^^xsd:date'::rdf_literal; -- Returns t
+SELECT '"2025-04-25T18:45:00"^^xsd:dateTime'::rdf_literal < '"2025-04-25T18:45:00"^^xsd:dateTime'::rdf_literal; -- Returns t
+SELECT '"18:44:38"^^xsd:time'::rdf_literal < '"18:45:00"^^xsd:time'::rdf_literal; -- Returns t
+SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdf_literal < '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdf_literal; -- Returns t
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdf_literal < '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdf_literal; -- Error or defined behavior
+
+-- String and simple literals
+SELECT '"abc"^^xsd:string'::rdf_literal < '"abd"^^xsd:string'::rdf_literal; -- Returns t
+SELECT '"abc"^^xsd:string'::rdf_literal < '"abc"^^xsd:string'::rdf_literal; -- Returns t
+SELECT '"a"'::rdf_literal < '"b"'::rdf_literal; -- Returns t
+SELECT '""^^xsd:string'::rdf_literal < '"a"^^xsd:string'::rdf_literal; -- Returns t
+SELECT '"\u00E9"^^xsd:string'::rdf_literal < '"\u00EA"^^xsd:string'::rdf_literal; -- Returns t
+
+-- Language-tagged literals
+SELECT '"a"@en'::rdf_literal < '"b"@en'::rdf_literal; -- ERROR: cannot compare language-tagged literals
+SELECT '"chat"@en'::rdf_literal < '"chat"@fr'::rdf_literal; -- ERROR: cannot compare language-tagged literals
+SELECT '"abc"@de'::rdf_literal < '"abc"@en'::rdf_literal; -- ERROR: cannot compare language-tagged literals
+SELECT '"abc"@en'::rdf_literal < '"abc"@EN'::rdf_literal; -- ERROR: cannot compare language-tagged literals
+
+-- xsd:anyURI comparisons
+SELECT '"http://a"^^xsd:anyURI'::rdf_literal < '"http://b"^^xsd:anyURI'::rdf_literal; -- Returns t
+SELECT '"http://a"^^xsd:anyURI'::rdf_literal < '"http://a"^^xsd:anyURI'::rdf_literal; -- Returns t
+SELECT '""^^xsd:anyURI'::rdf_literal < '"http://b"^^xsd:anyURI'::rdf_literal; -- Returns t
+SELECT '"http://\u00E9"^^xsd:anyURI'::rdf_literal < '"http://\u00EA"^^xsd:anyURI'::rdf_literal; -- Returns t
+
+-- Incompatible datatype comparisons
+SELECT '"41"'::rdf_literal < '"42"^^xsd:int'::rdf_literal; -- ERROR: cannot compare literals of different datatypes
+SELECT '"abc"^^xsd:string'::rdf_literal < '"2020-01-01"^^xsd:date'::rdf_literal; -- ERROR: cannot compare literals of different datatypes
+SELECT '"2020-01-01"^^xsd:date'::rdf_literal < '"abc"^^xsd:string'::rdf_literal; -- ERROR: cannot compare literals of different datatypes
+SELECT '"41"^^xsd:int'::rdf_literal < '"42"^^ex:customDatatype'::rdf_literal; -- ERROR: cannot compare literals of different datatypes
+
+-- NaN and infinities
+SELECT '"42"^^xsd:double'::rdf_literal < '"NaN"^^xsd:double'::rdf_literal; -- Returns f
+SELECT '"NaN"^^xsd:double'::rdf_literal < '"NaN"^^xsd:double'::rdf_literal; -- Returns f
+SELECT '"NaN"^^xsd:double'::rdf_literal < '"42"^^xsd:double'::rdf_literal; -- Returns f
+SELECT '"999999999"^^xsd:double'::rdf_literal < '"INF"^^xsd:double'::rdf_literal; -- Returns t
+SELECT '"-999999999"^^xsd:double'::rdf_literal < '"-INF"^^xsd:double'::rdf_literal; -- Returns f

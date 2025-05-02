@@ -1,18 +1,5 @@
-\pset null NULL
-CREATE EXTENSION IF NOT EXISTS rdf_fdw;
-
 SHOW datestyle;
 SHOW timezone;
-
-/* text <-> rdf_literal */
-SELECT '"foo"'::rdf_literal;
-SELECT '"foo"^^xsd:string'::rdf_literal;
-SELECT '"foo"@es'::rdf_literal;
-SELECT '"foo"@es'::rdf_literal::text;
-SELECT '"foo"@es'::rdf_literal::text::rdf_literal;
-SELECT '"foo"^^xsd:string'::rdf_literal::text::rdf_literal;
---SELECT '"foo"^^xsd:string'::rdf_literal = '"foo"^^xsd:string'::text;
---SELECT '"foo"^^xsd:string'::text = '"foo"^^xsd:string'::rdf_literal;
 
 /* rdf_literal <-> rdf_literal */
 SELECT '""'::rdf_literal = '""'::rdf_literal;
@@ -145,12 +132,6 @@ SELECT 0::numeric < '"-0.000000000000000001"^^xsd:decimal'::rdf_literal;
 SELECT 0::numeric ='"-0.0"^^xsd:decimal'::rdf_literal;
 
 /* double precision (float8) <-> rdf_literal */
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision;
-SELECT '"-42.73"^^xsd:double'::rdf_literal::double precision;
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision::rdf_literal;
-SELECT '"-42.73"^^xsd:double'::rdf_literal::double precision::rdf_literal;
-SELECT '"4.2E1"^^xsd:double'::rdf_literal::double precision; -- PostgreSQL limitation: scientific notation will be dropped
-SELECT '"-4.2E1"^^xsd:double'::rdf_literal::double precision; -- PostgreSQL limitation: scientific notation will be dropped
 SELECT '"42.73"^^xsd:double'::rdf_literal::double precision = 42.73000::double precision;
 SELECT '"42.73"^^xsd:double'::rdf_literal::double precision <> 42.73000::double precision;
 SELECT '"42.73"^^xsd:double'::rdf_literal::double precision > 42.999999::double precision;
@@ -175,16 +156,6 @@ SELECT 1e308::double precision > '"Infinity"^^xsd:double'::rdf_literal;
 SELECT -1e308::double precision < '"-Infinity"^^xsd:double'::rdf_literal;
 
 /* real (float4) <-> rdf_literal */
-SELECT 42.73::real::rdf_literal;
-SELECT 42.73::real::rdf_literal::real;
-SELECT (-42.73)::real::rdf_literal;
-SELECT (-42.73)::real::rdf_literal::real;
-SELECT 'INF'::real::rdf_literal;
-SELECT 'INF'::real::rdf_literal::real;
-SELECT '-INF'::real::rdf_literal;
-SELECT '-INF'::real::rdf_literal::real;
-SELECT 'NaN'::real::rdf_literal;
-SELECT 'NaN'::real::rdf_literal::real;
 SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42.73::real;
 SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42::real;
 SELECT '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42::real;
@@ -215,14 +186,6 @@ SELECT 43.00::real <= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_l
 SELECT -43.00::real <= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
 
 /* bigint (int8) <-> rdf_literal */
-SELECT 42::bigint::rdf_literal;
-SELECT 42::bigint::rdf_literal::bigint;
-SELECT (-42)::bigint::rdf_literal;
-SELECT (-42)::bigint::rdf_literal::bigint;
-SELECT 42746357267238767::bigint::rdf_literal;
-SELECT 42746357267238767::bigint::rdf_literal::bigint;
-SELECT (-42746357267238767)::bigint::rdf_literal;
-SELECT (-42746357267238767)::bigint::rdf_literal::bigint;
 SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = 42746357267238768;
 SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = -42746357267238768;
 SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <> 42746357267238768;
@@ -253,14 +216,6 @@ SELECT 42746357267238799 <= '"42746357267238768"^^<http://www.w3.org/2001/XMLSch
 SELECT -42746357267238799 <= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
 
 /* int (int4) <-> rdf_literal */
-SELECT 42::int::rdf_literal;
-SELECT 42::int::rdf_literal::int;
-SELECT (-42)::int::rdf_literal;
-SELECT (-42)::int::rdf_literal::int;
-SELECT 427463::int::rdf_literal;
-SELECT 427463::int::rdf_literal::int;
-SELECT (-427463)::int::rdf_literal;
-SELECT (-427463)::int::rdf_literal::int;
 SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = 427463::int;
 SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = -427463::int;
 SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <> 427463::int;
@@ -292,14 +247,6 @@ SELECT -427464::int <= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_
 SELECT '"2147483648"^^xsd:int'::rdf_literal::int; -- must fail: out of range for type integer
 
 /* smallint (int2) <-> rdf_literal */
-SELECT 42::smallint::rdf_literal;
-SELECT 42::smallint::rdf_literal::smallint;
-SELECT (-42)::smallint::rdf_literal;
-SELECT (-42)::smallint::rdf_literal::smallint;
-SELECT 4273::smallint::rdf_literal;
-SELECT 4273::smallint::rdf_literal::smallint;
-SELECT (-4273)::smallint::rdf_literal;
-SELECT (-4273)::smallint::rdf_literal::smallint;
 SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = 4273::smallint;
 SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = -4273::smallint;
 SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <> 4273::smallint;
@@ -333,10 +280,6 @@ SELECT '"-32768"^^xsd:short'::rdf_literal = -32768::smallint;
 SELECT '"32768"^^xsd:short'::rdf_literal::smallint;
 
 /* timestamptz (timestamp with time zone) <-> rdf_literal */
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal::timestamptz;
-SELECT '2025-04-25 18:44:38'::timestamptz::rdf_literal;
-SELECT '2025-04-25 18:44:38'::timestamptz::rdf_literal::timestamptz;
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal = '2025-04-25 18:44:38.149101+00'::timestamptz;
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal <> '2025-04-26 18:44:38.149101+00'::timestamptz;
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal != '2025-04-26 18:44:38.149101+00'::timestamptz;
@@ -353,10 +296,6 @@ SELECT '2025-04-26 18:44:38.149101+00'::timestamptz >= '2025-04-25 18:44:38.1491
 SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <= '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
 
 /* timestamp (timestamp with time zone) <-> rdf_literal */
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal;
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal::timestamp;
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal;
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal::timestamp;
 SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal = '2025-04-25 18:44:38'::timestamp;
 SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal <> '2025-04-26 18:44:38'::timestamp;
 SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal != '2025-04-26 18:44:38'::timestamp;
@@ -373,8 +312,6 @@ SELECT '2025-04-26 18:44:38'::timestamp >= '2025-04-25 18:44:38'::timestamp::rdf
 SELECT '2025-04-26 18:44:38'::timestamp <= '2025-04-25 18:44:38'::timestamp::rdf_literal;
 
 /* date <-> rdf_literal */
-SELECT '2020-05-12'::date::rdf_literal;
-SELECT '2020-05-12'::date::rdf_literal::date;
 SELECT '2020-05-12'::date::rdf_literal = '2020-05-12'::date;
 SELECT '2020-05-12'::date::rdf_literal <> '2020-05-12'::date;
 SELECT '2020-05-12'::date::rdf_literal != '2020-05-12'::date;
@@ -395,10 +332,6 @@ SELECT '0001-01-01'::date::rdf_literal = '0001-01-01'::date;
 SELECT '9999-12-31'::date::rdf_literal = '9999-12-31'::date;
 
 /* time (without time zone) <-> rdf_literal */
-SELECT '18:44:38'::time::rdf_literal;
-SELECT '18:44:38'::time::rdf_literal::time;
-SELECT '00:00:00'::time::rdf_literal;
-SELECT '00:00:00'::time::rdf_literal::time;
 SELECT '18:44:38'::time::rdf_literal = '18:44:38'::time;
 SELECT '18:44:38'::time::rdf_literal <> '18:44:38'::time;
 SELECT '18:44:38'::time::rdf_literal != '18:44:38'::time;
@@ -417,10 +350,6 @@ SELECT '-18:44:38'::time::rdf_literal;
 SELECT 'invalid'::time::rdf_literal;
 
 /* timetz (with time zone) <-> rdf_literal */
-SELECT '04:05:06-08:00'::timetz::rdf_literal;
-SELECT '04:05:06-08:00'::timetz::rdf_literal::timetz;
-SELECT '04:05:06 PST'::timetz::rdf_literal;
-SELECT '04:05:06 PST'::timetz::rdf_literal::timetz;
 SELECT '04:05:06-08:00'::timetz::rdf_literal = '04:05:06-08:00'::timetz;
 SELECT '04:05:06-08:00'::timetz::rdf_literal <> '04:05:06-08:00'::timetz;
 SELECT '04:05:06-08:00'::timetz::rdf_literal != '04:05:06-08:00'::timetz;
@@ -445,23 +374,6 @@ SELECT (1=1)::rdf_literal::boolean;
 SELECT (1<>1)::rdf_literal::boolean;
 
 /* interval <-> rdf_literal */
-SELECT '1 day'::interval::rdf_literal;
-SELECT '1 hour 30 minutes'::interval::rdf_literal;
-SELECT '2 years 3 months'::interval::rdf_literal;
-SELECT '5 days 12 hours'::interval::rdf_literal;
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdf_literal;
-SELECT '5.123456 seconds'::interval::rdf_literal;
-SELECT '0.000001 seconds'::interval::rdf_literal;
-SELECT '1 minute 0.5 seconds'::interval::rdf_literal;
-SELECT '-1 year -2 months'::interval::rdf_literal;
-SELECT '-3 days -4 hours'::interval::rdf_literal;
-SELECT '0 seconds'::interval::rdf_literal;
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdf_literal::interval;
-SELECT '-1 year -2 months'::interval::rdf_literal::interval;
-SELECT '5.123456 seconds'::interval::rdf_literal::interval;
-SELECT '0 seconds'::interval::rdf_literal::interval;
-SELECT '0.000001 seconds'::interval::rdf_literal::interval;
-SELECT '"P1"^^xsd:duration'::rdf_literal = '12 months'::interval;
 SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
 SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
 SELECT '"P1"^^xsd:duration'::rdf_literal <> '12 months'::interval;

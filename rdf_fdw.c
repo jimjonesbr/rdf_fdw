@@ -94,6 +94,9 @@
 #else
 #include "libpq/md5.h"
 #endif
+#include "utils/varlena.h"
+#include "mb/pg_wchar.h"
+#include <regex.h>
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
@@ -138,9 +141,11 @@
 #define RDF_XSD_LONG "<http://www.w3.org/2001/XMLSchema#long>"
 #define RDF_XSD_SHORT "<http://www.w3.org/2001/XMLSchema#short>"
 #define RDF_XSD_FLOAT "<http://www.w3.org/2001/XMLSchema#float>"
+#define RDF_XSD_BYTE "<http://www.w3.org/2001/XMLSchema#byte>"
 #define RDF_XSD_BOOLEAN "<http://www.w3.org/2001/XMLSchema#boolean>"
 #define RDF_XSD_TIME "<http://www.w3.org/2001/XMLSchema#time>"
 #define RDF_XSD_DURATION "<http://www.w3.org/2001/XMLSchema#duration>"
+#define RDF_XSD_ANYURI "<http://www.w3.org/2001/XMLSchema#anyURI>"
 
 #define RDF_DEFAULT_QUERY_PARAM "query"
 #define RDF_DEFAULT_FETCH_SIZE 100
@@ -406,6 +411,21 @@ typedef struct {
     char data[FLEXIBLE_ARRAY_MEMBER];
 } RDFIRIDatum;
 
+typedef struct
+{
+	char *raw;				/* raw literal (with language and data type, if any) */
+	char *lex;	 			/* literal's lexical value: "foo"^^xsd:string -> foo */
+	char *dtype; 			/* literal's data type, e.g xsd:string, xsd:short */
+	char *lang;	 			/* literal's language tag, e.g. 'en', 'de', 'es' */
+	bool isPlainLiteral;	/* literal has no language or data type*/
+	bool isNumeric;			/* literal has a numeric value, e.g. xsd:int, xsd:float*/
+	bool isString;			/* xsd:string literal */
+	bool isDateTime;		/* xsd:dateTime literal */
+	bool isDate;			/* xsd:date literal*/
+	bool isDuration;		/* xsd:duration */
+	bool isTime;			/* xsd:time */
+} parsed_rdf_literal;
+
 //static Oid RDFIRIOID = InvalidOid;
 
 extern Datum rdf_fdw_handler(PG_FUNCTION_ARGS);
@@ -452,8 +472,14 @@ extern Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS);
 /* rdf_literal PostgreSQL data type */
 extern Datum rdf_literal_in(PG_FUNCTION_ARGS);
 extern Datum rdf_literal_out(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq(PG_FUNCTION_ARGS);
+
+/* rdf_literal (custom data type)*/
+extern Datum rdf_literal_eq_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdf_literal_neq_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdf_literal_lt_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdf_literal_gt_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdf_literal_le_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdf_literal_ge_rdf_literal(PG_FUNCTION_ARGS);
 
 /* numeric data type */
 extern Datum rdf_literal_to_numeric(PG_FUNCTION_ARGS);
@@ -680,10 +706,15 @@ PG_FUNCTION_INFO_V1(rdf_fdw_bound);
 PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
 PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
 
+/* rdf_literal (custom data type) */
 PG_FUNCTION_INFO_V1(rdf_literal_in);
 PG_FUNCTION_INFO_V1(rdf_literal_out);
-PG_FUNCTION_INFO_V1(rdf_literal_eq);
-PG_FUNCTION_INFO_V1(rdf_literal_neq);
+PG_FUNCTION_INFO_V1(rdf_literal_eq_rdf_literal);
+PG_FUNCTION_INFO_V1(rdf_literal_neq_rdf_literal);
+PG_FUNCTION_INFO_V1(rdf_literal_lt_rdf_literal);
+PG_FUNCTION_INFO_V1(rdf_literal_gt_rdf_literal);
+PG_FUNCTION_INFO_V1(rdf_literal_le_rdf_literal);
+PG_FUNCTION_INFO_V1(rdf_literal_ge_rdf_literal);
 
 /* numeric data type */
 PG_FUNCTION_INFO_V1(rdf_literal_to_numeric);
@@ -941,6 +972,10 @@ static char *bnode(char *input);
 static char *generate_uuid_v4(void);
 static char *rdf_concat(char *left, char *right);
 
+static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2);
+static bool LiteralsComparable(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2);
+static char *unescape_unicode(const char *input);
+
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
 	FdwRoutine *fdwroutine = makeNode(FdwRoutine);
@@ -1055,8 +1090,8 @@ static char *CstringToRDFLiteral(char *input)
 }
 
 /*
- * ExtractRDFLexicalValue
- * ----------------------
+ * lex
+ * ---
  *
  * Extracts the lexical value from an RDF literal, stripping quotes, language tags,
  * and datatype annotations as per SPARQL conventions. Handles both quoted and
@@ -1067,69 +1102,115 @@ static char *CstringToRDFLiteral(char *input)
  *
  * returns: Null-terminated C string representing the lexical value (e.g., "abc", "123")
  */
+// static char *lex(char *input)
+// {
+// 	const char *start;
+// 	const char *end;
+// 	bool is_quoted;
+// 	int len;
+// 	StringInfoData output;
+
+// 	elog(DEBUG1, "%s called: input='%s'", __func__, input);
+
+// 	start = input;
+// 	is_quoted = (*start == '"');
+// 	len = strlen(start);
+// 	initStringInfo(&output);
+
+// 	if (len == 0)
+// 		return "";
+
+// 	if (is_quoted)
+// 	{
+// 		start++; /* skip initial quote */
+// 		end = start;
+
+// 		/* scan to find the end, checking for language tag or datatype */
+// 		while (*end)
+// 		{
+// 			if (*end == '@' || (*end == '^' && *(end + 1) == '^'))
+// 			{
+// 				/* back up to exclude the closing quote before the tag */
+// 				if (end > start && *(end - 1) == '"')
+// 					end--;
+// 				break;
+// 			}
+// 			end++;
+// 		}
+
+// 		if (*end == '\0')
+// 		{
+// 			end = start + strlen(start);
+// 			if (end > start && *(end - 1) == '"')
+// 				end--;
+// 		}
+	
+// 		/* copy the content, escaping unescaped quotes if needed */
+// 		while (start < end)
+// 		{
+// 			if (*start == '"' && start != end - 1)
+// 			{
+// 				if (start == input + 1 || *(start - 1) != '\\')
+// 				{
+// 					appendStringInfoChar(&output, '\\');
+// 				}
+// 				appendStringInfoChar(&output, '"');
+// 			}
+// 			else
+// 			{
+// 				appendStringInfoChar(&output, *start);
+// 			}
+// 			start++;
+// 		}
+// 	}
+// 	else
+// 	{
+// 		end = strstr(start, "@");
+// 		if (!end)
+// 			end = strstr(start, "^^");
+
+// 		if (end)
+// 			appendBinaryStringInfo(&output, start, end - start);
+// 		else
+// 			appendStringInfoString(&output, start);
+// 	}
+
+// 	elog(DEBUG1,"%s exit: returning => '%s'", __func__, output.data);
+
+// 	return output.data;
+// }
 static char *lex(char *input)
 {
-	const char *start;
+	const char *start = input;
 	const char *end;
-	bool is_quoted;
-	int len;
+	int len = strlen(input);
+	int nquotes = 0;
 	StringInfoData output;
 
-	elog(DEBUG1, "%s called: input='%s'", __func__, input);
-
-	start = input;
-	is_quoted = (*start == '"');
-	len = strlen(start);
 	initStringInfo(&output);
+
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	if (len == 0)
 		return "";
 
-	if (is_quoted)
+	for (int i = 0; i < len; i++)
 	{
-		start++; /* skip initial quote */
-		end = start;
-
-		/* scan to find the end, checking for language tag or datatype */
-		while (*end)
-		{
-			if (*end == '@' || (*end == '^' && *(end + 1) == '^'))
-			{
-				/* back up to exclude the closing quote before the tag */
-				if (end > start && *(end - 1) == '"')
-					end--;
-				break;
-			}
-			end++;
-		}
-
-		if (*end == '\0')
-		{
-			end = start + strlen(start);
-			if (end > start && *(end - 1) == '"')
-				end--;
-		}
-
-		/* copy the content, escaping unescaped quotes if needed */
-		while (start < end)
-		{
-			if (*start == '"' && start != end - 1)
-			{
-				if (start == input + 1 || *(start - 1) != '\\')
-				{
-					appendStringInfoChar(&output, '\\');
-				}
-				appendStringInfoChar(&output, '"');
-			}
-			else
-			{
-				appendStringInfoChar(&output, *start);
-			}
-			start++;
-		}
+		if (input[i] == '"')
+			nquotes++;
 	}
-	else
+
+	elog(DEBUG2,"%s: input='%s'first nquotes=%d", __func__, input, nquotes);
+
+	if (input[0] == '"' && nquotes == 1)
 	{
+		appendStringInfoChar(&output, '\\');
+		appendStringInfoChar(&output, '"');
+	}
+
+	if (start[0] != '"')
+	{
+		/* Not quoted, return until @ or ^^ if present */
 		end = strstr(start, "@");
 		if (!end)
 			end = strstr(start, "^^");
@@ -1138,12 +1219,31 @@ static char *lex(char *input)
 			appendBinaryStringInfo(&output, start, end - start);
 		else
 			appendStringInfoString(&output, start);
+
+		elog(DEBUG1, "%s exit (quoted): returning '%s'", __func__, output.data);
+		return output.data;
 	}
 
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, output.data);
+	/* Quoted literal: skip first quote */
+	start++;
+
+	/* Find the end of lexical content: quote before @ or ^^ or final quote */
+	end = start;
+	while (*end)
+	{
+		if (*end == '"' &&
+			(end[1] == '\0' || end[1] == '@' || (end[1] == '^' && end[2] == '^')))
+			break;
+		end++;
+	}
+
+	appendBinaryStringInfo(&output, start, end - start);
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, output.data);
 
 	return output.data;
 }
+
+
 
 /*
  * lang
@@ -1250,7 +1350,7 @@ static char *strlang(char *literal, char *language)
 	if (strlen(literal) == 0)
 		appendStringInfo(&buf, "\"\"@%s", language);
 	else
-		appendStringInfo(&buf, "\"%s\"@%s", lex(literal), language);
+		appendStringInfo(&buf, "%s@%s", CstringToRDFLiteral(lex(literal)), language);
 
 	elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 
@@ -2698,6 +2798,7 @@ static bool isNumeric(char *term)
 		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#nonPositiveInteger>") == 0 ||
 		strcmp(datatype_uri, RDF_XSD_LONG) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_INT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_BYTE) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_SHORT) == 0 ||
 		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedLong>") == 0 ||
 		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedInt>") == 0 ||
@@ -8848,22 +8949,209 @@ typedef struct rdf_literal
 	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
 } rdf_literal;
 
+static bool is_valid_xsd_double(const char *lexical)
+{
+	regex_t regex;
+	int reti;
+	bool is_valid = false;
+	const char *pattern = "^[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$";
+
+	if (pg_strcasecmp(lexical, "NaN") == 0 || pg_strcasecmp(lexical, "INF") == 0 || pg_strcasecmp(lexical, "-INF") == 0)
+		return true;
+
+	reti = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (reti)
+		ereport(ERROR, (errmsg("could not compile regex for xsd:double")));
+
+	reti = regexec(&regex, lexical, 0, NULL, 0);
+
+	if (reti == 0)
+		is_valid = true;
+
+	regfree(&regex);
+	return is_valid;
+}
+
+static bool is_valid_xsd_int(const char *lexical)
+{
+	regex_t regex;
+	int reti;
+	bool is_valid = false;
+	const char *pattern = "^-?[0-9]+$";
+
+	reti = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (reti)
+		ereport(ERROR, (errmsg("could not compile regex for xsd:int")));
+
+	reti = regexec(&regex, lexical, 0, NULL, 0);
+	if (reti == 0)
+		is_valid = true;
+
+	regfree(&regex);
+	return is_valid;
+}
+
+static bool is_valid_xsd_dateTime(const char *lexical)
+{
+	regex_t regex;
+	int reti;
+	bool is_valid = false;
+	const char *pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?$";
+
+	reti = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (reti)
+		ereport(ERROR, (errmsg("could not compile regex for xsd:dateTime")));
+
+	reti = regexec(&regex, lexical, 0, NULL, 0);
+
+	if (reti == 0)
+		is_valid = true;
+
+	regfree(&regex);
+	return is_valid;
+}
+
+static bool is_valid_xsd_time(const char *lexical)
+{
+	regex_t regex;
+	int reti;
+	bool is_valid = false;
+	const char *pattern = "^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?$";
+
+	reti = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (reti)
+		ereport(ERROR, (errmsg("could not compile regex for xsd:time")));
+
+	reti = regexec(&regex, lexical, 0, NULL, 0);
+
+	if (reti == 0)
+		is_valid = true;
+
+	regfree(&regex);
+	return is_valid;
+}
+
+static bool is_valid_xsd_date(const char *lexical)
+{
+	regex_t regex;
+	int reti;
+	bool is_valid = false;
+	const char *pattern = "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])([+-][0-9]{2}:[0-9]{2}|Z)?$";
+
+	reti = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (reti)
+		ereport(ERROR, (errmsg("could not compile regex for xsd:date")));
+
+	reti = regexec(&regex, lexical, 0, NULL, 0);
+
+	if (reti == 0)
+		is_valid = true;
+
+	regfree(&regex);
+	return is_valid;
+}
+
+static bool is_valid_language_tag(const char *lan)
+{
+	regex_t regex;
+	int reti;
+	bool is_valid = false;
+	const char *pattern = "^[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*$";
+
+	reti = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (reti)
+		ereport(ERROR, (errmsg("could not compile regex for language tag")));
+
+	reti = regexec(&regex, lan, 0, NULL, 0);
+
+	if (reti == 0)
+		is_valid = true;
+
+	regfree(&regex);
+	return is_valid;
+}
+
 Datum rdf_literal_in(PG_FUNCTION_ARGS)
 {
-	char *str = PG_GETARG_CSTRING(0);
+	char *str_in = PG_GETARG_CSTRING(0);
+	char *lexical;
+	char *normalized;
+	char* lan;
+	char *dtype;
 	rdf_literal *result;
 	size_t len;
+	StringInfoData r;
 
-	if (!isLiteral(str))
+	// if (!isLiteral(str_in))
+	// 	ereport(ERROR,
+	// 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+	// 			 errmsg("invalid RDF literal syntax: \"%s\"", str_in)));
+	
+	initStringInfo(&r);
+	lexical = lex(str_in);
+	lan = lang(str_in);
+	dtype = datatype(str_in);
+
+	if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid RDF literal syntax: \"%s\"", str)));
+				 errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
 
-	len = strlen(str);
+	else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
+	
+	else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
+		ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+			errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
+
+	else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
+			ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
+
+	else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
+	
+	else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
+
+	else if (strlen(lan) != 0)
+	{
+		if (!is_valid_language_tag(lan))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						errmsg("invalid language tag: \"%s\"", lan)));
+
+		normalized = strlang(unescape_unicode(lexical), lan);
+	}
+	else if (strlen(dtype) != 0)
+		normalized = strdt(unescape_unicode(lexical), dtype);
+	else
+	{
+		appendStringInfo(&r,"\"%s\"", unescape_unicode(lexical));
+		normalized = r.data;
+	}
+		// normalized = str((char *) unescape_unicode(lexical));
+
+	len = strlen(normalized);
 	result = (rdf_literal *)palloc(VARHDRSZ + len + 1);
 	SET_VARSIZE(result, VARHDRSZ + len);
-	memcpy(result->vl_data, str, len);
-	result->vl_data[len] = '\0'; // Explicitly null-terminate
+	memcpy(result->vl_data, normalized, len);
+	/* explicitly null-terminate! */
+	result->vl_data[len] = '\0';
 
 	PG_RETURN_POINTER(result);
 }
@@ -8880,38 +9168,60 @@ Datum rdf_literal_out(PG_FUNCTION_ARGS)
 	PG_RETURN_CSTRING(out);
 }
 
-typedef struct
-{
-	char *raw;				/* raw literal (with language and data type, if any) */
-	char *lex;	 			/* literal's lexical value: "foo"^^xsd:string -> foo */
-	char *dtype; 			/* literal's data type, e.g xsd:string, xsd:short */
-	char *lang;	 			/* literal's language tag, e.g. 'en', 'de', 'es' */
-	bool isPlainLiteral;	/* literal has no language or data type*/
-	bool isNumeric;			/* literal has a numeric value, e.g. xsd:int, xsd:float*/
-	bool isString;			/* xsd:string literal */
-	bool isDateTime;		/* xsd:dateTime literal */
-	bool isDate;			/* xsd:date literal*/
-	bool isDuration;		/* xsd:duration */
-} parsed_rdf_literal;
+// Datum
+// rdf_literal_out(PG_FUNCTION_ARGS)
+// {
+// 	rdf_literal *lit = (rdf_literal *)PG_GETARG_POINTER(0);
+// 	int len = VARSIZE(lit) - VARHDRSZ;
+// 	char *lexical = (char *)palloc(len + 1);
+// 	StringInfoData out;
+// 	char *lang_tag, *dtype;
+
+// 	memcpy(lexical, lit->vl_data, len);
+// 	lexical[len] = '\0';
+
+// 	initStringInfo(&out);
+// 	appendStringInfoChar(&out, '"');
+
+// 	for (const char *p = lexical; *p; p++)
+// 	{
+// 		if (*p == '"')  // only escape actual embedded quotes
+// 			appendStringInfoChar(&out, '\\');
+// 		appendStringInfoChar(&out, *p);
+// 	}
+
+// 	appendStringInfoChar(&out, '"');
+
+// 	lang_tag = lang(lexical);
+// 	dtype = datatype(lexical);
+
+// 	if (lang_tag && strlen(lang_tag) > 0)
+// 		appendStringInfo(&out, "@%s", lang_tag);
+// 	else if (dtype && strlen(dtype) > 0)
+// 		appendStringInfo(&out, "^^%s", dtype);
+
+// 	PG_RETURN_CSTRING(out.data);
+// }
 
 static parsed_rdf_literal parse_rdf_literal(char *input)
 {
 	parsed_rdf_literal result = {NULL, NULL, NULL, false};
-
+	char *lexical = lex(input);
 	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	result.raw = input;
-	result.lex = lex(input);
+	result.lex = unescape_unicode(lexical);
 	result.dtype = datatype(input);
 	result.lang = lang(input);
 	/* initialize all flags */
-	result.isPlainLiteral = false;	
+	result.isPlainLiteral = false;
 	result.isDate = false;
 	result.isDateTime = false;
 	result.isString = false;
 	result.isNumeric = false;
 	result.isDuration = false;
-	
+	result.isTime = false;
+
 	/* flag the literal as simple if there is no language or data type*/
 	if (strlen(result.dtype) == 0 && strlen(result.lang) == 0)
 		result.isPlainLiteral = true;
@@ -8922,7 +9232,7 @@ static parsed_rdf_literal parse_rdf_literal(char *input)
 	}
 	else if ((result.isNumeric = isNumeric(input)))
 	{
-		//elog(WARNING,"literal '%s' is numeric ", result.raw);
+		// elog(WARNING,"literal '%s' is numeric ", result.raw);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DATE) == 0)
 	{
@@ -8936,7 +9246,18 @@ static parsed_rdf_literal parse_rdf_literal(char *input)
 	{
 		result.isDuration = true;
 	}
-
+	else if (strcmp(result.dtype, RDF_XSD_TIME) == 0)
+	{
+		result.isTime = true;
+	}
+	/* 
+	 * allow lexicographic comparison for xsd:anyURI literals, aligning with
+	 * SPARQL 1.1’s treatment of xsd:anyURI as xsd:string. 
+	 */
+	else if (strcmp(result.dtype, RDF_XSD_ANYURI) == 0)
+	{
+		result.isPlainLiteral = true;
+	}
 
 	elog(DEBUG1, "%s exit", __func__);
 	return result;
@@ -8953,13 +9274,16 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 
 	/* 
 	 * plain (no language or data type) and xsd:string literals
-	 * are considered the same, so we only compare their contents.
+	 * are considered the same, so we only compare their contents
+	 * directly.
 	 */
 	if ((a.isPlainLiteral && b.isPlainLiteral) ||
 		(a.isPlainLiteral && b.isString) ||
 		(a.isString && b.isPlainLiteral) ||
 		(a.isString && b.isString))
-		return strcmp(a.lex, b.lex) == 0;
+		return varstr_cmp(a.lex, strlen(a.lex),
+						  b.lex, strlen(b.lex),
+						  DEFAULT_COLLATION_OID) == 0;
 
 	/* 
 	 * plain literals (no language or data type) can only be compared 
@@ -8992,52 +9316,6 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 		(!a.isNumeric && !b.isNumeric) &&
 		strcmp(a.dtype, b.dtype) != 0)
 		return false;
-
-/*
-	if (a.isString && b.isString)
-	{
-
-		bool aHasLang = strlen(a.lang) > 0;
-		bool bHasLang = strlen(b.lang) > 0;
-		bool aHasType;
-		bool bHasType;
-		bool bothNoType;
-
-		if (aHasLang && bHasLang)
-		{
-			elog(DEBUG2, "%s: both language-tagged literals", __func__);
-			if (pg_strcasecmp(a.lang, b.lang) != 0)
-			{
-				elog(DEBUG2, "%s: different language tags: %s vs %s", __func__, a.lang, b.lang);
-				return false;
-			}
-			return strcmp(a.lex, b.lex) == 0;
-		}
-		else if (aHasLang || bHasLang)
-		{
-			elog(DEBUG2, "%s: only one literal has a language tag", __func__);
-			return false;
-		}
-
-		aHasType = a.dtype && strlen(a.dtype) > 0;
-		bHasType = b.dtype && strlen(b.dtype) > 0;
-		bothNoType = !aHasType && !bHasType;
-
-		if (bothNoType || (aHasType && bHasType && strcmp(a.dtype, b.dtype) == 0))
-		{
-			elog(DEBUG2, "%s: both string literals have %s",
-				 __func__, bothNoType ? "no datatype" : "same datatype");
-			return strcmp(a.lex, b.lex) == 0;
-		}
-
-		if ((aHasType && strcmp(a.dtype, RDF_XSD_STRING) == 0 && !bHasType) ||
-			(bHasType && strcmp(b.dtype, RDF_XSD_STRING) == 0 && !aHasType))
-		{
-			elog(DEBUG2, "%s: one literal has xsd:string, other has no datatype", __func__);
-			return strcmp(a.lex, b.lex) == 0;
-		}
-	}
-*/
 
 	if (a.isNumeric && b.isNumeric)
 	{
@@ -9078,19 +9356,14 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 
 	if (a.isDuration && b.isDuration)
 	{
-		Datum a_val = DirectFunctionCall3(
-			interval_in,
-			CStringGetDatum(a.lex),
-			ObjectIdGetDatum(InvalidOid),   // argument type OID is ignored here
-			Int32GetDatum(-1)               // typmod: -1 = unspecified (default)
-		);
-	
-		Datum b_val = DirectFunctionCall3(
-			interval_in,
-			CStringGetDatum(b.lex),
-			ObjectIdGetDatum(InvalidOid),   // argument type OID is ignored here
-			Int32GetDatum(-1)               // typmod: -1 = unspecified (default)
-		);
+		Datum a_val = DirectFunctionCall3(interval_in,
+										  CStringGetDatum(a.lex),
+										  ObjectIdGetDatum(InvalidOid),
+										  Int32GetDatum(-1));
+		Datum b_val = DirectFunctionCall3(interval_in,
+										  CStringGetDatum(b.lex),
+										  ObjectIdGetDatum(InvalidOid),
+										  Int32GetDatum(-1));
 
 		return DatumGetBool(DirectFunctionCall2(interval_eq, a_val, b_val));
 	}
@@ -9099,39 +9372,499 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 	return strcmp(a.lex, b.lex) == 0;
 }
 
-Datum rdf_literal_neq(PG_FUNCTION_ARGS)
+Datum rdf_literal_neq_rdf_literal(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
+	rdf_literal *a = (rdf_literal *) PG_GETARG_POINTER(0);
+	rdf_literal *b = (rdf_literal *) PG_GETARG_POINTER(1);
 
-	char *a_data = pstrdup(VARDATA_ANY(a));
-	char *b_data = pstrdup(VARDATA_ANY(b));
+	// char *a_data = pstrdup(VARDATA_ANY(a));
+	// char *b_data = pstrdup(VARDATA_ANY(b));
 
-	parsed_rdf_literal a_parsed = parse_rdf_literal(a_data);
-	parsed_rdf_literal b_parsed = parse_rdf_literal(b_data);
+	parsed_rdf_literal a_parsed = parse_rdf_literal(VARDATA_ANY(a));
+	parsed_rdf_literal b_parsed = parse_rdf_literal(VARDATA_ANY(b));
 
 	bool result = compare_rdf_literals(a_parsed, b_parsed);
 
 	PG_RETURN_BOOL(!result);
 }
 
-Datum rdf_literal_eq(PG_FUNCTION_ARGS)
+Datum rdf_literal_eq_rdf_literal(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
-
-	// Safely extract the data using the VARATT macros
-	char *a_data = pstrdup(VARDATA_ANY(a));
-	char *b_data = pstrdup(VARDATA_ANY(b));
-
-	// Parse the RDF literals
-	parsed_rdf_literal a_parsed = parse_rdf_literal(a_data);
-	parsed_rdf_literal b_parsed = parse_rdf_literal(b_data);
+	rdf_literal *a = (rdf_literal *) PG_GETARG_POINTER(0);
+	rdf_literal *b = (rdf_literal *) PG_GETARG_POINTER(1);
+	parsed_rdf_literal a_parsed = parse_rdf_literal(VARDATA_ANY(a));
+	parsed_rdf_literal b_parsed = parse_rdf_literal(VARDATA_ANY(b));
 
 	bool result = compare_rdf_literals(a_parsed, b_parsed);
 
 	PG_RETURN_BOOL(result);
 }
+
+static bool LiteralsComparable(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+{
+	/* identify the shared type category between the two literals */
+	bool bothNumeric = rdfnode1.isNumeric && rdfnode2.isNumeric;
+	bool bothDate = rdfnode1.isDate && rdfnode2.isDate;
+	bool bothDateTime = rdfnode1.isDateTime && rdfnode2.isDateTime;
+	bool bothTime = rdfnode1.isTime && rdfnode2.isTime;
+	bool bothDuration = rdfnode1.isDuration && rdfnode2.isDuration;
+	bool bothString = (rdfnode1.isString || rdfnode1.isPlainLiteral) &&	
+					  (rdfnode2.isString || rdfnode2.isPlainLiteral);
+
+	/* check for language-tagged literals (not comparable) */
+	if (strlen(rdfnode1.lang) != 0 || strlen(rdfnode2.lang) !=0)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("cannot compare language-tagged literals")));
+
+	/*
+	 * literals are comparable only if both are of the same comparable category:
+	 * numeric, date, dateTime, or duration
+	 */
+	if (bothNumeric || bothDate || bothDateTime || bothDuration || bothString || bothTime)
+		return true;
+
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("cannot compare literals of different datatypes")));
+}
+
+static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+{
+	Datum arg1, arg2;
+
+	if (!LiteralsComparable(rdfnode1, rdfnode2))
+		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+
+	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
+	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		return false;
+	
+	/* string and plain literals */
+	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
+	{
+		return strcmp(rdfnode1.lex, rdfnode2.lex) < 0; /* unicode codepoint order */
+	}
+
+	/* numeric literals */
+	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
+	{
+		arg1 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(numeric_lt, arg1, arg2));
+	}
+
+	/* xsd:date literals */
+	if (rdfnode1.isDate && rdfnode2.isDate)
+	{
+		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(date_lt, arg1, arg2));
+	}
+
+	/* xsd:dateTime literals */
+	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
+	{
+		/* Check if either literal lacks a timezone */
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL || 
+							strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL || 
+							strpbrk(rdfnode2.lex, "+-") != NULL);
+
+		/* If either literal lacks a timezone, they are incomparable */
+		if (!has_timezone1 || !has_timezone2)
+			return false;
+
+		/* Proceed with timestamp comparison */
+		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													CStringGetDatum(rdfnode1.lex),
+													ObjectIdGetDatum(InvalidOid),
+													Int32GetDatum(-1)));
+		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													CStringGetDatum(rdfnode2.lex),
+													ObjectIdGetDatum(InvalidOid),
+													Int32GetDatum(-1)));
+		return timestamptz_cmp_internal(arg1, arg2) < 0;
+	}
+
+	/* xsd:time literals */
+	if (rdfnode1.isTime && rdfnode2.isTime)
+	{
+		arg1 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		return DatumGetBool(DirectFunctionCall2(time_lt, arg1, arg2));
+	}
+
+	/* xsd:duration literals */
+	if (rdfnode1.isDuration && rdfnode2.isDuration)
+	{
+		arg1 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(interval_lt, arg1, arg2));
+	}
+
+	return false;
+}
+
+Datum rdf_literal_lt_rdf_literal(PG_FUNCTION_ARGS)
+{
+	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
+	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
+	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
+	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+
+	PG_RETURN_BOOL(rdf_literal_lt(rdfnode1, rdfnode2));
+}
+
+static bool rdf_literal_gt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+{
+	Datum arg1, arg2;
+
+	if (!LiteralsComparable(rdfnode1, rdfnode2))
+		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+
+	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
+	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		return false;
+
+	/* string and plain literals */
+	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
+	{
+		return strcmp(rdfnode1.lex, rdfnode2.lex) > 0; /* unicode codepoint order */
+	}
+
+	/* numeric literals */
+	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
+	{
+		arg1 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(numeric_gt, arg1, arg2));
+	}
+
+	/* xsd:date literals */
+	if (rdfnode1.isDate && rdfnode2.isDate)
+	{
+		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(date_gt, arg1, arg2));
+	}
+
+	/* xsd:dateTime literals */
+	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
+	{
+		/* Check if either literal lacks a timezone */
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
+							  strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
+							  strpbrk(rdfnode2.lex, "+-") != NULL);
+
+		/* If either literal lacks a timezone, they are incomparable */
+		if (!has_timezone1 || !has_timezone2)
+			return false;
+
+		/* Proceed with timestamp comparison */
+		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													   CStringGetDatum(rdfnode1.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
+		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													   CStringGetDatum(rdfnode2.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
+		return timestamptz_cmp_internal(arg1, arg2) > 0;
+	}
+
+	/* xsd:time literals */
+	if (rdfnode1.isTime && rdfnode2.isTime)
+	{
+		arg1 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		return DatumGetBool(DirectFunctionCall2(time_gt, arg1, arg2));
+	}
+
+	/* xsd:duration literals */
+	if (rdfnode1.isDuration && rdfnode2.isDuration)
+	{
+		arg1 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(interval_gt, arg1, arg2));
+	}
+
+	return false;
+}
+
+Datum rdf_literal_gt_rdf_literal(PG_FUNCTION_ARGS)
+{
+	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
+	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
+	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
+	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+
+	PG_RETURN_BOOL(rdf_literal_gt(rdfnode1, rdfnode2));
+}
+
+
+
+
+
+static bool rdf_literal_le(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+{
+	Datum arg1, arg2;
+
+	if (!LiteralsComparable(rdfnode1, rdfnode2))
+		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+
+	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
+	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		return false;
+
+	/* string and plain literals */
+	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
+	{
+		return strcmp(rdfnode1.lex, rdfnode2.lex) <= 0; /* unicode codepoint order */
+	}
+
+	/* numeric literals */
+	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
+	{
+		arg1 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(numeric_le, arg1, arg2));
+	}
+
+	/* xsd:date literals */
+	if (rdfnode1.isDate && rdfnode2.isDate)
+	{
+		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(date_le, arg1, arg2));
+	}
+
+	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
+	{
+		/* Check if either literal lacks a timezone */
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL || 
+							strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL || 
+							strpbrk(rdfnode2.lex, "+-") != NULL);
+
+		/* If either literal lacks a timezone, they are incomparable */
+		if (!has_timezone1 || !has_timezone2)
+			return false;
+
+		/* Proceed with timestamp comparison */
+		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													CStringGetDatum(rdfnode1.lex),
+													ObjectIdGetDatum(InvalidOid),
+													Int32GetDatum(-1)));
+		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													CStringGetDatum(rdfnode2.lex),
+													ObjectIdGetDatum(InvalidOid),
+													Int32GetDatum(-1)));
+		return timestamptz_cmp_internal(arg1, arg2) <= 0;
+	}
+
+	/* xsd:time literals */
+	if (rdfnode1.isTime && rdfnode2.isTime)
+	{
+		arg1 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		return DatumGetBool(DirectFunctionCall2(time_le, arg1, arg2));
+	}
+
+	/* xsd:duration literals */
+	if (rdfnode1.isDuration && rdfnode2.isDuration)
+	{
+		arg1 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(interval_le, arg1, arg2));
+	}
+
+	return false;
+}
+
+Datum rdf_literal_le_rdf_literal(PG_FUNCTION_ARGS)
+{
+	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
+	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
+	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
+	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+
+	PG_RETURN_BOOL(rdf_literal_le(rdfnode1, rdfnode2));
+}
+
+
+
+static bool rdf_literal_ge(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+{
+	Datum arg1, arg2;
+
+	if (!LiteralsComparable(rdfnode1, rdfnode2))
+		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+
+	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
+	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		return false;
+
+	/* string and plain literals */
+	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
+	{
+		return strcmp(rdfnode1.lex, rdfnode2.lex) >= 0; /* unicode codepoint order */
+	}
+
+	/* numeric literals */
+	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
+	{
+		arg1 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(numeric_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(numeric_ge, arg1, arg2));
+	}
+
+	/* xsd:date literals */
+	if (rdfnode1.isDate && rdfnode2.isDate)
+	{
+		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(date_ge, arg1, arg2));
+	}
+
+	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
+	{
+		/* Check if either literal lacks a timezone */
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL || 
+							strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL || 
+							strpbrk(rdfnode2.lex, "+-") != NULL);
+
+		/* If either literal lacks a timezone, they are incomparable */
+		if (!has_timezone1 || !has_timezone2)
+			return false;
+
+		/* Proceed with timestamp comparison */
+		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													CStringGetDatum(rdfnode1.lex),
+													ObjectIdGetDatum(InvalidOid),
+													Int32GetDatum(-1)));
+		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+													CStringGetDatum(rdfnode2.lex),
+													ObjectIdGetDatum(InvalidOid),
+													Int32GetDatum(-1)));
+		return timestamptz_cmp_internal(arg1, arg2) >= 0;
+	}
+
+	/* xsd:time literals */
+	if (rdfnode1.isTime && rdfnode2.isTime)
+	{
+		arg1 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(time_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		return DatumGetBool(DirectFunctionCall2(time_ge, arg1, arg2));
+	}
+
+	/* xsd:duration literals */
+	if (rdfnode1.isDuration && rdfnode2.isDuration)
+	{
+		arg1 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode1.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(interval_in,
+								   CStringGetDatum(rdfnode2.lex),
+								   ObjectIdGetDatum(InvalidOid),
+								   Int32GetDatum(-1));
+
+		return DatumGetBool(DirectFunctionCall2(interval_ge, arg1, arg2));
+	}
+
+	return false;
+}
+
+Datum rdf_literal_ge_rdf_literal(PG_FUNCTION_ARGS)
+{
+	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
+	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
+	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
+	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+
+	PG_RETURN_BOOL(rdf_literal_ge(rdfnode1, rdfnode2));
+}
+
 
 /* numeric */
 Datum rdf_literal_to_numeric(PG_FUNCTION_ARGS)
@@ -11171,4 +11904,137 @@ Datum interval_ge_rdf_literal(PG_FUNCTION_ARGS)
 												   rdf_interval));
 
 	PG_RETURN_BOOL(result);
+}
+
+static char *unescape_unicode(const char *input)
+{
+    StringInfoData buf;
+    initStringInfo(&buf);
+
+    elog(DEBUG2, "%s: Input='%s'", __func__, input);
+
+    for (const char *p = input; *p;)
+    {
+        if (p[0] == '\\' && p[1] == 'u')
+        {
+            /* \uXXXX (exactly 4 hex digits) */
+            if (p[2] && p[3] && p[4] && p[5] &&
+                isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
+                (!p[6] || !isxdigit(p[6])))
+            {
+                uint16_t codeunit;
+                char hex[5];
+                unsigned char utf8[5];
+                int len;
+
+                memcpy(hex, p + 2, 4);
+                hex[4] = '\0';
+                sscanf(hex, "%hx", &codeunit);
+                elog(DEBUG2, "%s: Parsed \\u%s to codeunit U+%04X", __func__, hex, codeunit);
+
+                /* Check for high surrogate */
+                if (codeunit >= 0xD800 && codeunit <= 0xDBFF &&
+                    p[6] == '\\' && p[7] == 'u' &&
+                    p[8] && p[9] && p[10] && p[11] &&
+                    isxdigit(p[8]) && isxdigit(p[9]) && isxdigit(p[10]) && isxdigit(p[11]) &&
+                    (!p[12] || !isxdigit(p[12])))
+                {
+                    uint16_t low;
+                    char lowhex[5];
+                    uint32_t full;
+
+                    memcpy(lowhex, p + 8, 4);
+                    lowhex[4] = '\0';
+                    sscanf(lowhex, "%hx", &low);
+
+                    if (low >= 0xDC00 && low <= 0xDFFF)
+                    {
+                        full = 0x10000 + (((codeunit - 0xD800) << 10) | (low - 0xDC00));
+                        elog(DEBUG2, "%s: Surrogate pair U+%04X U+%04X -> U+%X", __func__, codeunit, low, full);
+                        memset(utf8, 0, sizeof(utf8));
+                        pg_unicode_to_server(full, utf8);
+                        len = pg_utf_mblen(utf8);
+                        appendBinaryStringInfo(&buf, utf8, len);
+                        p += 12;
+                        continue;
+                    }
+                }
+
+                if (codeunit >= 0xD800 && codeunit <= 0xDFFF)
+                {
+                    elog(DEBUG2, "%s: Lone surrogate U+%04X -> U+FFFD", __func__, codeunit);
+                    pg_unicode_to_server(0xFFFD, utf8);
+                    len = pg_utf_mblen(utf8);
+                    appendBinaryStringInfo(&buf, utf8, len);
+                    p += 6;
+                    continue;
+                }
+
+                memset(utf8, 0, sizeof(utf8));
+                pg_unicode_to_server(codeunit, utf8);
+                len = pg_utf_mblen(utf8);
+                appendBinaryStringInfo(&buf, utf8, len);
+                p += 6;
+                continue;
+            }
+            else
+            {
+                elog(DEBUG2, "%s: Invalid \\u sequence at '%s' -> literal", __func__, p);
+                appendStringInfoString(&buf, "\\u");
+                p += 2;
+                for (int i = 0; i < 4 && p[0] && isxdigit(p[0]); i++)
+                    appendStringInfoChar(&buf, *p++);
+                continue;
+            }
+        }
+        else if (p[0] == '\\' && p[1] == 'U')
+        {
+            /* \UXXXXXXXX (exactly 8 hex digits) */
+            if (p[2] && p[3] && p[4] && p[5] && p[6] && p[7] && p[8] && p[9] &&
+                isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
+                isxdigit(p[6]) && isxdigit(p[7]) && isxdigit(p[8]) && isxdigit(p[9]) &&
+                (!p[10] || !isxdigit(p[10])))
+            {
+                char hex[9];
+                uint32_t codepoint;
+                unsigned char utf8[5];
+                int len;
+
+                memcpy(hex, p + 2, 8);
+                hex[8] = '\0';
+                sscanf(hex, "%x", &codepoint);
+                elog(DEBUG2, "%s: Parsed \\U%s to codepoint U+%X", __func__, hex, codepoint);
+
+                if (codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF))
+                {
+                    elog(DEBUG2, "%s: Invalid codepoint U+%X -> U+FFFD", __func__, codepoint);
+                    codepoint = 0xFFFD;
+                }
+
+                memset(utf8, 0, sizeof(utf8));
+                pg_unicode_to_server(codepoint, utf8);
+                len = pg_utf_mblen(utf8);
+                appendBinaryStringInfo(&buf, utf8, len);
+                p += 10;
+                continue;
+            }
+            else
+            {
+                elog(DEBUG2, "%s: Invalid \\U sequence at '%s' -> literal", __func__, p);
+                appendStringInfoString(&buf, "\\U");
+                p += 2;
+                for (int i = 0; i < 8 && p[0] && isxdigit(p[0]); i++)
+                    appendStringInfoChar(&buf, *p++);
+                continue;
+            }
+        }
+        else
+        {
+            /* Preserve all other characters, including \t, \n, \", etc. */
+            appendStringInfoChar(&buf, *p++);
+        }
+    }
+
+    elog(DEBUG2, "%s: Output='%s'", __func__, buf.data);
+    return buf.data;
 }
