@@ -3470,13 +3470,13 @@ SELECT sparql.round('"-2.5"^^xsd:int');
 ERROR:  invalid lexical form for xsd:int: "-2.5"
 CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round('');
-ERROR:  invalid RDF literal syntax: ""
+ERROR:  invalid input syntax for type numeric: ""
 CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round('""');
 ERROR:  invalid input syntax for type numeric: ""
 CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round(' ');
-ERROR:  invalid RDF literal syntax: " "
+ERROR:  invalid input syntax for type numeric: " "
 CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
 SELECT sparql.round('" "');
 ERROR:  invalid input syntax for type numeric: " "

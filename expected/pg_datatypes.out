@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 SHOW datestyle;
    DateStyle   
 ---------------
@@ -246,9 +247,7 @@ SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:string'::rdf_literal;
 (1 row)
 
 SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:date'::rdf_literal;
-ERROR:  invalid lexical form for xsd:date: "42"
-LINE 1: SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:date'::rdf_...
-                                              ^
+ERROR:  invalid lexical form for xsd:date: "42" at character 39
 SELECT '"-0"^^xsd:int'::rdf_literal = '"0"^^xsd:int'::rdf_literal; -- Should return t (numeric zero)
  ?column? 
 ----------
@@ -292,9 +291,7 @@ SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-11"^^xsd:date'::rdf_lit
 (1 row)
 
 SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""^^xsd:date'::rdf_literal;
-ERROR:  invalid lexical form for xsd:date: ""
-LINE 1: SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""^^xsd:date...
-                                                       ^
+ERROR:  invalid lexical form for xsd:date: "" at character 48
 SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""'::rdf_literal;
  ?column? 
 ----------
@@ -315,7 +312,6 @@ SELECT '"0001-01-01"^^xsd:date'::rdf_literal = '"0001-01-01"^^xsd:date'::rdf_lit
 
 SELECT '"2025-13-01T12:00:00"^^xsd:dateTime'::rdf_literal = '"2025-13-01T12:00:00"^^xsd:dateTime'::rdf_literal; -- Should error (invalid month)
 ERROR:  date/time field value out of range: "2025-13-01T12:00:00"
-HINT:  Perhaps you need a different "datestyle" setting.
 SELECT '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdf_literal; -- Should error (invalid hour)
 ERROR:  date/time field value out of range: "2025-04-25T25:00:00Z"
 SELECT '"1.0E308"^^xsd:double'::rdf_literal = '"1.0E308"^^xsd:double'::rdf_literal; -- Should return t or error if overflow
@@ -325,9 +321,7 @@ SELECT '"1.0E308"^^xsd:double'::rdf_literal = '"1.0E308"^^xsd:double'::rdf_liter
 (1 row)
 
 SELECT '"invalid"^^xsd:dateTime'::rdf_literal = '"invalid"^^xsd:dateTime'::rdf_literal; -- Should error
-ERROR:  invalid lexical form for xsd:dateTime: "invalid"
-LINE 1: SELECT '"invalid"^^xsd:dateTime'::rdf_literal = '"invalid"^^...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "invalid" at character 8
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"18:44:38"^^xsd:time'::rdf_literal;
  ?column? 
 ----------
@@ -371,9 +365,7 @@ SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"foo"'::rdf_literal;
 (1 row)
 
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""^^xsd:time'::rdf_literal;
-ERROR:  invalid lexical form for xsd:time: ""
-LINE 1: SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""^^xsd:time':...
-                                                     ^
+ERROR:  invalid lexical form for xsd:time: "" at character 46
 SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""'::rdf_literal;
  ?column? 
 ----------
@@ -387,41 +379,23 @@ SELECT '"18:44:38"^^xsd:time'::rdf_literal = ''::rdf_literal;
 (1 row)
 
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-29 08:48:33"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^xsd:string'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '""^^xsd:dateTime'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '""'::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ''::rdf_literal;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38"
-LINE 1: SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ...
-               ^
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal;
  ?column? 
 ----------
@@ -791,13 +765,9 @@ SELECT '"NaN"^^xsd:double'::rdf_literal != 0::double precision;
 (1 row)
 
 SELECT '"Infinity"^^xsd:double'::rdf_literal > 1e308::double precision;
-ERROR:  invalid lexical form for xsd:double: "Infinity"
-LINE 1: SELECT '"Infinity"^^xsd:double'::rdf_literal > 1e308::double...
-               ^
+ERROR:  invalid lexical form for xsd:double: "Infinity" at character 8
 SELECT '"-Infinity"^^xsd:double'::rdf_literal < -1e308::double precision;
-ERROR:  invalid lexical form for xsd:double: "-Infinity"
-LINE 1: SELECT '"-Infinity"^^xsd:double'::rdf_literal < -1e308::doub...
-               ^
+ERROR:  invalid lexical form for xsd:double: "-Infinity" at character 8
 SELECT 42.73000::double precision = '"42.73"^^xsd:double'::rdf_literal::double precision;
  ?column? 
 ----------
@@ -853,13 +823,9 @@ SELECT 0::double precision != '"NaN"^^xsd:double'::rdf_literal;
 (1 row)
 
 SELECT 1e308::double precision > '"Infinity"^^xsd:double'::rdf_literal;
-ERROR:  invalid lexical form for xsd:double: "Infinity"
-LINE 1: SELECT 1e308::double precision > '"Infinity"^^xsd:double'::r...
-                                         ^
+ERROR:  invalid lexical form for xsd:double: "Infinity" at character 34
 SELECT -1e308::double precision < '"-Infinity"^^xsd:double'::rdf_literal;
-ERROR:  invalid lexical form for xsd:double: "-Infinity"
-LINE 1: SELECT -1e308::double precision < '"-Infinity"^^xsd:double':...
-                                          ^
+ERROR:  invalid lexical form for xsd:double: "-Infinity" at character 35
 /* real (float4) <-> rdf_literal */
 SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42.73::real;
  ?column? 
@@ -1804,13 +1770,9 @@ SELECT '2020-05-13'::date <= '2020-05-12'::date::rdf_literal;
 (1 row)
 
 SELECT '"invalid"^^xsd:date'::rdf_literal::date;
-ERROR:  invalid lexical form for xsd:date: "invalid"
-LINE 1: SELECT '"invalid"^^xsd:date'::rdf_literal::date;
-               ^
+ERROR:  invalid lexical form for xsd:date: "invalid" at character 8
 SELECT '"2020-13-01"^^xsd:date'::rdf_literal::date;
-ERROR:  invalid lexical form for xsd:date: "2020-13-01"
-LINE 1: SELECT '"2020-13-01"^^xsd:date'::rdf_literal::date;
-               ^
+ERROR:  invalid lexical form for xsd:date: "2020-13-01" at character 8
 SELECT '0001-01-01'::date::rdf_literal = '0001-01-01'::date;
  ?column? 
 ----------
@@ -1909,13 +1871,9 @@ SELECT '18:44:59'::time <= '18:44:38'::time::rdf_literal;
 (1 row)
 
 SELECT '-18:44:38'::time::rdf_literal;
-ERROR:  time zone displacement out of range: "-18:44:38"
-LINE 1: SELECT '-18:44:38'::time::rdf_literal;
-               ^
+ERROR:  time zone displacement out of range: "-18:44:38" at character 8
 SELECT 'invalid'::time::rdf_literal;
-ERROR:  invalid input syntax for type time: "invalid"
-LINE 1: SELECT 'invalid'::time::rdf_literal;
-               ^
+ERROR:  invalid input syntax for type time: "invalid" at character 8
 /* timetz (with time zone) <-> rdf_literal */
 SELECT '04:05:06-08:00'::timetz::rdf_literal = '04:05:06-08:00'::timetz;
  ?column? 

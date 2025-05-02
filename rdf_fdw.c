@@ -38,7 +38,7 @@
 #include "foreign/fdwapi.h"
 #include "foreign/foreign.h"
 #include "libpq/pqsignal.h"
-#include "mb/pg_wchar.h"
+//#include "mb/pg_wchar.h"
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
@@ -90,11 +90,11 @@
 #include "funcapi.h"
 #include "librdf.h"
 #if PG_VERSION_NUM >= 100000
+#include "utils/varlena.h"
 #include "common/md5.h"
 #else
 #include "libpq/md5.h"
 #endif
-#include "utils/varlena.h"
 #include "mb/pg_wchar.h"
 #include <regex.h>
 
@@ -974,6 +974,9 @@ static char *rdf_concat(char *left, char *right);
 
 static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2);
 static bool LiteralsComparable(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2);
+#if PG_VERSION_NUM < 130000
+static void pg_unicode_to_server(pg_wchar c, unsigned char *utf8);
+#endif
 static char *unescape_unicode(const char *input);
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
@@ -9081,7 +9084,7 @@ Datum rdf_literal_in(PG_FUNCTION_ARGS)
 {
 	char *str_in = PG_GETARG_CSTRING(0);
 	char *lexical;
-	char *normalized;
+	//char *normalized;
 	char* lan;
 	char *dtype;
 	rdf_literal *result;
@@ -9094,6 +9097,7 @@ Datum rdf_literal_in(PG_FUNCTION_ARGS)
 	// 			 errmsg("invalid RDF literal syntax: \"%s\"", str_in)));
 	
 	initStringInfo(&r);
+
 	lexical = lex(str_in);
 	lan = lang(str_in);
 	dtype = datatype(str_in);
@@ -9135,21 +9139,23 @@ Datum rdf_literal_in(PG_FUNCTION_ARGS)
 					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 						errmsg("invalid language tag: \"%s\"", lan)));
 
-		normalized = strlang(unescape_unicode(lexical), lan);
+		//normalized = strlang(unescape_unicode(lexical), lan);
+		appendStringInfo(&r, "%s", strlang(unescape_unicode(lexical), lan));
 	}
 	else if (strlen(dtype) != 0)
-		normalized = strdt(unescape_unicode(lexical), dtype);
+		//normalized = strdt(unescape_unicode(lexical), dtype);
+		appendStringInfo(&r, "%s", strdt(unescape_unicode(lexical), dtype));
 	else
 	{
 		appendStringInfo(&r,"\"%s\"", unescape_unicode(lexical));
-		normalized = r.data;
+		//normalized = r.data;
 	}
 		// normalized = str((char *) unescape_unicode(lexical));
 
-	len = strlen(normalized);
+	len = strlen(r.data);
 	result = (rdf_literal *)palloc(VARHDRSZ + len + 1);
 	SET_VARSIZE(result, VARHDRSZ + len);
-	memcpy(result->vl_data, normalized, len);
+	memcpy(result->vl_data, r.data, len);
 	/* explicitly null-terminate! */
 	result->vl_data[len] = '\0';
 
@@ -9319,16 +9325,30 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 
 	if (a.isNumeric && b.isNumeric)
 	{
-		Datum a_val = DirectFunctionCall3(numeric_in,
+
+		Datum a_val;
+		Datum b_val;
+
+		if (strcmp(a.dtype, RDF_XSD_DOUBLE) == 0)
+		{
+			a_val = DirectFunctionCall1(float8in, CStringGetDatum(a.lex));
+			b_val = DirectFunctionCall1(float8in, CStringGetDatum(b.lex));
+
+			return DatumGetBool(DirectFunctionCall2(float8eq, a_val, b_val));
+		}
+		else
+		{
+			a_val = DirectFunctionCall3(numeric_in,
 										  CStringGetDatum(a.lex),
 										  ObjectIdGetDatum(InvalidOid),
 										  Int32GetDatum(-1));
-		Datum b_val = DirectFunctionCall3(numeric_in,
+			b_val = DirectFunctionCall3(numeric_in,
 										  CStringGetDatum(b.lex),
 										  ObjectIdGetDatum(InvalidOid),
 										  Int32GetDatum(-1));
 
-		return DatumGetBool(DirectFunctionCall2(numeric_eq, a_val, b_val));
+			return DatumGetBool(DirectFunctionCall2(numeric_eq, a_val, b_val));
+		}
 	}
 
 	if (a.isDate && b.isDate)
@@ -9449,17 +9469,27 @@ static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{
-		arg1 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
+	{		
+		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
+		{
+			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
+			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
 
-		return DatumGetBool(DirectFunctionCall2(numeric_lt, arg1, arg2));
+			return DatumGetBool(DirectFunctionCall2(float8lt, arg1, arg2));
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+
+			return DatumGetBool(DirectFunctionCall2(numeric_lt, arg1, arg2));
+		}
 	}
 
 	/* xsd:date literals */
@@ -9554,20 +9584,29 @@ static bool rdf_literal_gt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 	{
 		return strcmp(rdfnode1.lex, rdfnode2.lex) > 0; /* unicode codepoint order */
 	}
-
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{
-		arg1 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
+	{		
+		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
+		{
+			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
+			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
 
-		return DatumGetBool(DirectFunctionCall2(numeric_gt, arg1, arg2));
+			return DatumGetBool(DirectFunctionCall2(float8gt, arg1, arg2));
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+
+			return DatumGetBool(DirectFunctionCall2(numeric_gt, arg1, arg2));
+		}
 	}
 
 	/* xsd:date literals */
@@ -9669,17 +9708,27 @@ static bool rdf_literal_le(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{
-		arg1 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
+	{		
+		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
+		{
+			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
+			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
 
-		return DatumGetBool(DirectFunctionCall2(numeric_le, arg1, arg2));
+			return DatumGetBool(DirectFunctionCall2(float8le, arg1, arg2));
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+
+			return DatumGetBool(DirectFunctionCall2(numeric_le, arg1, arg2));
+		}
 	}
 
 	/* xsd:date literals */
@@ -9778,17 +9827,27 @@ static bool rdf_literal_ge(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{
-		arg1 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(numeric_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
+	{		
+		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
+		{
+			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
+			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
 
-		return DatumGetBool(DirectFunctionCall2(numeric_ge, arg1, arg2));
+			return DatumGetBool(DirectFunctionCall2(float8ge, arg1, arg2));
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(numeric_in,
+									   CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+
+			return DatumGetBool(DirectFunctionCall2(numeric_ge, arg1, arg2));
+		}
 	}
 
 	/* xsd:date literals */
@@ -10313,7 +10372,12 @@ Datum float4_to_rdf_literal(PG_FUNCTION_ARGS)
 	StringInfoData buf;
 	initStringInfo(&buf);
 
-	appendStringInfo(&buf, "\"%g\"^^%s", val, RDF_XSD_FLOAT);
+	if (isnan(val))
+		appendStringInfo(&buf, "\"NaN\"^^%s", RDF_XSD_FLOAT);
+	else if (isinf(val))
+		appendStringInfo(&buf, val < 0 ? "\"-Infinity\"^^%s" : "\"Infinity\"^^%s", RDF_XSD_FLOAT);
+	else
+		appendStringInfo(&buf, "\"%g\"^^%s", val, RDF_XSD_FLOAT);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
@@ -11906,6 +11970,44 @@ Datum interval_ge_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
+#if PG_VERSION_NUM < 130000
+static void
+pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
+{
+    unsigned char utf8buf[8];  /* Large enough for UTF-8 encoding */
+    int len;
+    unsigned char *converted;
+
+    /* Convert Unicode code point to UTF-8 */
+    if (unicode_to_utf8(c, utf8buf) == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
+                 errmsg("invalid Unicode code point: 0x%04x", c)));
+
+    len = pg_utf_mblen(utf8buf);  /* Get the length of the encoded UTF-8 character */
+
+    if (GetDatabaseEncoding() == PG_UTF8)
+    {
+        memcpy(utf8, utf8buf, len);
+    }
+    else
+    {
+        converted = pg_do_encoding_conversion(utf8buf, len,
+                                              PG_UTF8, GetDatabaseEncoding());
+
+        if (converted == NULL)
+            ereport(ERROR,
+                    (errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
+                     errmsg("Unicode character 0x%04x cannot be converted to server encoding \"%s\"",
+                            c, GetDatabaseEncodingName())));
+
+        memcpy(utf8, converted, strlen((const char *)converted));
+    }
+
+    utf8[len] = '\0';  /* Null-terminate (safe if utf8 has size ≥ 5) */
+}
+#endif
+
 static char *unescape_unicode(const char *input)
 {
     StringInfoData buf;
@@ -11952,9 +12054,9 @@ static char *unescape_unicode(const char *input)
                         full = 0x10000 + (((codeunit - 0xD800) << 10) | (low - 0xDC00));
                         elog(DEBUG2, "%s: Surrogate pair U+%04X U+%04X -> U+%X", __func__, codeunit, low, full);
                         memset(utf8, 0, sizeof(utf8));
-                        pg_unicode_to_server(full, utf8);
-                        len = pg_utf_mblen(utf8);
-                        appendBinaryStringInfo(&buf, utf8, len);
+                        pg_unicode_to_server(full, (unsigned char *)utf8);
+                        len = pg_utf_mblen( (const unsigned char *)utf8);
+                        appendBinaryStringInfo(&buf, (const char *)utf8, len);
                         p += 12;
                         continue;
                     }
@@ -11963,17 +12065,17 @@ static char *unescape_unicode(const char *input)
                 if (codeunit >= 0xD800 && codeunit <= 0xDFFF)
                 {
                     elog(DEBUG2, "%s: Lone surrogate U+%04X -> U+FFFD", __func__, codeunit);
-                    pg_unicode_to_server(0xFFFD, utf8);
+                    pg_unicode_to_server(0xFFFD, (unsigned char *)utf8);
                     len = pg_utf_mblen(utf8);
-                    appendBinaryStringInfo(&buf, utf8, len);
+                    appendBinaryStringInfo(&buf, (const char*)utf8, len);
                     p += 6;
                     continue;
                 }
 
                 memset(utf8, 0, sizeof(utf8));
-                pg_unicode_to_server(codeunit, utf8);
+                pg_unicode_to_server(codeunit, (unsigned char *)utf8);
                 len = pg_utf_mblen(utf8);
-                appendBinaryStringInfo(&buf, utf8, len);
+                appendBinaryStringInfo(&buf, (const char*)utf8, len);
                 p += 6;
                 continue;
             }
@@ -12014,7 +12116,7 @@ static char *unescape_unicode(const char *input)
                 memset(utf8, 0, sizeof(utf8));
                 pg_unicode_to_server(codepoint, utf8);
                 len = pg_utf_mblen(utf8);
-                appendBinaryStringInfo(&buf, utf8, len);
+                appendBinaryStringInfo(&buf, (const char*) utf8, len);
                 p += 10;
                 continue;
             }

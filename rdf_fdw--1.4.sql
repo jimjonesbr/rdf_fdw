@@ -162,8 +162,7 @@ CREATE OPERATOR < (
     RIGHTARG = rdf_literal,
     PROCEDURE = rdf_literal_lt_rdf_literal,
     COMMUTATOR = '>',
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_rdf_literal(rdf_literal, rdf_literal)
@@ -176,8 +175,7 @@ CREATE OPERATOR > (
     RIGHTARG = rdf_literal,
     PROCEDURE = rdf_literal_gt_rdf_literal,
     COMMUTATOR = '<',
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_rdf_literal(rdf_literal, rdf_literal)
@@ -190,8 +188,7 @@ CREATE OPERATOR <= (
     RIGHTARG = rdf_literal,
     PROCEDURE = rdf_literal_le_rdf_literal,
     COMMUTATOR = '>=',
-    RESTRICT = scalarltsel,
-    JOIN = scalarlejoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_rdf_literal(rdf_literal, rdf_literal)
@@ -204,8 +201,7 @@ CREATE OPERATOR >= (
     RIGHTARG = rdf_literal,
     PROCEDURE = rdf_literal_ge_rdf_literal,
     COMMUTATOR = '<=',
-    RESTRICT = scalargtsel,
-    JOIN = scalargejoinsel
+    RESTRICT = scalargtsel
 );
 
 /* rdf_literal OP numeric */
@@ -220,8 +216,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_numeric,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_numeric(rdf_literal, numeric)
@@ -235,8 +230,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_numeric,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_numeric(rdf_literal, numeric)
@@ -249,8 +243,7 @@ CREATE OPERATOR < (
     RIGHTARG = numeric,
     PROCEDURE = rdf_literal_lt_numeric,
     COMMUTATOR = '>',
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_numeric(rdf_literal, numeric)
@@ -263,8 +256,7 @@ CREATE OPERATOR > (
     RIGHTARG = numeric,
     PROCEDURE = rdf_literal_gt_numeric,
     COMMUTATOR = '<',
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_numeric(rdf_literal, numeric)
@@ -277,8 +269,7 @@ CREATE OPERATOR <= (
     RIGHTARG = numeric,
     PROCEDURE = rdf_literal_le_numeric,
     COMMUTATOR = '>=',
-    RESTRICT = scalarltsel,
-    JOIN = scalarlejoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_numeric(rdf_literal, numeric)
@@ -291,8 +282,7 @@ CREATE OPERATOR >= (
     RIGHTARG = numeric,
     PROCEDURE = rdf_literal_ge_numeric,
     COMMUTATOR = '<=',
-    RESTRICT = scalargtsel,
-    JOIN = scalargejoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_to_numeric(rdf_literal)
@@ -323,8 +313,7 @@ CREATE OPERATOR = (
     PROCEDURE = numeric_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION numeric_neq_rdf_literal(numeric, rdf_literal)
@@ -338,8 +327,7 @@ CREATE OPERATOR <> (
     PROCEDURE = numeric_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION numeric_lt_rdf_literal(numeric, rdf_literal)
@@ -352,8 +340,7 @@ CREATE OPERATOR < (
     RIGHTARG = rdf_literal,
     PROCEDURE = numeric_lt_rdf_literal,
     COMMUTATOR = '>',
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION numeric_gt_rdf_literal(numeric, rdf_literal)
@@ -366,8 +353,7 @@ CREATE OPERATOR > (
     RIGHTARG = rdf_literal,
     PROCEDURE = numeric_gt_rdf_literal,
     COMMUTATOR = '<',
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION numeric_le_rdf_literal(numeric, rdf_literal)
@@ -380,8 +366,7 @@ CREATE OPERATOR <= (
     RIGHTARG = rdf_literal,
     PROCEDURE = numeric_le_rdf_literal,
     COMMUTATOR = '>=',
-    RESTRICT = scalarltsel,
-    JOIN = scalarlejoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION numeric_ge_rdf_literal(numeric, rdf_literal)
@@ -394,8 +379,7 @@ CREATE OPERATOR >= (
     RIGHTARG = rdf_literal,
     PROCEDURE = numeric_ge_rdf_literal,
     COMMUTATOR = '<=',
-    RESTRICT = scalargtsel,
-    JOIN = scalargejoinsel
+    RESTRICT = scalargtsel
 );
 
 /* rdf_literal OP float8 (double precision) */
@@ -410,8 +394,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_float8,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_float8(rdf_literal, float8)
@@ -425,8 +408,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_float8,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_float8(rdf_literal, float8)
@@ -440,8 +422,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_float8,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_float8(rdf_literal, float8)
@@ -455,8 +436,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_float8,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_float8(rdf_literal, float8)
@@ -470,8 +450,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_float8,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_float8(rdf_literal, float8)
@@ -485,8 +464,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_float8,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_to_float8(rdf_literal)
@@ -509,8 +487,7 @@ CREATE OPERATOR = (
     PROCEDURE = float8_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION float8_neq_rdf_literal(float8, rdf_literal)
@@ -524,8 +501,7 @@ CREATE OPERATOR <> (
     PROCEDURE = float8_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION float8_lt_rdf_literal(float8, rdf_literal)
@@ -539,8 +515,7 @@ CREATE OPERATOR < (
     PROCEDURE = float8_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION float8_gt_rdf_literal(float8, rdf_literal)
@@ -554,8 +529,7 @@ CREATE OPERATOR > (
     PROCEDURE = float8_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION float8_le_rdf_literal(float8, rdf_literal)
@@ -569,8 +543,7 @@ CREATE OPERATOR <= (
     PROCEDURE = float8_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION float8_ge_rdf_literal(float8, rdf_literal)
@@ -584,8 +557,7 @@ CREATE OPERATOR >= (
     PROCEDURE = float8_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION float8_to_rdf_literal(float8)
@@ -617,8 +589,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_float4,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_float4(rdf_literal, float4)
@@ -632,8 +603,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_float4,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_float4(rdf_literal, float4)
@@ -647,8 +617,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_float4,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_float4(rdf_literal, float4)
@@ -662,8 +631,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_float4,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_float4(rdf_literal, float4)
@@ -677,8 +645,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_float4,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_float4(rdf_literal, float4)
@@ -692,8 +659,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_float4,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* float4 (real) OP rdf_literal */
@@ -716,8 +682,7 @@ CREATE OPERATOR = (
     PROCEDURE = float4_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION float4_neq_rdf_literal(float4, rdf_literal)
@@ -731,8 +696,7 @@ CREATE OPERATOR <> (
     PROCEDURE = float4_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION float4_lt_rdf_literal(float4, rdf_literal)
@@ -746,8 +710,7 @@ CREATE OPERATOR < (
     PROCEDURE = float4_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION float4_gt_rdf_literal(float4, rdf_literal)
@@ -761,8 +724,7 @@ CREATE OPERATOR > (
     PROCEDURE = float4_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION float4_le_rdf_literal(float4, rdf_literal)
@@ -776,8 +738,7 @@ CREATE OPERATOR <= (
     PROCEDURE = float4_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION float4_ge_rdf_literal(float4, rdf_literal)
@@ -791,8 +752,7 @@ CREATE OPERATOR >= (
     PROCEDURE = float4_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* rdf_literal OP int8 (bigint) */
@@ -815,8 +775,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_int8,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_int8(rdf_literal, int8)
@@ -830,8 +789,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_int8,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_int8(rdf_literal, int8)
@@ -845,8 +803,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_int8,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_int8(rdf_literal, int8)
@@ -860,8 +817,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_int8,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_int8(rdf_literal, int8)
@@ -875,8 +831,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_int8,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_int8(rdf_literal, int8)
@@ -890,8 +845,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_int8,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -916,8 +870,7 @@ CREATE OPERATOR = (
     PROCEDURE = int8_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION int8_neq_rdf_literal(int8, rdf_literal)
@@ -931,8 +884,7 @@ CREATE OPERATOR <> (
     PROCEDURE = int8_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION int8_lt_rdf_literal(int8, rdf_literal)
@@ -946,8 +898,7 @@ CREATE OPERATOR < (
     PROCEDURE = int8_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION int8_gt_rdf_literal(int8, rdf_literal)
@@ -961,8 +912,7 @@ CREATE OPERATOR > (
     PROCEDURE = int8_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION int8_le_rdf_literal(int8, rdf_literal)
@@ -976,8 +926,7 @@ CREATE OPERATOR <= (
     PROCEDURE = int8_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION int8_ge_rdf_literal(int8, rdf_literal)
@@ -991,8 +940,7 @@ CREATE OPERATOR >= (
     PROCEDURE = int8_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* rdf_literal OP int4 (int) */
@@ -1016,8 +964,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_int4,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_int4(rdf_literal, int4)
@@ -1031,8 +978,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_int4,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_int4(rdf_literal, int4)
@@ -1046,8 +992,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_int4,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_int4(rdf_literal, int4)
@@ -1061,8 +1006,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_int4,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_int4(rdf_literal, int4)
@@ -1076,8 +1020,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_int4,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_int4(rdf_literal, int4)
@@ -1091,8 +1034,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_int4,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -1116,8 +1058,7 @@ CREATE OPERATOR = (
     PROCEDURE = int4_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION int4_neq_rdf_literal(int4, rdf_literal)
@@ -1131,8 +1072,7 @@ CREATE OPERATOR <> (
     PROCEDURE = int4_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION int4_lt_rdf_literal(int4, rdf_literal)
@@ -1146,8 +1086,7 @@ CREATE OPERATOR < (
     PROCEDURE = int4_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION int4_gt_rdf_literal(int4, rdf_literal)
@@ -1161,8 +1100,7 @@ CREATE OPERATOR > (
     PROCEDURE = int4_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION int4_le_rdf_literal(int4, rdf_literal)
@@ -1176,8 +1114,7 @@ CREATE OPERATOR <= (
     PROCEDURE = int4_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION int4_ge_rdf_literal(int4, rdf_literal)
@@ -1191,8 +1128,7 @@ CREATE OPERATOR >= (
     PROCEDURE = int4_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* rdf_literal OP int2 (smallint) */
@@ -1216,8 +1152,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_int2,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_int2(rdf_literal, int2)
@@ -1231,8 +1166,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_int2,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_int2(rdf_literal, int2)
@@ -1246,8 +1180,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_int2,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_int2(rdf_literal, int2)
@@ -1261,8 +1194,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_int2,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_int2(rdf_literal, int2)
@@ -1276,8 +1208,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_int2,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_int2(rdf_literal, int2)
@@ -1291,8 +1222,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_int2,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -1317,8 +1247,7 @@ CREATE OPERATOR = (
     PROCEDURE = int2_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION int2_neq_rdf_literal(int2, rdf_literal)
@@ -1332,8 +1261,7 @@ CREATE OPERATOR <> (
     PROCEDURE = int2_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION int2_lt_rdf_literal(int2, rdf_literal)
@@ -1347,8 +1275,7 @@ CREATE OPERATOR < (
     PROCEDURE = int2_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION int2_gt_rdf_literal(int2, rdf_literal)
@@ -1362,8 +1289,7 @@ CREATE OPERATOR > (
     PROCEDURE = int2_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION int2_le_rdf_literal(int2, rdf_literal)
@@ -1377,8 +1303,7 @@ CREATE OPERATOR <= (
     PROCEDURE = int2_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION int2_ge_rdf_literal(int2, rdf_literal)
@@ -1392,8 +1317,7 @@ CREATE OPERATOR >= (
     PROCEDURE = int2_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 -- rdf_literal OP timestamptz (timestamp with time zone)
@@ -1415,8 +1339,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_timestamptz,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_timestamptz(rdf_literal, timestamptz)
@@ -1429,8 +1352,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_timestamptz,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_timestamptz(rdf_literal, timestamptz)
@@ -1443,8 +1365,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_timestamptz,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_timestamptz(rdf_literal, timestamptz)
@@ -1457,8 +1378,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_timestamptz,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_eq_timestamptz(rdf_literal, timestamptz)
@@ -1471,8 +1391,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_timestamptz,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_timestamptz(rdf_literal, timestamptz)
@@ -1485,8 +1404,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_timestamptz,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 
@@ -1509,8 +1427,7 @@ CREATE OPERATOR < (
     PROCEDURE = timestamptz_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION timestamptz_gt_rdf_literal(timestamptz, rdf_literal)
@@ -1523,8 +1440,7 @@ CREATE OPERATOR > (
     PROCEDURE = timestamptz_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION timestamptz_le_rdf_literal(timestamptz, rdf_literal)
@@ -1537,8 +1453,7 @@ CREATE OPERATOR <= (
     PROCEDURE = timestamptz_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION timestamptz_ge_rdf_literal(timestamptz, rdf_literal)
@@ -1551,8 +1466,7 @@ CREATE OPERATOR >= (
     PROCEDURE = timestamptz_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION timestamptz_eq_rdf_literal(timestamptz, rdf_literal)
@@ -1565,8 +1479,7 @@ CREATE OPERATOR = (
     PROCEDURE = timestamptz_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION timestamptz_neq_rdf_literal(timestamptz, rdf_literal)
@@ -1579,8 +1492,7 @@ CREATE OPERATOR <> (
     PROCEDURE = timestamptz_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 /* rdf_literal OP timestamp (without time zone) */
@@ -1593,10 +1505,14 @@ CREATE CAST (rdf_literal AS timestamp)
 WITH FUNCTION rdf_literal_to_timestamp(rdf_literal) 
 AS IMPLICIT;
 
+-- CREATE FUNCTION rdf_literal_eq_timestamp(rdf_literal, timestamp)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'rdf_literal_eq_timestamp'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION rdf_literal_eq_timestamp(rdf_literal, timestamp)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_literal_eq_timestamp'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamp($1) = $2; $$;
 
 CREATE OPERATOR = (
     LEFTARG = rdf_literal,
@@ -1604,14 +1520,17 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_timestamp,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
+-- CREATE FUNCTION rdf_literal_neq_timestamp(rdf_literal, timestamp)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'rdf_literal_neq_timestamp'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION rdf_literal_neq_timestamp(rdf_literal, timestamp)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_literal_neq_timestamp'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamp($1) <> $2; $$;
 
 CREATE OPERATOR <> (
     LEFTARG = rdf_literal,
@@ -1619,14 +1538,17 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_timestamp,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
+--CREATE FUNCTION rdf_literal_lt_timestamp(rdf_literal, timestamp)
+--RETURNS boolean
+--AS 'MODULE_PATHNAME', 'rdf_literal_lt_timestamp'
+--LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION rdf_literal_lt_timestamp(rdf_literal, timestamp)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_literal_lt_timestamp'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamp($1) < $2; $$;
 
 CREATE OPERATOR < (
     LEFTARG = rdf_literal,
@@ -1634,14 +1556,17 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_timestamp,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
+-- CREATE FUNCTION rdf_literal_gt_timestamp(rdf_literal, timestamp)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'rdf_literal_gt_timestamp'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION rdf_literal_gt_timestamp(rdf_literal, timestamp)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_literal_gt_timestamp'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamp($1) > $2; $$;
 
 CREATE OPERATOR > (
     LEFTARG = rdf_literal,
@@ -1649,14 +1574,17 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_timestamp,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
+-- CREATE FUNCTION rdf_literal_le_timestamp(rdf_literal, timestamp)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'rdf_literal_le_timestamp'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION rdf_literal_le_timestamp(rdf_literal, timestamp)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_literal_le_timestamp'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamp($1) <= $2; $$;
 
 CREATE OPERATOR <= (
     LEFTARG = rdf_literal,
@@ -1664,14 +1592,17 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_timestamp,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
+-- CREATE FUNCTION rdf_literal_ge_timestamp(rdf_literal, timestamp)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'rdf_literal_ge_timestamp'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION rdf_literal_ge_timestamp(rdf_literal, timestamp)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'rdf_literal_ge_timestamp'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT rdf_literal_to_timestamp($1) >= $2; $$;
 
 CREATE OPERATOR >= (
     LEFTARG = rdf_literal,
@@ -1679,8 +1610,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_timestamp,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -1693,10 +1623,14 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE CAST (timestamp AS rdf_literal)
 WITH FUNCTION timestamp_to_rdf_literal(timestamp);
 
+-- CREATE FUNCTION timestamp_eq_rdf_literal(timestamp, rdf_literal)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'timestamp_eq_rdf_literal'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION timestamp_eq_rdf_literal(timestamp, rdf_literal)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'timestamp_eq_rdf_literal'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 = rdf_literal_to_timestamp($2); $$;
 
 CREATE OPERATOR = (
     LEFTARG = timestamp,
@@ -1704,14 +1638,17 @@ CREATE OPERATOR = (
     PROCEDURE = timestamp_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
+-- CREATE FUNCTION timestamp_neq_rdf_literal(timestamp, rdf_literal)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'timestamp_neq_rdf_literal'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION timestamp_neq_rdf_literal(timestamp, rdf_literal)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'timestamp_neq_rdf_literal'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 <> rdf_literal_to_timestamp($2); $$;
 
 CREATE OPERATOR <> (
     LEFTARG = timestamp,
@@ -1719,14 +1656,17 @@ CREATE OPERATOR <> (
     PROCEDURE = timestamp_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
+-- CREATE FUNCTION timestamp_lt_rdf_literal(timestamp, rdf_literal)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'timestamp_lt_rdf_literal'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION timestamp_lt_rdf_literal(timestamp, rdf_literal)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'timestamp_lt_rdf_literal'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 < rdf_literal_to_timestamp($2); $$;
 
 CREATE OPERATOR < (
     LEFTARG = timestamp,
@@ -1734,14 +1674,17 @@ CREATE OPERATOR < (
     PROCEDURE = timestamp_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
+-- CREATE FUNCTION timestamp_gt_rdf_literal(timestamp, rdf_literal)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'timestamp_gt_rdf_literal'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION timestamp_gt_rdf_literal(timestamp, rdf_literal)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'timestamp_gt_rdf_literal'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 > rdf_literal_to_timestamp($2); $$;
 
 CREATE OPERATOR > (
     LEFTARG = timestamp,
@@ -1749,14 +1692,17 @@ CREATE OPERATOR > (
     PROCEDURE = timestamp_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
+-- CREATE FUNCTION timestamp_le_rdf_literal(timestamp, rdf_literal)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'timestamp_le_rdf_literal'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION timestamp_le_rdf_literal(timestamp, rdf_literal)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'timestamp_le_rdf_literal'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 <= rdf_literal_to_timestamp($2); $$;
 
 CREATE OPERATOR <= (
     LEFTARG = timestamp,
@@ -1764,14 +1710,17 @@ CREATE OPERATOR <= (
     PROCEDURE = timestamp_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
+-- CREATE FUNCTION timestamp_ge_rdf_literal(timestamp, rdf_literal)
+-- RETURNS boolean
+-- AS 'MODULE_PATHNAME', 'timestamp_ge_rdf_literal'
+-- LANGUAGE C IMMUTABLE STRICT;
+
 CREATE FUNCTION timestamp_ge_rdf_literal(timestamp, rdf_literal)
-RETURNS boolean
-AS 'MODULE_PATHNAME', 'timestamp_ge_rdf_literal'
-LANGUAGE C IMMUTABLE STRICT;
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 >= rdf_literal_to_timestamp($2); $$;
 
 CREATE OPERATOR >= (
     LEFTARG = timestamp,
@@ -1779,8 +1728,7 @@ CREATE OPERATOR >= (
     PROCEDURE = timestamp_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* ## rdf_literal OP date ## */
@@ -1803,8 +1751,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_date,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_date(rdf_literal, date)
@@ -1818,8 +1765,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_date,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_date(rdf_literal, date)
@@ -1833,8 +1779,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_date,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_date(rdf_literal, date)
@@ -1848,8 +1793,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_date,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_date(rdf_literal, date)
@@ -1863,8 +1807,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_date,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_date(rdf_literal, date)
@@ -1878,8 +1821,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_date,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* date OP rdf_literal */
@@ -1902,8 +1844,7 @@ CREATE OPERATOR = (
     PROCEDURE = date_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION date_neq_rdf_literal(date, rdf_literal)
@@ -1917,8 +1858,7 @@ CREATE OPERATOR <> (
     PROCEDURE = date_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION date_lt_rdf_literal(date, rdf_literal)
@@ -1932,8 +1872,7 @@ CREATE OPERATOR < (
     PROCEDURE = date_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION date_gt_rdf_literal(date, rdf_literal)
@@ -1947,8 +1886,7 @@ CREATE OPERATOR > (
     PROCEDURE = date_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION date_le_rdf_literal(date, rdf_literal)
@@ -1962,8 +1900,7 @@ CREATE OPERATOR <= (
     PROCEDURE = date_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION date_ge_rdf_literal(date, rdf_literal)
@@ -1977,8 +1914,7 @@ CREATE OPERATOR >= (
     PROCEDURE = date_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* ## rdf_literal OP time ## */
@@ -2001,8 +1937,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_time,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_time(rdf_literal, time)
@@ -2016,8 +1951,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_time,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_time(rdf_literal, time)
@@ -2031,8 +1965,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_time,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_time(rdf_literal, time)
@@ -2046,8 +1979,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_time,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_time(rdf_literal, time)
@@ -2061,8 +1993,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_time,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_time(rdf_literal, time)
@@ -2076,8 +2007,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_time,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* ## time OP rdf_literal ## */
@@ -2100,8 +2030,7 @@ CREATE OPERATOR = (
     PROCEDURE = time_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION time_neq_rdf_literal(time, rdf_literal)
@@ -2115,8 +2044,7 @@ CREATE OPERATOR <> (
     PROCEDURE = time_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION time_lt_rdf_literal(time, rdf_literal)
@@ -2130,8 +2058,7 @@ CREATE OPERATOR < (
     PROCEDURE = time_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION time_gt_rdf_literal(time, rdf_literal)
@@ -2145,8 +2072,7 @@ CREATE OPERATOR > (
     PROCEDURE = time_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION time_le_rdf_literal(time, rdf_literal)
@@ -2160,8 +2086,7 @@ CREATE OPERATOR <= (
     PROCEDURE = time_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION time_ge_rdf_literal(time, rdf_literal)
@@ -2175,8 +2100,7 @@ CREATE OPERATOR >= (
     PROCEDURE = time_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -2204,8 +2128,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_timetz,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_timetz(rdf_literal, timetz)
@@ -2219,8 +2142,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_timetz,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION rdf_literal_lt_timetz(rdf_literal, timetz)
@@ -2234,8 +2156,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_timetz,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_timetz(rdf_literal, timetz)
@@ -2249,8 +2170,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_timetz,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_timetz(rdf_literal, timetz)
@@ -2264,8 +2184,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_timetz,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_timetz(rdf_literal, timetz)
@@ -2279,8 +2198,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_timetz,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 /* ## time OP rdf_literal ## */
@@ -2303,8 +2221,7 @@ CREATE OPERATOR = (
     PROCEDURE = timetz_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION timetz_neq_rdf_literal(timetz, rdf_literal)
@@ -2318,8 +2235,7 @@ CREATE OPERATOR <> (
     PROCEDURE = timetz_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION timetz_lt_rdf_literal(timetz, rdf_literal)
@@ -2333,8 +2249,7 @@ CREATE OPERATOR < (
     PROCEDURE = timetz_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION timetz_gt_rdf_literal(timetz, rdf_literal)
@@ -2348,8 +2263,7 @@ CREATE OPERATOR > (
     PROCEDURE = timetz_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION timetz_le_rdf_literal(timetz, rdf_literal)
@@ -2363,8 +2277,7 @@ CREATE OPERATOR <= (
     PROCEDURE = timetz_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION timetz_ge_rdf_literal(timetz, rdf_literal)
@@ -2378,8 +2291,7 @@ CREATE OPERATOR >= (
     PROCEDURE = timetz_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -2434,8 +2346,7 @@ CREATE OPERATOR = (
     PROCEDURE = rdf_literal_eq_interval,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION rdf_literal_neq_interval(rdf_literal, interval)
@@ -2449,8 +2360,7 @@ CREATE OPERATOR <> (
     PROCEDURE = rdf_literal_neq_interval,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 
@@ -2465,8 +2375,7 @@ CREATE OPERATOR < (
     PROCEDURE = rdf_literal_lt_interval,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_gt_interval(rdf_literal, interval)
@@ -2480,8 +2389,7 @@ CREATE OPERATOR > (
     PROCEDURE = rdf_literal_gt_interval,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION rdf_literal_le_interval(rdf_literal, interval)
@@ -2495,8 +2403,7 @@ CREATE OPERATOR <= (
     PROCEDURE = rdf_literal_le_interval,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION rdf_literal_ge_interval(rdf_literal, interval)
@@ -2510,8 +2417,7 @@ CREATE OPERATOR >= (
     PROCEDURE = rdf_literal_ge_interval,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 
@@ -2528,8 +2434,7 @@ CREATE OPERATOR = (
     PROCEDURE = interval_eq_rdf_literal,
     COMMUTATOR = '=',
     NEGATOR = '<>',
-    RESTRICT = eqsel,
-    JOIN = eqjoinsel
+    RESTRICT = eqsel
 );
 
 CREATE FUNCTION interval_neq_rdf_literal(interval, rdf_literal)
@@ -2543,8 +2448,7 @@ CREATE OPERATOR <> (
     PROCEDURE = interval_neq_rdf_literal,
     COMMUTATOR = '<>',
     NEGATOR = '=',
-    RESTRICT = neqsel,
-    JOIN = neqjoinsel
+    RESTRICT = neqsel
 );
 
 CREATE FUNCTION interval_lt_rdf_literal(interval, rdf_literal)
@@ -2558,8 +2462,7 @@ CREATE OPERATOR < (
     PROCEDURE = interval_lt_rdf_literal,
     COMMUTATOR = >,
     NEGATOR = >=,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION interval_gt_rdf_literal(interval, rdf_literal)
@@ -2573,8 +2476,7 @@ CREATE OPERATOR > (
     PROCEDURE = interval_gt_rdf_literal,
     COMMUTATOR = <,
     NEGATOR = <=,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 CREATE FUNCTION interval_le_rdf_literal(interval, rdf_literal)
@@ -2588,8 +2490,7 @@ CREATE OPERATOR <= (
     PROCEDURE = interval_le_rdf_literal,
     COMMUTATOR = >=,
     NEGATOR = >,
-    RESTRICT = scalarltsel,
-    JOIN = scalarltjoinsel
+    RESTRICT = scalarltsel
 );
 
 CREATE FUNCTION interval_ge_rdf_literal(interval, rdf_literal)
@@ -2603,8 +2504,7 @@ CREATE OPERATOR >= (
     PROCEDURE = interval_ge_rdf_literal,
     COMMUTATOR = <=,
     NEGATOR = <,
-    RESTRICT = scalargtsel,
-    JOIN = scalargtjoinsel
+    RESTRICT = scalargtsel
 );
 
 

@@ -1,4 +1,5 @@
 \pset null NULL
+\set VERBOSITY terse
 -- Tests for equality (=) operator on rdf_literal type
 
 -- Language-tagged literals (case-insensitive)

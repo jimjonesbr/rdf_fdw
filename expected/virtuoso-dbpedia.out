@@ -766,13 +766,13 @@ LIMIT 5
 
 INFO:  SPARQL returned 5 records.
 
-      name       | birthdate  |            party             |    country    
------------------+------------+------------------------------+---------------
- Bob Evnen       | 11-29-2022 | National Republican Party    | United States
- Bob Evnen       | 11-29-2022 | Republikanische Partei       | United States
- Russell Findlay | 01-07-2021 | Scottish Conservative Party  | Scotland
- Rachael Thomas  | 11-15-2020 | Konservative Partei Kanadas  | Canada
- Ausma Malik     | 12-17-2018 | Ontario New Democratic Party | Canada
+           name           | birthdate  |                     party                      |               country               
+--------------------------+------------+------------------------------------------------+-------------------------------------
+ Cristian-Vasile Terheș   | 12-04-1978 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
+ Cristian Popescu Piedone | 02-15-1963 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
+ Klaus Iohannis           | 06-13-1959 | Demokratisches Forum der Deutschen in Rumänien | http://dbpedia.org/resource/Romania
+ Norica Nicolai           | 01-27-1958 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
+ Victor Ciorbea           | 10-26-1954 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
 (5 rows)
 
 /*
@@ -849,15 +849,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 10000 records.
+INFO:  SPARQL returned 1587 records.
 
-           name           | birthdate  |                     party                     |      country       
---------------------------+------------+-----------------------------------------------+--------------------
- Oliver Smith             | 02-20-1993 | Liberal Democrats                             | the United Kingdom
- Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
- Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
- Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
+      name       | birthdate  |                   party                   |  country  
+-----------------+------------+-------------------------------------------+-----------
+ Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
+ Sharon Dowey    | 11-20-2010 | Scottish Conservative Party               | Scotland
+ Miran Charuka   | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
+ Sam Oosterhoff  | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
+ Emma Roddick    | 07-30-1997 | Scottish National Party                   | Scotland
 (5 rows)
 
 /*
@@ -889,16 +889,11 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 10000 records.
+INFO:  SPARQL returned 1587 records.
 
-        name        | birthdate  |         party          |  country  
---------------------+------------+------------------------+-----------
- Sarah Hanson-Young | 12-23-1981 | Australian Greens      | Australia
- Andrew Cripps      | 02-05-1981 | Liberal National Party | Australia
- Clare O'Neil       | 09-12-1980 | Australian Labor Party | Australia
- Roslyn Dundas      | 07-28-1978 | Australian Democrats   | Australia
- Amanda Rishworth   | 07-10-1978 | Australian Labor Party | Australia
-(5 rows)
+ name | birthdate | party | country 
+------+-----------+-------+---------
+(0 rows)
 
 /* 
  * "~~ ANY(ARRAY[])" is not going to be pushed down! 
@@ -929,16 +924,11 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 10000 records.
+INFO:  SPARQL returned 1587 records.
 
-          name           | birthdate  |           party           | country 
--------------------------+------------+---------------------------+---------
- Krzysztof Bosak         | 06-13-1982 | Liga Polskich Rodzin      | Poland
- Krzysztof Bosak         | 06-13-1982 | Ruch Narodowy             | Poland
- Paweł Bartosz Olszewski | 12-11-1979 | Platforma Obywatelska     | Poland
- Piotr Ślusarczyk        | 08-24-1979 | Liga Polskich Rodzin      | Poland
- Lucjan Karasiewicz      | 07-10-1979 | Polska Jest Najważniejsza | Poland
-(5 rows)
+ name | birthdate | party | country 
+------+-----------+-------+---------
+(0 rows)
 
 /* 
  * "NOT country ~~* ANY(ARRAY[])" is not going to be pushed down! 
@@ -969,15 +959,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 10000 records.
+INFO:  SPARQL returned 1587 records.
 
-           name           | birthdate  |                     party                     |     country     
---------------------------+------------+-----------------------------------------------+-----------------
- Ramon "Jolo" Revilla III | 03-15-1988 | Lakas CMD                                     | Philippines
- Ramon "Jolo" Revilla III | 03-15-1988 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
- Simon-Pierre Diamond     | 02-09-1985 | Action démocratique du Québec                 | Canada
- Simon-Pierre Diamond     | 02-09-1985 | Parti libéral du Québec                       | Canada
- Vandolph Quizon          | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
+         name          | birthdate  |                   party                   |  country  
+-----------------------+------------+-------------------------------------------+-----------
+ Miran Charuka         | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
+ Sam Oosterhoff        | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
+ Michael Ford          | 03-25-1994 | Progressive Conservative Party of Ontario | Canada
+ Maria Victoria Barros | 02-01-1992 | Progressistas                             | Brazil
+ Jeremy Roberts        | 11-10-1991 | Progressive Conservative Party of Ontario | Canada
 (5 rows)
 
 /*
@@ -1153,13 +1143,15 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | name_len 
----------------------------------------+-----------+----------
- http://dbpedia.org/resource/Will_Bond | Will Bond |        9
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for ROUND
  */
@@ -1195,13 +1187,15 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | name_len 
----------------------------------------+-----------+----------
- http://dbpedia.org/resource/Will_Bond | Will Bond |        9
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for FLOOR
  */
@@ -1237,13 +1231,15 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | name_len 
----------------------------------------+-----------+----------
- http://dbpedia.org/resource/Will_Bond | Will Bond |        9
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for SUBSTRING
  */
@@ -1283,12 +1279,15 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?pageid
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
- uri | name | name_upper 
------+------+------------
-(0 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for EXTRACT
  * Fields in singular form
@@ -1333,13 +1332,15 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | birthdate  |              ts              
----------------------------------------+-----------+------------+------------------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for EXTRACT
  * Fields in plural form
@@ -1384,13 +1385,15 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | birthdate  |              ts              
----------------------------------------+-----------+------------+------------------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for DATE_PART
  * Fields in plural form
@@ -1435,13 +1438,15 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | birthdate  |              ts              
----------------------------------------+-----------+------------+------------------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for DATE_PART
  * Fields in singular form
@@ -1486,13 +1491,15 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | birthdate  |              ts              
----------------------------------------+-----------+------------+------------------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Pushdown test for MD5
  */
@@ -1528,13 +1535,15 @@ SELECT ?person ?personname ?birthdate ?pageid ("2002-03-08T14:33:42"^^xsd:dateTi
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-                  uri                  |   name    | birthdate  |              ts              
----------------------------------------+-----------+------------+------------------------------
- http://dbpedia.org/resource/Will_Bond | Will Bond | 04-08-1970 | Fri Mar 08 14:33:42 2002 PST
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /* ################### SPARQL  Aggregators ################### */
 CREATE FOREIGN TABLE party_members (
   country text  OPTIONS (variable '?country'),
@@ -1591,15 +1600,15 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
   ORDER BY DESC (?qt)
 
 
-INFO:  SPARQL returned 4253 records.
-
-        party         | nmembers 
-----------------------+----------
- Mec Vannin           |        1
- Manx Labour Party    |        1
- Liberal Vannin Party |        3
-(3 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /* ################### SPARQL UNION ################### */
 CREATE FOREIGN TABLE chanceler_candidates (
   name text  OPTIONS (variable '?name'),
@@ -1652,14 +1661,15 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
     } 
 
 
-INFO:  SPARQL returned 2 records.
-
-      name      |                 party                 | birthdate  
-----------------+---------------------------------------+------------
- Markus Söder   | Christian Social Union in Bavaria     | 01-05-1967
- Friedrich Merz | Christian Democratic Union of Germany | 11-11-1955
-(2 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 CREATE FOREIGN TABLE german_public_universities (
   id text      OPTIONS (variable '?uri'),
   name text    OPTIONS (variable '?name'),
@@ -1711,22 +1721,15 @@ SELECT ?name ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt)
 ORDER BY  DESC (?lat)
 LIMIT 10
 
-INFO:  SPARQL returned 10 records.
-
-                name                |                    wkt                     
-------------------------------------+--------------------------------------------
- Europa Universität Flensburg       | POINT(9.451999664306641 54.7760009765625)
- University of Greifswald           | POINT(13.37462615966797 54.09463882446289)
- University of Lübeck               | POINT(10.70583343505859 53.83694458007812)
- Hamburg University of Technology   | POINT(9.969444274902344 53.46083450317383)
- University of Bremen               | POINT(8.853610992431641 53.10861206054688)
- University of the Arts Bremen      | POINT(8.767499923706055 53.09805679321289)
- Humboldt University of Berlin      | POINT(13.39333343505859 52.5180549621582)
- Berlin University of the Arts      | POINT(13.32694435119629 52.5091667175293)
- Berlin School of Economics and Law | POINT(13.33777809143066 52.48527908325195)
- Free University of Berlin          | POINT(13.29055595397949 52.45305633544922)
-(10 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * WHERE clause containing a column with 'expression' OPTION.
  */
@@ -1759,13 +1762,15 @@ SELECT ?uri ?name ?lon ?lat (CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt)
  FILTER(CONCAT("POINT(",?lon," ",?lat,")") = "POINT(8.49305534362793 52.03777694702148)")
 }
 
-INFO:  SPARQL returned 1 record.
-
-         name         |                    wkt                    
-----------------------+-------------------------------------------
- Bielefeld University | POINT(8.49305534362793 52.03777694702148)
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * WHERE conditions with expressions
  */
@@ -1795,14 +1800,15 @@ SELECT ?uri ?name ?lon ?lat
  FILTER(?lon < 9)
 }
 
-INFO:  SPARQL returned 23 records.
-
-             name              | ?column? | ?column? 
--------------------------------+----------+----------
- University of Bremen          | t        | t
- University of the Arts Bremen | t        | t
-(2 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
   
 /*
  * SPARQL contains a LIMIT. Nothing will be pushed down.
@@ -1838,12 +1844,15 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
     LIMIT 1
   
 
-INFO:  SPARQL returned 1 record.
-
- birthdate 
------------
-(0 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * SPARQL contains ORDER BY. Nothing will be pushed down.
  */
@@ -1878,12 +1887,15 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
     ORDER BY DESC(?birthdate)
   
 
-INFO:  SPARQL returned 10000 records.
-
- birthdate 
------------
-(0 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * SPARQL contains no explicit WHERE clause.
  */
@@ -1919,17 +1931,15 @@ SELECT ?person ?birthdate
 }
 LIMIT 5
 
-INFO:  SPARQL returned 5 records.
-
- birthdate  
-------------
- 1969-06-19
- 1788-07-14
- 1962-12-17
- 1976-03-30
- 1987-06-30
-(5 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /* ===================== Pushdown Check =====================
  * Tests the result set for filter applied localy and remotely. 
  * The result sets must be identical.
@@ -2031,8 +2041,15 @@ SELECT DISTINCT ?personname ?birthdate ?partyname ?country
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)  ASC (?personname)  ASC (?country)
 
-INFO:  SPARQL returned 0 records.
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /* Disabling enable_pushdown OPTION */
 ALTER FOREIGN TABLE film                OPTIONS (ADD enable_pushdown 'false');
 ALTER FOREIGN TABLE politicians_germany OPTIONS (ADD enable_pushdown 'false');
@@ -2065,8 +2082,15 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
      }
 
 
-INFO:  SPARQL returned 1955 records.
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 CREATE TABLE t_politicians_localfilters AS
 SELECT DISTINCT 
   name, 
@@ -2100,18 +2124,23 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
       } 
 
 
-INFO:  SPARQL returned 1898 records.
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 SELECT * FROM t_film_remotefilters        EXCEPT SELECT * FROM t_film_localfilters;
- name | released | runtime 
-------+----------+---------
-(0 rows)
-
+ERROR:  relation "t_film_localfilters" does not exist
+LINE 1: ... t_film_remotefilters        EXCEPT SELECT * FROM t_film_loc...
+                                                             ^
 SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FROM t_politicians_localfilters;
- name | birthdate | party | country 
-------+-----------+-------+---------
-(0 rows)
-
+ERROR:  relation "t_politicians_remotefilters" does not exist
+LINE 1: SELECT * FROM t_politicians_remotefilters EXCEPT SELECT * FR...
+                      ^
 /* 
  * Test SPARQL containing LIMIT keyword in a literal
  */
@@ -2150,14 +2179,15 @@ SELECT ?name
   }
 LIMIT 2
 
-INFO:  SPARQL returned 2 records.
-
-        name         
----------------------
- ''Farol de Cacilhas
- Cacilhas Lighthouse
-(2 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing ORDER BY keyword in a literal
  */
@@ -2198,14 +2228,15 @@ SELECT ?name
 ORDER BY  DESC (?name)
 LIMIT 2
 
-INFO:  SPARQL returned 2 records.
-
-        name         
----------------------
- Jefferson Seal Flag
- Five Coloured Flag
-(2 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing DISTINCT keyword in a literal
  */
@@ -2244,13 +2275,15 @@ SELECT DISTINCT ?name
   }
 ORDER BY  ASC (?name)
 
-INFO:  SPARQL returned 15 records.
-
- name 
-------
- 1957
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing GROUP BY keyword in a literal
  */
@@ -2289,13 +2322,15 @@ SELECT ?name
   }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-     name      
----------------
- Only for Love
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing a REDUCED modifier
  */
@@ -2328,22 +2363,15 @@ SELECT REDUCED ?name
   }
 LIMIT 10
 
-INFO:  SPARQL returned 10 records.
-
-      name      
-----------------
- Cab Calloway
- Cab Kaye
- Cabum
- Caca Handika
- Cachao
- Cacho Castaña
- Cachorro López
- CACTUS
- Tuccho
- Cadalack Ron
-(10 rows)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing multiple FROM clauses
  */
@@ -2389,13 +2417,15 @@ FROM <http://abc.def>
 }
 LIMIT 10
 
-INFO:  SPARQL returned 1 record.
-
-    name     
--------------
- Isle of Man
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing a FROM clause
  */
@@ -2435,13 +2465,15 @@ FROM <http://dbpedia.org>
 }
 LIMIT 10
 
-INFO:  SPARQL returned 1 record.
-
-   name   
-----------
- Brazylia
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  * Test SPARQL containing FROM and FROM NAMED clauses
  */
@@ -2485,13 +2517,15 @@ FROM NAMED <http://xyz.abc>
 }
 LIMIT 10
 
-INFO:  SPARQL returned 1 record.
-
- name  
--------
- Japón
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 CREATE FOREIGN TABLE generic_rdf_table4 (
   uri text   OPTIONS (variable '?s', nodetype 'iri'),
   name text  OPTIONS (variable '?o')  
@@ -2530,13 +2564,15 @@ FROM NAMED <http://xyz.abc>
 }
 LIMIT 10
 
-INFO:  SPARQL returned 1 record.
-
- name  
--------
- Japón
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 CREATE FOREIGN TABLE public.regex_test1 (
   txt text OPTIONS (variable '?o', nodetype 'literal')
 )
@@ -2561,13 +2597,15 @@ SELECT ?o
  FILTER(REGEX(?o,".*\\^...2reGeX\\$$","i"))
 }
 
-INFO:  SPARQL returned 1 record.
-
-     txt     
--------------
- ^txt2regex$
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 CREATE FOREIGN TABLE public.regex_test (
   name     text OPTIONS (variable '?name', nodetype 'literal'),
   abstract text OPTIONS (variable '?abstract', expression 'STR(?abs)')
@@ -2608,13 +2646,15 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*wITh.MAC..\\.$","i"))
 }
 
-INFO:  SPARQL returned 1 record.
-
-      name       
------------------
- Call-A.P.P.L.E.
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  LIKE and ILIKE expressions containing "(" and "["
  */
@@ -2638,13 +2678,15 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*\\(ABBREVIATED AS cw\\).*","i"))
 }
 
-INFO:  SPARQL returned 1 record.
-
-     name      
----------------
- Computerworld
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  LIKE and ILIKE expressions containing "-"
  */
@@ -2669,13 +2711,15 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(?name,"^Your..."))
 }
 
-INFO:  SPARQL returned 1 record.
-
-  name   
----------
- Your 64
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 /*
  LIKE and ILIKE expressions containing single and double quotes
  */
@@ -2699,13 +2743,15 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*cOuNtRy's.*","i"))
 }
 
-INFO:  SPARQL returned 1 record.
-
-     name      
----------------
- Computerworld
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Method Not Allowed (HTTP status 405)
+HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 DROP SERVER dbpedia CASCADE;
 NOTICE:  drop cascades to 20 other objects
 DETAIL:  drop cascades to foreign table film

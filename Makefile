@@ -32,8 +32,8 @@ REGRESS = create_extension \
 			rdfliteral_le \
 			rdfliteral_ge \
 			pg_datatypes \
-			describe \
 			functions \
+			describe \
 			virtuoso-dbpedia \
 			graphdb-getty \
 			blazegraph-wikidata

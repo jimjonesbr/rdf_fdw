@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 SHOW datestyle;
 SHOW timezone;
 
