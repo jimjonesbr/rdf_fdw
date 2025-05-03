@@ -469,6 +469,10 @@ extern Datum rdf_fdw_bound(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS);
 
+/* rdf_iri PostgreSQL data type */
+extern Datum rdf_iri_in(PG_FUNCTION_ARGS);
+extern Datum rdf_iri_out(PG_FUNCTION_ARGS);
+
 /* rdf_literal PostgreSQL data type */
 extern Datum rdf_literal_in(PG_FUNCTION_ARGS);
 extern Datum rdf_literal_out(PG_FUNCTION_ARGS);
@@ -705,6 +709,10 @@ PG_FUNCTION_INFO_V1(rdf_fdw_md5);
 PG_FUNCTION_INFO_V1(rdf_fdw_bound);
 PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
 PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
+
+/* rdf_iri (custom data type) */
+PG_FUNCTION_INFO_V1(rdf_iri_in);
+PG_FUNCTION_INFO_V1(rdf_iri_out);
 
 /* rdf_literal (custom data type) */
 PG_FUNCTION_INFO_V1(rdf_literal_in);
@@ -1724,53 +1732,37 @@ Datum rdf_fdw_iri(PG_FUNCTION_ARGS)
 /*
  * isIRI
  * -----
- *
- * Checks if an RDF term is an IRI. Returns true if the term is enclosed in < > and
- * starts with a scheme (e.g., http://, https://), false otherwise. Follows SPARQL
- * isIRI/isURI behavior (Section 17.4.2.1).
- *
- * input: Null-terminated C string (e.g., "<http://example/>", "foo", "\"foo\"@en")
- *
- * returns: Boolean (true if IRI, false otherwise)
+ * Checks if a string is an RDF IRI. A valid IRI must:
+ * - Start with '<' and end with '>'
+ * - Not contain spaces or quote characters
+ * - May be absolute (with a colon) or relative (e.g., <foo>)
+ *   according to SPARQL 1.1.
  */
-static bool isIRI(char *input)
+static bool isIRI( char *input)
 {
-	const char *inner;
-	size_t len = strlen(input);
+	size_t len;
+	size_t i;
 
-	elog(DEBUG1, "%s called: input '%s'", __func__, input);
-
-	if (strlen(input) == 0)
-	{
-		elog(DEBUG1,"%s exit: returning => 'false' (NULL or empty)", __func__);
-		return false; /* NULL or empty isn’t an IRI */
-	}
-
-	/* Must be enclosed in < > */
-	if (input[0] != '<' || input[len - 1] != '>' || len < 3)
-	{
-		elog(DEBUG1,"%s exit: returning => 'false' (must be closed in)", __func__);
+	if (input == NULL || (len = strlen(input)) < 3)
 		return false;
-	}
 
-	/* Check for a scheme (basic IRI check) */
-	if (strncmp(input, "<http://", 7) == 0 || strncmp(input, "<https://", 8) == 0)
+	/* Must be enclosed in <...> */
+	if (input[0] != '<' || input[len - 1] != '>')
+		return false;
+
+	/* Check for illegal characters inside the IRI */
+	for (i = 1; i < len - 1; i++)
 	{
-		elog(DEBUG1,"%s exit: returning => 'true' (has a basic http or https scheme)", __func__);
-		return true;
+		char c = input[i];
+		if (c == '"' || c == ' ' || c == '\n' || c == '\r' || c == '\t')
+			return false;
 	}
 
-	/* Allow other schemes (e.g., <mailto:>, <urn:>) but require some prefix */
-	inner = input + 1; /* Skip < */
-	if (strchr(inner, ':') && strchr(inner, '>') && strchr(inner, ':') < strchr(inner, '>'))
-	{
-		elog(DEBUG1,"%s exit: returning => 'true' (other schemes (e.g., <mailto:>, <urn:>)", __func__);
-		return true;
-	}
-
-	elog(DEBUG1,"%s exit: returning => 'false' (no scheme or malformed)", __func__);
-	return false; /* No scheme or malformed */
+	/* All checks passed — valid IRI (absolute or relative) */
+	return true;
 }
+
+
 
 /*
  * rdf_fdw_isIRI
@@ -8952,6 +8944,12 @@ typedef struct rdf_literal
 	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
 } rdf_literal;
 
+typedef struct rdf_iri
+{
+	int32 vl_len_;						 // required varlena header
+	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
+} rdf_iri;
+
 static bool is_valid_xsd_double(const char *lexical)
 {
 	regex_t regex;
@@ -9080,21 +9078,59 @@ static bool is_valid_language_tag(const char *lan)
 	return is_valid;
 }
 
+Datum rdf_iri_in(PG_FUNCTION_ARGS)
+{
+	char *str_in = PG_GETARG_CSTRING(0);
+	char *str_iri;
+	rdf_iri *result;
+	size_t len;
+
+	if (isIRI(str_in) || isBlank(str_in))
+		str_iri = str_in;
+	else
+	{
+		char *lexical = lex(str_in);
+
+		if (strlen(lexical) == 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid IRI: empty string"),
+					 errdetail("an IRI must be a non-empty string.")));
+
+		str_iri = iri(lexical);
+	}
+
+	len = strlen(str_iri);
+	result = (rdf_iri *)palloc(VARHDRSZ + len + 1);
+	SET_VARSIZE(result, VARHDRSZ + len);
+	memcpy(result->vl_data, str_iri, len);
+	/* explicitly null-terminate! */
+	result->vl_data[len] = '\0';
+
+	PG_RETURN_POINTER(result);
+}
+
+Datum rdf_iri_out(PG_FUNCTION_ARGS)
+{
+	rdf_iri *iri = (rdf_iri *)PG_GETARG_POINTER(0);
+	int len = VARSIZE(iri) - VARHDRSZ;
+	char *out = (char *)palloc(len + 1);
+
+	memcpy(out, iri->vl_data, len);
+	out[len] = '\0';
+
+	PG_RETURN_CSTRING(out);
+}
+
 Datum rdf_literal_in(PG_FUNCTION_ARGS)
 {
 	char *str_in = PG_GETARG_CSTRING(0);
 	char *lexical;
-	//char *normalized;
 	char* lan;
 	char *dtype;
 	rdf_literal *result;
 	size_t len;
 	StringInfoData r;
-
-	// if (!isLiteral(str_in))
-	// 	ereport(ERROR,
-	// 			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-	// 			 errmsg("invalid RDF literal syntax: \"%s\"", str_in)));
 	
 	initStringInfo(&r);
 
@@ -9139,18 +9175,12 @@ Datum rdf_literal_in(PG_FUNCTION_ARGS)
 					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 						errmsg("invalid language tag: \"%s\"", lan)));
 
-		//normalized = strlang(unescape_unicode(lexical), lan);
 		appendStringInfo(&r, "%s", strlang(unescape_unicode(lexical), lan));
 	}
 	else if (strlen(dtype) != 0)
-		//normalized = strdt(unescape_unicode(lexical), dtype);
 		appendStringInfo(&r, "%s", strdt(unescape_unicode(lexical), dtype));
 	else
-	{
 		appendStringInfo(&r,"\"%s\"", unescape_unicode(lexical));
-		//normalized = r.data;
-	}
-		// normalized = str((char *) unescape_unicode(lexical));
 
 	len = strlen(r.data);
 	result = (rdf_literal *)palloc(VARHDRSZ + len + 1);
@@ -9173,41 +9203,6 @@ Datum rdf_literal_out(PG_FUNCTION_ARGS)
 
 	PG_RETURN_CSTRING(out);
 }
-
-// Datum
-// rdf_literal_out(PG_FUNCTION_ARGS)
-// {
-// 	rdf_literal *lit = (rdf_literal *)PG_GETARG_POINTER(0);
-// 	int len = VARSIZE(lit) - VARHDRSZ;
-// 	char *lexical = (char *)palloc(len + 1);
-// 	StringInfoData out;
-// 	char *lang_tag, *dtype;
-
-// 	memcpy(lexical, lit->vl_data, len);
-// 	lexical[len] = '\0';
-
-// 	initStringInfo(&out);
-// 	appendStringInfoChar(&out, '"');
-
-// 	for (const char *p = lexical; *p; p++)
-// 	{
-// 		if (*p == '"')  // only escape actual embedded quotes
-// 			appendStringInfoChar(&out, '\\');
-// 		appendStringInfoChar(&out, *p);
-// 	}
-
-// 	appendStringInfoChar(&out, '"');
-
-// 	lang_tag = lang(lexical);
-// 	dtype = datatype(lexical);
-
-// 	if (lang_tag && strlen(lang_tag) > 0)
-// 		appendStringInfo(&out, "@%s", lang_tag);
-// 	else if (dtype && strlen(dtype) > 0)
-// 		appendStringInfo(&out, "^^%s", dtype);
-
-// 	PG_RETURN_CSTRING(out.data);
-// }
 
 static parsed_rdf_literal parse_rdf_literal(char *input)
 {

@@ -53,6 +53,7 @@ BEGIN
 END; $$;
 
 /* Custom rdf_fdw Data Types */
+/*
 CREATE FUNCTION rdf_fdw_iri_in(cstring) RETURNS rdfiri
 AS 'MODULE_PATHNAME', 'rdf_fdw_iri_in'
 LANGUAGE C IMMUTABLE STRICT;
@@ -104,6 +105,102 @@ CREATE OPERATOR = (
     RIGHTARG = rdfiri,
     COMMUTATOR = =,
     NEGATOR = <>
+);
+*/
+
+/* IRI data type */
+CREATE FUNCTION rdf_iri_in(cstring) RETURNS rdf_iri
+AS 'MODULE_PATHNAME', 'rdf_iri_in'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdf_iri_out(rdf_iri) RETURNS cstring
+AS 'MODULE_PATHNAME', 'rdf_iri_out'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE TYPE rdf_iri (
+    INPUT = rdf_iri_in,
+    OUTPUT = rdf_iri_out,
+    STORAGE = extended
+);
+
+CREATE FUNCTION rdf_iri_eq_rdf_iri(rdf_iri, rdf_iri)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1::text = $2::text; $$;
+
+
+CREATE OPERATOR = (
+  LEFTARG = rdf_iri,
+  RIGHTARG = rdf_iri,
+  PROCEDURE = rdf_iri_eq_rdf_iri,
+  COMMUTATOR = '=',
+  NEGATOR = '<>',
+  RESTRICT = eqsel
+);
+
+CREATE FUNCTION rdf_iri_eq_text(rdf_iri, text)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1::text = $2::text; $$;
+
+
+CREATE OPERATOR = (
+  LEFTARG = rdf_iri,
+  RIGHTARG = text,
+  PROCEDURE = rdf_iri_eq_text,
+  COMMUTATOR = '=',
+  NEGATOR = '<>',
+  RESTRICT = eqsel
+);
+
+CREATE FUNCTION text_eq_rdf_iri(text, rdf_iri)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 = $2::text; $$;
+
+CREATE OPERATOR = (
+  LEFTARG = text,
+  RIGHTARG = rdf_iri,
+  PROCEDURE = text_eq_rdf_iri,
+  COMMUTATOR = '=',
+  NEGATOR = '<>',
+  RESTRICT = eqsel
+);
+
+CREATE FUNCTION rdf_iri_neq_rdf_iri(rdf_iri, rdf_iri)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1::text <> $2::text; $$;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_iri,
+    RIGHTARG = rdf_iri,
+    PROCEDURE = rdf_iri_neq_rdf_iri,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel
+);
+
+CREATE FUNCTION rdf_iri_neq_text(rdf_iri, text)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1::text <> $2; $$;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdf_iri,
+    RIGHTARG = text,
+    PROCEDURE = rdf_iri_neq_text,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel
+);
+
+CREATE FUNCTION text_neq_rdf_iri(text, rdf_iri)
+RETURNS boolean LANGUAGE SQL IMMUTABLE AS
+$$ SELECT $1 <> $2::text; $$;
+
+CREATE OPERATOR <> (
+    LEFTARG = text,
+    RIGHTARG = rdf_iri,
+    PROCEDURE = text_neq_rdf_iri,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel
 );
 
 /* casts, functions, and operators */

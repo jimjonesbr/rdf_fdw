@@ -24,6 +24,9 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
   else print v[1] }')
 
 REGRESS = create_extension \
+			rdfiri_in \
+			rdfiri_eq \
+			rdfiri_neq \
 			rdfliteral_in \
 			rdfliteral_eq \
 			rdfliteral_neq \
