@@ -766,13 +766,13 @@ LIMIT 5
 
 INFO:  SPARQL returned 5 records.
 
-           name           | birthdate  |                     party                      |               country               
---------------------------+------------+------------------------------------------------+-------------------------------------
- Cristian-Vasile Terheș   | 12-04-1978 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
- Cristian Popescu Piedone | 02-15-1963 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
- Klaus Iohannis           | 06-13-1959 | Demokratisches Forum der Deutschen in Rumänien | http://dbpedia.org/resource/Romania
- Norica Nicolai           | 01-27-1958 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
- Victor Ciorbea           | 10-26-1954 | Partidul Național Țărănesc Creștin Democrat    | http://dbpedia.org/resource/Romania
+      name       | birthdate  |            party             |    country    
+-----------------+------------+------------------------------+---------------
+ Bob Evnen       | 11-29-2022 | National Republican Party    | United States
+ Bob Evnen       | 11-29-2022 | Republikanische Partei       | United States
+ Russell Findlay | 01-07-2021 | Scottish Conservative Party  | Scotland
+ Rachael Thomas  | 11-15-2020 | Konservative Partei Kanadas  | Canada
+ Ausma Malik     | 12-17-2018 | Ontario New Democratic Party | Canada
 (5 rows)
 
 /*
@@ -849,15 +849,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 1587 records.
+INFO:  SPARQL returned 8618 records.
 
-      name       | birthdate  |                   party                   |  country  
------------------+------------+-------------------------------------------+-----------
- Russell Findlay | 01-07-2021 | Scottish Conservative Party               | Scotland
- Sharon Dowey    | 11-20-2010 | Scottish Conservative Party               | Scotland
- Miran Charuka   | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
- Sam Oosterhoff  | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
- Emma Roddick    | 07-30-1997 | Scottish National Party                   | Scotland
+      name       | birthdate  |                     party                     |      country       
+-----------------+------------+-----------------------------------------------+--------------------
+ Conor McGinn    | 07-31-1984 | Labour Party                                  | the United Kingdom
+ Vandolph Quizon | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
+ Vandolph Quizon | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Anna Lührmann   | 06-14-1983 | Bündnis 90/Die Grünen                         | Germany
+ Sakon Yamamoto  | 07-09-1982 | Liberaldemokratische Partei (Japan)           | Japan
 (5 rows)
 
 /*
@@ -889,11 +889,16 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 1587 records.
+INFO:  SPARQL returned 8618 records.
 
- name | birthdate | party | country 
-------+-----------+-------+---------
-(0 rows)
+     name      | birthdate  |           party            |  country  
+---------------+------------+----------------------------+-----------
+ Roslyn Dundas | 07-28-1978 | Australian Democrats       | Australia
+ Kate Ellis    | 09-22-1977 | Australian Labor Party     | Australia
+ Alex Hawke    | 07-09-1977 | Liberal Party of Australia | Australia
+ Steven Ciobo  | 05-29-1974 | Liberal Party of Australia | Australia
+ Kerry Nettle  | 12-24-1973 | Australian Greens          | Australia
+(5 rows)
 
 /* 
  * "~~ ANY(ARRAY[])" is not going to be pushed down! 
@@ -924,11 +929,16 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 1587 records.
+INFO:  SPARQL returned 8618 records.
 
- name | birthdate | party | country 
-------+-----------+-------+---------
-(0 rows)
+      name       | birthdate  |              party               | country 
+-----------------+------------+----------------------------------+---------
+ Adam Bielan     | 09-12-1974 | Akcja Wyborcza Solidarność       | Poland
+ Adam Bielan     | 09-12-1974 | Polska Jest Najważniejsza        | Poland
+ Adam Bielan     | 09-12-1974 | Polska Razem                     | Poland
+ Adam Bielan     | 09-12-1974 | Prawo i Sprawiedliwość           | Poland
+ Michał Kamiński | 03-28-1972 | Christlich-Nationale Vereinigung | Poland
+(5 rows)
 
 /* 
  * "NOT country ~~* ANY(ARRAY[])" is not going to be pushed down! 
@@ -959,15 +969,15 @@ SELECT ?personname ?birthdate ?partyname ?country
       }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 
-INFO:  SPARQL returned 1587 records.
+INFO:  SPARQL returned 8618 records.
 
-         name          | birthdate  |                   party                   |  country  
------------------------+------------+-------------------------------------------+-----------
- Miran Charuka         | 12-19-1999 | Samagi Jana Balawegaya                    | Sri Lanka
- Sam Oosterhoff        | 08-22-1997 | Progressive Conservative Party of Ontario | Canada
- Michael Ford          | 03-25-1994 | Progressive Conservative Party of Ontario | Canada
- Maria Victoria Barros | 02-01-1992 | Progressistas                             | Brazil
- Jeremy Roberts        | 11-10-1991 | Progressive Conservative Party of Ontario | Canada
+        name        | birthdate  |                     party                     |     country     
+--------------------+------------+-----------------------------------------------+-----------------
+ Vandolph Quizon    | 05-07-1984 | Liberal Party (Philippinen)                   | the Philippines
+ Vandolph Quizon    | 05-07-1984 | Partido Demokratiko Pilipino – Lakas ng Bayan | the Philippines
+ Anna Lührmann      | 06-14-1983 | Bündnis 90/Die Grünen                         | Germany
+ Sakon Yamamoto     | 07-09-1982 | Liberaldemokratische Partei (Japan)           | Japan
+ Adam van Koeverden | 01-29-1982 | Liberale Partei Kanadas                       | Canada
 (5 rows)
 
 /*
@@ -1143,15 +1153,13 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
-ERROR:  Method Not Allowed (HTTP status 405)
-HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
+INFO:  SPARQL returned 1 record.
+
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
+(1 row)
+
 /*
  * Pushdown test for ROUND
  */
@@ -1187,15 +1195,13 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
-ERROR:  Method Not Allowed (HTTP status 405)
-HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
+INFO:  SPARQL returned 1 record.
+
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
+(1 row)
+
 /*
  * Pushdown test for FLOOR
  */
@@ -1231,15 +1237,13 @@ SELECT ?person ?personname (STRLEN(?personname) AS ?name_len) ?pageid
 }
 LIMIT 1
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
-ERROR:  Method Not Allowed (HTTP status 405)
-HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
+INFO:  SPARQL returned 1 record.
+
+                  uri                  |   name    | name_len 
+---------------------------------------+-----------+----------
+ http://dbpedia.org/resource/Will_Bond | Will Bond |        9
+(1 row)
+
 /*
  * Pushdown test for SUBSTRING
  */
@@ -1279,15 +1283,12 @@ SELECT ?person ?personname (UCASE(?personname) AS ?name_ucase) ?pageid
 }
 LIMIT 1
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
-ERROR:  Method Not Allowed (HTTP status 405)
-HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
+INFO:  SPARQL returned 1 record.
+
+ uri | name | name_upper 
+-----+------+------------
+(0 rows)
+
 /*
  * Pushdown test for EXTRACT
  * Fields in singular form
@@ -2678,15 +2679,13 @@ SELECT ?name (STR(?abs) AS ?abstract)
  FILTER(REGEX(STR(?abs),".*\\(ABBREVIATED AS cw\\).*","i"))
 }
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/html"
-WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
-ERROR:  Method Not Allowed (HTTP status 405)
-HINT:  This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
+INFO:  SPARQL returned 1 record.
+
+     name      
+---------------
+ Computerworld
+(1 row)
+
 /*
  LIKE and ILIKE expressions containing "-"
  */

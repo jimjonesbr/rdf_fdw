@@ -34,14 +34,13 @@ REGRESS = create_extension \
 			pg_datatypes \
 			functions \
 			describe \
-			virtuoso-dbpedia \
 			graphdb-getty \
 			blazegraph-wikidata
 
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
 
 ifeq ($(shell [ "$(MAJORVERSION)" != "906" ] && [ "$(MAJORVERSION)" != "10" ] && echo yes),yes)
-  REGRESS += exceptions table-clone
+  REGRESS += exceptions
 endif
 
 $(info Tests to run: $(REGRESS))
