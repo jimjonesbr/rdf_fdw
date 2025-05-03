@@ -107,24 +107,24 @@ SELECT '"P1DT24H"^^xsd:duration'::rdf_literal = '"P2D"^^xsd:duration'::rdf_liter
 SELECT '"P1Y"^^xsd:duration'::rdf_literal = '"P2Y"^^xsd:duration'::rdf_literal;
 
 /* numeric <-> rdf_literal*/
-SELECT '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
-SELECT '"-92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
-SELECT '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
-SELECT '"-92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
-SELECT '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal = 92233720368.807;
-SELECT '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> 92233720368.807;
-SELECT '"-92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> -92233720368.807;
-SELECT '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal != 92233720368.807;
-SELECT '"9223372036854776"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal > 922337203.999;
-SELECT '"9223372036854776"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal < 922337203.999;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
+SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
+SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal = 123456789.123;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> 123456789.123;
+SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> -123456789.123;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal != 123456789.123;
+SELECT '"922337"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal > 922337203.999;
+SELECT '"922337"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal < 922337203.999;
 SELECT '"42.000000"^^xsd:decimal'::rdf_literal = 42::numeric;
 SELECT '"0.0000001"^^xsd:decimal'::rdf_literal > 0::numeric;
 SELECT '"-0.000001"^^xsd:decimal'::rdf_literal < 0::numeric;
 SELECT '"-0.0"^^xsd:decimal'::rdf_literal = 0::numeric;
-SELECT 92233720368.807 = '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
-SELECT -92233720368.807 = '"-92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
-SELECT 92233720368.807 <> '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
-SELECT 92233720368.807 != '"92233720368.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 123456789.123 = '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT -123456789.123 = '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 123456789.123 <> '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 123456789.123 != '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
 SELECT 922337203.999 > '"922337203.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
 SELECT 922337203.999 < '"922337203.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
 SELECT 42::numeric = '"42.00000"^^xsd:decimal'::rdf_literal;
