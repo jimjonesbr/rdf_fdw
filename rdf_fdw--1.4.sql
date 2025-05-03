@@ -2798,15 +2798,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.round(numeric) RETURNS numeric AS $$
-BEGIN
-  IF $1 > 0.0 THEN
-    RETURN pg_catalog.floor($1 + 0.5);
-  ELSE
-    RETURN pg_catalog.ceil($1 + 0.5);
-  END IF;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+-- CREATE FUNCTION sparql.round(numeric) RETURNS numeric AS $$
+-- BEGIN
+--   IF $1 > 0.0 THEN
+--     RETURN pg_catalog.floor($1 + 0.5);
+--   ELSE
+--     RETURN pg_catalog.ceil($1 + 0.5);
+--   END IF;
+-- END;
+-- $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.round(double precision) RETURNS double precision AS $$
 BEGIN

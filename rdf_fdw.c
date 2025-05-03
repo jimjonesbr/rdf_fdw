@@ -9949,7 +9949,10 @@ Datum rdf_literal_eq_numeric(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -9963,7 +9966,10 @@ Datum rdf_literal_neq_numeric(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -9977,7 +9983,11 @@ Datum rdf_literal_lt_numeric(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	// rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_lt, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -9991,7 +10001,10 @@ Datum rdf_literal_gt_numeric(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_gt, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -10005,7 +10018,10 @@ Datum rdf_literal_le_numeric(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_le, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -10019,7 +10035,10 @@ Datum rdf_literal_ge_numeric(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_ge, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -10033,7 +10052,11 @@ Datum numeric_eq_rdf_literal(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
+
 	result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -10047,7 +10070,10 @@ Datum numeric_neq_rdf_literal(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_num, NumericGetDatum(num)));
 
 	PG_RETURN_BOOL(result);
@@ -10061,7 +10087,10 @@ Datum numeric_lt_rdf_literal(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_lt, NumericGetDatum(num), rdf_num));
 
 	PG_RETURN_BOOL(result);
@@ -10075,7 +10104,10 @@ Datum numeric_gt_rdf_literal(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_gt, NumericGetDatum(num), rdf_num));
 
 	PG_RETURN_BOOL(result);
@@ -10089,7 +10121,10 @@ Datum numeric_le_rdf_literal(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_le, NumericGetDatum(num), rdf_num));
 
 	PG_RETURN_BOOL(result);
@@ -10103,7 +10138,10 @@ Datum numeric_ge_rdf_literal(PG_FUNCTION_ARGS)
 	Datum rdf_num;
 	bool result;
 
-	rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
+	rdf_num = DirectFunctionCall3(numeric_in,
+								  CStringGetDatum(p.lex),
+								  ObjectIdGetDatum(InvalidOid),
+								  Int32GetDatum(-1));
 	result = DatumGetBool(DirectFunctionCall2(numeric_ge, NumericGetDatum(num), rdf_num));
 
 	PG_RETURN_BOOL(result);
