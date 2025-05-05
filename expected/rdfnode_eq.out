@@ -1,0 +1,325 @@
+\pset null NULL
+\set VERBOSITY terse
+-- Tests for equality (=) operator on rdfnode type
+-- Language-tagged literals (case-insensitive)
+SELECT '"foo"@EN'::rdfnode = '"foo"@en'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"@en-us'::rdfnode = '"foo"@EN-US'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"@en'::rdfnode = '"foo"@en-us'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"café"@fr'::rdfnode = '"café"@fr'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"café"@fr'::rdfnode = '"cafe"@fr'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode = '" foo "^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- Unicode escapes
+SELECT '"\u0020"^^xsd:string'::rdfnode = '" "^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\U0001F600"^^xsd:string'::rdfnode = '"😀"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\U0001F600"^^xsd:string'::rdfnode = '"😀"'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\uD834\uDD1E"^^xsd:string'::rdfnode = '𝄞'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\""'::rdfnode = '"'::rdfnode;  -- False, first has quote escaped
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\\\\u0020"'::rdfnode = '"\\u0020"'::rdfnode;  -- False, first is two literal backslashes
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"\u0020"'::rdfnode = '" "'::rdfnode;  -- True
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\u0009"'::rdfnode = E'\t'::rdfnode;  -- True
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\uD834"^^xsd:string'::rdfnode;  -- Invalid alone
+                    rdfnode                     
+------------------------------------------------
+ "�"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\uDD1E"^^xsd:string'::rdfnode;  -- Invalid alone
+                    rdfnode                     
+------------------------------------------------
+ "�"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\u12"^^xsd:string'::rdfnode;  -- Too short
+                      rdfnode                      
+---------------------------------------------------
+ "\u12"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
+                       rdfnode                       
+-----------------------------------------------------
+ "\u12GZ"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed for \u)
+                        rdfnode                        
+-------------------------------------------------------
+ "\u123456"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\U000110000"'::rdfnode;  -- Invalid (codepoints above U+10FFFF)
+    rdfnode    
+---------------
+ "\U000110000"
+(1 row)
+
+-- Typed literals, same datatype IRI
+SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^<http://example.org/custom>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^<http://invalid>'::rdfnode = '"foo"^^<http://invalid>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Integer comparisons
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42"^^xsd:int'::rdfnode = '"-42"^^xsd:int'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"-42"^^xsd:int'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.00"^^xsd:decimal'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:integer'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.0000000000"^^xsd:double'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:short'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.73"^^xsd:decimal'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.0000000001"^^xsd:double'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"foo"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;
+ERROR:  invalid lexical form for xsd:date: "42" at character 35
+SELECT '"-0"^^xsd:int'::rdfnode = '"0"^^xsd:int'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"999999999999999999"^^xsd:integer'::rdfnode = '"999999999999999999.0"^^xsd:decimal'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Date and time comparisons
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-11"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '""^^xsd:date'::rdfnode;
+ERROR:  invalid lexical form for xsd:date: "" at character 44
+SELECT '"0001-01-01"^^xsd:date'::rdfnode = '"0001-01-01"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Invalid datetime
+SELECT '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode;
+ERROR:  date/time field value out of range: "2025-13-01T12:00:00"
+SELECT '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode;
+ERROR:  date/time field value out of range: "2025-04-25T25:00:00Z"
+SELECT '"1.0E308"^^xsd:double'::rdfnode = '"1.0E308"^^xsd:double'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:dateTime'::rdfnode;
+ERROR:  invalid lexical form for xsd:dateTime: "invalid" at character 8
+-- Time
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"20:44:38"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- String comparison fallbacks
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode;
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
+ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+

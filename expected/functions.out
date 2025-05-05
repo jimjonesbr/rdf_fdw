@@ -4,8 +4,8 @@ CREATE SERVER dbpedia
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 CREATE FOREIGN TABLE ftdbp (
-  p text    OPTIONS (variable '?p', literal_format 'raw'),
-  o text    OPTIONS (variable '?o', literal_format 'raw')
+  p rdfnode    OPTIONS (variable '?p', literal_format 'raw'),
+  o rdfnode OPTIONS (variable '?o', literal_format 'raw')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -146,10 +146,13 @@ SELECT sparql.strdt('', '<http://example.org/type>');
 
 SELECT sparql.strdt('foo', '');
 ERROR:  datatype IRI cannot be empty
+CONTEXT:  PL/pgSQL function sparql.strdt(text,text) line 3 at RETURN
 SELECT sparql.strdt('foo', ' ');
 ERROR:  datatype IRI cannot contain whitespaces
+CONTEXT:  PL/pgSQL function sparql.strdt(text,text) line 3 at RETURN
 SELECT sparql.strdt('foo', ' xsd:boolean ');
 ERROR:  datatype IRI cannot contain whitespaces
+CONTEXT:  PL/pgSQL function sparql.strdt(text,text) line 3 at RETURN
 SELECT sparql.strdt('foo', 'http://www.w3.org/2001/XMLSchema#string');
                       strdt                       
 --------------------------------------------------
@@ -210,9 +213,9 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "en"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>) = "PostgreSQL"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER(LANGMATCHES(LANG(?o), "en"))
 }
 
 INFO:  SPARQL returned 1 record.
@@ -313,8 +316,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(LANG(STRLANG(?o, "fr")) = "fr")
 }
 
@@ -398,8 +401,9 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(STR(?o) = "PostgreSQL")
  FILTER(STR(?o) = "PostgreSQL")
 }
 
@@ -432,7 +436,7 @@ SELECT sparql.lang(sparql.strdt('foo','xsd:string'));
 SELECT sparql.lang('"f"oo"@it');
  lang 
 ------
- it
+ 
 (1 row)
 
 SELECT sparql.lang('');
@@ -639,6 +643,8 @@ SELECT ?p ?o
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
  FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>)
+ FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>)
+ FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -648,7 +654,7 @@ INFO:  SPARQL returned 1 record.
  <http://dbpedia.org/ontology/wikiPageLength> | "91177"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> | <http://www.w3.org/2001/XMLSchema#nonNegativeInteger>
 (1 row)
 
-/* ENCODES_FOR_URI */
+  /* ENCODE_FOR_URI */
 SELECT sparql.encode_for_uri('"Los Angeles"');
  encode_for_uri  
 -----------------
@@ -717,6 +723,7 @@ SELECT ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://dbpedia.org/property/developer>)
  FILTER(ENCODE_FOR_URI(?o) = "PostgreSQL%20Global%20Development%20Group")
+ FILTER(ENCODE_FOR_URI(?o) = "PostgreSQL%20Global%20Development%20Group")
 }
 
 INFO:  SPARQL returned 1 record.
@@ -758,9 +765,9 @@ SELECT sparql.iri('"foo:bar"'), sparql.iri('foo:bar'), sparql.iri('<foo:bar>');
 (1 row)
 
 SELECT sparql.iri('"foo"'), sparql.iri('foo'), sparql.iri('<foo>');
-  iri  |  iri  |   iri   
--------+-------+---------
- <foo> | <foo> | <<foo>>
+  iri  |  iri  |  iri  
+-------+-------+-------
+ <foo> | <foo> | <foo>
 (1 row)
 
 SELECT sparql.iri('"a:b:c"'), sparql.iri('a:b:c'), sparql.iri('<a:b:c>');
@@ -800,6 +807,9 @@ SELECT ?p ?o
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
  FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
+ FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
+ FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
+ FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -809,7 +819,7 @@ INFO:  SPARQL returned 1 record.
  <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> | <http://dbpedia.org/property/released>
 (1 row)
 
-/* isIRI / isURI */
+  /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
  isiri 
 -------
@@ -910,8 +920,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(isIRI(?p))
  FILTER(IRI(?p) = <http://dbpedia.org/property/released>)
+ FILTER(isIRI(?p))
 }
 
 INFO:  SPARQL returned 1 record.
@@ -921,7 +931,7 @@ INFO:  SPARQL returned 1 record.
  <http://dbpedia.org/property/released> | "1996-07-08"^^<http://www.w3.org/2001/XMLSchema#date> | t
 (1 row)
 
-/* STRSTARTS */
+  /* STRSTARTS */
 SELECT sparql.strstarts('"foobar"','"foo"'), sparql.strstarts('foobar','foo');
  strstarts | strstarts 
 -----------+-----------
@@ -1059,6 +1069,7 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(LANGMATCHES(LANG(?o), "pt"))
  FILTER(STRSTARTS(?o, "Postgre"))
  FILTER(STRSTARTS(?o, "Postgre"))
@@ -1066,7 +1077,6 @@ SELECT ?p ?o
  FILTER(STRSTARTS(?o, "Postgre"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(STRSTARTS(?o, "Postgre"@pt))
  FILTER(STRSTARTS(?o, "Postgre"@pt))
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1076,7 +1086,7 @@ INFO:  SPARQL returned 1 record.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | t
 (1 row)
 
-/* STRENDS */
+  /* STRENDS */
 SELECT sparql.strends('"foobar"','"bar"'), sparql.strends('foobar','bar');
  strends | strends 
 ---------+---------
@@ -1212,12 +1222,12 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(STRENDS(?o, "SQL"))
  FILTER(STRENDS(?o, "SQL"))
  FILTER(STRENDS(?o, "SQL"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(STRENDS(?o, "SQL"^^<http://www.w3.org/2001/XMLSchema#string>))
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1227,7 +1237,7 @@ INFO:  SPARQL returned 1 record.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es | t
 (1 row)
 
-/* STRBEFORE */
+  /* STRBEFORE */
 SELECT sparql.strbefore('abc','b'), sparql.strbefore('"abc"','"b"');
  strbefore | strbefore 
 -----------+-----------
@@ -1390,8 +1400,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(STRBEFORE(STR(?o), "SQL") = "Postgre")
 }
 
@@ -1553,8 +1563,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "fr"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "fr"))
  FILTER(STRAFTER(STR(?o), "Postgre") = "SQL")
 }
 
@@ -1611,7 +1621,7 @@ SELECT sparql.contains('"foobar"@en', '"bar"^^xsd:string');
 SELECT sparql.contains('"foobar"', '""'), sparql.contains('foobar', '');
  contains | contains 
 ----------+----------
- t        | f
+ t        | t
 (1 row)
 
 SELECT sparql.contains('""', '"foo"'), sparql.contains('', 'foo');
@@ -1641,7 +1651,7 @@ SELECT sparql.contains(NULL, NULL);
 SELECT sparql.contains('"foobar"@en', '"foo"@fr');
  contains 
 ----------
- t
+ NULL
 (1 row)
 
 SELECT sparql.contains('"123"^^<http://example.com/int>', '"2"');
@@ -1671,19 +1681,19 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(CONTAINS(?o, "ostg"))
  FILTER(CONTAINS(?o, "ostg"@de))
  FILTER(CONTAINS(?o, "ostg"@de))
  FILTER(CONTAINS(?o, "ostg"^^<http://www.w3.org/2001/XMLSchema#string>))
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
 INFO:  SPARQL returned 1 record.
 
                       p                       |        o        | contains | contains 
 ----------------------------------------------+-----------------+----------+----------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | t        | t
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de | NULL     | t
 (1 row)
 
 /* LANGMATCHES */
@@ -1910,7 +1920,7 @@ SELECT sparql.isblank('b1');
 SELECT sparql.isblank('_:');
  isblank 
 ---------
- t
+ f
 (1 row)
 
 SELECT sparql.isblank('_');
@@ -1959,7 +1969,7 @@ INFO:  SPARQL returned 0 records.
 SELECT sparql.isnumeric('12');
  isnumeric 
 -----------
- t
+ f
 (1 row)
 
 SELECT sparql.isnumeric('"12"');
@@ -1977,7 +1987,7 @@ SELECT sparql.isnumeric('"12"^^xsd:nonNegativeInteger');
 SELECT sparql.isnumeric('"1200"^^xsd:byte');
  isnumeric 
 -----------
- f
+ t
 (1 row)
 
 SELECT sparql.isnumeric('<http://example/>');
@@ -2111,8 +2121,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISNUMERIC(?o))
  FILTER(?p = <http://dbpedia.org/ontology/wikiPageLength>)
+ FILTER(ISNUMERIC(?o))
 }
 
 INFO:  SPARQL returned 1 record.
@@ -2180,7 +2190,7 @@ SELECT sparql.isliteral('"bonjour"@fr');
 SELECT sparql.isliteral('12');
  isliteral 
 -----------
- f
+ t
 (1 row)
 
 SELECT sparql.isliteral('<http://example.org>');
@@ -2198,7 +2208,7 @@ SELECT sparql.isliteral('_:bnode');
 SELECT sparql.isliteral('');
  isliteral 
 -----------
- f
+ t
 (1 row)
 
 SELECT sparql.isliteral('" "');
@@ -2231,8 +2241,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(ISLITERAL(?o))
 }
 
 INFO:  SPARQL returned 21 records.
@@ -2262,7 +2272,7 @@ INFO:  SPARQL returned 21 records.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh        | t
 (21 rows)
 
-/* BNODE */
+  /* BNODE */
 SELECT sparql.isblank(sparql.bnode());
  isblank 
 ---------
@@ -2346,8 +2356,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISBLANK(BNODE(?o)))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(ISBLANK(BNODE(?o)))
 }
 
 INFO:  SPARQL returned 21 records.
@@ -2377,15 +2387,15 @@ INFO:  SPARQL returned 21 records.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh
 (21 rows)
 
-/* UUID (not pushable) */
-SELECT sparql.uuid() ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
+  /* UUID (not pushable) */
+SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
  ?column? 
 ----------
  t
 (1 row)
 
 /* STRUUID() (not pushable) */
-SELECT sparql.struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
  struuid_format 
 ----------------
  t
@@ -2487,8 +2497,9 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(LCASE(?o) = "postgresql"@de)
  FILTER(LCASE(?o) = "postgresql"@de)
 }
 
@@ -2510,8 +2521,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(STRSTARTS(LCASE(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)), "postgre"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STRSTARTS(LCASE(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)), "postgre"^^<http://www.w3.org/2001/XMLSchema#string>))
 }
 
 INFO:  SPARQL returned 20 records.
@@ -2636,8 +2647,9 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(UCASE(?o) = "POSTGRESQL"@es)
  FILTER(UCASE(?o) = "POSTGRESQL"@es)
 }
 
@@ -2659,8 +2671,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(STRSTARTS(UCASE(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)), "POSTGRE"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(STRSTARTS(UCASE(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)), "POSTGRE"^^<http://www.w3.org/2001/XMLSchema#string>))
 }
 
 INFO:  SPARQL returned 20 records.
@@ -2689,7 +2701,7 @@ INFO:  SPARQL returned 20 records.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@zh | "POSTGRESQL"^^<http://www.w3.org/2001/XMLSchema#string>
 (20 rows)
 
-/* STRLEN */
+  /* STRLEN */
 SELECT sparql.strlen('chat'), sparql.strlen('"chat"');
  strlen | strlen 
 --------+--------
@@ -2744,8 +2756,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
  FILTER(STRLEN(?o) = 10)
 }
 
@@ -2832,8 +2844,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(SUBSTR(?o, 7, 3) = "eSQ"@es)
  FILTER(SUBSTR(STRLANG(?o, "es"), 7, 3) = "eSQ"@es)
  FILTER(SUBSTR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>), 7, 3) = "eSQ"^^<http://www.w3.org/2001/XMLSchema#string>)
@@ -2910,8 +2922,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "pt"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
  FILTER(CONCAT(?o, "") = "PostgreSQL")
 }
 
@@ -2922,7 +2934,7 @@ INFO:  SPARQL returned 1 record.
  <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | "PostgreSQL Global"@pt | "PostgreSQL Global"
 (1 row)
 
-/* REPLACE */
+  /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
  replace | replace 
 ---------+---------
@@ -3155,11 +3167,8 @@ SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:
 (1 row)
 
 SELECT sparql.replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
- replace 
----------
- "Zbcd"
-(1 row)
-
+ERROR:  invalid lexical form for xsd:date: "abcd"
+CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 6 at RETURN
 SELECT sparql.replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
  replace  
 ----------
@@ -3174,7 +3183,7 @@ SELECT sparql.replace('ababab', 'ab', 'XY');         -- Non-global replacement (
 
 SELECT sparql.replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
 ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text,text) line 4 at RAISE
+CONTEXT:  PL/pgSQL function sparql.replace(rdfnode,rdfnode,rdfnode,rdfnode) line 4 at RAISE
 SELECT sparql.replace('abcd', '', 'Z');              -- Empty pattern without global flag
 ERROR:  pattern cannot be empty in REPLACE
 CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
@@ -3190,7 +3199,7 @@ SELECT sparql.replace('abcd', 'xy', 'Z');            -- No match for multi-chara
  "abcd"
 (1 row)
 
-SELECT sparql.replace('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
+SELECT sparql.replace('a' || repeat('b', 1000) || 'c', 'b'::text, 'Z'::text);  -- Long string with repeated pattern
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    replace                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  "aZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZc"
@@ -3248,8 +3257,8 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(REPLACE(?o, "Postgre", "My") = "MySQL")
  FILTER(REPLACE(?o, "POSTGRE", "My", "i") = "MySQL")
 }
@@ -3294,10 +3303,10 @@ SELECT sparql.regex('"abcd"', '"^ab"');
 
 SELECT sparql.regex('"abc\ndef"', '"^def$"', '"m"');
 ERROR:  Unsupported regex flags: m (only "i" is supported)
-CONTEXT:  PL/pgSQL function sparql.regex(text,text,text) line 8 at RAISE
+CONTEXT:  PL/pgSQL function sparql.regex(rdfnode,rdfnode,rdfnode) line 8 at RAISE
 SELECT sparql.regex('"abc\ndef"', '"c.d"', '"s"');
 ERROR:  Unsupported regex flags: s (only "i" is supported)
-CONTEXT:  PL/pgSQL function sparql.regex(text,text,text) line 8 at RAISE
+CONTEXT:  PL/pgSQL function sparql.regex(rdfnode,rdfnode,rdfnode) line 8 at RAISE
 SELECT sparql.regex('"abcd"@en', '"bc"');
  regex 
 -------
@@ -3336,7 +3345,7 @@ SELECT sparql.regex(NULL, '"a"'), sparql.regex('"abcd"', NULL), sparql.regex('"a
 
 SELECT sparql.regex('"abcd"', '"[a"');
 ERROR:  invalid regular expression: brackets [] not balanced
-CONTEXT:  PL/pgSQL function sparql.regex(text,text) line 6 at RETURN
+CONTEXT:  PL/pgSQL function sparql.regex(rdfnode,rdfnode) line 6 at RETURN
 SELECT p, o
 FROM ftdbp
 WHERE 
@@ -3350,10 +3359,10 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(REGEX(?o, "POSTGRES", "i"))
  FILTER(REGEX(?o, "^pOs", "i"))
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -3466,21 +3475,28 @@ SELECT sparql.round('"2.5"^^xsd:double');
      3
 (1 row)
 
-SELECT sparql.round('"-2.5"^^xsd:int');
-ERROR:  invalid lexical form for xsd:int: "-2.5"
-CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
+SELECT sparql.round('"-2.5"^^xsd:decimal');
+ round 
+-------
+    -2
+(1 row)
+
 SELECT sparql.round('');
 ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
+CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
+PL/pgSQL function sparql.round(text) line 3 at RETURN
 SELECT sparql.round('""');
 ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
+CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
+PL/pgSQL function sparql.round(text) line 3 at RETURN
 SELECT sparql.round(' ');
 ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
+CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
+PL/pgSQL function sparql.round(text) line 3 at RETURN
 SELECT sparql.round('" "');
 ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function sparql.round(text) line 4 at IF
+CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
+PL/pgSQL function sparql.round(text) line 3 at RETURN
 SELECT sparql.round(NULL);
  round 
 -------
@@ -3547,7 +3563,7 @@ SELECT sparql.ceil('"10.5"^^xsd:double');
    11
 (1 row)
 
-SELECT sparql.ceil('"-10.5"^^:xsd:decimal');
+SELECT sparql.ceil('"-10.5"^^xsd:decimal');
  ceil 
 ------
   -10
@@ -3599,7 +3615,7 @@ SELECT p, o, sparql.ceil(o)
 FROM ftdbp 
 WHERE 
   p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.ceil(o) = sparql.ceil('"23823.5"^^xsd:int') AND
+  sparql.ceil(o) = sparql.ceil('"23823.5"^^xsd:decimal') AND
   sparql.ceil(o) = sparql.ceil(23823.5);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -3671,7 +3687,7 @@ SELECT p, o, sparql.floor(o)
 FROM ftdbp 
 WHERE 
   p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.floor(o) = sparql.floor('"23824.5"^^xsd:int') AND
+  sparql.floor(o) = sparql.floor('"23824.5"^^xsd:decimal') AND
   sparql.floor(o) = sparql.floor(23824.5);
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
@@ -3984,19 +4000,19 @@ INFO:  SPARQL returned 1 record.
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
  round  
 --------
- 13.815
+ 14.000
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"'),3);
  round  
 --------
- 13.815
+ 14.000
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
  round  
 --------
- 13.815
+ 14.000
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
@@ -4050,7 +4066,8 @@ SELECT sparql.timezone('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
 
 SELECT sparql.timezone('"2011-01-10T14:45:13.815"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2011-01-10T14:45:13.815
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 27 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 27 at RAISE
+PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
                           timezone                           
 -------------------------------------------------------------
@@ -4083,19 +4100,22 @@ SELECT sparql.timezone('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
 
 SELECT sparql.timezone('"2020-12-01T08:00:00"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2020-12-01T08:00:00
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 27 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 27 at RAISE
+PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): invalid timezone offset: +25:00
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 41 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 41 at RAISE
+PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 ERROR:  SPARQL TIMEZONE(): invalid timezone offset: -99:99
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 41 at RAISE
+CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 41 at RAISE
+PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone('"invalid-date"^^xsd:dateTime');
-ERROR:  SPARQL TIMEZONE(): invalid xsd:dateTime format: invalid-date
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 20 at RAISE
+ERROR:  invalid lexical form for xsd:dateTime: "invalid-date"
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone('""^^xsd:dateTime');
-ERROR:  SPARQL TIMEZONE(): invalid xsd:dateTime literal
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 15 at RAISE
+ERROR:  invalid lexical form for xsd:dateTime: ""
+CONTEXT:  PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone(NULL);
  timezone 
 ----------
@@ -4110,82 +4130,88 @@ SELECT sparql.timezone('"not a date"^^xsd:string');
 
 /* TZ */
 SELECT sparql.tz('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
-   tz   
---------
- -05:00
+    tz    
+----------
+ "-05:00"
 (1 row)
 
 SELECT sparql.tz('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
- tz 
-----
- Z
+ tz  
+-----
+ "Z"
 (1 row)
 
 SELECT sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(rdfnode) line 11 at RAISE
+PL/pgSQL function sparql.tz(text) line 3 at RETURN
 SELECT sparql.tz('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
-   tz   
---------
- -05:00
+    tz    
+----------
+ "-05:00"
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00+02:30"^^xsd:dateTime');
-   tz   
---------
- +02:30
+    tz    
+----------
+ "+02:30"
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00Z"^^xsd:dateTime');
- tz 
-----
- Z
+ tz  
+-----
+ "Z"
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00.123+00:00"^^xsd:dateTime');
-   tz   
---------
- +00:00
+    tz    
+----------
+ "+00:00"
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
-   tz   
---------
- -04:45
+    tz    
+----------
+ "-04:45"
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00"^^xsd:dateTime');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(rdfnode) line 11 at RAISE
+PL/pgSQL function sparql.tz(text) line 3 at RETURN
 SELECT sparql.tz('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
-   tz   
---------
- +25:00
+    tz    
+----------
+ "+25:00"
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
-   tz   
---------
- -99:99
+    tz    
+----------
+ "-99:99"
 (1 row)
 
 SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
-ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
+ERROR:  invalid lexical form for xsd:dateTime: "invalid-date"
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 3 at RETURN
 SELECT sparql.tz('""^^xsd:dateTime');
-ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
+ERROR:  invalid lexical form for xsd:dateTime: ""
+CONTEXT:  PL/pgSQL function sparql.tz(text) line 3 at RETURN
 SELECT sparql.tz(NULL);
-ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
+  tz  
+------
+ NULL
+(1 row)
+
 SELECT sparql.tz('"not a date"^^xsd:string');
 ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 11 at RAISE
+CONTEXT:  PL/pgSQL function sparql.tz(rdfnode) line 11 at RAISE
+PL/pgSQL function sparql.tz(text) line 3 at RETURN
 /*BOUND */
 SELECT sparql.bound(NULL);
  bound 
 -------
- f
+ NULL
 (1 row)
 
 SELECT sparql.bound('abc');
@@ -4195,10 +4221,10 @@ SELECT sparql.bound('abc');
 (1 row)
 
 CREATE FOREIGN TABLE ft (
-  s text    OPTIONS (variable '?s', literal_format 'raw'),
-  p text    OPTIONS (variable '?p', literal_format 'raw'),
-  o text    OPTIONS (variable '?o', literal_format 'raw'),
-  x text    OPTIONS (variable '?x', literal_format 'raw')
+  s rdfnode OPTIONS (variable '?s', literal_format 'raw'),
+  p rdfnode OPTIONS (variable '?p', literal_format 'raw'),
+  o rdfnode OPTIONS (variable '?o', literal_format 'raw'),
+  x rdfnode OPTIONS (variable '?x', literal_format 'raw')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -4217,10 +4243,10 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?s ?p ?o ?x 
 { ?s ?p ?o OPTIONAL { ?s <http://foo.bar> ?x } 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "en"))
- FILTER(BOUND(?s))
  FILTER(?s = <http://dbpedia.org/resource/PostgreSQL>)
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "en"))
+ FILTER(BOUND(?s))
 }
 
 INFO:  SPARQL returned 1 record.
@@ -4279,9 +4305,9 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(LANGMATCHES(LANG(?o), "pt"))
  FILTER(SAMETERM(?o, "PostgreSQL"@pt))
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -4372,13 +4398,13 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?s ?p ?o ?x 
 { ?s ?p ?o OPTIONAL { ?s <http://foo.bar> ?x } 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "en"))
  FILTER(?s = <http://dbpedia.org/resource/PostgreSQL>)
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(COALESCE(?x, ?p) = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(COALESCE(?x, ?x, ?p) = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "en"))
  FILTER(COALESCE(?x, ?o) = "PostgreSQL"@en)
  FILTER(COALESCE(?x, ?x, ?x, ?o) = "PostgreSQL"@en)
+ FILTER(COALESCE(?x, ?p) = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(COALESCE(?x, ?x, ?p) = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(COALESCE(?x, "PostgreSQL") = "PostgreSQL")
  FILTER(COALESCE(?x, STR(?o)) = "PostgreSQL")
  FILTER(COALESCE(?x, STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>)) = "PostgreSQL"^^<http://www.w3.org/2001/XMLSchema#string>)
@@ -4488,18 +4514,20 @@ INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 SELECT ?p ?o 
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "pt"))
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(MD5(?o) = "399bd1ee587245ecac6f39beaa99886f")
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
+ FILTER(MD5(?o) = MD5("PostgreSQL"@pt))
 }
 
-INFO:  SPARQL returned 1 record.
-
-                      p                       |        o        |                md5                 
-----------------------------------------------+-----------------+------------------------------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt | "399bd1ee587245ecac6f39beaa99886f"
-(1 row)
-
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/plain"
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/plain"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (1)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/plain"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (2)
+WARNING:  HeaderCallbackFunction: unsupported header entry: "Content-Type: text/plain"
+WARNING:    ExecuteSPARQL: request to 'https://dbpedia.org/sparql' failed (3)
+ERROR:  Internal Server Error (HTTP status 500)
+HINT:  This indicates that the SERVER is currently unable to process any request due to internal problems. Check the SERVER url and try again: 'https://dbpedia.org/sparql'
 DROP SERVER dbpedia CASCADE;
 NOTICE:  drop cascades to 2 other objects
 DETAIL:  drop cascades to foreign table ftdbp

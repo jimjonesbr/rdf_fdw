@@ -97,6 +97,7 @@
 #endif
 #include "mb/pg_wchar.h"
 #include <regex.h>
+#include "parser/parse_type.h"
 
 #define REL_ALIAS_PREFIX    "r"
 /* Handy macro to add relation name qualification */
@@ -133,12 +134,20 @@
 #define RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED "xsd:string"
 #define RDF_XSD_STRING "<http://www.w3.org/2001/XMLSchema#string>"
 #define RDF_XSD_INTEGER "<http://www.w3.org/2001/XMLSchema#integer>"
+#define RDF_XSD_POSITIVEINTEGER "<http://www.w3.org/2001/XMLSchema#positiveInteger>"
+#define RDF_XSD_NEGATIVEINTEGER "<http://www.w3.org/2001/XMLSchema#negativeInteger>"
+#define RDF_XSD_NONPOSITIVEINTEGER "<http://www.w3.org/2001/XMLSchema#nonPositiveInteger>"
+#define RDF_XSD_NONNEGATIVEINTEGER "<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>"
 #define RDF_XSD_INT "<http://www.w3.org/2001/XMLSchema#int>"
 #define RDF_XSD_DATE "<http://www.w3.org/2001/XMLSchema#date>"
 #define RDF_XSD_DATETIME "<http://www.w3.org/2001/XMLSchema#dateTime>"
 #define RDF_XSD_DECIMAL "<http://www.w3.org/2001/XMLSchema#decimal>"
 #define RDF_XSD_DOUBLE "<http://www.w3.org/2001/XMLSchema#double>"
 #define RDF_XSD_LONG "<http://www.w3.org/2001/XMLSchema#long>"
+#define RDF_XSD_UNSIGNEDLONG "<http://www.w3.org/2001/XMLSchema#unsignedLong>"
+#define RDF_XSD_UNSIGNEDINT "<http://www.w3.org/2001/XMLSchema#unsignedInt>"
+#define RDF_XSD_UNSIGNEDSHORT "<http://www.w3.org/2001/XMLSchema#unsignedShort>"
+#define RDF_XSD_UNSIGNEDBYTE "<http://www.w3.org/2001/XMLSchema#unsignedByte>"
 #define RDF_XSD_SHORT "<http://www.w3.org/2001/XMLSchema#short>"
 #define RDF_XSD_FLOAT "<http://www.w3.org/2001/XMLSchema#float>"
 #define RDF_XSD_BYTE "<http://www.w3.org/2001/XMLSchema#byte>"
@@ -220,7 +229,8 @@
 #define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID \
 			|| (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID \
 			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
-			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID)
+			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID \
+			|| (x) == RDFNODEOID)
 
 /* list API has changed in v13 */
 #if PG_VERSION_NUM < 130000
@@ -397,19 +407,16 @@ static const TypeXSDMap type_map[] = {
 	{DATEOID, "date"},
 	{TIMEOID, "time"},
 	{TEXTOID, "string"},
+	{NAMEOID, "string"},	
 	{TIMESTAMPTZOID, "dateTime"},
 	{InvalidOid, NULL}};
+
 typedef struct RDFfdwTriple
 {
 	char *subject;	 /* RDF triple subject */
 	char *predicate; /* RDF triple predicate */
 	char *object;	 /* RDF triple object */
 } RDFfdwTriple;
-
-typedef struct {
-    int32 vl_len_;
-    char data[FLEXIBLE_ARRAY_MEMBER];
-} RDFIRIDatum;
 
 typedef struct
 {
@@ -424,9 +431,10 @@ typedef struct
 	bool isDate;			/* xsd:date literal*/
 	bool isDuration;		/* xsd:duration */
 	bool isTime;			/* xsd:time */
-} parsed_rdf_literal;
+	bool isIRI;				/* RDF IRI*/
+} parsed_rdfnode;
 
-//static Oid RDFIRIOID = InvalidOid;
+static Oid RDFNODEOID = InvalidOid;
 
 extern Datum rdf_fdw_handler(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
@@ -443,14 +451,13 @@ extern Datum rdf_fdw_strlang(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strdt(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_str(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lang(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_datatype(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri_in(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri_out(PG_FUNCTION_ARGS);
-extern Datum rdf_fdw_rdfiri_eq(PG_FUNCTION_ARGS);
-extern Datum rdf_fdw_rdfiri_text_eq(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS);
@@ -469,205 +476,201 @@ extern Datum rdf_fdw_bound(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS);
 
-/* rdf_iri PostgreSQL data type */
-extern Datum rdf_iri_in(PG_FUNCTION_ARGS);
-extern Datum rdf_iri_out(PG_FUNCTION_ARGS);
+/* rdfnode PostgreSQL data type */
+extern Datum rdfnode_in(PG_FUNCTION_ARGS);
+extern Datum rdfnode_out(PG_FUNCTION_ARGS);
 
-/* rdf_literal PostgreSQL data type */
-extern Datum rdf_literal_in(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_out(PG_FUNCTION_ARGS);
-
-/* rdf_literal (custom data type)*/
-extern Datum rdf_literal_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_rdf_literal(PG_FUNCTION_ARGS);
+/* rdfnode (custom data type)*/
+extern Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* numeric data type */
-extern Datum rdf_literal_to_numeric(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_numeric(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_numeric(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_numeric(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_numeric(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_numeric(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_numeric(PG_FUNCTION_ARGS);
-extern Datum numeric_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum numeric_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum numeric_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum numeric_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum numeric_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum numeric_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum numeric_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_numeric(PG_FUNCTION_ARGS);
+extern Datum numeric_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* float8 (double precision) data type */
-extern Datum rdf_literal_eq_float8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_float8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_float8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_float8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_float8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_float8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_to_float8(PG_FUNCTION_ARGS);
-extern Datum float8_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float8_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float8_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float8_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float8_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float8_ge_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float8_to_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_float8(PG_FUNCTION_ARGS);
+extern Datum float8_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_ge_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_to_rdfnode(PG_FUNCTION_ARGS);
 
 /* float4 (real) data type */
-extern Datum rdf_literal_to_float4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_float4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_float4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_float4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_float4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_float4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_float4(PG_FUNCTION_ARGS);
-extern Datum float4_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float4_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float4_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float4_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float4_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float4_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum float4_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_float4(PG_FUNCTION_ARGS);
+extern Datum float4_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* int8 (bigint) data type*/
-extern Datum rdf_literal_to_int8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_int8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_int8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_int8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_int8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_int8(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_int8(PG_FUNCTION_ARGS);
-extern Datum int8_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int8_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int8_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int8_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int8_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int8_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int8_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_int8(PG_FUNCTION_ARGS);
+extern Datum int8_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* int4 (int) data type */
-extern Datum rdf_literal_to_int4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_int4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_int4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_int4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_int4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_int4(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_int4(PG_FUNCTION_ARGS);
-extern Datum int4_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int4_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int4_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int4_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int4_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int4_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int4_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_int4(PG_FUNCTION_ARGS);
+extern Datum int4_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* int2 (smallint) data type */
-extern Datum rdf_literal_to_int2(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_int2(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_int2(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_int2(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_int2(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_int2(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_int2(PG_FUNCTION_ARGS);
-extern Datum int2_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int2_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int2_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int2_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int2_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int2_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum int2_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_int2(PG_FUNCTION_ARGS);
+extern Datum int2_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* timestamptz (timestamp with time zone) */
-extern Datum rdf_literal_to_timestamptz(PG_FUNCTION_ARGS);
-extern Datum timestamptz_to_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS);
 
 /* timestamp (timestamp without time zone) */
-extern Datum rdf_literal_to_timestamp(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_timestamp(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_timestamp(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_timestamp(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_timestamp(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_timestamp(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_timestamp(PG_FUNCTION_ARGS);
-extern Datum timestamp_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timestamp_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timestamp_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timestamp_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timestamp_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timestamp_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timestamp_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_timestamp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_timestamp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_timestamp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_timestamp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_timestamp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_timestamp(PG_FUNCTION_ARGS);
+extern Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timestamp_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timestamp_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timestamp_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timestamp_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timestamp_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timestamp_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* date */
-extern Datum rdf_literal_to_date(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_date(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_date(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_date(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_date(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_date(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_date(PG_FUNCTION_ARGS);
-extern Datum date_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum date_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum date_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum date_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum date_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum date_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum date_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_date(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_date(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_date(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_date(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_date(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_date(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_date(PG_FUNCTION_ARGS);
+extern Datum date_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum date_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum date_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum date_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum date_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum date_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum date_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* time (time without time zone) */
-extern Datum rdf_literal_to_time(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_time(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_time(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_time(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_time(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_time(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_time(PG_FUNCTION_ARGS);
-extern Datum time_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum time_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum time_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum time_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum time_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum time_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum time_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_time(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_time(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_time(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_time(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_time(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_time(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_time(PG_FUNCTION_ARGS);
+extern Datum time_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum time_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum time_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum time_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum time_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum time_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum time_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* timetz (time with time zone) */
-extern Datum rdf_literal_to_timetz(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_timetz(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_timetz(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_timetz(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_timetz(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_timetz(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_timetz(PG_FUNCTION_ARGS);
-extern Datum timetz_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timetz_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timetz_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timetz_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timetz_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timetz_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum timetz_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_timetz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_timetz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_timetz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_timetz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_timetz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_timetz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_timetz(PG_FUNCTION_ARGS);
+extern Datum timetz_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timetz_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timetz_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timetz_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timetz_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timetz_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum timetz_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* boolean */
-extern Datum rdf_literal_to_boolean(PG_FUNCTION_ARGS);
-extern Datum boolean_to_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_boolean(PG_FUNCTION_ARGS);
+extern Datum boolean_to_rdfnode(PG_FUNCTION_ARGS);
 
 /* interval */
-extern Datum rdf_literal_to_interval(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_eq_interval(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_neq_interval(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_lt_interval(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_gt_interval(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_le_interval(PG_FUNCTION_ARGS);
-extern Datum rdf_literal_ge_interval(PG_FUNCTION_ARGS);
-extern Datum interval_to_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum interval_eq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum interval_neq_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum interval_lt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum interval_gt_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum interval_le_rdf_literal(PG_FUNCTION_ARGS);
-extern Datum interval_ge_rdf_literal(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_interval(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_interval(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_interval(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_interval(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_interval(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_interval(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_interval(PG_FUNCTION_ARGS);
+extern Datum interval_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum interval_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum interval_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum interval_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum interval_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum interval_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum interval_ge_rdfnode(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
@@ -684,14 +687,13 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strlang);
 PG_FUNCTION_INFO_V1(rdf_fdw_strdt);
 PG_FUNCTION_INFO_V1(rdf_fdw_str);
 PG_FUNCTION_INFO_V1(rdf_fdw_lang);
+PG_FUNCTION_INFO_V1(rdf_fdw_datatype);
 PG_FUNCTION_INFO_V1(rdf_fdw_datatype_text);
 PG_FUNCTION_INFO_V1(rdf_fdw_datatype_poly);
 PG_FUNCTION_INFO_V1(rdf_fdw_arguments_compatible);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri_in);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri_out);
-PG_FUNCTION_INFO_V1(rdf_fdw_rdfiri_eq);
-PG_FUNCTION_INFO_V1(rdf_fdw_rdfiri_text_eq);
 PG_FUNCTION_INFO_V1(rdf_fdw_isIRI);
 PG_FUNCTION_INFO_V1(rdf_fdw_langmatches);
 PG_FUNCTION_INFO_V1(rdf_fdw_isBlank);
@@ -710,203 +712,199 @@ PG_FUNCTION_INFO_V1(rdf_fdw_bound);
 PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
 PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
 
-/* rdf_iri (custom data type) */
-PG_FUNCTION_INFO_V1(rdf_iri_in);
-PG_FUNCTION_INFO_V1(rdf_iri_out);
-
-/* rdf_literal (custom data type) */
-PG_FUNCTION_INFO_V1(rdf_literal_in);
-PG_FUNCTION_INFO_V1(rdf_literal_out);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(rdf_literal_le_rdf_literal);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_rdf_literal);
+/* rdfnode (custom data type) */
+PG_FUNCTION_INFO_V1(rdfnode_in);
+PG_FUNCTION_INFO_V1(rdfnode_out);
+PG_FUNCTION_INFO_V1(rdfnode_eq_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_neq_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_lt_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_gt_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_le_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_ge_rdfnode);
 
 /* numeric data type */
-PG_FUNCTION_INFO_V1(rdf_literal_to_numeric);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_numeric);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_numeric);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_numeric);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_numeric);
-PG_FUNCTION_INFO_V1(rdf_literal_le_numeric);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_numeric);
-PG_FUNCTION_INFO_V1(numeric_to_rdf_literal);
-PG_FUNCTION_INFO_V1(numeric_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(numeric_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(numeric_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(numeric_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(numeric_le_rdf_literal);
-PG_FUNCTION_INFO_V1(numeric_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_eq_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_neq_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_lt_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_gt_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_le_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_ge_numeric);
+PG_FUNCTION_INFO_V1(numeric_to_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_eq_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_neq_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_lt_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_gt_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_le_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_ge_rdfnode);
 
 /* float8 (double precision) data type */
-PG_FUNCTION_INFO_V1(rdf_literal_neq_float8);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_float8);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_float8);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_float8);
-PG_FUNCTION_INFO_V1(rdf_literal_le_float8);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_float8);
-PG_FUNCTION_INFO_V1(rdf_literal_to_float8);
-PG_FUNCTION_INFO_V1(float8_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(float8_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(float8_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(float8_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(float8_le_rdf_literal);
-PG_FUNCTION_INFO_V1(float8_ge_rdf_literal);
-PG_FUNCTION_INFO_V1(float8_to_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_neq_float8);
+PG_FUNCTION_INFO_V1(rdfnode_eq_float8);
+PG_FUNCTION_INFO_V1(rdfnode_lt_float8);
+PG_FUNCTION_INFO_V1(rdfnode_gt_float8);
+PG_FUNCTION_INFO_V1(rdfnode_le_float8);
+PG_FUNCTION_INFO_V1(rdfnode_ge_float8);
+PG_FUNCTION_INFO_V1(rdfnode_to_float8);
+PG_FUNCTION_INFO_V1(float8_eq_rdfnode);
+PG_FUNCTION_INFO_V1(float8_neq_rdfnode);
+PG_FUNCTION_INFO_V1(float8_lt_rdfnode);
+PG_FUNCTION_INFO_V1(float8_gt_rdfnode);
+PG_FUNCTION_INFO_V1(float8_le_rdfnode);
+PG_FUNCTION_INFO_V1(float8_ge_rdfnode);
+PG_FUNCTION_INFO_V1(float8_to_rdfnode);
 
 /* float4 (real) data type */
-PG_FUNCTION_INFO_V1(rdf_literal_to_float4);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_float4);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_float4);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_float4);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_float4);
-PG_FUNCTION_INFO_V1(rdf_literal_le_float4);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_float4);
-PG_FUNCTION_INFO_V1(float4_to_rdf_literal);
-PG_FUNCTION_INFO_V1(float4_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(float4_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(float4_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(float4_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(float4_le_rdf_literal);
-PG_FUNCTION_INFO_V1(float4_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_float4);
+PG_FUNCTION_INFO_V1(rdfnode_eq_float4);
+PG_FUNCTION_INFO_V1(rdfnode_neq_float4);
+PG_FUNCTION_INFO_V1(rdfnode_lt_float4);
+PG_FUNCTION_INFO_V1(rdfnode_gt_float4);
+PG_FUNCTION_INFO_V1(rdfnode_le_float4);
+PG_FUNCTION_INFO_V1(rdfnode_ge_float4);
+PG_FUNCTION_INFO_V1(float4_to_rdfnode);
+PG_FUNCTION_INFO_V1(float4_eq_rdfnode);
+PG_FUNCTION_INFO_V1(float4_neq_rdfnode);
+PG_FUNCTION_INFO_V1(float4_lt_rdfnode);
+PG_FUNCTION_INFO_V1(float4_gt_rdfnode);
+PG_FUNCTION_INFO_V1(float4_le_rdfnode);
+PG_FUNCTION_INFO_V1(float4_ge_rdfnode);
 
 /* int8 (bigint) data type */
-PG_FUNCTION_INFO_V1(rdf_literal_to_int8);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_int8);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_int8);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_int8);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_int8);
-PG_FUNCTION_INFO_V1(rdf_literal_le_int8);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_int8);
-PG_FUNCTION_INFO_V1(int8_to_rdf_literal);
-PG_FUNCTION_INFO_V1(int8_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(int8_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(int8_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(int8_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(int8_le_rdf_literal);
-PG_FUNCTION_INFO_V1(int8_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_int8);
+PG_FUNCTION_INFO_V1(rdfnode_eq_int8);
+PG_FUNCTION_INFO_V1(rdfnode_neq_int8);
+PG_FUNCTION_INFO_V1(rdfnode_lt_int8);
+PG_FUNCTION_INFO_V1(rdfnode_gt_int8);
+PG_FUNCTION_INFO_V1(rdfnode_le_int8);
+PG_FUNCTION_INFO_V1(rdfnode_ge_int8);
+PG_FUNCTION_INFO_V1(int8_to_rdfnode);
+PG_FUNCTION_INFO_V1(int8_eq_rdfnode);
+PG_FUNCTION_INFO_V1(int8_neq_rdfnode);
+PG_FUNCTION_INFO_V1(int8_lt_rdfnode);
+PG_FUNCTION_INFO_V1(int8_gt_rdfnode);
+PG_FUNCTION_INFO_V1(int8_le_rdfnode);
+PG_FUNCTION_INFO_V1(int8_ge_rdfnode);
 
 /* int4 (int) data type */
-PG_FUNCTION_INFO_V1(rdf_literal_to_int4);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_int4);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_int4);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_int4);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_int4);
-PG_FUNCTION_INFO_V1(rdf_literal_le_int4);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_int4);
-PG_FUNCTION_INFO_V1(int4_to_rdf_literal);
-PG_FUNCTION_INFO_V1(int4_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(int4_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(int4_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(int4_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(int4_le_rdf_literal);
-PG_FUNCTION_INFO_V1(int4_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_int4);
+PG_FUNCTION_INFO_V1(rdfnode_eq_int4);
+PG_FUNCTION_INFO_V1(rdfnode_neq_int4);
+PG_FUNCTION_INFO_V1(rdfnode_lt_int4);
+PG_FUNCTION_INFO_V1(rdfnode_gt_int4);
+PG_FUNCTION_INFO_V1(rdfnode_le_int4);
+PG_FUNCTION_INFO_V1(rdfnode_ge_int4);
+PG_FUNCTION_INFO_V1(int4_to_rdfnode);
+PG_FUNCTION_INFO_V1(int4_eq_rdfnode);
+PG_FUNCTION_INFO_V1(int4_neq_rdfnode);
+PG_FUNCTION_INFO_V1(int4_lt_rdfnode);
+PG_FUNCTION_INFO_V1(int4_gt_rdfnode);
+PG_FUNCTION_INFO_V1(int4_le_rdfnode);
+PG_FUNCTION_INFO_V1(int4_ge_rdfnode);
 
 /* int2 (smallint) data type */
-PG_FUNCTION_INFO_V1(rdf_literal_to_int2);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_int2);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_int2);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_int2);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_int2);
-PG_FUNCTION_INFO_V1(rdf_literal_le_int2);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_int2);
-PG_FUNCTION_INFO_V1(int2_to_rdf_literal);
-PG_FUNCTION_INFO_V1(int2_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(int2_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(int2_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(int2_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(int2_le_rdf_literal);
-PG_FUNCTION_INFO_V1(int2_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_int2);
+PG_FUNCTION_INFO_V1(rdfnode_eq_int2);
+PG_FUNCTION_INFO_V1(rdfnode_neq_int2);
+PG_FUNCTION_INFO_V1(rdfnode_lt_int2);
+PG_FUNCTION_INFO_V1(rdfnode_gt_int2);
+PG_FUNCTION_INFO_V1(rdfnode_le_int2);
+PG_FUNCTION_INFO_V1(rdfnode_ge_int2);
+PG_FUNCTION_INFO_V1(int2_to_rdfnode);
+PG_FUNCTION_INFO_V1(int2_eq_rdfnode);
+PG_FUNCTION_INFO_V1(int2_neq_rdfnode);
+PG_FUNCTION_INFO_V1(int2_lt_rdfnode);
+PG_FUNCTION_INFO_V1(int2_gt_rdfnode);
+PG_FUNCTION_INFO_V1(int2_le_rdfnode);
+PG_FUNCTION_INFO_V1(int2_ge_rdfnode);
 
 /* timestamptz (timestamp with time zone) */
-PG_FUNCTION_INFO_V1(timestamptz_to_rdf_literal);
-PG_FUNCTION_INFO_V1(rdf_literal_to_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_to_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_to_timestamptz);
 
 /* timestamp (timestamp without time zone) */
-PG_FUNCTION_INFO_V1(rdf_literal_to_timestamp);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_timestamp);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_timestamp);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_timestamp);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_timestamp);
-PG_FUNCTION_INFO_V1(rdf_literal_le_timestamp);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_timestamp);
-PG_FUNCTION_INFO_V1(timestamp_to_rdf_literal);
-PG_FUNCTION_INFO_V1(timestamp_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(timestamp_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(timestamp_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(timestamp_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(timestamp_le_rdf_literal);
-PG_FUNCTION_INFO_V1(timestamp_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_timestamp);
+PG_FUNCTION_INFO_V1(rdfnode_eq_timestamp);
+PG_FUNCTION_INFO_V1(rdfnode_neq_timestamp);
+PG_FUNCTION_INFO_V1(rdfnode_lt_timestamp);
+PG_FUNCTION_INFO_V1(rdfnode_gt_timestamp);
+PG_FUNCTION_INFO_V1(rdfnode_le_timestamp);
+PG_FUNCTION_INFO_V1(rdfnode_ge_timestamp);
+PG_FUNCTION_INFO_V1(timestamp_to_rdfnode);
+PG_FUNCTION_INFO_V1(timestamp_eq_rdfnode);
+PG_FUNCTION_INFO_V1(timestamp_neq_rdfnode);
+PG_FUNCTION_INFO_V1(timestamp_lt_rdfnode);
+PG_FUNCTION_INFO_V1(timestamp_gt_rdfnode);
+PG_FUNCTION_INFO_V1(timestamp_le_rdfnode);
+PG_FUNCTION_INFO_V1(timestamp_ge_rdfnode);
 
 /* date */
-PG_FUNCTION_INFO_V1(rdf_literal_to_date);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_date);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_date);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_date);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_date);
-PG_FUNCTION_INFO_V1(rdf_literal_le_date);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_date);
-PG_FUNCTION_INFO_V1(date_to_rdf_literal);
-PG_FUNCTION_INFO_V1(date_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(date_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(date_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(date_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(date_le_rdf_literal);
-PG_FUNCTION_INFO_V1(date_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_date);
+PG_FUNCTION_INFO_V1(rdfnode_eq_date);
+PG_FUNCTION_INFO_V1(rdfnode_neq_date);
+PG_FUNCTION_INFO_V1(rdfnode_lt_date);
+PG_FUNCTION_INFO_V1(rdfnode_gt_date);
+PG_FUNCTION_INFO_V1(rdfnode_le_date);
+PG_FUNCTION_INFO_V1(rdfnode_ge_date);
+PG_FUNCTION_INFO_V1(date_to_rdfnode);
+PG_FUNCTION_INFO_V1(date_eq_rdfnode);
+PG_FUNCTION_INFO_V1(date_neq_rdfnode);
+PG_FUNCTION_INFO_V1(date_lt_rdfnode);
+PG_FUNCTION_INFO_V1(date_gt_rdfnode);
+PG_FUNCTION_INFO_V1(date_le_rdfnode);
+PG_FUNCTION_INFO_V1(date_ge_rdfnode);
 
 /* time (time without time zone) */
-PG_FUNCTION_INFO_V1(rdf_literal_to_time);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_time);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_time);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_time);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_time);
-PG_FUNCTION_INFO_V1(rdf_literal_le_time);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_time);
-PG_FUNCTION_INFO_V1(time_to_rdf_literal);
-PG_FUNCTION_INFO_V1(time_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(time_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(time_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(time_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(time_le_rdf_literal);
-PG_FUNCTION_INFO_V1(time_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_time);
+PG_FUNCTION_INFO_V1(rdfnode_eq_time);
+PG_FUNCTION_INFO_V1(rdfnode_neq_time);
+PG_FUNCTION_INFO_V1(rdfnode_lt_time);
+PG_FUNCTION_INFO_V1(rdfnode_gt_time);
+PG_FUNCTION_INFO_V1(rdfnode_le_time);
+PG_FUNCTION_INFO_V1(rdfnode_ge_time);
+PG_FUNCTION_INFO_V1(time_to_rdfnode);
+PG_FUNCTION_INFO_V1(time_eq_rdfnode);
+PG_FUNCTION_INFO_V1(time_neq_rdfnode);
+PG_FUNCTION_INFO_V1(time_lt_rdfnode);
+PG_FUNCTION_INFO_V1(time_gt_rdfnode);
+PG_FUNCTION_INFO_V1(time_le_rdfnode);
+PG_FUNCTION_INFO_V1(time_ge_rdfnode);
 
 /* timetz (time witho time zone) */
-PG_FUNCTION_INFO_V1(rdf_literal_to_timetz);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_timetz);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_timetz);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_timetz);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_timetz);
-PG_FUNCTION_INFO_V1(rdf_literal_le_timetz);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_timetz);
-PG_FUNCTION_INFO_V1(timetz_to_rdf_literal);
-PG_FUNCTION_INFO_V1(timetz_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(timetz_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(timetz_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(timetz_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(timetz_le_rdf_literal);
-PG_FUNCTION_INFO_V1(timetz_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_timetz);
+PG_FUNCTION_INFO_V1(rdfnode_eq_timetz);
+PG_FUNCTION_INFO_V1(rdfnode_neq_timetz);
+PG_FUNCTION_INFO_V1(rdfnode_lt_timetz);
+PG_FUNCTION_INFO_V1(rdfnode_gt_timetz);
+PG_FUNCTION_INFO_V1(rdfnode_le_timetz);
+PG_FUNCTION_INFO_V1(rdfnode_ge_timetz);
+PG_FUNCTION_INFO_V1(timetz_to_rdfnode);
+PG_FUNCTION_INFO_V1(timetz_eq_rdfnode);
+PG_FUNCTION_INFO_V1(timetz_neq_rdfnode);
+PG_FUNCTION_INFO_V1(timetz_lt_rdfnode);
+PG_FUNCTION_INFO_V1(timetz_gt_rdfnode);
+PG_FUNCTION_INFO_V1(timetz_le_rdfnode);
+PG_FUNCTION_INFO_V1(timetz_ge_rdfnode);
 
 /* boolean */
-PG_FUNCTION_INFO_V1(rdf_literal_to_boolean);
-PG_FUNCTION_INFO_V1(boolean_to_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_boolean);
+PG_FUNCTION_INFO_V1(boolean_to_rdfnode);
 
 /* interval */
-PG_FUNCTION_INFO_V1(rdf_literal_to_interval);
-PG_FUNCTION_INFO_V1(rdf_literal_eq_interval);
-PG_FUNCTION_INFO_V1(rdf_literal_neq_interval);
-PG_FUNCTION_INFO_V1(rdf_literal_lt_interval);
-PG_FUNCTION_INFO_V1(rdf_literal_gt_interval);
-PG_FUNCTION_INFO_V1(rdf_literal_le_interval);
-PG_FUNCTION_INFO_V1(rdf_literal_ge_interval);
-PG_FUNCTION_INFO_V1(interval_to_rdf_literal);
-PG_FUNCTION_INFO_V1(interval_eq_rdf_literal);
-PG_FUNCTION_INFO_V1(interval_neq_rdf_literal);
-PG_FUNCTION_INFO_V1(interval_lt_rdf_literal);
-PG_FUNCTION_INFO_V1(interval_gt_rdf_literal);
-PG_FUNCTION_INFO_V1(interval_le_rdf_literal);
-PG_FUNCTION_INFO_V1(interval_ge_rdf_literal);
+PG_FUNCTION_INFO_V1(rdfnode_to_interval);
+PG_FUNCTION_INFO_V1(rdfnode_eq_interval);
+PG_FUNCTION_INFO_V1(rdfnode_neq_interval);
+PG_FUNCTION_INFO_V1(rdfnode_lt_interval);
+PG_FUNCTION_INFO_V1(rdfnode_gt_interval);
+PG_FUNCTION_INFO_V1(rdfnode_le_interval);
+PG_FUNCTION_INFO_V1(rdfnode_ge_interval);
+PG_FUNCTION_INFO_V1(interval_to_rdfnode);
+PG_FUNCTION_INFO_V1(interval_eq_rdfnode);
+PG_FUNCTION_INFO_V1(interval_neq_rdfnode);
+PG_FUNCTION_INFO_V1(interval_lt_rdfnode);
+PG_FUNCTION_INFO_V1(interval_gt_rdfnode);
+PG_FUNCTION_INFO_V1(interval_le_rdfnode);
+PG_FUNCTION_INFO_V1(interval_ge_rdfnode);
 
 static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
@@ -960,12 +958,14 @@ static char* CreateRegexString(char* str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static char *FormatSQLExtractField(char *field);
-static char *CstringToRDFLiteral(char *input);
+static char *cstring_to_rdfnode(char *input);
+static char *rdfnode_to_cstring(char *input);
 static char *lex(char *input);
 static bool LiteralsCompatible(char *literal1, char *literal2);
 static char *ExpandDatatypePrefix(char *str);
 static bool IsRDFStringLiteral(char *str_datatype);
 static char *MapSPARQLDatatype(Oid pgtype);
+static char *str(char *input);
 static char *strdt(char *literal, char *datatype);
 static char *lang(char *input);
 static char *datatype(char *input);
@@ -979,9 +979,10 @@ static bool isLiteral(char *term);
 static char *bnode(char *input);
 static char *generate_uuid_v4(void);
 static char *rdf_concat(char *left, char *right);
+static Oid get_rdfnode_oid(void);
 
-static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2);
-static bool LiteralsComparable(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2);
+static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2);
+static bool LiteralsComparable(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2);
 #if PG_VERSION_NUM < 130000
 static void pg_unicode_to_server(pg_wchar c, unsigned char *utf8);
 #endif
@@ -1017,7 +1018,7 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 }
 
 /*
- * CstringToRDFLiteral
+ * cstring_to_rdfnode
  * --------------
  *
  * Converts a raw string input into a valid RDF literal by adding quotes and escaping
@@ -1029,7 +1030,7 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
  * returns: a string representing the RDF literal (e.g., "\"abc\"", "\"ab\\\"c\"")
  *          or the input as-is if already a complete literal.
  */
-static char *CstringToRDFLiteral(char *input)
+static char *cstring_to_rdfnode(char *input)
 {
 	StringInfoData buf;
 	const char *start;
@@ -1100,160 +1101,102 @@ static char *CstringToRDFLiteral(char *input)
 	return buf.data;
 }
 
-/*
- * lex
- * ---
- *
- * Extracts the lexical value from an RDF literal, stripping quotes, language tags,
- * and datatype annotations as per SPARQL conventions. Handles both quoted and
- * unquoted inputs, escaping unescaped quotes within quoted literals when necessary.
- * Returns an empty string for empty input.
- *
- * input: Null-terminated C string representing an RDF literal or value (e.g., "abc"@en, "123"^^xsd:int, abc)
- *
- * returns: Null-terminated C string representing the lexical value (e.g., "abc", "123")
- */
-// static char *lex(char *input)
-// {
-// 	const char *start;
-// 	const char *end;
-// 	bool is_quoted;
-// 	int len;
-// 	StringInfoData output;
-
-// 	elog(DEBUG1, "%s called: input='%s'", __func__, input);
-
-// 	start = input;
-// 	is_quoted = (*start == '"');
-// 	len = strlen(start);
-// 	initStringInfo(&output);
-
-// 	if (len == 0)
-// 		return "";
-
-// 	if (is_quoted)
-// 	{
-// 		start++; /* skip initial quote */
-// 		end = start;
-
-// 		/* scan to find the end, checking for language tag or datatype */
-// 		while (*end)
-// 		{
-// 			if (*end == '@' || (*end == '^' && *(end + 1) == '^'))
-// 			{
-// 				/* back up to exclude the closing quote before the tag */
-// 				if (end > start && *(end - 1) == '"')
-// 					end--;
-// 				break;
-// 			}
-// 			end++;
-// 		}
-
-// 		if (*end == '\0')
-// 		{
-// 			end = start + strlen(start);
-// 			if (end > start && *(end - 1) == '"')
-// 				end--;
-// 		}
-	
-// 		/* copy the content, escaping unescaped quotes if needed */
-// 		while (start < end)
-// 		{
-// 			if (*start == '"' && start != end - 1)
-// 			{
-// 				if (start == input + 1 || *(start - 1) != '\\')
-// 				{
-// 					appendStringInfoChar(&output, '\\');
-// 				}
-// 				appendStringInfoChar(&output, '"');
-// 			}
-// 			else
-// 			{
-// 				appendStringInfoChar(&output, *start);
-// 			}
-// 			start++;
-// 		}
-// 	}
-// 	else
-// 	{
-// 		end = strstr(start, "@");
-// 		if (!end)
-// 			end = strstr(start, "^^");
-
-// 		if (end)
-// 			appendBinaryStringInfo(&output, start, end - start);
-// 		else
-// 			appendStringInfoString(&output, start);
-// 	}
-
-// 	elog(DEBUG1,"%s exit: returning => '%s'", __func__, output.data);
-
-// 	return output.data;
-// }
 static char *lex(char *input)
 {
-	const char *start = input;
-	const char *end;
-	int len = strlen(input);
-	int nquotes = 0;
-	StringInfoData output;
+    StringInfoData output;
+    const char *start = input;
+    int len = strlen(input);
 
-	initStringInfo(&output);
+    initStringInfo(&output);
+    elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
-	elog(DEBUG1, "%s called: input='%s'", __func__, input);
+    if (len == 0)
+        return "";
 
-	if (len == 0)
-		return "";
+    /* Handle quoted literal */
+    if (start[0] == '"') {
+        const char *p;
+        start++;  /* skip opening quote */
 
-	for (int i = 0; i < len; i++)
-	{
-		if (input[i] == '"')
-			nquotes++;
-	}
+        p = start;
+        while (*p) {
+            if (*p == '"' && *(p - 1) != '\\') {
+                break;  /* closing quote found */
+            }
+            if (*p == '\\' && *(p + 1)) {
+                appendStringInfoChar(&output, *p);
+                p++;
+            }
+            appendStringInfoChar(&output, *p);
+            p++;
+        }
 
-	elog(DEBUG2,"%s: input='%s'first nquotes=%d", __func__, input, nquotes);
+        /* No closing quote found — malformed, return whole string */
+        if (*p != '"') {
+            resetStringInfo(&output);
+            appendStringInfoString(&output, input);
+            return output.data;
+        }
 
-	if (input[0] == '"' && nquotes == 1)
-	{
-		appendStringInfoChar(&output, '\\');
-		appendStringInfoChar(&output, '"');
-	}
+        /* Successful: return parsed inside quotes */
+        return output.data;
+    }
 
-	if (start[0] != '"')
-	{
-		/* Not quoted, return until @ or ^^ if present */
-		end = strstr(start, "@");
-		if (!end)
-			end = strstr(start, "^^");
+    /* Handle IRI */
+    if (start[0] == '<') {
+        appendStringInfoString(&output, start);
+        return output.data;
+    }
 
-		if (end)
-			appendBinaryStringInfo(&output, start, end - start);
-		else
-			appendStringInfoString(&output, start);
+    /* Unquoted: trim at @ or ^^ only if they indicate language tag or datatype */
+    {
+        const char *at = strchr(start, '@');
+        const char *dt = strstr(start, "^^");
+        const char *cut = NULL;
 
-		elog(DEBUG1, "%s exit (quoted): returning '%s'", __func__, output.data);
-		return output.data;
-	}
+        if (at && (!dt || at < dt)) {
+            const char *tag = at + 1;
+            int letter_count = 0;
+            const char *p = NULL;
+            int is_lang_tag = 0;
 
-	/* Quoted literal: skip first quote */
-	start++;
+            if (*tag && isalpha(*tag)) {
+                p = tag;
+                while (*p && isalpha(*p) && letter_count < 8) {
+                    letter_count++;
+                    p++;
+                }
 
-	/* Find the end of lexical content: quote before @ or ^^ or final quote */
-	end = start;
-	while (*end)
-	{
-		if (*end == '"' &&
-			(end[1] == '\0' || end[1] == '@' || (end[1] == '^' && end[2] == '^')))
-			break;
-		end++;
-	}
+                if (letter_count >= 1 && (!*p || *p == '-' || (*p != '.' && *p != '@'))) {
+                    if (*p == '-') {
+                        p++;
+                        while (*p && (isalnum(*p) || *p == '-')) {
+                            p++;
+                        }
+                    }
 
-	appendBinaryStringInfo(&output, start, end - start);
-	elog(DEBUG1, "%s exit: returning => '%s'", __func__, output.data);
+                    if (!*p || (*p != '.' && *p != '@')) {
+                        is_lang_tag = 1;
+                    }
+                }
+            }
 
-	return output.data;
+            if (is_lang_tag) {
+                cut = at;
+            }
+        } else if (dt) {
+            cut = dt;
+        }
+
+        if (cut) {
+            appendBinaryStringInfo(&output, start, cut - start);
+        } else {
+            appendStringInfoString(&output, start);
+        }
+    }
+
+    return output.data;
 }
-
 
 
 /*
@@ -1348,20 +1291,22 @@ Datum rdf_fdw_lang(PG_FUNCTION_ARGS)
 static char *strlang(char *literal, char *language)
 {
 	StringInfoData buf;
+	char *lex_language = lex(language);
+	char *lex_literal = lex(literal);
 
 	elog(DEBUG1, "%s called: literal='%s', language='%s'", __func__, literal, language);
 
-	if (strlen(language) == 0)
+	if (strlen(lex_language) == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("language tag cannot be empty")));
 
 	initStringInfo(&buf);
 
-	if (strlen(literal) == 0)
-		appendStringInfo(&buf, "\"\"@%s", language);
+	if (strlen(lex_literal) == 0)
+		appendStringInfo(&buf, "\"\"@%s", lex_language);
 	else
-		appendStringInfo(&buf, "%s@%s", CstringToRDFLiteral(lex(literal)), language);
+		appendStringInfo(&buf, "%s@%s", str(literal), lex_language);
 
 	elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 
@@ -1478,12 +1423,11 @@ static char *ExpandDatatypePrefix(char *str)
 static char *strdt(char *literal, char *datatype)
 {
 	StringInfoData buf;
-	char *lexical;
-	char *expanded_datatype;
+	char *lex_datatype = lex(datatype);
 
 	elog(DEBUG1, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
-
-	if (!datatype || strlen(datatype) == 0)
+	
+	if (strlen(lex_datatype) == 0)
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						errmsg("datatype IRI cannot be empty")));
 
@@ -1491,15 +1435,20 @@ static char *strdt(char *literal, char *datatype)
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						errmsg("datatype IRI cannot contain whitespaces")));
 
-	lexical = lex(literal);
-	expanded_datatype = ExpandDatatypePrefix(datatype);
 	initStringInfo(&buf);
 
-	/* Always wrap in < > unless it’s already bracketed */
-	if (expanded_datatype[0] == '<' && expanded_datatype[strlen(expanded_datatype) - 1] == '>')
-		appendStringInfo(&buf, "%s^^%s", CstringToRDFLiteral(lexical), expanded_datatype);
+	if (isIRI(datatype))
+		appendStringInfo(&buf, "%s^^%s", str(literal), datatype);
 	else
-		appendStringInfo(&buf, "%s^^<%s>", CstringToRDFLiteral(lexical), expanded_datatype);
+	{		
+		char *expanded_datatype;
+		
+
+		elog(DEBUG2, "%s: data type not an IRI", __func__);		
+
+		expanded_datatype = ExpandDatatypePrefix(lex_datatype);
+		appendStringInfo(&buf, "%s^^%s", str(literal), iri(expanded_datatype));
+	}
 
 	elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 
@@ -1554,7 +1503,7 @@ static char *str(char *input)
 	if (!input || strlen(input) == 0)
 	{
 		elog(DEBUG1,"%s exit: returning empty literal", __func__);
-		return CstringToRDFLiteral(""); /* empty input returns empty string */
+		return cstring_to_rdfnode(""); /* empty input returns empty string */
 	}
 
 	/* Check if input looks like an IRI (starts with <, ends with >) */
@@ -1567,14 +1516,14 @@ static char *str(char *input)
 
 		elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
 
-		return CstringToRDFLiteral(buf.data);
+		return cstring_to_rdfnode(buf.data);
 	}
 
-	result = lex(input);
+	result = cstring_to_rdfnode(lex(input));
 
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, CstringToRDFLiteral(result));
+	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 
-	return CstringToRDFLiteral(result);
+	return result;
 }
 
 /*
@@ -1601,116 +1550,30 @@ Datum rdf_fdw_str(PG_FUNCTION_ARGS)
 /*
  * iri
  * ---
- *
  * Converts a string to an IRI by wrapping it in angle brackets (< >), mimicking
- * Virtuoso's IRI() function. Strips quotes and any language tags or datatypes if
- * present, and preserves pre-wrapped IRIs. No base URI resolution is applied.
- *
- * Input: Null-terminated C string (e.g., "http://example/", '"foo"@en', '<urn:uuid:...>')
- * Output: Null-terminated C string wrapped as an IRI (e.g., "<http://example/>")
+ * SPARQL's IRI() function. Strips quotes and any language tags or datatypes if
+ * present *only* for quoted literals. Raw strings and pre-wrapped IRIs are preserved.
  */
 static char *iri(char *input)
 {
-    StringInfoData buf;
-    const char *start, *end;
-
-    elog(DEBUG1, "%s called: input '%s'", __func__, input);
-
-    /* Handle empty or NULL input */
-    if (!input || strlen(input) == 0)
-        return "<>";
-
-    initStringInfo(&buf);
-
-    /* If input is already a valid IRI (enclosed in < >), return it unchanged */
-    if (isIRI(input))
-    {
-        appendStringInfoString(&buf, input);
-        elog(DEBUG1, "%s exit: returning existing IRI => '%s'", __func__, buf.data);
-        return pstrdup(buf.data);
-    }
-
-    /* Set default start and end to full string */
-    start = input;
-    end = input + strlen(input);
-
-    /* Handle quoted strings, stripping quotes and tags */
-    if (*start == '"')
-    {
-        start++;  /* Skip opening quote */
-        end = strrchr(input, '"');  /* Stop at closing quote */
-        if (!end || end <= start)
-            end = input + strlen(input);  /* Malformed input, use full string */
-        else
-        {
-            /* Check for language tags (@) or datatypes (^^) after the closing quote */
-            const char *post_quote = end + 1;
-            const char *tag = strpbrk(post_quote, "@^");
-            if (tag && (*tag == '@' || (tag[1] == '^' && tag[0] == '^')))
-                ;  /* Tag follows, keep end at quote to exclude it */
-            /* No tag, end stays at quote */
-        }
-    }
-
-    /* Wrap the result in < >, excluding quotes and tags */
-    appendStringInfo(&buf, "<");
-    if (*input == '"' && end != input + strlen(input))
-        appendBinaryStringInfo(&buf, start, end - start);  /* Quoted, stop before closing quote */
-    else
-        appendBinaryStringInfo(&buf, start, end - start);  /* Unquoted or malformed */
-    appendStringInfo(&buf, ">");
-
-    elog(DEBUG1, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
-    return pstrdup(buf.data);
-}
-
-Datum rdf_fdw_iri_in(PG_FUNCTION_ARGS)
-{
-	char *input = PG_GETARG_CSTRING(0);
 	StringInfoData buf;
-	RDFIRIDatum *result;
-	size_t len = strlen(input);
+	char *lexical;
 
-	if (!isIRI(input))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid IRI: %s", input)));
+	elog(DEBUG1, "%s called: input='%s'", __func__, input ? input : "(null)");
+
+	if (!input || *input == '\0')
+		return "<>";
+
+	if (isIRI(input))
+		return pstrdup(input);
 
 	initStringInfo(&buf);
-	appendStringInfoString(&buf, input);
 
-	result = (RDFIRIDatum *)palloc(IRI_SIZE(len));
-	SET_VARSIZE(result, IRI_SIZE(len));
-	memcpy(result->data, buf.data, len + 1); // Copy null-terminated string
+	lexical = lex(input);  // Extract the lexical form
+	appendStringInfo(&buf, "<%s>", lexical);
 
-	pfree(buf.data);
-	PG_RETURN_POINTER(result);
-}
-
-Datum rdf_fdw_iri_out(PG_FUNCTION_ARGS)
-{
-	RDFIRIDatum *iri = (RDFIRIDatum *)PG_GETARG_VARLENA_P(0);
-	PG_RETURN_CSTRING(pstrdup(iri->data));
-}
-
-Datum rdf_fdw_rdfiri_eq(PG_FUNCTION_ARGS)
-{
-    RDFIRIDatum *a = (RDFIRIDatum *)PG_GETARG_VARLENA_P(0);
-    RDFIRIDatum *b = (RDFIRIDatum *)PG_GETARG_VARLENA_P(1);
-
-    bool result = strcmp(a->data, b->data) == 0;
-    PG_RETURN_BOOL(result);
-}
-
-Datum rdf_fdw_rdfiri_text_eq(PG_FUNCTION_ARGS)
-{
-    RDFIRIDatum *a = (RDFIRIDatum *)PG_GETARG_VARLENA_P(0);
-    text *b = PG_GETARG_TEXT_PP(1);
-    char *b_str = text_to_cstring(b);
-
-    bool result = strcmp(a->data, b_str) == 0;
-    pfree(b_str);
-    PG_RETURN_BOOL(result);
+	elog(DEBUG1, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
+	return pstrdup(buf.data);
 }
 
 /*
@@ -1762,8 +1625,6 @@ static bool isIRI( char *input)
 	return true;
 }
 
-
-
 /*
  * rdf_fdw_isIRI
  * -------------
@@ -1810,7 +1671,8 @@ static char *datatype(char *input)
 		return "";
 	}
 
-	ptr = CstringToRDFLiteral(input);
+	ptr = cstring_to_rdfnode(input);
+	//ptr = str(input);
 	len = strlen(ptr);
 
 	initStringInfo(&buf);
@@ -1912,6 +1774,7 @@ static char *MapSPARQLDatatype(Oid pgtype)
 	elog(DEBUG1,"%s exit: returning NULL (unsupported type)", __func__);
 	return NULL; // Unsupported type
 }
+
 /*
  * rdf_fdw_datatype
  * ----------------
@@ -1923,34 +1786,61 @@ static char *MapSPARQLDatatype(Oid pgtype)
  *
  * returns: PostgreSQL text type representing the datatype URI
  */
-Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS)
+Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 {
-    text *str_arg = PG_GETARG_TEXT_PP(0);
-    char *str = text_to_cstring(str_arg);
-    char *result = datatype(str);
-    pfree(str);
-    PG_RETURN_TEXT_P(cstring_to_text(result));
+	Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
+
+	RDFNODEOID = get_rdfnode_oid();
+	
+	if (argtype == TEXTOID || argtype == VARCHAROID || argtype == RDFNODEOID)
+	{
+		char *arg = text_to_cstring(PG_GETARG_TEXT_PP(0));
+		char *result = datatype(arg);
+
+		PG_RETURN_TEXT_P(cstring_to_text(result));
+	}
+	else if (argtype == NAMEOID)
+	{
+		char *arg = NameStr(*PG_GETARG_NAME(0));
+		char *result = datatype(arg);
+
+		PG_RETURN_TEXT_P(cstring_to_text(result));
+	}
+	else
+	{
+		char *xsd_type = MapSPARQLDatatype(argtype);
+
+		if (xsd_type)
+		{
+			StringInfoData buf;
+			initStringInfo(&buf);
+			appendStringInfoString(&buf, RDF_XSD_BASE_URI);
+			appendStringInfoString(&buf, xsd_type);
+
+			PG_RETURN_TEXT_P(cstring_to_text(iri(buf.data)));
+		}
+
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("Unsupported input type for rdf_fdw_datatype: %u", argtype)));
+	}
 }
 
-Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS)
+static char *rdfnode_to_cstring(char *input)
 {
-    Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
-    char *xsd_type = MapSPARQLDatatype(argtype);
+	size_t len = strlen(input);
+	char *result;
 
-	elog(DEBUG1,"%s called: xsd_type='%s'", __func__, xsd_type);
+	/* if the string is too short to have wrapping quotes, return a copy as-is */
+	if (len < 2 || input[0] != '"' || input[len - 1] != '"')
+		return pstrdup(input);
 
-    if (xsd_type)
-    {
-        StringInfoData buf;
-        initStringInfo(&buf);
-        appendStringInfoString(&buf, RDF_XSD_BASE_URI);
-        appendStringInfoString(&buf, xsd_type);
-        PG_RETURN_TEXT_P(cstring_to_text(iri(buf.data)));
-    }
+	/* allocate new string, excluding the wrapping quotes */
+	result = (char *) palloc(len - 1);  /* len-2 for content, +1 for \0 */
+	memcpy(result, input + 1, len - 2);
+	result[len - 2] = '\0';
 
-    ereport(ERROR,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("Unsupported input type for rdf_fdw_datatype: %u", argtype)));
+	return result;
 }
 
 /*
@@ -1966,7 +1856,7 @@ Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS)
  *
  * returns: Null-terminated C string with URI-encoded result, formatted as an RDF literal
  */
-static char *encode_for_uri(char *str)
+static char *encode_for_uri(char *str_in)
 {
 	const char *unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
 	size_t in_len;
@@ -1975,25 +1865,23 @@ static char *encode_for_uri(char *str)
 	StringInfoData buf;
 	initStringInfo(&buf);
 
-	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str_in);
 
-	/* if it starts with a quote, treat as RDF literal; otherwise, use raw string */
-	if (str[0] == '"')
-		str = lex(str);
+	str_in = rdfnode_to_cstring(str_in);
+	in_len = strlen(str_in);
 
-	in_len = strlen(str);
-	elog(DEBUG2, "%s: encoding string: '%s', length: %zu", __func__, str, in_len);
+	elog(DEBUG2, "%s: encoding string: '%s', length: %zu", __func__, str_in, in_len);
 
 	for (size_t i = 0; i < in_len; i++)
 	{
-		unsigned char c = (unsigned char)str[i];
+		unsigned char c = (unsigned char)str_in[i];
 		if (strchr(unreserved, c))
 			appendStringInfoChar(&buf, c);
 		else
 			appendStringInfo(&buf, "%%%02X", c);
 	}
 
-	res = CstringToRDFLiteral(buf.data);
+	res = cstring_to_rdfnode(buf.data);
 
 	elog(DEBUG1,"%s exit: returning => '%s'", __func__, res);
 	return res;
@@ -2013,52 +1901,10 @@ static char *encode_for_uri(char *str)
 Datum rdf_fdw_encode_for_uri(PG_FUNCTION_ARGS)
 {
 	text *input = PG_GETARG_TEXT_PP(0);
-	char *str = text_to_cstring(input);
-	char *result = encode_for_uri(str);
+	char *str_in = text_to_cstring(input);
+	char *result = encode_for_uri(str(str_in));
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
-}
-
-/*
- * contains
- * --------
- *
- * Mimics SPARQL's CONTAINS function. Checks if the first string (str) contains
- * the second string (substr) as a substring. Case-sensitive. Returns true if
- * substr is found in str, false otherwise. Handles RDF literals by extracting
- * their lexical values.
- *
- * str: Null-terminated C string (e.g., "\"hello world\"", "<http://ex.com>")
- * substr: Null-terminated C string (e.g., "\"world\"", "foo")
- *
- * returns: Boolean (true if substr is in str, false otherwise)
- */
-static bool contains(char *str, char *substr)
-{
-	char *str_lexical;
-	char *substr_lexical;
-	bool result;
-
-	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
-
-	/* handle NULL or empty inputs */
-	if (!str || !substr || strlen(str) == 0 || strlen(substr) == 0)
-	{
-		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
-		return false;
-	}
-
-	/* extract lexical values (strips quotes, tags, etc.) */
-	str_lexical = lex(str);
-	substr_lexical = lex(substr);
-
-	/* check if substr is in str using strstr */
-	result = (strstr(str_lexical, substr_lexical) != NULL);
-
-	elog(DEBUG1, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
-		 __func__, result ? "true" : "false", str_lexical, substr_lexical);
-
-	return result;
 }
 
 /*
@@ -2077,10 +1923,46 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 {
     text *str_text = PG_GETARG_TEXT_PP(0);
     text *substr_text = PG_GETARG_TEXT_PP(1);
-    char *str = text_to_cstring(str_text);
-    char *substr = text_to_cstring(substr_text);
-    bool result = contains(str, substr);
+    char *str_in = text_to_cstring(str_text);
+    char *substr_in = text_to_cstring(substr_text);
+	char *str_lex;
+	char *substr_lex;
+	char *lang_str;
+	bool result;
 
+    //bool result = contains(str_in, substr);
+	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
+
+	/* handle NULL or empty inputs */
+	if (!str_in || !substr_in || strlen(str_in) == 0 || strlen(substr_in) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+		PG_RETURN_BOOL(false);
+	}
+
+	lang_str = lang(str_in);
+
+	if (strlen(lang_str) != 0)
+	{
+		char *lang_substr = lang(substr_in);
+
+		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
+		{
+			elog(DEBUG1, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
+			PG_RETURN_NULL();
+		}
+	}
+
+	/* extract lexical values (strips quotes, tags, etc.) */
+	str_lex = lex(str_in);
+	substr_lex = lex(substr_in);
+
+	/* check if substr is in str using strstr */
+	result = (strstr(str_lex, substr_lex) != NULL);
+
+	elog(DEBUG1, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
+			__func__, result ? "true" : "false", str_lex, substr_lex);
+	
     PG_RETURN_BOOL(result);
 }
 
@@ -2233,7 +2115,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 		{
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = CstringToRDFLiteral(buf.data);
+			result = cstring_to_rdfnode(buf.data);
 			if (strstr(result, "^^") == NULL)
 			{
 				result = strdt(buf.data, dt1);
@@ -2246,7 +2128,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 		{
 			/* simple literal or implicit xsd:string */
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = CstringToRDFLiteral(buf.data);
+			result = cstring_to_rdfnode(buf.data);
 
 			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
@@ -2257,7 +2139,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 	if (strlen(dt1) > 0 &&
 		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		result = CstringToRDFLiteral("");
+		result = cstring_to_rdfnode("");
 		if (strstr(result, "^^") == NULL)
 		{
 			StringInfoData typed_buf;
@@ -2270,7 +2152,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 
-	result = CstringToRDFLiteral("");
+	result = cstring_to_rdfnode("");
 	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
@@ -2347,7 +2229,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 		{
 			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = CstringToRDFLiteral(buf.data);
+			result = cstring_to_rdfnode(buf.data);
 			if (strstr(result, "^^") == NULL)
 			{
 				result = strdt(buf.data, dt1);
@@ -2361,7 +2243,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 		{
 			/* simple literal or implicit xsd:string */
 			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = CstringToRDFLiteral(buf.data);
+			result = cstring_to_rdfnode(buf.data);
 			pfree(buf.data);
 
 			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
@@ -2373,7 +2255,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 	if (has_explicit_datatype && strlen(dt1) > 0 &&
 		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		result = CstringToRDFLiteral("");
+		result = cstring_to_rdfnode("");
 		if (strstr(result, "^^") == NULL)
 		{
 			StringInfoData typed_buf;
@@ -2386,7 +2268,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 
-	result = CstringToRDFLiteral("");
+	result = cstring_to_rdfnode("");
 	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
@@ -2581,8 +2463,11 @@ static bool langmatches(char *lang_tag, char *pattern)
 		return false;
 	}
 
+
+	pattern = rdfnode_to_cstring(pattern);
+
 	/* Use lang_tag directly, assuming it's already extracted */
-	tag = lang_tag; /* e.g., "en" from lang('"foo"@en') */
+	tag = rdfnode_to_cstring(lang_tag); /* e.g., "en" from lang('"foo"@en') */
 	/* Handle pattern: bare string or quoted literal */
 	if (pattern[0] == '"' && strrchr(pattern, '"') > pattern)
 		pat = lex(pattern); /* e.g., "\"en\"" -> "en" */
@@ -2690,8 +2575,8 @@ static bool isBlank(char *term)
 		return false;
 	}
 
-	/* Check if term starts with "_:" */
-	result = (strncmp(term, "_:", 2) == 0);
+	/* Check if term starts with "_:" and has at least 3 characters */
+	result = (strncmp(term, "_:", 2) == 0) && strlen(term) > 2;
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, result ? "true" : "false");
 	return result;
@@ -2787,18 +2672,18 @@ static bool isNumeric(char *term)
 
 	/* Check for numeric datatypes */
 	if (strcmp(datatype_uri, RDF_XSD_INTEGER) == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>") == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#positiveInteger>") == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#negativeInteger>") == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#nonPositiveInteger>") == 0 ||
+		strcmp(datatype_uri, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_POSITIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_NEGATIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_NONPOSITIVEINTEGER) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_LONG) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_INT) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_BYTE) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_SHORT) == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedLong>") == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedInt>") == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedShort>") == 0 ||
-		strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#unsignedByte>") == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDLONG) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDINT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDSHORT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDBYTE) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_DOUBLE) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_FLOAT) == 0 ||
 		strcmp(datatype_uri, RDF_XSD_DECIMAL) == 0)
@@ -2806,18 +2691,12 @@ static bool isNumeric(char *term)
 		/* Special case for xsd:byte: SPARQL requires values to be integers between -128 and 127.
 		 * For example, isNumeric("1200"^^xsd:byte) returns false because 1200 exceeds 127.
 		 * We parse the lexical value to ensure it’s a valid integer and check its range. */
-		if (strcmp(datatype_uri, "<http://www.w3.org/2001/XMLSchema#byte>") == 0)
+		if (strcmp(datatype_uri, RDF_XSD_BYTE) == 0)
 		{
-			long val = strtol(lexical, &endptr, 10); /* Parse as integer */
 			/* Ensure the entire string is a valid integer and within xsd:byte range */
 			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
 			{
 				elog(DEBUG1,"%s exit: returning 'false' (not a pure integer)", __func__);
-				return false;
-			}
-			if (val < -128 || val > 127) /* Outside xsd:byte range, e.g., 1200 */
-			{
-				elog(DEBUG1,"%s exit: returning 'false' (outside xsd:byte range)", __func__);
 				return false;
 			}
 
@@ -2888,15 +2767,8 @@ static bool isLiteral(char *term)
 		return false;
 	}
 
-	/* Bare strings (e.g., "12") are not literals */
-	if (*term != '"' && *term != '_' && *term != '<')
-	{
-		elog(DEBUG1,"%s exit: returning 'false' (bare strings are not literals)", __func__);
-		return false;
-	}
-
 	/* Normalize input */
-	ptr = CstringToRDFLiteral(term);
+	ptr = cstring_to_rdfnode(term);
 	len = strlen(ptr);
 
 	/* Check for valid quoted literal */
@@ -2956,23 +2828,21 @@ static bool isLiteral(char *term)
  *
  * returns: PostgreSQL boolean type
  */
-Datum
-rdf_fdw_isLiteral(PG_FUNCTION_ARGS)
+Datum rdf_fdw_isLiteral(PG_FUNCTION_ARGS)
 {
-    text *input_text;
-    char *term;
-    bool result;
+	text *input_text;
+	char *term;
+	bool result;
 
-    /* STRICT handles NULL input */
-    input_text = PG_GETARG_TEXT_PP(0);
-    term = text_to_cstring(input_text);
+	input_text = PG_GETARG_TEXT_PP(0);
+	term = text_to_cstring(input_text);
 
-    result = isLiteral(term);
+	result = isLiteral(term);
 
-    /* Clean up input string */
-    pfree(term);
+	/* Clean up input string */
+	pfree(term);
 
-    PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(result);
 }
 
 /*
@@ -3151,17 +3021,6 @@ static char *generate_uuid_v4(void)
 	return result;
 }
 
-/*
- * rdf_fdw_uuid
- * PostgreSQL function wrapper for SPARQL’s UUID and STRUUID functions.
- * - UUID(): Returns an IRI (<urn:uuid:<uuid>>).
- * - STRUUID(): Returns a string literal (<uuid>).
- * Expects no arguments, enforced by SQL declaration.
- *
- * Uses fn_extra to store whether it’s UUID (1) or STRUUID (0).
- *
- * Returns: PostgreSQL text type (e.g., "<urn:uuid:123e4567-e89b-12d3-a456-426614174000>" or "123e4567-e89b-12d3-a456-426614174000")
- */
 Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
 {
 	StringInfoData buf;
@@ -3267,7 +3126,7 @@ static char *lcase(char *str)
 	if (strlen(str) == 0)
 	{
 		elog(DEBUG1,"%s exit: returning empty literal (str is an empty string)", __func__);
-		return CstringToRDFLiteral("");
+		return cstring_to_rdfnode("");
 	}
 
 	/* Check for IRIs or blank nodes */
@@ -3317,7 +3176,7 @@ static char *lcase(char *str)
 	else if (strlen(str_datatype) != 0)
 		result = strdt(buf.data, str_datatype);
 	else
-		result = CstringToRDFLiteral(buf.data);
+		result = cstring_to_rdfnode(buf.data);
 
 	pfree(buf.data);
 
@@ -3377,7 +3236,7 @@ static char *ucase(char *str)
 	if (strlen(str) == 0)
 	{
 		elog(DEBUG1,"%s exit: returning empty literal (str is an empty string)", __func__);		
-		return CstringToRDFLiteral("");
+		return cstring_to_rdfnode("");
 	}
 
 	/* Check for IRIs or blank nodes */
@@ -3427,7 +3286,7 @@ static char *ucase(char *str)
 	else if (strlen(str_datatype) != 0)
 		result = strdt(buf.data, str_datatype);
 	else
-		result = CstringToRDFLiteral(buf.data);
+		result = cstring_to_rdfnode(buf.data);
 
 	pfree(buf.data);
 
@@ -3599,7 +3458,7 @@ static char *substr_sparql(char *str, int start, int length)
 	else if (strlen(str_datatype) > 0)
 		result = strdt(buf.data, str_datatype);
 	else
-		result = CstringToRDFLiteral(buf.data);
+		result = cstring_to_rdfnode(buf.data);
 
 	pfree(buf.data);
 
@@ -3622,7 +3481,7 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
 	str = text_to_cstring(input);
 
 	if (strlen(str) == 0)
-		PG_RETURN_TEXT_P(cstring_to_text(CstringToRDFLiteral("")));
+		PG_RETURN_TEXT_P(cstring_to_text(cstring_to_rdfnode("")));
 
 	if (PG_NARGS() == 3 && !PG_ARGISNULL(2))
 	{
@@ -3685,7 +3544,7 @@ static char *rdf_concat(char *left, char *right)
 	/* only one argument has a datatype */
 	if ((strlen(dt1) != 0 && strlen(dt2) == 0) || (strlen(dt1) == 0 && strlen(dt2) != 0))
 	{
-		result = CstringToRDFLiteral(buf.data);
+		result = cstring_to_rdfnode(buf.data);
 		elog(DEBUG1,"%s exit: returning '%s' (only one argument has a datatype)", __func__, result);
 		return result;
 	}
@@ -3693,7 +3552,7 @@ static char *rdf_concat(char *left, char *right)
 	/* only one argument has a language tag */
 	if ((strlen(lang1) != 0 && strlen(lang2) == 0) || (strlen(lang1) == 0 && strlen(lang2) != 0))
 	{
-		result = CstringToRDFLiteral(buf.data);
+		result = cstring_to_rdfnode(buf.data);
 		elog(DEBUG1,"%s exit: returning '%s' (only one argument has a language tag)", __func__, result);
 		return result;
 
@@ -3717,7 +3576,7 @@ static char *rdf_concat(char *left, char *right)
 		return result;
 	}
 
-	result = CstringToRDFLiteral(buf.data);
+	result = cstring_to_rdfnode(buf.data);
 
 	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
 	return result;
@@ -3813,25 +3672,25 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 		{
 			/* convert the Datum to a cstring (assuming text) */
 			char *el = DatumToString(elems[i], TEXTOID);
-			char *rdf_literal;
+			char *rdfnode;
 			text *result;
 			Datum res;
 
 			if (isIRI(el) || isBlank(el))
-				rdf_literal = el;
+				rdfnode = el;
 			else if (isLiteral(el))
 			{
 				char *dt = datatype(el);
 
 				if (strlen(dt) != 0)
-					rdf_literal = strdt(el, dt);
+					rdfnode = strdt(el, dt);
 				else
-					rdf_literal = el;
+					rdfnode = el;
 			}
 			else
-				rdf_literal = CstringToRDFLiteral(el);
+				rdfnode = cstring_to_rdfnode(el);
 
-			result = cstring_to_text(rdf_literal);
+			result = cstring_to_text(rdfnode);
 			res = PointerGetDatum(result);
 
 			PG_RETURN_DATUM(res);
@@ -3965,10 +3824,10 @@ static List *DescribeIRI(RDFfdwState *state)
 					else if (language)
 						appendStringInfo(&literal, "%s", strlang(value, language));
 					else
-						appendStringInfo(&literal, "%s", CstringToRDFLiteral(value));
+						appendStringInfo(&literal, "%s", cstring_to_rdfnode(value));
 				}
 				else
-					appendStringInfo(&literal, "%s", CstringToRDFLiteral(value));
+					appendStringInfo(&literal, "%s", cstring_to_rdfnode(value));
 
 				triple->object = pstrdup(literal.data);
 				pfree(literal.data);
@@ -6002,7 +5861,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	elog(DEBUG1,"%s called",__func__);
 
 	//TODO: create function to retrieve the OID of custom data types for 9.6+
-	//RDFIRIOID = get_rdfiri_oid();
+	RDFNODEOID = get_rdfnode_oid();
 
 	/*
 	 * Setting session's default values.
@@ -7042,7 +6901,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						else if (xmlStrcmp(node_type, (xmlChar *)"uri") == 0)
 							appendStringInfo(&literal_value, "%s", iri(node_value));
 						else
-							appendStringInfo(&literal_value, "%s", CstringToRDFLiteral(node_value));
+							appendStringInfo(&literal_value, "%s", cstring_to_rdfnode(node_value));
 					}
 					else
 						appendStringInfo(&literal_value, "%s", node_value);
@@ -7139,7 +6998,13 @@ static char *DatumToString(Datum datum, Oid type)
 	typoutput = ((Form_pg_type)GETSTRUCT(tuple))->typoutput;
 	ReleaseSysCache(tuple);
 
-	switch (type)
+	if (type == RDFNODEOID)
+	{
+		str = DatumGetCString(OidFunctionCall1(typoutput, datum));
+		initStringInfo(&result);
+		appendStringInfo(&result, "%s", str);
+	}
+	else switch (type)
 	{
 		case TEXTOID:
 		case CHAROID:
@@ -7387,12 +7252,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		ReleaseSysCache(tuple);
 
 		/* ignore operators in other than the pg_catalog schema */
-		if (schema != PG_CATALOG_NAMESPACE)
-			return NULL;
+		// if (schema != PG_CATALOG_NAMESPACE)
+		// {
+		// 	elog(DEBUG1, "%s [T_OpExpr]: returning NULL: operator not in pg_catalog schema", __func__);
+		// 	return NULL;
+		// }
 
 		/* don't push condition down if the right argument can't be translated into a SPARQL value*/
 		if (!canHandleType(rightargtype))
+		{
+			elog(DEBUG1, "%s [T_OpExpr]: returning NULL: cannot handle data type", __func__);
 			return NULL;
+		}
 
 		/* the operators that we can translate */
 		if (strcmp(opername, "=") == 0 ||
@@ -7487,17 +7358,17 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (right_column->language)
 						{
 							if (strcmp(right_column->language, "*") == 0)
-								appendStringInfo(&left_filter_arg, "%s", CstringToRDFLiteral(left));
+								appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfnode(left));
 							else
 								appendStringInfo(&left_filter_arg, "%s", strlang(left, right_column->language));
 						}
 						else if (right_column->literaltype)
 							appendStringInfo(&left_filter_arg, "%s", strdt(left, right_column->literaltype));
 						else
-							appendStringInfo(&left_filter_arg, "%s", CstringToRDFLiteral(left));
+							appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfnode(left));
 					}
 					else
-						appendStringInfo(&left_filter_arg, "%s", CstringToRDFLiteral(left));
+						appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfnode(left));
 				}
 				/* check if the argument is a column */
 				else if (left_column && leftexpr->type == T_Var)
@@ -7543,7 +7414,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (left_column->language)
 						{
 							if (strcmp(left_column->language, "*") == 0)
-								appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
+								appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
 							else
 								appendStringInfo(&right_filter_arg, "%s", strlang(right, left_column->language));
 						}
@@ -7552,12 +7423,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (isIRI(right) || isBlank(right)) /* REVISAR!!!*/
 							appendStringInfo(&right_filter_arg, "%s", right);
 						else
-							appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
+							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
 					}
 					else if (isIRI(right))
 						appendStringInfo(&right_filter_arg, "%s", right);
 					else
-						appendStringInfo(&right_filter_arg, "%s", CstringToRDFLiteral(right));
+						appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
 				}
 				else if (rightexpr->type == T_Var)
 				{
@@ -7807,7 +7678,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 											 first_arg ? "" : ", ", strdt(c, col->literaltype));
 						else
 							appendStringInfo(&result, "%s%s",
-											 first_arg ? "" : ", ", CstringToRDFLiteral(c));
+											 first_arg ? "" : ", ", cstring_to_rdfnode(c));
 					}
 					else
 						appendStringInfo(&result, "%s%s",
@@ -8002,7 +7873,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (IsStringDataType(ct->consttype) && isIRI(arg))
 							appendStringInfo(&args, "%s", arg);
 						else if (IsStringDataType(ct->consttype))
-							appendStringInfo(&args, "%s", CstringToRDFLiteral(arg));
+							appendStringInfo(&args, "%s", cstring_to_rdfnode(arg));
 						else
 							appendStringInfo(&args, "%s", arg);
 					}
@@ -8217,10 +8088,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (strlen(dt) != 0)
 					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", strdt(element, dt));
 				else
-					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", element);
+					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", cstring_to_rdfnode(element));
 			}
 			else if (nodeTag(element_expr) == T_Const)
-				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", str(element));
+				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", cstring_to_rdfnode(element));
 			else
 				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", element);
 
@@ -8801,7 +8672,8 @@ static bool IsStringDataType(Oid type)
 			 type == DATEOID ||
 			 type == TIMESTAMPOID ||
 			 type == TIMESTAMPTZOID ||
-			 type == NAMEOID;
+			 type == NAMEOID ||
+			 type == RDFNODEOID;
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
 	return result;
@@ -8915,40 +8787,23 @@ static char *FormatSQLExtractField(char *field)
 	return res;
 }
 
-/*
-static Oid get_rdfiri_oid(void)
+static Oid get_rdfnode_oid(void)
 {
-    Oid rdfiri_oid = InvalidOid;
-    HeapTuple tuple;
+    TypeName *typename = makeTypeNameFromNameList(list_make2(makeString("public"), makeString("rdfnode")));
+    Oid typoid = typenameTypeId(NULL, typename);
 
-    elog(DEBUG1, "%s called", __func__);
+    if (!OidIsValid(typoid))
+        elog(ERROR, "could not find type \"rdfnode\"");
 
-    tuple = SearchSysCache1(TYPENAMENSP, CStringGetDatum("rdfiri"));
-    if (HeapTupleIsValid(tuple))
-    {
-        rdfiri_oid = HeapTupleGetOid(tuple);
-        ReleaseSysCache(tuple);
-    }
-    else
-    {
-        elog(ERROR, "could not find type 'rdfiri' in pg_type");
-    }
-
-    return rdfiri_oid;
+    return typoid;
 }
-	*/
 
-typedef struct rdf_literal
+
+typedef struct rdfnode
 {
 	int32 vl_len_;						 // required varlena header
 	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
-} rdf_literal;
-
-typedef struct rdf_iri
-{
-	int32 vl_len_;						 // required varlena header
-	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
-} rdf_iri;
+} rdfnode;
 
 static bool is_valid_xsd_double(const char *lexical)
 {
@@ -9078,112 +8933,74 @@ static bool is_valid_language_tag(const char *lan)
 	return is_valid;
 }
 
-Datum rdf_iri_in(PG_FUNCTION_ARGS)
-{
-	char *str_in = PG_GETARG_CSTRING(0);
-	char *str_iri;
-	rdf_iri *result;
-	size_t len;
-
-	if (isIRI(str_in) || isBlank(str_in))
-		str_iri = str_in;
-	else
-	{
-		char *lexical = lex(str_in);
-
-		if (strlen(lexical) == 0)
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid IRI: empty string"),
-					 errdetail("an IRI must be a non-empty string.")));
-
-		str_iri = iri(lexical);
-	}
-
-	len = strlen(str_iri);
-	result = (rdf_iri *)palloc(VARHDRSZ + len + 1);
-	SET_VARSIZE(result, VARHDRSZ + len);
-	memcpy(result->vl_data, str_iri, len);
-	/* explicitly null-terminate! */
-	result->vl_data[len] = '\0';
-
-	PG_RETURN_POINTER(result);
-}
-
-Datum rdf_iri_out(PG_FUNCTION_ARGS)
-{
-	rdf_iri *iri = (rdf_iri *)PG_GETARG_POINTER(0);
-	int len = VARSIZE(iri) - VARHDRSZ;
-	char *out = (char *)palloc(len + 1);
-
-	memcpy(out, iri->vl_data, len);
-	out[len] = '\0';
-
-	PG_RETURN_CSTRING(out);
-}
-
-Datum rdf_literal_in(PG_FUNCTION_ARGS)
+Datum rdfnode_in(PG_FUNCTION_ARGS)
 {
 	char *str_in = PG_GETARG_CSTRING(0);
 	char *lexical;
-	char* lan;
+	char *lan;
 	char *dtype;
-	rdf_literal *result;
+	
+	rdfnode *result;
 	size_t len;
 	StringInfoData r;
-	
+
 	initStringInfo(&r);
 
-	lexical = lex(str_in);
-	lan = lang(str_in);
-	dtype = datatype(str_in);
-
-	if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
-
-	else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
-	
-	else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
-		ereport(ERROR,
-			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-			errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
-
-	else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
-			ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
-
-	else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
-	
-	else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
-
-	else if (strlen(lan) != 0)
+	if (strlen(str_in) == 0)
+		appendStringInfo(&r, "\"\"");
+	else if (isLiteral(str_in))
 	{
-		if (!is_valid_language_tag(lan))
+		char *node = cstring_to_rdfnode(str_in);
+
+		lexical = lex(node);
+		lan = lang(node);
+		dtype = datatype(node);
+
+		if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-						errmsg("invalid language tag: \"%s\"", lan)));
+					 errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
+		else if (strlen(lan) != 0)
+		{
+			if (!is_valid_language_tag(lan))
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid language tag: \"%s\"", lan)));
 
-		appendStringInfo(&r, "%s", strlang(unescape_unicode(lexical), lan));
+			appendStringInfo(&r, "%s", strlang(unescape_unicode(lexical), lan));
+		}
+		else if (strlen(dtype) != 0)
+			appendStringInfo(&r, "%s", strdt(unescape_unicode(lexical), dtype));
+		else
+			appendStringInfo(&r, "%s", str(unescape_unicode(str_in)));
 	}
-	else if (strlen(dtype) != 0)
-		appendStringInfo(&r, "%s", strdt(unescape_unicode(lexical), dtype));
 	else
-		appendStringInfo(&r,"\"%s\"", unescape_unicode(lexical));
+	{
+		appendStringInfo(&r, "%s", unescape_unicode(str_in));
+	}
 
 	len = strlen(r.data);
-	result = (rdf_literal *)palloc(VARHDRSZ + len + 1);
+	result = (rdfnode *)palloc(VARHDRSZ + len + 1);
 	SET_VARSIZE(result, VARHDRSZ + len);
 	memcpy(result->vl_data, r.data, len);
 	/* explicitly null-terminate! */
@@ -9192,9 +9009,9 @@ Datum rdf_literal_in(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(result);
 }
 
-Datum rdf_literal_out(PG_FUNCTION_ARGS)
+Datum rdfnode_out(PG_FUNCTION_ARGS)
 {
-	rdf_literal *lit = (rdf_literal *)PG_GETARG_POINTER(0);
+	rdfnode *lit = (rdfnode *)PG_GETARG_POINTER(0);
 	int len = VARSIZE(lit) - VARHDRSZ;
 	char *out = (char *)palloc(len + 1);
 
@@ -9204,9 +9021,9 @@ Datum rdf_literal_out(PG_FUNCTION_ARGS)
 	PG_RETURN_CSTRING(out);
 }
 
-static parsed_rdf_literal parse_rdf_literal(char *input)
+static parsed_rdfnode parse_rdfnode(char *input)
 {
-	parsed_rdf_literal result = {NULL, NULL, NULL, false};
+	parsed_rdfnode result = {NULL, NULL, NULL, false};
 	char *lexical = lex(input);
 	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
@@ -9222,12 +9039,15 @@ static parsed_rdf_literal parse_rdf_literal(char *input)
 	result.isNumeric = false;
 	result.isDuration = false;
 	result.isTime = false;
+	result.isIRI = false;
 
 	/* flag the literal as simple if there is no language or data type*/
 	if (strlen(result.dtype) == 0 && strlen(result.lang) == 0)
 		result.isPlainLiteral = true;
 
-	if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
+	if (isIRI(input))
+		result.isIRI = true;
+	else if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
 	{
 		result.isString = true;
 	}
@@ -9264,7 +9084,7 @@ static parsed_rdf_literal parse_rdf_literal(char *input)
 	return result;
 }
 
-static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
+static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 {
 	elog(DEBUG1, "%s called", __func__);
 
@@ -9273,6 +9093,9 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 	elog(DEBUG2, "%s: b.lex='%s', b.dtype='%s', b.lang='%s', b.isNumeric='%d'", __func__,
 		 b.lex, b.dtype ? b.dtype : "(null)", b.lang ? b.lang : "(null)", b.isNumeric);
 
+	
+	if (a.isIRI && b.isIRI)
+		return strcmp(a.raw, b.raw) == 0;
 	/* 
 	 * plain (no language or data type) and xsd:string literals
 	 * are considered the same, so we only compare their contents
@@ -9387,35 +9210,27 @@ static bool compare_rdf_literals(parsed_rdf_literal a, parsed_rdf_literal b)
 	return strcmp(a.lex, b.lex) == 0;
 }
 
-Datum rdf_literal_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *) PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *) PG_GETARG_POINTER(1);
+	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
+	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
 
-	// char *a_data = pstrdup(VARDATA_ANY(a));
-	// char *b_data = pstrdup(VARDATA_ANY(b));
-
-	parsed_rdf_literal a_parsed = parse_rdf_literal(VARDATA_ANY(a));
-	parsed_rdf_literal b_parsed = parse_rdf_literal(VARDATA_ANY(b));
-
-	bool result = compare_rdf_literals(a_parsed, b_parsed);
-
-	PG_RETURN_BOOL(!result);
+	PG_RETURN_BOOL(!rdfnode_eq(a_parsed, b_parsed));
 }
 
-Datum rdf_literal_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *) PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *) PG_GETARG_POINTER(1);
-	parsed_rdf_literal a_parsed = parse_rdf_literal(VARDATA_ANY(a));
-	parsed_rdf_literal b_parsed = parse_rdf_literal(VARDATA_ANY(b));
+	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
+	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
 
-	bool result = compare_rdf_literals(a_parsed, b_parsed);
-
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(rdfnode_eq(a_parsed, b_parsed));
 }
 
-static bool LiteralsComparable(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+static bool LiteralsComparable(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
 	/* identify the shared type category between the two literals */
 	bool bothNumeric = rdfnode1.isNumeric && rdfnode2.isNumeric;
@@ -9444,7 +9259,7 @@ static bool LiteralsComparable(parsed_rdf_literal rdfnode1, parsed_rdf_literal r
 			 errmsg("cannot compare literals of different datatypes")));
 }
 
-static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
 	Datum arg1, arg2;
 
@@ -9552,17 +9367,17 @@ static bool rdf_literal_lt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 	return false;
 }
 
-Datum rdf_literal_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
-	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
-	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
+	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
 
-	PG_RETURN_BOOL(rdf_literal_lt(rdfnode1, rdfnode2));
+	PG_RETURN_BOOL(rdfnode_lt(a_parsed, b_parsed));
 }
 
-static bool rdf_literal_gt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+static bool rdfnode_gt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
 	Datum arg1, arg2;
 
@@ -9669,21 +9484,21 @@ static bool rdf_literal_gt(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 	return false;
 }
 
-Datum rdf_literal_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
-	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
-	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
+	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
 
-	PG_RETURN_BOOL(rdf_literal_gt(rdfnode1, rdfnode2));
+	PG_RETURN_BOOL(rdfnode_gt(a_parsed, b_parsed));
 }
 
 
 
 
 
-static bool rdf_literal_le(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
 	Datum arg1, arg2;
 
@@ -9790,19 +9605,19 @@ static bool rdf_literal_le(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 	return false;
 }
 
-Datum rdf_literal_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum rdfnode_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
-	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
-	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
+	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
 
-	PG_RETURN_BOOL(rdf_literal_le(rdfnode1, rdfnode2));
+	PG_RETURN_BOOL(rdfnode_le(a_parsed, b_parsed));
 }
 
 
 
-static bool rdf_literal_ge(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfnode2)
+static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
 	Datum arg1, arg2;
 
@@ -9909,22 +9724,22 @@ static bool rdf_literal_ge(parsed_rdf_literal rdfnode1, parsed_rdf_literal rdfno
 	return false;
 }
 
-Datum rdf_literal_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdf_literal *a = (rdf_literal *)PG_GETARG_POINTER(0);
-	rdf_literal *b = (rdf_literal *)PG_GETARG_POINTER(1);
-	parsed_rdf_literal rdfnode1 = parse_rdf_literal(VARDATA_ANY(a));
-	parsed_rdf_literal rdfnode2 = parse_rdf_literal(VARDATA_ANY(b));
+	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
+	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
 
-	PG_RETURN_BOOL(rdf_literal_ge(rdfnode1, rdfnode2));
+	PG_RETURN_BOOL(rdfnode_ge(a_parsed, b_parsed));
 }
 
 
 /* numeric */
-Datum rdf_literal_to_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_to_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	if (!p.isNumeric)
 		ereport(ERROR,
@@ -9936,11 +9751,11 @@ Datum rdf_literal_to_numeric(PG_FUNCTION_ARGS)
 										Int32GetDatum(-1)));
 }
 
-Datum rdf_literal_eq_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -9953,11 +9768,11 @@ Datum rdf_literal_eq_numeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_numeric(PG_FUNCTION_ARGS)
 {
 	text *literal = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(literal));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(literal));
 	Datum rdf_num;
 	bool result;
 
@@ -9970,11 +9785,11 @@ Datum rdf_literal_neq_numeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_lt_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -9988,11 +9803,11 @@ Datum rdf_literal_lt_numeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10005,11 +9820,11 @@ Datum rdf_literal_gt_numeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_le_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10022,11 +9837,11 @@ Datum rdf_literal_le_numeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_numeric(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10039,11 +9854,11 @@ Datum rdf_literal_ge_numeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10057,11 +9872,11 @@ Datum numeric_eq_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *literal = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(literal));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(literal));
 	Datum rdf_num;
 	bool result;
 
@@ -10074,11 +9889,11 @@ Datum numeric_neq_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10091,11 +9906,11 @@ Datum numeric_lt_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10108,11 +9923,11 @@ Datum numeric_gt_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10125,11 +9940,11 @@ Datum numeric_le_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_num;
 	bool result;
 
@@ -10142,7 +9957,7 @@ Datum numeric_ge_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum numeric_to_rdf_literal(PG_FUNCTION_ARGS)
+Datum numeric_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric val = PG_GETARG_NUMERIC(0);
 	char *val_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(val)));
@@ -10157,13 +9972,13 @@ Datum numeric_to_rdf_literal(PG_FUNCTION_ARGS)
 }
 
 /* float8 */
-Datum rdf_literal_eq_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10171,13 +9986,13 @@ Datum rdf_literal_eq_float8(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(rdf_float == f);
 }
 
-Datum rdf_literal_neq_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10185,54 +10000,54 @@ Datum rdf_literal_neq_float8(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(rdf_float != f);
 }
 
-Datum rdf_literal_lt_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8lt, rdf_float, Float8GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8gt, rdf_float, Float8GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_le_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8le, rdf_float, Float8GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8ge, rdf_float, Float8GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_to_float8(PG_FUNCTION_ARGS)
+Datum rdfnode_to_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	if (!p.isNumeric)
 		ereport(ERROR,
@@ -10241,14 +10056,14 @@ Datum rdf_literal_to_float8(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(DirectFunctionCall1(float8in, CStringGetDatum(p.lex)));
 }
 
-/* float8 <-> rdf_literal (reverse operators) */
-Datum float8_eq_rdf_literal(PG_FUNCTION_ARGS)
+/* float8 <-> rdfnode (reverse operators) */
+Datum float8_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10256,13 +10071,13 @@ Datum float8_eq_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(f == rdf_float);
 }
 
-Datum float8_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum float8_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10270,47 +10085,47 @@ Datum float8_neq_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(f != rdf_float);
 }
 
-Datum float8_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum float8_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8lt, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
 }
 
-Datum float8_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum float8_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8gt, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
 }
 
-Datum float8_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum float8_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8le, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
 }
 
-Datum float8_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum float8_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8ge, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
 }
 
-Datum float8_to_rdf_literal(PG_FUNCTION_ARGS)
+Datum float8_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 val = PG_GETARG_FLOAT8(0);
 	char *valstr;
@@ -10325,81 +10140,81 @@ Datum float8_to_rdf_literal(PG_FUNCTION_ARGS)
 }
 
 /* float4 (real) */
-Datum rdf_literal_to_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_to_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	PG_RETURN_DATUM(DirectFunctionCall1(float4in, CStringGetDatum(p.lex)));
 }
 
-Datum rdf_literal_eq_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4eq, rdf_float4, Float4GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_float4(PG_FUNCTION_ARGS)
 {
 	text *literal = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(literal));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(literal));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ne, rdf_float4, Float4GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4gt, rdf_float4, Float4GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_lt_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4lt, rdf_float4, Float4GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ge, rdf_float4, Float4GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_float4(PG_FUNCTION_ARGS)
+Datum rdfnode_le_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4le, rdf_float4, Float4GetDatum(f)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum float4_to_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 val = PG_GETARG_FLOAT4(0);
 	StringInfoData buf;
@@ -10415,66 +10230,66 @@ Datum float4_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum float4_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4eq, Float4GetDatum(f), rdf_float4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum float4_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ne, Float4GetDatum(f), rdf_float4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum float4_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4lt, Float4GetDatum(f), rdf_float4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum float4_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4gt, Float4GetDatum(f), rdf_float4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum float4_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4le, Float4GetDatum(f), rdf_float4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum float4_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum float4_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ge, Float4GetDatum(f), rdf_float4));
 
@@ -10482,82 +10297,82 @@ Datum float4_ge_rdf_literal(PG_FUNCTION_ARGS)
 }
 
 /* ## bigint (int8) ## */
-Datum rdf_literal_to_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_to_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	int64 result = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(p.lex)));
 
 	PG_RETURN_INT64(result);
 }
 
-Datum rdf_literal_lt_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8lt, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_le_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8le, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8gt, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ge, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_eq_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8eq, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_int8(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ne, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int8_to_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	StringInfoData buf;
@@ -10567,150 +10382,150 @@ Datum int8_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum int8_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8lt, Int64GetDatum(val), rdf_int8));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int8_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8le, Int64GetDatum(val), rdf_int8));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int8_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8gt, Int64GetDatum(val), rdf_int8));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int8_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ge, Int64GetDatum(val), rdf_int8));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int8_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8eq, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int8_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum int8_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ne, rdf_int8, Int64GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* ## rdf_literal OP int (int4) ## */
-Datum rdf_literal_to_int4(PG_FUNCTION_ARGS)
+/* ## rdfnode OP int (int4) ## */
+Datum rdfnode_to_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	int32 result = DatumGetInt32(DirectFunctionCall1(int4in, CStringGetDatum(p.lex)));
 
 	PG_RETURN_INT64(result);
 }
 
-Datum rdf_literal_lt_int4(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT64(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4lt, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_int4(PG_FUNCTION_ARGS)
+Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4le, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_int4(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4gt, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_int4(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ge, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_eq_int4(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4eq, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_int4(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ne, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* ## int (int4) OP rdf_literal ## */
-Datum int4_to_rdf_literal(PG_FUNCTION_ARGS)
+/* ## int (int4) OP rdfnode ## */
+Datum int4_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	StringInfoData buf;
@@ -10720,150 +10535,150 @@ Datum int4_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum int4_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum int4_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4lt, Int32GetDatum(val), rdf_int4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int4_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum int4_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4le, Int32GetDatum(val), rdf_int4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int4_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum int4_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4gt, Int32GetDatum(val), rdf_int4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int4_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum int4_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ge, Int32GetDatum(val), rdf_int4));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int4_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum int4_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4eq, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int4_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ne, rdf_int4, Int32GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* ## rdf_literal OP int (int2) ## */
-Datum rdf_literal_to_int2(PG_FUNCTION_ARGS)
+/* ## rdfnode OP int (int2) ## */
+Datum rdfnode_to_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	int16 result = DatumGetInt32(DirectFunctionCall1(int2in, CStringGetDatum(p.lex)));
 
 	PG_RETURN_INT64(result);
 }
 
-Datum rdf_literal_lt_int2(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2lt, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_int2(PG_FUNCTION_ARGS)
+Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2le, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_int2(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2gt, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_int2(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ge, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_eq_int2(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2eq, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_int2(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ne, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* ## smallint (int2) OP rdf_literal ## */
-Datum int2_to_rdf_literal(PG_FUNCTION_ARGS)
+/* ## smallint (int2) OP rdfnode ## */
+Datum int2_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	StringInfoData buf;
@@ -10873,74 +10688,74 @@ Datum int2_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum int2_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum int2_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2lt, Int16GetDatum(val), rdf_int2));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int2_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum int2_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2le, Int16GetDatum(val), rdf_int2));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int2_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum int2_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2gt, Int16GetDatum(val), rdf_int2));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int2_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum int2_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ge, Int16GetDatum(val), rdf_int2));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int2_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum int2_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2eq, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum int2_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum int2_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ne, rdf_int2, Int16GetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* timestamptz (timestamp with time zone) OP rdf_literal */
-Datum timestamptz_to_rdf_literal(PG_FUNCTION_ARGS)
+/* timestamptz (timestamp with time zone) OP rdfnode */
+Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimestampTz ts = PG_GETARG_TIMESTAMPTZ(0);
 	struct pg_tm tm;
@@ -10962,12 +10777,12 @@ Datum timestamptz_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-/* rdf_literal OP timestamptz (timestamp with time zone) */
-Datum rdf_literal_to_timestamptz(PG_FUNCTION_ARGS)
+/* rdfnode OP timestamptz (timestamp with time zone) */
+Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	char *literal = strdt(text_to_cstring(t), RDF_XSD_DATE);
-	parsed_rdf_literal p = parse_rdf_literal(literal);
+	parsed_rdfnode p = parse_rdfnode(literal);
 	Datum result = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(p.lex),
 														   ObjectIdGetDatum(InvalidOid),
@@ -10976,12 +10791,12 @@ Datum rdf_literal_to_timestamptz(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(result);
 }
 
-/* rdf_literal OP timestamp */
-Datum rdf_literal_to_timestamp(PG_FUNCTION_ARGS)
+/* rdfnode OP timestamp */
+Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	char *literal = strdt(text_to_cstring(t), RDF_XSD_DATE);
-	parsed_rdf_literal p = parse_rdf_literal(literal);
+	parsed_rdfnode p = parse_rdfnode(literal);
 	Datum result;
 
 	if (!p.isDateTime && !p.isDate)
@@ -10995,74 +10810,74 @@ Datum rdf_literal_to_timestamp(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(result);
 }
 
-Datum rdf_literal_eq_timestamp(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_eq, rdf_ts, TimestampGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_timestamp(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ne, rdf_ts, TimestampGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_lt_timestamp(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_lt, rdf_ts, TimestampGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_timestamp(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_gt, rdf_ts, TimestampGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_timestamp(PG_FUNCTION_ARGS)
+Datum rdfnode_le_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_le, rdf_ts, TimestampGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_timestamp(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ge, rdf_ts, TimestampGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* timestamp OP rdf_literal */
-Datum timestamp_to_rdf_literal(PG_FUNCTION_ARGS)
+/* timestamp OP rdfnode */
+Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp ts = PG_GETARG_TIMESTAMP(0);
 	struct pg_tm tm;
@@ -11086,78 +10901,78 @@ Datum timestamp_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum timestamp_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum timestamp_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_eq, TimestampGetDatum(val), rdf_ts));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timestamp_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum timestamp_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ne, TimestampGetDatum(val), rdf_ts));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timestamp_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum timestamp_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_lt, TimestampGetDatum(val), rdf_ts));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timestamp_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum timestamp_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_gt, TimestampGetDatum(val), rdf_ts));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timestamp_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum timestamp_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_le, TimestampGetDatum(val), rdf_ts));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timestamp_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum timestamp_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ge, TimestampGetDatum(val), rdf_ts));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* date OP rdf_literal */
-Datum rdf_literal_to_date(PG_FUNCTION_ARGS)
+/* date OP rdfnode */
+Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	char *literal = strdt(text_to_cstring(t), RDF_XSD_DATE);
-	parsed_rdf_literal p = parse_rdf_literal(literal);
+	parsed_rdfnode p = parse_rdfnode(literal);
 
 	Datum result = DirectFunctionCall3(date_in,
 									   CStringGetDatum(p.lex),
@@ -11167,74 +10982,74 @@ Datum rdf_literal_to_date(PG_FUNCTION_ARGS)
 	PG_RETURN_DATEADT(DatumGetDateADT(result));
 }
 
-Datum rdf_literal_lt_date(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_lt, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_date(PG_FUNCTION_ARGS)
+Datum rdfnode_le_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_le, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_date(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_gt, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_date(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ge, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_eq_date(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_date(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* rdf_literal OP date */
-Datum date_to_rdf_literal(PG_FUNCTION_ARGS)
+/* rdfnode OP date */
+Datum date_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT d = PG_GETARG_DATEADT(0);
 	StringInfoData buf;
@@ -11250,78 +11065,78 @@ Datum date_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum date_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum date_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_lt, DateADTGetDatum(val), rdf_date));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum date_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum date_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_le, DateADTGetDatum(val), rdf_date));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum date_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum date_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_gt, DateADTGetDatum(val), rdf_date));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum date_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum date_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ge, DateADTGetDatum(val), rdf_date));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum date_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum date_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum date_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum date_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* rdf_literal OP time (without time zone) */
-Datum rdf_literal_to_time(PG_FUNCTION_ARGS)
+/* rdfnode OP time (without time zone) */
+Datum rdfnode_to_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	char *literal = strdt(text_to_cstring(t), RDF_XSD_TIME);
-	parsed_rdf_literal p = parse_rdf_literal(literal);
+	parsed_rdfnode p = parse_rdfnode(literal);
 
 	Datum result = DirectFunctionCall3(time_in,
 									   CStringGetDatum(p.lex),
@@ -11331,74 +11146,74 @@ Datum rdf_literal_to_time(PG_FUNCTION_ARGS)
 	PG_RETURN_TIMEADT(DatumGetTimeADT(result));
 }
 
-Datum rdf_literal_lt_time(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_lt, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_time(PG_FUNCTION_ARGS)
+Datum rdfnode_le_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_le, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_time(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_gt, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_time(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ge, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_eq_time(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_eq, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_time(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ne, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* time (without time zone) OP rdf_literal */
-Datum time_to_rdf_literal(PG_FUNCTION_ARGS)
+/* time (without time zone) OP rdfnode */
+Datum time_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT t = PG_GETARG_TIMEADT(0);
 	struct pg_tm tt;
@@ -11419,77 +11234,77 @@ Datum time_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum time_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum time_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_lt, TimeADTGetDatum(val), rdf_time));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum time_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum time_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_le, TimeADTGetDatum(val), rdf_time));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum time_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum time_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_gt, TimeADTGetDatum(val), rdf_time));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum time_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum time_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ge, TimeADTGetDatum(val), rdf_time));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum time_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum time_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_eq, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum time_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum time_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ne, rdf_time, TimeADTGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* rdf_literal OP timetz (with time zone) */
-Datum rdf_literal_to_timetz(PG_FUNCTION_ARGS)
+/* rdfnode OP timetz (with time zone) */
+Datum rdfnode_to_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum result = DirectFunctionCall3(timetz_in,
 									   CStringGetDatum(p.lex),
 									   ObjectIdGetDatum(InvalidOid),
@@ -11498,11 +11313,11 @@ Datum rdf_literal_to_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_TIMETZADT_P(DatumGetTimeTzADTP(result));
 }
 
-Datum rdf_literal_lt_timetz(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11512,11 +11327,11 @@ Datum rdf_literal_lt_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_timetz(PG_FUNCTION_ARGS)
+Datum rdfnode_le_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11526,11 +11341,11 @@ Datum rdf_literal_le_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_timetz(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11540,11 +11355,11 @@ Datum rdf_literal_gt_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_timetz(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11554,11 +11369,11 @@ Datum rdf_literal_ge_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_eq_timetz(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11568,11 +11383,11 @@ Datum rdf_literal_eq_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_timetz(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11582,8 +11397,8 @@ Datum rdf_literal_neq_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* timetz (with time zone) OP rdf_literal */
-Datum timetz_to_rdf_literal(PG_FUNCTION_ARGS)
+/* timetz (with time zone) OP rdfnode */
+Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *t = PG_GETARG_TIMETZADT_P(0);
 	char *timetzstr;
@@ -11599,78 +11414,78 @@ Datum timetz_to_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-Datum timetz_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum timetz_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_lt, TimeTzADTPGetDatum(val), rdf_timetz));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timetz_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum timetz_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_le, TimeTzADTPGetDatum(val), rdf_timetz));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timetz_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum timetz_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_gt, TimeTzADTPGetDatum(val), rdf_timetz));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timetz_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum timetz_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_ge, TimeTzADTPGetDatum(val), rdf_timetz));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timetz_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum timetz_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_eq, rdf_timetz, TimeTzADTPGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-Datum timetz_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum timetz_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_ne, rdf_timetz, TimeTzADTPGetDatum(val)));
 
 	PG_RETURN_BOOL(result);
 }
 
-/* boolean <-> rdf_literal */
-Datum rdf_literal_to_boolean(PG_FUNCTION_ARGS)
+/* boolean <-> rdfnode */
+Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	char *literal = text_to_cstring(t);
-	parsed_rdf_literal p = parse_rdf_literal(literal);
+	parsed_rdfnode p = parse_rdfnode(literal);
 	bool result;
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0)
@@ -11688,7 +11503,7 @@ Datum rdf_literal_to_boolean(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum boolean_to_rdf_literal(PG_FUNCTION_ARGS)
+Datum boolean_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	bool val = PG_GETARG_BOOL(0);
 	StringInfoData buf;
@@ -11703,11 +11518,11 @@ Datum boolean_to_rdf_literal(PG_FUNCTION_ARGS)
 }
 
 /* interval */
-Datum rdf_literal_to_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_to_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	char *literal = text_to_cstring(t);
-	parsed_rdf_literal p = parse_rdf_literal(literal);
+	parsed_rdfnode p = parse_rdfnode(literal);
 	Datum result;
 
 	if (strcmp(p.dtype, RDF_XSD_DURATION) != 0)
@@ -11723,11 +11538,11 @@ Datum rdf_literal_to_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(result);
 }
 
-Datum rdf_literal_eq_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_eq_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -11741,11 +11556,11 @@ Datum rdf_literal_eq_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_neq_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_neq_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -11759,11 +11574,11 @@ Datum rdf_literal_neq_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_lt_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_lt_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11776,11 +11591,11 @@ Datum rdf_literal_lt_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_le_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_le_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11793,11 +11608,11 @@ Datum rdf_literal_le_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_gt_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_gt_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11810,11 +11625,11 @@ Datum rdf_literal_gt_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum rdf_literal_ge_interval(PG_FUNCTION_ARGS)
+Datum rdfnode_ge_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11827,7 +11642,7 @@ Datum rdf_literal_ge_interval(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum interval_to_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *iv = PG_GETARG_INTERVAL_P(0);
 	StringInfoData buf;
@@ -11900,11 +11715,11 @@ Datum interval_to_rdf_literal(PG_FUNCTION_ARGS)
 }
 
 
-Datum interval_eq_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -11918,11 +11733,11 @@ Datum interval_eq_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum interval_neq_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -11936,11 +11751,11 @@ Datum interval_neq_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum interval_lt_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11953,11 +11768,11 @@ Datum interval_lt_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum interval_le_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11969,11 +11784,11 @@ Datum interval_le_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum interval_gt_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11986,11 +11801,11 @@ Datum interval_gt_rdf_literal(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-Datum interval_ge_rdf_literal(PG_FUNCTION_ARGS)
+Datum interval_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdf_literal p = parse_rdf_literal(text_to_cstring(t));
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),

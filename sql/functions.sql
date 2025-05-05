@@ -7,8 +7,8 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE ftdbp (
-  p text    OPTIONS (variable '?p', literal_format 'raw'),
-  o text    OPTIONS (variable '?o', literal_format 'raw')
+  p rdfnode    OPTIONS (variable '?p', literal_format 'raw'),
+  o rdfnode OPTIONS (variable '?o', literal_format 'raw')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -149,7 +149,7 @@ WHERE
   sparql.datatype(o) = sparql.iri('"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"') AND
   sparql.datatype(o) = '<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>';
 
-/* ENCODES_FOR_URI */
+  /* ENCODE_FOR_URI */
 SELECT sparql.encode_for_uri('"Los Angeles"');
 SELECT sparql.encode_for_uri('"Los Angeles"@en');
 SELECT sparql.encode_for_uri('"Los Angeles"^^xsd:string');
@@ -186,7 +186,7 @@ WHERE
   sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"@en') AND
   sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"^^xsd:string');
 
-/* isIRI / isURI */
+  /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
 SELECT sparql.isIRI('<mailto:foo@example.com>');
 SELECT sparql.isIRI('http://example/');
@@ -208,7 +208,7 @@ WHERE
   sparql.iri(p) = sparql.iri('http://dbpedia.org/property/released') AND
   sparql.isIRI(p);
 
-/* STRSTARTS */
+  /* STRSTARTS */
 SELECT sparql.strstarts('"foobar"','"foo"'), sparql.strstarts('foobar','foo');
 SELECT sparql.strstarts('"foobar"@en','"foo"@en');
 SELECT sparql.strstarts('"foobar"^^<xsd:string>','"foo"^^<xsd:string>');
@@ -242,7 +242,7 @@ WHERE
   sparql.strstarts(o, '"Postgre"@pt') AND
   sparql.strstarts(o, sparql.strlang('Postgre','pt'));
 
-/* STRENDS */
+  /* STRENDS */
 SELECT sparql.strends('"foobar"','"bar"'), sparql.strends('foobar','bar');
 SELECT sparql.strends('"foobar"@en','"bar"@en');
 SELECT sparql.strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
@@ -274,7 +274,7 @@ WHERE
   sparql.strends(o,'"SQL"^^xsd:string') AND
   sparql.strends(o, sparql.strdt('SQL','xsd:string'));
 
-/* STRBEFORE */
+  /* STRBEFORE */
 SELECT sparql.strbefore('abc','b'), sparql.strbefore('"abc"','"b"');
 SELECT sparql.strbefore('"abc"@en','bc');
 SELECT sparql.strbefore('"abc"@en','"b"@cy');
@@ -474,7 +474,7 @@ WHERE
   sparql.isliteral(o) AND 
   NOT sparql.isliteral(p);
 
-/* BNODE */
+  /* BNODE */
 SELECT sparql.isblank(sparql.bnode());
 SELECT sparql.bnode('xyz');
 SELECT sparql.bnode('xyz');
@@ -494,11 +494,11 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.isblank(sparql.bnode(o));
 
-/* UUID (not pushable) */
-SELECT sparql.uuid() ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
+  /* UUID (not pushable) */
+SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
 
 /* STRUUID() (not pushable) */
-SELECT sparql.struuid() ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
 
 /* LCASE */
 SELECT sparql.lcase('BAR');
@@ -566,7 +566,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.strstarts(sparql.ucase(sparql.strdt(o,'xsd:string')), sparql.ucase(sparql.strdt('postgre','xsd:string')));
 
-/* STRLEN */
+  /* STRLEN */
 SELECT sparql.strlen('chat'), sparql.strlen('"chat"');
 SELECT sparql.strlen('"chat"@en'), sparql.strlen(sparql.strlang('chat','en'));
 SELECT sparql.strlen('"chat"^^xsd:string'), sparql.strlen(sparql.strdt('chat','xsd:string'));
@@ -622,7 +622,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'pt') AND
   sparql.concat(o,'') = sparql.str('PostgreSQL');
 
-/* REPLACE */
+  /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
 SELECT sparql.replace('"abab"', '"B"', '"Z"','"i"'), sparql.replace('abab', 'B', 'Z','i');
 SELECT sparql.replace('"abab"', '"B."', '"Z"','"i"'), sparql.replace('abab', 'B.', 'Z','i');
@@ -670,7 +670,7 @@ SELECT sparql.replace('abcd', '', 'Z', 'g');         -- Empty pattern with globa
 SELECT sparql.replace('abcd', '', 'Z');              -- Empty pattern without global flag
 SELECT sparql.replace('abcd', 'z', 'Z');             -- No pattern match
 SELECT sparql.replace('abcd', 'xy', 'Z');            -- No match for multi-character pattern
-SELECT sparql.replace('a' || repeat('b', 1000) || 'c', 'b', 'Z');  -- Long string with repeated pattern
+SELECT sparql.replace('a' || repeat('b', 1000) || 'c', 'b'::text, 'Z'::text);  -- Long string with repeated pattern
 SELECT sparql.replace('abcd', 'abcd', 'XYZ');       -- Pattern matches the entire string
 SELECT sparql.replace('abcdabcd', 'abcd', 'XYZ');   -- Pattern matches at the start
 SELECT sparql.replace('""', '"b"', '"Z"');           -- Empty literal as input
@@ -735,7 +735,7 @@ WHERE
 /* ROUND */
 SELECT sparql.round('"2.4999"^^xsd:double');
 SELECT sparql.round('"2.5"^^xsd:double');
-SELECT sparql.round('"-2.5"^^xsd:int');
+SELECT sparql.round('"-2.5"^^xsd:decimal');
 SELECT sparql.round('');
 SELECT sparql.round('""');
 SELECT sparql.round(' ');
@@ -756,7 +756,7 @@ WHERE
 
 /* CEIL */
 SELECT sparql.ceil('"10.5"^^xsd:double');
-SELECT sparql.ceil('"-10.5"^^:xsd:decimal');
+SELECT sparql.ceil('"-10.5"^^xsd:decimal');
 SELECT sparql.ceil(NULL);
 SELECT sparql.ceil(CAST(10.5 AS numeric));
 SELECT sparql.ceil(CAST(-10.5 AS double precision));
@@ -769,7 +769,7 @@ SELECT p, o, sparql.ceil(o)
 FROM ftdbp 
 WHERE 
   p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.ceil(o) = sparql.ceil('"23823.5"^^xsd:int') AND
+  sparql.ceil(o) = sparql.ceil('"23823.5"^^xsd:decimal') AND
   sparql.ceil(o) = sparql.ceil(23823.5);
 
 /* FLOOR */
@@ -786,7 +786,7 @@ SELECT p, o, sparql.floor(o)
 FROM ftdbp 
 WHERE 
   p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.floor(o) = sparql.floor('"23824.5"^^xsd:int') AND
+  sparql.floor(o) = sparql.floor('"23824.5"^^xsd:decimal') AND
   sparql.floor(o) = sparql.floor(23824.5);
 
 /* RAND */
@@ -918,10 +918,10 @@ SELECT sparql.bound(NULL);
 SELECT sparql.bound('abc');
 
 CREATE FOREIGN TABLE ft (
-  s text    OPTIONS (variable '?s', literal_format 'raw'),
-  p text    OPTIONS (variable '?p', literal_format 'raw'),
-  o text    OPTIONS (variable '?o', literal_format 'raw'),
-  x text    OPTIONS (variable '?x', literal_format 'raw')
+  s rdfnode OPTIONS (variable '?s', literal_format 'raw'),
+  p rdfnode OPTIONS (variable '?p', literal_format 'raw'),
+  o rdfnode OPTIONS (variable '?o', literal_format 'raw'),
+  x rdfnode OPTIONS (variable '?x', literal_format 'raw')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -937,7 +937,6 @@ WHERE
   sparql.bound(s);
 
 /* SAMETERM */
-
 SELECT sparql.sameterm('"abc"', '"abc"');
 SELECT sparql.sameterm('"abc"@en', '"abc"@en');
 SELECT sparql.sameterm('"abc"@en', '"abc"');

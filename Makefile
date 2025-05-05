@@ -24,16 +24,13 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
   else print v[1] }')
 
 REGRESS = create_extension \
-			rdfiri_in \
-			rdfiri_eq \
-			rdfiri_neq \
-			rdfliteral_in \
-			rdfliteral_eq \
-			rdfliteral_neq \
-			rdfliteral_lt \
-			rdfliteral_gt \
-			rdfliteral_le \
-			rdfliteral_ge \
+			rdfnode_in \
+			rdfnode_eq \
+			rdfnode_neq \
+			rdfnode_lt \
+			rdfnode_gt \
+			rdfnode_le \
+			rdfnode_ge \
 			pg_datatypes \
 			functions \
 			describe \

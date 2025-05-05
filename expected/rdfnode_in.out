@@ -1,0 +1,640 @@
+SELECT '"foo"'::rdfnode;
+ rdfnode 
+---------
+ "foo"
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"foo"@es'::rdfnode;
+ rdfnode  
+----------
+ "foo"@es
+(1 row)
+
+SELECT '"foo"@es'::rdfnode::text;
+   text   
+----------
+ "foo"@es
+(1 row)
+
+SELECT '"foo"@es'::rdfnode::text::rdfnode;
+ rdfnode  
+----------
+ "foo"@es
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode::text::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"nan"^^xsd:double'::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "nan"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"NAN"^^xsd:double'::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "NAN"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"nAn"^^xsd:double'::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "nAn"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"forty-two"^^xsd:int'::rdfnode;
+ERROR:  invalid lexical form for xsd:int: "forty-two"
+LINE 1: SELECT '"forty-two"^^xsd:int'::rdfnode;
+               ^
+SELECT '"invalid"^^xsd:dateTime'::rdfnode;
+ERROR:  invalid lexical form for xsd:dateTime: "invalid"
+LINE 1: SELECT '"invalid"^^xsd:dateTime'::rdfnode;
+               ^
+SELECT '"25:00:00"^^xsd:time'::rdfnode;
+ERROR:  invalid lexical form for xsd:time: "25:00:00"
+LINE 1: SELECT '"25:00:00"^^xsd:time'::rdfnode;
+               ^
+SELECT '"2025-13-01"^^xsd:date'::rdfnode;
+ERROR:  invalid lexical form for xsd:date: "2025-13-01"
+LINE 1: SELECT '"2025-13-01"^^xsd:date'::rdfnode;
+               ^
+SELECT '"abc"^^invalid:datatype'::rdfnode;
+          rdfnode          
+---------------------------
+ "abc"^^<invalid:datatype>
+(1 row)
+
+SELECT '"abc"@invalid_lang'::rdfnode;
+ERROR:  invalid language tag: "invalid_lang"
+LINE 1: SELECT '"abc"@invalid_lang'::rdfnode;
+               ^
+SELECT '"foo'::rdfnode;
+ rdfnode 
+---------
+ "\"foo"
+(1 row)
+
+SELECT 'f"o"o'::rdfnode;
+  rdfnode  
+-----------
+ "f\"o\"o"
+(1 row)
+
+SELECT '𝄞'::rdfnode;
+ rdfnode 
+---------
+ "𝄞"
+(1 row)
+
+SELECT ''::rdfnode;
+ rdfnode 
+---------
+ ""
+(1 row)
+
+SELECT '"'::rdfnode; 
+ rdfnode 
+---------
+ "\""
+(1 row)
+
+SELECT '"\""'::rdfnode;
+ rdfnode 
+---------
+ "\""
+(1 row)
+
+SELECT '😀'::rdfnode;
+ rdfnode 
+---------
+ "😀"
+(1 row)
+
+SELECT '"x^^y"'::rdfnode;           -- → "x^^y"
+ rdfnode 
+---------
+ "x^^y"
+(1 row)
+
+SELECT '"a\\"b"@en'::rdfnode;       -- → "a\"b"@en
+  rdfnode   
+------------
+ "a\\"b"@en
+(1 row)
+
+SELECT '"𝄞"^^<http://example.org/dt>'::rdfnode;
+           rdfnode            
+------------------------------
+ "𝄞"^^<http://example.org/dt>
+(1 row)
+
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
+       numeric        
+----------------------
+ 9223372036854775.807
+(1 row)
+
+SELECT '"-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
+        numeric        
+-----------------------
+ -9223372036854775.807
+(1 row)
+
+SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT '"-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdfnode::double precision;
+ float8 
+--------
+  42.73
+(1 row)
+
+SELECT '"-42.73"^^xsd:double'::rdfnode::double precision;
+ float8 
+--------
+ -42.73
+(1 row)
+
+SELECT '"42.73"^^xsd:double'::rdfnode::double precision::rdfnode;
+                      rdfnode                       
+----------------------------------------------------
+ "42.73"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"-42.73"^^xsd:double'::rdfnode::double precision::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "-42.73"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"4.2E1"^^xsd:double'::rdfnode::double precision;
+ float8 
+--------
+     42
+(1 row)
+
+SELECT '"-4.2E1"^^xsd:double'::rdfnode::double precision;
+ float8 
+--------
+    -42
+(1 row)
+
+SELECT 42.73::real::rdfnode;
+                      rdfnode                      
+---------------------------------------------------
+ "42.73"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 42.73::real::rdfnode::real;
+ float4 
+--------
+  42.73
+(1 row)
+
+SELECT (-42.73)::real::rdfnode;
+                      rdfnode                       
+----------------------------------------------------
+ "-42.73"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT (-42.73)::real::rdfnode::real;
+ float4 
+--------
+ -42.73
+(1 row)
+
+SELECT 'INF'::real::rdfnode;
+                       rdfnode                        
+------------------------------------------------------
+ "Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 'INF'::real::rdfnode::real;
+  float4  
+----------
+ Infinity
+(1 row)
+
+SELECT '-INF'::real::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "-Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT '-INF'::real::rdfnode::real;
+  float4   
+-----------
+ -Infinity
+(1 row)
+
+SELECT 'NaN'::real::rdfnode;
+                     rdfnode                     
+-------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 'NaN'::real::rdfnode::real;
+ float4 
+--------
+    NaN
+(1 row)
+
+SELECT 42::bigint::rdfnode;
+                    rdfnode                    
+-----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT 42::bigint::rdfnode::bigint;
+ int8 
+------
+   42
+(1 row)
+
+SELECT (-42)::bigint::rdfnode;
+                    rdfnode                     
+------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT (-42)::bigint::rdfnode::bigint;
+ int8 
+------
+  -42
+(1 row)
+
+SELECT 42746357267238767::bigint::rdfnode;
+                           rdfnode                            
+--------------------------------------------------------------
+ "42746357267238767"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT 42746357267238767::bigint::rdfnode::bigint;
+       int8        
+-------------------
+ 42746357267238767
+(1 row)
+
+SELECT (-42746357267238767)::bigint::rdfnode;
+                            rdfnode                            
+---------------------------------------------------------------
+ "-42746357267238767"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT (-42746357267238767)::bigint::rdfnode::bigint;
+        int8        
+--------------------
+ -42746357267238767
+(1 row)
+
+SELECT 42::int::rdfnode;
+                   rdfnode                    
+----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT 42::int::rdfnode::int;
+ int4 
+------
+   42
+(1 row)
+
+SELECT (-42)::int::rdfnode;
+                    rdfnode                    
+-----------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT (-42)::int::rdfnode::int;
+ int4 
+------
+  -42
+(1 row)
+
+SELECT 427463::int::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "427463"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT 427463::int::rdfnode::int;
+  int4  
+--------
+ 427463
+(1 row)
+
+SELECT (-427463)::int::rdfnode;
+                      rdfnode                      
+---------------------------------------------------
+ "-427463"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT (-427463)::int::rdfnode::int;
+  int4   
+---------
+ -427463
+(1 row)
+
+SELECT 42::smallint::rdfnode;
+                    rdfnode                     
+------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT 42::smallint::rdfnode::smallint;
+ int2 
+------
+   42
+(1 row)
+
+SELECT (-42)::smallint::rdfnode;
+                     rdfnode                     
+-------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT (-42)::smallint::rdfnode::smallint;
+ int2 
+------
+  -42
+(1 row)
+
+SELECT 4273::smallint::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "4273"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT 4273::smallint::rdfnode::smallint;
+ int2 
+------
+ 4273
+(1 row)
+
+SELECT (-4273)::smallint::rdfnode;
+                      rdfnode                      
+---------------------------------------------------
+ "-4273"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT (-4273)::smallint::rdfnode::smallint;
+ int2  
+-------
+ -4273
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
+                                  rdfnode                                   
+----------------------------------------------------------------------------
+ "2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode::timestamptz;
+             timestamptz             
+-------------------------------------
+ Fri Apr 25 11:44:38.149101 2025 PDT
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
+                                  rdfnode                                   
+----------------------------------------------------------------------------
+ "2025-04-26T01:44:38.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
+         timestamptz          
+------------------------------
+ Fri Apr 25 18:44:38 2025 PDT
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "2025-04-25T18:44:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
+        timestamp         
+--------------------------
+ Fri Apr 25 18:44:38 2025
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "2025-04-25T18:44:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
+        timestamp         
+--------------------------
+ Fri Apr 25 18:44:38 2025
+(1 row)
+
+SELECT '2020-05-12'::date::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "2020-05-12"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '2020-05-12'::date::rdfnode::date;
+    date    
+------------
+ 05-12-2020
+(1 row)
+
+SELECT '18:44:38'::time::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '18:44:38'::time::rdfnode::time;
+   time   
+----------
+ 18:44:38
+(1 row)
+
+SELECT '00:00:00'::time::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "00:00:00"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '00:00:00'::time::rdfnode::time;
+   time   
+----------
+ 00:00:00
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '04:05:06-08:00'::timetz::rdfnode::timetz;
+   timetz    
+-------------
+ 04:05:06-08
+(1 row)
+
+SELECT '04:05:06 PST'::timetz::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '04:05:06 PST'::timetz::rdfnode::timetz;
+   timetz    
+-------------
+ 04:05:06-08
+(1 row)
+
+SELECT true::rdfnode;
+                      rdfnode                       
+----------------------------------------------------
+ "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT false::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "false"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT true::rdfnode::boolean;
+ bool 
+------
+ t
+(1 row)
+
+SELECT false::rdfnode::boolean;
+ bool 
+------
+ f
+(1 row)
+
+SELECT (1=1)::rdfnode::boolean;
+ bool 
+------
+ t
+(1 row)
+
+SELECT (1<>1)::rdfnode::boolean;
+ bool 
+------
+ f
+(1 row)
+
+SELECT '1 day'::interval::rdfnode;
+                      rdfnode                       
+----------------------------------------------------
+ "P1D"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 hour 30 minutes'::interval::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "PT1H30M"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '2 years 3 months'::interval::rdfnode;
+                       rdfnode                        
+------------------------------------------------------
+ "P2Y3M"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '5 days 12 hours'::interval::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "P5DT12H"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdfnode;
+                            rdfnode                            
+---------------------------------------------------------------
+ "P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '5.123456 seconds'::interval::rdfnode;
+                          rdfnode                           
+------------------------------------------------------------
+ "PT5.123456S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '0.000001 seconds'::interval::rdfnode;
+                          rdfnode                           
+------------------------------------------------------------
+ "PT0.000001S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 minute 0.5 seconds'::interval::rdfnode;
+                           rdfnode                            
+--------------------------------------------------------------
+ "PT1M0.500000S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 year -2 months'::interval::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "-P1Y2M"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-3 days -4 hours'::interval::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "-P3DT4H"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '0 seconds'::interval::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "PT0S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdfnode::interval;
+                   interval                   
+----------------------------------------------
+ @ 1 year 2 mons 3 days 4 hours 5 mins 6 secs
+(1 row)
+
+SELECT '-1 year -2 months'::interval::rdfnode::interval;
+ERROR:  invalid input syntax for type interval: "-P1Y2M"
+SELECT '5.123456 seconds'::interval::rdfnode::interval;
+    interval     
+-----------------
+ @ 5.123456 secs
+(1 row)
+
+SELECT '0 seconds'::interval::rdfnode::interval;
+ interval 
+----------
+ @ 0
+(1 row)
+
+SELECT '0.000001 seconds'::interval::rdfnode::interval;
+    interval     
+-----------------
+ @ 0.000001 secs
+(1 row)
+

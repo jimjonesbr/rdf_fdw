@@ -11,2233 +11,2233 @@ SHOW timezone;
  America/Los_Angeles
 (1 row)
 
-/* rdf_literal <-> rdf_literal */
-SELECT '""'::rdf_literal = '""'::rdf_literal;
+/* rdfnode <-> rdfnode */
+SELECT '""'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '""@en'::rdf_literal = '""@pt'::rdf_literal;
+SELECT '""@en'::rdfnode = '""@pt'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"'::rdf_literal = '"foo"'::rdf_literal;
+SELECT '"foo"'::rdfnode = '"foo"'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"^^xsd:string'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
+SELECT '"foo"^^xsd:string'::rdfnode = '"foo"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"^^xsd:string'::rdf_literal = '"foo"^^<http://www.w3.org/2001/XMLSchema#string>'::rdf_literal;
+SELECT '"foo"^^xsd:string'::rdfnode = '"foo"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"@es'::rdf_literal = '"foo"@es'::rdf_literal;
+SELECT '"foo"@es'::rdfnode = '"foo"@es'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"'::rdf_literal = '"foo"@de'::rdf_literal;
+SELECT '"foo"'::rdfnode = '"foo"@de'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"@pt'::rdf_literal = '"foo"@de'::rdf_literal;
+SELECT '"foo"@pt'::rdfnode = '"foo"@de'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"@en'::rdf_literal = '"foo"@en-US'::rdf_literal;
+SELECT '"foo"@en'::rdfnode = '"foo"@en-US'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '""'::rdf_literal <> '""'::rdf_literal;
+SELECT '""'::rdfnode <> '""'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '""@en'::rdf_literal <> '""@pt'::rdf_literal;
+SELECT '""@en'::rdfnode <> '""@pt'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"'::rdf_literal <> '"foo"'::rdf_literal;
+SELECT '"foo"'::rdfnode <> '"foo"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"^^xsd:string'::rdf_literal <> '"foo"^^xsd:string'::rdf_literal;
+SELECT '"foo"^^xsd:string'::rdfnode <> '"foo"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"@es'::rdf_literal <> '"foo"@es'::rdf_literal;
+SELECT '"foo"@es'::rdfnode <> '"foo"@es'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"'::rdf_literal <> '"foo"@de'::rdf_literal;
+SELECT '"foo"'::rdfnode <> '"foo"@de'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"@pt'::rdf_literal <> '"foo"@de'::rdf_literal;
+SELECT '"foo"@pt'::rdfnode <> '"foo"@de'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"@en'::rdf_literal <> '"foo"@en-US'::rdf_literal;
+SELECT '"foo"@en'::rdfnode <> '"foo"@en-US'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:int'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:int'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"@EN'::rdf_literal = '"foo"@en'::rdf_literal; -- Should return t (case-insensitive)
+SELECT '"foo"@EN'::rdfnode = '"foo"@en'::rdfnode; -- Should return t (case-insensitive)
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"@en-us'::rdf_literal = '"foo"@EN-US'::rdf_literal; -- Should return t
+SELECT '"foo"@en-us'::rdfnode = '"foo"@EN-US'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"@en'::rdf_literal = '"foo"@en-us'::rdf_literal; -- Should return f
+SELECT '"foo"@en'::rdfnode = '"foo"@en-us'::rdfnode; -- Should return f
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"café"@fr'::rdf_literal = '"café"@fr'::rdf_literal; -- Should return t
+SELECT '"café"@fr'::rdfnode = '"café"@fr'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"café"@fr'::rdf_literal = '"cafe"@fr'::rdf_literal; -- Should return f
+SELECT '"café"@fr'::rdfnode = '"cafe"@fr'::rdfnode; -- Should return f
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"\u0020"^^xsd:string'::rdf_literal = '" "^^xsd:string'::rdf_literal; -- Should return t (Unicode space)
+SELECT '"\u0020"^^xsd:string'::rdfnode = '" "^^xsd:string'::rdfnode; -- Should return t (Unicode space)
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"^^<http://example.org/custom>'::rdf_literal = '"foo"^^<http://example.org/custom>'::rdf_literal; -- Should return t (lexical comparison)
+SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^<http://example.org/custom>'::rdfnode; -- Should return t (lexical comparison)
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"foo"^^<http://example.org/custom>'::rdf_literal = '"foo"^^xsd:string'::rdf_literal; -- Should return f
+SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^xsd:string'::rdfnode; -- Should return f
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"foo"^^<http://invalid>'::rdf_literal = '"foo"^^<http://invalid>'::rdf_literal; -- Should error or return t
+SELECT '"foo"^^<http://invalid>'::rdfnode = '"foo"^^<http://invalid>'::rdfnode; -- Should error or return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42"^^xsd:int'::rdf_literal = '"-42"^^xsd:int'::rdf_literal;
+SELECT '"-42"^^xsd:int'::rdfnode = '"-42"^^xsd:int'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"-42"^^xsd:int'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"-42"^^xsd:int'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42.00"^^xsd:decimal'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42.00"^^xsd:decimal'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:integer'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:integer'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42.0000000000"^^xsd:double'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42.0000000000"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:short'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:short'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42.73"^^xsd:decimal'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42.73"^^xsd:decimal'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42.0000000001"^^xsd:double'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42.0000000001"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"foo"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:string'::rdf_literal;
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42"^^xsd:int'::rdf_literal = '"42"^^xsd:date'::rdf_literal;
-ERROR:  invalid lexical form for xsd:date: "42" at character 39
-SELECT '"-0"^^xsd:int'::rdf_literal = '"0"^^xsd:int'::rdf_literal; -- Should return t (numeric zero)
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;
+ERROR:  invalid lexical form for xsd:date: "42" at character 35
+SELECT '"-0"^^xsd:int'::rdfnode = '"0"^^xsd:int'::rdfnode; -- Should return t (numeric zero)
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"999999999999999999"^^xsd:integer'::rdf_literal = '"999999999999999999.0"^^xsd:decimal'::rdf_literal; -- Should return t
+SELECT '"999999999999999999"^^xsd:integer'::rdfnode = '"999999999999999999.0"^^xsd:decimal'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-08"^^xsd:date'::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"^^xsd:date'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-08"^^xsd:string'::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-08"'::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-08"'::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '"2011-10-11"^^xsd:date'::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-11"^^xsd:date'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""^^xsd:date'::rdf_literal;
-ERROR:  invalid lexical form for xsd:date: "" at character 48
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = '""'::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '""^^xsd:date'::rdfnode;
+ERROR:  invalid lexical form for xsd:date: "" at character 44
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2011-10-08"^^xsd:date'::rdf_literal = ''::rdf_literal;
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = ''::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"0001-01-01"^^xsd:date'::rdf_literal = '"0001-01-01"^^xsd:date'::rdf_literal; -- Should return t
+SELECT '"0001-01-01"^^xsd:date'::rdfnode = '"0001-01-01"^^xsd:date'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2025-13-01T12:00:00"^^xsd:dateTime'::rdf_literal = '"2025-13-01T12:00:00"^^xsd:dateTime'::rdf_literal; -- Should error (invalid month)
+SELECT '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode; -- Should error (invalid month)
 ERROR:  date/time field value out of range: "2025-13-01T12:00:00"
-SELECT '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdf_literal; -- Should error (invalid hour)
+SELECT '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode; -- Should error (invalid hour)
 ERROR:  date/time field value out of range: "2025-04-25T25:00:00Z"
-SELECT '"1.0E308"^^xsd:double'::rdf_literal = '"1.0E308"^^xsd:double'::rdf_literal; -- Should return t or error if overflow
+SELECT '"1.0E308"^^xsd:double'::rdfnode = '"1.0E308"^^xsd:double'::rdfnode; -- Should return t or error if overflow
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"invalid"^^xsd:dateTime'::rdf_literal = '"invalid"^^xsd:dateTime'::rdf_literal; -- Should error
+SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:dateTime'::rdfnode; -- Should error
 ERROR:  invalid lexical form for xsd:dateTime: "invalid" at character 8
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"18:44:38"^^xsd:time'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^xsd:time'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"20:44:38"^^xsd:time'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"20:44:38"^^xsd:time'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"18:44:38"'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"18:44:38"^^xsd:string'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"foo"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '"foo"'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"foo"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""^^xsd:time'::rdf_literal;
-ERROR:  invalid lexical form for xsd:time: "" at character 46
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = '""'::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '""^^xsd:time'::rdfnode;
+ERROR:  invalid lexical form for xsd:time: "" at character 42
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"18:44:38"^^xsd:time'::rdf_literal = ''::rdf_literal;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = ''::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-29 08:48:33"^^<http://www.w3.org/2001/XMLSchema#time>'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-29 08:48:33"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25 18:44:38"^^xsd:string'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^xsd:string'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"foo"^^xsd:string'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '""^^xsd:dateTime'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '""^^xsd:dateTime'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = '""'::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '""'::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdf_literal = ''::rdf_literal;
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = ''::rdfnode;
 ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-29T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-29T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38.149101Z"'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38.149101Z"^^xsd:string'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"foo"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '""^^xsd:string'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '""^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = '""'::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdf_literal = ''::rdf_literal;
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = ''::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdf_literal; -- Should return t (missing timezone as UTC)
+SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode; -- Should return t (missing timezone as UTC)
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-04-25T18:44:38+01:00"^^xsd:dateTime'::rdf_literal = '"2025-04-25T17:44:38Z"^^xsd:dateTime'::rdf_literal; -- Should return t (same UTC moment)
+SELECT '"2025-04-25T18:44:38+01:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T17:44:38Z"^^xsd:dateTime'::rdfnode; -- Should return t (same UTC moment)
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2025-04-25T18:44:38-04:00"^^xsd:dateTime'::rdf_literal = '"2025-04-25T22:44:38Z"^^xsd:dateTime'::rdf_literal; -- Should return t
+SELECT '"2025-04-25T18:44:38-04:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T22:44:38Z"^^xsd:dateTime'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdf_literal = '"2025-04-25T18:44:38+01:00"^^xsd:dateTime'::rdf_literal; -- Should return f (UTC vs. +01:00)
+SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38+01:00"^^xsd:dateTime'::rdfnode; -- Should return f (UTC vs. +01:00)
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"0001-01-01T00:00:00Z"^^xsd:dateTime'::rdf_literal = '"0001-01-01T00:00:00Z"^^xsd:dateTime'::rdf_literal; -- Should return t
+SELECT '"0001-01-01T00:00:00Z"^^xsd:dateTime'::rdfnode = '"0001-01-01T00:00:00Z"^^xsd:dateTime'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"9999-12-31T23:59:59Z"^^xsd:dateTime'::rdf_literal = '"9999-12-31T23:59:59Z"^^xsd:dateTime'::rdf_literal; -- Should return t
+SELECT '"9999-12-31T23:59:59Z"^^xsd:dateTime'::rdfnode = '"9999-12-31T23:59:59Z"^^xsd:dateTime'::rdfnode; -- Should return t
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '"P5Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '"P5Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '"P1Y2M3DT4H5M6S"^^xsd:string'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '"P1Y2M3DT4H5M6S"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '"P1Y2M3DT4H5M6S"'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '"P1Y2M3DT4H5M6S"'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '"foo"^^xsd:string'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '"foo"^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '""^^xsd:string'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '""^^xsd:string'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '""'::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = ''::rdf_literal;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = ''::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P12M"^^xsd:duration'::rdf_literal = '"P1Y"^^xsd:duration'::rdf_literal;
+SELECT '"P12M"^^xsd:duration'::rdfnode = '"P1Y"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"PT3600S"^^xsd:duration'::rdf_literal = '"PT1H"^^xsd:duration'::rdf_literal;
+SELECT '"PT3600S"^^xsd:duration'::rdfnode = '"PT1H"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1DT24H"^^xsd:duration'::rdf_literal = '"P2D"^^xsd:duration'::rdf_literal;
+SELECT '"P1DT24H"^^xsd:duration'::rdfnode = '"P2D"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y"^^xsd:duration'::rdf_literal = '"P2Y"^^xsd:duration'::rdf_literal;
+SELECT '"P1Y"^^xsd:duration'::rdfnode = '"P2Y"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-/* numeric <-> rdf_literal*/
-SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
+/* numeric <-> rdfnode*/
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
     numeric    
 ---------------
  123456789.123
 (1 row)
 
-SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric;
+SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
     numeric     
 ----------------
  -123456789.123
 (1 row)
 
-SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
-                         rdf_literal                         
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric::rdfnode;
+                           rdfnode                           
 -------------------------------------------------------------
  "123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
-SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal::numeric::rdf_literal;
-                         rdf_literal                          
+SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric::rdfnode;
+                           rdfnode                            
 --------------------------------------------------------------
  "-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
-SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal = 123456789.123;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode = 123456789.123;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> 123456789.123;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode <> 123456789.123;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal <> -123456789.123;
+SELECT '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode <> -123456789.123;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal != 123456789.123;
+SELECT '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode != 123456789.123;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"922337"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal > 922337203.999;
+SELECT '"922337"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode > 922337203.999;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"922337"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal < 922337203.999;
+SELECT '"922337"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode < 922337203.999;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.000000"^^xsd:decimal'::rdf_literal = 42::numeric;
+SELECT '"42.000000"^^xsd:decimal'::rdfnode = 42::numeric;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"0.0000001"^^xsd:decimal'::rdf_literal > 0::numeric;
+SELECT '"0.0000001"^^xsd:decimal'::rdfnode > 0::numeric;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-0.000001"^^xsd:decimal'::rdf_literal < 0::numeric;
+SELECT '"-0.000001"^^xsd:decimal'::rdfnode < 0::numeric;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-0.0"^^xsd:decimal'::rdf_literal = 0::numeric;
+SELECT '"-0.0"^^xsd:decimal'::rdfnode = 0::numeric;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 123456789.123 = '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 123456789.123 = '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -123456789.123 = '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT -123456789.123 = '"-123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 123456789.123 <> '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 123456789.123 <> '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 123456789.123 != '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 123456789.123 != '"123456789.123"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 922337203.999 > '"922337203.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 922337203.999 > '"922337203.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 922337203.999 < '"922337203.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdf_literal;
+SELECT 922337203.999 < '"922337203.000"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42::numeric = '"42.00000"^^xsd:decimal'::rdf_literal;
+SELECT 42::numeric = '"42.00000"^^xsd:decimal'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 0::numeric > '"0.0001"^^xsd:decimal'::rdf_literal;
+SELECT 0::numeric > '"0.0001"^^xsd:decimal'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 0::numeric < '"-0.0001"^^xsd:decimal'::rdf_literal;
+SELECT 0::numeric < '"-0.0001"^^xsd:decimal'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 0::numeric ='"-0.0"^^xsd:decimal'::rdf_literal;
+SELECT 0::numeric ='"-0.0"^^xsd:decimal'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-/* double precision (float8) <-> rdf_literal */
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision = 42.73000::double precision;
+/* double precision (float8) <-> rdfnode */
+SELECT '"42.73"^^xsd:double'::rdfnode::double precision = 42.73000::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision <> 42.73000::double precision;
+SELECT '"42.73"^^xsd:double'::rdfnode::double precision <> 42.73000::double precision;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision > 42.999999::double precision;
+SELECT '"42.73"^^xsd:double'::rdfnode::double precision > 42.999999::double precision;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42.73"^^xsd:double'::rdf_literal::double precision < 42.999999::double precision;
+SELECT '"42.73"^^xsd:double'::rdfnode::double precision < 42.999999::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"4.2E1"^^xsd:double'::rdf_literal = 42.0::double precision;
+SELECT '"4.2E1"^^xsd:double'::rdfnode = 42.0::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"4.2000001E1"^^xsd:double'::rdf_literal > 42.0::double precision;
+SELECT '"4.2000001E1"^^xsd:double'::rdfnode > 42.0::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"4.1999999E1"^^xsd:double'::rdf_literal < 42.0::double precision;
+SELECT '"4.1999999E1"^^xsd:double'::rdfnode < 42.0::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"0.0"^^xsd:double'::rdf_literal = '-0.0'::double precision;
+SELECT '"0.0"^^xsd:double'::rdfnode = '-0.0'::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"NaN"^^xsd:double'::rdf_literal != 0::double precision;
+SELECT '"NaN"^^xsd:double'::rdfnode != 0::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"Infinity"^^xsd:double'::rdf_literal > 1e308::double precision;
+SELECT '"Infinity"^^xsd:double'::rdfnode > 1e308::double precision;
 ERROR:  invalid lexical form for xsd:double: "Infinity" at character 8
-SELECT '"-Infinity"^^xsd:double'::rdf_literal < -1e308::double precision;
+SELECT '"-Infinity"^^xsd:double'::rdfnode < -1e308::double precision;
 ERROR:  invalid lexical form for xsd:double: "-Infinity" at character 8
-SELECT 42.73000::double precision = '"42.73"^^xsd:double'::rdf_literal::double precision;
+SELECT 42.73000::double precision = '"42.73"^^xsd:double'::rdfnode::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42.73000::double precision <> '"42.73"^^xsd:double'::rdf_literal::double precision;
+SELECT 42.73000::double precision <> '"42.73"^^xsd:double'::rdfnode::double precision;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42.999999::double precision >'"42.73"^^xsd:double'::rdf_literal::double precision;
+SELECT 42.999999::double precision >'"42.73"^^xsd:double'::rdfnode::double precision;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42.999999::double precision < '"42.73"^^xsd:double'::rdf_literal::double precision;
+SELECT 42.999999::double precision < '"42.73"^^xsd:double'::rdfnode::double precision;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42.0::double precision = '"4.2E1"^^xsd:double'::rdf_literal;
+SELECT 42.0::double precision = '"4.2E1"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42.0::double precision > '"4.2000001E1"^^xsd:double'::rdf_literal;
+SELECT 42.0::double precision > '"4.2000001E1"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42.0::double precision < '"4.1999999E1"^^xsd:double'::rdf_literal;
+SELECT 42.0::double precision < '"4.1999999E1"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '-0.0'::double precision = '"0.0"^^xsd:double'::rdf_literal;
+SELECT '-0.0'::double precision = '"0.0"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 0::double precision != '"NaN"^^xsd:double'::rdf_literal;
+SELECT 0::double precision != '"NaN"^^xsd:double'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 1e308::double precision > '"Infinity"^^xsd:double'::rdf_literal;
+SELECT 1e308::double precision > '"Infinity"^^xsd:double'::rdfnode;
 ERROR:  invalid lexical form for xsd:double: "Infinity" at character 34
-SELECT -1e308::double precision < '"-Infinity"^^xsd:double'::rdf_literal;
+SELECT -1e308::double precision < '"-Infinity"^^xsd:double'::rdfnode;
 ERROR:  invalid lexical form for xsd:double: "-Infinity" at character 35
-/* real (float4) <-> rdf_literal */
-SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42.73::real;
+/* real (float4) <-> rdfnode */
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode = 42.73::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42::real;
+SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode = 42::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = 42::real;
+SELECT '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode = 42::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal = -42.73::real;
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode = -42.73::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <> 42.73::real;
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode <> 42.73::real;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <> 42::real;
+SELECT '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode <> 42::real;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal > 43.00::real;
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode > 43.00::real;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal > -43.00::real;
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode > -43.00::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal < 43.00::real;
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode < 43.00::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal < -43.00::real;
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode < -43.00::real;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal >= 43.00::real;
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode >= 43.00::real;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal >= -43.00::real;
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode >= -43.00::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <= 43.00::real;
+SELECT '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode <= 43.00::real;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal <= -43.00::real;
+SELECT '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode <= -43.00::real;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42.73::real = '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 42.73::real = '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42::real = '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 42::real = '"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42::real = '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 42::real = '"42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -42.73::real = '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT -42.73::real = '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42.73::real <> '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 42.73::real <> '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42::real <>'"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 42::real <>'"42.00"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 43.00::real > '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 43.00::real > '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -43.00::real > '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT -43.00::real > '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 43.00::real < '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 43.00::real < '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -43.00::real < '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT -43.00::real < '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 43.00::real >= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 43.00::real >= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -43.00::real >= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT -43.00::real >= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 43.00::real <= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT 43.00::real <= '"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -43.00::real <= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdf_literal;
+SELECT -43.00::real <= '"-42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-/* bigint (int8) <-> rdf_literal */
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = 42746357267238768;
+/* bigint (int8) <-> rdfnode */
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode = 42746357267238768;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal = -42746357267238768;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode = -42746357267238768;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <> 42746357267238768;
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode <> 42746357267238768;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <> -42746357267238768;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode <> -42746357267238768;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal != 42746357267238768;
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode != 42746357267238768;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal != -42746357267238768;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode != -42746357267238768;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal > 42746357267238799;
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode > 42746357267238799;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal > -42746357267238799;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode > -42746357267238799;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal < 42746357267238799;
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode < 42746357267238799;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal < -42746357267238799;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode < -42746357267238799;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal >= 42746357267238799;
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode >= 42746357267238799;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal >= -42746357267238799;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode >= -42746357267238799;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <= 42746357267238799;
+SELECT '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode <= 42746357267238799;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal <= -42746357267238799;
+SELECT '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode <= -42746357267238799;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42746357267238768 ='"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238768 ='"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -42746357267238768 = '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238768 = '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42746357267238768 <> '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238768 <> '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -42746357267238768 <> '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238768 <> '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42746357267238768 != '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238768 != '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -42746357267238768 != '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238768 != '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42746357267238799 > '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238799 > '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -42746357267238799 > '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238799 > '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42746357267238799 < '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238799 < '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -42746357267238799 < '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238799 < '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 42746357267238799 >= '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238799 >= '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -42746357267238799 >= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238799 >= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 42746357267238799 <= '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT 42746357267238799 <= '"42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -42746357267238799 <= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdf_literal;
+SELECT -42746357267238799 <= '"-42746357267238768"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-/* int (int4) <-> rdf_literal */
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = 427463::int;
+/* int (int4) <-> rdfnode */
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode = 427463::int;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal = -427463::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode = -427463::int;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <> 427463::int;
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode <> 427463::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <> -427463::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode <> -427463::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal != 427463::int;
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode != 427463::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal != -427463::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode != -427463::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal > 427464::int;
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode > 427464::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal > -427464::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode > -427464::int;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal < 427464::int;
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode < 427464::int;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal < -427464::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode < -427464::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal >= 427464::int;
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode >= 427464::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal >= -427464::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode >= -427464::int;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <= 427464::int;
+SELECT '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode <= 427464::int;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal <= -427464::int;
+SELECT '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode <= -427464::int;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 427463::int = '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427463::int = '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -427463::int = '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427463::int = '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 427463::int <> '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427463::int <> '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -427463::int <> '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427463::int <> '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 427463::int != '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427463::int != '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -427463::int != '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427463::int != '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 427464::int > '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427464::int > '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -427464::int > '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427464::int > '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 427464::int <'"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427464::int <'"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -427464::int < '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427464::int < '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 427464::int >= '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427464::int >= '"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -427464::int >= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427464::int >= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 427464::int <='"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT 427464::int <='"427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -427464::int <= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdf_literal;
+SELECT -427464::int <= '"-427463"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"2147483648"^^xsd:int'::rdf_literal::int; -- must fail: out of range for type integer
+SELECT '"2147483648"^^xsd:int'::rdfnode::int; -- must fail: out of range for type integer
 ERROR:  value "2147483648" is out of range for type integer
-/* smallint (int2) <-> rdf_literal */
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = 4273::smallint;
+/* smallint (int2) <-> rdfnode */
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode = 4273::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal = -4273::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode = -4273::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <> 4273::smallint;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode <> 4273::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <> -4273::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode <> -4273::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal != 4273::smallint;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode != 4273::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal != -4273::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode != -4273::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal > 4274::smallint;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode > 4274::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal > -4274::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode > -4274::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal < 4274::smallint;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode < 4274::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal < -4274::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode < -4274::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal >= 4274::smallint;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode >= 4274::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal >= -4274::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode >= -4274::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <= 4274::smallint;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode <= 4274::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal <= -4274::smallint;
+SELECT '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode <= -4274::smallint;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 4273::smallint = '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4273::smallint = '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -4273::smallint = '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4273::smallint = '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 4273::smallint <> '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4273::smallint <> '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -4273::smallint <> '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4273::smallint <> '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 4273::smallint != '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4273::smallint != '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -4273::smallint != '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4273::smallint != '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 4274::smallint > '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4274::smallint > '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -4274::smallint > '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4274::smallint > '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 4274::smallint <'"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4274::smallint <'"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -4274::smallint < '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4274::smallint < '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT 4274::smallint >= '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4274::smallint >= '"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT -4274::smallint >= '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4274::smallint >= '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT 4274::smallint <='"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT 4274::smallint <='"4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT -4274::smallint <= '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdf_literal;
+SELECT -4274::smallint <= '"-4273"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"32767"^^xsd:short'::rdf_literal = 32767::smallint;
+SELECT '"32767"^^xsd:short'::rdfnode = 32767::smallint;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"-32768"^^xsd:short'::rdf_literal = -32768::smallint;
+SELECT '"-32768"^^xsd:short'::rdfnode = -32768::smallint;
 ERROR:  smallint out of range
-SELECT '"32768"^^xsd:short'::rdf_literal::smallint;
+SELECT '"32768"^^xsd:short'::rdfnode::smallint;
 ERROR:  value "32768" is out of range for type smallint
-/* timestamptz (timestamp with time zone) <-> rdf_literal */
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal = '2025-04-25 18:44:38.149101+00'::timestamptz;
+/* timestamptz (timestamp with time zone) <-> rdfnode */
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode = '2025-04-25 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal <> '2025-04-26 18:44:38.149101+00'::timestamptz;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode <> '2025-04-26 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal != '2025-04-26 18:44:38.149101+00'::timestamptz;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode != '2025-04-26 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal > '2025-04-26 18:44:38.149101+00'::timestamptz;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode > '2025-04-26 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal < '2025-04-26 18:44:38.149101+00'::timestamptz;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode < '2025-04-26 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal >= '2025-04-26 18:44:38.149101+00'::timestamptz;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode >= '2025-04-26 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal <= '2025-04-26 18:44:38.149101+00'::timestamptz;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode <= '2025-04-26 18:44:38.149101+00'::timestamptz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38.149101+00'::timestamptz = '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-25 18:44:38.149101+00'::timestamptz = '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <> '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <> '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38.149101+00'::timestamptz != '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz != '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38.149101+00'::timestamptz > '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz > '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38.149101+00'::timestamptz < '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz < '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2025-04-26 18:44:38.149101+00'::timestamptz >= '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz >= '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <= '2025-04-25 18:44:38.149101+00'::timestamptz::rdf_literal;
+SELECT '2025-04-26 18:44:38.149101+00'::timestamptz <= '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-/* timestamp (timestamp with time zone) <-> rdf_literal */
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal = '2025-04-25 18:44:38'::timestamp;
+/* timestamp (timestamp with time zone) <-> rdfnode */
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode = '2025-04-25 18:44:38'::timestamp;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal <> '2025-04-26 18:44:38'::timestamp;
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode <> '2025-04-26 18:44:38'::timestamp;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal != '2025-04-26 18:44:38'::timestamp;
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode != '2025-04-26 18:44:38'::timestamp;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal > '2025-04-26 18:44:38'::timestamp;
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode > '2025-04-26 18:44:38'::timestamp;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal < '2025-04-26 18:44:38'::timestamp;
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode < '2025-04-26 18:44:38'::timestamp;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal >= '2025-04-26 18:44:38'::timestamp;
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode >= '2025-04-26 18:44:38'::timestamp;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp::rdf_literal <= '2025-04-26 18:44:38'::timestamp;
+SELECT '2025-04-25 18:44:38'::timestamp::rdfnode <= '2025-04-26 18:44:38'::timestamp;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-25 18:44:38'::timestamp = '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-25 18:44:38'::timestamp = '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38'::timestamp <> '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-26 18:44:38'::timestamp <> '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38'::timestamp != '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-26 18:44:38'::timestamp != '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38'::timestamp > '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-26 18:44:38'::timestamp > '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38'::timestamp < '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-26 18:44:38'::timestamp < '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2025-04-26 18:44:38'::timestamp >= '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-26 18:44:38'::timestamp >= '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2025-04-26 18:44:38'::timestamp <= '2025-04-25 18:44:38'::timestamp::rdf_literal;
+SELECT '2025-04-26 18:44:38'::timestamp <= '2025-04-25 18:44:38'::timestamp::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-/* date <-> rdf_literal */
-SELECT '2020-05-12'::date::rdf_literal = '2020-05-12'::date;
+/* date <-> rdfnode */
+SELECT '2020-05-12'::date::rdfnode = '2020-05-12'::date;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2020-05-12'::date::rdf_literal <> '2020-05-12'::date;
+SELECT '2020-05-12'::date::rdfnode <> '2020-05-12'::date;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-12'::date::rdf_literal != '2020-05-12'::date;
+SELECT '2020-05-12'::date::rdfnode != '2020-05-12'::date;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-12'::date::rdf_literal > '2020-05-13'::date;
+SELECT '2020-05-12'::date::rdfnode > '2020-05-13'::date;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-12'::date::rdf_literal < '2020-05-13'::date;
+SELECT '2020-05-12'::date::rdfnode < '2020-05-13'::date;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2020-05-12'::date::rdf_literal >= '2020-05-13'::date;
+SELECT '2020-05-12'::date::rdfnode >= '2020-05-13'::date;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-12'::date::rdf_literal <= '2020-05-13'::date;
+SELECT '2020-05-12'::date::rdfnode <= '2020-05-13'::date;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2020-05-12'::date = '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-12'::date = '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2020-05-12'::date <> '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-12'::date <> '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-12'::date != '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-12'::date != '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-13'::date > '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-13'::date > '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2020-05-13'::date < '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-13'::date < '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '2020-05-13'::date >= '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-13'::date >= '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '2020-05-13'::date <= '2020-05-12'::date::rdf_literal;
+SELECT '2020-05-13'::date <= '2020-05-12'::date::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"invalid"^^xsd:date'::rdf_literal::date;
+SELECT '"invalid"^^xsd:date'::rdfnode::date;
 ERROR:  invalid lexical form for xsd:date: "invalid" at character 8
-SELECT '"2020-13-01"^^xsd:date'::rdf_literal::date;
+SELECT '"2020-13-01"^^xsd:date'::rdfnode::date;
 ERROR:  invalid lexical form for xsd:date: "2020-13-01" at character 8
-SELECT '0001-01-01'::date::rdf_literal = '0001-01-01'::date;
+SELECT '0001-01-01'::date::rdfnode = '0001-01-01'::date;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '9999-12-31'::date::rdf_literal = '9999-12-31'::date;
+SELECT '9999-12-31'::date::rdfnode = '9999-12-31'::date;
  ?column? 
 ----------
  f
 (1 row)
 
-/* time (without time zone) <-> rdf_literal */
-SELECT '18:44:38'::time::rdf_literal = '18:44:38'::time;
+/* time (without time zone) <-> rdfnode */
+SELECT '18:44:38'::time::rdfnode = '18:44:38'::time;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '18:44:38'::time::rdf_literal <> '18:44:38'::time;
+SELECT '18:44:38'::time::rdfnode <> '18:44:38'::time;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:38'::time::rdf_literal != '18:44:38'::time;
+SELECT '18:44:38'::time::rdfnode != '18:44:38'::time;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:38'::time::rdf_literal > '18:44:59'::time;
+SELECT '18:44:38'::time::rdfnode > '18:44:59'::time;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:38'::time::rdf_literal < '18:44:59'::time;
+SELECT '18:44:38'::time::rdfnode < '18:44:59'::time;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '18:44:38'::time::rdf_literal >= '18:44:59'::time;
+SELECT '18:44:38'::time::rdfnode >= '18:44:59'::time;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:38'::time::rdf_literal <= '18:44:59'::time;
+SELECT '18:44:38'::time::rdfnode <= '18:44:59'::time;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '18:44:38'::time = '18:44:38'::time::rdf_literal;
+SELECT '18:44:38'::time = '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '18:44:38'::time <> '18:44:38'::time::rdf_literal;
+SELECT '18:44:38'::time <> '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:38'::time != '18:44:38'::time::rdf_literal;
+SELECT '18:44:38'::time != '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:59'::time > '18:44:38'::time::rdf_literal;
+SELECT '18:44:59'::time > '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '18:44:59'::time < '18:44:38'::time::rdf_literal;
+SELECT '18:44:59'::time < '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '18:44:59'::time >= '18:44:38'::time::rdf_literal;
+SELECT '18:44:59'::time >= '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '18:44:59'::time <= '18:44:38'::time::rdf_literal;
+SELECT '18:44:59'::time <= '18:44:38'::time::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '-18:44:38'::time::rdf_literal;
+SELECT '-18:44:38'::time::rdfnode;
 ERROR:  time zone displacement out of range: "-18:44:38" at character 8
-SELECT 'invalid'::time::rdf_literal;
+SELECT 'invalid'::time::rdfnode;
 ERROR:  invalid input syntax for type time: "invalid" at character 8
-/* timetz (with time zone) <-> rdf_literal */
-SELECT '04:05:06-08:00'::timetz::rdf_literal = '04:05:06-08:00'::timetz;
+/* timetz (with time zone) <-> rdfnode */
+SELECT '04:05:06-08:00'::timetz::rdfnode = '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz::rdf_literal <> '04:05:06-08:00'::timetz;
+SELECT '04:05:06-08:00'::timetz::rdfnode <> '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz::rdf_literal != '04:05:06-08:00'::timetz;
+SELECT '04:05:06-08:00'::timetz::rdfnode != '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '12:05:06-08:00'::timetz::rdf_literal > '04:05:06-08:00'::timetz;
+SELECT '12:05:06-08:00'::timetz::rdfnode > '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '12:05:06-08:00'::timetz::rdf_literal < '04:05:06-08:00'::timetz;
+SELECT '12:05:06-08:00'::timetz::rdfnode < '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '12:05:06-08:00'::timetz::rdf_literal >= '04:05:06-08:00'::timetz;
+SELECT '12:05:06-08:00'::timetz::rdfnode >= '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '12:05:06-08:00'::timetz::rdf_literal <= '04:05:06-08:00'::timetz;
+SELECT '12:05:06-08:00'::timetz::rdfnode <= '04:05:06-08:00'::timetz;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz = '04:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz = '04:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz <> '04:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz <> '04:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz != '04:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz != '04:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz > '12:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz > '12:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz < '12:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz < '12:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz >= '12:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz >= '12:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '04:05:06-08:00'::timetz <= '12:05:06-08:00'::timetz::rdf_literal;
+SELECT '04:05:06-08:00'::timetz <= '12:05:06-08:00'::timetz::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-/* boolean <-> rdf_literal */
-SELECT true::rdf_literal;
-                    rdf_literal                     
+/* boolean <-> rdfnode */
+SELECT true::rdfnode;
+                      rdfnode                       
 ----------------------------------------------------
  "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
 (1 row)
 
-SELECT false::rdf_literal;
-                     rdf_literal                     
+SELECT false::rdfnode;
+                       rdfnode                       
 -----------------------------------------------------
  "false"^^<http://www.w3.org/2001/XMLSchema#boolean>
 (1 row)
 
-SELECT true::rdf_literal::boolean;
+SELECT true::rdfnode::boolean;
  bool 
 ------
  t
 (1 row)
 
-SELECT false::rdf_literal::boolean;
+SELECT false::rdfnode::boolean;
  bool 
 ------
  f
 (1 row)
 
-SELECT (1=1)::rdf_literal::boolean;
+SELECT (1=1)::rdfnode::boolean;
  bool 
 ------
  t
 (1 row)
 
-SELECT (1<>1)::rdf_literal::boolean;
+SELECT (1<>1)::rdfnode::boolean;
  bool 
 ------
  f
 (1 row)
 
-/* interval <-> rdf_literal */
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+/* interval <-> rdfnode */
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode = '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1"^^xsd:duration'::rdf_literal <> '12 months'::interval;
+SELECT '"P1"^^xsd:duration'::rdfnode <> '12 months'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal <> '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode <> '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal <> '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode <> '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1"^^xsd:duration'::rdf_literal != '12 months'::interval;
+SELECT '"P1"^^xsd:duration'::rdfnode != '12 months'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal != '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode != '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal != '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode != '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1"^^xsd:duration'::rdf_literal > '12 months'::interval;
+SELECT '"P1"^^xsd:duration'::rdfnode > '12 months'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal > '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode > '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal > '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode > '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1"^^xsd:duration'::rdf_literal < '12 months'::interval;
+SELECT '"P1"^^xsd:duration'::rdfnode < '12 months'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal < '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode < '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal < '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode < '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1"^^xsd:duration'::rdf_literal >= '12 months'::interval;
+SELECT '"P1"^^xsd:duration'::rdfnode >= '12 months'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal >= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode >= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal >= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode >= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1"^^xsd:duration'::rdf_literal <= '12 months'::interval;
+SELECT '"P1"^^xsd:duration'::rdfnode <= '12 months'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal <= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode <= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal <= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode <= '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '12 months'::interval = '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval = '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval = '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval = '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval = '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval = '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '12 months'::interval <> '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval <> '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal <> '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
+SELECT '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode <> '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <> '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <> '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '12 months'::interval != '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval != '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval != '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval != '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval != '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval != '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '12 months'::interval > '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval > '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval > '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval > '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval > '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval > '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '12 months'::interval < '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval < '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <'"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <'"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval < '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval < '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '12 months'::interval >= '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval >= '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval >= '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval >= '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval >= '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval >= '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '12 months'::interval <= '"P1"^^xsd:duration'::rdf_literal;
+SELECT '12 months'::interval <= '"P1"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdf_literal;
+SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
  ?column? 
 ----------
  t
