@@ -193,7 +193,7 @@
 #define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
 #define RDF_COLUMN_OPTION_LANGUAGE "language"
 #define RDF_COLUMN_OPTION_LITERAL_TYPE "literal_type"
-#define RDF_COLUMN_OPTION_LITERAL_FORMAT "literal_format"
+//#define RDF_COLUMN_OPTION_LITERAL_FORMAT "literal_format"
 
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_RAW "raw"
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT "content"
@@ -379,7 +379,7 @@ static struct RDFfdwOption valid_options[] =
 	{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LITERAL_TYPE, AttributeRelationId, false, false},
-	{RDF_COLUMN_OPTION_LITERAL_FORMAT, AttributeRelationId, false, false},
+//	{RDF_COLUMN_OPTION_LITERAL_FORMAT, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
 	{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
 	/* User Mapping */
@@ -479,6 +479,8 @@ extern Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS);
 /* rdfnode PostgreSQL data type */
 extern Datum rdfnode_in(PG_FUNCTION_ARGS);
 extern Datum rdfnode_out(PG_FUNCTION_ARGS);
+extern Datum rdfnode_to_text(PG_FUNCTION_ARGS);
+extern Datum rdfnode_cmp(PG_FUNCTION_ARGS);
 
 /* rdfnode (custom data type)*/
 extern Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS);
@@ -715,6 +717,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
 /* rdfnode (custom data type) */
 PG_FUNCTION_INFO_V1(rdfnode_in);
 PG_FUNCTION_INFO_V1(rdfnode_out);
+PG_FUNCTION_INFO_V1(rdfnode_to_text);
+PG_FUNCTION_INFO_V1(rdfnode_cmp);
 PG_FUNCTION_INFO_V1(rdfnode_eq_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_neq_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_lt_rdfnode);
@@ -4677,7 +4681,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	ListCell *cell;
 	struct RDFfdwOption *opt;
 	bool hasliteralatt = false;
-	bool is_iri = false;
+	//bool is_iri = false;
 	
 	elog(DEBUG1,"%s called", __func__);
 
@@ -4833,8 +4837,8 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
 								 errhint("this parameter expects node types ('iri' or 'literal')")));
 					
-					if(strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
-						is_iri = true;
+					// if(strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
+					// 	is_iri = true;
 				}
 
 				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0)
@@ -4876,36 +4880,36 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								RDF_COLUMN_OPTION_LANGUAGE)));
 				}
 
-				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0)
-				{
-					char *literal_format = defGetString(def);
+				// if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0)
+				// {
+				// 	char *literal_format = defGetString(def);
 
-					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) != 0 && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT) != 0)
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-								 errmsg("invalid %s: '%s'", def->defname, literal_format),
-								 errhint("this parameter can only be '%s' or '%s'",
-										 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
-										 RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT)));
+				// 	if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) != 0 && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT) != 0)
+				// 		ereport(ERROR,
+				// 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+				// 				 errmsg("invalid %s: '%s'", def->defname, literal_format),
+				// 				 errhint("this parameter can only be '%s' or '%s'",
+				// 						 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
+				// 						 RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT)));
 
-					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && is_iri)
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, literal_format),
-								 errhint("%s columns can only be of %s '%s'",
-										 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
-										 RDF_COLUMN_OPTION_NODETYPE,
-										 RDF_COLUMN_OPTION_NODETYPE_LITERAL)));
+				// 	if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && is_iri)
+				// 		ereport(ERROR,
+				// 				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+				// 				 errmsg("invalid %s: '%s'", def->defname, literal_format),
+				// 				 errhint("%s columns can only be of %s '%s'",
+				// 						 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
+				// 						 RDF_COLUMN_OPTION_NODETYPE,
+				// 						 RDF_COLUMN_OPTION_NODETYPE_LITERAL)));
 
-					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && hasliteralatt)
-						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							errhint("the parameter '%s' cannot be combined with '%s' or '%s'",
-								RDF_COLUMN_OPTION_LITERAL_FORMAT,
-								RDF_COLUMN_OPTION_LANGUAGE,
-								RDF_COLUMN_OPTION_LITERAL_TYPE)));
-				}
+				// 	if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && hasliteralatt)
+				// 		ereport(ERROR,
+				// 			(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+				// 			errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+				// 			errhint("the parameter '%s' cannot be combined with '%s' or '%s'",
+				// 				RDF_COLUMN_OPTION_LITERAL_FORMAT,
+				// 				RDF_COLUMN_OPTION_LANGUAGE,
+				// 				RDF_COLUMN_OPTION_LITERAL_TYPE)));
+				// }
 
 				break;
 			}
@@ -5150,7 +5154,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->pushable = true;
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 		state->rdfTable->cols[i]->used = false;
-		state->rdfTable->cols[i]->literal_fomat = RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT;
+		//state->rdfTable->cols[i]->literal_fomat = RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT;
 
 		foreach (lc, options)
 		{
@@ -5178,11 +5182,11 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 				//state->rdfTable->cols[i]->literaltype = pstrdup(literaltype.data);
 				state->rdfTable->cols[i]->literaltype = pstrdup(defGetString(def));
 			}
-			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0 )
-			{
-				elog(DEBUG2,"  %s: (%d) adding sparql node format > '%s'",__func__,i,defGetString(def));
-				state->rdfTable->cols[i]->literal_fomat = pstrdup(defGetString(def));
-			}
+			// else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0 )
+			// {
+			// 	elog(DEBUG2,"  %s: (%d) adding sparql node format > '%s'",__func__,i,defGetString(def));
+			// 	state->rdfTable->cols[i]->literal_fomat = pstrdup(defGetString(def));
+			// }
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_NODETYPE) == 0)
 			{
 				elog(DEBUG2,"  %s: (%d) adding sparql node data type > '%s'",__func__,i,defGetString(def));
@@ -6859,7 +6863,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 		Oid pgtype = state->rdfTable->cols[i]->pgtype;
 		char *sparqlvar = state->rdfTable->cols[i]->sparqlvar;
 		char *colname = state->rdfTable->cols[i]->name;
-		char *literal_format = state->rdfTable->cols[i]->literal_fomat;
+		//char *literal_format = state->rdfTable->cols[i]->literal_fomat;
 		int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
 
 		for (result = record->children; result != NULL; result = result->next)
@@ -6885,6 +6889,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					xmlChar *content = xmlNodeGetContent(value->children);
 					const xmlChar *node_type = value->name;
 					char *node_value;
+					//text *txt;
 
 					initStringInfo(&literal_value);
 					node_value = (char *)content;
@@ -6892,14 +6897,15 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					elog(DEBUG3, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
 						 __func__, (char *)content, (char *)lang, (char *)datatype, node_type);
 
-					if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
+					//if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
+					if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
 					{
 						if (datatype)
 							appendStringInfo(&literal_value, "%s", strdt(node_value, (char *)datatype));
 						else if (lang)
 							appendStringInfo(&literal_value, "%s", strlang(node_value, (char *)lang));
 						else if (xmlStrcmp(node_type, (xmlChar *)"uri") == 0)
-							appendStringInfo(&literal_value, "%s", iri(node_value));
+							appendStringInfo(&literal_value, "%s", (iri(node_value)));
 						else
 							appendStringInfo(&literal_value, "%s", cstring_to_rdfnode(node_value));
 					}
@@ -6909,8 +6915,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					datum = CStringGetDatum(literal_value.data);
 					slot->tts_isnull[i] = false;
 
-					elog(DEBUG3, "  %s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
-					elog(DEBUG3, "    %s: value > '%s'", __func__, (char *)content);
+					elog(DEBUG3, "%s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
+					elog(DEBUG3, "%s: value > '%s'", __func__, (char *)content);
 
 					/* find the appropriate conversion function */
 					tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
@@ -6933,6 +6939,10 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 							datum,
 							ObjectIdGetDatum(InvalidOid),
 							Int32GetDatum(pgtypmod));
+					}
+					else if (pgtype == RDFNODEOID)
+					{
+						slot->tts_values[i] = DirectFunctionCall1(rdfnode_in, datum);
 					}
 					else
 					{
@@ -6962,11 +6972,14 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 			slot->tts_values[i] = PointerGetDatum(NULL);
 		}
 	}
-/*
-	MemoryContextSwitchTo(old_cxt);
-	MemoryContextDelete(tmp_cxt);
-	*/
 
+	ExecStoreVirtualTuple(slot);
+
+	//MemoryContextSwitchTo(old_cxt);
+	//MemoryContextDelete(tmp_cxt);
+	
+
+	
 	elog(DEBUG3,"%s exit", __func__);
 }
 
@@ -7146,7 +7159,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	Var *variable;
 	HeapTuple tuple;
 	StringInfoData result;
-	Oid leftargtype, rightargtype, schema;
+	Oid leftargtype, rightargtype;
+	//Oid schema;
 	int index;
 	ArrayExpr *array;
 	ArrayCoerceExpr *arraycoerce;
@@ -7248,7 +7262,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		oprkind = ((Form_pg_operator)GETSTRUCT(tuple))->oprkind;
 		leftargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprleft;
 		rightargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprright;
-		schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
+		//schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
 		ReleaseSysCache(tuple);
 
 		/* ignore operators in other than the pg_catalog schema */
@@ -7562,7 +7576,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		break;
 	case T_ScalarArrayOpExpr:
-		elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: start (expr->type='%u')", __func__, expr->type);
+		//Expr *leftExpr;
+			elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: start (expr->type='%u')", __func__, expr->type);
 		arrayoper = (ScalarArrayOpExpr *)expr;
 
 		/* get operator name, left argument type and schema */
@@ -7573,16 +7588,16 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 		opername = pstrdup(((Form_pg_operator)GETSTRUCT(tuple))->oprname.data);
 		leftargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprleft;
-		schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
+		//schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
 		ReleaseSysCache(tuple);
-
-		/* ignore operators in other than the pg_catalog schema */
-		if (schema != PG_CATALOG_NAMESPACE)
-		{
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (operator schema is not PG_CATALOG_NAMESPACE)", __func__);
-			return NULL;
-		}
-
+		/*
+				// ignore operators in other than the pg_catalog schema
+				if (schema != PG_CATALOG_NAMESPACE)
+				{
+					elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (operator schema is not PG_CATALOG_NAMESPACE)", __func__);
+					return NULL;
+				}
+		*/
 		/* don't try to push down anything but IN and NOT IN expressions */
 		if ((strcmp(opername, "=") != 0 || !arrayoper->useOr) && (strcmp(opername, "<>") != 0 || arrayoper->useOr))
 		{
@@ -7596,33 +7611,53 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return NULL;
 		}
 
-		left = DeparseExpr(state, foreignrel, linitial(arrayoper->args));
+		/* the first (=initial) argument can be T_Var or T_Func */
+		leftexpr = (Expr *)linitial(arrayoper->args);
+		left = DeparseExpr(state, foreignrel, leftexpr);
+
 		if (left == NULL)
 		{
 			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
 			return NULL;
 		}
 
-		col = GetRDFColumn(state, left);
-
-		if (!col)
-		{
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column of left argument is not valid)", __func__);
-			return NULL;
-		}
-
-		if (!col->pushable)
-		{
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column is not pushable)", __func__);
-			return NULL;
-		}
-
 		initStringInfo(&result);
 
-		if (strcmp(opername, "=") == 0)
-			appendStringInfo(&result, "%s IN (", !col->expression ? col->sparqlvar : col->expression);
+		if (leftexpr->type == T_Var)
+		{
+			elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: left argument's dat type is T_Var (column)", __func__);
+			col = GetRDFColumn(state, left);
+
+			if (!col)
+			{
+				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column of left argument is not valid)", __func__);
+				return NULL;
+			}
+
+			if (!col->pushable)
+			{
+				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column is not pushable)", __func__);
+				return NULL;
+			}
+
+			if (strcmp(opername, "=") == 0)
+				appendStringInfo(&result, "%s IN (", !col->expression ? col->sparqlvar : col->expression);
+			else
+				appendStringInfo(&result, "%s NOT IN (", !col->expression ? col->sparqlvar : col->expression);
+		}
+		else if (leftexpr->type == T_FuncExpr)
+		{
+			elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: left argument's dat type is T_FuncExpr", __func__);
+			if (strcmp(opername, "=") == 0)
+				appendStringInfo(&result, "%s IN (", left);
+			else
+				appendStringInfo(&result, "%s NOT IN (", left);
+		}
 		else
-			appendStringInfo(&result, "%s NOT IN (", !col->expression ? col->sparqlvar : col->expression);
+		{
+			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL left argument type '%u' not supported", __func__, leftexpr->type);
+			return NULL;
+		}
 
 		/* the second (=last) argument can be Const, ArrayExpr or ArrayCoerceExpr */
 		rightexpr = (Expr *)llast(arrayoper->args);
@@ -7670,15 +7705,15 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 					if (IsStringDataType(leftargtype))
 					{
-						if (col->language)
+						if (col && col->language)
 							appendStringInfo(&result, "%s%s",
 											 first_arg ? "" : ", ", strlang(c, col->language));
-						else if (col->literaltype)
+						else if (col && col->literaltype)
 							appendStringInfo(&result, "%s%s",
 											 first_arg ? "" : ", ", strdt(c, col->literaltype));
 						else
 							appendStringInfo(&result, "%s%s",
-											 first_arg ? "" : ", ", cstring_to_rdfnode(c));
+											 first_arg ? "" : ", ", str(c));
 					}
 					else
 						appendStringInfo(&result, "%s%s",
@@ -7790,7 +7825,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		opername = pstrdup(((Form_pg_proc)GETSTRUCT(tuple))->proname.data);
-		schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
+		//schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
 		ReleaseSysCache(tuple);
 
 		elog(DEBUG2, "  %s [T_FuncExpr]: opername = %s", __func__, opername);
@@ -7799,11 +7834,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		 * ignore functions that are not in the pg_catalog schema and are
 		 * not pushable.
 		 */
-		if (schema != PG_CATALOG_NAMESPACE && !IsFunctionPushable(opername))
+		// if (schema != PG_CATALOG_NAMESPACE && !IsFunctionPushable(opername))
+		// {
+		// 	elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
+		// 	return NULL;
+		// }
+
+		if (!IsFunctionPushable(opername))
 		{
 			elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
 			return NULL;
 		}
+
 
 		if (IsFunctionPushable(opername))
 		{
@@ -8944,6 +8986,9 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 	size_t len;
 	StringInfoData r;
 
+	// if (!str_in || strlen(str_in) == 0)
+	// 	elog(ERROR, "rdfnode_in: invalid input");
+
 	initStringInfo(&r);
 
 	if (strlen(str_in) == 0)
@@ -8987,16 +9032,16 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 						 errmsg("invalid language tag: \"%s\"", lan)));
 
-			appendStringInfo(&r, "%s", strlang(unescape_unicode(lexical), lan));
+			appendStringInfo(&r, "%s", pstrdup(strlang(unescape_unicode(lexical), lan)));
 		}
 		else if (strlen(dtype) != 0)
-			appendStringInfo(&r, "%s", strdt(unescape_unicode(lexical), dtype));
+			appendStringInfo(&r, "%s", pstrdup(strdt(unescape_unicode(lexical), dtype)));
 		else
-			appendStringInfo(&r, "%s", str(unescape_unicode(str_in)));
+			appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
 	}
 	else
 	{
-		appendStringInfo(&r, "%s", unescape_unicode(str_in));
+		appendStringInfo(&r, "%s", pstrdup(unescape_unicode(str_in)));
 	}
 
 	len = strlen(r.data);
@@ -9083,6 +9128,37 @@ static parsed_rdfnode parse_rdfnode(char *input)
 	elog(DEBUG1, "%s exit", __func__);
 	return result;
 }
+
+
+Datum rdfnode_cmp(PG_FUNCTION_ARGS)
+{
+    text *ta = PG_GETARG_TEXT_PP(0);
+    text *tb = PG_GETARG_TEXT_PP(1);
+
+    const char *stra = text_to_cstring(ta);
+    const char *strb = text_to_cstring(tb);
+
+    int result = strcmp(stra, strb);
+
+	//elog(WARNING, "%s: stra=%s, strb=%s result=%d", __func__, stra, strb, result);
+	
+	// elog(WARNING, "rdfnode_cmp: raw a = %p, raw b = %p", ta, tb);
+	// elog(WARNING, "rdfnode_cmp: stra = \"%s\", strb = \"%s\"", stra, strb);
+	// elog(WARNING, "rdfnode_cmp: len(a) = %d, len(b) = %d",
+	// 	VARSIZE(ta) - VARHDRSZ, VARSIZE(tb) - VARHDRSZ);
+   
+
+	// MemoryContext context = GetMemoryChunkContext((void *)stra);
+	// elog(WARNING, "stra context = %p", context);
+
+	if (result < 0)
+		PG_RETURN_INT32(-1);
+	else if (result > 0)
+		PG_RETURN_INT32(1);
+	else
+		PG_RETURN_INT32(0);
+}
+
 
 static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 {
@@ -9734,6 +9810,26 @@ Datum rdfnode_ge_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(rdfnode_ge(a_parsed, b_parsed));
 }
 
+Datum rdfnode_to_text(PG_FUNCTION_ARGS)
+{
+	rdfnode *lit = (rdfnode *)PG_GETARG_POINTER(0);
+	char *out;
+	int len;
+	text *result;
+
+	len = VARSIZE(lit) - VARHDRSZ;
+	if (len < 0)
+		elog(ERROR, "rdfnode_to_text: invalid varlena length: %d", len);
+
+	out = (char *)palloc(len + 1);
+	memcpy(out, VARDATA(lit), len);
+	out[len] = '\0';
+
+	result = cstring_to_text(out);
+	pfree(out);
+
+	PG_RETURN_TEXT_P(result);
+}
 
 /* numeric */
 Datum rdfnode_to_numeric(PG_FUNCTION_ARGS)
@@ -11858,133 +11954,133 @@ pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 
 static char *unescape_unicode(const char *input)
 {
-    StringInfoData buf;
-    initStringInfo(&buf);
+	StringInfoData buf;
+	initStringInfo(&buf);
 
-    elog(DEBUG2, "%s: Input='%s'", __func__, input);
+	elog(DEBUG2, "%s: Input='%s'", __func__, input);
 
-    for (const char *p = input; *p;)
-    {
-        if (p[0] == '\\' && p[1] == 'u')
-        {
-            /* \uXXXX (exactly 4 hex digits) */
-            if (p[2] && p[3] && p[4] && p[5] &&
-                isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
-                (!p[6] || !isxdigit(p[6])))
-            {
-                uint16_t codeunit;
-                char hex[5];
-                unsigned char utf8[5];
-                int len;
+	for (const char *p = input; *p;)
+	{
+		if (p[0] == '\\' && p[1] == 'u')
+		{
+			/* \uXXXX (exactly 4 hex digits) */
+			if (p[2] && p[3] && p[4] && p[5] &&
+				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
+				(!p[6] || !isxdigit(p[6])))
+			{
+				uint16_t codeunit;
+				char hex[5];
+				unsigned char utf8[5];
+				int len;
 
-                memcpy(hex, p + 2, 4);
-                hex[4] = '\0';
-                sscanf(hex, "%hx", &codeunit);
-                elog(DEBUG2, "%s: Parsed \\u%s to codeunit U+%04X", __func__, hex, codeunit);
+				memcpy(hex, p + 2, 4);
+				hex[4] = '\0';
+				sscanf(hex, "%hx", &codeunit);
+				elog(DEBUG2, "%s: Parsed \\u%s to codeunit U+%04X", __func__, hex, codeunit);
 
-                /* Check for high surrogate */
-                if (codeunit >= 0xD800 && codeunit <= 0xDBFF &&
-                    p[6] == '\\' && p[7] == 'u' &&
-                    p[8] && p[9] && p[10] && p[11] &&
-                    isxdigit(p[8]) && isxdigit(p[9]) && isxdigit(p[10]) && isxdigit(p[11]) &&
-                    (!p[12] || !isxdigit(p[12])))
-                {
-                    uint16_t low;
-                    char lowhex[5];
-                    uint32_t full;
+				/* Check for high surrogate */
+				if (codeunit >= 0xD800 && codeunit <= 0xDBFF &&
+					p[6] == '\\' && p[7] == 'u' &&
+					p[8] && p[9] && p[10] && p[11] &&
+					isxdigit(p[8]) && isxdigit(p[9]) && isxdigit(p[10]) && isxdigit(p[11]) &&
+					(!p[12] || !isxdigit(p[12])))
+				{
+					uint16_t low;
+					char lowhex[5];
+					uint32_t full;
 
-                    memcpy(lowhex, p + 8, 4);
-                    lowhex[4] = '\0';
-                    sscanf(lowhex, "%hx", &low);
+					memcpy(lowhex, p + 8, 4);
+					lowhex[4] = '\0';
+					sscanf(lowhex, "%hx", &low);
 
-                    if (low >= 0xDC00 && low <= 0xDFFF)
-                    {
-                        full = 0x10000 + (((codeunit - 0xD800) << 10) | (low - 0xDC00));
-                        elog(DEBUG2, "%s: Surrogate pair U+%04X U+%04X -> U+%X", __func__, codeunit, low, full);
-                        memset(utf8, 0, sizeof(utf8));
-                        pg_unicode_to_server(full, (unsigned char *)utf8);
-                        len = pg_utf_mblen( (const unsigned char *)utf8);
-                        appendBinaryStringInfo(&buf, (const char *)utf8, len);
-                        p += 12;
-                        continue;
-                    }
-                }
+					if (low >= 0xDC00 && low <= 0xDFFF)
+					{
+						full = 0x10000 + (((codeunit - 0xD800) << 10) | (low - 0xDC00));
+						elog(DEBUG2, "%s: Surrogate pair U+%04X U+%04X -> U+%X", __func__, codeunit, low, full);
+						memset(utf8, 0, sizeof(utf8));
+						pg_unicode_to_server(full, (unsigned char *)utf8);
+						len = pg_utf_mblen((const unsigned char *)utf8);
+						appendBinaryStringInfo(&buf, (const char *)utf8, len);
+						p += 12;
+						continue;
+					}
+				}
 
-                if (codeunit >= 0xD800 && codeunit <= 0xDFFF)
-                {
-                    elog(DEBUG2, "%s: Lone surrogate U+%04X -> U+FFFD", __func__, codeunit);
-                    pg_unicode_to_server(0xFFFD, (unsigned char *)utf8);
-                    len = pg_utf_mblen(utf8);
-                    appendBinaryStringInfo(&buf, (const char*)utf8, len);
-                    p += 6;
-                    continue;
-                }
+				if (codeunit >= 0xD800 && codeunit <= 0xDFFF)
+				{
+					elog(DEBUG2, "%s: Lone surrogate U+%04X -> U+FFFD", __func__, codeunit);
+					pg_unicode_to_server(0xFFFD, (unsigned char *)utf8);
+					len = pg_utf_mblen(utf8);
+					appendBinaryStringInfo(&buf, (const char *)utf8, len);
+					p += 6;
+					continue;
+				}
 
-                memset(utf8, 0, sizeof(utf8));
-                pg_unicode_to_server(codeunit, (unsigned char *)utf8);
-                len = pg_utf_mblen(utf8);
-                appendBinaryStringInfo(&buf, (const char*)utf8, len);
-                p += 6;
-                continue;
-            }
-            else
-            {
-                elog(DEBUG2, "%s: Invalid \\u sequence at '%s' -> literal", __func__, p);
-                appendStringInfoString(&buf, "\\u");
-                p += 2;
-                for (int i = 0; i < 4 && p[0] && isxdigit(p[0]); i++)
-                    appendStringInfoChar(&buf, *p++);
-                continue;
-            }
-        }
-        else if (p[0] == '\\' && p[1] == 'U')
-        {
-            /* \UXXXXXXXX (exactly 8 hex digits) */
-            if (p[2] && p[3] && p[4] && p[5] && p[6] && p[7] && p[8] && p[9] &&
-                isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
-                isxdigit(p[6]) && isxdigit(p[7]) && isxdigit(p[8]) && isxdigit(p[9]) &&
-                (!p[10] || !isxdigit(p[10])))
-            {
-                char hex[9];
-                uint32_t codepoint;
-                unsigned char utf8[5];
-                int len;
+				memset(utf8, 0, sizeof(utf8));
+				pg_unicode_to_server(codeunit, (unsigned char *)utf8);
+				len = pg_utf_mblen(utf8);
+				appendBinaryStringInfo(&buf, (const char *)utf8, len);
+				p += 6;
+				continue;
+			}
+			else
+			{
+				elog(DEBUG2, "%s: Invalid \\u sequence at '%s' -> literal", __func__, p);
+				appendStringInfoString(&buf, "\\u");
+				p += 2;
+				for (int i = 0; i < 4 && p[0] && isxdigit(p[0]); i++)
+					appendStringInfoChar(&buf, *p++);
+				continue;
+			}
+		}
+		else if (p[0] == '\\' && p[1] == 'U')
+		{
+			/* \UXXXXXXXX (exactly 8 hex digits) */
+			if (p[2] && p[3] && p[4] && p[5] && p[6] && p[7] && p[8] && p[9] &&
+				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
+				isxdigit(p[6]) && isxdigit(p[7]) && isxdigit(p[8]) && isxdigit(p[9]) &&
+				(!p[10] || !isxdigit(p[10])))
+			{
+				char hex[9];
+				uint32_t codepoint;
+				unsigned char utf8[5];
+				int len;
 
-                memcpy(hex, p + 2, 8);
-                hex[8] = '\0';
-                sscanf(hex, "%x", &codepoint);
-                elog(DEBUG2, "%s: Parsed \\U%s to codepoint U+%X", __func__, hex, codepoint);
+				memcpy(hex, p + 2, 8);
+				hex[8] = '\0';
+				sscanf(hex, "%x", &codepoint);
+				elog(DEBUG2, "%s: Parsed \\U%s to codepoint U+%X", __func__, hex, codepoint);
 
-                if (codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF))
-                {
-                    elog(DEBUG2, "%s: Invalid codepoint U+%X -> U+FFFD", __func__, codepoint);
-                    codepoint = 0xFFFD;
-                }
+				if (codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF))
+				{
+					elog(DEBUG2, "%s: Invalid codepoint U+%X -> U+FFFD", __func__, codepoint);
+					codepoint = 0xFFFD;
+				}
 
-                memset(utf8, 0, sizeof(utf8));
-                pg_unicode_to_server(codepoint, utf8);
-                len = pg_utf_mblen(utf8);
-                appendBinaryStringInfo(&buf, (const char*) utf8, len);
-                p += 10;
-                continue;
-            }
-            else
-            {
-                elog(DEBUG2, "%s: Invalid \\U sequence at '%s' -> literal", __func__, p);
-                appendStringInfoString(&buf, "\\U");
-                p += 2;
-                for (int i = 0; i < 8 && p[0] && isxdigit(p[0]); i++)
-                    appendStringInfoChar(&buf, *p++);
-                continue;
-            }
-        }
-        else
-        {
-            /* Preserve all other characters, including \t, \n, \", etc. */
-            appendStringInfoChar(&buf, *p++);
-        }
-    }
+				memset(utf8, 0, sizeof(utf8));
+				pg_unicode_to_server(codepoint, utf8);
+				len = pg_utf_mblen(utf8);
+				appendBinaryStringInfo(&buf, (const char *)utf8, len);
+				p += 10;
+				continue;
+			}
+			else
+			{
+				elog(DEBUG2, "%s: Invalid \\U sequence at '%s' -> literal", __func__, p);
+				appendStringInfoString(&buf, "\\U");
+				p += 2;
+				for (int i = 0; i < 8 && p[0] && isxdigit(p[0]); i++)
+					appendStringInfoChar(&buf, *p++);
+				continue;
+			}
+		}
+		else
+		{
+			/* Preserve all other characters, including \t, \n, \", etc. */
+			appendStringInfoChar(&buf, *p++);
+		}
+	}
 
-    elog(DEBUG2, "%s: Output='%s'", __func__, buf.data);
-    return buf.data;
+	elog(DEBUG2, "%s: Output='%s'", __func__, buf.data);
+	return buf.data;
 }

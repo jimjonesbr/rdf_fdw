@@ -7,8 +7,8 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE ftdbp (
-  p rdfnode    OPTIONS (variable '?p', literal_format 'raw'),
-  o rdfnode OPTIONS (variable '?o', literal_format 'raw')
+  p rdfnode    OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -918,10 +918,10 @@ SELECT sparql.bound(NULL);
 SELECT sparql.bound('abc');
 
 CREATE FOREIGN TABLE ft (
-  s rdfnode OPTIONS (variable '?s', literal_format 'raw'),
-  p rdfnode OPTIONS (variable '?p', literal_format 'raw'),
-  o rdfnode OPTIONS (variable '?o', literal_format 'raw'),
-  x rdfnode OPTIONS (variable '?x', literal_format 'raw')
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o'),
+  x rdfnode OPTIONS (variable '?x')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',

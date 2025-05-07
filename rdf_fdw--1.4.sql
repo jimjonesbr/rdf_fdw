@@ -62,10 +62,10 @@ AS 'MODULE_PATHNAME', 'rdfnode_out'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE TYPE rdfnode (
-  INTERNALLENGTH = VARIABLE,
-  INPUT = rdfnode_in,
-  OUTPUT = rdfnode_out,
-  STORAGE = EXTENDED
+    INPUT = rdfnode_in,
+    OUTPUT = rdfnode_out,
+    INTERNALLENGTH = VARIABLE,
+    STORAGE = EXTENDED
 );
 
 CREATE FUNCTION rdfnode_eq_rdfnode(rdfnode, rdfnode)
@@ -149,6 +149,30 @@ CREATE OPERATOR >= (
     COMMUTATOR = '<=',
     RESTRICT = scalargtsel
 );
+
+-- Create comparison function for rdfnode
+CREATE FUNCTION rdfnode_cmp(rdfnode, rdfnode)
+RETURNS integer
+AS 'MODULE_PATHNAME', 'rdfnode_cmp'
+LANGUAGE C IMMUTABLE STRICT;
+
+-- Create btree operator class for rdfnode
+CREATE OPERATOR CLASS rdfnode_ops
+DEFAULT FOR TYPE rdfnode USING btree AS
+    OPERATOR 1 <  (rdfnode, rdfnode),
+    OPERATOR 2 <= (rdfnode, rdfnode),
+    OPERATOR 3 =  (rdfnode, rdfnode),
+    OPERATOR 4 >= (rdfnode, rdfnode),
+    OPERATOR 5 >  (rdfnode, rdfnode),
+    FUNCTION 1 rdfnode_cmp(rdfnode, rdfnode);
+
+CREATE FUNCTION rdfnode_to_text(rdfnode)
+RETURNS text
+AS 'MODULE_PATHNAME', 'rdfnode_to_text'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE CAST (rdfnode AS text) 
+WITH FUNCTION rdfnode_to_text(rdfnode);
 
 /* rdfnode OP numeric */
 CREATE FUNCTION rdfnode_eq_numeric(rdfnode, numeric)
