@@ -1,0 +1,583 @@
+DROP EXTENSION IF EXISTS rdf_fdw CASCADE;
+CREATE EXTENSION rdf_fdw;
+CREATE SERVER linkegeodata 
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
+CREATE FOREIGN TABLE hbf (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER linkegeodata OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}');
+/* SPARQL 17.4.1.7 - RDFterm-equal */
+SELECT p, o FROM hbf
+WHERE 
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  o = '"Leipzig Hbf"';
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?o = "Leipzig Hbf")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |       o       
+----------------------------------------------+---------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf"
+(1 row)
+
+/* SPARQL 17.4.1.9 - IN */
+SELECT p, o FROM hbf
+WHERE
+  o IN ('"Leipzig Hbf"', 
+        '"Gare centrale de Leipzig"@fr');
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o IN ("Leipzig Hbf", "Gare centrale de Leipzig"))
+}
+
+INFO:  SPARQL returned 2 records.
+
+                       p                        |       o       
+------------------------------------------------+---------------
+ <http://www.w3.org/2000/01/rdf-schema#label>   | "Leipzig Hbf"
+ <http://linkedgeodata.org/ontology/short_name> | "Leipzig Hbf"
+(2 rows)
+
+/* SPARQL 17.4.1.10 - NOT IN*/
+SELECT p, o FROM hbf
+WHERE
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.lang(o) NOT IN ('de','es');
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANG(?o) NOT IN ("de", "es"))
+}
+
+INFO:  SPARQL returned 2 records.
+
+                      p                       |               o               
+----------------------------------------------+-------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf"
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Gare centrale de Leipzig"@fr
+(2 rows)
+
+/* SPARQL 15.5 - LIMIT */
+SELECT p, o FROM hbf
+WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
+LIMIT 5;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
+}
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+                         p                         |                         o                          
+---------------------------------------------------+----------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://geovocab.org/spatial#Feature>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/RailwayThing>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/meta/Node>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/RailwayStation>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/Station>
+(5 rows)
+
+SELECT p, o FROM hbf
+WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
+FETCH FIRST 5 ROWS ONLY;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
+}
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+                         p                         |                         o                          
+---------------------------------------------------+----------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://geovocab.org/spatial#Feature>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/RailwayThing>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/meta/Node>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/RailwayStation>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/Station>
+(5 rows)
+
+/* SPARQL 15.4 - OFFSET */
+SELECT p, o FROM hbf
+WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
+OFFSET 5 ROWS
+FETCH FIRST 10 ROWS ONLY;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
+}
+LIMIT 15
+
+INFO:  SPARQL returned 6 records.
+
+                         p                         |                            o                             
+---------------------------------------------------+----------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/PublicTransportThing>
+(1 row)
+
+SELECT p, o FROM hbf
+WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
+OFFSET 5 ROWS
+LIMIT 10;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
+}
+LIMIT 15
+
+INFO:  SPARQL returned 6 records.
+
+                         p                         |                            o                             
+---------------------------------------------------+----------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/PublicTransportThing>
+(1 row)
+
+/* SPARQL 15.1 - ORDER BY */
+SELECT o FROM hbf
+ORDER BY p DESC
+LIMIT 3;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
+ORDER BY  DESC (?p)
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                          o                           
+------------------------------------------------------
+ "12.3831"^^<http://www.w3.org/2001/XMLSchema#double>
+ "51.3466"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/resource/Leipzig_Hauptbahnhof>
+(3 rows)
+
+SELECT p FROM hbf
+ORDER BY o DESC
+LIMIT 3;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
+ORDER BY  DESC (?o)
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                       p                        
+------------------------------------------------
+ <http://purl.org/dc/terms/contributor>
+ <http://www.w3.org/2003/01/geo/wgs84_pos#lat>
+ <http://www.w3.org/2003/01/geo/wgs84_pos#long>
+(3 rows)
+
+SELECT p, o FROM hbf
+ORDER BY p DESC, o ASC
+LIMIT 3;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
+ORDER BY  DESC (?p)  ASC (?o)
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                       p                        |                          o                           
+------------------------------------------------+------------------------------------------------------
+ <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "12.3831"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.3466"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://www.w3.org/2002/07/owl#sameAs>         | <http://dbpedia.org/resource/Leipzig_Hauptbahnhof>
+(3 rows)
+
+SELECT p, o FROM hbf
+ORDER BY p DESC, o ASC
+OFFSET 5
+LIMIT 2;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
+ORDER BY  DESC (?p)  ASC (?o)
+LIMIT 7
+
+INFO:  SPARQL returned 7 records.
+
+                         p                         |                   o                   
+---------------------------------------------------+---------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://geovocab.org/spatial#Feature>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/meta/Node>
+(2 rows)
+
+SELECT p,o FROM hbf
+ORDER BY 1 DESC, 2 ASC
+OFFSET 5
+LIMIT 10;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
+ORDER BY  DESC (?p)  ASC (?o)
+LIMIT 15
+
+INFO:  SPARQL returned 15 records.
+
+                         p                         |                                 o                                  
+---------------------------------------------------+--------------------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://geovocab.org/spatial#Feature>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/meta/Node>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/PublicTransportThing>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/RailwayStation>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/RailwayThing>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://linkedgeodata.org/ontology/Station>
+ <http://purl.org/dc/terms/modified>               | "2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <http://purl.org/dc/terms/contributor>            | <http://linkedgeodata.org/triplify/user1851521>
+ <http://linkedgeodata.org/ontology/wikipedia>     | "de:Leipzig Hauptbahnhof"
+ <http://linkedgeodata.org/ontology/wheelchair>    | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(10 rows)
+
+/* SPARQL 18.2.5.3 - DISTINCT*/
+SELECT DISTINCT p FROM hbf
+WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT DISTINCT ?p 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+ORDER BY  ASC (?p)
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       
+----------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label>
+(1 row)
+
+-- DISTINCT ON is not supported, therefore it won't be pushed down.
+SELECT DISTINCT ON (p) p,o FROM hbf
+WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+ORDER BY  ASC (?p)
+
+INFO:  SPARQL returned 2 records.
+
+                      p                       |       o       
+----------------------------------------------+---------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (text) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  p <> '<foo.bar>' AND
+  p >= '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  p <= '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  p BETWEEN '<http://www.w3.org/2000/01/rdf-schema#label>' AND '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p != <foo.bar>)
+ FILTER(?p >= <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p <= <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p >= <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p <= <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 2 records.
+
+                      p                       |               o               
+----------------------------------------------+-------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf"
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Gare centrale de Leipzig"@fr
+(2 rows)
+
+/* SPARQL - 17.3 Operator Mapping (rdfnode) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND
+  p <> '<foo.bar>' AND
+  p >= '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND
+  p <= '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND
+  p BETWEEN '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p != <foo.bar>)
+ FILTER(?p >= <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p <= <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p >= <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?p <= <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 2 records.
+
+                      p                       |               o               
+----------------------------------------------+-------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf"
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Gare centrale de Leipzig"@fr
+(2 rows)
+
+/* SPARQL - 17.3 Operator Mapping (int) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://linkedgeodata.org/ontology/version>'::rdfnode AND
+  o <> 20 AND
+  o >= 19 AND
+  o <= 19 AND
+  o BETWEEN 18 AND 20;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://linkedgeodata.org/ontology/version>)
+ FILTER(?o != 20)
+ FILTER(?o >= 19)
+ FILTER(?o <= 19)
+ FILTER(?o >= 18)
+ FILTER(?o <= 20)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                      |                      o                       
+---------------------------------------------+----------------------------------------------
+ <http://linkedgeodata.org/ontology/version> | "19"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (bigint) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://linkedgeodata.org/ontology/version>'::rdfnode AND
+  o <> 20::bigint AND
+  o >= 19::bigint AND
+  o <= 19::bigint AND
+  o BETWEEN 18::bigint AND 20::bigint;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://linkedgeodata.org/ontology/version>)
+ FILTER(?o != 20)
+ FILTER(?o >= 19)
+ FILTER(?o <= 19)
+ FILTER(?o >= 18)
+ FILTER(?o <= 20)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                      p                      |                      o                       
+---------------------------------------------+----------------------------------------------
+ <http://linkedgeodata.org/ontology/version> | "19"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (real) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://www.w3.org/2003/01/geo/wgs84_pos#long>'::rdfnode AND
+  o <> 13.40::real AND
+  o >= 12.01::real AND
+  o <= 14.01::real AND
+  o BETWEEN 12::real AND 14::real;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2003/01/geo/wgs84_pos#long>)
+ FILTER(?o != 13.4)
+ FILTER(?o >= 12.01)
+ FILTER(?o <= 14.01)
+ FILTER(?o >= 12)
+ FILTER(?o <= 14)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                        |                          o                           
+------------------------------------------------+------------------------------------------------------
+ <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "12.3831"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (double precision) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://www.w3.org/2003/01/geo/wgs84_pos#long>'::rdfnode AND
+  o <> 13.40::double precision AND
+  o >= 12.01::double precision AND
+  o <= 14.01::double precision AND
+  o BETWEEN 12::double precision AND 14::double precision;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2003/01/geo/wgs84_pos#long>)
+ FILTER(?o != 13.4)
+ FILTER(?o >= 12.01)
+ FILTER(?o <= 14.01)
+ FILTER(?o >= 12)
+ FILTER(?o <= 14)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                        |                          o                           
+------------------------------------------------+------------------------------------------------------
+ <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "12.3831"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (numeric) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://www.w3.org/2003/01/geo/wgs84_pos#long>'::rdfnode AND
+  o <> 13.40::numeric AND
+  o >= 12.01::numeric AND
+  o <= 14.01::numeric AND
+  o BETWEEN 12::numeric AND 14::numeric;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2003/01/geo/wgs84_pos#long>)
+ FILTER(?o != 13.40)
+ FILTER(?o >= 12.01)
+ FILTER(?o <= 14.01)
+ FILTER(?o >= 12)
+ FILTER(?o <= 14)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                        |                          o                           
+------------------------------------------------+------------------------------------------------------
+ <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "12.3831"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (timestamp) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
+  o <> '2020-01-31 18:30:00'::timestamp AND
+  o >= '2015-07-12 20:40:00'::timestamp AND
+  o <= '2015-07-12 21:00:00'::timestamp AND
+  o BETWEEN '2014-01-01 12:30:00'::timestamp AND '2016-01-01 12:30:00'::timestamp;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/modified>)
+ FILTER(?o != "2020-01-31T18:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2015-07-12T20:40:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2015-07-12T21:00:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2014-01-01T12:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2016-01-01T12:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                  p                  |                                 o                                  
+-------------------------------------+--------------------------------------------------------------------
+ <http://purl.org/dc/terms/modified> | "2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (timestamptz) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
+  o <> '2020-01-31 18:30:00'::timestamptz AND
+  o >= '2015-07-12 20:40:00'::timestamptz AND
+  o <= '2015-07-12 21:00:00'::timestamptz AND
+  o BETWEEN '2014-01-01 12:30:00'::timestamptz AND '2016-01-01 12:30:00'::timestamptz;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/modified>)
+ FILTER(?o != ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ p | o 
+---+---
+(0 rows)
+
+  

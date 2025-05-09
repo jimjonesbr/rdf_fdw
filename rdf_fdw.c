@@ -984,6 +984,7 @@ static char *bnode(char *input);
 static char *generate_uuid_v4(void);
 static char *rdf_concat(char *left, char *right);
 static Oid get_rdfnode_oid(void);
+static bool isPlainLiteral(char *litral);
 
 static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2);
 static bool LiteralsComparable(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2);
@@ -2737,6 +2738,14 @@ Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
+static bool isPlainLiteral(char *literal)
+{
+	if (strlen(lang(literal)) != 0 || strlen(datatype(literal)) != 0)
+		return false;
+	
+	return true;
+}
+
 /*
  * isLiteral
  * ---------
@@ -2751,7 +2760,7 @@ Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS)
  *
  * returns: Boolean (1 for literal, 0 otherwise)
  */
-static bool isLiteral(char *term)
+ static bool isLiteral(char *term)
 {
 	const char *ptr;
 	int len;
@@ -5054,39 +5063,29 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 	TupleTableSlot *slot = node->ss.ss_ScanTupleSlot;
 	struct RDFfdwState *state = (struct RDFfdwState *) node->fdw_state;
 
-	elog(DEBUG3,"%s called",__func__);
-
-	ExecClearTuple(slot);	
+	elog(DEBUG3, "%s called", __func__);
 
 	if (state->numcols == 0)
 	{
-		elog(DEBUG3,"  %s: no foreign column available in this table.",__func__);	
-		return slot;
+		elog(DEBUG3, "  %s: no foreign column available in this table.", __func__);
+		return NULL;
 	}
 
-	elog(DEBUG3,"  %s: state->rowcount = %d | state->pagesize = %d",__func__,state->rowcount , state->pagesize);
+	elog(DEBUG3, "  %s: rowcount = %d | pagesize = %d", __func__, state->rowcount, state->pagesize);
 
-	if(state->rowcount < state->pagesize)
-	{		
-		CreateTuple(slot, state);
-		ExecStoreVirtualTuple(slot);
-		elog(DEBUG3,"  %s: virtual tuple stored (%d/%d)",__func__,state->rowcount , state->pagesize);
-		state->rowcount++;
-	} 
-	else 
-	{
-	   /*
-		* No further records to be retrieved. Let's clean up the XML parser before ending the query.
-		*/	
-		elog(DEBUG3,"  %s: no rows left (%d/%d)",__func__,state->rowcount , state->pagesize);
+	if (state->rowcount >= state->pagesize)
+		return NULL;
 
-		elog(DEBUG3,"%s: freeing xml parser",__func__);
-		xmlCleanupParser();
-	}
+	CreateTuple(slot, state);
+	//ExecStoreVirtualTuple(slot);  // REQUIRED to return a valid tuple
+	elog(DEBUG3, "%s: virtual tuple stored (%d/%d)", __func__, state->rowcount, state->pagesize);
+	elog(DEBUG3, "%s: valid slots = %d", __func__, slot->tts_nvalid);
+
+	state->rowcount++;
 
 	return slot;
-	
 }
+
 
 static void rdfReScanForeignScan(ForeignScanState *node)
 {
@@ -6857,6 +6856,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 	elog(DEBUG3, "%s called ", __func__);
 
+	ExecClearTuple(slot);
+
 	for (int i = 0; i < state->numcols; i++)
 	{
 		bool match = false;
@@ -6889,7 +6890,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					xmlChar *content = xmlNodeGetContent(value->children);
 					const xmlChar *node_type = value->name;
 					char *node_value;
-					//text *txt;
 
 					initStringInfo(&literal_value);
 					node_value = (char *)content;
@@ -6897,7 +6897,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					elog(DEBUG3, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
 						 __func__, (char *)content, (char *)lang, (char *)datatype, node_type);
 
-					//if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0)
 					if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
 					{
 						if (datatype)
@@ -6913,6 +6912,9 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						appendStringInfo(&literal_value, "%s", node_value);
 
 					datum = CStringGetDatum(literal_value.data);
+					// char *rdfnode_str = MemoryContextStrdup(slot->tts_mcxt, literal_value.data);
+					// datum = CStringGetDatum(rdfnode_str);
+
 					slot->tts_isnull[i] = false;
 
 					elog(DEBUG3, "%s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
@@ -6963,22 +6965,22 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 			if (prop)
 				xmlFree(prop);
+
 		}
 
 		if (!match)
 		{
 			elog(DEBUG3, "    %s: setting NULL for column '%s' (%s)", __func__, colname, sparqlvar);
 			slot->tts_isnull[i] = true;
-			slot->tts_values[i] = PointerGetDatum(NULL);
+			//slot->tts_values[i] = PointerGetDatum(NULL);
 		}
-	}
 
-	ExecStoreVirtualTuple(slot);
+	}
 
 	//MemoryContextSwitchTo(old_cxt);
 	//MemoryContextDelete(tmp_cxt);
 	
-
+	ExecStoreVirtualTuple(slot);
 	
 	elog(DEBUG3,"%s exit", __func__);
 }
@@ -7048,9 +7050,12 @@ static char *DatumToString(Datum datum, Oid type)
 			break;
 		case TIMESTAMPTZOID:
 			str = DeparseTimestamp(datum, true);
+			//str = rdfnode_to_cs DatumGetCString(DirectFunctionCall1(timestamptz_to_rdfnode, datum));
+			//appendStringInfo(&result, "%s", str);
 			initStringInfo(&result);
 			break;
 		default:
+			elog(DEBUG1,"%s exit: returning NULL (unknown data type)", __func__);
 			return NULL;
 	}
 
@@ -7107,6 +7112,7 @@ static char *DeparseTimestamp(Datum datum, bool hasTimezone)
 	fsec_t datetime_fsec;
 	StringInfoData s;
 
+	elog(DEBUG1, "%s called", __func__);
 	/* this is sloppy, but DatumGetTimestampTz and DatumGetTimestamp are the same */
 	if (TIMESTAMP_NOT_FINITE(DatumGetTimestampTz(datum)))
 		ereport(ERROR,
@@ -7178,14 +7184,14 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 	if (expr == NULL)
 	{
-		elog(DEBUG1, "%s exit: returning NULL (expr is NULL)", __func__);
+		elog(DEBUG1, "%s: returning NULL (expr is NULL)", __func__);
 		return NULL;
 	}
 
 	switch (nodeTag(expr))
 	{
 	case T_Const:
-		elog(DEBUG2, "%s (T_Const): called > %u", __func__, expr->type);
+		elog(DEBUG2, "%s [T_Const] called: expr->type=%u", __func__, expr->type);
 		constant = (Const *)expr;
 		if (constant->constisnull)
 		{
@@ -7198,7 +7204,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			char *c = DatumToString(constant->constvalue, constant->consttype);
 			if (c == NULL)
 			{
-				elog(DEBUG1, "%s exit [T_Const]: returning NULL (DatumToString returned NULL)", __func__);
+				elog(DEBUG1, "%s [T_Const]: returning NULL (DatumToString returned NULL)", __func__);
 				return NULL;
 			}
 			else
@@ -7217,6 +7223,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					appendStringInfo(&result, "%s", lex_str);
 			}
 		}
+		elog(DEBUG2, "%s [T_Const]: reached end of block with result='%s'", __func__, result.data);
 		break;
 	case T_Var:
 
@@ -7225,7 +7232,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (variable->vartype == BOOLOID)
 		{
-			elog(DEBUG1, "%s exit [T_Var]: returning NULL (variable type is a BOOLOID)", __func__);
+			elog(DEBUG1, "%s [T_Var]: returning NULL (variable type is a BOOLOID)", __func__);
 			return NULL;
 		}
 
@@ -7237,7 +7244,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		/* if no foreign table column is found, return NULL */
 		if (index == -1)
 		{
-			elog(DEBUG1, "%s exit [T_Var]: returning NULL (no table column found)", __func__);
+			elog(DEBUG1, "%s [T_Var]: returning NULL (no table column found)", __func__);
 			return NULL;
 		}
 
@@ -7294,19 +7301,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			strcmp(opername, "~~*") == 0 ||
 			strcmp(opername, "!~~*") == 0)
 		{
-
 			/* SPARQL does not negate with <> */
 			if (strcmp(opername, "<>") == 0)
 				opername = "!=";
 
-			elog(DEBUG2, "  %s [T_OpExpr]: deparsing operand of left expression", __func__);
+			elog(DEBUG2, "%s [T_OpExpr]: deparsing operand of left expression", __func__);
 			left = DeparseExpr(state, foreignrel, linitial(oper->args));
-			elog(DEBUG2, "  %s [T_OpExpr]: left operand returned => %s", __func__, left);
+			elog(DEBUG2, "%s [T_OpExpr]: left operand returned => %s", __func__, left);
 
 			if (left == NULL)
 			{
-				pfree(opername);
-				elog(DEBUG1, "%s exit: returning NULL (left argument couldn't be deparsed)", __func__);
+				//pfree(opername);
+				elog(DEBUG1, "%s [T_OpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
 				return NULL;
 			}
 
@@ -7328,7 +7334,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (right == NULL)
 				{
-					elog(DEBUG1, "%s exit: returning NULL (right argument couldn't be deparsed)", __func__);
+					elog(DEBUG1, "%s [T_OpExpr]: returning NULL (right argument couldn't be deparsed)", __func__);
 					return NULL;
 				}
 
@@ -7339,23 +7345,23 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (leftexpr->type == T_Var && (!left_column || !left_column->pushable))
 				{
-					elog(DEBUG1, "%s exit [T_OpExpr]: returning NULL (column of left argument is invalid or not pushable)", __func__);
+					elog(DEBUG1, "%s [T_OpExpr]: returning NULL (column of left argument is invalid or not pushable)", __func__);
 					return NULL;
 				}
 
-				elog(DEBUG2, "%s: getting right column based on '%s' ... ", __func__, right);
+				elog(DEBUG2, "%s [T_OpExpr]: getting right column based on '%s' ... ", __func__, right);
 				right_column = GetRDFColumn(state, right);
 
 				if (rightexpr->type == T_Var && (!right_column || !right_column->pushable))
 				{
-					elog(DEBUG1, "%s exit [T_OpExpr]: returning NULL (column of right argument is invalid or not pushable)", __func__);
+					elog(DEBUG1, "%s [T_OpExpr]: returning NULL (column of right argument is invalid or not pushable)", __func__);
 					return NULL;
 				}
 
 				/* if the column contains an expression we use it in all FILTER expressions*/
 				if (left_column && left_column->expression)
 				{
-					elog(DEBUG2, "%s: adding expression '%s' for left expression", __func__, left_column->expression);
+					elog(DEBUG2, "%s [T_OpExpr]: adding expression '%s' for left expression", __func__, left_column->expression);
 					appendStringInfo(&left_filter_arg, "%s", left_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
@@ -7415,7 +7421,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* if the column contains an expression we use it in all FILTER expressions*/
 				if (right_column && right_column->expression)
 				{
-					elog(DEBUG1, "%s: adding expression '%s' for left expression", __func__, right_column->expression);
+					elog(DEBUG1, "%s [T_OpExpr]: adding expression '%s' for left expression", __func__, right_column->expression);
 					appendStringInfo(&right_filter_arg, "%s", right_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
@@ -7437,13 +7443,35 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (isIRI(right) || isBlank(right)) /* REVISAR!!!*/
 							appendStringInfo(&right_filter_arg, "%s", right);
 						else
+						{
+							//elog(WARNING, ">>>>>>>>>>>>>>");
 							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
+						}
 					}
 					else if (isIRI(right))
 						appendStringInfo(&right_filter_arg, "%s", right);
 					else
-						appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
+					{
+						//elog(WARNING, "!!!!!!!!!!!!!!!!!!!!!!");
+
+						//if (rightargtype == TIMESTAMPOID)
+						//elog(WARNING, "@@@@@@@@@@@@@@: %s^^<%s%s>", RDF_XSD_BASE_URI, MapSPARQLDatatype(rightargtype));
+						char *xsd_type = MapSPARQLDatatype(rightargtype);
+						char *literal = cstring_to_rdfnode(right);
+
+						if (xsd_type && isPlainLiteral(literal))
+							appendStringInfo(&right_filter_arg, "%s^^<%s%s>",
+								literal,
+								RDF_XSD_BASE_URI,
+								MapSPARQLDatatype(rightargtype)
+							);
+						else
+							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
+					}
 				}
+
+				// here: if rightargtype = TIMESTAMPOID && TIMESTAMPTZOID then xsd:dateTime
+				//       if rightargtype = DATEOID then xsd:date
 				else if (rightexpr->type == T_Var)
 				{
 					if (right_column && right_column->language && strcmp(right_column->language, "*") == 0)
@@ -7477,7 +7505,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 */
 					if (leftexpr->type != T_Var && rightexpr->type != T_Const)
 					{
-						elog(DEBUG1, "%s exit [T_OpExpr]: returning NULL (type of left expression is not a T_Var and the right expression is not a T_Const)", __func__);
+						elog(DEBUG1, "%s [T_OpExpr]: returning NULL (type of left expression is not a T_Var and the right expression is not a T_Const)", __func__);
 						return NULL;
 					}
 
@@ -7674,7 +7702,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			 */
 			if (constant->constisnull)
 			{
-				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (constant->constisnull)", __func__);
+				elog(DEBUG1, "%s [T_ScalarArrayOpExpr]: returning NULL (constant->constisnull)", __func__);
 				return NULL;
 			}
 			else
@@ -7727,7 +7755,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* don't push down empty arrays, since the semantics for NOT x = ANY(<empty array>) differ */
 				if (first_arg)
 				{
-					elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot push empty arrays)", __func__);
+					elog(DEBUG1, "%s [T_ScalarArrayOpExpr]: returning NULL (cannot push empty arrays)", __func__);
 					return NULL;
 				}
 			}
@@ -8018,6 +8046,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "COALESCE(%s)", NameStr(args));
 			else if (strcmp(opername, "extract") == 0)
 				appendStringInfo(&result, "%s(%s)", extract_type, NameStr(args));
+			else if (strcmp(opername, "rdfnode_to_timestamp") == 0)
+				appendStringInfo(&result, "%s", NameStr(args));
+			else if (strcmp(opername, "rdfnode_to_timestamptz") == 0)
+				appendStringInfo(&result, "%s", NameStr(args));
 			else
 			{
 				elog(DEBUG1, "%s [T_FuncExpr]: returning NULL (unknown opername '%s')", __func__, opername);
@@ -8782,7 +8814,9 @@ static bool IsFunctionPushable(char *funcname)
 			 strcmp(funcname, "bound") == 0 ||
 			 strcmp(funcname, "sameterm") == 0 ||
 			 strcmp(funcname, "coalesce") == 0 ||
-			 strcmp(funcname, "substring") == 0;
+			 strcmp(funcname, "substring") == 0 ||
+			 strcmp(funcname, "rdfnode_to_timestamp") == 0 ||
+			 strcmp(funcname, "rdfnode_to_timestamptz") == 0;
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
 
@@ -8974,97 +9008,99 @@ static bool is_valid_language_tag(const char *lan)
 	regfree(&regex);
 	return is_valid;
 }
-
 Datum rdfnode_in(PG_FUNCTION_ARGS)
 {
-	char *str_in = PG_GETARG_CSTRING(0);
-	char *lexical;
-	char *lan;
-	char *dtype;
-	
-	rdfnode *result;
-	size_t len;
-	StringInfoData r;
+    char *str_in = PG_GETARG_CSTRING(0);
+    char *lexical;
+    char *lan;
+    char *dtype;
+    
+    rdfnode *result;
+    size_t len;
+    StringInfoData r;
 
-	// if (!str_in || strlen(str_in) == 0)
-	// 	elog(ERROR, "rdfnode_in: invalid input");
+    // Initialize string buffer
+    initStringInfo(&r);
 
-	initStringInfo(&r);
+    if (strlen(str_in) == 0)
+    {
+        appendStringInfo(&r, "\"\"");
+    }
+    else if (isLiteral(str_in))
+    {
+        char *node = cstring_to_rdfnode(str_in);
 
-	if (strlen(str_in) == 0)
-		appendStringInfo(&r, "\"\"");
-	else if (isLiteral(str_in))
-	{
-		char *node = cstring_to_rdfnode(str_in);
+        lexical = lex(node);
+        lan = lang(node);
+        dtype = datatype(node);
 
-		lexical = lex(node);
-		lan = lang(node);
-		dtype = datatype(node);
+        /* xsd data tyoe validations */
+        if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
+            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                            errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
+        else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
+            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                            errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
+        else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
+            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                            errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
+        else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
+            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                            errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
+        else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
+            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                            errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
+        else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
+            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                            errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
+        else if (strlen(lan) != 0)
+        {
+            if (!is_valid_language_tag(lan))
+                ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                                errmsg("invalid language tag: \"%s\"", lan)));
 
-		if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-					 errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
-		else if (strlen(lan) != 0)
-		{
-			if (!is_valid_language_tag(lan))
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-						 errmsg("invalid language tag: \"%s\"", lan)));
+            appendStringInfo(&r, "%s", pstrdup(strlang(unescape_unicode(lexical), lan)));
+        }
+        else if (strlen(dtype) != 0)
+            appendStringInfo(&r, "%s", pstrdup(strdt(unescape_unicode(lexical), dtype)));
+        else
+            appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
+    }
+    else
+    {
+        appendStringInfo(&r, "%s", pstrdup(unescape_unicode(str_in)));
+    }
 
-			appendStringInfo(&r, "%s", pstrdup(strlang(unescape_unicode(lexical), lan)));
-		}
-		else if (strlen(dtype) != 0)
-			appendStringInfo(&r, "%s", pstrdup(strdt(unescape_unicode(lexical), dtype)));
-		else
-			appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
-	}
-	else
-	{
-		appendStringInfo(&r, "%s", pstrdup(unescape_unicode(str_in)));
-	}
+    len = strlen(r.data);
+ 
+    /* 
+	 * allocate memory for the rdfnode (use palloc0 to clear memory).
+	 * r.data is already null-terminated, so no +1 :)
+	 */
+    result = (rdfnode *)palloc0(VARHDRSZ + len);
+    SET_VARSIZE(result, VARHDRSZ + len);
 
-	len = strlen(r.data);
-	result = (rdfnode *)palloc(VARHDRSZ + len + 1);
-	SET_VARSIZE(result, VARHDRSZ + len);
-	memcpy(result->vl_data, r.data, len);
-	/* explicitly null-terminate! */
-	result->vl_data[len] = '\0';
+    /* 
+	 * copy string data into the result structure.
+	 * no need for explicit null-termination here
+	 */
+    memcpy(result->vl_data, r.data, len);
 
-	PG_RETURN_POINTER(result);
+    PG_RETURN_POINTER(result);
 }
 
 Datum rdfnode_out(PG_FUNCTION_ARGS)
 {
-	rdfnode *lit = (rdfnode *)PG_GETARG_POINTER(0);
-	int len = VARSIZE(lit) - VARHDRSZ;
-	char *out = (char *)palloc(len + 1);
+    text *lit = PG_GETARG_TEXT_PP(0);       // Handles detoasting
+    int len = VARSIZE_ANY_EXHDR(lit);       // Get payload length safely
+    char *out = (char *) palloc(len + 1);
 
-	memcpy(out, lit->vl_data, len);
-	out[len] = '\0';
+    memcpy(out, VARDATA_ANY(lit), len);
+    out[len] = '\0';
 
-	PG_RETURN_CSTRING(out);
+    PG_RETURN_CSTRING(out);
 }
+
 
 static parsed_rdfnode parse_rdfnode(char *input)
 {
@@ -9129,27 +9165,13 @@ static parsed_rdfnode parse_rdfnode(char *input)
 	return result;
 }
 
-
 Datum rdfnode_cmp(PG_FUNCTION_ARGS)
 {
-    text *ta = PG_GETARG_TEXT_PP(0);
-    text *tb = PG_GETARG_TEXT_PP(1);
-
-    const char *stra = text_to_cstring(ta);
-    const char *strb = text_to_cstring(tb);
-
-    int result = strcmp(stra, strb);
-
-	//elog(WARNING, "%s: stra=%s, strb=%s result=%d", __func__, stra, strb, result);
-	
-	// elog(WARNING, "rdfnode_cmp: raw a = %p, raw b = %p", ta, tb);
-	// elog(WARNING, "rdfnode_cmp: stra = \"%s\", strb = \"%s\"", stra, strb);
-	// elog(WARNING, "rdfnode_cmp: len(a) = %d, len(b) = %d",
-	// 	VARSIZE(ta) - VARHDRSZ, VARSIZE(tb) - VARHDRSZ);
-   
-
-	// MemoryContext context = GetMemoryChunkContext((void *)stra);
-	// elog(WARNING, "stra context = %p", context);
+	text *ta = PG_GETARG_TEXT_PP(0);
+	text *tb = PG_GETARG_TEXT_PP(1);
+	const char *node1 = text_to_cstring(ta);
+	const char *node2 = text_to_cstring(tb);
+	int result = strcmp(node1, node2);
 
 	if (result < 0)
 		PG_RETURN_INT32(-1);
@@ -9158,7 +9180,6 @@ Datum rdfnode_cmp(PG_FUNCTION_ARGS)
 	else
 		PG_RETURN_INT32(0);
 }
-
 
 static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 {
@@ -9288,20 +9309,22 @@ static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 
 Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
-	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
+	text *a_text = PG_GETARG_TEXT_PP(0);
+	text *b_text = PG_GETARG_TEXT_PP(1);
+
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
 
 	PG_RETURN_BOOL(!rdfnode_eq(a_parsed, b_parsed));
 }
 
 Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
-	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
+	text *a_text = PG_GETARG_TEXT_PP(0);
+	text *b_text = PG_GETARG_TEXT_PP(1);
+
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
 
 	PG_RETURN_BOOL(rdfnode_eq(a_parsed, b_parsed));
 }
@@ -9445,13 +9468,15 @@ static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
-	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
+	text *a_text = PG_GETARG_TEXT_PP(0);
+	text *b_text = PG_GETARG_TEXT_PP(1);
+
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
 
 	PG_RETURN_BOOL(rdfnode_lt(a_parsed, b_parsed));
 }
+
 
 static bool rdfnode_gt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
@@ -9562,10 +9587,11 @@ static bool rdfnode_gt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
-	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
+	text *a_text = PG_GETARG_TEXT_PP(0);
+	text *b_text = PG_GETARG_TEXT_PP(1);
+
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
 
 	PG_RETURN_BOOL(rdfnode_gt(a_parsed, b_parsed));
 }
@@ -9683,15 +9709,14 @@ static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
-	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
+	text *a_text = PG_GETARG_TEXT_PP(0);
+	text *b_text = PG_GETARG_TEXT_PP(1);
+
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
 
 	PG_RETURN_BOOL(rdfnode_le(a_parsed, b_parsed));
 }
-
-
 
 static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 {
@@ -9802,34 +9827,27 @@ static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	rdfnode *a = (rdfnode *) PG_GETARG_POINTER(0);
-	rdfnode *b = (rdfnode *) PG_GETARG_POINTER(1);
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring((text *) a));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring((text *) b));
+	text *a_text = PG_GETARG_TEXT_PP(0);
+	text *b_text = PG_GETARG_TEXT_PP(1);
+
+	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
+	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
 
 	PG_RETURN_BOOL(rdfnode_ge(a_parsed, b_parsed));
 }
 
 Datum rdfnode_to_text(PG_FUNCTION_ARGS)
 {
-	rdfnode *lit = (rdfnode *)PG_GETARG_POINTER(0);
-	char *out;
-	int len;
-	text *result;
+    text *lit = PG_GETARG_TEXT_PP(0);         // Safe detoasting
+    int len = VARSIZE_ANY_EXHDR(lit);         // Length of the actual data
+    text *result = (text *) palloc(VARHDRSZ + len);
 
-	len = VARSIZE(lit) - VARHDRSZ;
-	if (len < 0)
-		elog(ERROR, "rdfnode_to_text: invalid varlena length: %d", len);
+    SET_VARSIZE(result, VARHDRSZ + len);
+    memcpy(VARDATA(result), VARDATA_ANY(lit), len);
 
-	out = (char *)palloc(len + 1);
-	memcpy(out, VARDATA(lit), len);
-	out[len] = '\0';
-
-	result = cstring_to_text(out);
-	pfree(out);
-
-	PG_RETURN_TEXT_P(result);
+    PG_RETURN_TEXT_P(result);
 }
+
 
 /* numeric */
 Datum rdfnode_to_numeric(PG_FUNCTION_ARGS)
