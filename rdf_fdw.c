@@ -230,7 +230,7 @@
 			|| (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID \
 			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
 			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID \
-			|| (x) == RDFNODEOID)
+			|| (x) == TIMEOID || (x) == TIMETZOID || (x) == RDFNODEOID)
 
 /* list API has changed in v13 */
 #if PG_VERSION_NUM < 130000
@@ -656,7 +656,11 @@ extern Datum timetz_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* boolean */
 extern Datum rdfnode_to_boolean(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_boolean(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_boolean(PG_FUNCTION_ARGS);
 extern Datum boolean_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum boolean_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum boolean_neq_rdfnode(PG_FUNCTION_ARGS);
 
 /* interval */
 extern Datum rdfnode_to_interval(PG_FUNCTION_ARGS);
@@ -892,7 +896,11 @@ PG_FUNCTION_INFO_V1(timetz_ge_rdfnode);
 
 /* boolean */
 PG_FUNCTION_INFO_V1(rdfnode_to_boolean);
+PG_FUNCTION_INFO_V1(rdfnode_eq_boolean);
+PG_FUNCTION_INFO_V1(rdfnode_neq_boolean);
 PG_FUNCTION_INFO_V1(boolean_to_rdfnode);
+PG_FUNCTION_INFO_V1(boolean_eq_rdfnode);
+PG_FUNCTION_INFO_V1(boolean_neq_rdfnode);
 
 /* interval */
 PG_FUNCTION_INFO_V1(rdfnode_to_interval);
@@ -948,8 +956,8 @@ static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
 static bool ContainsWhitespaces(char *str);
 static bool IsSPARQLVariableValid(const char* str);
-static char *DeparseDate(Datum datum);
-static char *DeparseTimestamp(Datum datum, bool hasTimezone);
+//static char *DeparseDate(Datum datum);
+//static char *DeparseTimestamp(Datum datum, Oid typid);
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state);
@@ -7001,6 +7009,7 @@ static char *DatumToString(Datum datum, Oid type)
 	regproc typoutput;
 	HeapTuple tuple;
 	char *str;
+	text *t;
 
 	elog(DEBUG1,"%s called: type='%u' ",__func__,type);
 
@@ -7013,10 +7022,10 @@ static char *DatumToString(Datum datum, Oid type)
 	typoutput = ((Form_pg_type)GETSTRUCT(tuple))->typoutput;
 	ReleaseSysCache(tuple);
 
+	initStringInfo(&result);
 	if (type == RDFNODEOID)
 	{
-		str = DatumGetCString(OidFunctionCall1(typoutput, datum));
-		initStringInfo(&result);
+		str = DatumGetCString(OidFunctionCall1(typoutput, datum));	
 		appendStringInfo(&result, "%s", str);
 	}
 	else switch (type)
@@ -7035,25 +7044,32 @@ static char *DatumToString(Datum datum, Oid type)
 		case FLOAT8OID:
 		case NUMERICOID:
 			str = DatumGetCString(OidFunctionCall1(typoutput, datum));
-			initStringInfo(&result);
 			appendStringInfo(&result, "%s", str);
 			break;
 		case DATEOID:
-			str = DeparseDate(datum);
-			initStringInfo(&result);
-			appendStringInfo(&result, "%s", str);
+			t = DatumGetTextP(DirectFunctionCall1(date_to_rdfnode, datum));
+			appendStringInfo(&result, "%s", text_to_cstring(t));
+			break;
+		case TIMEOID:
+			t = DatumGetTextP(DirectFunctionCall1(time_to_rdfnode, datum));
+			appendStringInfo(&result, "%s", text_to_cstring(t));
+			break;
+		case TIMETZOID:
+			t = DatumGetTextP(DirectFunctionCall1(timetz_to_rdfnode, datum));
+			appendStringInfo(&result, "%s", text_to_cstring(t));
 			break;
 		case TIMESTAMPOID:
-			str = DeparseTimestamp(datum, false);
-			initStringInfo(&result);
-			appendStringInfo(&result, "%s", str);
+			t = DatumGetTextP(DirectFunctionCall1(timestamp_to_rdfnode, datum));
+			appendStringInfo(&result, "%s", text_to_cstring(t));
 			break;
 		case TIMESTAMPTZOID:
-			str = DeparseTimestamp(datum, true);
-			//str = rdfnode_to_cs DatumGetCString(DirectFunctionCall1(timestamptz_to_rdfnode, datum));
-			//appendStringInfo(&result, "%s", str);
-			initStringInfo(&result);
+			t = DatumGetTextP(DirectFunctionCall1(timestamptz_to_rdfnode, datum));
+			appendStringInfo(&result, "%s", text_to_cstring(t));
 			break;
+		case BOOLOID:
+			t = DatumGetTextP(DirectFunctionCall1(boolean_to_rdfnode, datum));
+			appendStringInfo(&result, "%s", text_to_cstring(t));
+			break;			
 		default:
 			elog(DEBUG1,"%s exit: returning NULL (unknown data type)", __func__);
 			return NULL;
@@ -7072,29 +7088,29 @@ static char *DatumToString(Datum datum, Oid type)
  * 
  * retrns a string representation of the given date
  */
-static char *DeparseDate(Datum datum)
-{
-	struct pg_tm datetime_tm;
-	StringInfoData s;
+// static char *DeparseDate(Datum datum)
+// {
+// 	struct pg_tm datetime_tm;
+// 	StringInfoData s;
 
-	if (DATE_NOT_FINITE(DatumGetDateADT(datum)))
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-				errmsg("infinite date value cannot be stored")));
+// 	if (DATE_NOT_FINITE(DatumGetDateADT(datum)))
+// 		ereport(ERROR,
+// 				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+// 				errmsg("infinite date value cannot be stored")));
 
-	/* get the parts */
-	(void)j2date(DatumGetDateADT(datum) + POSTGRES_EPOCH_JDATE,
-			&(datetime_tm.tm_year),
-			&(datetime_tm.tm_mon),
-			&(datetime_tm.tm_mday));
+// 	/* get the parts */
+// 	(void)j2date(DatumGetDateADT(datum) + POSTGRES_EPOCH_JDATE,
+// 			&(datetime_tm.tm_year),
+// 			&(datetime_tm.tm_mon),
+// 			&(datetime_tm.tm_mday));
 
-	initStringInfo(&s);
-	appendStringInfo(&s, "%04d-%02d-%02d",
-			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
-			datetime_tm.tm_mon, datetime_tm.tm_mday);
+// 	initStringInfo(&s);
+// 	appendStringInfo(&s, "%04d-%02d-%02d",
+// 			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
+// 			datetime_tm.tm_mon, datetime_tm.tm_mday);
 
-	return s.data;
-}
+// 	return s.data;
+// }
 
 /* 
  * DeparseTimestamp
@@ -7105,44 +7121,98 @@ static char *DeparseDate(Datum datum)
  * 
  * retrns a string representation of the given timestamp
  */
-static char *DeparseTimestamp(Datum datum, bool hasTimezone)
-{
-	struct pg_tm datetime_tm;
-	int32 tzoffset;
-	fsec_t datetime_fsec;
-	StringInfoData s;
+// static char *DeparseTimestamp(Datum datum, bool hasTimezone)
+// {
+// 	struct pg_tm datetime_tm;
+// 	int32 tzoffset;
+// 	fsec_t datetime_fsec;
+// 	StringInfoData s;
 
-	elog(DEBUG1, "%s called", __func__);
-	/* this is sloppy, but DatumGetTimestampTz and DatumGetTimestamp are the same */
-	if (TIMESTAMP_NOT_FINITE(DatumGetTimestampTz(datum)))
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-				errmsg("infinite timestamp value cannot be stored")));
+// 	elog(DEBUG1, "%s called", __func__);
+// 	/* this is sloppy, but DatumGetTimestampTz and DatumGetTimestamp are the same */
+// 	if (TIMESTAMP_NOT_FINITE(DatumGetTimestampTz(datum)))
+// 		ereport(ERROR,
+// 				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+// 				errmsg("infinite timestamp value cannot be stored")));
 
-	/* get the parts */
-	tzoffset = 0;
-	(void)timestamp2tm(DatumGetTimestampTz(datum),
-				hasTimezone ? &tzoffset : NULL,
-				&datetime_tm,
-				&datetime_fsec,
-				NULL,
-				NULL);
+// 	/* get the parts */
+// 	tzoffset = 0;
+// 	(void)timestamp2tm(DatumGetTimestampTz(datum),
+// 				hasTimezone ? &tzoffset : NULL,
+// 				&datetime_tm,
+// 				&datetime_fsec,
+// 				NULL,
+// 				NULL);
 
-	initStringInfo(&s);
-	if (hasTimezone)
-		appendStringInfo(&s, "%04d-%02d-%02dT%02d:%02d:%02d.%06d%+03d:%02d",
-			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
-			datetime_tm.tm_mon, datetime_tm.tm_mday, datetime_tm.tm_hour,
-			datetime_tm.tm_min, datetime_tm.tm_sec, (int32)datetime_fsec,
-			-tzoffset / 3600, ((tzoffset > 0) ? tzoffset % 3600 : -tzoffset % 3600) / 60);
-	else
-		appendStringInfo(&s, "%04d-%02d-%02dT%02d:%02d:%02d.%06d",
-			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
-			datetime_tm.tm_mon, datetime_tm.tm_mday, datetime_tm.tm_hour,
-			datetime_tm.tm_min, datetime_tm.tm_sec, (int32)datetime_fsec);
+// 	initStringInfo(&s);
+// 	if (hasTimezone)
+// 		appendStringInfo(&s, "%04d-%02d-%02dT%02d:%02d:%02d.%06d%+03d:%02d",
+// 			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
+// 			datetime_tm.tm_mon, datetime_tm.tm_mday, datetime_tm.tm_hour,
+// 			datetime_tm.tm_min, datetime_tm.tm_sec, (int32)datetime_fsec,
+// 			-tzoffset / 3600, ((tzoffset > 0) ? tzoffset % 3600 : -tzoffset % 3600) / 60);
+// 	else
+// 		appendStringInfo(&s, "%04d-%02d-%02dT%02d:%02d:%02d.%06d",
+// 			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
+// 			datetime_tm.tm_mon, datetime_tm.tm_mday, datetime_tm.tm_hour,
+// 			datetime_tm.tm_min, datetime_tm.tm_sec, (int32)datetime_fsec);
 
-	return s.data;
-}
+// 	return s.data;
+// }
+
+// static char *
+// format_timestamp(Timestamp ts)
+// {
+// 	struct pg_tm tm;
+// 	fsec_t fsec;
+// 	StringInfoData buf;
+
+// 	if (TIMESTAMP_NOT_FINITE(ts) ||
+// 		timestamp2tm(ts, NULL, &tm, &fsec, NULL, NULL) != 0)
+// 		elog(ERROR, "invalid timestamp");
+
+// 	initStringInfo(&buf);
+// 	appendStringInfo(&buf, "%04d-%02d-%02dT%02d:%02d:%02d",
+// 					 tm.tm_year, tm.tm_mon, tm.tm_mday,
+// 					 tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+// 	if (fsec != 0)
+// 		appendStringInfo(&buf, ".%06d", (int)fsec);
+
+// 	return buf.data;
+// }
+
+// static char *
+// format_timestamptz(TimestampTz ts)
+// {
+// 	struct pg_tm tm;
+// 	fsec_t fsec;
+// 	const char *tzn;
+// 	StringInfoData buf;
+
+// 	if (timestamp2tm(ts, NULL, &tm, &fsec, &tzn, NULL) != 0)
+// 		ereport(ERROR, (errmsg("invalid timestamp")));
+
+// 	initStringInfo(&buf);
+// 	appendStringInfo(&buf, "%04d-%02d-%02dT%02d:%02d:%02d",
+// 					 tm.tm_year, tm.tm_mon, tm.tm_mday,
+// 					 tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+// 	return buf.data;
+// }
+
+// static char *
+// DeparseTimestamp(Datum datum, Oid typid)
+// {
+// 	if (typid == TIMESTAMPOID)
+// 		return format_timestamp(DatumGetTimestamp(datum));
+// 	else if (typid == TIMESTAMPTZOID)
+// 		return format_timestamptz(DatumGetTimestampTz(datum));
+// 	else
+// 		elog(ERROR, "unsupported Oid %u passed to DeparseTimestamp", typid);
+
+// 	return NULL; // not reached
+// }
 
 /*
  * DeparseExpr
@@ -7452,9 +7522,14 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						appendStringInfo(&right_filter_arg, "%s", right);
 					else
 					{
-						//elog(WARNING, "!!!!!!!!!!!!!!!!!!!!!!");
+						// elog(WARNING, "%%%%%%%%%%%%%%%%%%");
 
-						//if (rightargtype == TIMESTAMPOID)
+						// if (rightargtype == TIMESTAMPTZOID)
+						// {
+						// 	elog(WARNING, "!!!!!!!!!!!!!!!!!!!!!!");
+						// 	Datum d = DirectFunctionCall1(timestamptz_to_rdfnode, datum);
+						// 	elog(WARNING,"##### %s", DatumGetCString(d));
+						// }
 						//elog(WARNING, "@@@@@@@@@@@@@@: %s^^<%s%s>", RDF_XSD_BASE_URI, MapSPARQLDatatype(rightargtype));
 						char *xsd_type = MapSPARQLDatatype(rightargtype);
 						char *literal = cstring_to_rdfnode(right);
@@ -8050,6 +8125,15 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "%s", NameStr(args));
 			else if (strcmp(opername, "rdfnode_to_timestamptz") == 0)
 				appendStringInfo(&result, "%s", NameStr(args));
+			else if (strcmp(opername, "rdfnode_to_times") == 0)
+				appendStringInfo(&result, "%s", NameStr(args));
+			else if (strcmp(opername, "rdfnode_to_timetz") == 0)
+				appendStringInfo(&result, "%s", NameStr(args));
+			else if (strcmp(opername, "rdfnode_to_boolean") == 0)
+				appendStringInfo(&result, "%s", NameStr(args));
+			else if (strcmp(opername, "boolean_to_rdfnode") == 0)
+				appendStringInfo(&result, "%s", NameStr(args));
+
 			else
 			{
 				elog(DEBUG1, "%s [T_FuncExpr]: returning NULL (unknown opername '%s')", __func__, opername);
@@ -8815,8 +8899,12 @@ static bool IsFunctionPushable(char *funcname)
 			 strcmp(funcname, "sameterm") == 0 ||
 			 strcmp(funcname, "coalesce") == 0 ||
 			 strcmp(funcname, "substring") == 0 ||
+			 strcmp(funcname, "rdfnode_to_time") == 0 ||
+			 strcmp(funcname, "rdfnode_to_timetz") == 0 ||
 			 strcmp(funcname, "rdfnode_to_timestamp") == 0 ||
-			 strcmp(funcname, "rdfnode_to_timestamptz") == 0;
+			 strcmp(funcname, "rdfnode_to_timestamptz") == 0 ||
+			 strcmp(funcname, "rdfnode_to_boolean") == 0 ||
+			 strcmp(funcname, "boolean_to_rdfnode") == 0;
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
 
@@ -11602,12 +11690,12 @@ Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 	parsed_rdfnode p = parse_rdfnode(literal);
 	bool result;
 
-	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0)
+	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
 		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
 
-	if (pg_strcasecmp(p.lex, "true") == 0)
+	if (pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0)
 		result = true;
-	else if (pg_strcasecmp(p.lex, "false") == 0)
+	else if (pg_strcasecmp(p.lex, "false") == 0 || strcmp(p.lex, "0") == 0)
 		result = false;
 	else
 		ereport(ERROR,
@@ -11615,6 +11703,42 @@ Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 				 errdetail("expected values for xsd:boolean are \"true\" or \"false\"")));
 
 	PG_RETURN_BOOL(result);
+}
+
+Datum rdfnode_eq_boolean(PG_FUNCTION_ARGS)
+{
+	text *t = PG_GETARG_TEXT_PP(0);
+	bool val = PG_GETARG_BOOL(1);
+	char *literal = text_to_cstring(t);
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+
+	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
+		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+
+	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && val)
+		PG_RETURN_BOOL(true);
+	else if ((pg_strcasecmp(p.lex, "false") == 0 || strcmp(p.lex, "0") == 0) && !val)
+		PG_RETURN_BOOL(true);
+	else
+		PG_RETURN_BOOL(false);
+}
+
+Datum rdfnode_neq_boolean(PG_FUNCTION_ARGS)
+{
+	text *t = PG_GETARG_TEXT_PP(0);
+	bool val = PG_GETARG_BOOL(1);
+	char *literal = text_to_cstring(t);
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+
+	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
+		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+
+	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && !val)
+		PG_RETURN_BOOL(true);
+	else if ((pg_strcasecmp(p.lex, "false") || strcmp(p.lex, "0") == 0) == 0 && val)
+		PG_RETURN_BOOL(true);
+	else
+		PG_RETURN_BOOL(false);
 }
 
 Datum boolean_to_rdfnode(PG_FUNCTION_ARGS)
@@ -11629,6 +11753,42 @@ Datum boolean_to_rdfnode(PG_FUNCTION_ARGS)
 		appendStringInfo(&buf, "\"false\"^^%s", RDF_XSD_BOOLEAN);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
+}
+
+Datum boolean_eq_rdfnode(PG_FUNCTION_ARGS)
+{
+	bool val = PG_GETARG_BOOL(0);
+	text *t = PG_GETARG_TEXT_PP(1);
+	char *literal = text_to_cstring(t);
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+
+	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
+		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+
+	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && val)
+		PG_RETURN_BOOL(true);
+	else if ((pg_strcasecmp(p.lex, "false") == 0 || strcmp(p.lex, "0") == 0) && !val)
+		PG_RETURN_BOOL(true);
+	else
+		PG_RETURN_BOOL(false);
+}
+
+Datum boolean_neq_rdfnode(PG_FUNCTION_ARGS)
+{
+	bool val = PG_GETARG_BOOL(0);
+	text *t = PG_GETARG_TEXT_PP(1);
+	char *literal = text_to_cstring(t);
+	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+
+	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
+		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+
+	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && !val)
+		PG_RETURN_BOOL(true);
+	else if ((pg_strcasecmp(p.lex, "false") == 0 || strcmp(p.lex, "0") == 0) && val)
+		PG_RETURN_BOOL(true);
+	else
+		PG_RETURN_BOOL(false);
 }
 
 /* interval */

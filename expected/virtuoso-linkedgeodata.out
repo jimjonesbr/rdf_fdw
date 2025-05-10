@@ -378,14 +378,19 @@ INFO:  SPARQL returned 2 records.
  <http://www.w3.org/2000/01/rdf-schema#label> | "Gare centrale de Leipzig"@fr
 (2 rows)
 
-/* SPARQL - 17.3 Operator Mapping (int) */
+/* SPARQL - 17.3 Operator Mapping (smallint) */
 SELECT p, o FROM hbf
 WHERE 
   p = '<http://linkedgeodata.org/ontology/version>'::rdfnode AND
-  o <> 20 AND
-  o >= 19 AND
-  o <= 19 AND
-  o BETWEEN 18 AND 20;
+  o = 19::smallint AND
+  o <> 20::smallint AND
+  o >= 19::smallint AND
+  o <= 19::smallint AND
+  o BETWEEN 18 AND 20 AND
+  19::smallint = o AND
+  20::smallint <> o AND
+  19::smallint >= o AND
+  19::smallint <= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
@@ -393,47 +398,101 @@ SELECT ?p ?o
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://linkedgeodata.org/ontology/version>)
+ FILTER(?o = 19)
  FILTER(?o != 20)
  FILTER(?o >= 19)
  FILTER(?o <= 19)
  FILTER(?o >= 18)
  FILTER(?o <= 20)
+ FILTER(19 = ?o)
+ FILTER(20 != ?o)
+ FILTER(19 >= ?o)
+ FILTER(19 <= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
 
-                      p                      |                      o                       
----------------------------------------------+----------------------------------------------
- <http://linkedgeodata.org/ontology/version> | "19"^^<http://www.w3.org/2001/XMLSchema#int>
+                      p                      |                        o                         
+---------------------------------------------+--------------------------------------------------
+ <http://linkedgeodata.org/ontology/version> | "19"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (int) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://linkedgeodata.org/ontology/changeset>'::rdfnode AND
+  o = 32586907::int AND
+  o <> 999999::int AND
+  o >= 32586907::int AND
+  o <= 32586907::int AND
+  o BETWEEN 32586900::int AND 32586909::int AND
+  32586907::int = o AND
+  999999::int <> o AND
+  32586907::int >= o AND
+  32586907::int <= o;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://linkedgeodata.org/ontology/changeset>)
+ FILTER(?o = 32586907)
+ FILTER(?o != 999999)
+ FILTER(?o >= 32586907)
+ FILTER(?o <= 32586907)
+ FILTER(?o >= 32586900)
+ FILTER(?o <= 32586909)
+ FILTER(32586907 = ?o)
+ FILTER(999999 != ?o)
+ FILTER(32586907 >= ?o)
+ FILTER(32586907 <= ?o)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |                           o                            
+-----------------------------------------------+--------------------------------------------------------
+ <http://linkedgeodata.org/ontology/changeset> | "32586907"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (bigint) */
 SELECT p, o FROM hbf
 WHERE 
-  p = '<http://linkedgeodata.org/ontology/version>'::rdfnode AND
-  o <> 20::bigint AND
-  o >= 19::bigint AND
-  o <= 19::bigint AND
-  o BETWEEN 18::bigint AND 20::bigint;
+  p = '<http://linkedgeodata.org/ontology/changeset>'::rdfnode AND
+  o = 32586907::bigint AND
+  o <> 999999::bigint AND
+  o >= 32586907::bigint AND
+  o <= 32586907::bigint AND
+  o BETWEEN 32586900::bigint AND 32586909::bigint AND
+  32586907::bigint = o AND
+  999999::bigint <> o AND
+  32586907::bigint >= o AND
+  32586907::bigint <= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://linkedgeodata.org/ontology/version>)
- FILTER(?o != 20)
- FILTER(?o >= 19)
- FILTER(?o <= 19)
- FILTER(?o >= 18)
- FILTER(?o <= 20)
+ FILTER(?p = <http://linkedgeodata.org/ontology/changeset>)
+ FILTER(?o = 32586907)
+ FILTER(?o != 999999)
+ FILTER(?o >= 32586907)
+ FILTER(?o <= 32586907)
+ FILTER(?o >= 32586900)
+ FILTER(?o <= 32586909)
+ FILTER(32586907 = ?o)
+ FILTER(999999 != ?o)
+ FILTER(32586907 >= ?o)
+ FILTER(32586907 <= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
 
-                      p                      |                      o                       
----------------------------------------------+----------------------------------------------
- <http://linkedgeodata.org/ontology/version> | "19"^^<http://www.w3.org/2001/XMLSchema#int>
+                       p                       |                           o                            
+-----------------------------------------------+--------------------------------------------------------
+ <http://linkedgeodata.org/ontology/changeset> | "32586907"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (real) */
@@ -443,7 +502,10 @@ WHERE
   o <> 13.40::real AND
   o >= 12.01::real AND
   o <= 14.01::real AND
-  o BETWEEN 12::real AND 14::real;
+  o BETWEEN 12::real AND 14::real AND
+  13.40::real <> o AND
+  12.01::real <= o AND
+  14.01::real >= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
@@ -456,6 +518,9 @@ SELECT ?p ?o
  FILTER(?o <= 14.01)
  FILTER(?o >= 12)
  FILTER(?o <= 14)
+ FILTER(13.4 != ?o)
+ FILTER(12.01 <= ?o)
+ FILTER(14.01 >= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -472,7 +537,10 @@ WHERE
   o <> 13.40::double precision AND
   o >= 12.01::double precision AND
   o <= 14.01::double precision AND
-  o BETWEEN 12::double precision AND 14::double precision;
+  o BETWEEN 12::double precision AND 14::double precision AND
+  13.40::double precision <> o AND
+  12.01::double precision <= o AND
+  14.01::double precision >= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
@@ -485,6 +553,9 @@ SELECT ?p ?o
  FILTER(?o <= 14.01)
  FILTER(?o >= 12)
  FILTER(?o <= 14)
+ FILTER(13.4 != ?o)
+ FILTER(12.01 <= ?o)
+ FILTER(14.01 >= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -501,7 +572,10 @@ WHERE
   o <> 13.40::numeric AND
   o >= 12.01::numeric AND
   o <= 14.01::numeric AND
-  o BETWEEN 12::numeric AND 14::numeric;
+  o BETWEEN 12::numeric AND 14::numeric AND
+  13.40::numeric <> o AND
+  12.01::numeric <= o AND
+  14.01::numeric >= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
@@ -514,6 +588,9 @@ SELECT ?p ?o
  FILTER(?o <= 14.01)
  FILTER(?o >= 12)
  FILTER(?o <= 14)
+ FILTER(13.40 != ?o)
+ FILTER(12.01 <= ?o)
+ FILTER(14.01 >= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -530,7 +607,10 @@ WHERE
   o <> '2020-01-31 18:30:00'::timestamp AND
   o >= '2015-07-12 20:40:00'::timestamp AND
   o <= '2015-07-12 21:00:00'::timestamp AND
-  o BETWEEN '2014-01-01 12:30:00'::timestamp AND '2016-01-01 12:30:00'::timestamp;
+  o BETWEEN '2014-01-01 12:30:00'::timestamp AND '2016-01-01 12:30:00'::timestamp AND
+  '2020-01-31 18:30:00'::timestamp <> o AND
+  '2015-07-12 20:40:00'::timestamp <= o AND
+  '2015-07-12 21:00:00'::timestamp >= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
@@ -538,11 +618,14 @@ SELECT ?p ?o
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://purl.org/dc/terms/modified>)
- FILTER(?o != "2020-01-31T18:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o >= "2015-07-12T20:40:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2015-07-12T21:00:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o >= "2014-01-01T12:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2016-01-01T12:30:00.000000"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o != "2020-01-31T18:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2015-07-12T20:40:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2015-07-12T21:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2014-01-01T12:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2016-01-01T12:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER("2020-01-31T18:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> != ?o)
+ FILTER("2015-07-12T20:40:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> <= ?o)
+ FILTER("2015-07-12T21:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> >= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -557,9 +640,12 @@ SELECT p, o FROM hbf
 WHERE 
   p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
   o <> '2020-01-31 18:30:00'::timestamptz AND
-  o >= '2015-07-12 20:40:00'::timestamptz AND
-  o <= '2015-07-12 21:00:00'::timestamptz AND
-  o BETWEEN '2014-01-01 12:30:00'::timestamptz AND '2016-01-01 12:30:00'::timestamptz;
+  o >= '2015-07-12 08:40:00'::timestamptz AND
+  o <= '2015-07-13 21:00:00'::timestamptz AND
+  o BETWEEN '2014-01-01 12:30:00'::timestamptz AND '2016-01-01 12:30:00'::timestamptz AND
+  '2020-01-31 18:30:00'::timestamptz <> o AND
+  '2015-07-12 08:40:00'::timestamptz <= o AND
+  '2015-07-13 21:00:00'::timestamptz >= o;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
@@ -567,11 +653,101 @@ SELECT ?p ?o
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://purl.org/dc/terms/modified>)
- FILTER(?o != ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o >= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o >= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= ""^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o != "2020-02-01T02:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2015-07-12T15:40:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2015-07-14T04:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2014-01-01T20:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2016-01-01T20:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER("2020-02-01T02:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> != ?o)
+ FILTER("2015-07-12T15:40:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <= ?o)
+ FILTER("2015-07-14T04:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> >= ?o)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                  p                  |                                 o                                  
+-------------------------------------+--------------------------------------------------------------------
+ <http://purl.org/dc/terms/modified> | "2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (date) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') = '2015-07-12'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') <> '2025-02-02'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') >= '2015-07-12'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') <= '2015-07-13'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') BETWEEN '2014-01-01'::date AND '2016-01-01'::date AND
+  '2015-07-12'::date =  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
+  '2025-02-02'::date <> sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
+  '2015-07-12'::date <= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
+  '2015-07-13'::date >= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date');
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/modified>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) = "2015-07-12"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) != "2025-02-02"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) >= "2015-07-12"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) <= "2015-07-13"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) >= "2014-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) <= "2016-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER("2015-07-12"^^<http://www.w3.org/2001/XMLSchema#date> = STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2025-02-02"^^<http://www.w3.org/2001/XMLSchema#date> != STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2015-07-12"^^<http://www.w3.org/2001/XMLSchema#date> <= STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2015-07-13"^^<http://www.w3.org/2001/XMLSchema#date> >= STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                  p                  |                                 o                                  
+-------------------------------------+--------------------------------------------------------------------
+ <http://purl.org/dc/terms/modified> | "2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+-- /* SPARQL - 17.3 Operator Mapping (time) */
+-- SELECT p, o FROM hbf
+-- WHERE 
+--   p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
+--   sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') = '20:41:25'::time AND
+--   sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') <> '23:00:00'::time AND
+--   sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') >= '20:41:25'::time AND
+--   sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') <= '20:41:25'::time AND
+--   sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') BETWEEN '18:41:25'::time AND '20:41:25'::time;  
+/* SPARQL - 17.3 Operator Mapping (timetz) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') = '20:41:25'::timetz AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') <> '23:00:00'::timetz AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') >= '20:41:25'::timetz AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') <= '20:41:25'::timetz AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') BETWEEN '18:41:25'::timetz AND '20:41:25'::timetz AND
+  '20:41:25'::timetz =  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
+  '23:00:00'::timetz <> sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
+  '20:41:25'::timetz <= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
+  '20:41:25'::timetz >= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time');
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/modified>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) = "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) != "23:00:00-07"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "18:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER("20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time> = STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("23:00:00-07"^^<http://www.w3.org/2001/XMLSchema#time> != STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time> <= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time> >= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
 }
 
 INFO:  SPARQL returned 0 records.
@@ -580,4 +756,31 @@ INFO:  SPARQL returned 0 records.
 ---+---
 (0 rows)
 
-  
+/* SPARQL - 17.3 Operator Mapping (boolean) */
+SELECT p, o FROM hbf
+WHERE 
+  p = '<http://linkedgeodata.org/ontology/wheelchair>'::rdfnode AND
+  o = true AND
+  o <> false AND
+  true = o AND
+  false <> o;
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://linkedgeodata.org/ontology/wheelchair>)
+ FILTER(?o = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER(?o != "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER("true"^^<http://www.w3.org/2001/XMLSchema#boolean> = ?o)
+ FILTER("false"^^<http://www.w3.org/2001/XMLSchema#boolean> != ?o)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                        |                        o                        
+------------------------------------------------+-------------------------------------------------
+ <http://linkedgeodata.org/ontology/wheelchair> | "1"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+

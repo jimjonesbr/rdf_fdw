@@ -2278,6 +2278,34 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE CAST (rdfnode AS boolean)
 WITH FUNCTION rdfnode_to_boolean(rdfnode);
 
+CREATE FUNCTION rdfnode_eq_boolean(rdfnode, boolean)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_eq_boolean'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rdfnode,
+    RIGHTARG = boolean,
+    PROCEDURE = rdfnode_eq_boolean,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel
+);
+
+CREATE FUNCTION rdfnode_neq_boolean(rdfnode, boolean)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_neq_boolean'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = rdfnode,
+    RIGHTARG = boolean,
+    PROCEDURE = rdfnode_neq_boolean,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel
+);
+
 CREATE FUNCTION boolean_to_rdfnode(boolean)
 RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'boolean_to_rdfnode'
@@ -2286,7 +2314,36 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE CAST (boolean AS rdfnode)
 WITH FUNCTION boolean_to_rdfnode(boolean);
 
--- boolean
+CREATE FUNCTION boolean_eq_rdfnode(boolean, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'boolean_eq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = boolean,
+    RIGHTARG = rdfnode,
+    PROCEDURE = boolean_eq_rdfnode,
+    COMMUTATOR = '=',
+    NEGATOR = '<>',
+    RESTRICT = eqsel
+);
+
+CREATE FUNCTION boolean_neq_rdfnode(boolean, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'boolean_neq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+    LEFTARG = boolean,
+    RIGHTARG = rdfnode,
+    PROCEDURE = boolean_neq_rdfnode,
+    COMMUTATOR = '<>',
+    NEGATOR = '=',
+    RESTRICT = neqsel
+);
+
+
+
 CREATE FUNCTION rdfnode_to_interval(rdfnode)
 RETURNS interval
 AS 'MODULE_PATHNAME', 'rdfnode_to_interval'
