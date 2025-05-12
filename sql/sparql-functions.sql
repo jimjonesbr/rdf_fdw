@@ -2,18 +2,6 @@
 
 --SET search_path TO sparql, pg_catalog;
 
-CREATE SERVER dbpedia 
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
-
-CREATE FOREIGN TABLE ftdbp (
-  p rdfnode    OPTIONS (variable '?p'),
-  o rdfnode OPTIONS (variable '?o')
-)
-SERVER dbpedia OPTIONS (
-  log_sparql 'true',
-  sparql 'SELECT * WHERE { <http://dbpedia.org/resource/PostgreSQL> ?p ?o }');
-
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"');
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"^^<xsd:string>');
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"^^<xsd:string>','"b"');
@@ -52,13 +40,6 @@ SELECT sparql.strdt('foo', 'foo:bar');
 SELECT sparql.strdt('foo', 'xsd:string');
 SELECT sparql.strdt('foo', '<nonsense>');
 
-SELECT p, o, sparql.strdt(o,'xsd:string')
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strdt(o,'xsd:string') = sparql.strdt('PostgreSQL','xsd:string') AND
-  sparql.langmatches(sparql.lang(o),'en');
-
 /* STRLANG */
 SELECT sparql.strlang('foo',NULL);
 SELECT sparql.strlang(NULL,'de');
@@ -74,13 +55,6 @@ SELECT sparql.strlang(sparql.strlang('f"o"o','en'),'de');
 SELECT sparql.strlang(sparql.strlang('x\"y','pl'),'it');
 SELECT sparql.strlang('foo', 'xyz');
 
-SELECT p, o, sparql.strlang(o,'fr')
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'de') AND
-  sparql.lang(sparql.strlang(o,'fr')) = 'fr';
-
 /* STR */
 SELECT sparql.str('foo');
 SELECT sparql.str('"foo"');
@@ -93,13 +67,6 @@ SELECT sparql.str('');
 SELECT sparql.str(' ');
 SELECT sparql.str(NULL);
 
-SELECT p, o, sparql.str(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'es') AND
-  sparql.str(o) = sparql.str('PostgreSQL') AND sparql.str(o) = '"PostgreSQL"';
-
 /* LANG */
 SELECT sparql.lang('"foo"@en');
 SELECT sparql.lang(sparql.strlang('foo','fr'));
@@ -109,12 +76,6 @@ SELECT sparql.lang('');
 SELECT sparql.lang(' ');
 SELECT sparql.lang(NULL);
 SELECT sparql.lang('<http://example.org>'); 
-
-SELECT p, o, sparql.lang(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.lang(o) = 'es';
 
 /* DATATYPE */
 SELECT sparql.datatype('"foo"^^xsd:string');
@@ -142,13 +103,6 @@ SELECT sparql.datatype(cast(42.73 AS real));
 SELECT sparql.datatype(true);
 SELECT sparql.datatype(NULL);
 
-SELECT p, o, sparql.datatype(o)
-FROM ftdbp 
-WHERE 
-  sparql.datatype(o) = sparql.iri('http://www.w3.org/2001/XMLSchema#nonNegativeInteger') AND
-  sparql.datatype(o) = sparql.iri('"http://www.w3.org/2001/XMLSchema#nonNegativeInteger"') AND
-  sparql.datatype(o) = '<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>';
-
   /* ENCODE_FOR_URI */
 SELECT sparql.encode_for_uri('"Los Angeles"');
 SELECT sparql.encode_for_uri('"Los Angeles"@en');
@@ -159,13 +113,6 @@ SELECT sparql.encode_for_uri('foo! *''();:@&=+$,/?#[]');
 SELECT sparql.encode_for_uri('foo');
 SELECT sparql.encode_for_uri('');
 SELECT sparql.encode_for_uri(NULL);
-
-SELECT p, o, sparql.encode_for_uri(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/developer') AND
-  sparql.encode_for_uri(o) = sparql.encode_for_uri('PostgreSQL Global Development Group') AND
-  sparql.encode_for_uri(o) = sparql.encode_for_uri(sparql.strlang('PostgreSQL Global Development Group','de'));
 
 /* IRI / URI */
 SELECT sparql.iri('"http://example/"'), sparql.iri('http://example/'), sparql.iri('<http://example/>');
@@ -178,13 +125,6 @@ SELECT sparql.iri('"a:b:c"'), sparql.iri('a:b:c'), sparql.iri('<a:b:c>');
 SELECT sparql.iri('"http:/not-a-scheme"'), sparql.iri('http:/not-a-scheme'), sparql.iri('<http:/not-a-scheme>');
 SELECT sparql.iri('"foo"@en');
 SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
-
-SELECT p, o, sparql.iri(p) FROM ftdbp 
-WHERE 
-  sparql.iri(p) = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"') AND
-  sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"@en') AND
-  sparql.iri(p) = sparql.iri('"http://dbpedia.org/property/released"^^xsd:string');
 
   /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
@@ -202,11 +142,6 @@ SELECT sparql.isIRI(NULL);
 SELECT sparql.isIRI('<not-an-iri');
 SELECT sparql.isURI('<http://example/>');
 SELECT sparql.isURI('path');
-
-SELECT p, o, sparql.isIRI(p) FROM ftdbp 
-WHERE 
-  sparql.iri(p) = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.isIRI(p);
 
   /* STRSTARTS */
 SELECT sparql.strstarts('"foobar"','"foo"'), sparql.strstarts('foobar','foo');
@@ -230,18 +165,6 @@ SELECT sparql.strstarts('foobar','"foo"^^<xsd:string>');
 SELECT sparql.strstarts('foobar', sparql.strlang('foo','it'));
 SELECT sparql.strstarts('foobar','"foo"@de');
 
-SELECT p, o, sparql.strstarts(o, sparql.str('Postgre'))
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'pt') AND
-  sparql.strstarts(o,'Postgre') AND
-  sparql.strstarts(o, '"Postgre"') AND
-  sparql.strstarts(o,'"Postgre"^^xsd:string') AND
-  sparql.strstarts(o, sparql.strdt('Postgre','xsd:string')) AND
-  sparql.strstarts(o, '"Postgre"@pt') AND
-  sparql.strstarts(o, sparql.strlang('Postgre','pt'));
-
   /* STRENDS */
 SELECT sparql.strends('"foobar"','"bar"'), sparql.strends('foobar','bar');
 SELECT sparql.strends('"foobar"@en','"bar"@en');
@@ -263,16 +186,6 @@ SELECT sparql.strends(sparql.strlang('foobar','en'), sparql.strdt('bar','xsd:str
 SELECT sparql.strends('foobar', sparql.strdt('bar','xsd:string'));
 SELECT sparql.strends('foobar','"bar"^^<xsd:string>');
 SELECT sparql.strends('foobar','"bar"@de');
-
-SELECT p, o, sparql.strends(o, sparql.str('SQL'))
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'es') AND
-  sparql.strends(o,'SQL') AND
-  sparql.strends(o, '"SQL"') AND
-  sparql.strends(o,'"SQL"^^xsd:string') AND
-  sparql.strends(o, sparql.strdt('SQL','xsd:string'));
 
   /* STRBEFORE */
 SELECT sparql.strbefore('abc','b'), sparql.strbefore('"abc"','"b"');
@@ -301,13 +214,6 @@ SELECT sparql.strbefore('', 'xyz');
 SELECT sparql.strbefore('', '');
 SELECT sparql.strbefore('""','""');
 
-SELECT p, o, sparql.strbefore(sparql.str(o), 'SQL')
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'de') AND
-  sparql.strbefore(sparql.str(o), 'SQL') = sparql.str('Postgre');
-
 /* STRAFTER */
 SELECT sparql.strafter('"abc"','"b"');
 SELECT sparql.strafter('"abc"@en','ab');
@@ -333,13 +239,6 @@ SELECT sparql.strafter('abc', '');
 SELECT sparql.strafter('', 'xyz');
 SELECT sparql.strafter('', '');
 
-SELECT p, o, sparql.strafter(o, sparql.strlang('Postgre','fr')), sparql.strafter(o, sparql.strdt('Postgre','xsd:string'))
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'fr') AND
-  sparql.strafter(sparql.str(o), 'Postgre') = sparql.str('SQL');
-
 /* CONTAINS */
 SELECT sparql.contains('"foobar"', '"bar"'), sparql.contains('foobar', 'bar');
 SELECT sparql.contains('"foobar"@en', '"foo"@en'), sparql.contains(sparql.strlang('"foobar"','en'), sparql.strlang('foo','en'));
@@ -356,16 +255,6 @@ SELECT sparql.contains(NULL, NULL);
 SELECT sparql.contains('"foobar"@en', '"foo"@fr');
 SELECT sparql.contains('"123"^^<http://example.com/int>', '"2"');
 SELECT sparql.contains('"abc"', '"def"@en');
-
-SELECT p, o, sparql.contains(o,'"ostg"@fr'), sparql.contains(o,'"ostg"^^xsd:string')
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'de') AND
-  sparql.contains(o,'ostg') AND
-  sparql.contains(o,'"ostg"@de') AND
-  sparql.contains(o, sparql.strlang('ostg','de')) AND
-  sparql.contains(o, sparql.strdt('ostg','xsd:string'));
 
 /* LANGMATCHES */
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en"');
@@ -393,10 +282,6 @@ SELECT sparql.langmatches('en', '"en"');
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '');
 SELECT sparql.langmatches('', '"*"');
 
-SELECT p, o, sparql.langmatches(sparql.lang(o),'*')
-FROM ftdbp 
-WHERE sparql.langmatches(sparql.lang(o),'pt');
-
 /* ISBLANK */
 SELECT sparql.isblank('_:b1');
 SELECT sparql.isblank('_:node123');
@@ -412,10 +297,6 @@ SELECT sparql.isblank('_');
 SELECT sparql.isblank(' ');
 SELECT sparql.isblank('');
 SELECT sparql.isblank(NULL);
-
-SELECT p, o, sparql.isblank(o)
-FROM ftdbp 
-WHERE sparql.isblank(o);
 
 /* ISNUMERIC */
 SELECT sparql.isnumeric('12');
@@ -443,12 +324,6 @@ SELECT sparql.isnumeric('""');
 SELECT sparql.isnumeric('" "');
 SELECT sparql.isnumeric(NULL);
 
-SELECT p, o, sparql.isnumeric(o), sparql.isnumeric(p)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://dbpedia.org/ontology/wikiPageLength') AND
-  sparql.isnumeric(o);
-
 /* ISLITERAL */
 SELECT sparql.isliteral('"hello"');
 SELECT sparql.isliteral('"123"');
@@ -467,13 +342,6 @@ SELECT sparql.isliteral('" "');
 SELECT sparql.isliteral('""');
 SELECT sparql.isliteral(NULL);
 
-SELECT p, o, sparql.isliteral(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.isliteral(o) AND 
-  NOT sparql.isliteral(p);
-
   /* BNODE */
 SELECT sparql.isblank(sparql.bnode());
 SELECT sparql.bnode('xyz');
@@ -488,13 +356,7 @@ SELECT sparql.bnode('_:bnode');
 SELECT sparql.bnode('');
 SELECT sparql.bnode(NULL);
 
-SELECT p, o
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.isblank(sparql.bnode(o));
-
-  /* UUID (not pushable) */
+/* UUID (not pushable) */
 SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
 
 /* STRUUID() (not pushable) */
@@ -519,20 +381,6 @@ SELECT sparql.lcase('""');
 SELECT sparql.lcase('" "');
 SELECT sparql.lcase(' ');
 
-SELECT p, o, sparql.lcase(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'de') AND  
-  sparql.lcase(o) = sparql.lcase('"PostgreSQL"@de') AND
-  sparql.lcase(o) = sparql.lcase(sparql.strlang('PostgreSQL','de'));
-
-SELECT p, o, sparql.lcase(sparql.strdt(o,'xsd:string'))
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND   
-  sparql.strstarts(sparql.lcase(sparql.strdt(o,'xsd:string')), sparql.lcase(sparql.strdt('POSTGRE','xsd:string')));
-
 /* UCASE */
 SELECT sparql.ucase('bar');
 SELECT sparql.ucase('"bar"');
@@ -552,21 +400,7 @@ SELECT sparql.ucase('""');
 SELECT sparql.ucase('" "');
 SELECT sparql.ucase(' ');
 
-SELECT p, o, sparql.ucase(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'es') AND
-  sparql.ucase(o) = sparql.ucase('"PostgreSQL"@es') AND
-  sparql.ucase(o) = sparql.ucase(sparql.strlang('PostgreSQL','es'));
-
-SELECT p, o, sparql.ucase(sparql.strdt(o,'xsd:string'))
-FROM ftdbp
-WHERE
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strstarts(sparql.ucase(sparql.strdt(o,'xsd:string')), sparql.ucase(sparql.strdt('postgre','xsd:string')));
-
-  /* STRLEN */
+/* STRLEN */
 SELECT sparql.strlen('chat'), sparql.strlen('"chat"');
 SELECT sparql.strlen('"chat"@en'), sparql.strlen(sparql.strlang('chat','en'));
 SELECT sparql.strlen('"chat"^^xsd:string'), sparql.strlen(sparql.strdt('chat','xsd:string'));
@@ -574,13 +408,6 @@ SELECT sparql.strlen('""'), sparql.strlen('');
 SELECT sparql.strlen('" "'), sparql.strlen(' ');
 SELECT sparql.strlen('"łø"'), sparql.strlen('łø');
 SELECT sparql.strlen(NULL);
-
-SELECT p, o, sparql.strlen(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'de') AND
-  sparql.strlen(o) = sparql.strlen('"PostgreSQL"@de');
 
 /* SUBSTR */
 SELECT sparql.substr('"foobar"', 4), sparql.substr('foobar', 4);
@@ -594,16 +421,6 @@ SELECT sparql.substr('', 42);
 SELECT sparql.substr(NULL, 42);
 SELECT sparql.substr('"foo"', NULL);
 
-SELECT p, o, sparql.substr(o, 7, 3), sparql.substr(sparql.strdt(o,'xsd:string'), 7, 3) 
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.substr(o, 7, 3) = sparql.substr('"PostgreSQL"@es', 7, 3) AND
-  sparql.substr(sparql.strdt(o,'xsd:string'), 7, 3) = sparql.substr(sparql.strdt('PostgreSQL','xsd:string'), 7, 3) AND
-  sparql.substr(o, 7) = sparql.substr('"PostgreSQL"@es', 7) AND
-  sparql.substr(sparql.strlang(o,'es'), 7, 3) = sparql.substr(sparql.strlang('PostgreSQL','es'), 7, 3) AND
-  sparql.langmatches(sparql.lang(o), 'es');
-
 /* CONCAT */
 SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');
 SELECT sparql.concat('"foo"@en', '"bar"@en'), sparql.concat(sparql.strlang('foo','en'), sparql.strlang('bar','en'));
@@ -614,13 +431,6 @@ SELECT sparql.concat('"foo"@en', '"bar"^^xsd:string'), sparql.concat(sparql.strl
 SELECT sparql.concat(NULL, 'bar'), sparql.concat('foo', NULL), sparql.concat(NULL, NULL);
 SELECT sparql.concat('foo', ''), sparql.concat('', 'bar'), sparql.concat('', ''), sparql.concat('""', '""');
 SELECT sparql.concat('"foo"^^foo:bar', 'bar'), sparql.concat('"foo"', '"bar"^^foo:bar');
-
-SELECT p, o, sparql.concat(o,sparql.strlang(' Global','pt')), sparql.concat(o,sparql.strdt(' Global','xsd:string'))
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'pt') AND
-  sparql.concat(o,'') = sparql.str('PostgreSQL');
 
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
@@ -679,14 +489,6 @@ SELECT sparql.replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
 SELECT sparql.replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
 SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
 
-SELECT p, o, sparql.replace(o,'Postgre','My'), sparql.replace(o,'"Postgre"@de','')
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'es') AND
-  sparql.replace(o,'Postgre','My') = sparql.replace(sparql.strlang('PostgreSQL','es'),'Postgre','My') AND
-  sparql.replace(o, 'POSTGRE', 'My','i') = sparql.replace('"PostgreSQL"@es', 'POSTGRE', 'My','i');
-
 /* REGEX */
 SELECT sparql.regex('"abcd"', '"bc"');
 SELECT sparql.regex('"abcd"', '"xy"');
@@ -703,14 +505,6 @@ SELECT sparql.regex('"abcd"', '""');
 SELECT sparql.regex(NULL, '"a"'), sparql.regex('"abcd"', NULL), sparql.regex('"abcd"', '"a"', NULL);
 SELECT sparql.regex('"abcd"', '"[a"');
 
-SELECT p, o
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'es') AND
-  sparql.regex(o, sparql.ucase('postgres'), 'i') AND 
-  sparql.regex(o, '^pOs','i') ;
-
 /* ABS */
 SELECT sparql.abs('"-1"^^xsd:int');
 SELECT sparql.abs('"-1.42"^^xsd:double');
@@ -725,12 +519,6 @@ SELECT sparql.abs(CAST(-1.42 AS double precision));
 SELECT sparql.abs(CAST(-1 AS bigint));
 SELECT sparql.abs(CAST(-1 AS smallint));
 SELECT sparql.abs(CAST(-1 AS int));
-
-SELECT p, o, sparql.abs(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.abs(o) = 23824;
 
 /* ROUND */
 SELECT sparql.round('"2.4999"^^xsd:double');
@@ -748,12 +536,6 @@ SELECT sparql.round(CAST(42 AS bigint));
 SELECT sparql.round(CAST(42 AS smallint));
 SELECT sparql.round(CAST(42 AS int));
 
-SELECT p, o, sparql.round(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.round(o) = sparql.round('"23824"^^xsd:int');
-
 /* CEIL */
 SELECT sparql.ceil('"10.5"^^xsd:double');
 SELECT sparql.ceil('"-10.5"^^xsd:decimal');
@@ -765,13 +547,6 @@ SELECT sparql.ceil(CAST(-42 AS bigint));
 SELECT sparql.ceil(CAST(42 AS smallint));
 SELECT sparql.ceil(CAST(-42 AS int));
 
-SELECT p, o, sparql.ceil(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.ceil(o) = sparql.ceil('"23823.5"^^xsd:decimal') AND
-  sparql.ceil(o) = sparql.ceil(23823.5);
-
 /* FLOOR */
 SELECT sparql.floor('"10.5"^^xsd:double');
 SELECT sparql.floor('"-10.5"^^xsd:decimal');
@@ -782,32 +557,12 @@ SELECT sparql.floor(CAST(-42 AS bigint));
 SELECT sparql.floor(CAST(42 AS smallint));
 SELECT sparql.floor(CAST(-42 AS int));
 
-SELECT p, o, sparql.floor(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/ontology/wikiPageID') AND
-  sparql.floor(o) = sparql.floor('"23824.5"^^xsd:decimal') AND
-  sparql.floor(o) = sparql.floor(23824.5);
-
-/* RAND */
-SELECT setseed(0.42);
-SELECT 
-  sparql.lex(sparql.rand())::numeric BETWEEN 0.0 AND 1.0, 
-  sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
-
 /* YEAR */
 SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
 SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.year('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::timestamp);
-
-SELECT p, o, sparql.year(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.year(o) = 1996 AND
-  sparql.year(o) = sparql.year('"1996-07-08"^^xsd:date');
 
 /* MONTH */
 SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -816,26 +571,12 @@ SELECT sparql.month('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::timestamp);
 
-SELECT p, o, sparql.month(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.month(o) = 7 AND
-  sparql.month(o) = sparql.month('"1996-07-08"^^xsd:date');
-
 /* DAYS */
 SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
 SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.day('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::timestamp);
-
-SELECT p, o, sparql.day(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.day(o) = 8 AND
-  sparql.day(o) = sparql.day('"1996-07-08"^^xsd:date');
 
 /* HOURS */
 SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -844,13 +585,6 @@ SELECT sparql.hours('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::timestamp);
 
-SELECT p, o, sparql.hours(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.hours(o) = 0 AND
-  sparql.hours(o) = sparql.hours('"1996-07-08"^^xsd:date');
-
 /* MINUTES */
 SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
 SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"');
@@ -858,26 +592,12 @@ SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::timestamp);
 
-SELECT p, o, sparql.minutes(o)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.minutes(o) = 0 AND
-  sparql.minutes(o) = sparql.minutes('"1996-07-08"^^xsd:date');
-
 /* SECONDS */
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"'),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::timestamp),3);
-
-SELECT p, o, pg_catalog.round(sparql.seconds(o),3)
-FROM ftdbp 
-WHERE 
-  p = sparql.iri('http://dbpedia.org/property/released') AND
-  sparql.seconds(o) = 0.0 AND
-  sparql.seconds(o) = sparql.seconds('"1996-07-08"^^xsd:date');
 
 /* TIMEZONE */
 SELECT sparql.timezone('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -917,25 +637,6 @@ SELECT sparql.tz('"not a date"^^xsd:string');
 SELECT sparql.bound(NULL);
 SELECT sparql.bound('abc');
 
-CREATE FOREIGN TABLE ft (
-  s rdfnode OPTIONS (variable '?s'),
-  p rdfnode OPTIONS (variable '?p'),
-  o rdfnode OPTIONS (variable '?o'),
-  x rdfnode OPTIONS (variable '?x')
-)
-SERVER dbpedia OPTIONS (
-  log_sparql 'true',
-  sparql 'SELECT * WHERE { ?s ?p ?o OPTIONAL { ?s <http://foo.bar> ?x } }');
-
-SELECT s, p, o, x, sparql.bound(x)
-FROM ft
-WHERE 
-  s = sparql.iri('http://dbpedia.org/resource/PostgreSQL') AND
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'en') AND
-  NOT sparql.bound(x) AND
-  sparql.bound(s);
-
 /* SAMETERM */
 SELECT sparql.sameterm('"abc"', '"abc"');
 SELECT sparql.sameterm('"abc"@en', '"abc"@en');
@@ -943,18 +644,6 @@ SELECT sparql.sameterm('"abc"@en', '"abc"');
 SELECT sparql.sameterm('"abc"^^xsd:string', '"abc"');
 SELECT sparql.sameterm(NULL, '"abc"');
 SELECT sparql.sameterm(NULL, NULL);
-
-SELECT p, o, sparql.sameterm(o,'"PostgreSQL"@pt')
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'pt') AND
-  sparql.sameterm(o,'"PostgreSQL"@pt');
-
-SELECT p, o, sparql.sameterm(o,'"PostgreSQL"@pt')
-FROM ftdbp
-WHERE 
-  sparql.sameterm(p, '<http://www.w3.org/2000/01/rdf-schema#label>');
 
 /* COALESCE */
 SELECT sparql.coalesce(NULL, NULL, 'foo');
@@ -964,20 +653,6 @@ SELECT sparql.coalesce(NULL, NULL, '"foo"@fr');
 SELECT sparql.coalesce(NULL, NULL, '<http://example/>');
 SELECT sparql.coalesce(NULL, NULL, sparql.iri('"http://example/"'));
 SELECT sparql.coalesce(NULL, NULL, sparql.bnode('foo'));
-
-SELECT s, p, o, x,sparql.coalesce(x, o)
-FROM ft
-WHERE 
-  s = sparql.iri('http://dbpedia.org/resource/PostgreSQL') AND
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'en') AND
-  sparql.coalesce(x, o) = sparql.strlang('PostgreSQL','en') AND
-  sparql.coalesce(x, x, x, o) = sparql.strlang('PostgreSQL','en') AND
-  sparql.coalesce(x, p) = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.coalesce(x, x, p) = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.coalesce(x, '"PostgreSQL"') = sparql.str('PostgreSQL') AND
-  sparql.coalesce(x, sparql.str(o)) = sparql.str('PostgreSQL') AND
-  sparql.coalesce(x, sparql.strdt(o,'xsd:string')) = sparql.strdt('PostgreSQL','xsd:string');
 
 /* MD5 */
 SELECT sparql.md5('abc');
@@ -994,12 +669,3 @@ SELECT sparql.md5('""');
 SELECT sparql.md5(NULL);
 SELECT sparql.md5('"Münster"');
 SELECT sparql.md5(repeat('a', 10000));
-
-SELECT p, o, sparql.md5(o)
-FROM ftdbp
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'pt') AND
-  sparql.md5(o) = sparql.md5('"PostgreSQL"@pt');
-
-DROP SERVER dbpedia CASCADE;

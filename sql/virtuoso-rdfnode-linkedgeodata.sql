@@ -1,7 +1,3 @@
-
-DROP EXTENSION IF EXISTS rdf_fdw CASCADE;
-CREATE EXTENSION rdf_fdw;
-
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
@@ -667,3 +663,5 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.md5(o) = sparql.md5('"Leipzig Hbf"');
+
+DROP SERVER linkedgeodata CASCADE;

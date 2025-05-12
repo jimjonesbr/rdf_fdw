@@ -32,8 +32,9 @@ REGRESS = create_extension \
 			rdfnode_le \
 			rdfnode_ge \
 			pg_datatypes \
-			functions \
-			virtuoso-linkedgeodata \
+			sparql-functions \
+			virtuoso-pgtypes-linkedgeodata \
+			virtuoso-rdfnode-linkedgeodata \
 			describe \
 			graphdb-getty \
 			blazegraph-wikidata

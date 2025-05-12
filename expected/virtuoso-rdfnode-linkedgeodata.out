@@ -1,5 +1,3 @@
-DROP EXTENSION IF EXISTS rdf_fdw CASCADE;
-CREATE EXTENSION rdf_fdw;
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
@@ -1986,3 +1984,7 @@ INFO:  SPARQL returned 1 record.
  <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf" | "0e47f45fa9649af5c788570aa96ca213"
 (1 row)
 
+DROP SERVER linkedgeodata CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table hbf
+drop cascades to foreign table hbf2

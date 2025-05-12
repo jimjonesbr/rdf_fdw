@@ -210,6 +210,7 @@
 #define RDF_SPARQL_KEYWORD_HAVING "HAVING"
 #define RDF_SPARQL_KEYWORD_LIMIT "LIMIT"
 #define RDF_SPARQL_KEYWORD_UNION "UNION"
+#define RDF_SPARQL_KEYWORD_MINUS "MINUS"
 
 #define RDF_SPARQL_AGGREGATE_FUNCTION_COUNT "COUNT"
 #define RDF_SPARQL_AGGREGATE_FUNCTION_AVG "AVG"
@@ -6577,6 +6578,7 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 	result = LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_GROUPBY, " \n\t?", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_ORDERBY, " \n\t?DA", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_LIMIT, " \n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_MINUS, " \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_UNION, " \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t", RDF_SPARQL_KEYWORD_HAVING, " \n\t(", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 keyword_count == 1;
@@ -7522,19 +7524,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						appendStringInfo(&right_filter_arg, "%s", right);
 					else
 					{
-						// elog(WARNING, "%%%%%%%%%%%%%%%%%%");
-
-						// if (rightargtype == TIMESTAMPTZOID)
-						// {
-						// 	elog(WARNING, "!!!!!!!!!!!!!!!!!!!!!!");
-						// 	Datum d = DirectFunctionCall1(timestamptz_to_rdfnode, datum);
-						// 	elog(WARNING,"##### %s", DatumGetCString(d));
-						// }
-						//elog(WARNING, "@@@@@@@@@@@@@@: %s^^<%s%s>", RDF_XSD_BASE_URI, MapSPARQLDatatype(rightargtype));
 						char *xsd_type = MapSPARQLDatatype(rightargtype);
 						char *literal = cstring_to_rdfnode(right);
 
-						if (xsd_type && isPlainLiteral(literal))
+						if (xsd_type && isPlainLiteral(literal) && leftargtype == RDFNODEOID)
 							appendStringInfo(&right_filter_arg, "%s^^<%s%s>",
 								literal,
 								RDF_XSD_BASE_URI,
