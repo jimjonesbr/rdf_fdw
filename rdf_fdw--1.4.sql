@@ -2721,13 +2721,13 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.strlen(rdfnode) IS 'Returns the length of the literal text.';
 
 CREATE FUNCTION sparql.substr(rdfnode, int, int)
-RETURNS text
+RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_substr'
 LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.substr(rdfnode, int, int) IS 'Extracts a substring from the input literal with start and length.';
 
 CREATE FUNCTION sparql.substr(rdfnode, int)
-RETURNS text
+RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_substr'
 LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.substr(rdfnode, int) IS 'Extracts a substring from the input literal starting at the given position.';

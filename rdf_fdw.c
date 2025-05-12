@@ -7808,7 +7808,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 					if (IsStringDataType(leftargtype))
 					{
-						if (col && col->language)
+						if (col && col->pgtype == RDFNODEOID)
+							appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", c);
+						else if (col && col->language)
 							appendStringInfo(&result, "%s%s",
 											 first_arg ? "" : ", ", strlang(c, col->language));
 						else if (col && col->literaltype)

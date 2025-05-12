@@ -2845,11 +2845,11 @@ SELECT ?p ?o
 { <http://dbpedia.org/resource/PostgreSQL> ?p ?o 
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LANGMATCHES(LANG(?o), "es"))
  FILTER(SUBSTR(?o, 7, 3) = "eSQ"@es)
- FILTER(SUBSTR(STRLANG(?o, "es"), 7, 3) = "eSQ"@es)
  FILTER(SUBSTR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#string>), 7, 3) = "eSQ"^^<http://www.w3.org/2001/XMLSchema#string>)
  FILTER(SUBSTR(?o, 7) = "eSQL"@es)
+ FILTER(SUBSTR(STRLANG(?o, "es"), 7, 3) = "eSQ"@es)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
 }
 
 INFO:  SPARQL returned 1 record.
