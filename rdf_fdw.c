@@ -38,13 +38,13 @@
 #include "foreign/fdwapi.h"
 #include "foreign/foreign.h"
 #include "libpq/pqsignal.h"
-//#include "mb/pg_wchar.h"
+// #include "mb/pg_wchar.h"
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
 #include "nodes/pg_list.h"
 #if PG_VERSION_NUM < 180000
-#include "nodes/bitmapset.h"  // Needed for bms_is_empty in versions where it's inline
+#include "nodes/bitmapset.h" // Needed for bms_is_empty in versions where it's inline
 #endif
 #include "optimizer/cost.h"
 #include "optimizer/pathnode.h"
@@ -99,10 +99,10 @@
 #include <regex.h>
 #include "parser/parse_type.h"
 
-#define REL_ALIAS_PREFIX    "r"
+#define REL_ALIAS_PREFIX "r"
 /* Handy macro to add relation name qualification */
-#define ADD_REL_QUALIFIER(buf, varno)   \
-		appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
+#define ADD_REL_QUALIFIER(buf, varno) \
+	appendStringInfo((buf), "%s%d.", REL_ALIAS_PREFIX, (varno))
 
 /* Doesn't exist prior PostgreSQL 11 */
 #ifndef ALLOCSET_SMALL_SIZES
@@ -113,7 +113,7 @@
 #if PG_VERSION_NUM >= 90500
 /* array_create_iterator has a new signature from 9.5 on */
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
-#endif  /* PG_VERSION_NUM */
+#endif /* PG_VERSION_NUM */
 
 #define FDW_VERSION "1.4.0-dev"
 #define REQUEST_SUCCESS 0
@@ -193,7 +193,7 @@
 #define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
 #define RDF_COLUMN_OPTION_LANGUAGE "language"
 #define RDF_COLUMN_OPTION_LITERAL_TYPE "literal_type"
-//#define RDF_COLUMN_OPTION_LITERAL_FORMAT "literal_format"
+// #define RDF_COLUMN_OPTION_LITERAL_FORMAT "literal_format"
 
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_RAW "raw"
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT "content"
@@ -227,11 +227,7 @@
  * This macro is used by DeparseExpr to identify PostgreSQL
  * types that can be translated to SPARQL
  */
-#define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID \
-			|| (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID \
-			|| (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID \
-			|| (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID \
-			|| (x) == TIMEOID || (x) == TIMETZOID || (x) == RDFNODEOID)
+#define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID || (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID || (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID || (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID || (x) == TIMEOID || (x) == TIMETZOID || (x) == RDFNODEOID)
 
 /* list API has changed in v13 */
 #if PG_VERSION_NUM < 130000
@@ -240,7 +236,7 @@
 #else
 #define list_next(l, e) lnext((l), (e))
 #define do_each_cell(cell, list, element) for_each_cell(cell, (list), (element))
-#endif  /* PG_VERSION_NUM */
+#endif /* PG_VERSION_NUM */
 
 PG_MODULE_MAGIC;
 
@@ -252,51 +248,51 @@ typedef enum RDFfdwQueryType
 
 typedef struct RDFfdwState
 {
-	int numcols;                 /* Total number of columns in the foreign table. */
-	int rowcount;                /* Number of rows currently returned to the client */
-	int pagesize;                /* Total number of records retrieved from the SPARQL endpoint*/
-	char *sparql;                /* Final SPARQL query sent to the endpoint (after pusdhown) */
-	char *user;                  /* User name for HTTP basic authentication */
-	char *password;              /* Password for HTTP basic authentication */
-	char *sparql_prefixes;       /* SPARQL PREFIX entries */
-	char *sparql_select;         /* SPARQL SELECT containing the columns / variables used in the SQL query */
-	char *sparql_from;           /* SPARQL FROM clause entries*/
-	char *sparql_where;          /* SPARQL WHERE clause */
-	char *sparql_filter;         /* SPARQL FILTER clauses based on SQL WHERE conditions */
-	char *sparql_orderby;        /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
-	char *sparql_limit;          /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
-	char *sparql_resultset;      /* Raw string containing the result of a SPARQL query */
-	char *raw_sparql;            /* Raw SPARQL query set in the CREATE TABLE statement */
-	char *endpoint;              /* SPARQL endpoint set in the CREATE SERVER statement*/
-	char *query_param;           /* SPARQL query POST parameter used by the endpoint */
-	char *format;                /* Format in which the RDF triplestore has to reply */
-	char *proxy;                 /* Proxy for HTTP requests, if necessary. */
-	char *proxy_type;            /* Proxy protocol (HTTPS, HTTP). */
-	char *proxy_user;            /* User name for proxy authentication. */
-	char *proxy_user_password;   /* Password for proxy authentication. */
-	char *custom_params;         /* Custom parameters used to compose the request URL */
-	char *base_uri;              /* Base URI for possible relative references */
-	bool request_redirect;       /* Enables or disables URL redirecting. */
-	bool enable_pushdown;        /* Enables or disables pushdown of SQL commands */
-	bool is_sparql_parsable;     /* Marks the query is or not for pushdown*/
-	bool log_sparql;             /* Enables or disables logging SPARQL queries as NOTICE */
-	bool has_unparsable_conds;   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
-	bool keep_raw_literal;       /* Flag to determine if a literal should be serialized with its data type/language or not*/
-	long request_max_redirect;   /* Limit of how many times the URL redirection (jump) may occur. */
-	long connect_timeout;        /* Timeout for SPARQL queries */
-	long max_retries;            /* Number of re-try attemtps for failed SPARQL queries */
-	xmlDocPtr xmldoc;            /* XML document where the result of SPARQL queries will be stored */	
-	Oid foreigntableid;          /* FOREIGN TABLE oid */
-	List *records;               /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
-	struct RDFfdwTable *rdfTable;/* All necessary information of the FOREIGN TABLE used in a SQL statement */
-	Cost startup_cost;           /* startup cost estimate */
-	Cost total_cost;             /* total cost estimate */
-	ForeignServer *server;       /* FOREIGN SERVER to connect to the RDF triplestore */
-	ForeignTable *foreign_table; /* FOREIGN TABLE containing the graph pattern (SPARQL Query) and column / variable mapping */
-	UserMapping *mapping;        /* USER MAPPING to enable http basic authentication for a given postgres user */
-	MemoryContext rdfctxt;       /* Memory Context for data manipulation */
-	CURL *curl;                  /* CURL request handler */
-	RDFfdwQueryType sparql_query_type;  /* SPARQL Query type: SELECT, DESCRIBE */
+	int numcols;					   /* Total number of columns in the foreign table. */
+	int rowcount;					   /* Number of rows currently returned to the client */
+	int pagesize;					   /* Total number of records retrieved from the SPARQL endpoint*/
+	char *sparql;					   /* Final SPARQL query sent to the endpoint (after pusdhown) */
+	char *user;						   /* User name for HTTP basic authentication */
+	char *password;					   /* Password for HTTP basic authentication */
+	char *sparql_prefixes;			   /* SPARQL PREFIX entries */
+	char *sparql_select;			   /* SPARQL SELECT containing the columns / variables used in the SQL query */
+	char *sparql_from;				   /* SPARQL FROM clause entries*/
+	char *sparql_where;				   /* SPARQL WHERE clause */
+	char *sparql_filter;			   /* SPARQL FILTER clauses based on SQL WHERE conditions */
+	char *sparql_orderby;			   /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
+	char *sparql_limit;				   /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
+	char *sparql_resultset;			   /* Raw string containing the result of a SPARQL query */
+	char *raw_sparql;				   /* Raw SPARQL query set in the CREATE TABLE statement */
+	char *endpoint;					   /* SPARQL endpoint set in the CREATE SERVER statement*/
+	char *query_param;				   /* SPARQL query POST parameter used by the endpoint */
+	char *format;					   /* Format in which the RDF triplestore has to reply */
+	char *proxy;					   /* Proxy for HTTP requests, if necessary. */
+	char *proxy_type;				   /* Proxy protocol (HTTPS, HTTP). */
+	char *proxy_user;				   /* User name for proxy authentication. */
+	char *proxy_user_password;		   /* Password for proxy authentication. */
+	char *custom_params;			   /* Custom parameters used to compose the request URL */
+	char *base_uri;					   /* Base URI for possible relative references */
+	bool request_redirect;			   /* Enables or disables URL redirecting. */
+	bool enable_pushdown;			   /* Enables or disables pushdown of SQL commands */
+	bool is_sparql_parsable;		   /* Marks the query is or not for pushdown*/
+	bool log_sparql;				   /* Enables or disables logging SPARQL queries as NOTICE */
+	bool has_unparsable_conds;		   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
+	bool keep_raw_literal;			   /* Flag to determine if a literal should be serialized with its data type/language or not*/
+	long request_max_redirect;		   /* Limit of how many times the URL redirection (jump) may occur. */
+	long connect_timeout;			   /* Timeout for SPARQL queries */
+	long max_retries;				   /* Number of re-try attemtps for failed SPARQL queries */
+	xmlDocPtr xmldoc;				   /* XML document where the result of SPARQL queries will be stored */
+	Oid foreigntableid;				   /* FOREIGN TABLE oid */
+	List *records;					   /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
+	struct RDFfdwTable *rdfTable;	   /* All necessary information of the FOREIGN TABLE used in a SQL statement */
+	Cost startup_cost;				   /* startup cost estimate */
+	Cost total_cost;				   /* total cost estimate */
+	ForeignServer *server;			   /* FOREIGN SERVER to connect to the RDF triplestore */
+	ForeignTable *foreign_table;	   /* FOREIGN TABLE containing the graph pattern (SPARQL Query) and column / variable mapping */
+	UserMapping *mapping;			   /* USER MAPPING to enable http basic authentication for a given postgres user */
+	MemoryContext rdfctxt;			   /* Memory Context for data manipulation */
+	CURL *curl;						   /* CURL request handler */
+	RDFfdwQueryType sparql_query_type; /* SPARQL Query type: SELECT, DESCRIBE */
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;
@@ -306,29 +302,29 @@ typedef struct RDFfdwState
 	char *sort_order;
 	int offset;
 	int fetch_size;
-	int inserted_records;	
+	int inserted_records;
 } RDFfdwState;
 
 typedef struct RDFfdwTable
-{	
-	char *name;                  /* FOREIGN TABLE name */
-	struct RDFfdwColumn **cols;  /* List of columns of a FOREIGN TABLE */
+{
+	char *name;					/* FOREIGN TABLE name */
+	struct RDFfdwColumn **cols; /* List of columns of a FOREIGN TABLE */
 } RDFfdwTable;
 
 typedef struct RDFfdwColumn
-{	
-	char *name;                  /* Column name */
-	char *sparqlvar;             /* Column OPTION 'variable' - SPARQL variable */
-	char *expression;            /* Column OPTION 'expression' - SPARQL expression*/
-	char *literaltype;           /* Column OPTION 'type' - literal data type */
-	char *literal_fomat;         /*  */
-	char *nodetype;              /* Column OPTION 'nodetype' - node data type */
-	char *language;              /* Column OPTION 'language' - RDF language tag for literals */
-	Oid  pgtype;                 /* PostgreSQL data type */
-	int  pgtypmod;               /* PostgreSQL type modifier */
-	int  pgattnum;               /* PostgreSQL attribute number */
-	bool used;                   /* Is the column used in the current SQL query? */
-	bool pushable;               /* Marks a column as safe or not to pushdown */
+{
+	char *name;			 /* Column name */
+	char *sparqlvar;	 /* Column OPTION 'variable' - SPARQL variable */
+	char *expression;	 /* Column OPTION 'expression' - SPARQL expression*/
+	char *literaltype;	 /* Column OPTION 'type' - literal data type */
+	char *literal_fomat; /*  */
+	char *nodetype;		 /* Column OPTION 'nodetype' - node data type */
+	char *language;		 /* Column OPTION 'language' - RDF language tag for literals */
+	Oid pgtype;			 /* PostgreSQL data type */
+	int pgtypmod;		 /* PostgreSQL type modifier */
+	int pgattnum;		 /* PostgreSQL attribute number */
+	bool used;			 /* Is the column used in the current SQL query? */
+	bool pushable;		 /* Marks a column as safe or not to pushdown */
 
 } RDFfdwColumn;
 
@@ -353,42 +349,41 @@ struct RDFfdwOption
 };
 
 static struct RDFfdwOption valid_options[] =
-{
-	/* Foreign Servers */
-	{RDF_SERVER_OPTION_ENDPOINT, ForeignServerRelationId, true, false},
-	{RDF_SERVER_OPTION_FORMAT, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_HTTP_PROXY, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_HTTPS_PROXY, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_CUSTOMPARAM, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_PROXY_USER, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_PROXY_USER_PASSWORD, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_CONNECTTIMEOUT, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_CONNECTRETRY, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_REQUEST_REDIRECT, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_ENABLE_PUSHDOWN, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_QUERY_PARAM, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_FETCH_SIZE, ForeignServerRelationId, false, false},
-	{RDF_SERVER_OPTION_BASE_URI, ForeignServerRelationId, false, false},
-	/* Foreign Tables */
-	{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
-	{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
-	{RDF_TABLE_OPTION_ENABLE_PUSHDOWN, ForeignTableRelationId, false, false},
-	{RDF_TABLE_OPTION_FETCH_SIZE, ForeignTableRelationId, false, false},
-	/* Options for Foreign Table's Columns */
-	{RDF_COLUMN_OPTION_VARIABLE, AttributeRelationId, true, false},
-	{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
-	{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
-	{RDF_COLUMN_OPTION_LITERAL_TYPE, AttributeRelationId, false, false},
-//	{RDF_COLUMN_OPTION_LITERAL_FORMAT, AttributeRelationId, false, false},
-	{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
-	{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
-	/* User Mapping */
-	{RDF_USERMAPPING_OPTION_USER, UserMappingRelationId, false, false},
-	{RDF_USERMAPPING_OPTION_PASSWORD, UserMappingRelationId, false, false},
-	/* EOList option */
-	{NULL, InvalidOid, false, false}
-};
+	{
+		/* Foreign Servers */
+		{RDF_SERVER_OPTION_ENDPOINT, ForeignServerRelationId, true, false},
+		{RDF_SERVER_OPTION_FORMAT, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_HTTP_PROXY, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_HTTPS_PROXY, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_CUSTOMPARAM, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_PROXY_USER, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_PROXY_USER_PASSWORD, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_CONNECTTIMEOUT, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_CONNECTRETRY, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_REQUEST_REDIRECT, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_ENABLE_PUSHDOWN, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_QUERY_PARAM, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_FETCH_SIZE, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_BASE_URI, ForeignServerRelationId, false, false},
+		/* Foreign Tables */
+		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
+		{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
+		{RDF_TABLE_OPTION_ENABLE_PUSHDOWN, ForeignTableRelationId, false, false},
+		{RDF_TABLE_OPTION_FETCH_SIZE, ForeignTableRelationId, false, false},
+		/* Options for Foreign Table's Columns */
+		{RDF_COLUMN_OPTION_VARIABLE, AttributeRelationId, true, false},
+		{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
+		{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
+		{RDF_COLUMN_OPTION_LITERAL_TYPE, AttributeRelationId, false, false},
+		//	{RDF_COLUMN_OPTION_LITERAL_FORMAT, AttributeRelationId, false, false},
+		{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
+		{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
+		/* User Mapping */
+		{RDF_USERMAPPING_OPTION_USER, UserMappingRelationId, false, false},
+		{RDF_USERMAPPING_OPTION_PASSWORD, UserMappingRelationId, false, false},
+		/* EOList option */
+		{NULL, InvalidOid, false, false}};
 
 typedef struct
 {
@@ -408,7 +403,7 @@ static const TypeXSDMap type_map[] = {
 	{DATEOID, "date"},
 	{TIMEOID, "time"},
 	{TEXTOID, "string"},
-	{NAMEOID, "string"},	
+	{NAMEOID, "string"},
 	{TIMESTAMPTZOID, "dateTime"},
 	{InvalidOid, NULL}};
 
@@ -419,21 +414,27 @@ typedef struct RDFfdwTriple
 	char *object;	 /* RDF triple object */
 } RDFfdwTriple;
 
+typedef struct rdfnode
+{
+	int32 vl_len_;						 // required varlena header
+	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
+} rdfnode;
+
 typedef struct
 {
-	char *raw;				/* raw literal (with language and data type, if any) */
-	char *lex;	 			/* literal's lexical value: "foo"^^xsd:string -> foo */
-	char *dtype; 			/* literal's data type, e.g xsd:string, xsd:short */
-	char *lang;	 			/* literal's language tag, e.g. 'en', 'de', 'es' */
-	bool isPlainLiteral;	/* literal has no language or data type*/
-	bool isNumeric;			/* literal has a numeric value, e.g. xsd:int, xsd:float*/
-	bool isString;			/* xsd:string literal */
-	bool isDateTime;		/* xsd:dateTime literal */
-	bool isDate;			/* xsd:date literal*/
-	bool isDuration;		/* xsd:duration */
-	bool isTime;			/* xsd:time */
-	bool isIRI;				/* RDF IRI*/
-} parsed_rdfnode;
+	char *raw;			 /* raw literal (with language and data type, if any) */
+	char *lex;			 /* literal's lexical value: "foo"^^xsd:string -> foo */
+	char *dtype;		 /* literal's data type, e.g xsd:string, xsd:short */
+	char *lang;			 /* literal's language tag, e.g. 'en', 'de', 'es' */
+	bool isPlainLiteral; /* literal has no language or data type*/
+	bool isNumeric;		 /* literal has a numeric value, e.g. xsd:int, xsd:float*/
+	bool isString;		 /* xsd:string literal */
+	bool isDateTime;	 /* xsd:dateTime literal */
+	bool isDate;		 /* xsd:date literal*/
+	bool isDuration;	 /* xsd:duration */
+	bool isTime;		 /* xsd:time */
+	bool isIRI;			 /* RDF IRI*/
+} rdfnode_info;
 
 static Oid RDFNODEOID = InvalidOid;
 
@@ -926,9 +927,9 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags);
 static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node);
 static void rdfReScanForeignScan(ForeignScanState *node);
 static void rdfEndForeignScan(ForeignScanState *node);
-//static TupleTableSlot *rdfExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
-//static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
-//static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+// static TupleTableSlot *rdfExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+// static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+// static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 
 static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value);
 static List *DescribeIRI(RDFfdwState *state);
@@ -940,39 +941,38 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static char *ConstToCString(Const *constant);
-static Const *CStringToConst(const char* str);
+static Const *CStringToConst(const char *str);
 static List *SerializePlanData(RDFfdwState *state);
 static struct RDFfdwState *DeserializePlanData(List *list);
 static int CheckURL(char *url);
-static void InitSession(struct RDFfdwState *state,  RelOptInfo *baserel, PlannerInfo *root);
+static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
 #if PG_VERSION_NUM >= 110000
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
-#endif  /*PG_VERSION_NUM */
+#endif /*PG_VERSION_NUM */
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static bool IsSPARQLParsable(struct RDFfdwState *state);
 static bool IsExpressionPushable(char *expression);
 static bool ContainsWhitespaces(char *str);
-static bool IsSPARQLVariableValid(const char* str);
-//static char *DeparseDate(Datum datum);
-//static char *DeparseTimestamp(Datum datum, Oid typid);
+static bool IsSPARQLVariableValid(const char *str);
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state);
 static char *DatumToString(Datum datum, Oid type);
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
-static char *DeparseSQLOrderBy( struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
+static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
 static char *DeparseSPARQLPrefix(char *raw_sparql);
-static char* CreateRegexString(char* str);
+static char *CreateRegexString(char *str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
 static char *FormatSQLExtractField(char *field);
-static char *cstring_to_rdfnode(char *input);
-static char *rdfnode_to_cstring(char *input);
+static char *cstring_to_rdfliteral(char *input);
+static char *rdfnode_to_cstring(rdfnode *node);
+
 static char *lex(char *input);
 static bool LiteralsCompatible(char *literal1, char *literal2);
 static char *ExpandDatatypePrefix(char *str);
@@ -991,12 +991,11 @@ static bool langmatches(char *lang_tag, char *pattern);
 static bool isLiteral(char *term);
 static char *bnode(char *input);
 static char *generate_uuid_v4(void);
-static char *rdf_concat(char *left, char *right);
-static Oid get_rdfnode_oid(void);
+static char *concat(char *left, char *right);
+static Oid GetRDFNodeOID(void);
 static bool isPlainLiteral(char *litral);
-
-static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2);
-static bool LiteralsComparable(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2);
+static rdfnode_info parse_rdfnode(rdfnode *node);
+static bool LiteralsComparable(rdfnode *n1, rdfnode *n2);
 #if PG_VERSION_NUM < 130000
 static void pg_unicode_to_server(pg_wchar c, unsigned char *utf8);
 #endif
@@ -1012,9 +1011,9 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	fdwroutine->IterateForeignScan = rdfIterateForeignScan;
 	fdwroutine->ReScanForeignScan = rdfReScanForeignScan;
 	fdwroutine->EndForeignScan = rdfEndForeignScan;
-	//fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
-	//fdwroutine->ExecForeignUpdate = rdfExecForeignUpdate;
-	//fdwroutine->ExecForeignDelete = rdfExecForeignDelete;
+	// fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
+	// fdwroutine->ExecForeignUpdate = rdfExecForeignUpdate;
+	// fdwroutine->ExecForeignDelete = rdfExecForeignDelete;
 	PG_RETURN_POINTER(fdwroutine);
 }
 
@@ -1032,8 +1031,8 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 }
 
 /*
- * cstring_to_rdfnode
- * --------------
+ * cstring_to_rdfliteral
+ * ---------------------
  *
  * Converts a raw string input into a valid RDF literal by adding quotes and escaping
  * internal quotes as needed. If the input is already a complete RDF literal (i.e.,
@@ -1044,18 +1043,18 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
  * returns: a string representing the RDF literal (e.g., "\"abc\"", "\"ab\\\"c\"")
  *          or the input as-is if already a complete literal.
  */
-static char *cstring_to_rdfnode(char *input)
+static char *cstring_to_rdfliteral(char *input)
 {
 	StringInfoData buf;
 	const char *start;
 	const char *end;
 	int len;
 
-	elog(DEBUG1,"%s called: input='%s'", __func__, input);
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	if (!input || strlen(input) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning empty literal '\"\"'", __func__);
+		elog(DEBUG1, "%s exit: returning empty literal '\"\"'", __func__);
 		return "\"\""; /* empty input becomes empty literal */
 	}
 
@@ -1076,7 +1075,7 @@ static char *cstring_to_rdfnode(char *input)
 
 			if (tag && tag > start + 1 && *(tag - 1) == '"')
 			{
-				elog(DEBUG1,"%s exit: returning => '%s'", __func__, input);
+				elog(DEBUG1, "%s exit: returning => '%s'", __func__, input);
 				/* complete literal with lang or type, return as-is */
 				return input;
 			}
@@ -1111,107 +1110,125 @@ static char *cstring_to_rdfnode(char *input)
 	/* add closing quote */
 	appendStringInfoChar(&buf, '"');
 
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 	return buf.data;
 }
 
 static char *lex(char *input)
 {
-    StringInfoData output;
-    const char *start = input;
-    int len = strlen(input);
+	StringInfoData output;
+	const char *start = input;
+	int len = strlen(input);
 
-    initStringInfo(&output);
-    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+	initStringInfo(&output);
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
-    if (len == 0)
-        return "";
+	if (len == 0)
+		return "";
 
-    /* Handle quoted literal */
-    if (start[0] == '"') {
-        const char *p;
-        start++;  /* skip opening quote */
+	/* Handle quoted literal */
+	if (start[0] == '"')
+	{
+		const char *p;
+		start++; /* skip opening quote */
 
-        p = start;
-        while (*p) {
-            if (*p == '"' && *(p - 1) != '\\') {
-                break;  /* closing quote found */
-            }
-            if (*p == '\\' && *(p + 1)) {
-                appendStringInfoChar(&output, *p);
-                p++;
-            }
-            appendStringInfoChar(&output, *p);
-            p++;
-        }
+		p = start;
+		while (*p)
+		{
+			if (*p == '"' && *(p - 1) != '\\')
+			{
+				break; /* closing quote found */
+			}
+			if (*p == '\\' && *(p + 1))
+			{
+				appendStringInfoChar(&output, *p);
+				p++;
+			}
+			appendStringInfoChar(&output, *p);
+			p++;
+		}
 
-        /* No closing quote found — malformed, return whole string */
-        if (*p != '"') {
-            resetStringInfo(&output);
-            appendStringInfoString(&output, input);
-            return output.data;
-        }
+		/* No closing quote found — malformed, return whole string */
+		if (*p != '"')
+		{
+			resetStringInfo(&output);
+			appendStringInfoString(&output, input);
+			return output.data;
+		}
 
-        /* Successful: return parsed inside quotes */
-        return output.data;
-    }
+		/* Successful: return parsed inside quotes */
+		return output.data;
+	}
 
-    /* Handle IRI */
-    if (start[0] == '<') {
-        appendStringInfoString(&output, start);
-        return output.data;
-    }
+	/* Handle IRI */
+	if (start[0] == '<')
+	{
+		appendStringInfoString(&output, start);
+		return output.data;
+	}
 
-    /* Unquoted: trim at @ or ^^ only if they indicate language tag or datatype */
-    {
-        const char *at = strchr(start, '@');
-        const char *dt = strstr(start, "^^");
-        const char *cut = NULL;
+	/* Unquoted: trim at @ or ^^ only if they indicate language tag or datatype */
+	{
+		const char *at = strchr(start, '@');
+		const char *dt = strstr(start, "^^");
+		const char *cut = NULL;
 
-        if (at && (!dt || at < dt)) {
-            const char *tag = at + 1;
-            int letter_count = 0;
-            const char *p = NULL;
-            int is_lang_tag = 0;
+		if (at && (!dt || at < dt))
+		{
+			const char *tag = at + 1;
+			int letter_count = 0;
+			const char *p = NULL;
+			int is_lang_tag = 0;
 
-            if (*tag && isalpha(*tag)) {
-                p = tag;
-                while (*p && isalpha(*p) && letter_count < 8) {
-                    letter_count++;
-                    p++;
-                }
+			if (*tag && isalpha(*tag))
+			{
+				p = tag;
+				while (*p && isalpha(*p) && letter_count < 8)
+				{
+					letter_count++;
+					p++;
+				}
 
-                if (letter_count >= 1 && (!*p || *p == '-' || (*p != '.' && *p != '@'))) {
-                    if (*p == '-') {
-                        p++;
-                        while (*p && (isalnum(*p) || *p == '-')) {
-                            p++;
-                        }
-                    }
+				if (letter_count >= 1 && (!*p || *p == '-' || (*p != '.' && *p != '@')))
+				{
+					if (*p == '-')
+					{
+						p++;
+						while (*p && (isalnum(*p) || *p == '-'))
+						{
+							p++;
+						}
+					}
 
-                    if (!*p || (*p != '.' && *p != '@')) {
-                        is_lang_tag = 1;
-                    }
-                }
-            }
+					if (!*p || (*p != '.' && *p != '@'))
+					{
+						is_lang_tag = 1;
+					}
+				}
+			}
 
-            if (is_lang_tag) {
-                cut = at;
-            }
-        } else if (dt) {
-            cut = dt;
-        }
+			if (is_lang_tag)
+			{
+				cut = at;
+			}
+		}
+		else if (dt)
+		{
+			cut = dt;
+		}
 
-        if (cut) {
-            appendBinaryStringInfo(&output, start, cut - start);
-        } else {
-            appendStringInfoString(&output, start);
-        }
-    }
+		if (cut)
+		{
+			appendBinaryStringInfo(&output, start, cut - start);
+		}
+		else
+		{
+			appendStringInfoString(&output, start);
+		}
+	}
 
-    return output.data;
+	return output.data;
 }
-
 
 /*
  * lang
@@ -1261,12 +1278,12 @@ static char *lang(char *input)
 			tag_end++;
 
 		initStringInfo(&buf);
-		appendBinaryStringInfo(&buf, tag_start, tag_end - tag_start);		
-		elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
+		appendBinaryStringInfo(&buf, tag_start, tag_end - tag_start);
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
 		return buf.data;
 	}
 
-	elog(DEBUG1,"%s exit: returning empty string", __func__);
+	elog(DEBUG1, "%s exit: returning empty string", __func__);
 	return "";
 }
 
@@ -1283,11 +1300,11 @@ static char *lang(char *input)
  */
 Datum rdf_fdw_lang(PG_FUNCTION_ARGS)
 {
-    text *input_text = PG_GETARG_TEXT_PP(0);
-    char *literal = text_to_cstring(input_text);
-    char *result = lang(literal);
+	text *input_text = PG_GETARG_TEXT_PP(0);
+	char *literal = text_to_cstring(input_text);
+	char *result = lang(literal);
 
-    PG_RETURN_TEXT_P(cstring_to_text(result));
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -1398,7 +1415,7 @@ static char *ExpandDatatypePrefix(char *str)
 
 		if (stripped_str != str)
 			pfree(stripped_str);
-	
+
 		elog(DEBUG1, "%s exit: returning '%s'", __func__, buf.data);
 
 		return buf.data;
@@ -1440,7 +1457,7 @@ static char *strdt(char *literal, char *datatype)
 	char *lex_datatype = lex(datatype);
 
 	elog(DEBUG1, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
-	
+
 	if (strlen(lex_datatype) == 0)
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						errmsg("datatype IRI cannot be empty")));
@@ -1454,11 +1471,10 @@ static char *strdt(char *literal, char *datatype)
 	if (isIRI(datatype))
 		appendStringInfo(&buf, "%s^^%s", str(literal), datatype);
 	else
-	{		
+	{
 		char *expanded_datatype;
-		
 
-		elog(DEBUG2, "%s: data type not an IRI", __func__);		
+		elog(DEBUG2, "%s: data type not an IRI", __func__);
 
 		expanded_datatype = ExpandDatatypePrefix(lex_datatype);
 		appendStringInfo(&buf, "%s^^%s", str(literal), iri(expanded_datatype));
@@ -1514,29 +1530,24 @@ static char *str(char *input)
 
 	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
-	if (!input || strlen(input) == 0)
+	if (!input || input[0] == '\0')
 	{
-		elog(DEBUG1,"%s exit: returning empty literal", __func__);
-		return cstring_to_rdfnode(""); /* empty input returns empty string */
+		elog(DEBUG1, "%s exit: returning empty literal", __func__);
+		return "\"\"";
 	}
 
-	/* Check if input looks like an IRI (starts with <, ends with >) */
-	if (input[0] == '<' && input[strlen(input) - 1] == '>' && strlen(input) > 2)
+	if (isIRI(input))
 	{
+		size_t len = strlen(input);
 		initStringInfo(&buf);
-		appendStringInfoString(&buf, input + 1); /* Skip opening < */
-		buf.len--;								 /* Remove closing > */
-		buf.data[buf.len] = '\0';				 /* Null-terminate */
+		appendStringInfo(&buf, "\"%.*s\"", (int)(len - 2), input + 1); // skip '<' and trim '>'
 
-		elog(DEBUG1,"%s exit: returning => '%s'", __func__, buf.data);
-
-		return cstring_to_rdfnode(buf.data);
+		elog(DEBUG1, "%s exit: returning IRI '%s'", __func__, buf.data);
+		return buf.data;
 	}
 
-	result = cstring_to_rdfnode(lex(input));
-
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
-
+	result = cstring_to_rdfliteral(lex(input));
+	elog(DEBUG1, "%s exit: returning literal '%s'", __func__, result);
 	return result;
 }
 
@@ -1554,11 +1565,11 @@ static char *str(char *input)
  */
 Datum rdf_fdw_str(PG_FUNCTION_ARGS)
 {
-    text *input_text = PG_GETARG_TEXT_PP(0);
-    char *input_cstr = text_to_cstring(input_text);
-    char *result = str(input_cstr);
-       
-    PG_RETURN_TEXT_P(cstring_to_text(result));
+	text *input_text = PG_GETARG_TEXT_PP(0);
+	char *input_cstr = text_to_cstring(input_text);
+	char *result = str(input_cstr);
+
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -1583,7 +1594,7 @@ static char *iri(char *input)
 
 	initStringInfo(&buf);
 
-	lexical = lex(input);  // Extract the lexical form
+	lexical = lex(input); // Extract the lexical form
 	appendStringInfo(&buf, "<%s>", lexical);
 
 	elog(DEBUG1, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
@@ -1599,11 +1610,11 @@ static char *iri(char *input)
  */
 Datum rdf_fdw_iri(PG_FUNCTION_ARGS)
 {
-    text *input_text = PG_GETARG_TEXT_PP(0);
-    char *input_cstr = text_to_cstring(input_text);
-    char *result = iri(input_cstr);
+	text *input_text = PG_GETARG_TEXT_PP(0);
+	char *input_cstr = text_to_cstring(input_text);
+	char *result = iri(input_cstr);
 
-    PG_RETURN_TEXT_P(cstring_to_text(result));
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -1615,7 +1626,7 @@ Datum rdf_fdw_iri(PG_FUNCTION_ARGS)
  * - May be absolute (with a colon) or relative (e.g., <foo>)
  *   according to SPARQL 1.1.
  */
-static bool isIRI( char *input)
+static bool isIRI(char *input)
 {
 	size_t len;
 	size_t i;
@@ -1685,8 +1696,7 @@ static char *datatype(char *input)
 		return "";
 	}
 
-	ptr = cstring_to_rdfnode(input);
-	//ptr = str(input);
+	ptr = cstring_to_rdfliteral(input);
 	len = strlen(ptr);
 
 	initStringInfo(&buf);
@@ -1780,12 +1790,12 @@ static char *MapSPARQLDatatype(Oid pgtype)
 	{
 		if (pgtype == type_map[i].type_oid)
 		{
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, (char *)type_map[i].xsd_datatype);
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, (char *)type_map[i].xsd_datatype);
 			return (char *)type_map[i].xsd_datatype;
 		}
 	}
 
-	elog(DEBUG1,"%s exit: returning NULL (unsupported type)", __func__);
+	elog(DEBUG1, "%s exit: returning NULL (unsupported type)", __func__);
 	return NULL; // Unsupported type
 }
 
@@ -1804,8 +1814,8 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 {
 	Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
 
-	RDFNODEOID = get_rdfnode_oid();
-	
+	RDFNODEOID = GetRDFNodeOID();
+
 	if (argtype == TEXTOID || argtype == VARCHAROID || argtype == RDFNODEOID)
 	{
 		char *arg = text_to_cstring(PG_GETARG_TEXT_PP(0));
@@ -1840,19 +1850,16 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 	}
 }
 
-static char *rdfnode_to_cstring(char *input)
+static char *rdfnode_to_cstring(rdfnode *node)
 {
-	size_t len = strlen(input);
-	char *result;
+	/* Get a pointer to the actual data and its length */
+	char *data = VARDATA_ANY(node);
+	int len = VARSIZE_ANY_EXHDR(node);
 
-	/* if the string is too short to have wrapping quotes, return a copy as-is */
-	if (len < 2 || input[0] != '"' || input[len - 1] != '"')
-		return pstrdup(input);
-
-	/* allocate new string, excluding the wrapping quotes */
-	result = (char *) palloc(len - 1);  /* len-2 for content, +1 for \0 */
-	memcpy(result, input + 1, len - 2);
-	result[len - 2] = '\0';
+	/* Allocate a null-terminated C string */
+	char *result = palloc(len + 1);
+	memcpy(result, data, len);
+	result[len] = '\0';
 
 	return result;
 }
@@ -1881,7 +1888,7 @@ static char *encode_for_uri(char *str_in)
 
 	elog(DEBUG1, "%s called: str='%s'", __func__, str_in);
 
-	str_in = rdfnode_to_cstring(str_in);
+	str_in = lex(str_in);
 	in_len = strlen(str_in);
 
 	elog(DEBUG2, "%s: encoding string: '%s', length: %zu", __func__, str_in, in_len);
@@ -1895,9 +1902,9 @@ static char *encode_for_uri(char *str_in)
 			appendStringInfo(&buf, "%%%02X", c);
 	}
 
-	res = cstring_to_rdfnode(buf.data);
+	res = cstring_to_rdfliteral(buf.data);
 
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, res);
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, res);
 	return res;
 }
 
@@ -1935,16 +1942,16 @@ Datum rdf_fdw_encode_for_uri(PG_FUNCTION_ARGS)
  */
 Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 {
-    text *str_text = PG_GETARG_TEXT_PP(0);
-    text *substr_text = PG_GETARG_TEXT_PP(1);
-    char *str_in = text_to_cstring(str_text);
-    char *substr_in = text_to_cstring(substr_text);
+	text *str_text = PG_GETARG_TEXT_PP(0);
+	text *substr_text = PG_GETARG_TEXT_PP(1);
+	char *str_in = text_to_cstring(str_text);
+	char *substr_in = text_to_cstring(substr_text);
 	char *str_lex;
 	char *substr_lex;
 	char *lang_str;
 	bool result;
 
-    //bool result = contains(str_in, substr);
+	// bool result = contains(str_in, substr);
 	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
 
 	/* handle NULL or empty inputs */
@@ -1975,9 +1982,9 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 	result = (strstr(str_lex, substr_lex) != NULL);
 
 	elog(DEBUG1, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
-			__func__, result ? "true" : "false", str_lex, substr_lex);
-	
-    PG_RETURN_BOOL(result);
+		 __func__, result ? "true" : "false", str_lex, substr_lex);
+
+	PG_RETURN_BOOL(result);
 }
 
 /*
@@ -2012,7 +2019,7 @@ static bool LiteralsCompatible(char *literal1, char *literal2)
 
 	if (!literal1 || !literal2)
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (one of the arguments is NULL)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (one of the arguments is NULL)", __func__);
 		return false;
 	}
 
@@ -2023,14 +2030,14 @@ static bool LiteralsCompatible(char *literal1, char *literal2)
 		(strlen(dt1) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0) &&
 		(strlen(dt2) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		elog(DEBUG1,"%s exit: returning 'true' (both simple literals or xsd:string)", __func__);
+		elog(DEBUG1, "%s exit: returning 'true' (both simple literals or xsd:string)", __func__);
 		return true;
 	}
 
 	/* both plain literals with identical language tags */
 	if (strlen(lang1) > 0 && strlen(lang2) > 0 && strcmp(lang1, lang2) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning 'true' (both plain literals with identical language tags)", __func__);
+		elog(DEBUG1, "%s exit: returning 'true' (both plain literals with identical language tags)", __func__);
 		return true;
 	}
 
@@ -2038,12 +2045,12 @@ static bool LiteralsCompatible(char *literal1, char *literal2)
 	if (strlen(lang1) > 0 && strlen(lang2) == 0 &&
 		(strlen(dt2) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		elog(DEBUG1,"%s exit: returning 'true' (arg1 has language tag, arg2 is simple or xsd:string)", __func__);
+		elog(DEBUG1, "%s exit: returning 'true' (arg1 has language tag, arg2 is simple or xsd:string)", __func__);
 		return true;
 	}
 
 	/* incompatible otherwise (e.g., arg1 xsd:string, arg2 language-tagged) */
-	elog(DEBUG1,"%s exit: returning 'false' (incompatible)", __func__);
+	elog(DEBUG1, "%s exit: returning 'false' (incompatible)", __func__);
 	return false;
 }
 
@@ -2089,16 +2096,15 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 	char *str_lexical;
 	char *delimiter_lexical;
 	char *lang1;
-	char *dt1 = "";														  // Datatype of arg1
+	char *dt1 = "";
 	char *pos;
 	char *result;
-	//bool has_explicit_datatype = false;
 
-	elog(DEBUG1,"%s called: str='%s', delimiter='%s", __func__, str_arg_cstr, delimiter_arg_cstr);
+	elog(DEBUG1, "%s called: str='%s', delimiter='%s", __func__, str_arg_cstr, delimiter_arg_cstr);
 
-	str_lexical = lex(str_arg_cstr);			  // Lexical form of arg1
-	delimiter_lexical = lex(delimiter_arg_cstr); // Lexical form of arg2
-	lang1 = lang(str_arg_cstr);									  // Language tag of arg1
+	str_lexical = lex(str_arg_cstr);
+	delimiter_lexical = lex(delimiter_arg_cstr);
+	lang1 = lang(str_arg_cstr);
 
 	/* extract datatypes if no language tags */
 	if (strlen(lang1) == 0)
@@ -2106,14 +2112,13 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 
 	if (!LiteralsCompatible(str_arg_cstr, delimiter_arg_cstr))
 	{
-		elog(DEBUG1,"%s exit: returning NULL (literals no compatible)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (literals no compatible)", __func__);
 		PG_RETURN_NULL();
 	}
 
 	if ((pos = strstr(str_lexical, delimiter_lexical)) != NULL)
 	{
 		size_t before_len = pos - str_lexical;
-		//char *result;
 		StringInfoData buf;
 		initStringInfo(&buf);
 
@@ -2122,29 +2127,29 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
 			result = strlang(buf.data, lang1);
 
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else if (strlen(dt1) > 0 && /* only for explicit ^^ */
 				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 		{
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = cstring_to_rdfnode(buf.data);
+			result = cstring_to_rdfliteral(buf.data);
 			if (strstr(result, "^^") == NULL)
 			{
 				result = strdt(buf.data, dt1);
 			}
 
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else
 		{
 			/* simple literal or implicit xsd:string */
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = cstring_to_rdfnode(buf.data);
+			result = cstring_to_rdfliteral(buf.data);
 
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 	}
@@ -2153,7 +2158,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 	if (strlen(dt1) > 0 &&
 		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		result = cstring_to_rdfnode("");
+		result = cstring_to_rdfliteral("");
 		if (strstr(result, "^^") == NULL)
 		{
 			StringInfoData typed_buf;
@@ -2162,12 +2167,12 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 			result = typed_buf.data;
 		}
 
-		elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 
-	result = cstring_to_rdfnode("");
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+	result = cstring_to_rdfliteral("");
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
@@ -2201,7 +2206,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 	bool has_explicit_datatype = false;
 	char *result;
 
-	elog(DEBUG1,"%s called: str='%s', delimiter='%s'", __func__, str_arg_cstr, delimiter_arg_cstr);
+	elog(DEBUG1, "%s called: str='%s', delimiter='%s'", __func__, str_arg_cstr, delimiter_arg_cstr);
 
 	str = lex(str_arg_cstr);
 	delimiter = lex(delimiter_arg_cstr);
@@ -2217,7 +2222,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 
 	if (!LiteralsCompatible(str_arg_cstr, delimiter_arg_cstr))
 	{
-		elog(DEBUG1,"%s exit: returning NULL (incompatible literals)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (incompatible literals)", __func__);
 		PG_RETURN_NULL();
 	}
 
@@ -2226,7 +2231,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 		size_t delimiter_len = strlen(delimiter);
 		char *after_start = pos + delimiter_len;
 		size_t after_len = strlen(str) - (after_start - str);
-		
+
 		StringInfoData buf;
 		initStringInfo(&buf);
 
@@ -2236,31 +2241,31 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 			result = strlang(buf.data, lang1);
 			pfree(buf.data);
 
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else if (has_explicit_datatype && strlen(dt1) > 0 &&
 				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 		{
 			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = cstring_to_rdfnode(buf.data);
+			result = cstring_to_rdfliteral(buf.data);
 			if (strstr(result, "^^") == NULL)
 			{
 				result = strdt(buf.data, dt1);
 			}
 			pfree(buf.data);
-			
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 		else
 		{
 			/* simple literal or implicit xsd:string */
 			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = cstring_to_rdfnode(buf.data);
+			result = cstring_to_rdfliteral(buf.data);
 			pfree(buf.data);
 
-			elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 			PG_RETURN_TEXT_P(cstring_to_text(result));
 		}
 	}
@@ -2269,7 +2274,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 	if (has_explicit_datatype && strlen(dt1) > 0 &&
 		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
-		result = cstring_to_rdfnode("");
+		result = cstring_to_rdfliteral("");
 		if (strstr(result, "^^") == NULL)
 		{
 			StringInfoData typed_buf;
@@ -2278,12 +2283,12 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 			result = typed_buf.data;
 		}
 
-		elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 
-	result = cstring_to_rdfnode("");
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+	result = cstring_to_rdfliteral("");
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
@@ -2310,30 +2315,30 @@ static bool strstarts(char *str, char *substr)
 	size_t substr_len = strlen(substr_lexical);
 	int result;
 
-	elog(DEBUG1,"%s called: str='%s', substr='%s'", __func__, str, substr);
+	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
 	if (!LiteralsCompatible(str, substr))
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (incompatible literals)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (incompatible literals)", __func__);
 		return false;
 	}
 
 	if (substr_len == 0)
 	{
-		elog(DEBUG1,"%s exit: returning 'true' (empty substring is a prefix of any string)", __func__);
+		elog(DEBUG1, "%s exit: returning 'true' (empty substring is a prefix of any string)", __func__);
 		return true;
 	}
 
 	if (substr_len > str_len)
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (substring longer than string cannot be a prefix)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (substring longer than string cannot be a prefix)", __func__);
 		return false;
 	}
 
 	result = strncmp(str_lexical, substr_lexical, substr_len);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__,
-		result == 0 ? "true" : "false");
+	elog(DEBUG1, "%s exit: returning '%s'", __func__,
+		 result == 0 ? "true" : "false");
 
 	return result == 0;
 }
@@ -2360,11 +2365,11 @@ Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
 	char *str = text_to_cstring(str_arg);
 	char *substr = text_to_cstring(substr_arg);
 
-	elog(DEBUG1,"%s called: str='%s', substr='%s'", __func__, str, substr);
+	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
 	if (!LiteralsCompatible(str, substr))
 	{
-		elog(DEBUG1,"%s exit: returning NULL (incompatible literals)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (incompatible literals)", __func__);
 		PG_RETURN_NULL();
 	}
 
@@ -2388,37 +2393,37 @@ Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
  */
 static bool strends(char *str, char *substr)
 {
-    char *str_lexical = lex(str);
-    char *substr_lexical = lex(substr);
-    size_t str_len = strlen(str_lexical);
-    size_t substr_len = strlen(substr_lexical);
+	char *str_lexical = lex(str);
+	char *substr_lexical = lex(substr);
+	size_t str_len = strlen(str_lexical);
+	size_t substr_len = strlen(substr_lexical);
 	int result;
 
-	elog(DEBUG1,"%s called: str='%s', substr='%s'", __func__, str, substr);
+	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
-    if (!LiteralsCompatible(str, substr))
-    {
-		elog(DEBUG1,"%s exit: returning 'false' (incompatible literals)", __func__);
+	if (!LiteralsCompatible(str, substr))
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (incompatible literals)", __func__);
 		return false;
 	}
 
-    if (substr_len == 0)
-    {
-		elog(DEBUG1,"%s exit: returning 'true' (an empty substring is a suffix of any string)", __func__);
+	if (substr_len == 0)
+	{
+		elog(DEBUG1, "%s exit: returning 'true' (an empty substring is a suffix of any string)", __func__);
 		return true;
 	}
 
-    if (substr_len > str_len)
-    {
-		elog(DEBUG1,"%s exit: returning 'false' (substring longer than string cannot be a suffix)", __func__);
+	if (substr_len > str_len)
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (substring longer than string cannot be a suffix)", __func__);
 		return false;
 	}
 
 	result = strncmp(str_lexical + (str_len - substr_len), substr_lexical, substr_len);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
 
-    return result == 0;
+	return result == 0;
 }
 
 /*
@@ -2438,15 +2443,15 @@ static bool strends(char *str, char *substr)
  */
 Datum rdf_fdw_strends(PG_FUNCTION_ARGS)
 {
-    text *str_arg = PG_GETARG_TEXT_PP(0);
-    text *substr_arg = PG_GETARG_TEXT_PP(1);
-    char *str = text_to_cstring(str_arg);
-    char *substr = text_to_cstring(substr_arg);
+	text *str_arg = PG_GETARG_TEXT_PP(0);
+	text *substr_arg = PG_GETARG_TEXT_PP(1);
+	char *str = text_to_cstring(str_arg);
+	char *substr = text_to_cstring(substr_arg);
 
-    if (!LiteralsCompatible(str, substr))
-        PG_RETURN_NULL();  // Incompatible arguments return NULL per SPARQL
+	if (!LiteralsCompatible(str, substr))
+		PG_RETURN_NULL(); // Incompatible arguments return NULL per SPARQL
 
-    PG_RETURN_BOOL(strends(str, substr));
+	PG_RETURN_BOOL(strends(str, substr));
 }
 
 /*
@@ -2477,11 +2482,8 @@ static bool langmatches(char *lang_tag, char *pattern)
 		return false;
 	}
 
-
-	pattern = rdfnode_to_cstring(pattern);
-
-	/* Use lang_tag directly, assuming it's already extracted */
-	tag = rdfnode_to_cstring(lang_tag); /* e.g., "en" from lang('"foo"@en') */
+	pattern = lex(pattern);
+	tag = lex(lang_tag); /* e.g., "en" from lang('"foo"@en') */
 	/* Handle pattern: bare string or quoted literal */
 	if (pattern[0] == '"' && strrchr(pattern, '"') > pattern)
 		pat = lex(pattern); /* e.g., "\"en\"" -> "en" */
@@ -2538,7 +2540,7 @@ static bool langmatches(char *lang_tag, char *pattern)
 	}
 
 	elog(DEBUG1, "%s exit: returning '%s' (tag='%s', pat='%s')",
-		__func__, result ? "true" : "false", tag, pat);
+		 __func__, result ? "true" : "false", tag, pat);
 
 	return result;
 }
@@ -2635,11 +2637,11 @@ static bool isNumeric(char *term)
 	bool is_bare_number = false;
 	char *endptr;
 
-	elog(DEBUG1,"%s called: term='%s'", __func__, term);
+	elog(DEBUG1, "%s called: term='%s'", __func__, term);
 
 	if (!term || strlen(term) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (term either NULL or an empty string)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (term either NULL or an empty string)", __func__);
 		return false;
 	}
 
@@ -2658,21 +2660,21 @@ static bool isNumeric(char *term)
 	/* Validate lexical form as numeric (integers, decimals, or scientific notation) */
 	if (!lexical || strlen(lexical) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
 		return false;
 	}
 
 	strtod(lexical, &endptr);
 	if (*endptr != '\0') /* not a valid number, e.g., "abc" */
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (not a valid number)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (not a valid number)", __func__);
 		return false;
 	}
 
 	/* Bare numbers are numeric */
 	if (is_bare_number)
 	{
-		elog(DEBUG1,"%s exit: returning 'true' (bare numbers are numeric)", __func__);
+		elog(DEBUG1, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
 		return true;
 	}
 
@@ -2680,7 +2682,7 @@ static bool isNumeric(char *term)
 	datatype_uri = datatype(term);
 	if (strlen(datatype_uri) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (no datatype or invalid literal)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (no datatype or invalid literal)", __func__);
 		return false;
 	} /* No datatype or invalid literal (e.g., "12") */
 
@@ -2710,22 +2712,22 @@ static bool isNumeric(char *term)
 			/* Ensure the entire string is a valid integer and within xsd:byte range */
 			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
 			{
-				elog(DEBUG1,"%s exit: returning 'false' (not a pure integer)", __func__);
+				elog(DEBUG1, "%s exit: returning 'false' (not a pure integer)", __func__);
 				return false;
 			}
 
-			elog(DEBUG1,"%s exit: returning 'true' (valid xsd:byte)", __func__);
+			elog(DEBUG1, "%s exit: returning 'true' (valid xsd:byte)", __func__);
 			return true; /* Valid xsd:byte, e.g., "100" */
 		}
 		/* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
 		 * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
 		 * Accept them as numeric. */
 
-		elog(DEBUG1,"%s exit: returning 'true'", __func__);
+		elog(DEBUG1, "%s exit: returning 'true'", __func__);
 		return true;
 	}
 
-	elog(DEBUG1,"%s exit: returning 'false'", __func__);
+	elog(DEBUG1, "%s exit: returning 'false'", __func__);
 	return false;
 }
 
@@ -2751,7 +2753,7 @@ static bool isPlainLiteral(char *literal)
 {
 	if (strlen(lang(literal)) != 0 || strlen(datatype(literal)) != 0)
 		return false;
-	
+
 	return true;
 }
 
@@ -2769,7 +2771,7 @@ static bool isPlainLiteral(char *literal)
  *
  * returns: Boolean (1 for literal, 0 otherwise)
  */
- static bool isLiteral(char *term)
+static bool isLiteral(char *term)
 {
 	const char *ptr;
 	int len;
@@ -2778,19 +2780,19 @@ static bool isPlainLiteral(char *literal)
 
 	if (!term || *term == '\0')
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (term either NULL or has no '\\0')", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (term either NULL or has no '\\0')", __func__);
 		return false;
 	}
 
 	/* Exclude IRIs and blank nodes first */
 	if (isIRI(term) || isBlank(term))
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (either an IRI or a blank node)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (either an IRI or a blank node)", __func__);
 		return false;
 	}
 
 	/* Normalize input */
-	ptr = cstring_to_rdfnode(term);
+	ptr = cstring_to_rdfliteral(term);
 	len = strlen(ptr);
 
 	/* Check for valid quoted literal */
@@ -2808,7 +2810,7 @@ static bool isPlainLiteral(char *literal)
 				const char *dt_start = tag + 2;
 				if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
 				{
-					elog(DEBUG1,"%s exit: returning 'true' (valid datatype)", __func__);
+					elog(DEBUG1, "%s exit: returning 'true' (valid datatype)", __func__);
 					return true;
 				} /* Valid datatype */
 			}
@@ -2816,26 +2818,26 @@ static bool isPlainLiteral(char *literal)
 			else if (lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"' &&
 					 *(lang_tag + 1) != '\0')
 			{
-				elog(DEBUG1,"%s exit: returning 'true' (literal has a language tag)", __func__);
+				elog(DEBUG1, "%s exit: returning 'true' (literal has a language tag)", __func__);
 				return true;
 			}
 			/* Simple literal: quoted string, no ^^ or @ */
 			else if (ptr[len - 1] == '"')
 			{
-				elog(DEBUG1,"%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
+				elog(DEBUG1, "%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
 				return true;
 			}
 		}
 		else if (len == 1)
 		{
 			/* Empty quoted literal "" */
-			elog(DEBUG1,"%s exit: returning 'true' (empty quoted literal)", __func__);
+			elog(DEBUG1, "%s exit: returning 'true' (empty quoted literal)", __func__);
 			return true;
 		}
 	}
 
 	/* Invalid or non-literal */
-	elog(DEBUG1,"%s exit: returning 'false' (invalid or non-literal)", __func__);
+	elog(DEBUG1, "%s exit: returning 'false' (invalid or non-literal)", __func__);
 	return false;
 }
 
@@ -2885,7 +2887,7 @@ static char *bnode(char *input)
 	StringInfoData buf;
 	static uint64 counter = 0; /* Ensure uniqueness for BNODE() */
 
-	elog(DEBUG1,"%s called: input='%s'", __func__, input);
+	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
 	initStringInfo(&buf);
 
@@ -2905,7 +2907,7 @@ static char *bnode(char *input)
 		/* Reject IRIs and blank nodes explicitly */
 		if (isIRI(input) || isBlank(input))
 		{
-			elog(DEBUG1,"%s exit: returning NULL (input eiter an IRI or a blank node)", __func__);
+			elog(DEBUG1, "%s exit: returning NULL (input eiter an IRI or a blank node)", __func__);
 			return NULL;
 		}
 
@@ -2927,7 +2929,7 @@ static char *bnode(char *input)
 		/* Validate input is a literal */
 		if (!isLiteral(normalized_input))
 		{
-			elog(DEBUG1,"%s exit: returning NULL (input is not a literal)", __func__);
+			elog(DEBUG1, "%s exit: returning NULL (input is not a literal)", __func__);
 			return NULL;
 		}
 
@@ -2935,7 +2937,7 @@ static char *bnode(char *input)
 		lexical = lex(normalized_input);
 		if (!lexical || strlen(lexical) == 0)
 		{
-			elog(DEBUG1,"%s exit: returning NULL (lexical value either NULL or an empty string)", __func__);
+			elog(DEBUG1, "%s exit: returning NULL (lexical value either NULL or an empty string)", __func__);
 			return NULL;
 		}
 
@@ -2950,7 +2952,7 @@ static char *bnode(char *input)
 		}
 	}
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, buf.data);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, buf.data);
 	return buf.data;
 }
 
@@ -3010,7 +3012,7 @@ static char *generate_uuid_v4(void)
 	char *result;
 	int i;
 
-	elog(DEBUG1,"%s called", __func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	initStringInfo(&buf);
 
@@ -3039,7 +3041,7 @@ static char *generate_uuid_v4(void)
 	result = pstrdup(buf.data);
 	pfree(buf.data);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -3095,11 +3097,11 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
  */
 static bool IsRDFStringLiteral(char *str)
 {
-	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	if (str == NULL)
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (NULL argument)", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (NULL argument)", __func__);
 		return false;
 	}
 
@@ -3107,7 +3109,7 @@ static bool IsRDFStringLiteral(char *str)
 		strcmp(str, RDF_SIMPLE_LITERAL_DATATYPE) == 0 ||
 		strcmp(str, RDF_LANGUAGE_LITERAL_DATATYPE) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning 'true'", __func__);
+		elog(DEBUG1, "%s exit: returning 'true'", __func__);
 		return true;
 	}
 
@@ -3147,8 +3149,8 @@ static char *lcase(char *str)
 
 	if (strlen(str) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning empty literal (str is an empty string)", __func__);
-		return cstring_to_rdfnode("");
+		elog(DEBUG1, "%s exit: returning empty literal (str is an empty string)", __func__);
+		return cstring_to_rdfliteral("");
 	}
 
 	/* Check for IRIs or blank nodes */
@@ -3198,11 +3200,11 @@ static char *lcase(char *str)
 	else if (strlen(str_datatype) != 0)
 		result = strdt(buf.data, str_datatype);
 	else
-		result = cstring_to_rdfnode(buf.data);
+		result = cstring_to_rdfliteral(buf.data);
 
 	pfree(buf.data);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -3257,8 +3259,8 @@ static char *ucase(char *str)
 
 	if (strlen(str) == 0)
 	{
-		elog(DEBUG1,"%s exit: returning empty literal (str is an empty string)", __func__);		
-		return cstring_to_rdfnode("");
+		elog(DEBUG1, "%s exit: returning empty literal (str is an empty string)", __func__);
+		return cstring_to_rdfliteral("");
 	}
 
 	/* Check for IRIs or blank nodes */
@@ -3293,26 +3295,26 @@ static char *ucase(char *str)
 
 	elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
-    /* Convert to uppercase (ASCII only) */
-    len = strlen(lexical);
-    for (i = 0; i < len; i++)
-    {
-        char c = lexical[i];
-        if (c >= 'a' && c <= 'z')
-            c = c - ('a' - 'A');
-        appendStringInfoChar(&buf, c);
-    }
+	/* Convert to uppercase (ASCII only) */
+	len = strlen(lexical);
+	for (i = 0; i < len; i++)
+	{
+		char c = lexical[i];
+		if (c >= 'a' && c <= 'z')
+			c = c - ('a' - 'A');
+		appendStringInfoChar(&buf, c);
+	}
 
 	if (strlen(str_language) != 0)
 		result = strlang(buf.data, str_language);
 	else if (strlen(str_datatype) != 0)
 		result = strdt(buf.data, str_datatype);
 	else
-		result = cstring_to_rdfnode(buf.data);
+		result = cstring_to_rdfliteral(buf.data);
 
 	pfree(buf.data);
 
-	elog(DEBUG1,"%s exit: returning => '%s'", __func__, result);
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 	return result;
 }
 
@@ -3346,7 +3348,7 @@ static int count_utf8_chars(const char *str)
 {
 	int char_count = 0;
 
-	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	while (*str)
 	{
@@ -3356,7 +3358,7 @@ static int count_utf8_chars(const char *str)
 		str++;
 	}
 
-	elog(DEBUG1,"%s exit: returning '%d'", __func__, char_count);
+	elog(DEBUG1, "%s exit: returning '%d'", __func__, char_count);
 	return char_count;
 }
 
@@ -3397,8 +3399,8 @@ static int strlen_rdf(char *str)
 
 	lexical = lex(str);
 	result = count_utf8_chars(lexical);
-	
-	elog(DEBUG1,"%s exit: returning '%d'", __func__, result);
+
+	elog(DEBUG1, "%s exit: returning '%d'", __func__, result);
 	return result;
 }
 
@@ -3461,10 +3463,10 @@ static char *substr_sparql(char *str, int start, int length)
 	str_len = strlen(lexical);
 
 	elog(DEBUG1, "%s: lexical='%s', datatype='%s', language='%s', length=%d", __func__,
-		lexical, str_datatype, str_language, str_len);
+		 lexical, str_datatype, str_language, str_len);
 
 	if (start > str_len)
-		lexical[0] = '\0';  // empty result
+		lexical[0] = '\0'; // empty result
 
 	initStringInfo(&buf);
 
@@ -3480,11 +3482,11 @@ static char *substr_sparql(char *str, int start, int length)
 	else if (strlen(str_datatype) > 0)
 		result = strdt(buf.data, str_datatype);
 	else
-		result = cstring_to_rdfnode(buf.data);
+		result = cstring_to_rdfliteral(buf.data);
 
 	pfree(buf.data);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -3503,7 +3505,7 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
 	str = text_to_cstring(input);
 
 	if (strlen(str) == 0)
-		PG_RETURN_TEXT_P(cstring_to_text(cstring_to_rdfnode("")));
+		PG_RETURN_TEXT_P(cstring_to_text(cstring_to_rdfliteral("")));
 
 	if (PG_NARGS() == 3 && !PG_ARGISNULL(2))
 	{
@@ -3516,9 +3518,8 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
-
 /*
- * rdf_concat(text, text) returns text
+ * concat(text, text) returns text
  *
  * Implements the SPARQL CONCAT function.
  *
@@ -3534,7 +3535,7 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
  * NULL inputs yield NULL. Empty strings are allowed and result in valid RDF
  * literals.
  */
-static char *rdf_concat(char *left, char *right)
+static char *concat(char *left, char *right)
 {
 	char *lex1 = lex(left);
 	char *lex2 = lex(right);
@@ -3545,7 +3546,7 @@ static char *rdf_concat(char *left, char *right)
 	char *result;
 	StringInfoData buf;
 
-	elog(DEBUG1,"%s called: left='%s', right='%s'", __func__, left, right);
+	elog(DEBUG1, "%s called: left='%s', right='%s'", __func__, left, right);
 
 	initStringInfo(&buf);
 	appendStringInfoString(&buf, lex1);
@@ -3566,25 +3567,24 @@ static char *rdf_concat(char *left, char *right)
 	/* only one argument has a datatype */
 	if ((strlen(dt1) != 0 && strlen(dt2) == 0) || (strlen(dt1) == 0 && strlen(dt2) != 0))
 	{
-		result = cstring_to_rdfnode(buf.data);
-		elog(DEBUG1,"%s exit: returning '%s' (only one argument has a datatype)", __func__, result);
+		result = cstring_to_rdfliteral(buf.data);
+		elog(DEBUG1, "%s exit: returning '%s' (only one argument has a datatype)", __func__, result);
 		return result;
 	}
 
 	/* only one argument has a language tag */
 	if ((strlen(lang1) != 0 && strlen(lang2) == 0) || (strlen(lang1) == 0 && strlen(lang2) != 0))
 	{
-		result = cstring_to_rdfnode(buf.data);
-		elog(DEBUG1,"%s exit: returning '%s' (only one argument has a language tag)", __func__, result);
+		result = cstring_to_rdfliteral(buf.data);
+		elog(DEBUG1, "%s exit: returning '%s' (only one argument has a language tag)", __func__, result);
 		return result;
-
 	}
 
 	/* re-wrap result appropriately */
 	if (strlen(lang1) != 0 || strlen(lang2) != 0)
 	{
 		result = strlang(buf.data, strlen(lang1) > 0 ? lang1 : lang2);
-		elog(DEBUG1,"%s exit: returning '%s' (re-wrapping result appropriately)", __func__, result);
+		elog(DEBUG1, "%s exit: returning '%s' (re-wrapping result appropriately)", __func__, result);
 		return result;
 	}
 
@@ -3592,15 +3592,15 @@ static char *rdf_concat(char *left, char *right)
 		(strlen(dt2) > 0 && strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
 	{
 		result = strdt(buf.data, RDF_SIMPLE_LITERAL_DATATYPE);
-		elog(DEBUG1,"%s exit: returning '%s' (either left or right argument has a simple literal data type - %s)",
-			__func__, result, RDF_SIMPLE_LITERAL_DATATYPE);
+		elog(DEBUG1, "%s exit: returning '%s' (either left or right argument has a simple literal data type - %s)",
+			 __func__, result, RDF_SIMPLE_LITERAL_DATATYPE);
 
 		return result;
 	}
 
-	result = cstring_to_rdfnode(buf.data);
+	result = cstring_to_rdfliteral(buf.data);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -3608,7 +3608,7 @@ Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
 {
 	char *left = text_to_cstring(PG_GETARG_TEXT_PP(0));
 	char *right = text_to_cstring(PG_GETARG_TEXT_PP(1));
-	char *result = rdf_concat(left, right);
+	char *result = concat(left, right);
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
@@ -3685,7 +3685,7 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 	/* deconstruct the array into individual elements */
 	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);
 
-	elog(DEBUG1,"%s called: nelems='%d'", __func__, nelems);
+	elog(DEBUG1, "%s called: nelems='%d'", __func__, nelems);
 
 	/* loop over each element to find the first non-null one */
 	for (int i = 0; i < nelems; i++)
@@ -3710,7 +3710,7 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 					rdfnode = el;
 			}
 			else
-				rdfnode = cstring_to_rdfnode(el);
+				rdfnode = cstring_to_rdfliteral(el);
 
 			result = cstring_to_text(rdfnode);
 			res = PointerGetDatum(result);
@@ -3719,7 +3719,7 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 		}
 	}
 
-	elog(DEBUG1,"%s exit: returning NULL", __func__);
+	elog(DEBUG1, "%s exit: returning NULL", __func__);
 	PG_RETURN_NULL();
 }
 
@@ -3810,29 +3810,28 @@ static List *DescribeIRI(RDFfdwState *state)
 
 		while (!librdf_stream_end(stream))
 		{
-			RDFfdwTriple *triple = (RDFfdwTriple *) palloc0(sizeof(RDFfdwTriple));
+			RDFfdwTriple *triple = (RDFfdwTriple *)palloc0(sizeof(RDFfdwTriple));
 			librdf_statement *statement = librdf_stream_get_object(stream);
 
 			if (librdf_node_is_resource(statement->subject))
-				triple->subject = pstrdup(iri((char *) librdf_uri_as_string(librdf_node_get_uri(statement->subject))));
+				triple->subject = pstrdup(iri((char *)librdf_uri_as_string(librdf_node_get_uri(statement->subject))));
 			else if (librdf_node_is_blank(statement->subject))
-				triple->subject = pstrdup((char *) librdf_node_get_blank_identifier(statement->subject));
+				triple->subject = pstrdup((char *)librdf_node_get_blank_identifier(statement->subject));
 			else
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_ERROR),
 						 errmsg("unsupported subject node type")));
 
 			if (librdf_node_is_blank(statement->predicate))
-				triple->predicate = strdup((char *) librdf_node_get_blank_identifier(statement->predicate));
+				triple->predicate = strdup((char *)librdf_node_get_blank_identifier(statement->predicate));
 			else
-				triple->predicate = pstrdup(iri((char *) librdf_uri_as_string(librdf_node_get_uri(statement->predicate))));
-
+				triple->predicate = pstrdup(iri((char *)librdf_uri_as_string(librdf_node_get_uri(statement->predicate))));
 
 			if (librdf_node_is_resource(statement->object))
-				triple->object = pstrdup(iri((char *) librdf_uri_as_string(librdf_node_get_uri(statement->object))));
+				triple->object = pstrdup(iri((char *)librdf_uri_as_string(librdf_node_get_uri(statement->object))));
 			else if (librdf_node_is_literal(statement->object))
 			{
-				char *value = (char *) librdf_node_get_literal_value(statement->object);
+				char *value = (char *)librdf_node_get_literal_value(statement->object);
 				StringInfoData literal;
 				initStringInfo(&literal);
 
@@ -3842,20 +3841,20 @@ static List *DescribeIRI(RDFfdwState *state)
 					librdf_uri *datatype = librdf_node_get_literal_value_datatype_uri(statement->object);
 
 					if (datatype)
-						appendStringInfo(&literal, "%s", strdt(value, (char *) librdf_uri_as_string(datatype)));
+						appendStringInfo(&literal, "%s", strdt(value, (char *)librdf_uri_as_string(datatype)));
 					else if (language)
 						appendStringInfo(&literal, "%s", strlang(value, language));
 					else
-						appendStringInfo(&literal, "%s", cstring_to_rdfnode(value));
+						appendStringInfo(&literal, "%s", cstring_to_rdfliteral(value));
 				}
 				else
-					appendStringInfo(&literal, "%s", cstring_to_rdfnode(value));
+					appendStringInfo(&literal, "%s", cstring_to_rdfliteral(value));
 
 				triple->object = pstrdup(literal.data);
 				pfree(literal.data);
 			}
 			else if (librdf_node_is_blank(statement->object))
-				triple->object = pstrdup((char *) librdf_node_get_blank_identifier(statement->object));
+				triple->object = pstrdup((char *)librdf_node_get_blank_identifier(statement->object));
 			else
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_ERROR),
@@ -3891,7 +3890,7 @@ static List *DescribeIRI(RDFfdwState *state)
 	librdf_free_uri(uri);
 	librdf_free_world(world);
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 	return result;
 }
 
@@ -3908,10 +3907,10 @@ static List *DescribeIRI(RDFfdwState *state)
  */
 Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 {
-	struct RDFfdwState *state = (struct RDFfdwState *) palloc0(sizeof(RDFfdwState));
+	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
 	text *srvname_arg = PG_GETARG_TEXT_P(0);
 	text *iri_arg = PG_GETARG_TEXT_P(1);
-	bool keep_raw_literal =  PG_GETARG_BOOL(2);
+	bool keep_raw_literal = PG_GETARG_BOOL(2);
 	text *base_uri_arg = PG_GETARG_TEXT_P(3);
 	char *srvname;
 	char *describe_query;
@@ -3952,10 +3951,10 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 					 errmsg("a DESCRIBE pattern cannot contain only whitespace characters")));
 
-		if(LocateKeyword(describe_query, " \n\t>", "DESCRIBE"," *?\n\t<", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
+		if (LocateKeyword(describe_query, " \n\t>", "DESCRIBE", " *?\n\t<", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
 			ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-				errmsg("invalid DESCRIBE query:\n\n%s\n", describe_query)));
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("invalid DESCRIBE query:\n\n%s\n", describe_query)));
 
 		if (*srvname && strspn(srvname, " \t\n\r") == strlen(srvname))
 			ereport(ERROR,
@@ -3984,8 +3983,8 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 					 errmsg("invalid SERVER: %s", quote_identifier(srvname))));
 
 		/*
-		* loading SERVER OPTIONS
-		*/
+		 * loading SERVER OPTIONS
+		 */
 		LoadRDFServerInfo(state);
 
 		/*
@@ -4058,7 +4057,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 	}
 	else
 	{
-		elog(DEBUG1,"%s exit", __func__);
+		elog(DEBUG1, "%s exit", __func__);
 		SRF_RETURN_DONE(funcctx);
 	}
 }
@@ -4066,7 +4065,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 /*
  * rdf_fdw_clone_table
  * -----------------
- * 
+ *
  * Materializes the content of a foreign table into a normal table.
  */
 #if PG_VERSION_NUM >= 110000
@@ -4090,23 +4089,23 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	char *orderby_variable = NULL;
 	StringInfoData select;
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
-	if(PG_ARGISNULL(0))
+	if (PG_ARGISNULL(0))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'foreign_table' cannot be NULL")));
 	else
 		foreign_table_name = PG_GETARG_TEXT_P(0);
 
-	if(PG_ARGISNULL(1))
+	if (PG_ARGISNULL(1))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'target_table' cannot be NULL")));
 	else
 		target_table_name = PG_GETARG_TEXT_P(1);
 
-	if(PG_ARGISNULL(2))
+	if (PG_ARGISNULL(2))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'begin_offset' cannot be NULL"),
@@ -4114,21 +4113,21 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	else
 		begin_offset = PG_GETARG_INT32(2);
 
-	if(PG_ARGISNULL(3))
+	if (PG_ARGISNULL(3))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'fetch_size' cannot be NULL")));
 	else
 		fetch_size = PG_GETARG_INT32(3);
 
-	if(PG_ARGISNULL(4))
+	if (PG_ARGISNULL(4))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'max_records' cannot be NULL")));
 	else
 		max_records = PG_GETARG_INT32(4);
 
-	if(PG_ARGISNULL(5))
+	if (PG_ARGISNULL(5))
 		orderby_query = false;
 	else
 	{
@@ -4136,76 +4135,74 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		state->ordering_pgcolumn = text_to_cstring(ordering_pgcolumn);
 	}
 
-	if(PG_ARGISNULL(6))
+	if (PG_ARGISNULL(6))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'sort_order' cannot be NULL")));
 	else
 		sort_order = PG_GETARG_TEXT_P(6);
-	
-	if(PG_ARGISNULL(7))
+
+	if (PG_ARGISNULL(7))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'create_table' cannot be NULL")));
 	else
 		create_table = PG_GETARG_BOOL(7);
 
-	if(PG_ARGISNULL(8))
+	if (PG_ARGISNULL(8))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'verbose' cannot be NULL")));
 	else
 		verbose = PG_GETARG_BOOL(8);
 
-	if(PG_ARGISNULL(9))
+	if (PG_ARGISNULL(9))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'commit_page' cannot be NULL")));
 	else
 		commit_page = PG_GETARG_BOOL(9);
 
-
-	if(strlen(text_to_cstring(foreign_table_name)) == 0)
+	if (strlen(text_to_cstring(foreign_table_name)) == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'foreign_table' provided")));
 
-	if(strlen(text_to_cstring(target_table_name)) == 0)
+	if (strlen(text_to_cstring(target_table_name)) == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("no 'target_table' provided")));
 	else
 		state->target_table_name = text_to_cstring(target_table_name);
 
-	if(fetch_size < 0)
+	if (fetch_size < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'fetch_size': %d",fetch_size),
+				 errmsg("invalid 'fetch_size': %d", fetch_size),
 				 errhint("the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number")));
-	
-	if(max_records < 0)
+
+	if (max_records < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'max_records': %d",max_records),
+				 errmsg("invalid 'max_records': %d", max_records),
 				 errhint("'max_records' corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number")));
 
-	if(begin_offset < 0)
+	if (begin_offset < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'begin_offset': %d",begin_offset)));
+				 errmsg("invalid 'begin_offset': %d", begin_offset)));
 
-	if(strcasecmp(text_to_cstring(sort_order),"ASC") != 0 &&
-	   strcasecmp(text_to_cstring(sort_order),"DESC") != 0)
+	if (strcasecmp(text_to_cstring(sort_order), "ASC") != 0 &&
+		strcasecmp(text_to_cstring(sort_order), "DESC") != 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid 'sort_order': %s",text_to_cstring(sort_order)),
+				 errmsg("invalid 'sort_order': %s", text_to_cstring(sort_order)),
 				 errhint("the 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending)")));
-
 
 	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name), RDF_FOREIGN_TABLE_CODE);
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
-	
+
 	state->sort_order = text_to_cstring(sort_order);
 	state->enable_pushdown = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
@@ -4229,27 +4226,26 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * This new table will be a clone of the queried FOREIGN TABLE, of couse without
 	 * the table and column OPTIONS.
 	 */
-	if(create_table)
+	if (create_table)
 	{
 		StringInfoData ct;
 		SPI_connect();
 
 		initStringInfo(&ct);
-		appendStringInfo(&ct,"CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
-			state->target_table_name,
-			text_to_cstring(foreign_table_name));
+		appendStringInfo(&ct, "CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
+						 state->target_table_name,
+						 text_to_cstring(foreign_table_name));
 
-		if(SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
+		if (SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
 			ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("unable to create target table '%s'",state->target_table_name)));
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("unable to create target table '%s'", state->target_table_name)));
 
-		 if(verbose)
-			elog(INFO,"Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
-				text_to_cstring(target_table_name), text_to_cstring(foreign_table_name), NameStr(ct));
+		if (verbose)
+			elog(INFO, "Target TABLE \"%s\" created based on FOREIGN TABLE \"%s\":\n\n  %s\n",
+				 text_to_cstring(target_table_name), text_to_cstring(foreign_table_name), NameStr(ct));
 
 		SPI_finish();
-
 	}
 
 	/*
@@ -4257,30 +4253,30 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * it either existed before the function call or was just created.
 	 */
 #if PG_VERSION_NUM < 130000
-	state->target_table = heap_open(GetRelOidFromName(state->target_table_name,RDF_ORDINARY_TABLE_CODE), NoLock);
+	state->target_table = heap_open(GetRelOidFromName(state->target_table_name, RDF_ORDINARY_TABLE_CODE), NoLock);
 	heap_close(state->target_table, NoLock);
 #else
-	state->target_table = table_open(GetRelOidFromName(state->target_table_name,RDF_ORDINARY_TABLE_CODE), NoLock);
+	state->target_table = table_open(GetRelOidFromName(state->target_table_name, RDF_ORDINARY_TABLE_CODE), NoLock);
 	table_close(state->target_table, NoLock);
 #endif
-	/* 
-	 * Here we check if the target table matches the columns of the 
+	/*
+	 * Here we check if the target table matches the columns of the
 	 * FOREIGN TABLE.
-	 */	
+	 */
 	tupdesc = state->target_table->rd_att;
 
-	elog(DEBUG2,"%s: checking if tables match",__func__);
+	elog(DEBUG2, "%s: checking if tables match", __func__);
 	for (size_t ftidx = 0; ftidx < state->numcols; ftidx++)
 	{
 		for (size_t ttidx = 0; ttidx < state->target_table->rd_att->natts; ttidx++)
 		{
 			Form_pg_attribute attr = TupleDescAttr(tupdesc, ttidx);
 
-			elog(DEBUG2,"%s: comparing %s - %s", __func__,
-				NameStr(attr->attname),
-				state->rdfTable->cols[ftidx]->name);
+			elog(DEBUG2, "%s: comparing %s - %s", __func__,
+				 NameStr(attr->attname),
+				 state->rdfTable->cols[ftidx]->name);
 
-			if(strcmp(NameStr(attr->attname), state->rdfTable->cols[ftidx]->name) == 0)
+			if (strcmp(NameStr(attr->attname), state->rdfTable->cols[ftidx]->name) == 0)
 			{
 				state->rdfTable->cols[ftidx]->used = true;
 				match = true;
@@ -4288,39 +4284,34 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		}
 	}
 
-	/* 
+	/*
 	 * If both foreign and target table share no column we better stop it right here.
 	 */
-	if(!match)
+	if (!match)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("target table mismatch"),
 				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
-				 	state->target_table_name,
-					get_rel_name(state->foreigntableid))
-				)
-			);
+						 state->target_table_name,
+						 get_rel_name(state->foreigntableid))));
 	}
 
-
-
-
-	elog(DEBUG2,"%s: validating 'fetch_size' tables match",__func__);
-	if(fetch_size == 0)
+	elog(DEBUG2, "%s: validating 'fetch_size' tables match", __func__);
+	if (fetch_size == 0)
 	{
-		if(state->fetch_size != 0)
+		if (state->fetch_size != 0)
 			fetch_size = state->fetch_size;
 		else
 		{
 			fetch_size = RDF_DEFAULT_FETCH_SIZE;
-			if(verbose)
-				elog(INFO,"setting 'fetch_size' to %d (default)", RDF_DEFAULT_FETCH_SIZE);
+			if (verbose)
+				elog(INFO, "setting 'fetch_size' to %d (default)", RDF_DEFAULT_FETCH_SIZE);
 		}
 	}
 
-	elog(DEBUG2,"fetch_size = %d",fetch_size);	
-	elog(DEBUG2,"ordering_pgcolumn = '%s'", !orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
+	elog(DEBUG2, "fetch_size = %d", fetch_size);
+	elog(DEBUG2, "ordering_pgcolumn = '%s'", !orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn);
 
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
@@ -4347,17 +4338,16 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			appendStringInfo(&select, "%s ", pstrdup(state->rdfTable->cols[i]->sparqlvar));
 		else
 			appendStringInfo(&select, "(%s AS %s) ",
-								pstrdup(state->rdfTable->cols[i]->expression),
-								pstrdup(state->rdfTable->cols[i]->sparqlvar)
-							);
+							 pstrdup(state->rdfTable->cols[i]->expression),
+							 pstrdup(state->rdfTable->cols[i]->sparqlvar));
 	}
 
 	/*
-	* If at this point no 'orderby_variable' was set, we set it to the first 
-	* sparqlvar we can find in the table, so that we for sure have a variable
-	* to order by. This value might be overwritten in further iterations of this
-	* loop.
-	*/
+	 * If at this point no 'orderby_variable' was set, we set it to the first
+	 * sparqlvar we can find in the table, so that we for sure have a variable
+	 * to order by. This value might be overwritten in further iterations of this
+	 * loop.
+	 */
 	if (orderby_query)
 	{
 		if (orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0 && state->rdfTable->cols[0]->sparqlvar)
@@ -4378,46 +4368,46 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	}
 
 	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
-	elog(DEBUG2,"sparql_prefixes = \n\n'%s'",state->sparql_prefixes);
+	elog(DEBUG2, "sparql_prefixes = \n\n'%s'", state->sparql_prefixes);
 
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
-	elog(DEBUG2,"sparql_from = \n\n'%s'",state->sparql_from);
+	elog(DEBUG2, "sparql_from = \n\n'%s'", state->sparql_from);
 
 	state->sparql_select = NameStr(select);
-	elog(DEBUG2,"sparql_select = \n\n'%s'",state->sparql_select);
+	elog(DEBUG2, "sparql_select = \n\n'%s'", state->sparql_select);
 
 	state->sparql_where = DeparseSPARQLWhereGraphPattern(state);
-	elog(DEBUG2,"sparql_where = \n\n'%s'",state->sparql_where);
+	elog(DEBUG2, "sparql_where = \n\n'%s'", state->sparql_where);
 
 	state->inserted_records = 0;
 	state->offset = begin_offset;
 
-	if(verbose)
-		elog(INFO,"\n\n== Parameters ==\n\nforeign_table: '%s'\ntarget_table: '%s'\ncreate_table: '%s'\nfetch_size: %d\nbegin_offset: %d\nmax_records: %d\nordering_column: '%s'\nordering sparql variable: '%s'\nsort_order: '%s'\n",
-			get_rel_name(state->foreigntableid),
-			state->target_table_name,
-			create_table == 1 ? "true" : "false",
-			fetch_size, 
-			begin_offset,
-			max_records,
-			!orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn, 
-			orderby_variable,
-			state->sort_order);
+	if (verbose)
+		elog(INFO, "\n\n== Parameters ==\n\nforeign_table: '%s'\ntarget_table: '%s'\ncreate_table: '%s'\nfetch_size: %d\nbegin_offset: %d\nmax_records: %d\nordering_column: '%s'\nordering sparql variable: '%s'\nsort_order: '%s'\n",
+			 get_rel_name(state->foreigntableid),
+			 state->target_table_name,
+			 create_table == 1 ? "true" : "false",
+			 fetch_size,
+			 begin_offset,
+			 max_records,
+			 !orderby_query || strlen(state->ordering_pgcolumn) == 0 ? "NOT SET" : state->ordering_pgcolumn,
+			 orderby_variable,
+			 state->sort_order);
 
-	while(true)
+	while (true)
 	{
 		int ret = 0;
 		int limit = fetch_size;
 		StringInfoData limit_clause;
 
 		/* stop iteration if the current offset is greater than max_records */
-		if(max_records != 0 && state->inserted_records >= max_records)
+		if (max_records != 0 && state->inserted_records >= max_records)
 		{
-			elog(DEBUG2,"%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  fetch size: %d\n",
-						__func__,
-						max_records,
-						state->inserted_records,
-						fetch_size);
+			elog(DEBUG2, "%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  fetch size: %d\n",
+				 __func__,
+				 max_records,
+				 state->inserted_records,
+				 fetch_size);
 			break;
 		}
 
@@ -4425,7 +4415,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * if the current offset + fetch_size exceed the set limit we change
 		 * the limit.
 		 */
-		if(max_records != 0 && state->inserted_records + fetch_size >= max_records)
+		if (max_records != 0 && state->inserted_records + fetch_size >= max_records)
 			limit = max_records - state->inserted_records;
 
 		/*
@@ -4442,17 +4432,16 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * already contains a OFFSET LIMIT, it will be overwritten by this string
 		 */
 		initStringInfo(&limit_clause);
-		if(orderby_query)
-			appendStringInfo(&limit_clause,"ORDER BY %s(%s) \nOFFSET %d LIMIT %d",
-				state->sort_order,
-				orderby_variable,
-				state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
-				limit);
+		if (orderby_query)
+			appendStringInfo(&limit_clause, "ORDER BY %s(%s) \nOFFSET %d LIMIT %d",
+							 state->sort_order,
+							 orderby_variable,
+							 state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
+							 limit);
 		else
-			appendStringInfo(&limit_clause,"OFFSET %d LIMIT %d",
-				state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
-				limit);
-
+			appendStringInfo(&limit_clause, "OFFSET %d LIMIT %d",
+							 state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
+							 limit);
 
 		state->sparql_limit = NameStr(limit_clause);
 
@@ -4468,15 +4457,15 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		LoadRDFData(state);
 
 		/* get out in case the SPARQL retrieves nothing */
-		if(state->pagesize == 0)
+		if (state->pagesize == 0)
 		{
-			elog(DEBUG2,"%s: SPARQL query returned nothing",__func__);
+			elog(DEBUG2, "%s: SPARQL query returned nothing", __func__);
 			break;
 		}
 
-		ret = InsertRetrievedData(state,state->offset, state->offset + fetch_size);
+		ret = InsertRetrievedData(state, state->offset, state->offset + fetch_size);
 
-		elog(DEBUG2,"%s: InsertRetrievedData returned %d records",__func__, ret);
+		elog(DEBUG2, "%s: InsertRetrievedData returned %d records", __func__, ret);
 
 		state->inserted_records = state->inserted_records + ret;
 
@@ -4485,17 +4474,17 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		pfree(limit_clause.data);
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 	PG_RETURN_VOID();
 }
 
 /*
  * InsertRetrievedData
  * -----------------
- * 
+ *
  * Inserts data retrieved from the triplestore and stoted at the RDFfdwState.
- * 
- * state     : records retrieved from the triple store and SPARQL, SERVER and 
+ *
+ * state     : records retrieved from the triple store and SPARQL, SERVER and
  * 			   FOREIGN TABLE info.
  * offset    : current offset in the data harvesting set by the caller
  * fetch_size: fetch_size (page size) in the data harvesting set by the caller
@@ -4512,24 +4501,24 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	int ret = -1;
 	int processed_records = 0;
 
-	elog(DEBUG1,"%s called", __func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	SPI_connect_ext(SPI_OPT_NONATOMIC);
 
 	for (size_t rec = 0; rec < state->pagesize; rec++)
 	{
-		SPIPlanPtr		pplan;
-		Oid		   		*ctypes = (Oid *) palloc(state->numcols * sizeof(Oid));
-		StringInfoData 	insert_stmt;
-		StringInfoData 	insert_cols;
-		StringInfoData 	insert_pidx;
+		SPIPlanPtr pplan;
+		Oid *ctypes = (Oid *)palloc(state->numcols * sizeof(Oid));
+		StringInfoData insert_stmt;
+		StringInfoData insert_cols;
+		StringInfoData insert_pidx;
 
-		Datum	   		*cvals;			/* column values */
-		char	   		*cnulls;		/* column nulls */
-		int 			colindex = 0;		
+		Datum *cvals; /* column values */
+		char *cnulls; /* column nulls */
+		int colindex = 0;
 
-		cvals = (Datum *) palloc(state->numcols * sizeof(Datum));
-		cnulls = (char *) palloc(state->numcols * sizeof(char));
+		cvals = (Datum *)palloc(state->numcols * sizeof(Datum));
+		cnulls = (char *)palloc(state->numcols * sizeof(char));
 		initStringInfo(&insert_cols);
 		initStringInfo(&insert_pidx);
 
@@ -4557,46 +4546,45 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
 
 						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-						datum = CStringGetDatum(pstrdup((char *) buffer->content));
+						datum = CStringGetDatum(pstrdup((char *)buffer->content));
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
 
 						if (!HeapTupleIsValid(tuple))
 						{
 							ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-									errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
+									(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
+									 errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
 						}
 
 						typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
 						ReleaseSysCache(tuple);
 
-						if(pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
+						if (pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
 						{
 							cvals[colindex] = OidFunctionCall3(
-												typinput,
-												datum,
-												ObjectIdGetDatum(InvalidOid),
-												Int32GetDatum(pgtypmod));
+								typinput,
+								datum,
+								ObjectIdGetDatum(InvalidOid),
+								Int32GetDatum(pgtypmod));
 						}
 						else
 						{
 							cvals[colindex] = OidFunctionCall1(typinput, datum);
 						}
-												
+
 						xmlBufferFree(buffer);
 					}
-										
+
 					colindex++;
 
-					appendStringInfo(&insert_cols,"%s %s",
-						colindex > 1 ? "," : "", 
-						state->rdfTable->cols[i]->name);
-						
+					appendStringInfo(&insert_cols, "%s %s",
+									 colindex > 1 ? "," : "",
+									 state->rdfTable->cols[i]->name);
 
-					appendStringInfo(&insert_pidx,"%s$%d",
-						colindex > 1 ? "," : "", 
-						colindex);
+					appendStringInfo(&insert_pidx, "%s$%d",
+									 colindex > 1 ? "," : "",
+									 colindex);
 				}
 
 				pfree(name.data);
@@ -4606,36 +4594,32 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 		state->rowcount++;
 
 		initStringInfo(&insert_stmt);
-		appendStringInfo(&insert_stmt,"INSERT INTO %s (%s) VALUES (%s);",
-			state->target_table_name,
-			NameStr(insert_cols),
-			NameStr(insert_pidx)
-		);
+		appendStringInfo(&insert_stmt, "INSERT INTO %s (%s) VALUES (%s);",
+						 state->target_table_name,
+						 NameStr(insert_cols),
+						 NameStr(insert_pidx));
 
 		pplan = SPI_prepare(NameStr(insert_stmt), colindex, ctypes);
-		
+
 		ret = SPI_execp(pplan, cvals, cnulls, 0);
 
-		if(ret < 0)
+		if (ret < 0)
 			ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("SPI_execp returned %d. Unable to insert data into '%s'",ret, state->target_table_name)
-				)
-			);
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("SPI_execp returned %d. Unable to insert data into '%s'", ret, state->target_table_name)));
 
-		if(state->commit_page)
+		if (state->commit_page)
 			SPI_commit();
 
 		processed_records = processed_records + SPI_processed;
-
 	}
 
-	if(state->verbose)
-		elog(INFO,"[%d - %d]: %d records inserted",offset,fetch_size, processed_records);
+	if (state->verbose)
+		elog(INFO, "[%d - %d]: %d records inserted", offset, fetch_size, processed_records);
 
 	SPI_finish();
 
-	elog(DEBUG1,"%s exit: returning '%d' (processed_records)", __func__, processed_records);
+	elog(DEBUG1, "%s exit: returning '%d' (processed_records)", __func__, processed_records);
 	return processed_records;
 }
 
@@ -4655,42 +4639,41 @@ static Oid GetRelOidFromName(char *relname, char *code)
 	Oid res = 0;
 	int ret;
 
-	elog(DEBUG1,"%s called: relname='%s', code='%s'", __func__, relname, code);
+	elog(DEBUG1, "%s called: relname='%s', code='%s'", __func__, relname, code);
 
 	initStringInfo(&str);
-	appendStringInfo(&str,"SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
+	appendStringInfo(&str, "SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
 
-	if(strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
+	if (strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("internal error: '%s' unknown relation type",code)));
+				 errmsg("internal error: '%s' unknown relation type", code)));
 
 	SPI_connect();
 
 	ret = SPI_exec(NameStr(str), 0);
 
 	if (ret > 0 && SPI_tuptable != NULL)
-    {
-        SPITupleTable *tuptable = SPI_tuptable;
-        TupleDesc tupdesc = tuptable->tupdesc;
+	{
+		SPITupleTable *tuptable = SPI_tuptable;
+		TupleDesc tupdesc = tuptable->tupdesc;
 
 		HeapTuple tuple = tuptable->vals[0];
-		res = (Oid) atoi(SPI_getvalue(tuple, tupdesc, 1));
+		res = (Oid)atoi(SPI_getvalue(tuple, tupdesc, 1));
 	}
 
 	SPI_finish();
 
-	if(res == InvalidOid)
+	if (res == InvalidOid)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("invalid relation: '%s' is not a %s",relname,
-					strcmp(code,RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table" )));
+				 errmsg("invalid relation: '%s' is not a %s", relname,
+						strcmp(code, RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table")));
 
-	elog(DEBUG1,"%s exit: returning '%u'", __func__, res);
+	elog(DEBUG1, "%s exit: returning '%u'", __func__, res);
 	return res;
-
 }
-#endif  /* PG_VERSION_NUM >= 110000 */
+#endif /* PG_VERSION_NUM >= 110000 */
 
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 {
@@ -4699,9 +4682,8 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 	ListCell *cell;
 	struct RDFfdwOption *opt;
 	bool hasliteralatt = false;
-	//bool is_iri = false;
-	
-	elog(DEBUG1,"%s called", __func__);
+
+	elog(DEBUG1, "%s called", __func__);
 
 	/* Initialize found state to not found */
 	for (opt = valid_options; opt->optname; opt++)
@@ -4737,7 +4719,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					{
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								errmsg("invalid %s: '%s'", opt->optname, defGetString(def))));
+								 errmsg("invalid %s: '%s'", opt->optname, defGetString(def))));
 					}
 				}
 
@@ -4786,17 +4768,15 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					}
 				}
 
-
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_PUSHDOWN) == 0)
-				{				
+				{
 					char *enable_pushdown = defGetString(def);
-					if(strcasecmp(enable_pushdown,"true") !=0 && strcasecmp(enable_pushdown,"false") != 0)
+					if (strcasecmp(enable_pushdown, "true") != 0 && strcasecmp(enable_pushdown, "false") != 0)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, enable_pushdown),
 								 errhint("this parameter expects boolean values ('true' or 'false')")));
 				}
-
 
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_SPARQL) == 0)
 				{
@@ -4821,114 +4801,79 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'")));
 
 					/* report ERROR if the SPARQL query does not contain a SELECT */
-					 if(LocateKeyword(sparql, " {\n\t>", "SELECT"," *?\n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
+					if (LocateKeyword(sparql, " {\n\t>", "SELECT", " *?\n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
 						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-							errmsg("unable to parse SPARQL SELECT clause:\n%s.", sparql)));
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("unable to parse SPARQL SELECT clause:\n%s.", sparql)));
 				}
 
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_LOG_SPARQL) == 0)
-				{				
+				{
 					char *log_sparql = defGetString(def);
-					if(strcasecmp(log_sparql,"true") !=0 && strcasecmp(log_sparql,"false") != 0)
+					if (strcasecmp(log_sparql, "true") != 0 && strcasecmp(log_sparql, "false") != 0)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, log_sparql),
 								 errhint("this parameter expects boolean values ('true' or 'false')")));
 				}
-				
-				if(strcmp(opt->optname, RDF_COLUMN_OPTION_VARIABLE) == 0)
-				{	
-					if(!IsSPARQLVariableValid(defGetString(def)))
+
+				if (strcmp(opt->optname, RDF_COLUMN_OPTION_VARIABLE) == 0)
+				{
+					if (!IsSPARQLVariableValid(defGetString(def)))
 						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								errhint("a query variable must start with either \"?\" or \"$\"; the \"?\" or \"$\" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.")));
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								 errhint("a query variable must start with either \"?\" or \"$\"; the \"?\" or \"$\" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.")));
 				}
 
-				if(strcmp(opt->optname, RDF_COLUMN_OPTION_NODETYPE) == 0)
+				if (strcmp(opt->optname, RDF_COLUMN_OPTION_NODETYPE) == 0)
 				{
-					if(strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) != 0 &&
-					   strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_LITERAL) != 0)
-					   ereport(ERROR,
+					if (strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) != 0 &&
+						strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_LITERAL) != 0)
+						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
 								 errhint("this parameter expects node types ('iri' or 'literal')")));
-					
-					// if(strcasecmp(defGetString(def), RDF_COLUMN_OPTION_NODETYPE_IRI) == 0)
-					// 	is_iri = true;
 				}
 
-				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0)
-				{				
-					if(hasliteralatt)
-						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							 errhint("the parameters '%s' and '%s' cannot be combined",
-								RDF_COLUMN_OPTION_LITERAL_TYPE,
-								RDF_COLUMN_OPTION_LANGUAGE)));
-					
-					hasliteralatt = true;
-
-					if(ContainsWhitespaces(defGetString(def)))
-						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LITERAL_TYPE)));
-				}
-
-				if(strcmp(opt->optname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
+				if (strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0)
 				{
-					if(hasliteralatt)
+					if (hasliteralatt)
 						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-							 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							 errhint("the parameters '%s' and '%s' cannot be combined",
-								RDF_COLUMN_OPTION_LITERAL_TYPE,
-								RDF_COLUMN_OPTION_LANGUAGE)));
-					
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								 errhint("the parameters '%s' and '%s' cannot be combined",
+										 RDF_COLUMN_OPTION_LITERAL_TYPE,
+										 RDF_COLUMN_OPTION_LANGUAGE)));
+
 					hasliteralatt = true;
 
-					if(ContainsWhitespaces(defGetString(def)))
+					if (ContainsWhitespaces(defGetString(def)))
 						ereport(ERROR,
-							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-							errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-							errhint("whitespaces are not allwoed in '%s' option",
-								RDF_COLUMN_OPTION_LANGUAGE)));
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								 errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LITERAL_TYPE)));
 				}
 
-				// if(strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0)
-				// {
-				// 	char *literal_format = defGetString(def);
+				if (strcmp(opt->optname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
+				{
+					if (hasliteralatt)
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								 errhint("the parameters '%s' and '%s' cannot be combined",
+										 RDF_COLUMN_OPTION_LITERAL_TYPE,
+										 RDF_COLUMN_OPTION_LANGUAGE)));
 
-				// 	if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) != 0 && strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT) != 0)
-				// 		ereport(ERROR,
-				// 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-				// 				 errmsg("invalid %s: '%s'", def->defname, literal_format),
-				// 				 errhint("this parameter can only be '%s' or '%s'",
-				// 						 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
-				// 						 RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT)));
+					hasliteralatt = true;
 
-				// 	if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && is_iri)
-				// 		ereport(ERROR,
-				// 				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-				// 				 errmsg("invalid %s: '%s'", def->defname, literal_format),
-				// 				 errhint("%s columns can only be of %s '%s'",
-				// 						 RDF_COLUMN_OPTION_VALUE_LITERAL_RAW,
-				// 						 RDF_COLUMN_OPTION_NODETYPE,
-				// 						 RDF_COLUMN_OPTION_NODETYPE_LITERAL)));
-
-				// 	if (strcmp(literal_format, RDF_COLUMN_OPTION_VALUE_LITERAL_RAW) == 0 && hasliteralatt)
-				// 		ereport(ERROR,
-				// 			(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-				// 			errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-				// 			errhint("the parameter '%s' cannot be combined with '%s' or '%s'",
-				// 				RDF_COLUMN_OPTION_LITERAL_FORMAT,
-				// 				RDF_COLUMN_OPTION_LANGUAGE,
-				// 				RDF_COLUMN_OPTION_LITERAL_TYPE)));
-				// }
-
+					if (ContainsWhitespaces(defGetString(def)))
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
+								 errhint("whitespaces are not allwoed in '%s' option",
+										 RDF_COLUMN_OPTION_LANGUAGE)));
+				}
 				break;
 			}
 		}
@@ -4946,13 +4891,13 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 		/* Required option for this catalog type is missing? */
 		if (catalog == opt->optcontext && opt->optrequired && !opt->optfound)
 		{
-			ereport(ERROR, 
+			ereport(ERROR,
 					(errcode(ERRCODE_FDW_DYNAMIC_PARAMETER_VALUE_NEEDED),
 					 errmsg("required option '%s' is missing", opt->optname)));
 		}
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 	PG_RETURN_VOID();
 }
 
@@ -4966,9 +4911,6 @@ static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 	state->startup_cost = 10000.0;
 	/* estimate total cost as startup cost + 10 * (returned rows) */
 	state->total_cost = state->startup_cost + baserel->rows * 10.0;
-
-	//InitSession(state, baserel, root);
-
 	baserel->fdw_private = state;
 }
 
@@ -5001,7 +4943,7 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	List *fdw_private = NIL;
 	ListCell *cell;
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	foreach (cell, scan_clauses)
 	{
@@ -5020,17 +4962,17 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 
 	InitSession(state, baserel, root);
 
-	if(!state->enable_pushdown) 
+	if (!state->enable_pushdown)
 	{
 		state->sparql = state->raw_sparql;
-		elog(DEBUG2,"  %s: Pushdown feature disabled. SPARQL query won't be modified.",__func__);
-	} 
-	else if(!state->is_sparql_parsable) 
-	{
-		state->sparql = state->raw_sparql;
-		elog(DEBUG2,"  %s: SPARQL cannot be fully parsed. The raw SPARQL will be used and all filters will be applied locally.",__func__);
+		elog(DEBUG2, "  %s: Pushdown feature disabled. SPARQL query won't be modified.", __func__);
 	}
-	else 
+	else if (!state->is_sparql_parsable)
+	{
+		state->sparql = state->raw_sparql;
+		elog(DEBUG2, "  %s: SPARQL cannot be fully parsed. The raw SPARQL will be used and all filters will be applied locally.", __func__);
+	}
+	else
 	{
 		CreateSPARQL(state, root);
 	}
@@ -5054,12 +4996,12 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 
 	if (eflags & EXEC_FLAG_EXPLAIN_ONLY)
 		return;
-	
-	elog(DEBUG1,"%s called",__func__);
+
+	elog(DEBUG1, "%s called", __func__);
 
 	state = DeserializePlanData(fs->fdw_private);
 
-	elog(DEBUG2,"%s: initializing XML parser",__func__);
+	elog(DEBUG2, "%s: initializing XML parser", __func__);
 	xmlInitParser();
 
 	LoadRDFData(state);
@@ -5070,7 +5012,7 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 {
 	TupleTableSlot *slot = node->ss.ss_ScanTupleSlot;
-	struct RDFfdwState *state = (struct RDFfdwState *) node->fdw_state;
+	struct RDFfdwState *state = (struct RDFfdwState *)node->fdw_state;
 
 	elog(DEBUG3, "%s called", __func__);
 
@@ -5086,7 +5028,7 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 		return NULL;
 
 	CreateTuple(slot, state);
-	//ExecStoreVirtualTuple(slot);  // REQUIRED to return a valid tuple
+	// ExecStoreVirtualTuple(slot);  // REQUIRED to return a valid tuple
 	elog(DEBUG3, "%s: virtual tuple stored (%d/%d)", __func__, state->rowcount, state->pagesize);
 	elog(DEBUG3, "%s: valid slots = %d", __func__, slot->tts_nvalid);
 
@@ -5094,7 +5036,6 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 
 	return slot;
 }
-
 
 static void rdfReScanForeignScan(ForeignScanState *node)
 {
@@ -5104,32 +5045,32 @@ static void rdfEndForeignScan(ForeignScanState *node)
 {
 	struct RDFfdwState *state;
 
-	elog(DEBUG1,"%s: called ",__func__);
+	elog(DEBUG1, "%s: called ", __func__);
 
-	if(node->fdw_state) {
+	if (node->fdw_state)
+	{
 
-		state = (struct RDFfdwState *) node->fdw_state;
+		state = (struct RDFfdwState *)node->fdw_state;
 
-		if(state->xmldoc)
+		if (state->xmldoc)
 		{
-			elog(DEBUG2,"%s: freeing xmldoc",__func__);
+			elog(DEBUG2, "%s: freeing xmldoc", __func__);
 			xmlFreeDoc(state->xmldoc);
 		}
 
-		if(state)
+		if (state)
 		{
-			elog(DEBUG2,"%s: freeing rdf_fdw state",__func__);
+			elog(DEBUG2, "%s: freeing rdf_fdw state", __func__);
 			pfree(state);
 		}
-
 	}
 
-	elog(DEBUG1,"%s exit: so long .. \n",__func__);
+	elog(DEBUG1, "%s exit: so long .. \n", __func__);
 }
 
 static void LoadRDFTableInfo(RDFfdwState *state)
 {
-	ListCell *cell;	
+	ListCell *cell;
 	TupleDesc tupdesc;
 #if PG_VERSION_NUM < 130000
 	Relation rel = heap_open(state->foreigntableid, NoLock);
@@ -5145,8 +5086,8 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 	/*
 	 *Loading FOREIGN TABLE strucuture (columns and their OPTION values)
 	 */
-	state->rdfTable = (struct RDFfdwTable *) palloc0(sizeof(struct RDFfdwTable));
-	state->rdfTable->cols = (struct RDFfdwColumn **) palloc0(sizeof(struct RDFfdwColumn*) * state->numcols);
+	state->rdfTable = (struct RDFfdwTable *)palloc0(sizeof(struct RDFfdwTable));
+	state->rdfTable->cols = (struct RDFfdwColumn **)palloc0(sizeof(struct RDFfdwColumn *) * state->numcols);
 
 	for (int i = 0; i < state->numcols; i++)
 	{
@@ -5162,7 +5103,6 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->pushable = true;
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 		state->rdfTable->cols[i]->used = false;
-		//state->rdfTable->cols[i]->literal_fomat = RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT;
 
 		foreach (lc, options)
 		{
@@ -5170,56 +5110,43 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 
 			if (strcmp(def->defname, RDF_COLUMN_OPTION_VARIABLE) == 0)
 			{
-				elog(DEBUG2,"  %s: (%d) adding sparql variable > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2, "  %s: (%d) adding sparql variable > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->sparqlvar = pstrdup(defGetString(def));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_EXPRESSION) == 0)
 			{
-				elog(DEBUG2,"  %s: (%d) adding sparql expression > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2, "  %s: (%d) adding sparql expression > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->expression = pstrdup(defGetString(def));
 				state->rdfTable->cols[i]->pushable = IsExpressionPushable(defGetString(def));
-				elog(DEBUG2,"  %s: (%d) is expression pushable? > '%s'",__func__,i,
-					state->rdfTable->cols[i]->pushable ? "true" : "false");
+				elog(DEBUG2, "  %s: (%d) is expression pushable? > '%s'", __func__, i,
+					 state->rdfTable->cols[i]->pushable ? "true" : "false");
 			}
-			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0 )
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0)
 			{
-				// StringInfoData literaltype;
-				// initStringInfo(&literaltype);
-				// appendStringInfo(&literaltype, "^^%s", defGetString(def));
-				elog(DEBUG2,"  %s: (%d) adding sparql literal data type > '%s'",__func__,i,defGetString(def));
-				//state->rdfTable->cols[i]->literaltype = pstrdup(literaltype.data);
+				elog(DEBUG2, "  %s: (%d) adding sparql literal data type > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->literaltype = pstrdup(defGetString(def));
 			}
-			// else if (strcmp(def->defname, RDF_COLUMN_OPTION_LITERAL_FORMAT) == 0 )
-			// {
-			// 	elog(DEBUG2,"  %s: (%d) adding sparql node format > '%s'",__func__,i,defGetString(def));
-			// 	state->rdfTable->cols[i]->literal_fomat = pstrdup(defGetString(def));
-			// }
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_NODETYPE) == 0)
 			{
-				elog(DEBUG2,"  %s: (%d) adding sparql node data type > '%s'",__func__,i,defGetString(def));
+				elog(DEBUG2, "  %s: (%d) adding sparql node data type > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->nodetype = pstrdup(defGetString(def));
 			}
-			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LANGUAGE) == 0) 
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
 			{
-				// StringInfoData tag;
-				// initStringInfo(&tag);
-				// appendStringInfo(&tag, "@%s", defGetString(def));
-				elog(DEBUG2,"  %s: (%d) adding literal language tag > '%s'",__func__,i,defGetString(def));
-				//state->rdfTable->cols[i]->language = pstrdup(tag.data);
+				elog(DEBUG2, "  %s: (%d) adding literal language tag > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->language = pstrdup(defGetString(def));
 			}
 		}
 
 #if PG_VERSION_NUM < 110000
-		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,attr->atttypid);
+		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
 		state->rdfTable->cols[i]->pgtype = attr->atttypid;
 		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
 		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
 		state->rdfTable->cols[i]->pgattnum = attr->attnum;
 
 #else
-		elog(DEBUG1,"  %s: (%d) adding data type > %u",__func__,i,attr->atttypid);
+		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
 		state->rdfTable->cols[i]->pgtype = attr->atttypid;
 		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
 		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
@@ -5232,7 +5159,6 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 #else
 	table_close(rel, NoLock);
 #endif
-
 
 	/*
 	 * Loading FOREIGN TABLE OPTIONS
@@ -5248,14 +5174,11 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		}
 		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0)
 			state->log_sparql = defGetBoolean(def);
-			//state->log_sparql = getBoolVal(def);
-
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 			state->enable_pushdown = defGetBoolean(def);
-			//state->enable_pushdown = getBoolVal(def);
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 
 static void LoadRDFServerInfo(RDFfdwState *state)
@@ -5309,8 +5232,6 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
 				state->request_redirect = defGetBoolean(def);
-				//state->request_redirect = getBoolVal(def);
-
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)
 			{
 				char *tailpt;
@@ -5325,8 +5246,6 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
-				//state->enable_pushdown = getBoolVal(def);
-
 			else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 				state->query_param = defGetString(def);
 
@@ -5335,15 +5254,15 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 		}
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 
 static void LoadRDFUserMapping(RDFfdwState *state)
 {
 
-	Datum		datum;
-	HeapTuple	tp;
-	bool		isnull;
+	Datum datum;
+	HeapTuple tp;
+	bool isnull;
 	UserMapping *um;
 	List *options = NIL;
 	ListCell *cell;
@@ -5357,7 +5276,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 
 	if (!HeapTupleIsValid(tp))
 	{
-		elog(DEBUG2, "%s: not found for the specific user -- try PUBLIC",__func__);
+		elog(DEBUG2, "%s: not found for the specific user -- try PUBLIC", __func__);
 		tp = SearchSysCache2(USERMAPPINGUSERSERVER,
 							 ObjectIdGetDatum(InvalidOid),
 							 ObjectIdGetDatum(state->server->serverid));
@@ -5379,7 +5298,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 		um->umid = HeapTupleGetOid(tp);
 #else
 		um->umid = ((Form_pg_user_mapping)GETSTRUCT(tp))->oid;
-#endif		
+#endif
 		um->userid = GetUserId();
 		um->serverid = state->server->serverid;
 
@@ -5408,7 +5327,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 				}
 
 				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PASSWORD) == 0)
-				{					
+				{
 					state->password = pstrdup(defGetString(def));
 					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
 				}
@@ -5418,7 +5337,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 		ReleaseSysCache(tp);
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 /*
  * CStringToConst
@@ -5427,7 +5346,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
  *
  * returns Const from given string.
  */
-Const *CStringToConst(const char* str)
+Const *CStringToConst(const char *str)
 {
 	if (str == NULL)
 		return makeNullConst(TEXTOID, -1, InvalidOid);
@@ -5453,18 +5372,18 @@ char *ConstToCString(Const *constant)
 /*
  * SerializePlanData
  * -----------------
- * Converts parameters into Const variables, so that it can be properly 
+ * Converts parameters into Const variables, so that it can be properly
  * stored by the plan
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
- * 
+ *
  * returns a List containing all converted parameterrs.
  */
 static List *SerializePlanData(RDFfdwState *state)
 {
 	List *result = NIL;
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	result = lappend(result, IntToConst((int)state->numcols));
 	result = lappend(result, CStringToConst(state->sparql));
@@ -5496,47 +5415,47 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->max_retries));
 	result = lappend(result, OidToConst(state->foreigntableid));
 
-	elog(DEBUG2,"%s: serializing table with %d columns",__func__, state->numcols);
+	elog(DEBUG2, "%s: serializing table with %d columns", __func__, state->numcols);
 	for (int i = 0; i < state->numcols; ++i)
 	{
-		elog(DEBUG2,"%s: column name '%s'",__func__, state->rdfTable->cols[i]->name);
+		elog(DEBUG2, "%s: column name '%s'", __func__, state->rdfTable->cols[i]->name);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->name));
 
-		elog(DEBUG2,"%s: sparqlvar '%s'",__func__, state->rdfTable->cols[i]->sparqlvar);
+		elog(DEBUG2, "%s: sparqlvar '%s'", __func__, state->rdfTable->cols[i]->sparqlvar);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->sparqlvar));
 
-		elog(DEBUG2,"%s: expression '%s'",__func__, state->rdfTable->cols[i]->expression);
+		elog(DEBUG2, "%s: expression '%s'", __func__, state->rdfTable->cols[i]->expression);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->expression));
 
-		elog(DEBUG2,"%s: literaltype '%s'",__func__, state->rdfTable->cols[i]->literaltype);
+		elog(DEBUG2, "%s: literaltype '%s'", __func__, state->rdfTable->cols[i]->literaltype);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literaltype));
 
-		elog(DEBUG2,"%s: literal_format '%s'",__func__, state->rdfTable->cols[i]->literal_fomat);
+		elog(DEBUG2, "%s: literal_format '%s'", __func__, state->rdfTable->cols[i]->literal_fomat);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literal_fomat));
 
-		elog(DEBUG2,"%s: nodetype '%s'",__func__, state->rdfTable->cols[i]->nodetype);
+		elog(DEBUG2, "%s: nodetype '%s'", __func__, state->rdfTable->cols[i]->nodetype);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->nodetype));
 
-		elog(DEBUG2,"%s: language '%s'",__func__, state->rdfTable->cols[i]->language);
+		elog(DEBUG2, "%s: language '%s'", __func__, state->rdfTable->cols[i]->language);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->language));
 
-		elog(DEBUG2,"%s: pgtype '%u'",__func__, state->rdfTable->cols[i]->pgtype);
+		elog(DEBUG2, "%s: pgtype '%u'", __func__, state->rdfTable->cols[i]->pgtype);
 		result = lappend(result, OidToConst(state->rdfTable->cols[i]->pgtype));
 
-		elog(DEBUG2,"%s: pgtypmod '%d'",__func__, state->rdfTable->cols[i]->pgtypmod);
+		elog(DEBUG2, "%s: pgtypmod '%d'", __func__, state->rdfTable->cols[i]->pgtypmod);
 		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pgtypmod));
 
-		elog(DEBUG2,"%s: pgattnum '%d'",__func__, state->rdfTable->cols[i]->pgattnum);
+		elog(DEBUG2, "%s: pgattnum '%d'", __func__, state->rdfTable->cols[i]->pgattnum);
 		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pgattnum));
 
-		elog(DEBUG2,"%s: used '%d'",__func__, state->rdfTable->cols[i]->used);
+		elog(DEBUG2, "%s: used '%d'", __func__, state->rdfTable->cols[i]->used);
 		result = lappend(result, IntToConst(state->rdfTable->cols[i]->used));
 
-		elog(DEBUG2,"%s: pushable '%d'",__func__, state->rdfTable->cols[i]->pushable);
+		elog(DEBUG2, "%s: pushable '%d'", __func__, state->rdfTable->cols[i]->pushable);
 		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pushable));
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 	return result;
 }
 
@@ -5545,9 +5464,9 @@ static List *SerializePlanData(RDFfdwState *state)
  * -------------------
  * Converts Const variables created using SerializePlanData back
  * into pointers
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
- * 
+ *
  * returns a RDFfdwState containing all converted parameterrs.
  */
 static struct RDFfdwState *DeserializePlanData(List *list)
@@ -5555,7 +5474,7 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
 	ListCell *cell = list_head(list);
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	state->numcols = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	state->rowcount = 0;
@@ -5619,44 +5538,44 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	state->password = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->request_redirect = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->request_redirect = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->enable_pushdown = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->enable_pushdown = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->is_sparql_parsable = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->is_sparql_parsable = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->log_sparql = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->log_sparql = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->has_unparsable_conds = (bool) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->has_unparsable_conds = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->request_max_redirect = (int) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->request_max_redirect = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->connect_timeout = (int) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->connect_timeout = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->max_retries = (int) DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->max_retries = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
 	state->foreigntableid = DatumGetObjectId(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	elog(DEBUG2,"  %s: deserializing table with %d columns",__func__, state->numcols);
-	state->rdfTable = (struct RDFfdwTable *) palloc0(sizeof(struct RDFfdwTable));
-	state->rdfTable->cols = (struct RDFfdwColumn **) palloc0(sizeof(struct RDFfdwColumn*) * state->numcols);
+	elog(DEBUG2, "  %s: deserializing table with %d columns", __func__, state->numcols);
+	state->rdfTable = (struct RDFfdwTable *)palloc0(sizeof(struct RDFfdwTable));
+	state->rdfTable->cols = (struct RDFfdwColumn **)palloc0(sizeof(struct RDFfdwColumn *) * state->numcols);
 
-	for (int i = 0; i<state->numcols; ++i)
+	for (int i = 0; i < state->numcols; ++i)
 	{
 		state->rdfTable->cols[i] = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
 		state->rdfTable->cols[i]->name = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
-		elog(DEBUG2,"  %s: column name '%s'",__func__, state->rdfTable->cols[i]->name);
+		elog(DEBUG2, "  %s: column name '%s'", __func__, state->rdfTable->cols[i]->name);
 
 		state->rdfTable->cols[i]->sparqlvar = ConstToCString(lfirst(cell));
 		cell = list_next(list, cell);
@@ -5690,10 +5609,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 
 		state->rdfTable->cols[i]->pushable = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 		cell = list_next(list, cell);
-
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 	return state;
 }
 
@@ -5703,7 +5621,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 	char *ptr = repalloc(mem->memory, mem->size + realsize + 1);
 
-	elog(DEBUG1,"%s called", __func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	if (!ptr)
 		ereport(ERROR,
@@ -5715,7 +5633,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
-	elog(DEBUG1,"%s exit: returning '%lu' (realsize)", __func__, realsize);
+	elog(DEBUG1, "%s exit: returning '%lu' (realsize)", __func__, realsize);
 	return realsize;
 }
 
@@ -5730,11 +5648,11 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	char *rdfxml = "content-type: application/rdf+xml";
 	char *rdfxmlutf8 = "content-type: application/rdf+xml;charset=utf-8";
 
-	elog(DEBUG1,"%s called", __func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	Assert(contents);
 
-	/* is it a "content-type" entry? "*/	
+	/* is it a "content-type" entry? "*/
 	if (strncasecmp(contents, sparqlxml, 13) == 0)
 	{
 
@@ -5764,7 +5682,7 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
-	elog(DEBUG1,"%s exit: returning '%lu' (realsize)", __func__, realsize);
+	elog(DEBUG1, "%s exit: returning '%lu' (realsize)", __func__, realsize);
 	return realsize;
 }
 
@@ -5773,7 +5691,7 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
  * --------------------
  * Progress callback function for cURL requests. This allows us to
  * check for interruptions to immediatelly cancel the request.
- * 
+ *
  * dltotal: Total bytes to download
  * dlnow: Bytes downloaded so far
  * ultotal: Total bytes to upload
@@ -5814,7 +5732,7 @@ static int CheckURL(char *url)
 		return code;
 	}
 
-	elog(DEBUG1,"%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
+	elog(DEBUG1, "%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
 	return REQUEST_SUCCESS;
 }
 
@@ -5822,19 +5740,20 @@ static int CheckURL(char *url)
  * GetRDFColumn
  * -------------
  * Returns the RDFfdwColumn mapped to the table column in `columname`
- * 
+ *
  * state    : SPARQL, SERVER and FOREIGN TABLE info
  * columname: name of the FOREIGN TABLE column
- * 
+ *
  * returns RDFfdwColumn loded with all its attributes
  */
-static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname){
+static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname)
+{
 
-	elog(DEBUG1,"%s called: column='%s'",__func__, columnname);
+	elog(DEBUG1, "%s called: column='%s'", __func__, columnname);
 
-	if(!columnname)
+	if (!columnname)
 	{
-		elog(DEBUG1,"%s exit: returning NULL (columnname is NULL)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (columnname is NULL)", __func__);
 		return NULL;
 	}
 
@@ -5842,38 +5761,39 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 	{
 		if (strcmp(state->rdfTable->cols[i]->name, columnname) == 0)
 		{
-			elog(DEBUG1,"%s exit: rerurning match for columname '%s'",__func__, columnname);
+			elog(DEBUG1, "%s exit: rerurning match for columname '%s'", __func__, columnname);
 			return state->rdfTable->cols[i];
-		}	
+		}
 	}
 
-	elog(DEBUG1,"%s exit: rerurning NULL (no match found for '%s')",__func__,columnname);
+	elog(DEBUG1, "%s exit: rerurning NULL (no match found for '%s')", __func__, columnname);
 	return NULL;
 }
 
 /*
  * InitSession
  * ----------
- * This function loads the 'OPTION' variables declared in SERVER and FOREIGN 
- * TABLE statements. It also parses the raw_sparql query into its main clauses, 
+ * This function loads the 'OPTION' variables declared in SERVER and FOREIGN
+ * TABLE statements. It also parses the raw_sparql query into its main clauses,
  * so that it can be later modified to match the SQL SELECT clause and commands
  * that can be pushed down to SPARQL
- * 
+ *
  * state  : SPARQL, SERVER and FOREIGN TABLE info
  * baserel: Conditions and columns used in the SQL query
  * root   : Planner info
  */
-static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root) {
+static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root)
+{
 
 	List *columnlist = baserel->reltarget->exprs;
 	List *conditions = baserel->baserestrictinfo;
 	ListCell *cell;
 	StringInfoData select;
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
-	//TODO: create function to retrieve the OID of custom data types for 9.6+
-	RDFNODEOID = get_rdfnode_oid();
+	// TODO: create function to retrieve the OID of custom data types for 9.6+
+	RDFNODEOID = GetRDFNodeOID();
 
 	/*
 	 * Setting session's default values.
@@ -5905,15 +5825,15 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 */
 	LoadRDFUserMapping(state);
 
-	/* 
+	/*
 	 * Marking columns used in the SQL query for SPARQL pushdown
 	 */
-	elog(DEBUG2, "%s: looking for columns in the SELECT entry list",__func__);
-	foreach(cell, columnlist)
+	elog(DEBUG2, "%s: looking for columns in the SELECT entry list", __func__);
+	foreach (cell, columnlist)
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
-	elog(DEBUG2, "%s: looking for columns used in WHERE conditions",__func__);
-	foreach(cell, conditions)
+	elog(DEBUG2, "%s: looking for columns used in WHERE conditions", __func__);
+	foreach (cell, conditions)
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
 	/*
@@ -5929,12 +5849,12 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
 	{
-		if(state->rdfTable->cols[i]->used && !state->rdfTable->cols[i]->expression)
-			appendStringInfo(&select,"%s ",pstrdup(state->rdfTable->cols[i]->sparqlvar));
+		if (state->rdfTable->cols[i]->used && !state->rdfTable->cols[i]->expression)
+			appendStringInfo(&select, "%s ", pstrdup(state->rdfTable->cols[i]->sparqlvar));
 
-		else if(state->rdfTable->cols[i]->used && state->rdfTable->cols[i]->expression)
-			appendStringInfo(&select,"(%s AS %s) ",pstrdup(state->rdfTable->cols[i]->expression),
-												   pstrdup(state->rdfTable->cols[i]->sparqlvar));
+		else if (state->rdfTable->cols[i]->used && state->rdfTable->cols[i]->expression)
+			appendStringInfo(&select, "(%s AS %s) ", pstrdup(state->rdfTable->cols[i]->expression),
+							 pstrdup(state->rdfTable->cols[i]->sparqlvar));
 	}
 
 	state->sparql_select = pstrdup(select.data);
@@ -5964,7 +5884,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 */
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 
 /*
@@ -5991,10 +5911,10 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 	}
 
 	cell = list_nth_cell(state->records, state->rowcount);
-	res = (xmlNodePtr) lfirst(cell);
+	res = (xmlNodePtr)lfirst(cell);
 
-	elog(DEBUG3,"  %s exit: returning %d",__func__,state->rowcount);
-	
+	elog(DEBUG3, "  %s exit: returning %d", __func__, state->rowcount);
+
 	return res;
 }
 
@@ -6003,7 +5923,7 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
  * -------------
  * Executes the SPARQL query in the endpoint set in the CREATE FOREIGN TABLE
  * and CREATE SERVER statements. The result set is loaded into 'state'.
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  *
  * returns REQUEST_SUCCESS or REQUEST_FAIL
@@ -6014,7 +5934,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	StringInfoData url_buffer;
 	StringInfoData user_agent;
 	StringInfoData accept_header;
-	//StringInfoData http_auth;
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
@@ -6025,8 +5944,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	chunk.size = 0; /* no data at this point */
 	chunk_header.memory = palloc(1);
 	chunk_header.size = 0; /* no data at this point */
-	
-	elog(DEBUG1, "%s called",__func__);
+
+	elog(DEBUG1, "%s called", __func__);
 
 	curl_global_init(CURL_GLOBAL_ALL);
 	state->curl = curl_easy_init();
@@ -6040,7 +5959,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	initStringInfo(&url_buffer);
 	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
 
-	if(state->custom_params)
+	if (state->custom_params)
 		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(state->curl, state->custom_params, 0));
 
 	elog(DEBUG2, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
@@ -6114,32 +6033,32 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, true);
 
-        /* Enable verbose mode for debugging */
-        curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
+		/* Enable verbose mode for debugging */
+		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
 
-        /* Set the progress callback function */
-        curl_easy_setopt(state->curl, CURLOPT_XFERINFOFUNCTION, CURLProgressCallback);
+		/* Set the progress callback function */
+		curl_easy_setopt(state->curl, CURLOPT_XFERINFOFUNCTION, CURLProgressCallback);
 
-        /* Optional: Pass user data to the callback (NULL in this case) */
-        curl_easy_setopt(state->curl, CURLOPT_XFERINFODATA, NULL);
+		/* Optional: Pass user data to the callback (NULL in this case) */
+		curl_easy_setopt(state->curl, CURLOPT_XFERINFODATA, NULL);
 
-        /* Enable progress callback */
-        curl_easy_setopt(state->curl, CURLOPT_NOPROGRESS, 0L);
+		/* Enable progress callback */
+		curl_easy_setopt(state->curl, CURLOPT_NOPROGRESS, 0L);
 
 		initStringInfo(&user_agent);
-		appendStringInfo(&user_agent,  "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
+		appendStringInfo(&user_agent, "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
 		curl_easy_setopt(state->curl, CURLOPT_USERAGENT, user_agent.data);
 
 		headers = curl_slist_append(headers, accept_header.data);
 		curl_easy_setopt(state->curl, CURLOPT_HTTPHEADER, headers);
 
-		if(state->user && state->password)
+		if (state->user && state->password)
 		{
 			curl_easy_setopt(state->curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 			curl_easy_setopt(state->curl, CURLOPT_USERNAME, state->user);
 			curl_easy_setopt(state->curl, CURLOPT_PASSWORD, state->password);
 		}
-		else if(state->user && !state->password)
+		else if (state->user && !state->password)
 		{
 			curl_easy_setopt(state->curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 			curl_easy_setopt(state->curl, CURLOPT_USERNAME, state->user);
@@ -6172,32 +6091,32 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			if (len)
 			{
 				curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
-				
-				if(response_code == 401)
+
+				if (response_code == 401)
 					ereport(ERROR,
-						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-						 errmsg("Unauthorized (HTTP status %ld)", response_code),
-						 errhint("Check the user and password set in the USER MAPPING and try again.")));
-				else if(response_code == 404)
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("Unauthorized (HTTP status %ld)", response_code),
+							 errhint("Check the user and password set in the USER MAPPING and try again.")));
+				else if (response_code == 404)
 					ereport(ERROR,
-						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-						 errmsg("Not Found (HTTP status %ld)", response_code),
-						 errhint("This indicates that the server cannot find the requested resource. Check the SERVER url and try again: '%s'",state->endpoint)));
-				else if(response_code == 405)
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("Not Found (HTTP status %ld)", response_code),
+							 errhint("This indicates that the server cannot find the requested resource. Check the SERVER url and try again: '%s'", state->endpoint)));
+				else if (response_code == 405)
 					ereport(ERROR,
-						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-						 errmsg("Method Not Allowed (HTTP status %ld)", response_code),
-						 errhint("This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: '%s'",state->endpoint)));
-				else if(response_code == 500)
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("Method Not Allowed (HTTP status %ld)", response_code),
+							 errhint("This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: '%s'", state->endpoint)));
+				else if (response_code == 500)
 					ereport(ERROR,
-						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-						 errmsg("Internal Server Error (HTTP status %ld)", response_code),
-						 errhint("This indicates that the SERVER is currently unable to process any request due to internal problems. Check the SERVER url and try again: '%s'",state->endpoint)));				
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("Internal Server Error (HTTP status %ld)", response_code),
+							 errhint("This indicates that the SERVER is currently unable to process any request due to internal problems. Check the SERVER url and try again: '%s'", state->endpoint)));
 				else
 					ereport(ERROR,
-						(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-						 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->endpoint, response_code),
-						 errdetail("%s (curl error code %u)",curl_easy_strerror(res), res)));
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->endpoint, response_code),
+							 errdetail("%s (curl error code %u)", curl_easy_strerror(res), res)));
 			}
 			else
 			{
@@ -6216,7 +6135,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			elog(DEBUG2, "  %s: http response size = %ld", __func__, chunk.size);
 			elog(DEBUG2, "  %s: http response header = \n%s", __func__, chunk_header.memory);
 		}
-
 	}
 
 	pfree(chunk.memory);
@@ -6228,13 +6146,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	/*
 	 * We thrown an error in case the SPARQL endpoint returns an empty XML doc
 	 */
-	if(!state->sparql_resultset)
+	if (!state->sparql_resultset)
 	{
-		elog(DEBUG1,"%s exit: REQUEST_FAIL", __func__);
+		elog(DEBUG1, "%s exit: REQUEST_FAIL", __func__);
 		return REQUEST_FAIL;
 	}
 
-	elog(DEBUG1,"%s exit: REQUEST_SUCCESS", __func__);
+	elog(DEBUG1, "%s exit: REQUEST_SUCCESS", __func__);
 	return REQUEST_SUCCESS;
 }
 
@@ -6242,7 +6160,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
  * LoadRDFData
  * -----------
  * Parses the result set loaded into 'state->xmldoc' into records.
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  */
 static void LoadRDFData(RDFfdwState *state)
@@ -6267,13 +6185,13 @@ static void LoadRDFData(RDFfdwState *state)
 
 		for (results = root->children; results != NULL; results = results->next)
 		{
-			if (xmlStrcmp(results->name, (xmlChar *) "results") == 0)
+			if (xmlStrcmp(results->name, (xmlChar *)"results") == 0)
 			{
 				xmlNodePtr record;
 
 				for (record = results->children; record != NULL; record = record->next)
 				{
-					if (xmlStrcmp(record->name, (xmlChar *) "result") == 0)
+					if (xmlStrcmp(record->name, (xmlChar *)"result") == 0)
 					{
 						state->records = lappend(state->records, record);
 						state->pagesize++;
@@ -6285,19 +6203,19 @@ static void LoadRDFData(RDFfdwState *state)
 		}
 
 		if (state->log_sparql)
-			elog(INFO,"SPARQL returned %d %s.\n", state->pagesize, state->pagesize == 1 ? "record" : "records");
+			elog(INFO, "SPARQL returned %d %s.\n", state->pagesize, state->pagesize == 1 ? "record" : "records");
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 
 /*
  * SetUsedColumns
  * --------------
  * Marks FOREIGN TABLE's columns as used if they're used in the SQL query. This is
- * useful to get the mapped 'variable' OPTIONs, so that we can build a SPARQL SELECT 
+ * useful to get the mapped 'variable' OPTIONs, so that we can build a SPARQL SELECT
  * only with the required variables.
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  */
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid)
@@ -6547,7 +6465,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 		break;
 	}
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 
 /*
@@ -6555,11 +6473,11 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
  * ------------------
  * Checks if a SPARQL query can be parsed and modified to accommodate possible
  * pusdhown instructions. If it returns false it does not mean that the query
- * is invalid. It just means that it contains unsupported clauses and it cannot 
- * be modifed. 
- * 
+ * is invalid. It just means that it contains unsupported clauses and it cannot
+ * be modifed.
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
- * 
+ *
  * returns 'true' if the SPARQL query is safe to be parsed or 'false' otherwise
  */
 static bool IsSPARQLParsable(struct RDFfdwState *state)
@@ -6583,7 +6501,7 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
 			 LocateKeyword(state->raw_sparql, " \n\t", RDF_SPARQL_KEYWORD_HAVING, " \n\t(", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 keyword_count == 1;
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, !result ? "false" : "true");	
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, !result ? "false" : "true");
 	return result;
 }
 
@@ -6592,7 +6510,7 @@ static bool IsSPARQLParsable(struct RDFfdwState *state)
  * ------------
  * Checks if an expression attached to a column can be pushed down, in case it
  * is used in a condition in the SQL WHERE clause.
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  *
  * returns 'true' if the expression can be pushed down or 'false' otherwise
@@ -6622,80 +6540,80 @@ static bool IsExpressionPushable(char *expression)
  * ------------
  * Creates the final SPARQL query sent to the server, which might includes the
  * pushdown of SQL instructions. The query will be loaded into 'state->sparql'
- * 
+ *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  * root : Planner info
  */
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
-{	
+{
 	StringInfoData where_graph;
 	StringInfoData sparql;
 
 	initStringInfo(&sparql);
 	initStringInfo(&where_graph);
 
-	elog(DEBUG1, "%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
-	if(state->sparql_filter && strlen(state->sparql_filter) > 0)
-		appendStringInfo(&where_graph,"{%s\n ## rdf_fdw pushdown conditions ##\n%s}", pstrdup(state->sparql_where), pstrdup(state->sparql_filter));
+	if (state->sparql_filter && strlen(state->sparql_filter) > 0)
+		appendStringInfo(&where_graph, "{%s\n ## rdf_fdw pushdown conditions ##\n%s}", pstrdup(state->sparql_where), pstrdup(state->sparql_filter));
 	else
-		appendStringInfo(&where_graph,"{%s}",pstrdup(state->sparql_where));
-	/* 
-	 * if the raw SPARQL query contains a DISTINCT modifier, this must be added into the 
-	 * new SELECT clause 
-	 */	
-	if (state->is_sparql_parsable == true && 		
-		LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
+		appendStringInfo(&where_graph, "{%s}", pstrdup(state->sparql_where));
+	/*
+	 * if the raw SPARQL query contains a DISTINCT modifier, this must be added into the
+	 * new SELECT clause
+	 */
+	if (state->is_sparql_parsable == true &&
+		LocateKeyword(state->raw_sparql, " \n", "DISTINCT", " \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
 		elog(DEBUG2, "  %s: SPARQL is valid and contains a DISTINCT modifier > pushing down DISTINCT", __func__);
-		appendStringInfo(&sparql,"%s\nSELECT DISTINCT %s\n%s%s",
-			state->sparql_prefixes, 
-			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
-			state->sparql_from,
-			where_graph.data);		
-	} 
-	/* 
-	 * if the raw SPARQL query contains a REDUCED modifier, this must be added into the 
-	 * new SELECT clause 
+		appendStringInfo(&sparql, "%s\nSELECT DISTINCT %s\n%s%s",
+						 state->sparql_prefixes,
+						 strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
+						 state->sparql_from,
+						 where_graph.data);
+	}
+	/*
+	 * if the raw SPARQL query contains a REDUCED modifier, this must be added into the
+	 * new SELECT clause
 	 */
-	else if (state->is_sparql_parsable == true && 		
-		LocateKeyword(state->raw_sparql, " \n", "REDUCED"," \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
+	else if (state->is_sparql_parsable == true &&
+			 LocateKeyword(state->raw_sparql, " \n", "REDUCED", " \n?", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
 		elog(DEBUG2, "  %s: SPARQL is valid and contains a REDUCED modifier > pushing down REDUCED", __func__);
-		appendStringInfo(&sparql,"%s\nSELECT REDUCED %s\n%s%s",
-			state->sparql_prefixes, 
-			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
-			state->sparql_from, 
-			where_graph.data);		
+		appendStringInfo(&sparql, "%s\nSELECT REDUCED %s\n%s%s",
+						 state->sparql_prefixes,
+						 strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
+						 state->sparql_from,
+						 where_graph.data);
 	}
-	/* 
-	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does, 
-	 * this must be added into the new SELECT clause 
+	/*
+	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does,
+	 * this must be added into the new SELECT clause
 	 */
-	else if (state->is_sparql_parsable &&  
-			root && 								/* was the PlanerInfo provided? */
-			root->parse->distinctClause != NULL &&	/* is there a DISTINCT clause in the PlanerInfo?*/
-			!root->parse->hasDistinctOn &&			/* does the DISTINCT clause have a DISTINCT ON?*/
-			LocateKeyword(state->raw_sparql, " \n", "DISTINCT"," \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND) /* does the SPARQL have a DISTINCT clause?*/
+	else if (state->is_sparql_parsable &&
+			 root &&																						/* was the PlanerInfo provided? */
+			 root->parse->distinctClause != NULL &&															/* is there a DISTINCT clause in the PlanerInfo?*/
+			 !root->parse->hasDistinctOn &&																	/* does the DISTINCT clause have a DISTINCT ON?*/
+			 LocateKeyword(state->raw_sparql, " \n", "DISTINCT", " \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND) /* does the SPARQL have a DISTINCT clause?*/
 	{
-		appendStringInfo(&sparql,"%s\nSELECT DISTINCT %s\n%s%s",
-			state->sparql_prefixes, 
-			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
-			state->sparql_from,
-			where_graph.data);
+		appendStringInfo(&sparql, "%s\nSELECT DISTINCT %s\n%s%s",
+						 state->sparql_prefixes,
+						 strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
+						 state->sparql_from,
+						 where_graph.data);
 	}
 	else
-	{	
-		appendStringInfo(&sparql,"%s\nSELECT %s\n%s%s",
-			state->sparql_prefixes, 
-			strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
-			state->sparql_from, 
-			where_graph.data);
+	{
+		appendStringInfo(&sparql, "%s\nSELECT %s\n%s%s",
+						 state->sparql_prefixes,
+						 strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
+						 state->sparql_from,
+						 where_graph.data);
 	}
 	/*
 	 * if the SQL query contains an ORDER BY, we try to push it down.
 	 */
-	if(state->is_sparql_parsable && state->sparql_orderby) 
+	if (state->is_sparql_parsable && state->sparql_orderby)
 	{
 		elog(DEBUG2, "  %s: pushing down ORDER BY clause > 'ORDER BY %s'", __func__, state->sparql_orderby);
 		appendStringInfo(&sparql, "\nORDER BY%s", pstrdup(state->sparql_orderby));
@@ -6714,7 +6632,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 
 	state->sparql = pstrdup(NameStr(sparql));
 
-	elog(DEBUG1,"%s exit", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 }
 
 /*
@@ -6735,41 +6653,41 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
  *
  * returns         : position where 'keyword' was found, or RDF_KEYWORD_NOT_FOUND otherwise.
  */
-static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position) 
+static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position)
 {
 	int keyword_position = RDF_KEYWORD_NOT_FOUND;
 	StringInfoData idt;
 	initStringInfo(&idt);
 
-	if(count)
+	if (count)
 	{
 		for (size_t i = 0; i < *count; i++)
 		{
-			appendStringInfo(&idt,"  ");
+			appendStringInfo(&idt, "  ");
 		}
 
-		if(*count > 0)
-			appendStringInfo(&idt,"├─ ");
+		if (*count > 0)
+			appendStringInfo(&idt, "├─ ");
 	}
 
-	elog(DEBUG1,"%s%s called: searching '%s' in start_position %d", NameStr(idt), __func__, keyword, start_position);
+	elog(DEBUG1, "%s%s called: searching '%s' in start_position %d", NameStr(idt), __func__, keyword, start_position);
 
-	if(start_position < 0)
-		elog(ERROR, "%s%s: start_position cannot be negative.",NameStr(idt), __func__);
+	if (start_position < 0)
+		elog(ERROR, "%s%s: start_position cannot be negative.", NameStr(idt), __func__);
 
-	/* 
-	 * Some SPARQL keywords can be placed in the very beginning of a query, so they not always 
+	/*
+	 * Some SPARQL keywords can be placed in the very beginning of a query, so they not always
 	 * have a preceeding character. So here we first check if the searched keyword exists
 	 * in the beginning of the string.
 	 */
 	if (((strcasecmp(keyword, RDF_SPARQL_KEYWORD_SELECT) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_SELECT, strlen(RDF_SPARQL_KEYWORD_SELECT)) == 0) ||
 		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0) ||
 		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_DESCRIBE) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_DESCRIBE, strlen(RDF_SPARQL_KEYWORD_DESCRIBE)) == 0)) &&
-		 start_position == 0)
+		start_position == 0)
 	{
 		elog(DEBUG2, "%s%s: nothing before SELECT. Setting keyword_position to 0.", NameStr(idt), __func__);
 		keyword_position = 0;
-	} 
+	}
 	else
 	{
 
@@ -6810,17 +6728,16 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 		}
 	}
 
-
-	if((count) && keyword_position != RDF_KEYWORD_NOT_FOUND)
+	if ((count) && keyword_position != RDF_KEYWORD_NOT_FOUND)
 	{
-		(*count)++;		
+		(*count)++;
 		elog(DEBUG2, "%s%s (%d): keyword '%s' found in position %d. Recalling %s ... ", NameStr(idt), __func__, *count, keyword, keyword_position, __func__);
 		LocateKeyword(str, start_chars, keyword, end_chars, count, keyword_position + 1);
 
-		elog(DEBUG2,"%s%s: '%s' search returning postition %d for start position %d", NameStr(idt), __func__, keyword, keyword_position, start_position);
-	} 
+		elog(DEBUG2, "%s%s: '%s' search returning postition %d for start position %d", NameStr(idt), __func__, keyword, keyword_position, start_position);
+	}
 
-	elog(DEBUG1,"%s exit: returning '%d' (keyword_position)", __func__, keyword_position);
+	elog(DEBUG1, "%s exit: returning '%d' (keyword_position)", __func__, keyword_position);
 	return keyword_position;
 }
 
@@ -6854,14 +6771,14 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 	xmlNodePtr record;
 	xmlNodePtr result;
 	regproc typinput;
-/*
-	MemoryContext old_cxt, tmp_cxt;
+	/*
+		MemoryContext old_cxt, tmp_cxt;
 
-	tmp_cxt = AllocSetContextCreate(CurrentMemoryContext,
-									"rdf_fdw temporary data",
-									ALLOCSET_SMALL_SIZES);
-	old_cxt = MemoryContextSwitchTo(tmp_cxt);
-*/
+		tmp_cxt = AllocSetContextCreate(CurrentMemoryContext,
+										"rdf_fdw temporary data",
+										ALLOCSET_SMALL_SIZES);
+		old_cxt = MemoryContextSwitchTo(tmp_cxt);
+	*/
 	record = FetchNextBinding(state);
 
 	elog(DEBUG3, "%s called ", __func__);
@@ -6874,7 +6791,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 		Oid pgtype = state->rdfTable->cols[i]->pgtype;
 		char *sparqlvar = state->rdfTable->cols[i]->sparqlvar;
 		char *colname = state->rdfTable->cols[i]->name;
-		//char *literal_format = state->rdfTable->cols[i]->literal_fomat;
 		int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
 
 		for (result = record->children; result != NULL; result = result->next)
@@ -6916,15 +6832,12 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						else if (xmlStrcmp(node_type, (xmlChar *)"uri") == 0)
 							appendStringInfo(&literal_value, "%s", (iri(node_value)));
 						else
-							appendStringInfo(&literal_value, "%s", cstring_to_rdfnode(node_value));
+							appendStringInfo(&literal_value, "%s", cstring_to_rdfliteral(node_value));
 					}
 					else
 						appendStringInfo(&literal_value, "%s", node_value);
 
 					datum = CStringGetDatum(literal_value.data);
-					// char *rdfnode_str = MemoryContextStrdup(slot->tts_mcxt, literal_value.data);
-					// datum = CStringGetDatum(rdfnode_str);
-
 					slot->tts_isnull[i] = false;
 
 					elog(DEBUG3, "%s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
@@ -6975,34 +6888,31 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 			if (prop)
 				xmlFree(prop);
-
 		}
 
 		if (!match)
 		{
 			elog(DEBUG3, "    %s: setting NULL for column '%s' (%s)", __func__, colname, sparqlvar);
 			slot->tts_isnull[i] = true;
-			//slot->tts_values[i] = PointerGetDatum(NULL);
 		}
-
 	}
 
-	//MemoryContextSwitchTo(old_cxt);
-	//MemoryContextDelete(tmp_cxt);
-	
+	// MemoryContextSwitchTo(old_cxt);
+	// MemoryContextDelete(tmp_cxt);
+
 	ExecStoreVirtualTuple(slot);
-	
-	elog(DEBUG3,"%s exit", __func__);
+
+	elog(DEBUG3, "%s exit", __func__);
 }
 
 /*
  * DatumToString
  * -------------
  * Converts a 'Datum' into a char*.
- * 
+ *
  * datum: Data to be converted to char*
  * type : Oid of the data type to be converted
- * 
+ *
  * returns a char* with the string representation of a Datum or an empty string.
  */
 static char *DatumToString(Datum datum, Oid type)
@@ -7013,13 +6923,13 @@ static char *DatumToString(Datum datum, Oid type)
 	char *str;
 	text *t;
 
-	elog(DEBUG1,"%s called: type='%u' ",__func__,type);
+	elog(DEBUG1, "%s called: type='%u' ", __func__, type);
 
 	/* get the type's output function */
 	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(type));
 	if (!HeapTupleIsValid(tuple))
 	{
-		elog(ERROR, "%s: cache lookup failed for type %u",__func__, type);
+		elog(ERROR, "%s: cache lookup failed for type %u", __func__, type);
 	}
 	typoutput = ((Form_pg_type)GETSTRUCT(tuple))->typoutput;
 	ReleaseSysCache(tuple);
@@ -7027,11 +6937,12 @@ static char *DatumToString(Datum datum, Oid type)
 	initStringInfo(&result);
 	if (type == RDFNODEOID)
 	{
-		str = DatumGetCString(OidFunctionCall1(typoutput, datum));	
+		str = DatumGetCString(OidFunctionCall1(typoutput, datum));
 		appendStringInfo(&result, "%s", str);
 	}
-	else switch (type)
-	{
+	else
+		switch (type)
+		{
 		case TEXTOID:
 		case CHAROID:
 		case BPCHAROID:
@@ -7071,150 +6982,15 @@ static char *DatumToString(Datum datum, Oid type)
 		case BOOLOID:
 			t = DatumGetTextP(DirectFunctionCall1(boolean_to_rdfnode, datum));
 			appendStringInfo(&result, "%s", text_to_cstring(t));
-			break;			
+			break;
 		default:
-			elog(DEBUG1,"%s exit: returning NULL (unknown data type)", __func__);
+			elog(DEBUG1, "%s exit: returning NULL (unknown data type)", __func__);
 			return NULL;
-	}
+		}
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result.data);
-	return result.data;	
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result.data);
+	return result.data;
 }
-
-/*
- * DeparseDate
- * -----------
- * Deparses a 'Datum' of type 'date' and converts it to char*
- * 
- * datum: date to be converted
- * 
- * retrns a string representation of the given date
- */
-// static char *DeparseDate(Datum datum)
-// {
-// 	struct pg_tm datetime_tm;
-// 	StringInfoData s;
-
-// 	if (DATE_NOT_FINITE(DatumGetDateADT(datum)))
-// 		ereport(ERROR,
-// 				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-// 				errmsg("infinite date value cannot be stored")));
-
-// 	/* get the parts */
-// 	(void)j2date(DatumGetDateADT(datum) + POSTGRES_EPOCH_JDATE,
-// 			&(datetime_tm.tm_year),
-// 			&(datetime_tm.tm_mon),
-// 			&(datetime_tm.tm_mday));
-
-// 	initStringInfo(&s);
-// 	appendStringInfo(&s, "%04d-%02d-%02d",
-// 			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
-// 			datetime_tm.tm_mon, datetime_tm.tm_mday);
-
-// 	return s.data;
-// }
-
-/* 
- * DeparseTimestamp
- * ----------------
- * Deparses a 'Datum' of type 'timestamp' and converts it to char*
- * 
- * datum: timestamp to be converted
- * 
- * retrns a string representation of the given timestamp
- */
-// static char *DeparseTimestamp(Datum datum, bool hasTimezone)
-// {
-// 	struct pg_tm datetime_tm;
-// 	int32 tzoffset;
-// 	fsec_t datetime_fsec;
-// 	StringInfoData s;
-
-// 	elog(DEBUG1, "%s called", __func__);
-// 	/* this is sloppy, but DatumGetTimestampTz and DatumGetTimestamp are the same */
-// 	if (TIMESTAMP_NOT_FINITE(DatumGetTimestampTz(datum)))
-// 		ereport(ERROR,
-// 				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-// 				errmsg("infinite timestamp value cannot be stored")));
-
-// 	/* get the parts */
-// 	tzoffset = 0;
-// 	(void)timestamp2tm(DatumGetTimestampTz(datum),
-// 				hasTimezone ? &tzoffset : NULL,
-// 				&datetime_tm,
-// 				&datetime_fsec,
-// 				NULL,
-// 				NULL);
-
-// 	initStringInfo(&s);
-// 	if (hasTimezone)
-// 		appendStringInfo(&s, "%04d-%02d-%02dT%02d:%02d:%02d.%06d%+03d:%02d",
-// 			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
-// 			datetime_tm.tm_mon, datetime_tm.tm_mday, datetime_tm.tm_hour,
-// 			datetime_tm.tm_min, datetime_tm.tm_sec, (int32)datetime_fsec,
-// 			-tzoffset / 3600, ((tzoffset > 0) ? tzoffset % 3600 : -tzoffset % 3600) / 60);
-// 	else
-// 		appendStringInfo(&s, "%04d-%02d-%02dT%02d:%02d:%02d.%06d",
-// 			datetime_tm.tm_year > 0 ? datetime_tm.tm_year : -datetime_tm.tm_year + 1,
-// 			datetime_tm.tm_mon, datetime_tm.tm_mday, datetime_tm.tm_hour,
-// 			datetime_tm.tm_min, datetime_tm.tm_sec, (int32)datetime_fsec);
-
-// 	return s.data;
-// }
-
-// static char *
-// format_timestamp(Timestamp ts)
-// {
-// 	struct pg_tm tm;
-// 	fsec_t fsec;
-// 	StringInfoData buf;
-
-// 	if (TIMESTAMP_NOT_FINITE(ts) ||
-// 		timestamp2tm(ts, NULL, &tm, &fsec, NULL, NULL) != 0)
-// 		elog(ERROR, "invalid timestamp");
-
-// 	initStringInfo(&buf);
-// 	appendStringInfo(&buf, "%04d-%02d-%02dT%02d:%02d:%02d",
-// 					 tm.tm_year, tm.tm_mon, tm.tm_mday,
-// 					 tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-// 	if (fsec != 0)
-// 		appendStringInfo(&buf, ".%06d", (int)fsec);
-
-// 	return buf.data;
-// }
-
-// static char *
-// format_timestamptz(TimestampTz ts)
-// {
-// 	struct pg_tm tm;
-// 	fsec_t fsec;
-// 	const char *tzn;
-// 	StringInfoData buf;
-
-// 	if (timestamp2tm(ts, NULL, &tm, &fsec, &tzn, NULL) != 0)
-// 		ereport(ERROR, (errmsg("invalid timestamp")));
-
-// 	initStringInfo(&buf);
-// 	appendStringInfo(&buf, "%04d-%02d-%02dT%02d:%02d:%02d",
-// 					 tm.tm_year, tm.tm_mon, tm.tm_mday,
-// 					 tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-// 	return buf.data;
-// }
-
-// static char *
-// DeparseTimestamp(Datum datum, Oid typid)
-// {
-// 	if (typid == TIMESTAMPOID)
-// 		return format_timestamp(DatumGetTimestamp(datum));
-// 	else if (typid == TIMESTAMPTZOID)
-// 		return format_timestamptz(DatumGetTimestampTz(datum));
-// 	else
-// 		elog(ERROR, "unsupported Oid %u passed to DeparseTimestamp", typid);
-
-// 	return NULL; // not reached
-// }
 
 /*
  * DeparseExpr
@@ -7230,7 +7006,6 @@ static char *DatumToString(Datum datum, Oid type)
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *arg, *opername, *left, *right, oprkind;
-	// char *literalatt = "";
 	Const *constant;
 	OpExpr *oper;
 	ScalarArrayOpExpr *arrayoper;
@@ -7238,7 +7013,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	HeapTuple tuple;
 	StringInfoData result;
 	Oid leftargtype, rightargtype;
-	//Oid schema;
 	int index;
 	ArrayExpr *array;
 	ArrayCoerceExpr *arraycoerce;
@@ -7341,15 +7115,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		oprkind = ((Form_pg_operator)GETSTRUCT(tuple))->oprkind;
 		leftargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprleft;
 		rightargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprright;
-		//schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
 		ReleaseSysCache(tuple);
-
-		/* ignore operators in other than the pg_catalog schema */
-		// if (schema != PG_CATALOG_NAMESPACE)
-		// {
-		// 	elog(DEBUG1, "%s [T_OpExpr]: returning NULL: operator not in pg_catalog schema", __func__);
-		// 	return NULL;
-		// }
 
 		/* don't push condition down if the right argument can't be translated into a SPARQL value*/
 		if (!canHandleType(rightargtype))
@@ -7383,7 +7149,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (left == NULL)
 			{
-				//pfree(opername);
+				// pfree(opername);
 				elog(DEBUG1, "%s [T_OpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
 				return NULL;
 			}
@@ -7450,17 +7216,17 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (right_column->language)
 						{
 							if (strcmp(right_column->language, "*") == 0)
-								appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfnode(left));
+								appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfliteral(left));
 							else
 								appendStringInfo(&left_filter_arg, "%s", strlang(left, right_column->language));
 						}
 						else if (right_column->literaltype)
 							appendStringInfo(&left_filter_arg, "%s", strdt(left, right_column->literaltype));
 						else
-							appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfnode(left));
+							appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfliteral(left));
 					}
 					else
-						appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfnode(left));
+						appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfliteral(left));
 				}
 				/* check if the argument is a column */
 				else if (left_column && leftexpr->type == T_Var)
@@ -7506,18 +7272,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (left_column->language)
 						{
 							if (strcmp(left_column->language, "*") == 0)
-								appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
+								appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfliteral(right));
 							else
 								appendStringInfo(&right_filter_arg, "%s", strlang(right, left_column->language));
 						}
 						else if (left_column->literaltype)
 							appendStringInfo(&right_filter_arg, "%s", strdt(right, left_column->literaltype));
-						else if (isIRI(right) || isBlank(right)) /* REVISAR!!!*/
+						else if (isIRI(right) || isBlank(right))
 							appendStringInfo(&right_filter_arg, "%s", right);
 						else
 						{
-							//elog(WARNING, ">>>>>>>>>>>>>>");
-							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
+
+							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfliteral(right));
 						}
 					}
 					else if (isIRI(right))
@@ -7525,21 +7291,17 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 					{
 						char *xsd_type = MapSPARQLDatatype(rightargtype);
-						char *literal = cstring_to_rdfnode(right);
+						char *literal = cstring_to_rdfliteral(right);
 
 						if (xsd_type && isPlainLiteral(literal) && leftargtype == RDFNODEOID)
 							appendStringInfo(&right_filter_arg, "%s^^<%s%s>",
-								literal,
-								RDF_XSD_BASE_URI,
-								MapSPARQLDatatype(rightargtype)
-							);
+											 literal,
+											 RDF_XSD_BASE_URI,
+											 MapSPARQLDatatype(rightargtype));
 						else
-							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfnode(right));
+							appendStringInfo(&right_filter_arg, "%s", cstring_to_rdfliteral(right));
 					}
 				}
-
-				// here: if rightargtype = TIMESTAMPOID && TIMESTAMPTZOID then xsd:dateTime
-				//       if rightargtype = DATEOID then xsd:date
 				else if (rightexpr->type == T_Var)
 				{
 					if (right_column && right_column->language && strcmp(right_column->language, "*") == 0)
@@ -7672,8 +7434,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		break;
 	case T_ScalarArrayOpExpr:
-		//Expr *leftExpr;
-			elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: start (expr->type='%u')", __func__, expr->type);
+		elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: start (expr->type='%u')", __func__, expr->type);
 		arrayoper = (ScalarArrayOpExpr *)expr;
 
 		/* get operator name, left argument type and schema */
@@ -7684,16 +7445,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 		opername = pstrdup(((Form_pg_operator)GETSTRUCT(tuple))->oprname.data);
 		leftargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprleft;
-		//schema = ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace;
 		ReleaseSysCache(tuple);
-		/*
-				// ignore operators in other than the pg_catalog schema
-				if (schema != PG_CATALOG_NAMESPACE)
-				{
-					elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (operator schema is not PG_CATALOG_NAMESPACE)", __func__);
-					return NULL;
-				}
-		*/
+
 		/* don't try to push down anything but IN and NOT IN expressions */
 		if ((strcmp(opername, "=") != 0 || !arrayoper->useOr) && (strcmp(opername, "<>") != 0 || arrayoper->useOr))
 		{
@@ -7923,27 +7676,15 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		opername = pstrdup(((Form_pg_proc)GETSTRUCT(tuple))->proname.data);
-		//schema = ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace;
 		ReleaseSysCache(tuple);
 
 		elog(DEBUG2, "  %s [T_FuncExpr]: opername = %s", __func__, opername);
-
-		/*
-		 * ignore functions that are not in the pg_catalog schema and are
-		 * not pushable.
-		 */
-		// if (schema != PG_CATALOG_NAMESPACE && !IsFunctionPushable(opername))
-		// {
-		// 	elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
-		// 	return NULL;
-		// }
 
 		if (!IsFunctionPushable(opername))
 		{
 			elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
 			return NULL;
 		}
-
 
 		if (IsFunctionPushable(opername))
 		{
@@ -8013,7 +7754,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						else if (IsStringDataType(ct->consttype) && isIRI(arg))
 							appendStringInfo(&args, "%s", arg);
 						else if (IsStringDataType(ct->consttype))
-							appendStringInfo(&args, "%s", cstring_to_rdfnode(arg));
+							appendStringInfo(&args, "%s", cstring_to_rdfliteral(arg));
 						else
 							appendStringInfo(&args, "%s", arg);
 					}
@@ -8241,10 +7982,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (strlen(dt) != 0)
 					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", strdt(element, dt));
 				else
-					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", cstring_to_rdfnode(element));
+					appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", cstring_to_rdfliteral(element));
 			}
 			else if (nodeTag(element_expr) == T_Const)
-				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", cstring_to_rdfnode(element));
+				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", cstring_to_rdfliteral(element));
 			else
 				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", element);
 
@@ -8270,12 +8011,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 /*
  * DeparseSQLWhereConditions
  * ----------------------
- * Deparses the WHERE clause of SQL queries and tries to convert its conditions into 
+ * Deparses the WHERE clause of SQL queries and tries to convert its conditions into
  * SPARQL FILTER expressions.
- * 
+ *
  * state  : SPARQL, SERVER and FOREIGN TABLE info
  * baserel: Conditions and columns used in the SQL query
- * 
+ *
  * returns char* containing SPARQL FILTER expressions or an empty string if not applicable
  */
 static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel)
@@ -8284,18 +8025,17 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	ListCell *cell;
 	StringInfoData where_clause;
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	initStringInfo(&where_clause);
-	foreach(cell, conditions)
-	{		
+	foreach (cell, conditions)
+	{
 		/* deparse expression for pushdown */
 		char *where = DeparseExpr(
-					state, baserel,
-					((RestrictInfo *)lfirst(cell))->clause
-				);
+			state, baserel,
+			((RestrictInfo *)lfirst(cell))->clause);
 
-		if (where != NULL) 
+		if (where != NULL)
 		{
 			/* append new FILTER clause to query string */
 			appendStringInfo(&where_clause, " FILTER(%s)\n", pstrdup(where));
@@ -8304,15 +8044,13 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 		else
 		{
 			state->has_unparsable_conds = true;
-			elog(DEBUG1,"  %s: condition cannot be pushed down.",__func__);
+			elog(DEBUG1, "  %s: condition cannot be pushed down.", __func__);
 		}
-
 	}
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, where_clause.data);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, where_clause.data);
 	return where_clause.data;
 }
-
 
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 {
@@ -8320,7 +8058,7 @@ static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 	int where_size = -1;
 	char *result;
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	/*
 	 * Deparsing SPARQL WHERE clause
@@ -8338,18 +8076,18 @@ static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 
 	result = pnstrdup(state->raw_sparql + where_position, where_size);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, result);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
-/* 
+/*
  * DeparseSQLOrderBy
  * -----------------
- * 
+ *
  * state  : SPARQL, SERVER and FOREIGN TABLE info
  * baserel: Conditions and columns used in the SQL query
  * root   : Planner info
- * 
+ *
  * returns char* containg a SPARQL ORDER BY clause or an empty string if not applicable
  */
 static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
@@ -8359,7 +8097,7 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 	ListCell *cell;
 	char *delim = " ";
 
-	elog(DEBUG1, "%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	initStringInfo(&orderedquery);
 
@@ -8377,7 +8115,7 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 		/* ec_has_volatile saves some cycles */
 		if (pathkey_ec->ec_has_volatile)
 		{
-			elog(DEBUG1,"%s exit: returning 'false' (pathkey_ec->ec_has_volatile)", __func__);
+			elog(DEBUG1, "%s exit: returning 'false' (pathkey_ec->ec_has_volatile)", __func__);
 			return false;
 		}
 
@@ -8411,23 +8149,23 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 
 		if (em == NULL)
 		{
-			elog(DEBUG1,"%s exit: returning 'false' (EquivalenceMember is NULL)", __func__);
+			elog(DEBUG1, "%s exit: returning 'false' (EquivalenceMember is NULL)", __func__);
 			return false;
 		}
 
 		em_expr = em->em_expr;
 		em_type = exprType((Node *)em_expr);
 
-		/* 
-		 * SPARQL does not support sorting with functions, so it is not safe to 
+		/*
+		 * SPARQL does not support sorting with functions, so it is not safe to
 		 * push down anything other than T_Var.
 		 */
 
 		can_pushdown = (em_expr->type == T_Var) && canHandleType(em_type);
 
-		elog(DEBUG1,"  %s: can push down > %d",__func__, can_pushdown);
+		elog(DEBUG1, "  %s: can push down > %d", __func__, can_pushdown);
 
-		if (can_pushdown &&	((sort_clause = DeparseExpr(state, baserel, em_expr)) != NULL))
+		if (can_pushdown && ((sort_clause = DeparseExpr(state, baserel, em_expr)) != NULL))
 		{
 			/* keep usable_pathkeys for later use. */
 			usable_pathkeys = lappend(usable_pathkeys, pathkey);
@@ -8439,10 +8177,10 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 			if (pathkey->pk_cmptype == COMPARE_LT)
 #else
 			if (pathkey->pk_strategy == BTLessStrategyNumber)
-#endif  /* PG_VERSION_NUM */
-				appendStringInfo(&orderedquery, " ASC (%s)", (GetRDFColumn(state,sort_clause))->sparqlvar);
+#endif /* PG_VERSION_NUM */
+				appendStringInfo(&orderedquery, " ASC (%s)", (GetRDFColumn(state, sort_clause))->sparqlvar);
 			else
-				appendStringInfo(&orderedquery, " DESC (%s)", (GetRDFColumn(state,sort_clause))->sparqlvar);
+				appendStringInfo(&orderedquery, " DESC (%s)", (GetRDFColumn(state, sort_clause))->sparqlvar);
 		}
 		else
 		{
@@ -8455,7 +8193,7 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 			 * This could be improved from v13 on!
 			 */
 
-			elog(DEBUG1,"  %s: cannot push down ORDER BY",__func__);
+			elog(DEBUG1, "  %s: cannot push down ORDER BY", __func__);
 			list_free(usable_pathkeys);
 			usable_pathkeys = NIL;
 			break;
@@ -8464,23 +8202,23 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 
 	if (root->query_pathkeys != NIL && usable_pathkeys != NIL)
 	{
-		elog(DEBUG1,"%s exit: returning '%s'", __func__, orderedquery.data);
+		elog(DEBUG1, "%s exit: returning '%s'", __func__, orderedquery.data);
 		return orderedquery.data;
 	}
 	else
 	{
-		elog(DEBUG1,"%s exit: returning NULL (unable to deparse ORDER BY clause)",__func__);
+		elog(DEBUG1, "%s exit: returning NULL (unable to deparse ORDER BY clause)", __func__);
 		return NULL;
 	}
 }
 
-/* 
+/*
  * DeparseSPARQLFrom
  * -----------------
  * Deparses the SPARQL FROM clause.
- * 
+ *
  * raw_sparql: SPARQL query set in the CREATE TABLE statement
- * 
+ *
  * returns the SPARQL FROM clause
  */
 static char *DeparseSPARQLFrom(char *raw_sparql)
@@ -8490,14 +8228,14 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 	char *close_chars = " <\n\t";
 	int nfrom = 0;
 
-	elog(DEBUG1,"%s called", __func__);
+	elog(DEBUG1, "%s called", __func__);
 
 	initStringInfo(&from);
 
-	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_KEYWORD_NOT_FOUND)
-	{				
+	if (LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, &nfrom, 0) != RDF_KEYWORD_NOT_FOUND)
+	{
 		int entry_position = 0;
-		
+
 		for (int i = 1; i <= nfrom; i++)
 		{
 			bool is_named = false;
@@ -8506,7 +8244,7 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 
 			entry_position = LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_FROM, close_chars, NULL, entry_position);
 
-			if(entry_position == RDF_KEYWORD_NOT_FOUND)
+			if (entry_position == RDF_KEYWORD_NOT_FOUND)
 				break;
 
 			entry_position = entry_position + (strlen(RDF_SPARQL_KEYWORD_FROM) + 1);
@@ -8515,20 +8253,20 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 				entry_position++;
 
 			/* Is the SPARQL long enough for 'FROM NAMED' to be parsed? */
-			if(entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED) <= strlen(raw_sparql))
+			if (entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED) <= strlen(raw_sparql))
 			{
 				/*
 				 * if the next keyword is NAMED, set is_named to 'true' and move the cursor
 				 * to the next keyword
 				 */
-				if(strncasecmp(raw_sparql + entry_position, RDF_SPARQL_KEYWORD_NAMED, strlen(RDF_SPARQL_KEYWORD_NAMED)) == 0) {
+				if (strncasecmp(raw_sparql + entry_position, RDF_SPARQL_KEYWORD_NAMED, strlen(RDF_SPARQL_KEYWORD_NAMED)) == 0)
+				{
 					is_named = true;
 					entry_position = entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED);
 
 					while (raw_sparql[entry_position] == ' ')
 						entry_position++;
 				}
-
 			}
 
 			while (raw_sparql[entry_position] != ' ' &&
@@ -8536,24 +8274,22 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 				   raw_sparql[entry_position] != '\t' &&
 				   raw_sparql[entry_position] != '\0')
 			{
-				appendStringInfo(&from_entry,"%c",raw_sparql[entry_position]);
+				appendStringInfo(&from_entry, "%c", raw_sparql[entry_position]);
 
-				if(raw_sparql[entry_position] == '>')
+				if (raw_sparql[entry_position] == '>')
 					break;
-				
+
 				entry_position++;
 			}
 
-			if(is_named)
-				appendStringInfo(&from,"%s %s %s\n", RDF_SPARQL_KEYWORD_FROM, RDF_SPARQL_KEYWORD_NAMED, from_entry.data);
+			if (is_named)
+				appendStringInfo(&from, "%s %s %s\n", RDF_SPARQL_KEYWORD_FROM, RDF_SPARQL_KEYWORD_NAMED, from_entry.data);
 			else
-				appendStringInfo(&from,"%s %s\n", RDF_SPARQL_KEYWORD_FROM,from_entry.data);
-
-		}		
-
+				appendStringInfo(&from, "%s %s\n", RDF_SPARQL_KEYWORD_FROM, from_entry.data);
+		}
 	}
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, from.data);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, from.data);
 	return from.data;
 }
 
@@ -8561,9 +8297,9 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
  * DeparseSPARQLPrefix
  * -------------------
  * Deparses the SPARQL PREFIX entries.
- * 
+ *
  * raw_sparql: SPARQL query set in the CREATE TABLE statement
- * 
+ *
  * returns the SPARQL PREFIX entries
  */
 static char *DeparseSPARQLPrefix(char *raw_sparql)
@@ -8575,9 +8311,9 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
 
 	initStringInfo(&prefixes);
 
-	elog(DEBUG1,"%s called",__func__);
+	elog(DEBUG1, "%s called", __func__);
 
-	if(LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, &nprefix, 0) != RDF_KEYWORD_NOT_FOUND)
+	if (LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, &nprefix, 0) != RDF_KEYWORD_NOT_FOUND)
 	{
 		int keyword_position = 0;
 
@@ -8588,26 +8324,25 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
 
 			keyword_position = LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, NULL, keyword_position);
 
-			if(keyword_position == RDF_KEYWORD_NOT_FOUND)
+			if (keyword_position == RDF_KEYWORD_NOT_FOUND)
 				break;
 
 			while (raw_sparql[keyword_position] != '>' &&
 				   raw_sparql[keyword_position] != '\0')
 			{
-				appendStringInfo(&keyword_entry,"%c",raw_sparql[keyword_position]);
+				appendStringInfo(&keyword_entry, "%c", raw_sparql[keyword_position]);
 
-				if(raw_sparql[keyword_position] == '>')
+				if (raw_sparql[keyword_position] == '>')
 					break;
 
 				keyword_position++;
 			}
 
-			appendStringInfo(&prefixes,"%s>\n", keyword_entry.data);
-
+			appendStringInfo(&prefixes, "%s>\n", keyword_entry.data);
 		}
 	}
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, prefixes.data);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, prefixes.data);
 	return prefixes.data;
 }
 
@@ -8615,11 +8350,11 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
  * DeparseSQLLimit
  * ---------------
  * Deparses the SQL LIMIT or FETCH clause and converts it into a SPARQL LIMIT clause
- * 
+ *
  * state  : SPARQL, SERVER and FOREIGN TABLE info
  * root   : Planner info
  * baserel: Conditions and columns used in the SQL query
- * 
+ *
  * returns a SPARQL LIMIT clause or an empty string if not applicable
  */
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
@@ -8627,18 +8362,19 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	StringInfoData limit_clause;
 	char *limit_val, *offset_val = NULL;
 
-	elog(DEBUG1,"%s called ",__func__);
+	elog(DEBUG1, "%s called ", __func__);
 
 	/* don't push down LIMIT (OFFSET)  if the query has a GROUP BY clause or aggregates */
 	if (root->parse->groupClause != NULL || root->parse->hasAggs)
 	{
-		elog(DEBUG1,"%s exit: returning NULL (LIMIT won't be pushed down, as SQL query contains aggregators)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (LIMIT won't be pushed down, as SQL query contains aggregators)", __func__);
 		return NULL;
 	}
 
 	/* don't push down LIMIT (OFFSET) if the query contains DISTINCT */
-	if (root->parse->distinctClause != NULL) {
-		elog(DEBUG1,"%s exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)", __func__);
+	if (root->parse->distinctClause != NULL)
+	{
+		elog(DEBUG1, "%s exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)", __func__);
 		return NULL;
 	}
 
@@ -8648,7 +8384,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	 */
 	if (state->has_unparsable_conds)
 	{
-		elog(DEBUG1,"%s exit: returning NULL (LIMIT won't be pushed down, as there are WHERE conditions that could not be translated)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (LIMIT won't be pushed down, as there are WHERE conditions that could not be translated)", __func__);
 		return NULL;
 	}
 
@@ -8659,7 +8395,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 
 		if (limit->constisnull)
 		{
-			elog(DEBUG1,"%s exit: returning NULL (limit->constisnull)", __func__);
+			elog(DEBUG1, "%s exit: returning NULL (limit->constisnull)", __func__);
 			return NULL;
 		}
 
@@ -8667,7 +8403,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	}
 	else
 	{
-		elog(DEBUG1,"%s exit: returning NULL (constant is NULL)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (constant is NULL)", __func__);
 		return NULL;
 	}
 
@@ -8676,7 +8412,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	{
 		Const *offset = (Const *)root->parse->limitOffset;
 
-		if (! offset->constisnull)
+		if (!offset->constisnull)
 			offset_val = DatumToString(offset->constvalue, offset->consttype);
 	}
 
@@ -8686,37 +8422,36 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 	{
 		int val_offset = DatumGetInt32(((Const *)root->parse->limitOffset)->constvalue);
 		int val_limit = DatumGetInt32(((Const *)root->parse->limitCount)->constvalue);
-		appendStringInfo(&limit_clause, "LIMIT %d", val_offset+val_limit);
+		appendStringInfo(&limit_clause, "LIMIT %d", val_offset + val_limit);
 	}
 	else
 		appendStringInfo(&limit_clause, "LIMIT %s", limit_val);
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, NameStr(limit_clause));
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, NameStr(limit_clause));
 	return NameStr(limit_clause);
-
 }
 
 /*
  * ContainsWhitespaces
  * ---------------
  * Checks if a string contains whitespaces
- * 
+ *
  * str: string to be evaluated
- * 
+ *
  * returns true if the string contains whitespaces or false otherwise
  */
 static bool ContainsWhitespaces(char *str)
 {
-	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	for (int i = 0; str[i] != '\0'; i++)
 		if (isspace((unsigned char)str[i]))
 		{
-			elog(DEBUG1,"%s exit: returning 'true'", __func__);
+			elog(DEBUG1, "%s exit: returning 'true'", __func__);
 			return true;
 		}
 
-	elog(DEBUG1,"%s exit: returning 'false'", __func__);
+	elog(DEBUG1, "%s exit: returning 'false'", __func__);
 	return false;
 }
 
@@ -8731,24 +8466,24 @@ static bool ContainsWhitespaces(char *str)
  *
  * returns true if the variable is valid or false otherwise
  */
-static bool IsSPARQLVariableValid(const char* str) 
+static bool IsSPARQLVariableValid(const char *str)
 {
-	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	if (str[0] != '?' && str[0] != '$')
 	{
-		elog(DEBUG1,"%s exit: returning 'false' (str does not start with '?' or '$')", __func__);
+		elog(DEBUG1, "%s exit: returning 'false' (str does not start with '?' or '$')", __func__);
 		return false;
 	}
 
 	for (int i = 1; str[i] != '\0'; i++)
 		if (!isalnum(str[i]) && str[i] != '_')
 		{
-			elog(DEBUG1,"%s exit: returning 'false' (invalid variable name)", __func__);
+			elog(DEBUG1, "%s exit: returning 'false' (invalid variable name)", __func__);
 			return false;
 		}
 
-	elog(DEBUG1,"%s exit: returning 'true'", __func__);
+	elog(DEBUG1, "%s exit: returning 'true'", __func__);
 	return true;
 }
 
@@ -8756,46 +8491,46 @@ static bool IsSPARQLVariableValid(const char* str)
  * CreateRegexString
  * ---------------
  * Escapes regex wildcards into normal characters by adding \\ to them
- * 
+ *
  * str: string to be converted
- * 
+ *
  * returns str with the regex wildcards escaped.
  */
-static char* CreateRegexString(char* str)
+static char *CreateRegexString(char *str)
 {
 	StringInfoData res;
 	initStringInfo(&res);
 
-	elog(DEBUG1,"%s called: str='%s'", __func__, str);
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
-	if(!str)
+	if (!str)
 		return NULL;
 
 	for (int i = 0; str[i] != '\0'; i++)
 	{
 		char c = str[i];
 
-		if( i == 0 && c != '%' && c != '_' && c != '^' )
-			appendStringInfo(&res,"^");
+		if (i == 0 && c != '%' && c != '_' && c != '^')
+			appendStringInfo(&res, "^");
 
-		if(strchr("/:=#@^()[]{}+-*$.?|",c) != NULL)
-			appendStringInfo(&res,"\\\\%c", c);
-		else if(c == '%')
-			appendStringInfo(&res,".*");
-		else if(c == '_')
-			appendStringInfo(&res,".");
-		else if(c == '"')
-			appendStringInfo(&res,"\\\"");
+		if (strchr("/:=#@^()[]{}+-*$.?|", c) != NULL)
+			appendStringInfo(&res, "\\\\%c", c);
+		else if (c == '%')
+			appendStringInfo(&res, ".*");
+		else if (c == '_')
+			appendStringInfo(&res, ".");
+		else if (c == '"')
+			appendStringInfo(&res, "\\\"");
 		else
 			appendStringInfo(&res, "%c", c);
 
-		if(i == strlen(str)-1 && c != '%' && c != '_')
-			appendStringInfo(&res,"$");
+		if (i == strlen(str) - 1 && c != '%' && c != '_')
+			appendStringInfo(&res, "$");
 
 		elog(DEBUG2, "%s loop => %c res => %s", __func__, str[i], NameStr(res));
 	}
 
-	elog(DEBUG1,"%s exit: returning '%s'",__func__,NameStr(res));
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, NameStr(res));
 
 	return NameStr(res);
 }
@@ -8922,7 +8657,7 @@ static char *FormatSQLExtractField(char *field)
 {
 	char *res;
 
-	elog(DEBUG1,"%s called: field='%s'", __func__, field);
+	elog(DEBUG1, "%s called: field='%s'", __func__, field);
 
 	if (strcasecmp(field, "year") == 0 || strcasecmp(field, "years") == 0)
 		res = "YEAR";
@@ -8938,31 +8673,24 @@ static char *FormatSQLExtractField(char *field)
 		res = "SECONDS";
 	else
 	{
-		elog(DEBUG1,"%s exit: returning NULL (field unknown)", __func__);
+		elog(DEBUG1, "%s exit: returning NULL (field unknown)", __func__);
 		return NULL;
 	}
 
-	elog(DEBUG1,"%s exit: returning '%s'", __func__, res);
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, res);
 	return res;
 }
 
-static Oid get_rdfnode_oid(void)
+static Oid GetRDFNodeOID(void)
 {
-    TypeName *typename = makeTypeNameFromNameList(list_make2(makeString("public"), makeString("rdfnode")));
-    Oid typoid = typenameTypeId(NULL, typename);
+	TypeName *typename = makeTypeNameFromNameList(list_make2(makeString("public"), makeString("rdfnode")));
+	Oid typoid = typenameTypeId(NULL, typename);
 
-    if (!OidIsValid(typoid))
-        elog(ERROR, "could not find type \"rdfnode\"");
+	if (!OidIsValid(typoid))
+		elog(ERROR, "could not find type \"rdfnode\"");
 
-    return typoid;
+	return typoid;
 }
-
-
-typedef struct rdfnode
-{
-	int32 vl_len_;						 // required varlena header
-	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
-} rdfnode;
 
 static bool is_valid_xsd_double(const char *lexical)
 {
@@ -9093,108 +8821,107 @@ static bool is_valid_language_tag(const char *lan)
 }
 Datum rdfnode_in(PG_FUNCTION_ARGS)
 {
-    char *str_in = PG_GETARG_CSTRING(0);
-    char *lexical;
-    char *lan;
-    char *dtype;
-    
-    rdfnode *result;
-    size_t len;
-    StringInfoData r;
+	char *str_in = PG_GETARG_CSTRING(0);
+	char *lexical;
+	char *lan;
+	char *dtype;
 
-    // Initialize string buffer
-    initStringInfo(&r);
+	rdfnode *result;
+	size_t len;
+	StringInfoData r;
 
-    if (strlen(str_in) == 0)
-    {
-        appendStringInfo(&r, "\"\"");
-    }
-    else if (isLiteral(str_in))
-    {
-        char *node = cstring_to_rdfnode(str_in);
+	initStringInfo(&r);
 
-        lexical = lex(node);
-        lan = lang(node);
-        dtype = datatype(node);
+	if (strlen(str_in) == 0)
+	{
+		appendStringInfo(&r, "\"\"");
+	}
+	else if (isLiteral(str_in))
+	{
+		char *node = cstring_to_rdfliteral(str_in);
 
-        /* xsd data tyoe validations */
-        if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
-            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                            errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
-        else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
-            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                            errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
-        else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
-            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                            errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
-        else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
-            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                            errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
-        else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
-            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                            errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
-        else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
-            ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                            errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
-        else if (strlen(lan) != 0)
-        {
-            if (!is_valid_language_tag(lan))
-                ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-                                errmsg("invalid language tag: \"%s\"", lan)));
+		lexical = lex(node);
+		lan = lang(node);
+		dtype = datatype(node);
 
-            appendStringInfo(&r, "%s", pstrdup(strlang(unescape_unicode(lexical), lan)));
-        }
-        else if (strlen(dtype) != 0)
-            appendStringInfo(&r, "%s", pstrdup(strdt(unescape_unicode(lexical), dtype)));
-        else
-            appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
-    }
-    else
-    {
-        appendStringInfo(&r, "%s", pstrdup(unescape_unicode(str_in)));
-    }
+		/* xsd data tyoe validations */
+		if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
+			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
+			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
+			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
+			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
+			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
+		else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
+			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
+		else if (strlen(lan) != 0)
+		{
+			if (!is_valid_language_tag(lan))
+				ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+								errmsg("invalid language tag: \"%s\"", lan)));
 
-    len = strlen(r.data);
- 
-    /* 
+			appendStringInfo(&r, "%s", pstrdup(strlang(unescape_unicode(lexical), lan)));
+		}
+		else if (strlen(dtype) != 0)
+			appendStringInfo(&r, "%s", pstrdup(strdt(unescape_unicode(lexical), dtype)));
+		else
+			appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
+	}
+	else
+	{
+		appendStringInfo(&r, "%s", pstrdup(unescape_unicode(str_in)));
+	}
+
+	len = strlen(r.data);
+
+	/*
 	 * allocate memory for the rdfnode (use palloc0 to clear memory).
 	 * r.data is already null-terminated, so no +1 :)
 	 */
-    result = (rdfnode *)palloc0(VARHDRSZ + len);
-    SET_VARSIZE(result, VARHDRSZ + len);
+	result = (rdfnode *)palloc0(VARHDRSZ + len);
+	SET_VARSIZE(result, VARHDRSZ + len);
 
-    /* 
+	/*
 	 * copy string data into the result structure.
 	 * no need for explicit null-termination here
 	 */
-    memcpy(result->vl_data, r.data, len);
+	memcpy(result->vl_data, r.data, len);
 
-    PG_RETURN_POINTER(result);
+	PG_RETURN_POINTER(result);
 }
 
 Datum rdfnode_out(PG_FUNCTION_ARGS)
 {
-    text *lit = PG_GETARG_TEXT_PP(0);       // Handles detoasting
-    int len = VARSIZE_ANY_EXHDR(lit);       // Get payload length safely
-    char *out = (char *) palloc(len + 1);
+	text *lit = PG_GETARG_TEXT_PP(0); // Handles detoasting
+	int len = VARSIZE_ANY_EXHDR(lit); // Get payload length safely
+	char *out = (char *)palloc(len + 1);
 
-    memcpy(out, VARDATA_ANY(lit), len);
-    out[len] = '\0';
+	memcpy(out, VARDATA_ANY(lit), len);
+	out[len] = '\0';
 
-    PG_RETURN_CSTRING(out);
+	PG_RETURN_CSTRING(out);
 }
 
-
-static parsed_rdfnode parse_rdfnode(char *input)
+static rdfnode_info parse_rdfnode(rdfnode *node)
 {
-	parsed_rdfnode result = {NULL, NULL, NULL, false};
-	char *lexical = lex(input);
-	elog(DEBUG1, "%s called: input='%s'", __func__, input);
+	rdfnode_info result = {NULL, NULL, NULL, false};
+	char *raw = rdfnode_to_cstring(node);
+	char *lexical = lex(raw);
+	elog(DEBUG1, "%s called: input='%s'", __func__, raw);
 
-	result.raw = input;
+	result.raw = raw;
 	result.lex = unescape_unicode(lexical);
-	result.dtype = datatype(input);
-	result.lang = lang(input);
+	result.dtype = datatype(raw);
+	result.lang = lang(raw);
 	/* initialize all flags */
 	result.isPlainLiteral = false;
 	result.isDate = false;
@@ -9209,13 +8936,13 @@ static parsed_rdfnode parse_rdfnode(char *input)
 	if (strlen(result.dtype) == 0 && strlen(result.lang) == 0)
 		result.isPlainLiteral = true;
 
-	if (isIRI(input))
+	if (isIRI(raw))
 		result.isIRI = true;
 	else if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
 	{
 		result.isString = true;
 	}
-	else if ((result.isNumeric = isNumeric(input)))
+	else if ((result.isNumeric = isNumeric(raw)))
 	{
 		// elog(WARNING,"literal '%s' is numeric ", result.raw);
 	}
@@ -9235,9 +8962,9 @@ static parsed_rdfnode parse_rdfnode(char *input)
 	{
 		result.isTime = true;
 	}
-	/* 
+	/*
 	 * allow lexicographic comparison for xsd:anyURI literals, aligning with
-	 * SPARQL 1.1’s treatment of xsd:anyURI as xsd:string. 
+	 * SPARQL 1.1’s treatment of xsd:anyURI as xsd:string.
 	 */
 	else if (strcmp(result.dtype, RDF_XSD_ANYURI) == 0)
 	{
@@ -9264,19 +8991,20 @@ Datum rdfnode_cmp(PG_FUNCTION_ARGS)
 		PG_RETURN_INT32(0);
 }
 
-static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
+static bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 {
-	elog(DEBUG1, "%s called", __func__);
+	rdfnode_info a = parse_rdfnode(n1);
+	rdfnode_info b = parse_rdfnode(n2);
 
+	elog(DEBUG1, "%s called", __func__);
 	elog(DEBUG2, "%s: a.lex='%s', a.dtype='%s', a.lang='%s', a.isNumeric='%d'", __func__,
 		 a.lex, a.dtype ? a.dtype : "(null)", a.lang ? a.lang : "(null)", a.isNumeric);
 	elog(DEBUG2, "%s: b.lex='%s', b.dtype='%s', b.lang='%s', b.isNumeric='%d'", __func__,
 		 b.lex, b.dtype ? b.dtype : "(null)", b.lang ? b.lang : "(null)", b.isNumeric);
 
-	
 	if (a.isIRI && b.isIRI)
 		return strcmp(a.raw, b.raw) == 0;
-	/* 
+	/*
 	 * plain (no language or data type) and xsd:string literals
 	 * are considered the same, so we only compare their contents
 	 * directly.
@@ -9289,8 +9017,8 @@ static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 						  b.lex, strlen(b.lex),
 						  DEFAULT_COLLATION_OID) == 0;
 
-	/* 
-	 * plain literals (no language or data type) can only be compared 
+	/*
+	 * plain literals (no language or data type) can only be compared
 	 * to xsd:string or other plain literals.
 	 */
 	if ((!a.isPlainLiteral && !a.isString && b.isPlainLiteral) ||
@@ -9337,13 +9065,13 @@ static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 		else
 		{
 			a_val = DirectFunctionCall3(numeric_in,
-										  CStringGetDatum(a.lex),
-										  ObjectIdGetDatum(InvalidOid),
-										  Int32GetDatum(-1));
+										CStringGetDatum(a.lex),
+										ObjectIdGetDatum(InvalidOid),
+										Int32GetDatum(-1));
 			b_val = DirectFunctionCall3(numeric_in,
-										  CStringGetDatum(b.lex),
-										  ObjectIdGetDatum(InvalidOid),
-										  Int32GetDatum(-1));
+										CStringGetDatum(b.lex),
+										ObjectIdGetDatum(InvalidOid),
+										Int32GetDatum(-1));
 
 			return DatumGetBool(DirectFunctionCall2(numeric_eq, a_val, b_val));
 		}
@@ -9392,39 +9120,36 @@ static bool rdfnode_eq(parsed_rdfnode a, parsed_rdfnode b)
 
 Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	text *a_text = PG_GETARG_TEXT_PP(0);
-	text *b_text = PG_GETARG_TEXT_PP(1);
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
 
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
-
-	PG_RETURN_BOOL(!rdfnode_eq(a_parsed, b_parsed));
+	PG_RETURN_BOOL(!rdfnode_eq((rdfnode *)node1, (rdfnode *)node2));
 }
 
 Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	text *a_text = PG_GETARG_TEXT_PP(0);
-	text *b_text = PG_GETARG_TEXT_PP(1);
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
 
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
-
-	PG_RETURN_BOOL(rdfnode_eq(a_parsed, b_parsed));
+	PG_RETURN_BOOL(rdfnode_eq((rdfnode *)node1, (rdfnode *)node2));
 }
 
-static bool LiteralsComparable(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
+// static bool LiteralsComparable(rdfnode_info rdfnode1, rdfnode_info rdfnode2)
+static bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 {
+	rdfnode_info rdfnode1 = parse_rdfnode(n1);
+	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 	/* identify the shared type category between the two literals */
 	bool bothNumeric = rdfnode1.isNumeric && rdfnode2.isNumeric;
 	bool bothDate = rdfnode1.isDate && rdfnode2.isDate;
 	bool bothDateTime = rdfnode1.isDateTime && rdfnode2.isDateTime;
 	bool bothTime = rdfnode1.isTime && rdfnode2.isTime;
 	bool bothDuration = rdfnode1.isDuration && rdfnode2.isDuration;
-	bool bothString = (rdfnode1.isString || rdfnode1.isPlainLiteral) &&	
+	bool bothString = (rdfnode1.isString || rdfnode1.isPlainLiteral) &&
 					  (rdfnode2.isString || rdfnode2.isPlainLiteral);
 
 	/* check for language-tagged literals (not comparable) */
-	if (strlen(rdfnode1.lang) != 0 || strlen(rdfnode2.lang) !=0)
+	if (strlen(rdfnode1.lang) != 0 || strlen(rdfnode2.lang) != 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("cannot compare language-tagged literals")));
@@ -9441,18 +9166,20 @@ static bool LiteralsComparable(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 			 errmsg("cannot compare literals of different datatypes")));
 }
 
-static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
+static bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
+	rdfnode_info rdfnode1 = parse_rdfnode(n1);
+	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
-	if (!LiteralsComparable(rdfnode1, rdfnode2))
+	if (!LiteralsComparable(n1, n2))
 		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
 	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
 		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
 		return false;
-	
+
 	/* string and plain literals */
 	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
 	{
@@ -9461,7 +9188,7 @@ static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{		
+	{
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -9496,10 +9223,10 @@ static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
 		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL || 
-							strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL || 
-							strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
+							  strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
+							  strpbrk(rdfnode2.lex, "+-") != NULL);
 
 		/* If either literal lacks a timezone, they are incomparable */
 		if (!has_timezone1 || !has_timezone2)
@@ -9507,13 +9234,13 @@ static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 		/* Proceed with timestamp comparison */
 		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													CStringGetDatum(rdfnode1.lex),
-													ObjectIdGetDatum(InvalidOid),
-													Int32GetDatum(-1)));
+													   CStringGetDatum(rdfnode1.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
 		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													CStringGetDatum(rdfnode2.lex),
-													ObjectIdGetDatum(InvalidOid),
-													Int32GetDatum(-1)));
+													   CStringGetDatum(rdfnode2.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
 		return timestamptz_cmp_internal(arg1, arg2) < 0;
 	}
 
@@ -9551,21 +9278,19 @@ static bool rdfnode_lt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	text *a_text = PG_GETARG_TEXT_PP(0);
-	text *b_text = PG_GETARG_TEXT_PP(1);
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
 
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
-
-	PG_RETURN_BOOL(rdfnode_lt(a_parsed, b_parsed));
+	PG_RETURN_BOOL(rdfnode_lt((rdfnode *)node1, (rdfnode *)node2));
 }
 
-
-static bool rdfnode_gt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
+static bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
+	rdfnode_info rdfnode1 = parse_rdfnode(n1);
+	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
-	if (!LiteralsComparable(rdfnode1, rdfnode2))
+	if (!LiteralsComparable(n1, n2))
 		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
@@ -9580,7 +9305,7 @@ static bool rdfnode_gt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 	}
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{		
+	{
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -9670,24 +9395,19 @@ static bool rdfnode_gt(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	text *a_text = PG_GETARG_TEXT_PP(0);
-	text *b_text = PG_GETARG_TEXT_PP(1);
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
 
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
-
-	PG_RETURN_BOOL(rdfnode_gt(a_parsed, b_parsed));
+	PG_RETURN_BOOL(rdfnode_gt((rdfnode *)node1, (rdfnode *)node2));
 }
 
-
-
-
-
-static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
+static bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
+	rdfnode_info rdfnode1 = parse_rdfnode(n1);
+	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
-	if (!LiteralsComparable(rdfnode1, rdfnode2))
+	if (!LiteralsComparable(n1, n2))
 		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
@@ -9703,7 +9423,7 @@ static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{		
+	{
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -9737,10 +9457,10 @@ static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
 		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL || 
-							strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL || 
-							strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
+							  strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
+							  strpbrk(rdfnode2.lex, "+-") != NULL);
 
 		/* If either literal lacks a timezone, they are incomparable */
 		if (!has_timezone1 || !has_timezone2)
@@ -9748,13 +9468,13 @@ static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 		/* Proceed with timestamp comparison */
 		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													CStringGetDatum(rdfnode1.lex),
-													ObjectIdGetDatum(InvalidOid),
-													Int32GetDatum(-1)));
+													   CStringGetDatum(rdfnode1.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
 		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													CStringGetDatum(rdfnode2.lex),
-													ObjectIdGetDatum(InvalidOid),
-													Int32GetDatum(-1)));
+													   CStringGetDatum(rdfnode2.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
 		return timestamptz_cmp_internal(arg1, arg2) <= 0;
 	}
 
@@ -9792,20 +9512,19 @@ static bool rdfnode_le(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	text *a_text = PG_GETARG_TEXT_PP(0);
-	text *b_text = PG_GETARG_TEXT_PP(1);
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
 
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
-
-	PG_RETURN_BOOL(rdfnode_le(a_parsed, b_parsed));
+	PG_RETURN_BOOL(rdfnode_le((rdfnode *)node1, (rdfnode *)node2));
 }
 
-static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
+static bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
+	rdfnode_info rdfnode1 = parse_rdfnode(n1);
+	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
-	if (!LiteralsComparable(rdfnode1, rdfnode2))
+	if (!LiteralsComparable(n1, n2))
 		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
@@ -9821,7 +9540,7 @@ static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
-	{		
+	{
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -9855,10 +9574,10 @@ static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
 		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL || 
-							strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL || 
-							strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
+							  strpbrk(rdfnode1.lex, "+-") != NULL);
+		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
+							  strpbrk(rdfnode2.lex, "+-") != NULL);
 
 		/* If either literal lacks a timezone, they are incomparable */
 		if (!has_timezone1 || !has_timezone2)
@@ -9866,13 +9585,13 @@ static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 		/* Proceed with timestamp comparison */
 		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													CStringGetDatum(rdfnode1.lex),
-													ObjectIdGetDatum(InvalidOid),
-													Int32GetDatum(-1)));
+													   CStringGetDatum(rdfnode1.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
 		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													CStringGetDatum(rdfnode2.lex),
-													ObjectIdGetDatum(InvalidOid),
-													Int32GetDatum(-1)));
+													   CStringGetDatum(rdfnode2.lex),
+													   ObjectIdGetDatum(InvalidOid),
+													   Int32GetDatum(-1)));
 		return timestamptz_cmp_internal(arg1, arg2) >= 0;
 	}
 
@@ -9910,33 +9629,29 @@ static bool rdfnode_ge(parsed_rdfnode rdfnode1, parsed_rdfnode rdfnode2)
 
 Datum rdfnode_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	text *a_text = PG_GETARG_TEXT_PP(0);
-	text *b_text = PG_GETARG_TEXT_PP(1);
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
 
-	parsed_rdfnode a_parsed = parse_rdfnode(text_to_cstring(a_text));
-	parsed_rdfnode b_parsed = parse_rdfnode(text_to_cstring(b_text));
-
-	PG_RETURN_BOOL(rdfnode_ge(a_parsed, b_parsed));
+	PG_RETURN_BOOL(rdfnode_ge((rdfnode *)node1, (rdfnode *)node2));
 }
 
 Datum rdfnode_to_text(PG_FUNCTION_ARGS)
 {
-    text *lit = PG_GETARG_TEXT_PP(0);         // Safe detoasting
-    int len = VARSIZE_ANY_EXHDR(lit);         // Length of the actual data
-    text *result = (text *) palloc(VARHDRSZ + len);
+	text *lit = PG_GETARG_TEXT_PP(0); // Safe detoasting
+	int len = VARSIZE_ANY_EXHDR(lit); // Length of the actual data
+	text *result = (text *)palloc(VARHDRSZ + len);
 
-    SET_VARSIZE(result, VARHDRSZ + len);
-    memcpy(VARDATA(result), VARDATA_ANY(lit), len);
+	SET_VARSIZE(result, VARHDRSZ + len);
+	memcpy(VARDATA(result), VARDATA_ANY(lit), len);
 
-    PG_RETURN_TEXT_P(result);
+	PG_RETURN_TEXT_P(result);
 }
-
 
 /* numeric */
 Datum rdfnode_to_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (!p.isNumeric)
 		ereport(ERROR,
@@ -9952,7 +9667,7 @@ Datum rdfnode_eq_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -9967,9 +9682,9 @@ Datum rdfnode_eq_numeric(PG_FUNCTION_ARGS)
 
 Datum rdfnode_neq_numeric(PG_FUNCTION_ARGS)
 {
-	text *literal = PG_GETARG_TEXT_PP(0);
+	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(literal));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -9986,11 +9701,10 @@ Datum rdfnode_lt_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
-	// rdf_num = DirectFunctionCall1(numeric_in, CStringGetDatum(p.lex));
 	rdf_num = DirectFunctionCall3(numeric_in,
 								  CStringGetDatum(p.lex),
 								  ObjectIdGetDatum(InvalidOid),
@@ -10004,7 +9718,7 @@ Datum rdfnode_gt_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10021,7 +9735,7 @@ Datum rdfnode_le_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10038,7 +9752,7 @@ Datum rdfnode_ge_numeric(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Numeric num = PG_GETARG_NUMERIC(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10055,7 +9769,7 @@ Datum numeric_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10072,8 +9786,8 @@ Datum numeric_eq_rdfnode(PG_FUNCTION_ARGS)
 Datum numeric_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
-	text *literal = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(literal));
+	text *t = PG_GETARG_TEXT_PP(1);
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10090,7 +9804,7 @@ Datum numeric_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10107,7 +9821,7 @@ Datum numeric_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10124,7 +9838,7 @@ Datum numeric_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10141,7 +9855,7 @@ Datum numeric_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric num = PG_GETARG_NUMERIC(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_num;
 	bool result;
 
@@ -10175,7 +9889,7 @@ Datum rdfnode_eq_float8(PG_FUNCTION_ARGS)
 	float8 f = PG_GETARG_FLOAT8(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10189,7 +9903,7 @@ Datum rdfnode_neq_float8(PG_FUNCTION_ARGS)
 	float8 f = PG_GETARG_FLOAT8(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10201,7 +9915,7 @@ Datum rdfnode_lt_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8lt, rdf_float, Float8GetDatum(f)));
 
@@ -10212,7 +9926,7 @@ Datum rdfnode_gt_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8gt, rdf_float, Float8GetDatum(f)));
 
@@ -10223,7 +9937,7 @@ Datum rdfnode_le_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8le, rdf_float, Float8GetDatum(f)));
 
@@ -10234,7 +9948,7 @@ Datum rdfnode_ge_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float8 f = PG_GETARG_FLOAT8(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8ge, rdf_float, Float8GetDatum(f)));
 
@@ -10244,7 +9958,7 @@ Datum rdfnode_ge_float8(PG_FUNCTION_ARGS)
 Datum rdfnode_to_float8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (!p.isNumeric)
 		ereport(ERROR,
@@ -10260,7 +9974,7 @@ Datum float8_eq_rdfnode(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10274,7 +9988,7 @@ Datum float8_neq_rdfnode(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(1);
 	float8 rdf_float;
 	Datum rdf_float_datum;
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	rdf_float_datum = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	rdf_float = DatumGetFloat8(rdf_float_datum);
@@ -10286,7 +10000,7 @@ Datum float8_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8lt, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
@@ -10296,7 +10010,7 @@ Datum float8_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8gt, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
@@ -10306,7 +10020,7 @@ Datum float8_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8le, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
@@ -10316,7 +10030,7 @@ Datum float8_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float = DirectFunctionCall1(float8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float8ge, Float8GetDatum(f), rdf_float));
 	PG_RETURN_BOOL(result);
@@ -10340,7 +10054,7 @@ Datum float8_to_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	PG_RETURN_DATUM(DirectFunctionCall1(float4in, CStringGetDatum(p.lex)));
 }
@@ -10349,7 +10063,7 @@ Datum rdfnode_eq_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4eq, rdf_float4, Float4GetDatum(f)));
 
@@ -10358,9 +10072,9 @@ Datum rdfnode_eq_float4(PG_FUNCTION_ARGS)
 
 Datum rdfnode_neq_float4(PG_FUNCTION_ARGS)
 {
-	text *literal = PG_GETARG_TEXT_PP(0);
+	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(literal));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ne, rdf_float4, Float4GetDatum(f)));
 
@@ -10371,7 +10085,7 @@ Datum rdfnode_gt_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4gt, rdf_float4, Float4GetDatum(f)));
 
@@ -10382,7 +10096,7 @@ Datum rdfnode_lt_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4lt, rdf_float4, Float4GetDatum(f)));
 
@@ -10393,7 +10107,7 @@ Datum rdfnode_ge_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ge, rdf_float4, Float4GetDatum(f)));
 
@@ -10404,7 +10118,7 @@ Datum rdfnode_le_float4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	float4 f = PG_GETARG_FLOAT4(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4le, rdf_float4, Float4GetDatum(f)));
 
@@ -10431,7 +10145,7 @@ Datum float4_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4eq, Float4GetDatum(f), rdf_float4));
 
@@ -10442,7 +10156,7 @@ Datum float4_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ne, Float4GetDatum(f), rdf_float4));
 
@@ -10453,7 +10167,7 @@ Datum float4_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4lt, Float4GetDatum(f), rdf_float4));
 
@@ -10464,7 +10178,7 @@ Datum float4_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4gt, Float4GetDatum(f), rdf_float4));
 
@@ -10475,7 +10189,7 @@ Datum float4_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4le, Float4GetDatum(f), rdf_float4));
 
@@ -10486,7 +10200,7 @@ Datum float4_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	float4 f = PG_GETARG_FLOAT4(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_float4 = DirectFunctionCall1(float4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(float4ge, Float4GetDatum(f), rdf_float4));
 
@@ -10497,7 +10211,7 @@ Datum float4_ge_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	int64 result = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(p.lex)));
 
 	PG_RETURN_INT64(result);
@@ -10507,7 +10221,7 @@ Datum rdfnode_lt_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8lt, rdf_int8, Int64GetDatum(val)));
 
@@ -10518,7 +10232,7 @@ Datum rdfnode_le_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8le, rdf_int8, Int64GetDatum(val)));
 
@@ -10529,7 +10243,7 @@ Datum rdfnode_gt_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8gt, rdf_int8, Int64GetDatum(val)));
 
@@ -10540,7 +10254,7 @@ Datum rdfnode_ge_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ge, rdf_int8, Int64GetDatum(val)));
 
@@ -10551,7 +10265,7 @@ Datum rdfnode_eq_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8eq, rdf_int8, Int64GetDatum(val)));
 
@@ -10562,7 +10276,7 @@ Datum rdfnode_neq_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ne, rdf_int8, Int64GetDatum(val)));
 
@@ -10583,7 +10297,7 @@ Datum int8_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8lt, Int64GetDatum(val), rdf_int8));
 
@@ -10594,7 +10308,7 @@ Datum int8_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8le, Int64GetDatum(val), rdf_int8));
 
@@ -10605,7 +10319,7 @@ Datum int8_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8gt, Int64GetDatum(val), rdf_int8));
 
@@ -10616,7 +10330,7 @@ Datum int8_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ge, Int64GetDatum(val), rdf_int8));
 
@@ -10627,7 +10341,7 @@ Datum int8_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8eq, rdf_int8, Int64GetDatum(val)));
 
@@ -10638,7 +10352,7 @@ Datum int8_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int8ne, rdf_int8, Int64GetDatum(val)));
 
@@ -10649,7 +10363,7 @@ Datum int8_neq_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	int32 result = DatumGetInt32(DirectFunctionCall1(int4in, CStringGetDatum(p.lex)));
 
 	PG_RETURN_INT64(result);
@@ -10659,7 +10373,7 @@ Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT64(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4lt, rdf_int4, Int32GetDatum(val)));
 
@@ -10670,7 +10384,7 @@ Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4le, rdf_int4, Int32GetDatum(val)));
 
@@ -10681,7 +10395,7 @@ Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4gt, rdf_int4, Int32GetDatum(val)));
 
@@ -10692,7 +10406,7 @@ Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ge, rdf_int4, Int32GetDatum(val)));
 
@@ -10703,7 +10417,7 @@ Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4eq, rdf_int4, Int32GetDatum(val)));
 
@@ -10714,7 +10428,7 @@ Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT32(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ne, rdf_int4, Int32GetDatum(val)));
 
@@ -10736,7 +10450,7 @@ Datum int4_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4lt, Int32GetDatum(val), rdf_int4));
 
@@ -10747,7 +10461,7 @@ Datum int4_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4le, Int32GetDatum(val), rdf_int4));
 
@@ -10758,7 +10472,7 @@ Datum int4_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4gt, Int32GetDatum(val), rdf_int4));
 
@@ -10769,7 +10483,7 @@ Datum int4_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ge, Int32GetDatum(val), rdf_int4));
 
@@ -10780,7 +10494,7 @@ Datum int4_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4eq, rdf_int4, Int32GetDatum(val)));
 
@@ -10791,7 +10505,7 @@ Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int4ne, rdf_int4, Int32GetDatum(val)));
 
@@ -10802,7 +10516,7 @@ Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	int16 result = DatumGetInt32(DirectFunctionCall1(int2in, CStringGetDatum(p.lex)));
 
 	PG_RETURN_INT64(result);
@@ -10812,7 +10526,7 @@ Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2lt, rdf_int2, Int16GetDatum(val)));
 
@@ -10823,7 +10537,7 @@ Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2le, rdf_int2, Int16GetDatum(val)));
 
@@ -10834,7 +10548,7 @@ Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2gt, rdf_int2, Int16GetDatum(val)));
 
@@ -10845,7 +10559,7 @@ Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ge, rdf_int2, Int16GetDatum(val)));
 
@@ -10856,7 +10570,7 @@ Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2eq, rdf_int2, Int16GetDatum(val)));
 
@@ -10867,7 +10581,7 @@ Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int16 val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ne, rdf_int2, Int16GetDatum(val)));
 
@@ -10889,7 +10603,7 @@ Datum int2_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2lt, Int16GetDatum(val), rdf_int2));
 
@@ -10900,7 +10614,7 @@ Datum int2_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2le, Int16GetDatum(val), rdf_int2));
 
@@ -10911,7 +10625,7 @@ Datum int2_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2gt, Int16GetDatum(val), rdf_int2));
 
@@ -10922,7 +10636,7 @@ Datum int2_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ge, Int16GetDatum(val), rdf_int2));
 
@@ -10933,7 +10647,7 @@ Datum int2_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2eq, rdf_int2, Int16GetDatum(val)));
 
@@ -10944,7 +10658,7 @@ Datum int2_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(int2ne, rdf_int2, Int16GetDatum(val)));
 
@@ -10978,8 +10692,7 @@ Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	char *literal = strdt(text_to_cstring(t), RDF_XSD_DATE);
-	parsed_rdfnode p = parse_rdfnode(literal);
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum result = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(p.lex),
 														   ObjectIdGetDatum(InvalidOid),
@@ -10992,8 +10705,7 @@ Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS)
 Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	char *literal = strdt(text_to_cstring(t), RDF_XSD_DATE);
-	parsed_rdfnode p = parse_rdfnode(literal);
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum result;
 
 	if (!p.isDateTime && !p.isDate)
@@ -11011,7 +10723,7 @@ Datum rdfnode_eq_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_eq, rdf_ts, TimestampGetDatum(val)));
 
@@ -11022,7 +10734,7 @@ Datum rdfnode_neq_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ne, rdf_ts, TimestampGetDatum(val)));
 
@@ -11033,7 +10745,7 @@ Datum rdfnode_lt_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_lt, rdf_ts, TimestampGetDatum(val)));
 
@@ -11044,7 +10756,7 @@ Datum rdfnode_gt_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_gt, rdf_ts, TimestampGetDatum(val)));
 
@@ -11055,7 +10767,7 @@ Datum rdfnode_le_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_le, rdf_ts, TimestampGetDatum(val)));
 
@@ -11066,7 +10778,7 @@ Datum rdfnode_ge_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ge, rdf_ts, TimestampGetDatum(val)));
 
@@ -11102,7 +10814,7 @@ Datum timestamp_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_eq, TimestampGetDatum(val), rdf_ts));
 
@@ -11113,7 +10825,7 @@ Datum timestamp_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ne, TimestampGetDatum(val), rdf_ts));
 
@@ -11124,7 +10836,7 @@ Datum timestamp_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_lt, TimestampGetDatum(val), rdf_ts));
 
@@ -11135,7 +10847,7 @@ Datum timestamp_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_gt, TimestampGetDatum(val), rdf_ts));
 
@@ -11146,7 +10858,7 @@ Datum timestamp_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_le, TimestampGetDatum(val), rdf_ts));
 
@@ -11157,7 +10869,7 @@ Datum timestamp_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp val = PG_GETARG_TIMESTAMP(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ge, TimestampGetDatum(val), rdf_ts));
 
@@ -11168,9 +10880,7 @@ Datum timestamp_ge_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	char *literal = strdt(text_to_cstring(t), RDF_XSD_DATE);
-	parsed_rdfnode p = parse_rdfnode(literal);
-
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum result = DirectFunctionCall3(date_in,
 									   CStringGetDatum(p.lex),
 									   ObjectIdGetDatum(InvalidOid),
@@ -11183,7 +10893,7 @@ Datum rdfnode_lt_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_lt, rdf_date, DateADTGetDatum(val)));
 
@@ -11194,7 +10904,7 @@ Datum rdfnode_le_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_le, rdf_date, DateADTGetDatum(val)));
 
@@ -11205,7 +10915,7 @@ Datum rdfnode_gt_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_gt, rdf_date, DateADTGetDatum(val)));
 
@@ -11216,7 +10926,7 @@ Datum rdfnode_ge_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ge, rdf_date, DateADTGetDatum(val)));
 
@@ -11227,7 +10937,7 @@ Datum rdfnode_eq_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
 
@@ -11238,7 +10948,7 @@ Datum rdfnode_neq_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	DateADT val = PG_GETARG_INT16(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
 
@@ -11266,7 +10976,7 @@ Datum date_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_lt, DateADTGetDatum(val), rdf_date));
 
@@ -11277,7 +10987,7 @@ Datum date_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_le, DateADTGetDatum(val), rdf_date));
 
@@ -11288,7 +10998,7 @@ Datum date_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_gt, DateADTGetDatum(val), rdf_date));
 
@@ -11299,7 +11009,7 @@ Datum date_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ge, DateADTGetDatum(val), rdf_date));
 
@@ -11310,7 +11020,7 @@ Datum date_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
 
@@ -11321,7 +11031,7 @@ Datum date_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
 
@@ -11332,8 +11042,7 @@ Datum date_neq_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	char *literal = strdt(text_to_cstring(t), RDF_XSD_TIME);
-	parsed_rdfnode p = parse_rdfnode(literal);
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum result = DirectFunctionCall3(time_in,
 									   CStringGetDatum(p.lex),
@@ -11347,7 +11056,7 @@ Datum rdfnode_lt_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_lt, rdf_time, TimeADTGetDatum(val)));
 
@@ -11358,7 +11067,7 @@ Datum rdfnode_le_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_le, rdf_time, TimeADTGetDatum(val)));
 
@@ -11369,7 +11078,7 @@ Datum rdfnode_gt_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_gt, rdf_time, TimeADTGetDatum(val)));
 
@@ -11380,7 +11089,7 @@ Datum rdfnode_ge_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ge, rdf_time, TimeADTGetDatum(val)));
 
@@ -11391,7 +11100,7 @@ Datum rdfnode_eq_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_eq, rdf_time, TimeADTGetDatum(val)));
 
@@ -11402,7 +11111,7 @@ Datum rdfnode_neq_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeADT val = PG_GETARG_TIMEADT(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ne, rdf_time, TimeADTGetDatum(val)));
 
@@ -11435,7 +11144,7 @@ Datum time_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_lt, TimeADTGetDatum(val), rdf_time));
 
@@ -11446,7 +11155,7 @@ Datum time_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_le, TimeADTGetDatum(val), rdf_time));
 
@@ -11457,7 +11166,7 @@ Datum time_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_gt, TimeADTGetDatum(val), rdf_time));
 
@@ -11468,7 +11177,7 @@ Datum time_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ge, TimeADTGetDatum(val), rdf_time));
 
@@ -11479,7 +11188,7 @@ Datum time_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_eq, rdf_time, TimeADTGetDatum(val)));
 
@@ -11490,7 +11199,7 @@ Datum time_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT val = PG_GETARG_TIMEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(time_ne, rdf_time, TimeADTGetDatum(val)));
 
@@ -11501,7 +11210,7 @@ Datum time_neq_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum result = DirectFunctionCall3(timetz_in,
 									   CStringGetDatum(p.lex),
 									   ObjectIdGetDatum(InvalidOid),
@@ -11514,7 +11223,7 @@ Datum rdfnode_lt_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11528,7 +11237,7 @@ Datum rdfnode_le_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11542,7 +11251,7 @@ Datum rdfnode_gt_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11556,7 +11265,7 @@ Datum rdfnode_ge_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11570,7 +11279,7 @@ Datum rdfnode_eq_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11584,7 +11293,7 @@ Datum rdfnode_neq_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
 										   CStringGetDatum(p.lex),
 										   ObjectIdGetDatum(InvalidOid),
@@ -11615,7 +11324,7 @@ Datum timetz_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_lt, TimeTzADTPGetDatum(val), rdf_timetz));
 
@@ -11626,7 +11335,7 @@ Datum timetz_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_le, TimeTzADTPGetDatum(val), rdf_timetz));
 
@@ -11637,7 +11346,7 @@ Datum timetz_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_gt, TimeTzADTPGetDatum(val), rdf_timetz));
 
@@ -11648,7 +11357,7 @@ Datum timetz_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_ge, TimeTzADTPGetDatum(val), rdf_timetz));
 
@@ -11659,7 +11368,7 @@ Datum timetz_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_eq, rdf_timetz, TimeTzADTPGetDatum(val)));
 
@@ -11670,7 +11379,7 @@ Datum timetz_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
 	bool result = DatumGetBool(DirectFunctionCall2(timetz_ne, rdf_timetz, TimeTzADTPGetDatum(val)));
 
@@ -11681,12 +11390,11 @@ Datum timetz_neq_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	char *literal = text_to_cstring(t);
-	parsed_rdfnode p = parse_rdfnode(literal);
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	bool result;
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", p.raw)));
 
 	if (pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0)
 		result = true;
@@ -11694,7 +11402,7 @@ Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 		result = false;
 	else
 		ereport(ERROR,
-				(errmsg("cannot cast RDF literal: %s to boolean", literal),
+				(errmsg("cannot cast RDF literal: %s to boolean", p.raw),
 				 errdetail("expected values for xsd:boolean are \"true\" or \"false\"")));
 
 	PG_RETURN_BOOL(result);
@@ -11705,7 +11413,7 @@ Datum rdfnode_eq_boolean(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	bool val = PG_GETARG_BOOL(1);
 	char *literal = text_to_cstring(t);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
 		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
@@ -11723,7 +11431,7 @@ Datum rdfnode_neq_boolean(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	bool val = PG_GETARG_BOOL(1);
 	char *literal = text_to_cstring(t);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
 		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
@@ -11755,7 +11463,7 @@ Datum boolean_eq_rdfnode(PG_FUNCTION_ARGS)
 	bool val = PG_GETARG_BOOL(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	char *literal = text_to_cstring(t);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
 		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
@@ -11773,7 +11481,7 @@ Datum boolean_neq_rdfnode(PG_FUNCTION_ARGS)
 	bool val = PG_GETARG_BOOL(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	char *literal = text_to_cstring(t);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
 		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
@@ -11790,13 +11498,12 @@ Datum boolean_neq_rdfnode(PG_FUNCTION_ARGS)
 Datum rdfnode_to_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	char *literal = text_to_cstring(t);
-	parsed_rdfnode p = parse_rdfnode(literal);
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum result;
 
 	if (strcmp(p.dtype, RDF_XSD_DURATION) != 0)
 		ereport(ERROR,
-				(errmsg("cannot cast RDF literal: %s to interval", literal),
+				(errmsg("cannot cast RDF literal: %s to interval", p.raw),
 				 errdetail("expected xsd:duration")));
 
 	result = DirectFunctionCall3(interval_in,
@@ -11811,7 +11518,7 @@ Datum rdfnode_eq_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -11829,7 +11536,7 @@ Datum rdfnode_neq_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -11847,7 +11554,7 @@ Datum rdfnode_lt_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11864,7 +11571,7 @@ Datum rdfnode_le_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11881,7 +11588,7 @@ Datum rdfnode_gt_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11898,7 +11605,7 @@ Datum rdfnode_ge_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -11935,7 +11642,7 @@ Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 
 	/* check for zero duration */
 	is_zero = (years == 0 && months == 0 && days == 0 &&
-	           hours == 0 && mins == 0 && secs == 0 && usecs == 0);
+			   hours == 0 && mins == 0 && secs == 0 && usecs == 0);
 
 	appendStringInfoChar(&buf, '\"');
 
@@ -11983,12 +11690,11 @@ Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-
 Datum interval_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -12006,7 +11712,7 @@ Datum interval_neq_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
@@ -12024,7 +11730,7 @@ Datum interval_lt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -12041,7 +11747,7 @@ Datum interval_le_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
@@ -12057,13 +11763,13 @@ Datum interval_gt_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
 											 Int32GetDatum(-1));
 
-	bool result = DatumGetBool(DirectFunctionCall2(interval_gt,												   
+	bool result = DatumGetBool(DirectFunctionCall2(interval_gt,
 												   IntervalPGetDatum(val),
 												   rdf_interval));
 
@@ -12074,13 +11780,13 @@ Datum interval_ge_rdfnode(PG_FUNCTION_ARGS)
 {
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
-	parsed_rdfnode p = parse_rdfnode(text_to_cstring(t));
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	Datum rdf_interval = DirectFunctionCall3(interval_in,
 											 CStringGetDatum(p.lex),
 											 ObjectIdGetDatum(InvalidOid),
 											 Int32GetDatum(-1));
 
-	bool result = DatumGetBool(DirectFunctionCall2(interval_ge,												   
+	bool result = DatumGetBool(DirectFunctionCall2(interval_ge,
 												   IntervalPGetDatum(val),
 												   rdf_interval));
 
@@ -12091,37 +11797,37 @@ Datum interval_ge_rdfnode(PG_FUNCTION_ARGS)
 static void
 pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 {
-    unsigned char utf8buf[8];  /* Large enough for UTF-8 encoding */
-    int len;
-    unsigned char *converted;
+	unsigned char utf8buf[8]; /* Large enough for UTF-8 encoding */
+	int len;
+	unsigned char *converted;
 
-    /* Convert Unicode code point to UTF-8 */
-    if (unicode_to_utf8(c, utf8buf) == NULL)
-        ereport(ERROR,
-                (errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
-                 errmsg("invalid Unicode code point: 0x%04x", c)));
+	/* Convert Unicode code point to UTF-8 */
+	if (unicode_to_utf8(c, utf8buf) == NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
+				 errmsg("invalid Unicode code point: 0x%04x", c)));
 
-    len = pg_utf_mblen(utf8buf);  /* Get the length of the encoded UTF-8 character */
+	len = pg_utf_mblen(utf8buf); /* Get the length of the encoded UTF-8 character */
 
-    if (GetDatabaseEncoding() == PG_UTF8)
-    {
-        memcpy(utf8, utf8buf, len);
-    }
-    else
-    {
-        converted = pg_do_encoding_conversion(utf8buf, len,
-                                              PG_UTF8, GetDatabaseEncoding());
+	if (GetDatabaseEncoding() == PG_UTF8)
+	{
+		memcpy(utf8, utf8buf, len);
+	}
+	else
+	{
+		converted = pg_do_encoding_conversion(utf8buf, len,
+											  PG_UTF8, GetDatabaseEncoding());
 
-        if (converted == NULL)
-            ereport(ERROR,
-                    (errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
-                     errmsg("Unicode character 0x%04x cannot be converted to server encoding \"%s\"",
-                            c, GetDatabaseEncodingName())));
+		if (converted == NULL)
+			ereport(ERROR,
+					(errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
+					 errmsg("Unicode character 0x%04x cannot be converted to server encoding \"%s\"",
+							c, GetDatabaseEncodingName())));
 
-        memcpy(utf8, converted, strlen((const char *)converted));
-    }
+		memcpy(utf8, converted, strlen((const char *)converted));
+	}
 
-    utf8[len] = '\0';  /* Null-terminate (safe if utf8 has size ≥ 5) */
+	utf8[len] = '\0'; /* Null-terminate (safe if utf8 has size ≥ 5) */
 }
 #endif
 
