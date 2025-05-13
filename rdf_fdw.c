@@ -1052,6 +1052,10 @@ static char *cstring_to_rdfliteral(char *input)
 
 	elog(DEBUG1, "%s called: input='%s'", __func__, input);
 
+	/* return the string as-is if the input is an IRI */
+	if (isIRI(input))
+		return input;
+
 	if (!input || strlen(input) == 0)
 	{
 		elog(DEBUG1, "%s exit: returning empty literal '\"\"'", __func__);

@@ -71,7 +71,7 @@ ORDER BY 1 DESC, 2 ASC
 OFFSET 5
 LIMIT 10;
 
-/* SPARQL 18.2.5.3 - DISTINCT*/
+/* SPARQL 18.2.5.3 - DISTINCT */
 SELECT DISTINCT p FROM hbf
 WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
 
@@ -348,7 +348,10 @@ WHERE
 SELECT p, o, sparql.iri(p)
 FROM hbf
 WHERE 
-  sparql.iri(p) = sparql.iri('http://linkedgeodata.org/ontology/short_name');
+  sparql.iri(p) = sparql.iri('http://linkedgeodata.org/ontology/short_name') AND
+  sparql.iri('http://linkedgeodata.org/ontology/short_name') = sparql.iri(p) AND
+  sparql.iri('http://linkedgeodata.org/ontology/short_name') = p AND
+  p = sparql.iri('http://linkedgeodata.org/ontology/short_name');
 
 /* SPARQL 17.4.2.9 - BNODE */
 SELECT p, o, sparql.bnode(o)
@@ -362,14 +365,20 @@ SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strdt(o,'xsd:string') = sparql.strdt('"Gare centrale de Leipzig"@fr', 'xsd:string');
+  sparql.strdt('"Gare centrale de Leipzig"@fr', 'xsd:string') = sparql.strdt(o,'xsd:string') AND
+  sparql.strdt(o,'xsd:string') = sparql.strdt('"Gare centrale de Leipzig"@fr', 'xsd:string') AND
+  sparql.strdt(o,'xsd:string') = '"Gare centrale de Leipzig"^^xsd:string' AND
+  '"Gare centrale de Leipzig"^^xsd:string' = sparql.strdt(o,'xsd:string');
 
 /* SPARQL 17.4.2.11 - STRLANG */
 SELECT p, o, sparql.strlang(o,'en')
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strlang(o,'en') = sparql.strlang('"Leipzig Hbf"', 'en');
+  sparql.strlang(o,'en') = sparql.strlang('"Leipzig Hbf"', 'en') AND
+  sparql.strlang('"Leipzig Hbf"', 'en') = sparql.strlang(o,'en') AND
+  sparql.strlang('"Leipzig Hbf"', 'en') = '"Leipzig Hbf"@en' AND
+  '"Leipzig Hbf"@en' = sparql.strlang('"Leipzig Hbf"', 'en');
 
 /* SPARQL 17.4.2.12 - UUID (not pushable) */
 SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
@@ -382,7 +391,9 @@ SELECT p, o, sparql.strlen(o)
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strlen(o) = sparql.strlen('"Leipzig Hbf"');
+  sparql.strlen(o) = sparql.strlen('"Leipzig Hbf"') AND
+  sparql.strlen(o) = 11 AND
+  11 = sparql.strlen(o);
 
 /* SPARQL 17.4.3.3 - SUBSTR */
 SELECT p, o, sparql.substr(o, 9, 3)
@@ -396,14 +407,18 @@ SELECT p, o, sparql.ucase(o)
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.ucase(o) = sparql.ucase('"Gare centrale de Leipzig"@fr');
+  sparql.ucase(o) = sparql.ucase('"Gare centrale de Leipzig"@fr') AND
+  sparql.ucase(o) = '"GARE CENTRALE DE LEIPZIG"@fr' AND
+  '"GARE CENTRALE DE LEIPZIG"@fr' = sparql.ucase(o);
 
 /* SPARQL 17.4.3.5 - LCASE */
 SELECT p, o, sparql.lcase(o)
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.lcase(o) = sparql.lcase('"Gare centrale de Leipzig"@fr');
+  sparql.lcase(o) = sparql.lcase('"Gare centrale de Leipzig"@fr') AND
+  sparql.lcase(o) = '"gare centrale de leipzig"@fr' AND
+  '"gare centrale de leipzig"@fr' = sparql.lcase(o);
 
 /* SPARQL 17.4.3.6 - STRSTARTS */
 SELECT p, o, sparql.strstarts(o, sparql.str('"Gare"@fr'))
@@ -428,33 +443,39 @@ WHERE
   sparql.contains(o,'"Leipzig"');
 
 /* SPARQL 17.4.3.9 - STRBEFORE */
-SELECT p, o, sparql.strbefore(sparql.str(o), '"Leipzig"')
+SELECT p, o, sparql.strbefore(sparql.str(o), '"Leipzig"'), sparql.strbefore(sparql.str(o), '"centrale"')
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strbefore(sparql.str(o), '"centrale"') = sparql.strbefore(sparql.str('"Gare centrale de Leipzig"@fr'),'"centrale"');
+  sparql.strbefore(sparql.str(o), '"centrale"') = sparql.strbefore(sparql.str('"Gare centrale de Leipzig"@fr'),'"centrale"') AND
+  sparql.strbefore(sparql.str(o), '"centrale"') = '"Gare "' AND
+  '"Gare "' = sparql.strbefore(sparql.str(o), '"centrale"');
 
 /* SPARQL 17.4.3.10 - STRAFTER */
-SELECT p, o, sparql.strafter(sparql.str(o), '"Gare"')
+SELECT p, o, sparql.strafter(sparql.str(o), '"Gare"'), sparql.strafter(sparql.str(o), '"centrale"')
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.strafter(sparql.str(o), '"centrale"') = sparql.strafter(sparql.str('"Gare centrale de Leipzig"@fr'),'"centrale"');
+  sparql.strafter(sparql.str(o), '"centrale"') = sparql.strafter(sparql.str('"Gare centrale de Leipzig"@fr'),'"centrale"') AND
+  sparql.strafter(sparql.str(o), '"centrale"') = '" de Leipzig"' AND
+  '" de Leipzig"' = sparql.strafter(sparql.str(o), '"centrale"');
 
 /* SPARQL 17.4.3.11 - ENCODE_FOR_URI */
-
 SELECT p, o, sparql.encode_for_uri(o)
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.encode_for_uri(o) = sparql.encode_for_uri('"Gare centrale de Leipzig"@fr');
+  sparql.encode_for_uri(o) = sparql.encode_for_uri('"Gare centrale de Leipzig"@fr') AND
+  sparql.encode_for_uri(o) = '"Gare%20centrale%20de%20Leipzig"' AND 
+  '"Gare%20centrale%20de%20Leipzig"' = sparql.encode_for_uri(o);
 
 /* 17.4.3.12 - CONCAT */
 SELECT p, o, sparql.concat(o,sparql.strlang(' Noir','fr')), sparql.concat(o,sparql.strdt(' Global','xsd:string'))
 FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.concat(o,'') = sparql.concat('"Gare centrale de"','" Leipzig"@fr');
+  sparql.concat(o,'') = sparql.concat('"Gare centrale de"','" Leipzig"@fr') AND
+  sparql.concat('"Gare centrale de"','" Leipzig"@fr') = sparql.concat(o,'');
 
 /* SPARQL 17.4.3.13 - langMatches */
 SELECT p, o, sparql.langmatches(sparql.lang(o),'*'),  sparql.langmatches(sparql.lang(o),'fr'),  sparql.langmatches(sparql.lang(o),'de')
