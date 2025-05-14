@@ -334,7 +334,7 @@ DESCRIBE <http://vocab.getty.edu/ulan/500033638>
 
                              subject                             |                          predicate                          |                                       object                                       
 -----------------------------------------------------------------+-------------------------------------------------------------+------------------------------------------------------------------------------------
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#displayOrder>              | "178723"^^<http://www.w3.org/2001/XMLSchema#positiveInteger>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#displayOrder>              | "178771"^^<http://www.w3.org/2001/XMLSchema#positiveInteger>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/created>                          | "1989-12-22T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/created>                          | "1998-06-19T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2002-08-27T10:11:48"^^<http://www.w3.org/2001/XMLSchema#dateTime>
@@ -367,33 +367,33 @@ DESCRIBE <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Lusson, Louis-Adrien"@nl
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#parentString>              | "Persons, Artists"
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#parentStringAbbrev>        | "Persons, Artists"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://id.loc.gov/authorities/names/nr99039322>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://id.loc.gov/authorities/names/nr99039322>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <http://id.loc.gov/authorities/names/nr99039322>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://id.loc.gov/authorities/names/nr99039322>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://id.loc.gov/authorities/names/nr99039322>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/license>                          | <http://opendatacommons.org/licenses/by/1.0/>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://creativecommons.org/ns#license>                     | <http://opendatacommons.org/licenses/by/1.0/>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentTypeNonPreferred>     | <http://vocab.getty.edu/aat/300024987>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300024987>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300025103>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentTypePreferred>        | <http://vocab.getty.edu/aat/300025103>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300025103>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentTypeNonPreferred>     | <http://vocab.getty.edu/aat/300025492>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300025492>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://rdfs.org/ns/void#inDataset>                         | <http://vocab.getty.edu/dataset/ulan>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://vocab.getty.edu/ontology#PersonConcept>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://vocab.getty.edu/ontology#Subject>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderPreferredExtended>  | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broader>                   | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderInstantial>         | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#broaderTransitive>     | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderExtended>           | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#broader>               | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/iso25964/skos-thes#broaderInstantial>      | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderInstantialExtended> | <http://vocab.getty.edu/ulan/500000002>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderPreferred>          | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderInstantial>         | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broader>                   | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderInstantialExtended> | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderExtended>           | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderPreferredExtended>  | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/iso25964/skos-thes#broaderInstantial>      | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#broader>               | <http://vocab.getty.edu/ulan/500000002>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#broaderTransitive>     | <http://vocab.getty.edu/ulan/500000002>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#ulan1102_student_of>       | <http://vocab.getty.edu/ulan/500012660>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#related>               | <http://vocab.getty.edu/ulan/500012660>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://xmlns.com/foaf/0.1/focus>                           | <http://vocab.getty.edu/ulan/500033638-agent>
- <http://vocab.getty.edu/ulan/rev/5504715945>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
+ <http://vocab.getty.edu/ulan/rev/5505311476>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <http://vocab.getty.edu/ulan/500033638>
@@ -410,16 +410,16 @@ DESCRIBE <http://vocab.getty.edu/ulan/500033638>
  <https://wikidata.org/wiki/Q2825101>                            | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://vocab.getty.edu/ulan/500033638>
  <http://id.loc.gov/authorities/names/nr99039322>                | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://vocab.getty.edu/ulan/500033638>
  <https://wikidata.org/wiki/Q2825101>                            | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5501491860>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503758354>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503758355>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503781561>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5505311476>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/rev/5501491855>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/rev/5501491859>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/rev/5503758364>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/rev/5503758369>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/rev/5503781828>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
+ <http://vocab.getty.edu/ulan/rev/5504715945>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
+ <http://vocab.getty.edu/ulan/rev/5501491860>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
+ <http://vocab.getty.edu/ulan/rev/5503758354>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
+ <http://vocab.getty.edu/ulan/rev/5503758355>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
+ <http://vocab.getty.edu/ulan/rev/5503781561>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#inScheme>              | <http://vocab.getty.edu/ulan/>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000001>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000007>
@@ -428,38 +428,38 @@ DESCRIBE <http://vocab.getty.edu/ulan/500033638>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000130>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000189>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000202>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5500092528>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/ns/prov#wasGeneratedBy>                  | <http://vocab.getty.edu/ulan/rev/5500092528>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5500092528>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5500092528>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5500092529>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5500092529>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5500092529>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/ns/prov#wasGeneratedBy>                  | <http://vocab.getty.edu/ulan/rev/5500092529>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491855>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5501491855>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491859>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491855>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5501491859>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491859>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491860>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5501491860>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758354>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758354>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758355>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758354>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758355>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758363>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758355>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758363>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758364>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758363>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758364>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758364>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758369>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758369>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781561>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781561>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781570>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781570>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781828>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781570>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781828>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5504715945>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781828>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5504715945>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5505311476>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5504715945>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5505311476>
+ <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5505311476>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5505311485>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5505311485>
  <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5511239295>
