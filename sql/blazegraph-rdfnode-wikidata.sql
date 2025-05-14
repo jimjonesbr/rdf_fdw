@@ -152,12 +152,12 @@ SELECT p, o FROM rdbms
 WHERE 
   p = '<http://www.wikidata.org/prop/direct/P8687>'::rdfnode AND
   o = 31360.0::real AND
-  o <> 10000.99::real AND
+  o <> 10000::real AND
   o >= 31359.5::real AND
   o <= 31360.5::real AND
   o BETWEEN 31359.5::real AND 31360.5::real AND
   31360.0::real = o AND
-  10000.99::real <> o AND
+  10000::real <> o AND
   31360.5::real >= o AND
   31359.5::real <= o;
 
@@ -680,7 +680,7 @@ WHERE
   sparql.minutes(o) <= sparql.minutes('"1996-07-08T00:00:00Z"^^xsd:dateTime');
 
 /* SPARQL 17.4.5.7 - seconds */
-SELECT p, o, sparql.seconds(o)
+SELECT p, o, sparql.ceil(sparql.seconds(o))
 FROM rdbms
 WHERE 
   p = sparql.iri('<http://www.wikidata.org/prop/direct/P577>') AND
