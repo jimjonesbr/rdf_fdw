@@ -216,7 +216,7 @@ INFO:  SPARQL returned 3 records.
 
 SELECT p, o FROM country
 WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
-ORDER BY o DESC
+ORDER BY o ASC
 FETCH FIRST 3 ROWS ONLY;
 INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
 
@@ -226,16 +226,16 @@ SELECT ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
 }
-ORDER BY  DESC (?o)
+ORDER BY  ASC (?o)
 LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                        p                        |       o        
--------------------------------------------------+----------------
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "马恩岛"@zh
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "เกาะแมน"@th
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "Man Adası"@tr
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
 (3 rows)
 
 SELECT p, o FROM country

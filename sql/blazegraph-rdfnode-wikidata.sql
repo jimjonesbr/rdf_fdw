@@ -57,24 +57,29 @@ OFFSET 5 ROWS
 LIMIT 10;
 
 /* SPARQL 15.1 - ORDER BY */
-SELECT o FROM rdbms
+SELECT p FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC
 LIMIT 3;
 
 SELECT p FROM rdbms
-ORDER BY o DESC
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
+ORDER BY p ASC
 LIMIT 3;
 
 SELECT p, o FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC, o ASC
 LIMIT 3;
 
 SELECT p, o FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC, o ASC
 OFFSET 5
 LIMIT 2;
 
-SELECT p,o FROM rdbms
+SELECT p, o FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY 1 DESC, 2 ASC
 OFFSET 5
 LIMIT 10;

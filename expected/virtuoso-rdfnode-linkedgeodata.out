@@ -191,23 +191,23 @@ INFO:  SPARQL returned 3 records.
 (3 rows)
 
 SELECT p FROM hbf
-ORDER BY o DESC
+ORDER BY o ASC
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
-ORDER BY  DESC (?o)
+ORDER BY  ASC (?o)
 LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                       p                        
-------------------------------------------------
- <http://purl.org/dc/terms/contributor>
- <http://www.w3.org/2003/01/geo/wgs84_pos#lat>
- <http://www.w3.org/2003/01/geo/wgs84_pos#long>
+                               p                                
+----------------------------------------------------------------
+ <http://linkedgeodata.org/ontology/railway%3Astation_category>
+ <http://linkedgeodata.org/ontology/operator>
+ <http://linkedgeodata.org/ontology/railway%3Aref>
 (3 rows)
 
 SELECT p, o FROM hbf

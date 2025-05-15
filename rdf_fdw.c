@@ -5108,11 +5108,34 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 		state->rdfTable->cols[i]->used = false;
 
+#if PG_VERSION_NUM < 110000
+		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
+		state->rdfTable->cols[i]->pgtype = attr->atttypid;
+		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
+		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
+		state->rdfTable->cols[i]->pgattnum = attr->attnum;
+
+#else
+		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
+		state->rdfTable->cols[i]->pgtype = attr->atttypid;
+		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
+		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
+		state->rdfTable->cols[i]->pgattnum = attr->attnum;
+#endif
+
 		foreach (lc, options)
 		{
 			DefElem *def = (DefElem *)lfirst(lc);
 
-			if (strcmp(def->defname, RDF_COLUMN_OPTION_VARIABLE) == 0)
+			if (state->rdfTable->cols[i]->pgtype == RDFNODEOID && strcmp(def->defname, RDF_COLUMN_OPTION_VARIABLE) != 0)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
+						 errmsg("invalid option \"%s\" for column \"%s\"",
+								def->defname, state->rdfTable->cols[i]->name),
+						 errhint("rdfnode columns accept only the \"%s\" option", RDF_COLUMN_OPTION_VARIABLE)));
+			}
+			else if (strcmp(def->defname, RDF_COLUMN_OPTION_VARIABLE) == 0)
 			{
 				elog(DEBUG2, "  %s: (%d) adding sparql variable > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->sparqlvar = pstrdup(defGetString(def));
@@ -5142,20 +5165,6 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			}
 		}
 
-#if PG_VERSION_NUM < 110000
-		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
-		state->rdfTable->cols[i]->pgtype = attr->atttypid;
-		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
-		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
-		state->rdfTable->cols[i]->pgattnum = attr->attnum;
-
-#else
-		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
-		state->rdfTable->cols[i]->pgtype = attr->atttypid;
-		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
-		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
-		state->rdfTable->cols[i]->pgattnum = attr->attnum;
-#endif
 	}
 
 #if PG_VERSION_NUM < 130000

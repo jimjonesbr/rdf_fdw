@@ -281,5 +281,15 @@ ERROR:  empty value in option 'password'
 */
 CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'jim', foo 'bar');
 ERROR:  invalid rdf_fdw option 'foo'
-DROP SEQUENCE seq1;
-DROP FOREIGN TABLE IF EXISTS t1;
+/* invalid option for rdfnode column*/
+CREATE FOREIGN TABLE t16 (
+  name rdfnode OPTIONS (variable '?s', expression 'STR(?s)')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+SELECT * FROM t16;
+ERROR:  invalid option "expression" for column "name"
+HINT:  rdfnode columns accept only the "variable" option
+DROP SERVER testserver2 CASCADE;
+NOTICE:  drop cascades to 3 other objects
+DETAIL:  drop cascades to foreign table t1
+drop cascades to foreign table t6
+drop cascades to foreign table t16

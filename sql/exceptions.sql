@@ -238,5 +238,10 @@ CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'foo', passwor
 */
 CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'jim', foo 'bar');
 
-DROP SEQUENCE seq1;
-DROP FOREIGN TABLE IF EXISTS t1;
+/* invalid option for rdfnode column*/
+CREATE FOREIGN TABLE t16 (
+  name rdfnode OPTIONS (variable '?s', expression 'STR(?s)')
+) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+SELECT * FROM t16;
+
+DROP SERVER testserver2 CASCADE;

@@ -63,7 +63,7 @@ FETCH FIRST 3 ROWS ONLY;
 
 SELECT p, o FROM country
 WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
-ORDER BY o DESC
+ORDER BY o ASC
 FETCH FIRST 3 ROWS ONLY;
 
 SELECT p, o FROM country

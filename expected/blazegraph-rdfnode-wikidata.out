@@ -199,67 +199,80 @@ INFO:  SPARQL returned 15 records.
 (10 rows)
 
 /* SPARQL 15.1 - ORDER BY */
-SELECT o FROM rdbms
+SELECT p FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC
 LIMIT 3;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o}
+SELECT ?p 
+{wd:Q192490 ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
 ORDER BY  DESC (?p)
 LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-        o        
------------------
- "PostgreSQL"@ar
- "পোস্টজিআরই"@bn
- "Postgres"@ca
+                      p                       
+----------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label>
+ <http://www.w3.org/2000/01/rdf-schema#label>
+ <http://www.w3.org/2000/01/rdf-schema#label>
 (3 rows)
 
 SELECT p FROM rdbms
-ORDER BY o DESC
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
+ORDER BY p ASC
 LIMIT 3;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o}
-ORDER BY  DESC (?o)
+SELECT ?p 
+{wd:Q192490 ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+ORDER BY  ASC (?p)
 LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                     p                      
---------------------------------------------
- <http://schema.org/dateModified>
- <http://www.wikidata.org/prop/direct/P577>
- <http://www.wikidata.org/prop/direct/P571>
+                      p                       
+----------------------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label>
+ <http://www.w3.org/2000/01/rdf-schema#label>
+ <http://www.w3.org/2000/01/rdf-schema#label>
 (3 rows)
 
 SELECT p, o FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC, o ASC
 LIMIT 3;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?p ?o 
-{wd:Q192490 ?p ?o}
+{wd:Q192490 ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
 ORDER BY  DESC (?p)  ASC (?o)
 LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                       p                        |        o        
-------------------------------------------------+-----------------
- <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL"@ar
- <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@ca
- <http://www.w3.org/2004/02/skos/core#altLabel> | "পোস্টজিআরই"@bn
+                      p                       |           o            
+----------------------------------------------+------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@af
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@az
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
 (3 rows)
 
 SELECT p, o FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC, o ASC
 OFFSET 5
 LIMIT 2;
@@ -267,19 +280,23 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?p ?o 
-{wd:Q192490 ?p ?o}
+{wd:Q192490 ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
 ORDER BY  DESC (?p)  ASC (?o)
 LIMIT 7
 
 INFO:  SPARQL returned 7 records.
 
-                       p                        |          o           
-------------------------------------------------+----------------------
- <http://www.w3.org/2004/02/skos/core#altLabel> | "پست گر اس کیوال"@fa
- <http://www.w3.org/2004/02/skos/core#altLabel> | "পোস্টজিআরই"@bn
+                      p                       |           o            
+----------------------------------------------+------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn
 (2 rows)
 
-SELECT p,o FROM rdbms
+SELECT p, o FROM rdbms
+WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY 1 DESC, 2 ASC
 OFFSET 5
 LIMIT 10;
@@ -287,24 +304,27 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 
 SELECT ?p ?o 
-{wd:Q192490 ?p ?o}
+{wd:Q192490 ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
 ORDER BY  DESC (?p)  ASC (?o)
 LIMIT 15
 
 INFO:  SPARQL returned 15 records.
 
-                       p                        |              o              
-------------------------------------------------+-----------------------------
- <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@fr
- <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@hu
- <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@it
- <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@ja
- <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@lv
- <http://www.w3.org/2004/02/skos/core#altLabel> | "پست گر اس کیوال"@fa
- <http://www.w3.org/2004/02/skos/core#altLabel> | "پستگر اسکیوال"@fa
- <http://www.w3.org/2004/02/skos/core#altLabel> | "পোস্টজিআরই"@bn
- <http://www.w3.org/2004/02/skos/core#altLabel> | "ポスグレ"@ja
- <http://www.w3.org/2004/02/skos/core#altLabel> | "ポストグレスキューエル"@ja
+                      p                       |           o            
+----------------------------------------------+------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@da
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@el
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eo
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@et
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@eu
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn
 (10 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT */
