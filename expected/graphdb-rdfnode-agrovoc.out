@@ -1,0 +1,2101 @@
+SET timezone TO 'Etc/UTC';
+CREATE SERVER agrovoc
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint 'https://agrovoc.fao.org/sparql',
+  format 'application/sparql-results+xml',
+  query_param 'query'
+);
+CREATE FOREIGN TABLE country (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER agrovoc OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * {<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o}');
+/* SPARQL 17.4.1.7 - RDFterm-equal */
+SELECT p, o FROM country
+WHERE 
+  p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel') AND
+  o = '"Isle of Man"@de';
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?o = "Isle of Man"@de)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de
+(1 row)
+
+/* SPARQL 17.4.1.9 - IN */
+SELECT p, o FROM country
+WHERE
+  p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel') AND
+  o IN ('"Isle of Man"@de', '"Isla de Man"@es', '"Île de Man"@fr');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?o IN ("Isle of Man"@de, "Isla de Man"@es, "Île de Man"@fr))
+}
+
+INFO:  SPARQL returned 3 records.
+
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Île de Man"@fr
+(3 rows)
+
+/* SPARQL 17.4.1.10 - NOT IN*/
+SELECT p, o FROM country
+WHERE
+  p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel') AND
+  o NOT IN ('"Isle of Man"@de', '"Isla de Man"@es', '"Île de Man"@fr')
+LIMIT 5;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?o NOT IN ("Isle of Man"@de, "Isla de Man"@es, "Île de Man"@fr))
+}
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزیرک مان"@fa
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "मैन द्वीप"@hi
+(5 rows)
+
+/* SPARQL 15.5 - LIMIT */
+SELECT p, o FROM country
+WHERE p = sparql.iri('<http://www.w3.org/2004/02/skos/core#broader>')
+LIMIT 5;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#broader>)
+}
+LIMIT 5
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |                    o                     
+-----------------------------------------------+------------------------------------------
+ <http://www.w3.org/2004/02/skos/core#broader> | <http://aims.fao.org/aos/agrovoc/c_3371>
+(1 row)
+
+SELECT p, o FROM country
+WHERE p = sparql.iri('<http://www.w3.org/2004/02/skos/core#broader>')
+FETCH FIRST 5 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#broader>)
+}
+LIMIT 5
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |                    o                     
+-----------------------------------------------+------------------------------------------
+ <http://www.w3.org/2004/02/skos/core#broader> | <http://aims.fao.org/aos/agrovoc/c_3371>
+(1 row)
+
+/* SPARQL 15.4 - OFFSET */
+SELECT p, o FROM country
+WHERE p = sparql.iri('<http://www.w3.org/2008/05/skos-xl#prefLabel>')
+OFFSET 5
+LIMIT 10;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2008/05/skos-xl#prefLabel>)
+}
+LIMIT 15
+
+INFO:  SPARQL returned 15 records.
+
+                       p                       |                           o                           
+-----------------------------------------------+-------------------------------------------------------
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fa_1299522612953>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fr_1299522612977>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hi_1299522613002>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hu_1299522613031>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_it_1299522613059>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_ja_1299522613090>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_ko_1299522613124>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_lo_1299522613159>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pl_1299522613194>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pt_1299522613232>
+(10 rows)
+
+SELECT p, o FROM country
+WHERE p = sparql.iri('<http://www.w3.org/2008/05/skos-xl#prefLabel>')
+OFFSET 5 ROWS
+FETCH FIRST 10 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2008/05/skos-xl#prefLabel>)
+}
+LIMIT 15
+
+INFO:  SPARQL returned 15 records.
+
+                       p                       |                           o                           
+-----------------------------------------------+-------------------------------------------------------
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fa_1299522612953>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fr_1299522612977>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hi_1299522613002>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hu_1299522613031>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_it_1299522613059>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_ja_1299522613090>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_ko_1299522613124>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_lo_1299522613159>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pl_1299522613194>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pt_1299522613232>
+(10 rows)
+
+/* SPARQL 15.1 - ORDER BY */
+SELECT p, o FROM country
+WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
+ORDER BY p DESC
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  DESC (?p)
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
+(3 rows)
+
+SELECT p, o FROM country
+WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
+ORDER BY o DESC
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  DESC (?o)
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                        p                        |       o        
+-------------------------------------------------+----------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "马恩岛"@zh
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "เกาะแมน"@th
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Man Adası"@tr
+(3 rows)
+
+SELECT p, o FROM country
+WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
+ORDER BY p DESC, o ASC
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  DESC (?p)  ASC (?o)
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+(3 rows)
+
+SELECT p, o FROM country
+WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
+ORDER BY p DESC, o ASC
+OFFSET 10 ROWS
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  DESC (?p)  ASC (?o)
+LIMIT 13
+
+INFO:  SPARQL returned 13 records.
+
+                        p                        |         o         
+-------------------------------------------------+-------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "मैन द्वीप"@hi
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "კუნძული მენი"@ka
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "マン島"@ja
+(3 rows)
+
+SELECT p, o FROM country
+WHERE p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel')
+ORDER BY 1 DESC, 2 ASC
+OFFSET 5 ROWS
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  DESC (?p)  ASC (?o)
+LIMIT 8
+
+INFO:  SPARQL returned 8 records.
+
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزیرک مان"@fa
+(3 rows)
+
+/* SPARQL 18.2.5.3 - DISTINCT */
+SELECT DISTINCT p FROM country
+WHERE p = '<http://www.w3.org/2004/02/skos/core#prefLabel>';
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT DISTINCT ?p 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  ASC (?p)
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        
+-------------------------------------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel>
+(1 row)
+
+SELECT DISTINCT ON (p) p, o FROM country
+WHERE p = '<http://www.w3.org/2004/02/skos/core#prefLabel>';
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+ORDER BY  ASC (?p)
+
+INFO:  SPARQL returned 25 records.
+
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (text) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  p <> '<foo.bar>' AND
+  sparql.str(o) >= '"Isle"' AND
+  sparql.str(o) <= '"Isle of Man (GB)"' AND
+  sparql.str(o) BETWEEN '"Isle"' AND '"Isle of Man (GB)"'
+LIMIT 3;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?p != <foo.bar>)
+ FILTER(STR(?o) >= "Isle")
+ FILTER(STR(?o) <= "Isle of Man (GB)")
+ FILTER(STR(?o) >= "Isle")
+ FILTER(STR(?o) <= "Isle of Man (GB)")
+}
+LIMIT 3
+
+INFO:  SPARQL returned 2 records.
+
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
+(2 rows)
+
+/* SPARQL - 17.3 Operator Mapping (rdfnode) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  p <> '<foo.bar>' AND
+  sparql.str(o) >= '"Isle"'::rdfnode AND
+  sparql.str(o) <= '"Isle of Man (GB)"'::rdfnode AND
+  sparql.str(o) BETWEEN '"Isle"'::rdfnode AND '"Isle of Man (GB)"'::rdfnode
+LIMIT 3;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?p != <foo.bar>)
+ FILTER(STR(?o) >= "Isle")
+ FILTER(STR(?o) <= "Isle of Man (GB)")
+ FILTER(STR(?o) >= "Isle")
+ FILTER(STR(?o) <= "Isle of Man (GB)")
+}
+LIMIT 3
+
+INFO:  SPARQL returned 2 records.
+
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
+(2 rows)
+
+/* SPARQL - 17.3 Operator Mapping (smallint) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.strdt(o,'xsd:short') = 833::smallint AND
+  sparql.strdt(o,'xsd:short') <> 100::smallint AND
+  sparql.strdt(o,'xsd:short') >= 833::smallint AND
+  sparql.strdt(o,'xsd:short') <= 833::smallint AND
+  sparql.strdt(o,'xsd:short') BETWEEN 100 AND 1000 AND
+  833::smallint = sparql.strdt(o,'xsd:short') AND
+  100::smallint <> sparql.strdt(o,'xsd:short') AND
+  833::smallint >= sparql.strdt(o,'xsd:short') AND
+  833::smallint <= sparql.strdt(o,'xsd:short');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>) = 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>) != 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>) >= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>) <= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>) >= 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>) <= 1000)
+ FILTER(833 = STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>))
+ FILTER(100 != STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>))
+ FILTER(833 >= STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>))
+ FILTER(833 <= STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   
+-----------------------------------------------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (smallint) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.strdt(o,'xsd:int') = 833::int AND
+  sparql.strdt(o,'xsd:int') <> 100::int AND
+  sparql.strdt(o,'xsd:int') >= 833::int AND
+  sparql.strdt(o,'xsd:int') <= 833::int AND
+  sparql.strdt(o,'xsd:int') BETWEEN 100 AND 1000 AND
+  833::int = sparql.strdt(o,'xsd:int') AND
+  100::int <> sparql.strdt(o,'xsd:int') AND
+  833::int >= sparql.strdt(o,'xsd:int') AND
+  833::int <= sparql.strdt(o,'xsd:int');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>) = 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>) != 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>) >= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>) <= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>) >= 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>) <= 1000)
+ FILTER(833 = STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>))
+ FILTER(100 != STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>))
+ FILTER(833 >= STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>))
+ FILTER(833 <= STRDT(?o, <http://www.w3.org/2001/XMLSchema#int>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   
+-----------------------------------------------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (bigint) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.strdt(o,'xsd:long') = 833::bigint AND
+  sparql.strdt(o,'xsd:long') <> 100::bigint AND
+  sparql.strdt(o,'xsd:long') >= 833::bigint AND
+  sparql.strdt(o,'xsd:long') <= 833::bigint AND
+  sparql.strdt(o,'xsd:long') BETWEEN 100 AND 1000 AND
+  833::bigint = sparql.strdt(o,'xsd:long') AND
+  100::bigint <> sparql.strdt(o,'xsd:long') AND
+  833::bigint >= sparql.strdt(o,'xsd:long') AND
+  833::bigint <= sparql.strdt(o,'xsd:long');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>) = 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>) != 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>) >= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>) <= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>) >= 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>) <= 1000)
+ FILTER(833 = STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>))
+ FILTER(100 != STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>))
+ FILTER(833 >= STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>))
+ FILTER(833 <= STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   
+-----------------------------------------------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (real) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.strdt(o,'xsd:float') = 833.0::real AND
+  sparql.strdt(o,'xsd:float') <> 100::real AND
+  sparql.strdt(o,'xsd:float') >= 833.0::real AND
+  sparql.strdt(o,'xsd:float') <= 833.0::real AND
+  sparql.strdt(o,'xsd:float') BETWEEN 100 AND 1000 AND
+  833.0::real = sparql.strdt(o,'xsd:float') AND
+  100::real <> sparql.strdt(o,'xsd:float') AND
+  833.0::real >= sparql.strdt(o,'xsd:float') AND
+  833.0::real <= sparql.strdt(o,'xsd:float');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>) = 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>) != 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>) >= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>) <= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>) >= 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>) <= 1000)
+ FILTER(833 = STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>))
+ FILTER(100 != STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>))
+ FILTER(833 >= STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>))
+ FILTER(833 <= STRDT(?o, <http://www.w3.org/2001/XMLSchema#float>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   
+-----------------------------------------------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (double precision) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.strdt(o,'xsd:double') = 833.0::double precision AND
+  sparql.strdt(o,'xsd:double') <> 100::double precision AND
+  sparql.strdt(o,'xsd:double') >= 833.0::double precision AND
+  sparql.strdt(o,'xsd:double') <= 833.0::double precision AND
+  sparql.strdt(o,'xsd:double') BETWEEN 100 AND 1000 AND
+  833.0::double precision = sparql.strdt(o,'xsd:double') AND
+  100::double precision <> sparql.strdt(o,'xsd:double') AND
+  833.0::double precision >= sparql.strdt(o,'xsd:double') AND
+  833.0::double precision <= sparql.strdt(o,'xsd:double');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>) = 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>) != 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>) >= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>) <= 833)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>) >= 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>) <= 1000)
+ FILTER(833 = STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>))
+ FILTER(100 != STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>))
+ FILTER(833 >= STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>))
+ FILTER(833 <= STRDT(?o, <http://www.w3.org/2001/XMLSchema#double>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   
+-----------------------------------------------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (numeric) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.strdt(o,'xsd:decimal') = 833.0::numeric AND
+  sparql.strdt(o,'xsd:decimal') <> 100::numeric AND
+  sparql.strdt(o,'xsd:decimal') >= 833.0::numeric AND
+  sparql.strdt(o,'xsd:decimal') <= 833.0::numeric AND
+  sparql.strdt(o,'xsd:decimal') BETWEEN 100 AND 1000 AND
+  833.0::numeric = sparql.strdt(o,'xsd:decimal') AND
+  100::numeric <> sparql.strdt(o,'xsd:decimal') AND
+  833.0::numeric >= sparql.strdt(o,'xsd:decimal') AND
+  833.0::numeric <= sparql.strdt(o,'xsd:decimal');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>) = 833.0)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>) != 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>) >= 833.0)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>) <= 833.0)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>) >= 100)
+ FILTER(STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>) <= 1000)
+ FILTER(833.0 = STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>))
+ FILTER(100 != STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>))
+ FILTER(833.0 >= STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>))
+ FILTER(833.0 <= STRDT(?o, <http://www.w3.org/2001/XMLSchema#decimal>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   
+-----------------------------------------------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (timestamp) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/modified>'::rdfnode AND
+  o = '2024-02-13 14:30:39'::timestamp AND
+  o <> '1990-11-20 20:44:42'::timestamp AND
+  o >= '2024-02-13 14:30:39'::timestamp AND
+  o <= '2024-02-13 14:30:39'::timestamp AND
+  o BETWEEN '2000-01-01 00:00:00'::timestamp AND '2025-01-01 00:00:00'::timestamp AND
+  '2024-02-13 14:30:39'::timestamp = o AND
+  '2000-01-31 18:30:00'::timestamp <> o AND
+  '2024-02-13 14:30:39'::timestamp <= o AND
+  '2024-02-13 14:30:39'::timestamp >= o;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/modified>)
+ FILTER(?o != "1990-11-20T20:44:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2000-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2025-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER("2000-01-31T18:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> != ?o)
+ FILTER("2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime> <= ?o)
+ FILTER("2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime> >= ?o)
+ FILTER(?o = "2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                  p                  |                                 o                                  
+-------------------------------------+--------------------------------------------------------------------
+ <http://purl.org/dc/terms/modified> | "2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (timestamptz) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>'::rdfnode AND
+  o = '2011-11-20 20:44:42'::timestamptz AND
+  o <> '2000-01-31 18:30:00'::timestamptz AND
+  o >= '2011-11-20 20:44:42'::timestamptz AND
+  o <= '2011-11-20 20:44:42'::timestamptz AND
+  o BETWEEN '2000-01-01 00:00:00'::timestamptz AND '2025-01-01 00:00:00'::timestamptz AND
+  '2011-11-20 20:44:42'::timestamptz = o AND
+  '2000-01-31 18:30:00'::timestamptz <> o AND
+  '2011-11-20 20:44:42'::timestamptz <= o AND
+  '2011-11-20 20:44:42'::timestamptz >= o;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(?o != "2000-01-31T18:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2011-11-20T20:44:42.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2011-11-20T20:44:42.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2000-01-01T00:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2025-01-01T00:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER("2000-01-31T18:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> != ?o)
+ FILTER("2011-11-20T20:44:42.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <= ?o)
+ FILTER("2011-11-20T20:44:42.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> >= ?o)
+ FILTER(?o = "2011-11-20T20:44:42.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  
+------------------------------------+---------------------------------------------------------------------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (date) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>'::rdfnode AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') = '2011-11-20'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') <> '2000-01-01'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') >= '2011-11-20'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') <= '2011-11-20'::date AND
+  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') BETWEEN '1990-01-01'::date AND '2011-11-20'::date AND
+  '2011-11-20'::date =  sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
+  '2000-01-01'::date <> sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
+  '2011-11-20'::date <= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
+  '2011-11-20'::date >= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) = "2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) != "2000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) >= "2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) <= "2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) >= "1990-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>) <= "2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER("2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date> = STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2000-01-01"^^<http://www.w3.org/2001/XMLSchema#date> != STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date> <= STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+ FILTER("2011-11-20"^^<http://www.w3.org/2001/XMLSchema#date> >= STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  
+------------------------------------+---------------------------------------------------------------------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (timetz) */
+SELECT p, o, sparql.timezone(o), sparql.tz(o) FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>'::rdfnode AND
+  sparql.tz(o) = 'Z' AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') = '20:44:42'::time AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') <> '23:00:00'::time AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') >='20:44:42'::time AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') <= '20:44:42'::time AND
+  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') BETWEEN '00:00:00'::time AND '23:44:42'::time AND
+  '20:44:42'::time =  sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
+  '23:00:00'::time <> sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
+  '20:44:42'::time <= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
+  '20:44:42'::time >= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(TZ(?o) = "Z")
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) = "20:44:42"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) != "23:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "20:44:42"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:44:42"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "00:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "23:44:42"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER("20:44:42"^^<http://www.w3.org/2001/XMLSchema#time> = STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("23:00:00"^^<http://www.w3.org/2001/XMLSchema#time> != STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("20:44:42"^^<http://www.w3.org/2001/XMLSchema#time> <= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("20:44:42"^^<http://www.w3.org/2001/XMLSchema#time> >= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  |                          timezone                          | tz  
+------------------------------------+---------------------------------------------------------------------+------------------------------------------------------------+-----
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> | "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration> | "Z"
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (boolean) */
+SELECT p, o FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#broader>'::rdfnode AND
+  o = false AND
+  false = o;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#broader>)
+ FILTER(?o = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+ FILTER("false"^^<http://www.w3.org/2001/XMLSchema#boolean> = ?o)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ p | o 
+---+---
+(0 rows)
+
+/* SPARQL 17.4.1.1 - BOUND */
+CREATE FOREIGN TABLE country2 (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o'),
+  x rdfnode OPTIONS (variable '?x')
+)
+SERVER agrovoc OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * {<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }}');
+SELECT p, o, sparql.bound(p), sparql.bound(x)
+FROM country2
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.bound(o) AND
+  NOT sparql.bound(x);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o ?x 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(BOUND(?o))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | bound | bound 
+-------------------------------------------------+------------------+-------+-------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es | t     | f
+(1 row)
+
+/* SPARQL 17.4.1.3 - COALESCE */
+SELECT p, o, x, sparql.coalesce(x, o, p)
+FROM country2
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.coalesce(x, o) = '"Isle of Man"@de' AND
+  sparql.coalesce(x, x, o) = '"Isle of Man"@de' AND
+  sparql.coalesce(x, p) = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.coalesce(x, x, p) = '<http://www.w3.org/2004/02/skos/core#prefLabel>';
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o ?x 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(COALESCE(?x, ?o) = "Isle of Man"@de)
+ FILTER(COALESCE(?x, ?x, ?o) = "Isle of Man"@de)
+ FILTER(COALESCE(?x, ?p) = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(COALESCE(?x, ?x, ?p) = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | x |     coalesce     
+-------------------------------------------------+------------------+---+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de |   | "Isle of Man"@de
+(1 row)
+
+/* SPARQL 17.4.1.8 - sameTerm */
+SELECT p, o, sparql.sameterm(o,'"Île de Man"@fr')
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.sameterm(o,'"Île de Man"@fr') AND
+  sparql.sameterm(p,'<http://www.w3.org/2004/02/skos/core#prefLabel>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(SAMETERM(?o, "Île de Man"@fr))
+ FILTER(SAMETERM(?p, <http://www.w3.org/2004/02/skos/core#prefLabel>))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o        | sameterm 
+-------------------------------------------------+-----------------+----------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Île de Man"@fr | t
+(1 row)
+
+/* SPARQL 17.4.1.9 - IN */
+SELECT p, o
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  o IN ('"Isle of Man"@de'::rdfnode, '"Île de Man"@fr', sparql.strlang('Isla de Man','es'));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?o IN ("Isle of Man"@de, "Île de Man"@fr, "Isla de Man"@es))
+}
+
+INFO:  SPARQL returned 3 records.
+
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Île de Man"@fr
+(3 rows)
+
+/* SPARQL 17.4.1.10 - NOT IN */
+SELECT p, o
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  o NOT IN ('"Isle of Man"@de'::rdfnode, '"Île de Man"@fr', sparql.strlang('Isla de Man','es'))
+FETCH FIRST 3 ROWS ONLY;
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(?o NOT IN ("Isle of Man"@de, "Île de Man"@fr, "Isla de Man"@es))
+}
+LIMIT 3
+
+INFO:  SPARQL returned 3 records.
+
+                        p                        |         o          
+-------------------------------------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
+(3 rows)
+
+/* SPARQL 17.4.2.1 - isIRI */
+SELECT p, o, sparql.isIRI(p), sparql.isIRI(o) FROM country 
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>' AND
+  sparql.isIRI(p) AND
+  NOT sparql.isIRI(o);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>)
+ FILTER(isIRI(?p))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                              p                              |                 o                  | isiri | isiri 
+-------------------------------------------------------------+------------------------------------+-------+-------
+ <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary> | "Geographical below country level" | t     | f
+(1 row)
+
+/* SPARQL 17.4.2.2 - isBlank */
+SELECT p, o, sparql.bnode(o), sparql.isblank(o) FROM country
+WHERE sparql.isblank(sparql.bnode(o));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(ISBLANK(BNODE(?o)))
+}
+
+INFO:  SPARQL returned 2 records.
+
+                              p                              |                 o                  |               bnode                | isblank 
+-------------------------------------------------------------+------------------------------------+------------------------------------+---------
+ <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary> | "Geographical below country level" | _:Geographical_below_country_level | f
+ <http://aims.fao.org/aos/agrontology#m49Code>               | "833"                              | _:833                              | f
+(2 rows)
+
+/* SPARQL 17.4.2.3 - isLiteral */
+SELECT p, o, sparql.isliteral(o), sparql.isliteral(p) FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>' AND
+  sparql.isliteral(o) AND 
+  NOT sparql.isliteral(p);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>)
+ FILTER(ISLITERAL(?o))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                              p                              |                 o                  | isliteral | isliteral 
+-------------------------------------------------------------+------------------------------------+-----------+-----------
+ <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary> | "Geographical below country level" | t         | f
+(1 row)
+
+/* SPARQL 17.4.2.4 - isNumeric */
+SELECT p, o, sparql.strdt(o,'xsd:short'), sparql.isnumeric(o), sparql.isnumeric(p) FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.isnumeric(sparql.strdt(o,'xsd:short')) AND
+  NOT sparql.isnumeric(p);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(ISNUMERIC(STRDT(?o, <http://www.w3.org/2001/XMLSchema#short>)))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   |                      strdt                      | isnumeric | isnumeric 
+-----------------------------------------------+-------+-------------------------------------------------+-----------+-----------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833" | "833"^^<http://www.w3.org/2001/XMLSchema#short> | f         | f
+(1 row)
+
+/* SPARQL 17.4.2.5 - str */
+SELECT p, o, sparql.str(o)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.str(o) = sparql.str('"Ilha de Man"@pt');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(STR(?o) = "Ilha de Man")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |      str      
+-------------------------------------------------+------------------+---------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ilha de Man"@pt | "Ilha de Man"
+(1 row)
+
+/* SPARQL 17.4.2.6 - lang */
+SELECT p, o, sparql.lang(o)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.lang(o) = sparql.lang('"Isla de Man"@es');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANG(?o) = "es")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | lang 
+-------------------------------------------------+------------------+------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es | es
+(1 row)
+
+/* SPARQL 17.4.2.7 - datatype */
+SELECT p, o, sparql.datatype(o)
+FROM country
+WHERE
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.datatype(o) = sparql.datatype('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.datatype('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') = sparql.datatype(o);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(<http://www.w3.org/2001/XMLSchema#dateTime> = DATATYPE(?o))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  |                  datatype                   
+------------------------------------+---------------------------------------------------------------------+---------------------------------------------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> | <http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+/* SPARQL 17.4.2.8 - IRI */
+SELECT p, o, sparql.iri(p)
+FROM country
+WHERE 
+  sparql.iri(p) = sparql.iri('http://purl.org/dc/terms/created') AND
+  sparql.iri('<http://purl.org/dc/terms/created>') = sparql.iri(p) AND
+  sparql.iri('http://purl.org/dc/terms/created') = p AND
+  p = sparql.iri('http://purl.org/dc/terms/created');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(IRI(?p) = <http://purl.org/dc/terms/created>)
+ FILTER(<http://purl.org/dc/terms/created> = IRI(?p))
+ FILTER(<http://purl.org/dc/terms/created> = ?p)
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  |                iri                 
+------------------------------------+---------------------------------------------------------------------+------------------------------------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> | <http://purl.org/dc/terms/created>
+(1 row)
+
+/* SPARQL 17.4.2.9 - BNODE */
+SELECT p, o, sparql.bnode(o)
+FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>' AND
+  sparql.isblank(sparql.bnode(o));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>)
+ FILTER(ISBLANK(BNODE(?o)))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                              p                              |                 o                  |               bnode                
+-------------------------------------------------------------+------------------------------------+------------------------------------
+ <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary> | "Geographical below country level" | _:Geographical_below_country_level
+(1 row)
+
+/* SPARQL 17.4.2.10 - STRDT */
+SELECT p, o, sparql.strdt(o,'xsd:string')
+FROM country
+WHERE 
+  p = sparql.iri('<http://aims.fao.org/aos/agrontology#m49Code>') AND
+  '"833"^^xsd:string'::rdfnode = sparql.strdt(sparql.str(o),'xsd:string') AND
+  sparql.strdt(sparql.str(o),'xsd:string') = '"833"^^xsd:string'::rdfnode  AND
+  sparql.strdt(sparql.str('"833"^^xsd:integer'),'xsd:string') = sparql.strdt(sparql.str(o),'xsd:string') AND
+  sparql.strdt(sparql.str(o),'xsd:string') = sparql.strdt(sparql.str('"833"^^xsd:integer'),'xsd:string');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER("833"^^<http://www.w3.org/2001/XMLSchema#string> = STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>) = "833"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER("833"^^<http://www.w3.org/2001/XMLSchema#string> = STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>) = "833"^^<http://www.w3.org/2001/XMLSchema#string>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   |                      strdt                       
+-----------------------------------------------+-------+--------------------------------------------------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833" | "833"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+/* SPARQL 17.4.2.11 - STRLANG */
+SELECT p, o, sparql.strlang(o,'en')
+FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>' AND
+  sparql.strlang(sparql.str(o),'en') = sparql.strlang('"Geographical below country level"', 'en') AND
+  sparql.strlang('"Geographical below country level"', 'en') = sparql.strlang(sparql.str(o),'en') AND
+  sparql.strlang('"Geographical below country level"', 'en') = '"Geographical below country level"@en' AND
+  '"Geographical below country level"@en' = sparql.strlang('"Geographical below country level"', 'en');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary>)
+ FILTER(STRLANG(STR(?o), "en") = "Geographical below country level"@en)
+ FILTER("Geographical below country level"@en = STRLANG(STR(?o), "en"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                              p                              |                 o                  |                strlang                
+-------------------------------------------------------------+------------------------------------+---------------------------------------
+ <http://aims.fao.org/aos/agrontology#isPartOfSubvocabulary> | "Geographical below country level" | "Geographical below country level"@en
+(1 row)
+
+/* SPARQL 17.4.2.12 - UUID (not pushable) */
+SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
+ ?column? 
+----------
+ t
+(1 row)
+
+/*SPARQL 17.4.2.13 - STRUUID (not pushable) */
+SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+ ?column? 
+----------
+ t
+(1 row)
+
+/* SPARQL 17.4.3.2 - STRLEN */
+SELECT p, o, sparql.strlen(o)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.strlen(o) = sparql.strlen('"Isle of Man"@de') AND
+  sparql.strlen(o) = 11 AND
+  11 = sparql.strlen(o);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(STRLEN(?o) = 11)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | strlen 
+-------------------------------------------------+------------------+--------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de |     11
+(1 row)
+
+/* SPARQL 17.4.3.3 - SUBSTR */
+SELECT p, o, sparql.substr(o, 9, 3)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.substr(o, 9, 3) = sparql.substr('"Isla de Man"@es', 9, 3) AND
+  sparql.substr('"Isla de Man"@es', 9, 3) = sparql.substr(o, 9, 3);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(SUBSTR(?o, 9, 3) = "Man"@es)
+ FILTER("Man"@es = SUBSTR(?o, 9, 3))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |  substr  
+-------------------------------------------------+------------------+----------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es | "Man"@es
+(1 row)
+
+/* SPARQL 17.4.3.4 - UCASE */
+SELECT p, o, sparql.ucase(o)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.ucase(o) = sparql.ucase('"Île de Man"@fr') AND
+  sparql.ucase(o) = '"ÎLE DE MAN"@fr' AND
+  '"ÎLE DE MAN"@fr' = sparql.ucase(o);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(UCASE(?o) = "ÎLE DE MAN"@fr)
+ FILTER(UCASE(?o) = "ÎLE DE MAN"@fr)
+ FILTER("ÎLE DE MAN"@fr = UCASE(?o))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o        |      ucase      
+-------------------------------------------------+-----------------+-----------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Île de Man"@fr | "ÎLE DE MAN"@fr
+(1 row)
+
+/* SPARQL 17.4.3.5 - LCASE */
+SELECT p, o, sparql.lcase(o)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.lcase(o) = sparql.lcase('"Ilha de Man"@pt') AND
+  sparql.lcase(o) = '"ilha de man"@pt' AND
+  '"ilha de man"@pt' = sparql.lcase(o);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LCASE(?o) = "ilha de man"@pt)
+ FILTER(LCASE(?o) = "ilha de man"@pt)
+ FILTER("ilha de man"@pt = LCASE(?o))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |      lcase       
+-------------------------------------------------+------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ilha de Man"@pt | "ilha de man"@pt
+(1 row)
+
+/* SPARQL 17.4.3.6 - STRSTARTS */
+SELECT p, o, sparql.strstarts(o, sparql.str('"Isle"@de'))
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.strstarts(o,'"Isle"@de');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(STRSTARTS(?o, "Isle"@de))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | strstarts 
+-------------------------------------------------+------------------+-----------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de | t
+(1 row)
+
+/* SPARQL 17.4.3.7 - STRENDS */
+SELECT p, o, sparql.strends(o, sparql.str('"de Man"@pt'))
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'pt') AND
+  sparql.strends(o,'"de Man"@pt');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
+ FILTER(STRENDS(?o, "de Man"@pt))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | strends 
+-------------------------------------------------+------------------+---------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ilha de Man"@pt | t
+(1 row)
+
+/* SPARQL 17.4.3.8 - CONTAINS */
+SELECT p, o, sparql.contains(o,'"Isla"@es'), sparql.contains(o,'"Isla"^^xsd:string')
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.contains(o,'"Isla"@') AND
+  sparql.contains(o,'"Man"');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(CONTAINS(?o, "Isla"))
+ FILTER(CONTAINS(?o, "Man"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | contains | contains 
+-------------------------------------------------+------------------+----------+----------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es | t        | t
+(1 row)
+
+/* SPARQL 17.4.3.9 - STRBEFORE */
+SELECT p, o, sparql.strbefore(sparql.str(o), '"of Man"')
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'en') AND
+  sparql.strbefore(sparql.str(o), '" of Man"') = sparql.strbefore(sparql.str('"Isle of Man"@en'),'" of Man"') AND
+  sparql.strbefore(sparql.str(o), '" of Man"') = '"Isle"' AND
+  '"Isle"' = sparql.strbefore(sparql.str(o), '" of Man"');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "en"))
+ FILTER(STRBEFORE(STR(?o), " of Man") = "Isle")
+ FILTER(STRBEFORE(STR(?o), " of Man") = "Isle")
+ FILTER("Isle" = STRBEFORE(STR(?o), " of Man"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | strbefore 
+-------------------------------------------------+------------------+-----------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en | "Isle "
+(1 row)
+
+/* SPARQL 17.4.3.10 - STRAFTER */
+SELECT p, o, sparql.strafter(sparql.str(o), '"Isla "')
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.strafter(sparql.str(o), '"Isla "') = sparql.strafter(sparql.str('"Isla de Man"@es'),'"Isla "') AND
+  sparql.strafter(sparql.str(o), '"Isla "') = '"de Man"'::rdfnode AND
+  '"de Man"' = sparql.strafter(sparql.str(o), '"Isla "');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(STRAFTER(STR(?o), "Isla ") = "de Man")
+ FILTER(STRAFTER(STR(?o), "Isla ") = "de Man")
+ FILTER("de Man" = STRAFTER(STR(?o), "Isla "))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         | strafter 
+-------------------------------------------------+------------------+----------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es | "de Man"
+(1 row)
+
+/* SPARQL 17.4.3.11 - ENCODE_FOR_URI */
+SELECT p, o, sparql.encode_for_uri(o)
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'de') AND
+  sparql.encode_for_uri(o) = sparql.encode_for_uri('"Isle of Man"@de') AND
+  sparql.encode_for_uri(o) = '"Isle%20of%20Man"' AND 
+  '"Isle%20of%20Man"' = sparql.encode_for_uri(o);
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(ENCODE_FOR_URI(?o) = "Isle%20of%20Man")
+ FILTER(ENCODE_FOR_URI(?o) = "Isle%20of%20Man")
+ FILTER("Isle%20of%20Man" = ENCODE_FOR_URI(?o))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |  encode_for_uri   
+-------------------------------------------------+------------------+-------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@de | "Isle%20of%20Man"
+(1 row)
+
+/* 17.4.3.12 - CONCAT */
+SELECT p, o, sparql.concat(o,sparql.strlang(' (GB)','pt')), sparql.concat(o,'" (GB)"^^xsd:string')
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'pt') AND
+  sparql.concat(o,' (GB)') = sparql.concat('"Ilha de Man"@pt','" (GB)"') AND
+  sparql.concat('"Ilha de Man"@pt','" (GB)"') = sparql.concat(o,' (GB)');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "pt"))
+ FILTER(CONCAT(?o, " (GB)") = "Ilha de Man (GB)")
+ FILTER("Ilha de Man (GB)" = CONCAT(?o, " (GB)"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |        concat         |       concat       
+-------------------------------------------------+------------------+-----------------------+--------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ilha de Man"@pt | "Ilha de Man (GB)"@pt | "Ilha de Man (GB)"
+(1 row)
+
+/* SPARQL 17.4.3.13 - langMatches */
+SELECT p, o, sparql.langmatches(sparql.lang(o),'*'),  sparql.langmatches(sparql.lang(o),'fr'),  sparql.langmatches(sparql.lang(o),'de')
+FROM country
+WHERE sparql.langmatches(sparql.lang(o),'fr');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANGMATCHES(LANG(?o), "fr"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o        | langmatches | langmatches | langmatches 
+-------------------------------------------------+-----------------+-------------+-------------+-------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Île de Man"@fr | t           | t           | f
+(1 row)
+
+/* SPARQL 17.4.3.14 - REGEX */
+SELECT p, o
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'en') AND
+  sparql.regex(o, sparql.ucase('isle'), 'i') AND 
+  sparql.regex(o, '^iSl','i');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "en"))
+ FILTER(REGEX(?o, "ISLE", "i"))
+ FILTER(REGEX(?o, "^iSl", "i"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
+(1 row)
+
+/* SPARQL 17.4.3.15 - REPLACE */
+SELECT p, o, sparql.replace(o,'Isla','La Isla'), sparql.replace(o,'"Isla"@fr','La Isla')
+FROM country
+WHERE 
+  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.replace(sparql.str(o),'Isla','La Isla') = '"La Isla de Man"'::rdfnode AND
+  '"La Isla de Man"' = sparql.replace(sparql.str(o),'Isla','La Isla') AND
+  sparql.replace(sparql.str(o), 'ISLA', 'La Isla','i') = sparql.replace('"Isla de Man"', 'ISLA', 'La Isla','i');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+ FILTER(REPLACE(STR(?o), "Isla", "La Isla") = "La Isla de Man")
+ FILTER("La Isla de Man" = REPLACE(STR(?o), "Isla", "La Isla"))
+ FILTER(REPLACE(STR(?o), "ISLA", "La Isla", "i") = "La Isla de Man")
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |     replace      |     replace      
+-------------------------------------------------+------------------+------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isla de Man"@es | "La Isla de Man" | "La Isla de Man"
+(1 row)
+
+/* SPARQL 17.4.4.1 - abs */
+SELECT p, o, sparql.abs(sparql.strdt(o,'xsd:long')) FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) = 833::bigint AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) <> 100::bigint AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) >= 833::bigint AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) <= 833::bigint AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) BETWEEN 100::bigint AND 1000::bigint AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) =  '"833"^^xsd:long'::rdfnode AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) >  '"100"^^xsd:long'::rdfnode AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) >= '"833"^^xsd:long'::rdfnode AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) <  '"999"^^xsd:long'::rdfnode AND
+  sparql.abs(sparql.strdt(o,'xsd:long')) <= '"833"^^xsd:long'::rdfnode AND
+  833::bigint = sparql.abs(sparql.strdt(o,'xsd:long')) AND
+  '"833"^^xsd:long'::rdfnode = sparql.abs(sparql.strdt(o,'xsd:long'));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) != 100)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 100)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 1000)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) = "833"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) > "100"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= "833"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) < "999"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= "833"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER("833"^^<http://www.w3.org/2001/XMLSchema#long> = ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)))
+ FILTER(ABS(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) = 833)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   | abs 
+-----------------------------------------------+-------+-----
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833" | 833
+(1 row)
+
+/* SPARQL 17.4.4.2 - round */
+SELECT p, o, sparql.round(o)
+FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.round(sparql.strdt(o,'xsd:long')) = sparql.round(832.9::bigint) AND
+  sparql.round(sparql.strdt(o,'xsd:long')) <> 100::bigint AND
+  sparql.round(sparql.strdt(o,'xsd:long')) >= sparql.round(832.9::bigint) AND
+  sparql.round(sparql.strdt(o,'xsd:long')) <= sparql.round(832.9::bigint) AND
+  sparql.round(sparql.strdt(o,'xsd:long')) BETWEEN 100::bigint AND 1000::bigint AND
+  sparql.round(sparql.strdt(o,'xsd:long')) =  sparql.round('"832.9"^^xsd:long'::rdfnode) AND
+  sparql.round(sparql.strdt(o,'xsd:long')) >  '"100"^^xsd:long'::rdfnode AND
+  sparql.round(sparql.strdt(o,'xsd:long')) >= sparql.round('"832.9"^^xsd:long'::rdfnode) AND
+  sparql.round(sparql.strdt(o,'xsd:long')) <  '"999"^^xsd:long'::rdfnode AND
+  sparql.round(sparql.strdt(o,'xsd:long')) <= sparql.round('"832.9"^^xsd:long'::rdfnode)AND
+  sparql.round(832.9::bigint) = sparql.round(sparql.strdt(o,'xsd:long')) AND
+  sparql.round('"832.9"^^xsd:long'::rdfnode) = sparql.round(sparql.strdt(o,'xsd:long'));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) != 100)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 100)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 1000)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) > "100"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) < "999"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) = 833)
+ FILTER(ROUND(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) = 833)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   | round 
+-----------------------------------------------+-------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833" |   833
+(1 row)
+
+/* SPARQL 17.4.4.3 - ceil */
+SELECT p, o, sparql.ceil(o)
+FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) = sparql.ceil(832.9) AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) <> 100 AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) >= sparql.ceil(832.9) AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) <= sparql.ceil(832.9) AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) BETWEEN 100 AND 1000 AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) =  sparql.ceil('"832.9"^^xsd:long'::rdfnode) AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) >  '"100"^^xsd:long'::rdfnode AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) >= sparql.ceil('"832.9"^^xsd:long'::rdfnode) AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) <  '"999"^^xsd:long'::rdfnode AND
+  sparql.ceil(sparql.strdt(o,'xsd:long')) <= sparql.ceil('"832.9"^^xsd:long'::rdfnode)AND
+  sparql.ceil(832.9) = sparql.ceil(sparql.strdt(o,'xsd:long')) AND
+  sparql.ceil('"832.9"^^xsd:long'::rdfnode) = sparql.ceil(sparql.strdt(o,'xsd:long'));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) != 100)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 100)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 1000)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) > "100"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) < "999"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(CEIL(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) = 833)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   | ceil 
+-----------------------------------------------+-------+------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833" |  833
+(1 row)
+
+/* SPARQL 17.4.4.4 - floor */
+SELECT p, o, sparql.floor(o)
+FROM country
+WHERE 
+  p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) = sparql.floor(833.5) AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) <> 100 AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) >= sparql.floor(833.5) AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) <= sparql.floor(833.5) AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) BETWEEN 100 AND 1000 AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) =  sparql.floor('"833.5"^^xsd:long'::rdfnode) AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) >  '"100"^^xsd:long'::rdfnode AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) >= sparql.floor('"833.5"^^xsd:long'::rdfnode) AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) <  '"999"^^xsd:long'::rdfnode AND
+  sparql.floor(sparql.strdt(o,'xsd:long')) <= sparql.floor('"833.5"^^xsd:long'::rdfnode)AND
+  sparql.floor(833.5) = sparql.floor(sparql.strdt(o,'xsd:long')) AND
+  sparql.floor('"833.5"^^xsd:long'::rdfnode) = sparql.floor(sparql.strdt(o,'xsd:long'));
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://aims.fao.org/aos/agrontology#m49Code>)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) != 100)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 100)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 1000)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) > "100"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) >= 833)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) < "999"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) <= 833)
+ FILTER(FLOOR(STRDT(?o, <http://www.w3.org/2001/XMLSchema#long>)) = 833)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                       p                       |   o   | floor 
+-----------------------------------------------+-------+-------
+ <http://aims.fao.org/aos/agrontology#m49Code> | "833" |   833
+(1 row)
+
+/* SPARQL 17.4.4.5 - RAND */
+SELECT setseed(0.42);
+ setseed 
+---------
+ 
+(1 row)
+
+SELECT 
+  sparql.lex(sparql.rand())::numeric BETWEEN 0.0 AND 1.0, 
+  sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
+ ?column? | ?column? 
+----------+----------
+ t        | t
+(1 row)
+
+/* SPARQL 17.4.5.2 - year*/
+SELECT p, o, sparql.year(o)
+FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.year(o) = 2011 AND
+  sparql.year(o) > 2000 AND
+  sparql.year(o) < 2020 AND
+  sparql.year(o) >= 2011 AND
+  sparql.year(o) <= 2011 AND
+  sparql.year(o) = sparql.year('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.year(o) > sparql.year('"1990-01-12T20:00:00"^^xsd:dateTime') AND
+  sparql.year(o) < sparql.year('"2020-01-12T20:00:00"^^xsd:dateTime') AND
+  sparql.year(o) >= sparql.year('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.year(o) <= sparql.year('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(YEAR(?o) > 2000)
+ FILTER(YEAR(?o) < 2020)
+ FILTER(YEAR(?o) >= 2011)
+ FILTER(YEAR(?o) <= 2011)
+ FILTER(YEAR(?o) > YEAR("1990-01-12T20:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(YEAR(?o) < YEAR("2020-01-12T20:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(YEAR(?o) >= YEAR("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(YEAR(?o) <= YEAR("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(YEAR(?o) = 2011)
+ FILTER(YEAR("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 2011)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  | year 
+------------------------------------+---------------------------------------------------------------------+------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> | 2011
+(1 row)
+
+/* SPARQL 17.4.5.3 - month */
+SELECT p, o, sparql.month(o)
+FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.month(o) = 11 AND
+  sparql.month(o) > 01 AND
+  sparql.month(o) < 12 AND
+  sparql.month(o) >= 11 AND
+  sparql.month(o) <= 11 AND
+  sparql.month(o) = sparql.month('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.month(o) > sparql.month('"1990-01-12T20:00:00"^^xsd:dateTime') AND
+  sparql.month(o) < sparql.month('"2020-12-12T20:00:00"^^xsd:dateTime') AND
+  sparql.month(o) >= sparql.month('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.month(o) <= sparql.month('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(MONTH(?o) > 1)
+ FILTER(MONTH(?o) < 12)
+ FILTER(MONTH(?o) >= 11)
+ FILTER(MONTH(?o) <= 11)
+ FILTER(MONTH(?o) > MONTH("1990-01-12T20:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MONTH(?o) < MONTH("2020-12-12T20:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MONTH(?o) >= MONTH("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MONTH(?o) <= MONTH("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MONTH(?o) = 11)
+ FILTER(MONTH("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 11)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  | month 
+------------------------------------+---------------------------------------------------------------------+-------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> |    11
+(1 row)
+
+/* SPARQL 17.4.5.4 - day */
+SELECT p, o, sparql.day(o)
+FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.day(o) = 20 AND
+  sparql.day(o) > 01 AND
+  sparql.day(o) < 30 AND
+  sparql.day(o) >= 20 AND
+  sparql.day(o) <= 20 AND
+  sparql.day(o) = sparql.day('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.day(o) > sparql.day('"1990-01-01T20:00:00"^^xsd:dateTime') AND
+  sparql.day(o) < sparql.day('"2020-12-30T20:00:00"^^xsd:dateTime') AND
+  sparql.day(o) >= sparql.day('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.day(o) <= sparql.day('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(DAY(?o) > 1)
+ FILTER(DAY(?o) < 30)
+ FILTER(DAY(?o) >= 20)
+ FILTER(DAY(?o) <= 20)
+ FILTER(DAY(?o) > DAY("1990-01-01T20:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(DAY(?o) < DAY("2020-12-30T20:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(DAY(?o) >= DAY("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(DAY(?o) <= DAY("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(DAY(?o) = 20)
+ FILTER(DAY("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 20)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  | day 
+------------------------------------+---------------------------------------------------------------------+-----
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> |  20
+(1 row)
+
+/* SPARQL 7.4.5.5 - hours */
+SELECT p, o, sparql.hours(o)
+FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.hours(o) = 20 AND
+  sparql.hours(o) > 01 AND
+  sparql.hours(o) < 23 AND
+  sparql.hours(o) >= 20 AND
+  sparql.hours(o) <= 20 AND
+  sparql.hours(o) = sparql.hours('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.hours(o) > sparql.hours('"1990-01-01T01:00:00"^^xsd:dateTime') AND
+  sparql.hours(o) < sparql.hours('"2020-12-30T23:00:00"^^xsd:dateTime') AND
+  sparql.hours(o) >= sparql.hours('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.hours(o) <= sparql.hours('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(HOURS(?o) > 1)
+ FILTER(HOURS(?o) < 23)
+ FILTER(HOURS(?o) >= 20)
+ FILTER(HOURS(?o) <= 20)
+ FILTER(HOURS(?o) > HOURS("1990-01-01T01:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(HOURS(?o) < HOURS("2020-12-30T23:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(HOURS(?o) >= HOURS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(HOURS(?o) <= HOURS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(HOURS(?o) = 20)
+ FILTER(HOURS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 20)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  | hours 
+------------------------------------+---------------------------------------------------------------------+-------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> |    20
+(1 row)
+
+/* SPARQL 7.4.5.5 - minutes */
+SELECT p, o, sparql.minutes(o)
+FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.minutes(o) = 44 AND
+  sparql.minutes(o) > 01 AND
+  sparql.minutes(o) < 60 AND
+  sparql.minutes(o) >= 44 AND
+  sparql.minutes(o) <= 44 AND
+  sparql.minutes(o) = sparql.minutes('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.minutes(o) > sparql.minutes('"1990-01-01T01:01:00"^^xsd:dateTime') AND
+  sparql.minutes(o) < sparql.minutes('"2020-12-30T23:59:00"^^xsd:dateTime') AND
+  sparql.minutes(o) >= sparql.minutes('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.minutes(o) <= sparql.minutes('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(MINUTES(?o) > 1)
+ FILTER(MINUTES(?o) < 60)
+ FILTER(MINUTES(?o) >= 44)
+ FILTER(MINUTES(?o) <= 44)
+ FILTER(MINUTES(?o) > MINUTES("1990-01-01T01:01:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MINUTES(?o) < MINUTES("2020-12-30T23:59:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MINUTES(?o) >= MINUTES("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MINUTES(?o) <= MINUTES("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(MINUTES(?o) = 44)
+ FILTER(MINUTES("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 44)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  | minutes 
+------------------------------------+---------------------------------------------------------------------+---------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> |      44
+(1 row)
+
+/* SPARQL 17.4.5.7 - seconds */
+SELECT p, o, sparql.ceil(sparql.seconds(o))
+FROM country
+WHERE 
+  p = '<http://purl.org/dc/terms/created>' AND
+  sparql.seconds(o) = 42 AND
+  sparql.seconds(o) > 01 AND
+  sparql.seconds(o) < 59 AND
+  sparql.seconds(o) >= 42 AND
+  sparql.seconds(o) <= 42 AND
+  sparql.seconds(o) = sparql.seconds('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.seconds(o) > sparql.seconds('"1990-01-01T01:01:01"^^xsd:dateTime') AND
+  sparql.seconds(o) < sparql.seconds('"2020-12-30T23:59:59"^^xsd:dateTime') AND
+  sparql.seconds(o) >= sparql.seconds('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>') AND
+  sparql.seconds(o) <= sparql.seconds('"2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://purl.org/dc/terms/created>)
+ FILTER(SECONDS(?o) > 1)
+ FILTER(SECONDS(?o) < 59)
+ FILTER(SECONDS(?o) >= 42)
+ FILTER(SECONDS(?o) <= 42)
+ FILTER(SECONDS(?o) > SECONDS("1990-01-01T01:01:01"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(SECONDS(?o) < SECONDS("2020-12-30T23:59:59"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(SECONDS(?o) >= SECONDS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(SECONDS(?o) <= SECONDS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
+ FILTER(SECONDS(?o) = 42)
+ FILTER(SECONDS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 42)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                 p                  |                                  o                                  | ceil 
+------------------------------------+---------------------------------------------------------------------+------
+ <http://purl.org/dc/terms/created> | "2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> |   42
+(1 row)
+
+/* SPARQL 17.4.5.8 - timezone */
+SELECT sparql.timezone('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+                          timezone                           
+-------------------------------------------------------------
+ "-PT5H"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+
+/* SPARQL 7.4.5.9 - tz */
+SELECT sparql.tz('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
+    tz    
+----------
+ "-05:00"
+(1 row)
+
+/* SPARQL 17.4.6.1 - MD5 */
+SELECT p, o, sparql.md5(o)
+FROM country
+WHERE 
+  p = sparql.iri('http://www.w3.org/2004/02/skos/core#prefLabel') AND
+  sparql.langmatches(sparql.lang(o),'en') AND
+  sparql.md5(sparql.str(o)) = sparql.md5('"Isle of Man"');
+INFO:  SPARQL query sent to 'https://agrovoc.fao.org/sparql':
+
+
+SELECT ?p ?o 
+{<http://aims.fao.org/aos/agrovoc/c_3963> ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2004/02/skos/core#prefLabel>)
+ FILTER(LANGMATCHES(LANG(?o), "en"))
+ FILTER(MD5(STR(?o)) = MD5("Isle of Man"))
+}
+
+INFO:  SPARQL returned 1 record.
+
+                        p                        |        o         |                md5                 
+-------------------------------------------------+------------------+------------------------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en | "9a3075ee78e707359751cecfffedc5b8"
+(1 row)
+
+DROP SERVER wikidata CASCADE;
+ERROR:  server "wikidata" does not exist

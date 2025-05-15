@@ -1,3 +1,5 @@
+SET timezone TO 'Etc/UTC';
+
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (

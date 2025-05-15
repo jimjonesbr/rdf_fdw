@@ -1,3 +1,4 @@
+SET timezone TO 'Etc/UTC';
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
@@ -652,14 +653,14 @@ SELECT ?p ?o
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://purl.org/dc/terms/modified>)
- FILTER(?o != "2020-02-01T02:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o >= "2015-07-12T15:40:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2015-07-14T04:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o >= "2014-01-01T20:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2016-01-01T20:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER("2020-02-01T02:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> != ?o)
- FILTER("2015-07-12T15:40:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <= ?o)
- FILTER("2015-07-14T04:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> >= ?o)
+ FILTER(?o != "2020-01-31T18:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2015-07-12T08:40:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2015-07-13T21:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o >= "2014-01-01T12:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o <= "2016-01-01T12:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER("2020-01-31T18:30:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> != ?o)
+ FILTER("2015-07-12T08:40:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <= ?o)
+ FILTER("2015-07-13T21:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> >= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -737,16 +738,16 @@ SELECT ?p ?o
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://purl.org/dc/terms/modified>)
- FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) = "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) != "23:00:00-07"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "18:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER("20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time> = STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
- FILTER("23:00:00-07"^^<http://www.w3.org/2001/XMLSchema#time> != STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
- FILTER("20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time> <= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
- FILTER("20:41:25-07"^^<http://www.w3.org/2001/XMLSchema#time> >= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) = "20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) != "23:00:00+00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) >= "18:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>) <= "20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER("20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time> = STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("23:00:00+00"^^<http://www.w3.org/2001/XMLSchema#time> != STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time> <= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
+ FILTER("20:41:25+00"^^<http://www.w3.org/2001/XMLSchema#time> >= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>))
 }
 
 INFO:  SPARQL returned 0 records.

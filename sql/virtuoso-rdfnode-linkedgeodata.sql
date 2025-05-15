@@ -1,3 +1,5 @@
+SET timezone TO 'Etc/UTC';
+
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'http://linkedgeodata.org/sparql');

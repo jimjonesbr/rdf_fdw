@@ -35,10 +35,11 @@ REGRESS = create_extension \
 			sparql-functions \
 			virtuoso-pgtypes-linkedgeodata \
 			virtuoso-rdfnode-linkedgeodata \
+			blazegraph-pgtypes-wikidata \
 			blazegraph-rdfnode-wikidata \
-			describe \
-			graphdb-getty \
-			blazegraph-wikidata
+			graphdb-pgtypes-getty \
+			graphdb-rdfnode-agrovoc \
+			describe
 
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
 
