@@ -454,8 +454,8 @@ extern Datum rdf_fdw_strdt(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_str(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lang(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_datatype(PG_FUNCTION_ARGS);
-extern Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS);
-extern Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS);
+//extern Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS);
+//extern Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri_in(PG_FUNCTION_ARGS);
@@ -696,8 +696,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strdt);
 PG_FUNCTION_INFO_V1(rdf_fdw_str);
 PG_FUNCTION_INFO_V1(rdf_fdw_lang);
 PG_FUNCTION_INFO_V1(rdf_fdw_datatype);
-PG_FUNCTION_INFO_V1(rdf_fdw_datatype_text);
-PG_FUNCTION_INFO_V1(rdf_fdw_datatype_poly);
+//PG_FUNCTION_INFO_V1(rdf_fdw_datatype_text);
+//PG_FUNCTION_INFO_V1(rdf_fdw_datatype_poly);
 PG_FUNCTION_INFO_V1(rdf_fdw_arguments_compatible);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri_in);
@@ -987,6 +987,7 @@ static bool strstarts(char *str, char *substr);
 static bool strends(char *str, char *substr);
 static char *iri(char *input);
 static bool isIRI(char *input);
+static bool isBlank(char *term);
 static bool langmatches(char *lang_tag, char *pattern);
 static bool isLiteral(char *term);
 static char *bnode(char *input);
@@ -1666,9 +1667,16 @@ static bool isIRI(char *input)
  */
 Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS)
 {
-	text *input_text = PG_GETARG_TEXT_PP(0);
-	char *input_cstr = text_to_cstring(input_text);
-	bool result = isIRI(input_cstr);
+	text *input_text;
+	char *input_cstr;
+	bool result;
+
+	if (PG_ARGISNULL(0))
+		PG_RETURN_BOOL(false);
+
+	input_text = PG_GETARG_TEXT_PP(0);
+	input_cstr = text_to_cstring(input_text);
+	result = isIRI(input_cstr);
 
 	PG_RETURN_BOOL(result);
 }
@@ -1817,20 +1825,65 @@ static char *MapSPARQLDatatype(Oid pgtype)
 Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 {
 	Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
+	char *langtag;
+	char *result;
+	char *arg;
 
 	RDFNODEOID = GetRDFNodeOID();
 
 	if (argtype == TEXTOID || argtype == VARCHAROID || argtype == RDFNODEOID)
 	{
-		char *arg = text_to_cstring(PG_GETARG_TEXT_PP(0));
-		char *result = datatype(arg);
+		arg = text_to_cstring(PG_GETARG_TEXT_PP(0));
+
+		/* return NULL if arg is a blank node or IRI */
+		if (isIRI(arg) || isBlank(arg))
+			PG_RETURN_NULL();
+
+		langtag = lang(arg);
+
+		/* 
+		 * in RDF 1.1, language-tagged literals (like "foo"@es) have the
+		 * xsd:langString datatype
+		 */		
+		if (strlen(langtag) != 0)
+			PG_RETURN_TEXT_P(cstring_to_text(RDF_LANGUAGE_LITERAL_DATATYPE));
+
+		result = datatype(arg);
+
+		/* 
+		 * an untyped literal like "" is treated as having the datatype xsd:string
+		 * in RDF 1.1 and SPARQL 1.1.
+		 */
+		if (strlen(result) == 0)
+			PG_RETURN_TEXT_P(cstring_to_text(RDF_XSD_STRING));
 
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
 	else if (argtype == NAMEOID)
 	{
-		char *arg = NameStr(*PG_GETARG_NAME(0));
-		char *result = datatype(arg);
+		arg = NameStr(*PG_GETARG_NAME(0));
+
+		/* return NULL if arg is a blank node or IRI */
+		if (isIRI(arg) || isBlank(arg))
+			PG_RETURN_NULL();
+
+		langtag = lang(arg);
+		
+		/* 
+		 * In RDF 1.1, language-tagged literals (like "foo"@es) have the
+		 * xsd:langString datatype:
+		 */
+		if (strlen(langtag) != 0)
+			PG_RETURN_TEXT_P(cstring_to_text(RDF_LANGUAGE_LITERAL_DATATYPE));
+
+		result = datatype(arg);
+
+		/* 
+		 * an untyped literal like "" is treated as having the datatype xsd:string
+		 * in RDF 1.1 and SPARQL 1.1.
+		 */		
+		if (strlen(result) == 0)
+			PG_RETURN_TEXT_P(cstring_to_text(RDF_XSD_STRING));
 
 		PG_RETURN_TEXT_P(cstring_to_text(result));
 	}
@@ -2513,6 +2566,12 @@ static bool langmatches(char *lang_tag, char *pattern)
 	{
 		result = true;
 	}
+	/* SPARQL rule: prefix match with hyphen, e.g. "en" matches "en-US" */
+	else if (strncasecmp(tag, pat, strlen(pat)) == 0 &&
+	         tag[strlen(pat)] == '-')
+	{
+		result = true;
+	}
 	/* Prefix match with wildcard (e.g., "en-*" matches "en" or "en-us") */
 	else if (strchr(pat, '*'))
 	{
@@ -2748,8 +2807,15 @@ static bool isNumeric(char *term)
  */
 Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS)
 {
-	text *input_text = PG_GETARG_TEXT_PP(0);
-	bool result = isNumeric(text_to_cstring(input_text));
+	text *input_text;
+	bool result;
+
+	if (PG_ARGISNULL(0))
+		PG_RETURN_BOOL(false);
+
+	input_text = PG_GETARG_TEXT_PP(0);
+	result = isNumeric(text_to_cstring(input_text));
+
 	PG_RETURN_BOOL(result);
 }
 
@@ -2861,6 +2927,9 @@ Datum rdf_fdw_isLiteral(PG_FUNCTION_ARGS)
 	text *input_text;
 	char *term;
 	bool result;
+
+	if (PG_ARGISNULL(0))
+		PG_RETURN_BOOL(false);
 
 	input_text = PG_GETARG_TEXT_PP(0);
 	term = text_to_cstring(input_text);
@@ -3077,7 +3146,7 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
 	if (is_uuid)
 		appendStringInfo(&buf, "<urn:uuid:%s>", uuid_str);
 	else
-		appendStringInfoString(&buf, uuid_str);
+		appendStringInfoString(&buf, cstring_to_rdfliteral(uuid_str));
 
 	pfree(uuid_str);
 
@@ -3610,11 +3679,47 @@ static char *concat(char *left, char *right)
 
 Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
 {
-	char *left = text_to_cstring(PG_GETARG_TEXT_PP(0));
-	char *right = text_to_cstring(PG_GETARG_TEXT_PP(1));
-	char *result = concat(left, right);
+	ArrayType *arr = PG_GETARG_ARRAYTYPE_P(0);
+	Oid element_type = ARR_ELEMTYPE(arr);
+	int nelems;
+	Datum *elems;
+	bool *nulls;
+	char *str = NULL;
+	text *result;
 
-	PG_RETURN_TEXT_P(cstring_to_text(result));
+	/* Deconstruct the array into individual elements */
+	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);
+
+	elog(DEBUG1, "%s called: nelems='%d'", __func__, nelems);
+
+	for (int i = 0; i < nelems; i++)
+	{
+		char *el;
+
+		if (nulls[i])
+			PG_RETURN_NULL();
+
+		el = DatumToString(elems[i], TEXTOID);
+
+		if (str == NULL)
+			str = el;
+		else
+		{
+			char *tmp = concat(str, el); 
+			if (str != el)  // avoid freeing reused pointers
+				pfree(str);
+			str = tmp;
+		}
+	}
+
+	if (str == NULL || strlen(str) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning NULL", __func__);
+		PG_RETURN_NULL();
+	}
+
+	result = cstring_to_text(str);
+	PG_RETURN_TEXT_P(result);
 }
 
 Datum rdf_fdw_lex(PG_FUNCTION_ARGS)
@@ -5812,7 +5917,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 * Setting session's default values.
 	 */
 	state->enable_pushdown = true;
-	state->log_sparql = false;
+	state->log_sparql = true;
 	state->has_unparsable_conds = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
@@ -5967,7 +6072,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	appendStringInfo(&accept_header, "Accept: %s", state->format);
 
 	if (state->log_sparql)
-		elog(INFO, "SPARQL query sent to '%s':\n\n%s\n", state->endpoint, state->sparql);
+		elog(INFO, "SPARQL query sent to '%s':\n%s\n", state->endpoint, state->sparql);
 
 	initStringInfo(&url_buffer);
 	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
@@ -8351,7 +8456,8 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
 				keyword_position++;
 			}
 
-			appendStringInfo(&prefixes, "%s>\n", keyword_entry.data);
+			//appendStringInfo(&prefixes, "%s>\n", keyword_entry.data);
+			appendStringInfo(&prefixes, "%s> ", keyword_entry.data);
 		}
 	}
 
@@ -10235,8 +10341,15 @@ Datum rdfnode_lt_int8(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8lt, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10246,8 +10359,15 @@ Datum rdfnode_le_int8(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8le, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10257,8 +10377,15 @@ Datum rdfnode_gt_int8(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8gt, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10268,8 +10395,15 @@ Datum rdfnode_ge_int8(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8ge, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10279,19 +10413,34 @@ Datum rdfnode_eq_int8(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8eq, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
+
 
 Datum rdfnode_neq_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	int64 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8ne, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10311,8 +10460,15 @@ Datum int8_lt_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8lt, Int64GetDatum(val), rdf_int8));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10322,8 +10478,15 @@ Datum int8_le_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8le, Int64GetDatum(val), rdf_int8));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10333,8 +10496,15 @@ Datum int8_gt_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8gt, Int64GetDatum(val), rdf_int8));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10344,8 +10514,15 @@ Datum int8_ge_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8ge, Int64GetDatum(val), rdf_int8));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10355,8 +10532,15 @@ Datum int8_eq_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8eq, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10366,8 +10550,15 @@ Datum int8_neq_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int8 = DirectFunctionCall1(int8in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int8ne, rdf_int8, Int64GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10387,8 +10578,15 @@ Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	int32 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4lt, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10396,10 +10594,17 @@ Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT32(1);
+	int32 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4le, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10407,10 +10612,17 @@ Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT32(1);
+	int32 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4gt, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10418,10 +10630,17 @@ Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT32(1);
+	int32 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4ge, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10429,10 +10648,17 @@ Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT32(1);
+	int32 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4eq, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10440,10 +10666,17 @@ Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT32(1);
+	int32 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4ne, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10461,66 +10694,108 @@ Datum int4_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT32(0);
+	int32 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4lt, Int32GetDatum(val), rdf_int4));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int4_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT32(0);
+	int32 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4le, Int32GetDatum(val), rdf_int4));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int4_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT32(0);
+	int32 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4gt, Int32GetDatum(val), rdf_int4));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int4_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT32(0);
+	int32 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4ge, Int32GetDatum(val), rdf_int4));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int4_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT32(0);
+	int32 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4eq, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT32(0);
+	int32 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int4 = DirectFunctionCall1(int4in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int4ne, rdf_int4, Int32GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10538,10 +10813,17 @@ Datum rdfnode_to_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT16(1);
+	int16 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2lt, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10549,10 +10831,17 @@ Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT16(1);
+	int16 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2le, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10560,10 +10849,17 @@ Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT16(1);
+	int16 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2gt, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10571,10 +10867,17 @@ Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT16(1);
+	int16 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2ge, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10582,10 +10885,17 @@ Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT16(1);
+	int16 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2eq, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10593,10 +10903,17 @@ Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT16(1);
+	int16 val = PG_GETARG_INT64(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2ne, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+	                                        CStringGetDatum(p.lex),
+	                                        ObjectIdGetDatum(InvalidOid),
+	                                        Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_numeric, val_numeric));
 
 	PG_RETURN_BOOL(result);
 }
@@ -10614,66 +10931,108 @@ Datum int2_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT16(0);
+	int16 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2lt, Int16GetDatum(val), rdf_int2));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int2_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT16(0);
+	int16 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2le, Int16GetDatum(val), rdf_int2));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int2_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT16(0);
+	int16 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2gt, Int16GetDatum(val), rdf_int2));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int2_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT16(0);
+	int16 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2ge, Int16GetDatum(val), rdf_int2));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int2_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT16(0);
+	int16 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2eq, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum int2_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT16(0);
+	int16 val = PG_GETARG_INT64(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_int2 = DirectFunctionCall1(int2in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(int2ne, rdf_int2, Int16GetDatum(val)));
+
+	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
+
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+
+	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, val_numeric, rdf_numeric));
 
 	PG_RETURN_BOOL(result);
 }

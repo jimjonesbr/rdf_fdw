@@ -386,7 +386,7 @@ WHERE
 SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
 
 /*SPARQL 17.4.2.13 - STRUUID (not pushable) */
-SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+SELECT sparql.struuid()::text ~ '^"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"$';
 
 /* SPARQL 17.4.3.2 - STRLEN */
 SELECT p, o, sparql.strlen(o)

@@ -1,3 +1,5 @@
+CREATE SCHEMA sparql;
+
 CREATE FUNCTION rdf_fdw_handler()
 RETURNS fdw_handler AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT;
@@ -11,18 +13,6 @@ RETURNS void AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT;
 
 COMMENT ON FUNCTION rdf_fdw_validator(text[], oid) IS 'RDF Triplestore Foreign-data Wrapper options validator';
-
-CREATE TYPE rdf_fdw_triple AS (
-  subject text,
-  predicate text,
-  object text
-);
-
-CREATE FUNCTION rdf_fdw_describe(server text, query text, raw_literal boolean DEFAULT true, base_uri text DEFAULT '')
-RETURNS SETOF rdf_fdw_triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-
-COMMENT ON FUNCTION rdf_fdw_describe(text,text,boolean,text) IS 'Gateway for DESCRIBE SPARQL queries';
 
 CREATE FOREIGN DATA WRAPPER rdf_fdw
 HANDLER rdf_fdw_handler
@@ -2536,7 +2526,6 @@ CREATE OPERATOR >= (
 
 
 /* SPARQL functions in rdf_fdw */
-CREATE SCHEMA sparql;
 
 CREATE FUNCTION sparql.lex(rdfnode)
 RETURNS text
@@ -2564,7 +2553,7 @@ CREATE FUNCTION sparql.bound(text) RETURNS boolean AS $$
 BEGIN
   RETURN sparql.bound($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE FUNCTION sparql.sameterm(rdfnode, rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_sameterm'
@@ -2577,12 +2566,12 @@ LANGUAGE C STABLE;
 /* SPARQL 17.4.2 Functions on RDF Terms */
 CREATE FUNCTION sparql.isIRI(rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.isIRI(rdfnode) IS 'Checks if the input text is a valid IRI.';
 
 CREATE FUNCTION sparql.isURI(rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isIRI'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.isURI(rdfnode) IS 'Checks if the input text is a valid URI (alias for isIRI).';
 
 CREATE FUNCTION sparql.isblank(rdfnode) RETURNS boolean
@@ -2592,12 +2581,12 @@ COMMENT ON FUNCTION sparql.isblank(rdfnode) IS 'Checks if the input text is a bl
 
 CREATE FUNCTION sparql.isliteral(rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isLiteral'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.isliteral(rdfnode) IS 'Checks if the input text is a literal.';
 
 CREATE FUNCTION sparql.isnumeric(rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isNumeric'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.isnumeric(rdfnode) IS 'Checks if the input text is numeric.';
 
 CREATE FUNCTION sparql.str(rdfnode) RETURNS rdfnode
@@ -2772,11 +2761,13 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_encode_for_uri'
 LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.encode_for_uri(rdfnode) IS 'Encodes the input text for use in a URI.';
 
-CREATE FUNCTION sparql.concat(rdfnode, rdfnode)
-RETURNS rdfnode
+-- CREATE FUNCTION sparql.coalesce(VARIADIC rdfnode[]) RETURNS rdfnode
+-- AS 'MODULE_PATHNAME', 'rdf_fdw_coalesce'
+-- LANGUAGE C STABLE;
+CREATE FUNCTION sparql.concat(VARIADIC rdfnode[]) RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_concat'
 LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION sparql.concat(rdfnode, rdfnode) IS 'Concatenates two literals inputs for RDF processing.';
+--COMMENT ON FUNCTION sparql.concat(rdfnode, rdfnode) IS 'Concatenates two literals inputs for RDF processing.';
 
 CREATE FUNCTION sparql.langmatches(rdfnode, rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_langmatches'
@@ -2802,12 +2793,12 @@ BEGIN
   END IF;
   -- Restrict flags to 'i'
   IF sparql.lex($3) != 'i' THEN
-    RAISE EXCEPTION 'Unsupported regex flags: % (only "i" is supported)', sparql.lex($3);
+    RAISE EXCEPTION 'Unsupported REGEX() flag: "%" (only "i" is supported)', sparql.lex($3);
   END IF;
   RETURN sparql.lex($1) ~* sparql.lex($2);
 EXCEPTION
   WHEN invalid_regular_expression THEN
-    RAISE EXCEPTION 'Invalid regex pattern: %', sparql.lex($2);
+    RAISE EXCEPTION 'Invalid REGEX() pattern: %', sparql.lex($2);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2815,7 +2806,7 @@ CREATE FUNCTION sparql.replace(text, text, text)
 RETURNS rdfnode AS $$
 BEGIN
   IF sparql.lex($2::rdfnode) = '' THEN
-    RAISE EXCEPTION 'pattern cannot be empty in REPLACE';
+    RAISE EXCEPTION 'pattern cannot be empty in REPLACE()';
   END IF;
   RETURN pg_catalog.replace(sparql.lex($1::rdfnode), sparql.lex($2::rdfnode), sparql.lex($3::rdfnode))::rdfnode;
 END;
@@ -2825,7 +2816,7 @@ CREATE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode)
 RETURNS rdfnode AS $$
 BEGIN
   IF sparql.lex($2) = '' THEN
-    RAISE EXCEPTION 'pattern cannot be empty in REPLACE';
+    RAISE EXCEPTION 'pattern cannot be empty in REPLACE()';
   END IF;
   RETURN pg_catalog.replace(sparql.lex($1), sparql.lex($2), sparql.lex($3))::rdfnode;
 END;
@@ -2836,141 +2827,161 @@ RETURNS rdfnode
 AS $$
 BEGIN
   IF sparql.lex($2) = '' THEN
-     RAISE EXCEPTION 'pattern cannot be empty in REPLACE';
+     RAISE EXCEPTION 'pattern cannot be empty in REPLACE()';
   END IF;
   RETURN sparql.str(pg_catalog.regexp_replace(sparql.lex($1), sparql.lex($2), sparql.lex($3), sparql.lex($4) || 'g')::rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 /* SPARQL 17.4.4 Functions on Numerics */
-CREATE FUNCTION sparql.abs(text) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(text) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs(sparql.lex($1::rdfnode)::double precision);
+  --RETURN pg_catalog.abs(sparql.lex($1::rdfnode)::double precision)::rdfnode;
+  RETURN sparql.abs($1::rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(rdfnode) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(rdfnode) RETURNS rdfnode  AS $$
+DECLARE dt rdfnode;
 BEGIN
-  RETURN pg_catalog.abs(sparql.lex($1)::double precision);
+  IF NOT sparql.isnumeric($1) THEN
+    RAISE EXCEPTION 'invalid value for ABS(): %', $1;
+  END IF;
+
+  dt := sparql.datatype($1);
+
+  RETURN sparql.strdt(pg_catalog.abs(sparql.lex($1)::double precision)::rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(smallint) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(smallint) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1);
+  RETURN pg_catalog.abs($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(int) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(int) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.abs($1);
+  RETURN pg_catalog.abs($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(bigint) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(bigint) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.abs($1);
+  RETURN pg_catalog.abs($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(double precision) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(double precision) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1);
+  RETURN pg_catalog.abs($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(numeric) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(numeric) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1);
+  RETURN pg_catalog.abs($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.abs(real) RETURNS double precision  AS $$
+CREATE FUNCTION sparql.abs(real) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1);
+  RETURN pg_catalog.abs($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-
-CREATE FUNCTION sparql.round(text) RETURNS numeric AS $$
+CREATE FUNCTION sparql.round(text) RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.round($1::rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.round(rdfnode) RETURNS numeric AS $$
+CREATE FUNCTION sparql.round(rdfnode) RETURNS rdfnode AS $$
+DECLARE dt rdfnode;
 BEGIN
-  IF $1::rdfnode > 0.0 THEN
-    RETURN pg_catalog.floor(sparql.lex($1)::numeric + 0.5);
+  IF NOT sparql.isnumeric($1) THEN
+    RAISE EXCEPTION 'invalid value for ROUND(): %', $1;
+  END IF;
+
+  dt := sparql.datatype($1);
+
+  IF $1::rdfnode > 0.0 THEN    
+    RETURN sparql.strdt(pg_catalog.floor(sparql.lex($1)::numeric + 0.5)::rdfnode, dt);
   ELSE
-    RETURN pg_catalog.ceil(sparql.lex($1)::numeric + 0.5);
+    RETURN sparql.strdt(pg_catalog.ceil(sparql.lex($1)::numeric + 0.5)::rdfnode, dt);
   END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.round(double precision) RETURNS double precision AS $$
+CREATE FUNCTION sparql.round(double precision) RETURNS rdfnode AS $$
 BEGIN
   IF $1 > 0.0 THEN
-    RETURN pg_catalog.floor($1 + 0.5);
+    RETURN pg_catalog.floor($1 + 0.5)::rdfnode;
   ELSE
-    RETURN pg_catalog.ceil($1 + 0.5);
+    RETURN pg_catalog.ceil($1 + 0.5)::rdfnode;
   END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.ceil(text) 
-RETURNS numeric AS $$
+CREATE FUNCTION sparql.ceil(text) RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.ceil($1::rdfnode);
+  RETURN sparql.ceil($1::rdfnode)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.ceil(rdfnode) 
-RETURNS numeric AS $$
+CREATE FUNCTION sparql.ceil(rdfnode) RETURNS rdfnode AS $$
+DECLARE dt rdfnode;
 BEGIN
-  RETURN pg_catalog.ceil(sparql.lex($1)::numeric);
+  IF NOT sparql.isnumeric($1) THEN
+    RAISE EXCEPTION 'invalid value for CEIL(): %', $1;
+  END IF;
+
+  dt := sparql.datatype($1);
+
+  RETURN sparql.strdt(pg_catalog.ceil(sparql.lex($1)::numeric)::rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.ceil(numeric) 
-RETURNS numeric AS $$
+CREATE FUNCTION sparql.ceil(numeric) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.ceil($1);
+  RETURN pg_catalog.ceil($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.ceil(double precision) 
-RETURNS double precision AS $$
+CREATE FUNCTION sparql.ceil(double precision) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.ceil($1);
+  RETURN pg_catalog.ceil($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.floor(text) 
-RETURNS numeric AS $$
+CREATE FUNCTION sparql.floor(text) RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.floor($1::rdfnode);
+  RETURN sparql.floor($1::rdfnode)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.floor(rdfnode) 
-RETURNS numeric AS $$
+CREATE FUNCTION sparql.floor(rdfnode) RETURNS rdfnode AS $$
+DECLARE dt rdfnode;
 BEGIN
-  RETURN pg_catalog.floor(sparql.lex($1)::numeric);
+  IF NOT sparql.isnumeric($1) THEN
+    RAISE EXCEPTION 'invalid value for FLOOR(): %', $1;
+  END IF;
+
+  dt := sparql.datatype($1);
+
+  RETURN sparql.strdt(pg_catalog.floor(sparql.lex($1)::numeric)::rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.floor(numeric) 
-RETURNS numeric AS $$
+CREATE FUNCTION sparql.floor(numeric) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.floor($1);
+  RETURN pg_catalog.floor($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-CREATE FUNCTION sparql.floor(double precision) 
-RETURNS double precision AS $$
+CREATE FUNCTION sparql.floor(double precision) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.floor($1);
+  RETURN pg_catalog.floor($1)::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -3128,19 +3139,19 @@ BEGIN
   END IF;
 
   IF lexical IS NULL OR lexical = '' THEN
-    RAISE EXCEPTION 'SPARQL TIMEZONE(): invalid xsd:dateTime literal';
+    RAISE EXCEPTION 'TIMEZONE(): invalid xsd:dateTime literal';
   END IF;
 
   -- Basic xsd:dateTime format validation
   IF NOT lexical ~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.\d+)?([+-]\d{2}:\d{2}|Z)?$' THEN
-    RAISE EXCEPTION 'SPARQL TIMEZONE(): invalid xsd:dateTime format: %', lexical;
+    RAISE EXCEPTION 'TIMEZONE(): invalid xsd:dateTime format: %', lexical;
   END IF;
 
   -- Extract timezone
   tz_offset := substring(lexical from '([-+]\d{2}:\d{2}|Z)$');
 
   IF tz_offset IS NULL THEN
-    RAISE EXCEPTION 'SPARQL TIMEZONE(): datetime has no timezone: %', lexical;
+    RAISE EXCEPTION 'TIMEZONE(): datetime has no time zone: %', lexical;
   END IF;
 
   IF tz_offset = 'Z' THEN
@@ -3154,7 +3165,7 @@ BEGIN
 
   -- Validate timezone offset
   IF hours > 14 OR (hours = 14 AND minutes > 0) OR minutes >= 60 THEN
-    RAISE EXCEPTION 'SPARQL TIMEZONE(): invalid timezone offset: %', tz_offset;
+    RAISE EXCEPTION 'TIMEZONE(): invalid timezone offset: %', tz_offset;
   END IF;
 
   -- Format xsd:dayTimeDuration
@@ -3187,7 +3198,7 @@ BEGIN
 
   IF tz_offset IS NULL THEN
     -- Return an empty string or raise an error based on your requirements
-    RAISE EXCEPTION 'SPARQL TZ(): datetime has no timezone';
+    RAISE EXCEPTION 'TZ(): datetime has no timezone';
   END IF;
 
   -- If the timezone is 'Z', return 'Z'
@@ -3218,3 +3229,15 @@ BEGIN
   RETURN sparql.md5($1::rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+
+CREATE TYPE triple AS (
+  subject rdfnode,
+  predicate rdfnode,
+  object rdfnode
+);
+
+CREATE FUNCTION sparql.describe(server text, query text, raw_literal boolean DEFAULT true, base_uri text DEFAULT '')
+RETURNS SETOF triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+COMMENT ON FUNCTION sparql.describe(text,text,boolean,text) IS 'Gateway for DESCRIBE SPARQL queries';

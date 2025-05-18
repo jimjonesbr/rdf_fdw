@@ -417,3 +417,48 @@ SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval >= '"P1Y2M
 SELECT '12 months'::interval <= '"P1"^^xsd:duration'::rdfnode;
 SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M3DT4H5M6S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode;
 SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M3DT4H5M6S"^^xsd:duration'::rdfnode;
+
+-- mismatch data types
+SELECT '"42.73"^^xsd:float'::rdfnode = 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode != 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode <> 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode > 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode < 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode >= 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode <= 42::smallint;
+SELECT '"42.73"^^xsd:float'::rdfnode = 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode != 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode <> 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode > 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode < 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode >= 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode <= 42::int;
+SELECT '"42.73"^^xsd:float'::rdfnode = 42::bigint;
+SELECT '"42.73"^^xsd:float'::rdfnode != 42::bigint;
+SELECT '"42.73"^^xsd:float'::rdfnode <> 42::bigint;
+SELECT '"42.73"^^xsd:float'::rdfnode > 42::bigint;
+SELECT '"42.73"^^xsd:float'::rdfnode < 42::bigint;
+SELECT '"42.73"^^xsd:float'::rdfnode >= 42::bigint;
+SELECT '"42.73"^^xsd:float'::rdfnode <= 42::bigint;
+
+SELECT 42::smallint = '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::smallint != '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::smallint <> '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::smallint > '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::smallint < '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::smallint >= '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::smallint <= '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int = '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int != '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int <> '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int > '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int < '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int >= '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::int <= '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint = '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint != '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint <> '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint > '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint < '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint >= '"42.73"^^xsd:float'::rdfnode;
+SELECT 42::bigint <= '"42.73"^^xsd:float'::rdfnode;

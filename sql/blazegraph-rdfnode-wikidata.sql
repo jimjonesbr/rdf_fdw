@@ -400,7 +400,7 @@ WHERE
 SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
 
 /*SPARQL 17.4.2.13 - STRUUID (not pushable) */
-SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+SELECT sparql.struuid()::text ~ '^"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"$';
 
 /* SPARQL 17.4.3.2 - STRLEN */
 SELECT p, o, sparql.strlen(o)
@@ -448,11 +448,11 @@ WHERE
   sparql.strstarts(o,'"Postgre"@de');
 
 /* SPARQL 17.4.3.7 - STRENDS */
-SELECT p, o, sparql.strends(o, sparql.str('"SQL"@pt'))
+SELECT p, o, sparql.strends(o, sparql.str('"SQL"@fr'))
 FROM rdbms
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'pt') AND
+  sparql.langmatches(sparql.lang(o),'fr') AND
   sparql.strends(o,'"SQL"');
 
 /* SPARQL 17.4.3.8 - CONTAINS */
@@ -495,13 +495,13 @@ WHERE
   '"relationales%20Datenbankmanagementsystem"' = sparql.encode_for_uri(o);
 
 /* 17.4.3.12 - CONCAT */
-SELECT p, o, sparql.concat(o,sparql.strlang(' Global','pt')), sparql.concat(o,'" Global"^^xsd:string')
+SELECT p, o, sparql.concat(o,sparql.strlang(' Global','es')), sparql.concat(o,'" Global"^^xsd:string')
 FROM rdbms
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'pt') AND
-  sparql.concat(o,' Global') = sparql.concat('"PostgreSQL"@pt','" Global"') AND
-  sparql.concat('"PostgreSQL"@pt','" Global"') = sparql.concat(o,' Global');
+  sparql.langmatches(sparql.lang(o),'es') AND
+  sparql.concat(o,' Global') = sparql.concat('"PostgreSQL"@es','" Global"') AND
+  sparql.concat('"PostgreSQL"@es','" Global"') = sparql.concat(o,' Global');
 
 /* SPARQL 17.4.3.13 - langMatches */
 SELECT p, o, sparql.langmatches(sparql.lang(o),'*'),  sparql.langmatches(sparql.lang(o),'fr'),  sparql.langmatches(sparql.lang(o),'de')

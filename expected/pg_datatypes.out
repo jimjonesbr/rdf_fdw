@@ -2243,3 +2243,256 @@ SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval <= '"P1Y2M
  t
 (1 row)
 
+-- mismatch data types
+SELECT '"42.73"^^xsd:float'::rdfnode = 42::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode != 42::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode <> 42::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode > 42::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode < 42::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode >= 42::smallint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode <= 42::smallint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode = 42::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode != 42::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode <> 42::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode > 42::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode < 42::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode >= 42::int;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode <= 42::int;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode = 42::bigint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode != 42::bigint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode <> 42::bigint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode > 42::bigint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode < 42::bigint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode >= 42::bigint;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:float'::rdfnode <= 42::bigint;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::smallint = '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::smallint != '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::smallint <> '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::smallint > '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::smallint < '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::smallint >= '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::smallint <= '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::int = '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::int != '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::int <> '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::int > '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::int < '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::int >= '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::int <= '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::bigint = '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::bigint != '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::bigint <> '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::bigint > '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::bigint < '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT 42::bigint >= '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT 42::bigint <= '"42.73"^^xsd:float'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+

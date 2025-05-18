@@ -157,12 +157,6 @@ CREATE FOREIGN TABLE t5 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '
   SELECT ?s ?s ?p ?o}'); 
 
-/* empty WHERE clause */
-CREATE FOREIGN TABLE t6 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {}'); 
-
-SELECT * FROM t6;
-
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');

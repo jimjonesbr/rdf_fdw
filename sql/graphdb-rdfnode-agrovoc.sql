@@ -396,7 +396,7 @@ WHERE
 SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
 
 /*SPARQL 17.4.2.13 - STRUUID (not pushable) */
-SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+SELECT sparql.struuid()::text ~ '^"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"$';
 
 /* SPARQL 17.4.3.2 - STRLEN */
 SELECT p, o, sparql.strlen(o)
@@ -541,7 +541,7 @@ WHERE
   '"833"^^xsd:long'::rdfnode = sparql.abs(sparql.strdt(o,'xsd:long'));
 
 /* SPARQL 17.4.4.2 - round */
-SELECT p, o, sparql.round(o)
+SELECT p, o, sparql.round(sparql.strdt(o,'xsd:long'))
 FROM country
 WHERE 
   p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
@@ -559,7 +559,7 @@ WHERE
   sparql.round('"832.9"^^xsd:long'::rdfnode) = sparql.round(sparql.strdt(o,'xsd:long'));
 
 /* SPARQL 17.4.4.3 - ceil */
-SELECT p, o, sparql.ceil(o)
+SELECT p, o, sparql.ceil(sparql.strdt(o,'xsd:long'))
 FROM country
 WHERE 
   p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND
@@ -577,7 +577,7 @@ WHERE
   sparql.ceil('"832.9"^^xsd:long'::rdfnode) = sparql.ceil(sparql.strdt(o,'xsd:long'));
 
 /* SPARQL 17.4.4.4 - floor */
-SELECT p, o, sparql.floor(o)
+SELECT p, o, sparql.floor(sparql.strdt(o,'xsd:long'))
 FROM country
 WHERE 
   p = '<http://aims.fao.org/aos/agrontology#m49Code>'::rdfnode AND

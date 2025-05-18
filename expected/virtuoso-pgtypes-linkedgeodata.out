@@ -34,7 +34,6 @@ SELECT * FROM hbf
 WHERE label = 'Gare centrale de Leipzig';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -67,7 +66,6 @@ SELECT * FROM hbf
 WHERE label IN ('Leipzig Hbf', 'Gare centrale de Leipzig');
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -98,7 +96,6 @@ INFO:  SPARQL returned 6 records.
 SELECT label, type FROM hbf
 WHERE label = ANY(ARRAY['Leipzig Hbf', 'Gare centrale de Leipzig']);
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?type 
 {
@@ -131,7 +128,6 @@ SELECT * FROM hbf
 WHERE fake_string IN ('Leipzig Hbf', 'Gare centrale de Leipzig');
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -157,7 +153,6 @@ INFO:  SPARQL returned 0 records.
 SELECT * FROM hbf
 WHERE label NOT IN ('foo','bar');
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -197,7 +192,6 @@ SELECT * FROM hbf
 LIMIT 1;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -222,7 +216,6 @@ SELECT * FROM hbf
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -246,7 +239,6 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM hbf
 FETCH FIRST 2 ROWS ONLY;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -275,7 +267,6 @@ OFFSET 1
 LIMIT 1;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -300,7 +291,6 @@ SELECT * FROM hbf
 OFFSET 1
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -327,7 +317,6 @@ SELECT * FROM hbf
 ORDER BY label ASC
 LIMIT 2;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -356,7 +345,6 @@ ORDER BY label DESC
 LIMIT 2;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -383,7 +371,6 @@ SELECT * FROM hbf
 ORDER BY label ASC, type DESC
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -412,7 +399,6 @@ INFO:  SPARQL returned 3 records.
 SELECT DISTINCT label, modified FROM hbf;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?modified 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -436,7 +422,6 @@ INFO:  SPARQL returned 2 records.
 
 SELECT DISTINCT ON (label, modified) label, modified, version FROM hbf;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version 
 {
@@ -471,7 +456,6 @@ WHERE
   fake_date = '2018-05-01'::date AND
   fake_string = 'foo';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -516,7 +500,6 @@ WHERE
   fake_string <> 'bar'
 ORDER BY type;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT DISTINCT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -568,7 +551,6 @@ WHERE
   fake_date > '2017-05-01'::date;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -607,7 +589,6 @@ WHERE
   fake_timestamptz < '2012-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date < '2019-05-01'::date;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -648,7 +629,6 @@ WHERE
   fake_date >= '2018-05-01'::date;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -688,7 +668,6 @@ WHERE
   fake_date <= '2018-05-01'::date;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -727,7 +706,6 @@ WHERE
   fake_timestamptz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
@@ -775,7 +753,6 @@ WHERE
   length(label) BETWEEN 10 AND 88;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT ?label ?type 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -820,7 +797,6 @@ WHERE
   abs(version) BETWEEN 01 AND 99;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?version 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -862,7 +838,6 @@ WHERE
   round(lat) <= 51 AND
   round(lat) BETWEEN 01 AND 99;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT DISTINCT ?label ?lat 
 {
@@ -906,7 +881,6 @@ WHERE
   ceil(lat) BETWEEN 01 AND 99;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?lat 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -949,7 +923,6 @@ WHERE
   floor(lat) BETWEEN 01 AND 99;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label ?lat 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -985,7 +958,6 @@ SELECT DISTINCT label, modified
 FROM hbf
 WHERE substring(label,1,7) = 'Leipzig';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 
 SELECT DISTINCT ?label ?modified 
 {
@@ -1034,7 +1006,6 @@ FROM hbf
 WHERE md5(label) = '0ef548c961d447732b145dc39df17df4';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
 SELECT DISTINCT ?label 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
@@ -1077,7 +1048,6 @@ SELECT * FROM hbf_np1
 WHERE p = 'http://linkedgeodata.org/ontology/operator';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
     PREFIX dc: <http://purl.org/dc/terms/>
 
     SELECT * WHERE {
@@ -1113,7 +1083,6 @@ SELECT * FROM hbf_np2
 WHERE p = 'http://geovocab.org/geometry#geometry';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-
     PREFIX dc: <http://purl.org/dc/terms/>
 
     SELECT * WHERE {
@@ -1141,7 +1110,6 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np3
 WHERE p = 'http://www.w3.org/2000/01/rdf-schema#label';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} LIMIT 10
 
 INFO:  SPARQL returned 10 records.
@@ -1163,7 +1131,6 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np4
 WHERE p = 'http://www.w3.org/2000/01/rdf-schema#label';
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} ORDER BY ?o
 
 INFO:  SPARQL returned 25 records.
@@ -1185,7 +1152,6 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np5
 WHERE p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' AND c > 1;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
 SELECT ?p (count(?o) AS ?c) WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} GROUP BY ?p
 
 INFO:  SPARQL returned 19 records.

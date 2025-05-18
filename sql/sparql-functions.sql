@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 \pset null NULL
 
 --SET search_path TO sparql, pg_catalog;
@@ -83,8 +84,12 @@ SELECT sparql.datatype('"foo"^^<http://www.w3.org/2001/XMLSchema#string>');
 SELECT sparql.datatype(sparql.strdt('foo','xsd:string'));
 SELECT sparql.datatype('"42"^^<xsd:int>');
 SELECT sparql.datatype(sparql.strdt('foo','bar:xyz'));
+SELECT sparql.datatype('<http://example.de>');
+SELECT sparql.datatype('_:bnode42');
 SELECT sparql.datatype('"foo"@es');
+SELECT sparql.datatype('"foo"@es'::name);
 SELECT sparql.datatype('');
+SELECT sparql.datatype(''::name);
 SELECT sparql.datatype(' ');
 SELECT sparql.datatype('"foo"^<xsd:string>');
 SELECT sparql.datatype('"foo"^^xsd:string>');
@@ -281,6 +286,7 @@ SELECT sparql.langmatches('', '"en"');
 SELECT sparql.langmatches('en', '"en"');
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '');
 SELECT sparql.langmatches('', '"*"');
+SELECT sparql.langmatches('en-US', 'en');
 
 /* ISBLANK */
 SELECT sparql.isblank('_:b1');
@@ -360,7 +366,7 @@ SELECT sparql.bnode(NULL);
 SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}>$';
 
 /* STRUUID() (not pushable) */
-SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+SELECT sparql.struuid()::text ~ '^"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"$' AS struuid_format;
 
 /* LCASE */
 SELECT sparql.lcase('BAR');
@@ -431,6 +437,10 @@ SELECT sparql.concat('"foo"@en', '"bar"^^xsd:string'), sparql.concat(sparql.strl
 SELECT sparql.concat(NULL, 'bar'), sparql.concat('foo', NULL), sparql.concat(NULL, NULL);
 SELECT sparql.concat('foo', ''), sparql.concat('', 'bar'), sparql.concat('', ''), sparql.concat('""', '""');
 SELECT sparql.concat('"foo"^^foo:bar', 'bar'), sparql.concat('"foo"', '"bar"^^foo:bar');
+SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
+SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
+SELECT sparql.concat('"foo"','"&"', '"bar"');
+SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
 
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');

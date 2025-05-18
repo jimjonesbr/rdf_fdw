@@ -37,13 +37,7 @@ FROM getty_places
 ORDER BY lat
 LIMIT 10;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
-
- PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
- PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
- PREFIX gvp: <http://vocab.getty.edu/ontology#>
- PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
- PREFIX schema: <http://schema.org/>
-
+ PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>  PREFIX gvp: <http://vocab.getty.edu/ontology#>  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>  PREFIX schema: <http://schema.org/> 
 SELECT DISTINCT ?name ?lon ?lat 
 {
   ?place skos:inScheme tgn: ;
@@ -79,13 +73,7 @@ WHERE
 ORDER BY lon
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
-
- PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
- PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
- PREFIX gvp: <http://vocab.getty.edu/ontology#>
- PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
- PREFIX schema: <http://schema.org/>
-
+ PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>  PREFIX gvp: <http://vocab.getty.edu/ontology#>  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>  PREFIX schema: <http://schema.org/> 
 SELECT ?place ?name ?lon ?lat 
 {
   ?place skos:inScheme tgn: ;
@@ -118,13 +106,7 @@ SELECT * FROM (
 ORDER BY lat
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
-
- PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
- PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
- PREFIX gvp: <http://vocab.getty.edu/ontology#>
- PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
- PREFIX schema: <http://schema.org/>
-
+ PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>  PREFIX gvp: <http://vocab.getty.edu/ontology#>  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>  PREFIX schema: <http://schema.org/> 
 SELECT ?name ?lon ?lat 
 {
   ?place skos:inScheme tgn: ;
@@ -194,7 +176,6 @@ WHERE bio ~~* '%artist%'
 ORDER BY birth 
 LIMIT 10;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
-
 
   PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
   PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>

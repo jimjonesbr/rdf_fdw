@@ -43,7 +43,6 @@ FROM atms_munich
 WHERE bankname = 'BBBank';
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-
   PREFIX lgdo: <http://linkedgeodata.org/ontology/>
   PREFIX geom: <http://geovocab.org/geometry#>
   PREFIX bif: <bif:>
@@ -105,7 +104,6 @@ FROM places_below_sea_level
 WHERE wikidata_id = 'http://www.wikidata.org/entity/Q61308849'
 FETCH FIRST 5 ROWS ONLY;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 
 SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location 
 {
@@ -189,7 +187,6 @@ WHERE
 ORDER by language;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-
 SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?b4se) (STRAFTER(STR(?country),"entity/") AS ?q1d) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) ("2002-03-08"^^xsd:date AS ?det) ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
 {
     wd:Q458 wdt:P150 ?country.
@@ -238,7 +235,6 @@ WHERE
   bt IS NOT false;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
 {
     wd:Q458 wdt:P150 ?country.
@@ -269,7 +265,6 @@ WHERE
   bt IS true AND
   NOT bt IS false;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
 {
@@ -305,7 +300,6 @@ WHERE
   bt != false;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
 {
     wd:Q458 wdt:P150 ?country.
@@ -332,7 +326,6 @@ BEGIN
   OFFSET 0 LIMIT 5;  
 END; $$;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 
 SELECT ?country ?nativename 
 {
@@ -383,7 +376,6 @@ BEGIN
 END; $$;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-
 SELECT ?country ?nativename 
 {
     wd:Q458 wdt:P150 ?country.
@@ -397,7 +389,6 @@ INFO:  SPARQL returned 5 records.
 
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-
 SELECT ?country ?nativename 
 {
     wd:Q458 wdt:P150 ?country.
@@ -410,7 +401,6 @@ LIMIT 10
 INFO:  SPARQL returned 10 records.
 
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 
 SELECT ?country ?nativename 
 {
@@ -433,7 +423,6 @@ SELECT uri, nativename
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 
 SELECT ?country ?nativename 
 {

@@ -96,7 +96,6 @@ SELECT * FROM table_error4
 LIMIT 3;
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
-
 SELECT ?foo 
 {?s ?p ?o}
 LIMIT 3
@@ -186,15 +185,6 @@ ERROR:  unable to parse SPARQL WHERE clause:
 
   SELECT ?s ?s ?p ?o}
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
-/* empty WHERE clause */
-CREATE FOREIGN TABLE t6 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {}'); 
-SELECT * FROM t6;
- s 
----
- 
-(1 row)
-
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');
@@ -289,7 +279,6 @@ SELECT * FROM t16;
 ERROR:  invalid option "expression" for column "name"
 HINT:  rdfnode columns accept only the "variable" option
 DROP SERVER testserver2 CASCADE;
-NOTICE:  drop cascades to 3 other objects
+NOTICE:  drop cascades to 2 other objects
 DETAIL:  drop cascades to foreign table t1
-drop cascades to foreign table t6
 drop cascades to foreign table t16

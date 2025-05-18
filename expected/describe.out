@@ -5,10 +5,9 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql',
         connect_retry '0');
 -- IRI description
 SELECT subject, predicate, object
-FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
-ORDER BY object COLLATE "C";
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
+ORDER BY object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 
                   subject                   |                  predicate                   |                                                                       object                                                                       
@@ -54,7 +53,7 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 
 -- graph pattern description
 SELECT subject, predicate, object
-FROM rdf_fdw_describe('wikidata','
+FROM sparql.describe('wikidata','
   PREFIX wdt: <http://www.wikidata.org/prop/direct/>
   PREFIX wd:  <http://www.wikidata.org/entity/>
   DESCRIBE ?s
@@ -67,9 +66,8 @@ FROM rdf_fdw_describe('wikidata','
 WHERE 
   predicate = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   object = '"Harold Spencer Jones"@en'
-ORDER BY object COLLATE "C";
+ORDER BY object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 
   PREFIX wdt: <http://www.wikidata.org/prop/direct/>
   PREFIX wd:  <http://www.wikidata.org/entity/>
@@ -87,11 +85,10 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 (1 row)
 
 SELECT subject, predicate, object
-FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', false)
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', false)
 WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
-ORDER BY object COLLATE "C";
+ORDER BY object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 
                   subject                   |                  predicate                   |         object         
@@ -102,11 +99,10 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 (3 rows)
 
 SELECT subject, predicate, object
-FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true)
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true)
 WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
-ORDER BY object COLLATE "C";
+ORDER BY object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 
                   subject                   |                  predicate                   |                               object                                
@@ -117,15 +113,14 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 (3 rows)
 
 SELECT subject, predicate, object
-FROM rdf_fdw_describe(
+FROM sparql.describe(
     query =>'describe wd:Q471896',
     server => 'wikidata', 
     base_uri => 'http://test.base.uri/',
     raw_literal => false)
 WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
-ORDER BY object COLLATE "C";
+ORDER BY object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 describe wd:Q471896
 
                  subject                  |                  predicate                   |             object             
@@ -143,71 +138,68 @@ describe wd:Q471896
 (10 rows)
 
 -- empty server
-SELECT * FROM rdf_fdw_describe('', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
+SELECT * FROM sparql.describe('', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
 ERROR:  SERVER cannot be empty
 -- empty DESCRIBE pattern
-SELECT * FROM rdf_fdw_describe('wikidata', '');
+SELECT * FROM sparql.describe('wikidata', '');
 ERROR:  DESCRIBE pattern cannot be empty
 -- empty SERVER and DESCRIBE pattern
-SELECT * FROM rdf_fdw_describe('', '');
+SELECT * FROM sparql.describe('', '');
 ERROR:  SERVER cannot be empty
 -- NULL DESCRIBE pattern
-SELECT * FROM rdf_fdw_describe('wikidata', NULL);
+SELECT * FROM sparql.describe('wikidata', NULL);
  subject | predicate | object 
 ---------+-----------+--------
 (0 rows)
 
 -- NULL SERVER
-SELECT * FROM rdf_fdw_describe(NULL, 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
+SELECT * FROM sparql.describe(NULL, 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
  subject | predicate | object 
 ---------+-----------+--------
 (0 rows)
 
 -- NULL SERVER and DESCRIBE pattern
-SELECT * FROM rdf_fdw_describe(NULL, NULL);
+SELECT * FROM sparql.describe(NULL, NULL);
  subject | predicate | object 
 ---------+-----------+--------
 (0 rows)
 
 -- invalid SERVER
-SELECT * FROM rdf_fdw_describe('invalid', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
+SELECT * FROM sparql.describe('invalid', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
 ERROR:  invalid SERVER: invalid
-SELECT * FROM rdf_fdw_describe('    ', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
+SELECT * FROM sparql.describe('    ', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
 ERROR:  a SERVER cannot contain only whitespace characters
 -- invalid DESCRIBE pattern
-SELECT * FROM rdf_fdw_describe('wikidata', 'invalid');
+SELECT * FROM sparql.describe('wikidata', 'invalid');
 ERROR:  invalid DESCRIBE query:
 
 invalid
 
-SELECT * FROM rdf_fdw_describe('wikidata', '   ');
+SELECT * FROM sparql.describe('wikidata', '   ');
 ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
-SELECT * FROM rdf_fdw_describe('wikidata', 'DESCRIBE http://www.wikidata.org/entity/Q61308849'); -- missing < >
+SELECT * FROM sparql.describe('wikidata', 'DESCRIBE http://www.wikidata.org/entity/Q61308849'); -- missing < >
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 DESCRIBE http://www.wikidata.org/entity/Q61308849
 
 WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
 ERROR:  Unable to establish connection to 'https://query.wikidata.org/sparql' (HTTP status 400)
 DETAIL:  Failed writing received data to disk/application (curl error code 23)
 -- DESCRIBE pattern with a blank node
-SELECT * FROM rdf_fdw_describe('wikidata', '_:bnode1');
+SELECT * FROM sparql.describe('wikidata', '_:bnode1');
 ERROR:  invalid DESCRIBE query:
 
 _:bnode1
 
-SELECT * FROM rdf_fdw_describe('wikidata', 'DESCRIBE _:bnode1');
+SELECT * FROM sparql.describe('wikidata', 'DESCRIBE _:bnode1');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 DESCRIBE _:bnode1
 
 WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
 ERROR:  Unable to establish connection to 'https://query.wikidata.org/sparql' (HTTP status 400)
 DETAIL:  Failed writing received data to disk/application (curl error code 23)
 -- malformed entity IRI
-SELECT * FROM rdf_fdw_describe('wikidata', 'DESCRIBE <htt://i.am.malformed>');
+SELECT * FROM sparql.describe('wikidata', 'DESCRIBE <htt://i.am.malformed>');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
 DESCRIBE <htt://i.am.malformed>
 
  subject | predicate | object 
@@ -215,7 +207,7 @@ DESCRIBE <htt://i.am.malformed>
 (0 rows)
 
 -- SELECT query
-SELECT * FROM rdf_fdw_describe('wikidata', 'SELECT ?s ?p ?o WHERE {?s ?p ?o}');
+SELECT * FROM sparql.describe('wikidata', 'SELECT ?s ?p ?o WHERE {?s ?p ?o}');
 ERROR:  invalid DESCRIBE query:
 
 SELECT ?s ?p ?o WHERE {?s ?p ?o}
@@ -227,10 +219,9 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 -- IRI description
 SELECT subject, predicate, object 
-FROM rdf_fdw_describe('dbpedia','dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>') 
-ORDER BY subject, object COLLATE "C";
+FROM sparql.describe('dbpedia','dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>') 
+ORDER BY subject::text, object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
 dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>
 
                      subject                      |                     predicate                      |                                                                                                           object                                                                                                           
@@ -314,194 +305,3 @@ dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>
 (76 rows)
 
 DROP SERVER dbpedia;
-------------------------------- Getty Thesaurus (GraphDB) -------------------------------
-CREATE SERVER getty
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-    endpoint 'http://vocab.getty.edu/sparql',
-    base_uri 'http://rdf_fdw.regress.tests/'
-);
--- IRI description
-SELECT 
-  CASE WHEN subject LIKE 'r%' THEN 'bnode' ELSE subject END AS subject, 
-  predicate,
-  CASE WHEN object LIKE 'r%' THEN 'bnode' ELSE object END AS object
-FROM rdf_fdw_describe('getty','DESCRIBE <http://vocab.getty.edu/ulan/500033638>')
-ORDER BY object COLLATE "C";
-INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql':
-
-DESCRIBE <http://vocab.getty.edu/ulan/500033638>
-
-                             subject                             |                          predicate                          |                                       object                                       
------------------------------------------------------------------+-------------------------------------------------------------+------------------------------------------------------------------------------------
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#displayOrder>              | "178771"^^<http://www.w3.org/2001/XMLSchema#positiveInteger>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/created>                          | "1989-12-22T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/created>                          | "1998-06-19T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2002-08-27T10:11:48"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2002-08-27T10:13:26"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2008-12-12T12:50:48"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2008-12-12T12:50:49"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2008-12-12T13:04:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2008-12-12T13:07:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2009-01-28T15:37:38"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2009-01-28T15:37:41"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2009-01-28T17:03:19"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2009-12-16T10:58:22"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2010-11-05T12:55:45"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2010-11-05T12:55:47"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/modified>                         | "2021-08-09T01:24:06"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/elements/1.1/identifier>                | "500033638"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Adrien Louis Lusson"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#altLabel>              | "Adrien Louis Lusson"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Louis Adrien Lusson"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#altLabel>              | "Louis Adrien Lusson"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Louis-Adrien Lusson"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#altLabel>              | "Louis-Adrien Lusson"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Lusson, Adrien Louis"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#altLabel>              | "Lusson, Adrien Louis"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#altLabel>              | "Lusson, Adrien-Louis"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Lusson, Adrien-Louis"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Lusson, Louis Adrien"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#altLabel>              | "Lusson, Louis Adrien"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#prefLabel>             | "Lusson, Louis-Adrien"@nl
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#label>                | "Lusson, Louis-Adrien"@nl
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#parentString>              | "Persons, Artists"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#parentStringAbbrev>        | "Persons, Artists"
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <http://id.loc.gov/authorities/names/nr99039322>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://id.loc.gov/authorities/names/nr99039322>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://id.loc.gov/authorities/names/nr99039322>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/license>                          | <http://opendatacommons.org/licenses/by/1.0/>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://creativecommons.org/ns#license>                     | <http://opendatacommons.org/licenses/by/1.0/>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentTypeNonPreferred>     | <http://vocab.getty.edu/aat/300024987>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300024987>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentTypePreferred>        | <http://vocab.getty.edu/aat/300025103>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300025103>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentTypeNonPreferred>     | <http://vocab.getty.edu/aat/300025492>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#agentType>                 | <http://vocab.getty.edu/aat/300025492>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://rdfs.org/ns/void#inDataset>                         | <http://vocab.getty.edu/dataset/ulan>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://vocab.getty.edu/ontology#PersonConcept>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://vocab.getty.edu/ontology#Subject>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderPreferred>          | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderInstantial>         | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broader>                   | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderInstantialExtended> | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderExtended>           | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#broaderPreferredExtended>  | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/iso25964/skos-thes#broaderInstantial>      | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#broader>               | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#broaderTransitive>     | <http://vocab.getty.edu/ulan/500000002>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#ulan1102_student_of>       | <http://vocab.getty.edu/ulan/500012660>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#related>               | <http://vocab.getty.edu/ulan/500012660>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://xmlns.com/foaf/0.1/focus>                           | <http://vocab.getty.edu/ulan/500033638-agent>
- <http://vocab.getty.edu/ulan/rev/5505311476>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rel/500033638-agentType-300025103> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject>        | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rel/500033638-agentType-300024987> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject>        | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rel/500033638-agentType-300025492> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject>        | <http://vocab.getty.edu/ulan/500033638>
- <http://id.loc.gov/authorities/names/nr99039322>                | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <https://wikidata.org/wiki/Q2825101>                            | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500012660>                         | <http://www.w3.org/2004/02/skos/core#related>               | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500012660>                         | <http://vocab.getty.edu/ontology#ulan1101_teacher_of>       | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500000002>                         | <http://www.w3.org/2004/02/skos/core#narrower>              | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500000002>                         | <http://www.w3.org/2004/02/skos/core#member>                | <http://vocab.getty.edu/ulan/500033638>
- <http://id.loc.gov/authorities/names/nr99039322>                | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://vocab.getty.edu/ulan/500033638>
- <https://wikidata.org/wiki/Q2825101>                            | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <http://vocab.getty.edu/ulan/500033638>
- <http://id.loc.gov/authorities/names/nr99039322>                | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <https://wikidata.org/wiki/Q2825101>                            | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5501491855>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5501491859>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503758364>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503758369>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503781828>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5504715945>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5501491860>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503758354>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503758355>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/rev/5503781561>                    | <http://www.w3.org/ns/prov#used>                            | <http://vocab.getty.edu/ulan/500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#inScheme>              | <http://vocab.getty.edu/ulan/>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000001>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000007>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000013>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000124>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000130>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000189>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/contributor>                      | <http://vocab.getty.edu/ulan/contrib/2500000202>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5500092528>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/ns/prov#wasGeneratedBy>                  | <http://vocab.getty.edu/ulan/rev/5500092528>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5500092528>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5500092529>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5500092529>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/ns/prov#wasGeneratedBy>                  | <http://vocab.getty.edu/ulan/rev/5500092529>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5501491855>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491855>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5501491859>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491859>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5501491860>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5501491860>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758354>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758354>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758355>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758355>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758363>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758363>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758364>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758364>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503758369>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503758369>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781561>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781561>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781570>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781570>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5503781828>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5503781828>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5504715945>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5504715945>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5505311476>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5505311476>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5505311485>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5505311485>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#changeNote>            | <http://vocab.getty.edu/ulan/rev/5511239295>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/rev/5511239295>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#scopeNote>             | <http://vocab.getty.edu/ulan/scopeNote/36150>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#note>                  | <http://vocab.getty.edu/ulan/scopeNote/36150>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100039588>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100039894>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100041661>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100045770>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100045787>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100046495>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100153972>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100154640>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100181001-subject-500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100182972-subject-500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100183444-subject-500033638>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://purl.org/dc/terms/source>                           | <http://vocab.getty.edu/ulan/source/2100185916>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#altLabel>                | <http://vocab.getty.edu/ulan/term/1500092325>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://vocab.getty.edu/ontology#prefLabelGVP>              | <http://vocab.getty.edu/ulan/term/1500092327>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#altLabel>                | <http://vocab.getty.edu/ulan/term/1500092327>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#prefLabel>               | <http://vocab.getty.edu/ulan/term/1500092328-nl>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#altLabel>                | <http://vocab.getty.edu/ulan/term/1500422656>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#altLabel>                | <http://vocab.getty.edu/ulan/term/1500451988>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#altLabel>                | <http://vocab.getty.edu/ulan/term/1500471136>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2008/05/skos-xl#altLabel>                | <http://vocab.getty.edu/ulan/term/1500720170>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2000/01/rdf-schema#seeAlso>              | <http://www.getty.edu/vow/ULANFullDisplay?find=&role=&nation=&subjectid=500033638>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#List>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#List>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://www.w3.org/2000/01/rdf-schema#Class>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://www.w3.org/2002/07/owl#Class>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#first>          | <http://www.w3.org/2004/02/skos/core#Collection>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | <http://www.w3.org/2004/02/skos/core#Concept>
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#first>          | <http://www.w3.org/2004/02/skos/core#Concept>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#mappingRelation>       | <https://wikidata.org/wiki/Q2825101>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#closeMatch>            | <https://wikidata.org/wiki/Q2825101>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/2004/02/skos/core#exactMatch>            | <https://wikidata.org/wiki/Q2825101>
- <http://vocab.getty.edu/ulan/500033638>                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>           | bnode
- bnode                                                           | <http://www.w3.org/2000/01/rdf-schema#subClassOf>           | bnode
- bnode                                                           | <http://www.w3.org/2002/07/owl#unionOf>                     | bnode
- bnode                                                           | <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>           | bnode
-(168 rows)
-
-DROP SERVER getty;

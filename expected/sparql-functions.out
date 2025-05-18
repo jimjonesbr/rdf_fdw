@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 \pset null NULL
 --SET search_path TO sparql, pg_catalog;
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"');
@@ -136,13 +137,10 @@ SELECT sparql.strdt('', '<http://example.org/type>');
 
 SELECT sparql.strdt('foo', '');
 ERROR:  datatype IRI cannot be empty
-CONTEXT:  PL/pgSQL function sparql.strdt(text,text) line 3 at RETURN
 SELECT sparql.strdt('foo', ' ');
 ERROR:  datatype IRI cannot contain whitespaces
-CONTEXT:  PL/pgSQL function sparql.strdt(text,text) line 3 at RETURN
 SELECT sparql.strdt('foo', ' xsd:boolean ');
 ERROR:  datatype IRI cannot contain whitespaces
-CONTEXT:  PL/pgSQL function sparql.strdt(text,text) line 3 at RETURN
 SELECT sparql.strdt('foo', 'http://www.w3.org/2001/XMLSchema#string');
                       strdt                       
 --------------------------------------------------
@@ -411,40 +409,64 @@ SELECT sparql.datatype(sparql.strdt('foo','bar:xyz'));
  <bar:xyz>
 (1 row)
 
-SELECT sparql.datatype('"foo"@es');
+SELECT sparql.datatype('<http://example.de>');
  datatype 
 ----------
- 
+ NULL
+(1 row)
+
+SELECT sparql.datatype('_:bnode42');
+ datatype 
+----------
+ NULL
+(1 row)
+
+SELECT sparql.datatype('"foo"@es');
+                        datatype                         
+---------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+(1 row)
+
+SELECT sparql.datatype('"foo"@es'::name);
+                        datatype                         
+---------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
 (1 row)
 
 SELECT sparql.datatype('');
- datatype 
-----------
- 
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.datatype(''::name);
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 SELECT sparql.datatype(' ');
- datatype 
-----------
- 
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 SELECT sparql.datatype('"foo"^<xsd:string>');
- datatype 
-----------
- 
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 SELECT sparql.datatype('"foo"^^xsd:string>');
- datatype 
-----------
- 
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 SELECT sparql.datatype('"foo"^^<xsd:string');
- datatype 
-----------
- 
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 SELECT sparql.datatype(cast('2018-05-01' AS date));
@@ -711,7 +733,7 @@ SELECT sparql.isIRI('');
 SELECT sparql.isIRI(NULL);
  isiri 
 -------
- NULL
+ f
 (1 row)
 
 SELECT sparql.isIRI('<not-an-iri');
@@ -1500,6 +1522,12 @@ SELECT sparql.langmatches('', '"*"');
  t
 (1 row)
 
+SELECT sparql.langmatches('en-US', 'en');
+ langmatches 
+-------------
+ t
+(1 row)
+
 /* ISBLANK */
 SELECT sparql.isblank('_:b1');
  isblank 
@@ -1727,7 +1755,7 @@ SELECT sparql.isnumeric('" "');
 SELECT sparql.isnumeric(NULL);
  isnumeric 
 -----------
- NULL
+ f
 (1 row)
 
 /* ISLITERAL */
@@ -1824,7 +1852,7 @@ SELECT sparql.isliteral('""');
 SELECT sparql.isliteral(NULL);
  isliteral 
 -----------
- NULL
+ f
 (1 row)
 
   /* BNODE */
@@ -1908,7 +1936,7 @@ SELECT sparql.uuid()::text ~ '^<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[8
 (1 row)
 
 /* STRUUID() (not pushable) */
-SELECT sparql.struuid()::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AS struuid_format;
+SELECT sparql.struuid()::text ~ '^"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"$' AS struuid_format;
  struuid_format 
 ----------------
  t
@@ -2235,6 +2263,30 @@ SELECT sparql.concat('foo', ''), sparql.concat('', 'bar'), sparql.concat('', '')
 
 SELECT sparql.concat('"foo"^^foo:bar', 'bar'), sparql.concat('"foo"', '"bar"^^foo:bar');
 ERROR:  CONCAT arguments must be simple literals or 'xsd:string'
+SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
+    concat    
+--------------
+ "foo&bar"@en
+(1 row)
+
+SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
+                        concat                        
+------------------------------------------------------
+ "foo&bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.concat('"foo"','"&"', '"bar"');
+  concat   
+-----------
+ "foo&bar"
+(1 row)
+
+SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
+ concat 
+--------
+ NULL
+(1 row)
+
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
  replace | replace 
@@ -2285,8 +2337,7 @@ SELECT sparql.replace('""', '"b"', '"Z"'), sparql.replace('', 'b', 'Z');
 (1 row)
 
 SELECT sparql.replace('"abcd"', '""', '"Z"'), sparql.replace('abcd', '', 'Z');
-ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+ERROR:  pattern cannot be empty in REPLACE()
 SELECT sparql.replace('"abcd"', '"b"', '""'), sparql.replace('abcd', 'b', '');
  replace | replace 
 ---------+---------
@@ -2312,8 +2363,7 @@ SELECT sparql.replace('', 'a', 'Z');                -- Empty input string
 (1 row)
 
 SELECT sparql.replace('abcd', '', 'Z');             -- Empty pattern
-ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+ERROR:  pattern cannot be empty in REPLACE()
 SELECT sparql.replace('abcd', 'a', '');             -- Empty replacement
  replace 
 ---------
@@ -2321,8 +2371,7 @@ SELECT sparql.replace('abcd', 'a', '');             -- Empty replacement
 (1 row)
 
 SELECT sparql.replace('', '', 'Z');                 -- Empty pattern and replacement
-ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+ERROR:  pattern cannot be empty in REPLACE()
 SELECT sparql.replace('abcd', 'a', 'Z');            -- Pattern at the beginning
  replace 
 ---------
@@ -2469,7 +2518,6 @@ SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:
 
 SELECT sparql.replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
 ERROR:  invalid lexical form for xsd:date: "abcd"
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 6 at RETURN
 SELECT sparql.replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
  replace  
 ----------
@@ -2483,11 +2531,9 @@ SELECT sparql.replace('ababab', 'ab', 'XY');         -- Non-global replacement (
 (1 row)
 
 SELECT sparql.replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
-ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(rdfnode,rdfnode,rdfnode,rdfnode) line 4 at RAISE
+ERROR:  pattern cannot be empty in REPLACE()
 SELECT sparql.replace('abcd', '', 'Z');              -- Empty pattern without global flag
-ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+ERROR:  pattern cannot be empty in REPLACE()
 SELECT sparql.replace('abcd', 'z', 'Z');             -- No pattern match
  replace 
 ---------
@@ -2525,8 +2571,7 @@ SELECT sparql.replace('""', '"b"', '"Z"');           -- Empty literal as input
 (1 row)
 
 SELECT sparql.replace('"b"', '""', '"Z"');            -- Empty pattern in replacement
-ERROR:  pattern cannot be empty in REPLACE
-CONTEXT:  PL/pgSQL function sparql.replace(text,text,text) line 4 at RAISE
+ERROR:  pattern cannot be empty in REPLACE()
 SELECT sparql.replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
  replace 
 ---------
@@ -2577,11 +2622,9 @@ SELECT sparql.regex('"abcd"', '"^ab"');
 (1 row)
 
 SELECT sparql.regex('"abc\ndef"', '"^def$"', '"m"');
-ERROR:  Unsupported regex flags: m (only "i" is supported)
-CONTEXT:  PL/pgSQL function sparql.regex(rdfnode,rdfnode,rdfnode) line 8 at RAISE
+ERROR:  Unsupported REGEX() flag: "m" (only "i" is supported)
 SELECT sparql.regex('"abc\ndef"', '"c.d"', '"s"');
-ERROR:  Unsupported regex flags: s (only "i" is supported)
-CONTEXT:  PL/pgSQL function sparql.regex(rdfnode,rdfnode,rdfnode) line 8 at RAISE
+ERROR:  Unsupported REGEX() flag: "s" (only "i" is supported)
 SELECT sparql.regex('"abcd"@en', '"bc"');
  regex 
 -------
@@ -2620,38 +2663,35 @@ SELECT sparql.regex(NULL, '"a"'), sparql.regex('"abcd"', NULL), sparql.regex('"a
 
 SELECT sparql.regex('"abcd"', '"[a"');
 ERROR:  invalid regular expression: brackets [] not balanced
-CONTEXT:  PL/pgSQL function sparql.regex(rdfnode,rdfnode) line 6 at RETURN
 /* ABS */
 SELECT sparql.abs('"-1"^^xsd:int');
- abs 
------
-   1
+                     abs                     
+---------------------------------------------
+ "1"^^<http://www.w3.org/2001/XMLSchema#int>
 (1 row)
 
 SELECT sparql.abs('"-1.42"^^xsd:double');
- abs  
-------
- 1.42
+                        abs                        
+---------------------------------------------------
+ "1.42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.abs(sparql.strdt('-1.42','xsd:double'));
- abs  
-------
- 1.42
+                        abs                        
+---------------------------------------------------
+ "1.42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.abs(sparql.strdt('-1.42238','xsd:double'));
-   abs   
----------
- 1.42238
+                         abs                          
+------------------------------------------------------
+ "1.42238"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.abs('');
-ERROR:  invalid input syntax for type double precision: ""
-CONTEXT:  PL/pgSQL function sparql.abs(text) line 3 at RETURN
+ERROR:  invalid value for ABS(): ""
 SELECT sparql.abs(' ');
-ERROR:  invalid input syntax for type double precision: " "
-CONTEXT:  PL/pgSQL function sparql.abs(text) line 3 at RETURN
+ERROR:  invalid value for ABS(): " "
 SELECT sparql.abs(NULL);
  abs  
 ------
@@ -2659,119 +2699,111 @@ SELECT sparql.abs(NULL);
 (1 row)
 
 SELECT sparql.abs(CAST(-1.42 AS numeric));
- abs  
-------
- 1.42
+                        abs                         
+----------------------------------------------------
+ "1.42"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.abs(CAST(-1.42 AS double precision));
- abs  
-------
- 1.42
+                        abs                        
+---------------------------------------------------
+ "1.42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 --SELECT sparql.abs(CAST(-1.42 AS real));
 SELECT sparql.abs(CAST(-1 AS bigint));
- abs 
------
-   1
+                     abs                      
+----------------------------------------------
+ "1"^^<http://www.w3.org/2001/XMLSchema#long>
 (1 row)
 
 SELECT sparql.abs(CAST(-1 AS smallint));
- abs 
------
-   1
+                      abs                      
+-----------------------------------------------
+ "1"^^<http://www.w3.org/2001/XMLSchema#short>
 (1 row)
 
 SELECT sparql.abs(CAST(-1 AS int));
- abs 
------
-   1
+                     abs                     
+---------------------------------------------
+ "1"^^<http://www.w3.org/2001/XMLSchema#int>
 (1 row)
 
 /* ROUND */
 SELECT sparql.round('"2.4999"^^xsd:double');
- round 
--------
-     2
+                     round                      
+------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.round('"2.5"^^xsd:double');
- round 
--------
-     3
+                     round                      
+------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.round('"-2.5"^^xsd:decimal');
- round 
--------
-    -2
+                      round                       
+--------------------------------------------------
+ "-2"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.round('');
-ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
-PL/pgSQL function sparql.round(text) line 3 at RETURN
+ERROR:  invalid value for ROUND(): ""
 SELECT sparql.round('""');
-ERROR:  invalid input syntax for type numeric: ""
-CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
-PL/pgSQL function sparql.round(text) line 3 at RETURN
+ERROR:  invalid value for ROUND(): ""
 SELECT sparql.round(' ');
-ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
-PL/pgSQL function sparql.round(text) line 3 at RETURN
+ERROR:  invalid value for ROUND(): " "
 SELECT sparql.round('" "');
-ERROR:  invalid input syntax for type numeric: " "
-CONTEXT:  PL/pgSQL function sparql.round(rdfnode) line 3 at IF
-PL/pgSQL function sparql.round(text) line 3 at RETURN
+ERROR:  invalid value for ROUND(): " "
 SELECT sparql.round(NULL);
  round 
 -------
-  NULL
+ NULL
 (1 row)
 
 SELECT sparql.round(CAST(2.49999 AS numeric));
- round 
--------
-     2
+                     round                      
+------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.round(CAST(2.5 AS double precision));
- round 
--------
-     3
+                     round                      
+------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 --SELECT sparql.round(CAST(-2.5 AS real));
 SELECT sparql.round(CAST(42 AS bigint));
- round 
--------
-    42
+                      round                      
+-------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.round(CAST(42 AS smallint));
- round 
--------
-    42
+                      round                      
+-------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.round(CAST(42 AS int));
- round 
--------
-    42
+                      round                      
+-------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 /* CEIL */
 SELECT sparql.ceil('"10.5"^^xsd:double');
- ceil 
-------
-   11
+                      ceil                       
+-------------------------------------------------
+ "11"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.ceil('"-10.5"^^xsd:decimal');
- ceil 
-------
-  -10
+                       ceil                        
+---------------------------------------------------
+ "-10"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.ceil(NULL);
@@ -2781,88 +2813,88 @@ SELECT sparql.ceil(NULL);
 (1 row)
 
 SELECT sparql.ceil(CAST(10.5 AS numeric));
- ceil 
-------
-   11
+                       ceil                       
+--------------------------------------------------
+ "11"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.ceil(CAST(-10.5 AS double precision));
- ceil 
-------
-  -10
+                       ceil                       
+--------------------------------------------------
+ "-10"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.ceil(CAST(10.5 AS real));
- ceil 
-------
-   11
+                      ceil                       
+-------------------------------------------------
+ "11"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.ceil(CAST(-42 AS bigint));
- ceil 
-------
-  -42
+                       ceil                       
+--------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.ceil(CAST(42 AS smallint));
- ceil 
-------
-   42
+                      ceil                       
+-------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.ceil(CAST(-42 AS int));
- ceil 
-------
-  -42
+                       ceil                       
+--------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 /* FLOOR */
 SELECT sparql.floor('"10.5"^^xsd:double');
- floor 
--------
-    10
+                      floor                      
+-------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.floor('"-10.5"^^xsd:decimal');
- floor 
--------
-   -11
+                       floor                       
+---------------------------------------------------
+ "-11"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.floor(CAST(10.5 AS numeric));
- floor 
--------
-    10
+                      floor                       
+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.floor(CAST(-10.5 AS double precision));
- floor 
--------
-   -11
+                      floor                       
+--------------------------------------------------
+ "-11"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.floor(CAST(10.5 AS real));
- floor 
--------
-    10
+                      floor                      
+-------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.floor(CAST(-42 AS bigint));
- floor 
--------
-   -42
+                      floor                       
+--------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.floor(CAST(42 AS smallint));
- floor 
--------
-    42
+                      floor                      
+-------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 SELECT sparql.floor(CAST(-42 AS int));
- floor 
--------
-   -42
+                      floor                       
+--------------------------------------------------
+ "-42"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 /* YEAR */
@@ -3065,9 +3097,7 @@ SELECT sparql.timezone('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
 (1 row)
 
 SELECT sparql.timezone('"2011-01-10T14:45:13.815"^^xsd:dateTime');
-ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2011-01-10T14:45:13.815
-CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 27 at RAISE
-PL/pgSQL function sparql.timezone(text) line 3 at RETURN
+ERROR:  TIMEZONE(): datetime has no time zone: 2011-01-10T14:45:13.815
 SELECT sparql.timezone('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
                           timezone                           
 -------------------------------------------------------------
@@ -3099,23 +3129,15 @@ SELECT sparql.timezone('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
 (1 row)
 
 SELECT sparql.timezone('"2020-12-01T08:00:00"^^xsd:dateTime');
-ERROR:  SPARQL TIMEZONE(): datetime has no timezone: 2020-12-01T08:00:00
-CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 27 at RAISE
-PL/pgSQL function sparql.timezone(text) line 3 at RETURN
+ERROR:  TIMEZONE(): datetime has no time zone: 2020-12-01T08:00:00
 SELECT sparql.timezone('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
-ERROR:  SPARQL TIMEZONE(): invalid timezone offset: +25:00
-CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 41 at RAISE
-PL/pgSQL function sparql.timezone(text) line 3 at RETURN
+ERROR:  TIMEZONE(): invalid timezone offset: +25:00
 SELECT sparql.timezone('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
-ERROR:  SPARQL TIMEZONE(): invalid timezone offset: -99:99
-CONTEXT:  PL/pgSQL function sparql.timezone(rdfnode) line 41 at RAISE
-PL/pgSQL function sparql.timezone(text) line 3 at RETURN
+ERROR:  TIMEZONE(): invalid timezone offset: -99:99
 SELECT sparql.timezone('"invalid-date"^^xsd:dateTime');
 ERROR:  invalid lexical form for xsd:dateTime: "invalid-date"
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone('""^^xsd:dateTime');
 ERROR:  invalid lexical form for xsd:dateTime: ""
-CONTEXT:  PL/pgSQL function sparql.timezone(text) line 3 at RETURN
 SELECT sparql.timezone(NULL);
  timezone 
 ----------
@@ -3142,9 +3164,7 @@ SELECT sparql.tz('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
 (1 row)
 
 SELECT sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime');
-ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(rdfnode) line 11 at RAISE
-PL/pgSQL function sparql.tz(text) line 3 at RETURN
+ERROR:  TZ(): datetime has no timezone
 SELECT sparql.tz('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
     tz    
 ----------
@@ -3176,9 +3196,7 @@ SELECT sparql.tz('"2020-12-01T08:00:00.123456-04:45"^^xsd:dateTime');
 (1 row)
 
 SELECT sparql.tz('"2020-12-01T08:00:00"^^xsd:dateTime');
-ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(rdfnode) line 11 at RAISE
-PL/pgSQL function sparql.tz(text) line 3 at RETURN
+ERROR:  TZ(): datetime has no timezone
 SELECT sparql.tz('"2020-12-01T08:00:00+25:00"^^xsd:dateTime');
     tz    
 ----------
@@ -3193,10 +3211,8 @@ SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 
 SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
 ERROR:  invalid lexical form for xsd:dateTime: "invalid-date"
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 3 at RETURN
 SELECT sparql.tz('""^^xsd:dateTime');
 ERROR:  invalid lexical form for xsd:dateTime: ""
-CONTEXT:  PL/pgSQL function sparql.tz(text) line 3 at RETURN
 SELECT sparql.tz(NULL);
   tz  
 ------
@@ -3204,14 +3220,12 @@ SELECT sparql.tz(NULL);
 (1 row)
 
 SELECT sparql.tz('"not a date"^^xsd:string');
-ERROR:  SPARQL TZ(): datetime has no timezone
-CONTEXT:  PL/pgSQL function sparql.tz(rdfnode) line 11 at RAISE
-PL/pgSQL function sparql.tz(text) line 3 at RETURN
+ERROR:  TZ(): datetime has no timezone
 /*BOUND */
 SELECT sparql.bound(NULL);
  bound 
 -------
- NULL
+ f
 (1 row)
 
 SELECT sparql.bound('abc');
