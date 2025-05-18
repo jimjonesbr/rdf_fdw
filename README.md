@@ -2,7 +2,7 @@
 ---------------------------------------------
 # RDF Triplestore Foreign Data Wrapper for PostgreSQL (rdf_fdw)
 
-The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplestores via SPARQL endpoints, including pushdown of several SQL Query clauses.
+`rdf_fdw` is a PostgreSQL Foreign Data Wrapper that enables seamless access to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL clauses and includes built-in implementations of most SPARQL 1.1 functions.
 
 ![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
 
@@ -16,28 +16,13 @@ The `rdf_fdw` is a PostgreSQL Foreign Data Wrapper to easily access RDF triplest
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
-  - [version](#version)
-  - [rdf_fdw_describe](#rdf_fdw_describe)
+  - [rdf_fdw_version](#rdf_fdw_version)
+  - [SPARQL describe](#sparql-describe)
   - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
+- [RDF Node Handling](#rdf-node-handling)
+- [SPARQL Functions](#sparql-functions)
 - [Pushdown](#pushdown)
-  - [LIMIT](#limit)
-  - [ORDER BY](#order-by)
-  - [DISTINCT](#distinct)
-  - [WHERE](#where)
-    - [Supported Data Types and Operators](#supported-data-types-and-operators)
-    - [IN and ANY constructs](#in-and-any-constructs)
-    - [Pattern matching operators LIKE and ILIKE](#pattern-matching-operators-like-and-ilike)
-    - [String Functions](#string-functions)
-    - [Mathematical Functions](#string-functions)
-    - [Date Time Functions](#date-time-functions)
-  - [Pushdown Examples](#pushdown-examples)
 - [Examples](#examples)
-  - [DBpedia](#dbpedia)
-  - [Getty Thesaurus](#getty-thesaurus)
-  - [BBC Programmes and Music](#bbc-programmes-and-music)
-  - [Wikidata](#wikidata)
-  - [Import data into QGIS](#import-data-into-qgis)
-  - [Publish FOREIGN TABLE as WFS layer in GeoServer](#publish-foreign-table-as-wfs-layer-in-geoserver)
 - [Deploy with Docker](#deploy-with-docker)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
@@ -82,7 +67,7 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '1.3';
+CREATE EXTENSION rdf_fdw WITH VERSION '1.4';
 ```
 
 To run the predefined regression tests: 
@@ -175,15 +160,43 @@ The `rdf_fdw` will try to authenticate the given user using HTTP Basic Authentic
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
 
-Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and RDF Triplestores. Each `FOREIGN TABLE` column must be mapped to a SPARQL `variable`, so that PostgreSQL knows where to display each node retrieved from the SPARQL queries. Optionally, it is possible to add an `expression` to the column, so that function calls can be used to retrieve or format the data.
+Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and RDF Triplestores. Each column in a `FOREIGN TABLE` must be mapped to a SPARQL variable. This allows PostgreSQL to extract and assign results from the SPARQL query into the right column.
 
 **Table Options**
 
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `sparql`      | **required**    | The raw SPARQL query to be executed    |
-| `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown.  |
+| `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown. Default `true`  |
 | `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. Overrides the `SERVER` option `enable_pushdown` |
+
+Columns can use one of two data type categories:
+
+#### RDF Node
+The custom `rdfnode` type is designed to handle full RDF nodes, including both IRIs and literals with optional language tags or datatypes. It preserves the structure and semantics of RDF terms and is ideal when you need to manipulate or inspect RDF-specific details. Columns of this type only support the `variable`.
+
+**Column Options**
+
+| Option        | Type        | Description                                                                                                        |
+|---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
+| `variable`    | **required**    | Maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` (*`?` or `$` are **not** part of the variable name!)*. The name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
+
+Example:
+
+```sql
+CREATE FOREIGN TABLE hbf (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER linkedgeodata OPTIONS (
+  log_sparql 'true',
+  sparql 
+    'SELECT ?p ?o 
+     WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}');
+```
+
+#### PostgreSQL native types
+Alternatively, columns can be declared using PostgreSQL native types such as `text`, `date`, `int`, `boolean`, `numeric`, `timestamp`, etc. These are suitable for typed RDF literals or when you want automatic casting into PostgreSQL types. Native types support a wider range of column options:
 
 **Column Options**
 
@@ -191,9 +204,8 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `variable`    | **required**    | Maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` (*`?` or `$` are **not** part of the variable name!)*. The name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
 | `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable, it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). Any expression supported by the data source can be used. |
-| `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option ensures that the pushdown feature correctly sets the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` espressions ignore language tags when comparing literals.   |  
-| `literal_type`        | optional    | Data type for typed literals , e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option ensures that the pushdown feature correctly sets the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` expressions ignore data types when comparing literals. |
-| `literal_format`        | optional    | `raw` to display the literals with their language or data type, e.g. `"foo"^^<http://www.w3.org/2001/XMLSchema#strong>`, `"foo"@en"`, or `content` to display only its contents, e.g. `foo`.  (default `content` ) |
+| `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option ensures that the pushdown feature correctly sets the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` expressions ignore language tags when comparing literals.   |  
+| `literal_type`        | optional    | Data type for typed literals, e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option ensures that the pushdown feature correctly sets the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` expressions ignore data types when comparing literals. |
 | `nodetype`  | optional    | Type of the RDF node. Expected values are `literal` or `iri`. This option helps the query planner to optimize SPARQL `FILTER` expressions when the `WHERE` conditions are pushed down (default `literal`)  |
 
 
@@ -262,7 +274,7 @@ ALTER FOREIGN TABLE film OPTIONS (DROP enable_pushdown,
 ALTER SERVER dbpedia OPTIONS (DROP enable_pushdown);
 ```
 
-### [version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#version)
+### [rdf_fdw_version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_version)
 
 **Synopsis**
 
@@ -288,21 +300,16 @@ SELECT rdf_fdw_version();
 (1 row)
 ```
 
-### [rdf_fdw_describe](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_describe)
+### [SPARQL describe](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-describe)
 **Synopsis**
-```
-rdf_fdw_triple rdf_fdw_describe(
-  server text,
-  query text,
-  raw_literal boolean,
-  base_uri text
-)
+```sql
+sparql.describe(server text, query text, raw_literal boolean, base_uri text) → triple
 ```
 **Availability**: 1.4.0
 
 **Description**
 
-The `rdf_fdw_describe` function executes a SPARQL `DESCRIBE` query against a specified RDF triplestore `SERVER`. It retrieves RDF triples describing a resource (or resources) identified by the query and returns them as a table with three columns: subject, predicate, and object. This function is useful for exploring RDF data by fetching detailed descriptions of resources from a triplestore.
+The `sparql.describe` function executes a SPARQL `DESCRIBE` query against a specified RDF triplestore `SERVER`. It retrieves RDF triples describing a resource (or resources) identified by the query and returns them as a table with three columns: subject, predicate, and object. This function is useful for exploring RDF data by fetching detailed descriptions of resources from a triplestore.
 The function leverages the Redland RDF library (librdf) to parse the `RDF/XML` response from the triplestore into triples, which are then returned as rows in the result set.
 
 **Parameters**
@@ -320,10 +327,10 @@ The function leverages the Redland RDF library (librdf) to parse the `RDF/XML` r
 
 **Return Value**
 
-Returns a table with the following columns:
-* subject (text): The subject of each RDF triple, typically a URI or blank node identifier.
-* predicate (text): The predicate (property) of each RDF triple, always a URI.
-* object (text): The object of each RDF triple, which may be a URI, blank node, or literal value (formatted based on `raw_literal`).
+Returns a table with the following `rdfnode` columns:
+* `subject`: The subject of each RDF triple, typically a URI or blank node identifier.
+* `predicate`: The predicate (property) of each RDF triple, always a URI.
+* `object`: The object of each RDF triple, which may be a URI, blank node, or literal value.
 
 **Usage Example**
 
@@ -453,15 +460,1338 @@ SELECT * FROM t1_local;
 (13 rows)
 ```
 
+## [RDF Node Handling](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf-node-handling)
+The `rdf_fdw` extension introduces a custom data type called `rdfnode` that represents full RDF nodes exactly as they appear in a triplestore. It supports:
+
+- **IRIs** (e.g., `<http://example.org/resource>`)
+- **Plain literals** (e.g., `"42"`)
+- **Literals with language tags** (e.g., `"hello"@en`)
+- **Typed literals** (e.g., `"42"^^xsd:integer`)
+
+This type is useful when you want to inspect or preserve the full structure of RDF terms—including their language tags or datatypes—rather than just working with the value.
+
+### Casting Between `rdfnode` and Native Types
+
+Although `rdfnode` preserves the full RDF term, you can cast it to standard PostgreSQL types like `text`, `int`, or `date` when you only care about the literal value. Likewise, native values can be cast into `rdfnode`, with appropriate RDF serialization.
+
+From `rdfnode` to PostgreSQL:
+
+```sql
+SELECT CAST('"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode AS int);
+ int4 
+------
+   42
+(1 row)
+
+SELECT CAST('"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode AS numeric);
+ numeric 
+---------
+   42.73
+(1 row)
+
+SELECT CAST('"2025-05-16"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode AS date);
+    date    
+------------
+ 2025-05-16
+(1 row)
+
+SELECT CAST('"2025-05-16T06:41:50"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode AS timestamp);
+      timestamp      
+---------------------
+ 2025-05-16 06:41:50
+(1 row)
+```
+From PostgreSQL to `rdfnode`:
+
+```sql
+SELECT CAST('"foo"^^xsd:string' AS rdfnode);
+                     rdfnode                      
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT CAST(42.73 AS rdfnode);
+                       rdfnode                       
+-----------------------------------------------------
+ "42.73"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT CAST(422892987223 AS rdfnode);
+                         rdfnode                         
+---------------------------------------------------------
+ "422892987223"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT CAST(CURRENT_DATE AS rdfnode);
+                     current_date                      
+-------------------------------------------------------
+ "2025-05-16"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT CAST(CURRENT_TIMESTAMP AS rdfnode);
+                             current_timestamp                              
+----------------------------------------------------------------------------
+ "2025-05-16T06:41:50.221129Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+```
+
+### Choosing Between rdfnode and Native PostgreSQL Types
+
+You can use either of the following:
+
+* `rdfnode`, when you want to preserve the full RDF term **(recommended)**.
+* PostgreSQL native types (`text`, `date`, `int`, etc.), when you want automatic type coercion and simpler filtering
+
+Use native types when you want PostgreSQL to treat RDF data like regular values. Use rdfnode when you need full RDF semantics.
+
+
+### Comparison with Native PostgreSQL Types
+
+You can use either:
+
+- **`rdfnode`**, for full RDF terms
+- **PostgreSQL native types** (`text`, `date`, `int`, etc.), for automatic conversion of RDF literals into PostgreSQL values
+
+Use native types when you want PostgreSQL to coerce the RDF data into usable scalar values. Use `rdfnode` when you want to preserve the full RDF syntax and semantics (IRI, type, and language tag).
+
+### Supported Operators
+
+`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules.
+
+Examples: `rdfnode` vs `rdfnode`
+
+```sql
+SELECT '"foo"@en'::rdfnode = '"foo"@fr'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode > '"foobar"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode < '"foobar"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+ SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:short'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+ SELECT '"73.42"^^xsd:float'::rdfnode < '"100"^^xsd:short'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+```
+
+The `rdfnode` data type also allow comparisons with PostgreSQL native data types, such as `int`, `date`, `numeric`, etc.
+
+Examples: `rdfnode` vs PostgreSQL types
+
+```sql
+SELECT '"42"^^xsd:int'::rdfnode = 42;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2010-01-08"^^xsd:date'::rdfnode < '2020-12-30'::date;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:decimal'::rdfnode > 42.01;
+ ?column? 
+----------
+ t
+(1 row)
+
+```
+
+## [SPARQL Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-functions)
+
+`rdf_fdw` implements most of the [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs), exposing them as SQL-callable functions under the dedicated `sparql` schema. This avoids conflicts with similarly named built-in PostgreSQL functions such as `round`, `replace`, or `ceil`. These functions operate on RDF values retrieved through `FOREIGN TABLEs` and can be used in SQL queries or as part of pushdown expressions. They adhere closely to SPARQL semantics, including handling of RDF literals, language tags, datatypes, and null propagation rules, enabling expressive and standards-compliant RDF querying directly inside PostgreSQL.
+
+**⚠️ Note on SPARQL Compatibility**
+
+While most RDF triplestores claim support for SPARQL 1.1, their behavior may diverge from the standard—especially in how functions handle literals with language tags or datatypes. For example, the following query produces different results depending on the backend:
+
+```sparql
+SELECT (REPLACE("foo"@en, "o"@de, "xx"@fr) AS ?str) {}
+```
+* Virtuoso: `"fxxxx"`
+* Blazegraph: **Unknown error**: *incompatible operand for REPLACE: "o"@de*
+* GraphDB: `"fxxxx"@en`
+
+Such inconsistencies can lead to unexpected results. To avoid surprises, always verify how your target triplestore handles typed or tagged literals—or fall back to simpler alternatives like `STR()` when in doubt.
+
+### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
+
+```sql
+sparql.bound(value rdfnode) → boolean
+```
+
+Returns `true` if the RDF node is *bound* to a value, and `false` otherwise. Values like `NaN` or `INF` are considered bound.
+
+Example:
+```sql
+SELECT sparql.bound(NULL), sparql.bound('"NaN"^^xsd:double');
+ bound | bound 
+-------+-------
+ f     | t
+(1 row)
+```
+
+### [COALESCE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#coalesce)
+
+```sql
+sparql.coalesce(value1 rdfnode, value2 rdfnode, ... ) → rdfnode
+```
+
+Returns the **first bound** RDF node from the argument list. If none of the inputs are bound (i.e., all are `NULL`), returns `NULL`. The behavior mimics the SPARQL 1.1 `COALESCE()` function, valuating arguments from left to right. This is useful when working with optional data where fallback values are needed.
+
+Example:
+
+```sql
+ SELECT sparql.coalesce(NULL, NULL, '"foo"^^xsd:string');
+                     coalesce                     
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+```
+
+### [SAMETERM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sameterm)
+
+```sql
+sparql.sameTerm(a rdfnode, b rdfnode) → boolean
+```
+
+Returns `true` if the two RDF nodes are exactly the same term, and `false` otherwise. This comparison is strict and includes datatype, language tag, and node type (e.g., literal vs IRI). The behavior follows SPARQL 1.1's [sameTerm functional form](https://www.w3.org/TR/sparql11-query/#func-sameTerm), which does not allow coercion or implicit casting — unlike `=` or `IS NOT DISTINCT FROM`.
+
+Examples:
+
+```sql
+SELECT sparql.sameterm('"42"^^xsd:int', '"42"^^xsd:long');
+ sameterm 
+----------
+ f
+(1 row)
+
+SELECT sparql.sameterm('"foo"@en', '"foo"@en');
+ sameterm 
+----------
+ t
+(1 row)
+
+SELECT sparql.sameterm('"foo"@en', '"foo"@fr');
+ sameterm 
+----------
+ f
+(1 row)
+```
+
+> [!NOTE]  
+> Use `sameterm` when you need exact RDF identity, including type and language tag. For value-based comparison with implicit coercion, use `=` instead.
+
+## [isIRI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isiri)
+
+```sql
+sparql.isiri(value rdfnode) → boolean
+```
+Returns `true` if the given RDF node is an IRI, and `false` otherwise. This function implements the SPARQL 1.1 [isIRI()](https://www.w3.org/TR/sparql11-query/#func-isIRI) test, which checks whether the term is an IRI—not a literal, blank node, or unbound value.
+
+Examples:
+
+```sql
+SELECT sparql.isIRI('<https://foo.bar/>'); 
+ isiri 
+-------
+ t
+(1 row)
+
+SELECT sparql.isIRI('"foo"^^xsd:string');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT sparql.isIRI('_:bnode42');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT sparql.isIRI(NULL);
+ isiri 
+-------
+ f
+(1 row)
+```
+
+> [!NOTE]  
+> isURI is an alternate spelling for the isIRI function.
+
+## [isBLANK](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isblank)
+```sql
+sparql.isblank(value rdfnode) → boolean
+```
+
+Returns `true` if the given RDF node is a blank node, and `false` otherwise. This function implements the SPARQL 1.1 [isBlank()](https://www.w3.org/TR/sparql11-query/#func-isBlank) function, which is used to detect anonymous resources (blank nodes) in RDF graphs.
+
+```sql
+SELECT sparql.isblank('_:bnode42');
+ isblank 
+---------
+ t
+(1 row)
+
+SELECT sparql.isblank('"foo"^^xsd:string');
+ isblank 
+---------
+ f
+(1 row)
+```
+
+## [isLITERAL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isliteral)
+
+```sql
+sparql.isliteral(value rdfnode) → boolean
+```
+
+Returns `true` if the given RDF node is a literal, and `false` otherwise. This function implements the SPARQL 1.1 [isLiteral()](https://www.w3.org/TR/sparql11-query/#func-isLiteral) test. It returns `false` for IRIs, blank nodes, and unbound (`NULL`) values.
+
+Examples:
+
+```sql
+postgres=# SELECT sparql.isliteral('"foo"^^xsd:string');
+ isliteral 
+-----------
+ t
+(1 row)
+
+postgres=# SELECT sparql.isliteral('"foo"^^@es');
+ isliteral 
+-----------
+ t
+(1 row)
+
+postgres=# SELECT sparql.isliteral('_:bnode42');
+ isliteral 
+-----------
+ f
+(1 row)
+
+postgres=# SELECT sparql.isliteral('<http://foo.bar>');
+ isliteral 
+-----------
+ f
+(1 row)
+
+postgres=# SELECT sparql.isliteral(NULL);
+ isliteral 
+-----------
+ f
+(1 row)
+```
+
+## [isNUMERIC](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isnumeric)
+
+```sql
+sparql.isnumeric(term rdfnode) → boolean
+```
+
+Returns `true` if the RDF node is a literal with a numeric datatype (such as `xsd:int`, `xsd:decimal`, etc.), and `false` otherwise. See the SPARQL 1.1 section on [Operand Data Types](https://www.w3.org/TR/sparql11-query/#operandDataTypes) for more details.
+
+Examples:
+
+```sql
+SELECT sparql.isnumeric('"42"^^xsd:integer');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT sparql.isnumeric('"42.73"^^xsd:decimal');
+ isnumeric 
+-----------
+ t
+(1 row)
+
+SELECT sparql.isnumeric('"42.73"^^xsd:string');
+ isnumeric 
+-----------
+ f
+(1 row)
+
+SELECT sparql.isnumeric(NULL);
+ isnumeric 
+-----------
+ f
+(1 row)
+```
+
+## [STR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str)
+
+```sql
+sparql.str(value rdfnode) → rdfnode
+```
+Returns the **lexical form** (the string content) of the RDF node, as described at This implements the SPARQL 1.1 [str()](https://www.w3.org/TR/sparql11-query/#func-str) specification. For literals, this means stripping away the language tag or datatype. For IRIs, it returns the IRI string. For blank nodes, returns their label.
+
+Examples:
+
+```sql
+SELECT sparql.str('"foo"@en');
+  str  
+-------
+ "foo"
+(1 row)
+
+SELECT sparql.str('"foo"^^xsd:string');
+  str  
+-------
+ "foo"
+(1 row)
+
+SELECT sparql.str('<http://foo.bar>');
+       str        
+------------------
+ "http://foo.bar"
+(1 row)
+```
+
+## [LANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lang)
+
+```sql
+sparql.str(value rdfnode) → rdfnode
+```
+
+Returns the language tag of the literal, or an empty string if none exists. Implements the SPARQL 1.1 [LANG()](https://www.w3.org/TR/sparql11-query/#func-lang) function. All other RDF nodes — including IRIs, blank nodes, and typed literals — return an empty string.
+
+```sql
+SELECT sparql.lang('"foo"@es');
+ lang 
+------
+ es
+(1 row)
+
+SELECT sparql.lang('"foo"');
+ lang 
+------
+ 
+(1 row)
+
+SELECT sparql.lang('"foo"^^xsd:string');
+ lang 
+------
+ 
+(1 row)
+```
+
+## [DATATYPE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#datatype)
+
+```sql
+sparql.datatype(value rdfnode) → rdfnode
+```
+
+Returns the **datatype IRI** of a literal RDF node.
+
+* For typed literals, returns the declared datatype (e.g., `xsd:int`, `xsd:dateTime`, etc.).
+* For plain (untyped) literals, returns `xsd:string`.
+* For language-tagged literals, returns `rdf:langString`.
+* For non-literals (IRIs, blank nodes), returns `NULL`.
+
+This behavior complies with both SPARQL 1.1 and RDF 1.1.
+
+Examples:
+
+```sql
+SELECT sparql.datatype('"42"^^xsd:int');
+                datatype                
+----------------------------------------
+ <http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT sparql.datatype('"foo"');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.datatype('"foo"@de');
+                        datatype                         
+---------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+(1 row)
+
+SELECT sparql.datatype('<http://foo.bar>');
+ datatype 
+----------
+ NULL
+(1 row)
+
+SELECT sparql.datatype('_:bnode42');
+ datatype 
+----------
+ NULL
+(1 row)
+```
+
+> [!NOTE]  
+> Keep in mind that some triplestores (like Virtuoso) return `xsd:anyURI` for IRIs, but this behaviour is not defined in SPARQL 1.1 and is not standard-compliant.
+
+## [IRI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#iri)
+
+```sql
+sparql.iri(value rdfnode) → rdfnode
+```
+
+Constructs an RDF IRI from a string. Implements the SPARQL 1.1 [IRI()](https://www.w3.org/TR/sparql11-query/#func-iri) function. If the input is not a valid IRI, the function still wraps it as-is into an RDF IRI. No validation is performed.
+
+Examples:
+
+```sql
+SELECT sparql.iri('http://foo.bar');
+       iri        
+------------------
+ <http://foo.bar>
+(1 row)
+```
+
+## [BNODE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bnode)
+
+```sql
+sparql.bnode(value rdfnode DEFAULT NULL) → rdfnode
+```
+Constructs a blank node. If a string is provided, it's used as the label. If called with no argument, generates an automatically scoped blank node identifier. Implements the SPARQL 1.1 [BNODE()](https://www.w3.org/TR/sparql11-query/#func-bnode) function.
+
+Examples:
+
+```sql
+SELECT sparql.bnode('foo');
+ bnode 
+-------
+ _:foo
+(1 row)
+
+SELECT sparql.bnode('"foo"^^xsd:string');
+ bnode 
+-------
+ _:foo
+(1 row)
+
+SELECT sparql.bnode();
+       bnode        
+--------------------
+ _:b800704569809508
+(1 row)
+```
+
+## [STRDT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strdt)
+
+```sql
+sparql.strdt(lexical rdfnode, datatype_iri rdfnode) → rdfnode
+```
+
+Constructs a typed literal from a lexical string and a datatype IRI. Implements the SPARQL 1.1 [STRDT()](https://www.w3.org/TR/sparql11-query/#func-strdt) function. This function can also be used to change the datatype of an existing literal by extracting its lexical form (e.g., with `sparql.str()`) and applying a new datatype.
+
+Examples:
+
+```sql
+SELECT sparql.strdt('42','xsd:int');
+                    strdt                     
+----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT sparql.strdt('2025-01-01', 'http://www.w3.org/2001/XMLSchema#date');
+                         strdt                         
+-------------------------------------------------------
+ "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT sparql.strdt('"2025-01-01"^^xsd:string', 'http://www.w3.org/2001/XMLSchema#date');
+                         strdt                         
+-------------------------------------------------------
+ "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+```
+
+## [STLANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlang)
+
+```sql
+sparql.strlang(lexical rdfnode, lang_tag rdfnode) → rdfnode
+```
+Constructs a language-tagged literal from a string and a language code. Implements the SPARQL 1.1 [STRLANG()](https://www.w3.org/TR/sparql11-query/#func-strlang) function. You can also use this function to re-tag an existing literal by extracting its lexical form and assigning a new language tag.
+
+Examples:
+
+```sql
+SELECT sparql.strlang('foo','pt');
+ strlang  
+----------
+ "foo"@pt
+(1 row)
+
+SELECT sparql.strlang('"foo"@pt','es');
+ strlang  
+----------
+ "foo"@es
+(1 row)
+```
+
+## [UUID](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#uuid)
+
+```sql
+sparql.uuid() → rdfnode
+```
+
+Generates a fresh, globally unique IRI. Implements the SPARQL 1.1 [UUID()](https://www.w3.org/TR/sparql11-query/#func-uuid) function.
+
+Example:
+
+```sql
+SELECT sparql.uuid();
+                      uuid                       
+-------------------------------------------------
+ <urn:uuid:1beda602-2e35-4d13-a907-071454d2fce7>
+(1 row)
+```
+
+## [STRUUID](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#struuid)
+
+```sql
+sparql.struuid() → rdfnode
+```
+
+Generates a fresh, random UUID as a plain literal string. Implements the SPARQL 1.1 [STRUUID()](https://www.w3.org/TR/sparql11-query/#func-struuid) function. Each call returns a unique string literal containing the UUID. This is useful when you want to store or display the UUID as text rather than an IRI.
+
+Example:
+
+```sql
+SELECT sparql.struuid();
+                struuid                 
+----------------------------------------
+ "25a55e10-f789-4aab-bb7f-05f2ba495fd2"
+(1 row)
+```
+
+## [STRLEN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlen)
+
+```sql
+sparql.strlen(value rdfnode) → int
+```
+
+Returns the number of characters in the **lexical form** of the RDF node. Implements the SPARQL 1.1 [STRLEN()](https://www.w3.org/TR/sparql11-query/#func-strlen) function.
+
+Examples:
+
+```sql
+SELECT sparql.strlen('"foo"');
+ strlen 
+--------
+      3
+(1 row)
+
+SELECT sparql.strlen('"foo"@de');
+ strlen 
+--------
+      3
+(1 row)
+
+SELECT sparql.strlen('"foo"^^xsd:string');
+ strlen 
+--------
+      3
+(1 row)
+
+SELECT sparql.strlen('"42"^^xsd:int');
+ strlen 
+--------
+      2
+(1 row)
+```
+
+## [SUBSTR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#substr)
+
+```sql
+sparql.substr(value rdfnode, start int, length int DEFAULT NULL) → rdfnode
+```
+
+Extracts a substring from the lexical form of the RDF node. Implements the SPARQL 1.1 [SUBSTR()](https://www.w3.org/TR/sparql11-query/#func-substr) function.
+
+* The start index is 1-based.
+* If length is omitted, returns everything to the end of the string.
+* returns `NULL` if any of the arguments is `NULL`
+
+Examples:
+
+```sql
+SELECT sparql.substr('"foobar"', 1, 3);
+ substr 
+--------
+ "foo"
+(1 row)
+
+postgres=# SELECT sparql.substr('"foobar"', 4);
+ substr 
+--------
+ "bar"
+(1 row)
+```
+
+## [UCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ucase)
+
+```sql
+sparql.ucase(value rdfnode) → rdfnode
+```
+
+Converts the **lexical form** of the literal to uppercase. Implements the SPARQL 1.1 [UCASE()](https://www.w3.org/TR/sparql11-query/#func-ucase) function.
+
+Examples:
+
+```sql
+SELECT sparql.ucase('"foo"');
+ ucase 
+-------
+ "FOO"
+(1 row)
+
+SELECT sparql.ucase('"foo"@en');
+  ucase   
+----------
+ "FOO"@en
+(1 row)
+
+SELECT sparql.ucase('"foo"^^xsd:string');
+                      ucase                       
+--------------------------------------------------
+ "FOO"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+```
+
+## [LCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lcase)
+
+```sql
+sparql.lcase(value rdfnode) → rdfnode
+```
+
+Converts the **lexical form** of the literal to lowercase. Implements the SPARQL 1.1 [LCASE()](https://www.w3.org/TR/sparql11-query/#func-lcase) function.
+
+Examples:
+
+```sql
+SELECT sparql.lcase('"FOO"');
+ lcase 
+-------
+ "foo"
+(1 row)
+
+SELECT sparql.lcase('"FOO"@en');
+  lcase   
+----------
+ "foo"@en
+(1 row)
+
+SELECT sparql.lcase('"FOO"^^xsd:string');
+                      lcase                       
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+```
+
+## [STRSTARTS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strstarts)
+
+```sql
+sparql.strstarts(value rdfnode, prefix rdfnode) → boolean
+```
+
+Returns `true` if the **lexical form** of the RDF node starts with the given string. Implements the SPARQL 1.1 [STRSTARTS()](https://www.w3.org/TR/sparql11-query/#func-strstarts) function.
+
+Examples:
+
+```sql
+SELECT sparql.strstarts('"foobar"^^xsd:string', '"foo"^^xsd:string');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT sparql.strstarts('"foobar"@en', '"foo"^^xsd:string');
+ strstarts 
+-----------
+ t
+(1 row)
+```
+
+## [STRENDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strends)
+
+```sql
+sparql.strends(value rdfnode, suffix rdfnode) → boolean
+```
+
+Returns `true` if the **lexical form** of the RDF node ends with the given string. Implements the SPARQL 1.1 [STRENDS() ](https://www.w3.org/TR/sparql11-query/#func-strends)function.
+
+Examples:
+
+```sql
+SELECT sparql.strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
+ strends 
+---------
+ t
+(1 row)
+
+postgres=# SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
+ strends 
+---------
+ t
+(1 row)
+```
+
+## [CONTAINS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#contains)
+
+```sql
+sparql.contains(value rdfnode, substring rdfnode) → boolean
+```
+
+Returns `true` if the **lexical form** of the RDF node contains the given substring. Implements the SPARQL 1.1 [CONTAINS()](https://www.w3.org/TR/sparql11-query/#func-contains) function.
+
+Examples:
+
+```sql
+SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"');
+ contains 
+----------
+ t
+(1 row)
+
+SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"@en');
+ contains 
+----------
+ t
+(1 row)
+```
+
+## [STRBEFORE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strbefore)
+
+```sql
+sparql.strbefore(value rdfnode, delimiter rdfnode) → rdfnode
+```
+
+Returns the substring before the first occurrence of the delimiter in the **lexical form**. If the delimiter is not found, returns an empty string. Implements the SPARQL 1.1 [STRBEFORE()](https://www.w3.org/TR/sparql11-query/#func-strbefore) function.
+
+Examples:
+
+```sql
+SELECT sparql.strbefore('"foobar"^^xsd:string','"bar"^^xsd:string');
+                    strbefore                     
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.strbefore('"foobar"@en','"bar"^^xsd:string');
+ strbefore 
+-----------
+ "foo"@en
+(1 row)
+
+SELECT sparql.strbefore('"foobar"','"bar"^^xsd:string');
+ strbefore 
+-----------
+ "foo"
+(1 row)
+
+SELECT sparql.strbefore('"foobar"','"bar"');
+ strbefore 
+-----------
+ "foo"
+(1 row)
+```
+
+## [STRAFTER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strafter)
+
+```sql
+sparql.strafter(value rdfnode, delimiter rdfnode) → rdfnode
+```
+
+Returns the substring after the first occurrence of the delimiter in the **lexical form**. If the delimiter is not found, returns an empty string. Implements the SPARQL 1.1 [STRAFTER()](https://www.w3.org/TR/sparql11-query/#func-strafter) function.
+
+Examples:
+
+```sql
+SELECT sparql.strafter('"foobar"^^xsd:string','"foo"^^xsd:string');
+                     strafter                     
+--------------------------------------------------
+ "bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.strafter('"foobar"@en','"foo"^^xsd:string');
+ strafter 
+----------
+ "bar"@en
+(1 row)
+
+SELECT sparql.strafter('"foobar"','"foo"^^xsd:string');
+ strafter 
+----------
+ "bar"
+(1 row)
+
+SELECT sparql.strafter('"foobar"','"foo"');
+ strafter 
+----------
+ "bar"
+(1 row)
+```
+
+## [ENCODE_FOR_URI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#encode_for_uri)
+
+```sql
+sparql.encode_for_uri(value rdfnode) → rdfnode
+```
+
+Returns a URI-safe version of the lexical form by percent-encoding special characters. Implements the SPARQL 1.1 [ENCODE_FOR_URI()](https://www.w3.org/TR/sparql11-query/#func-encode) function.
+
+```sql
+SELECT sparql.encode_for_uri('"foo&bar!"');
+ encode_for_uri 
+----------------
+ "foo%26bar%21"
+(1 row)
+```
+
+## [CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#concat)
+
+```sql
+sparql.concat(value1 rdfnode, value2 rdfnode, ...) → rdfnode
+```
+
+Concatenates all input strings into one. Implements the SPARQL 1.1 [CONCAT()](https://www.w3.org/TR/sparql11-query/#func-concat) function.
+
+
+```sql
+SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
+    concat    
+--------------
+ "foo&bar"@en
+(1 row)
+
+postgres=# SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
+                        concat                        
+------------------------------------------------------
+ "foo&bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+postgres=# SELECT sparql.concat('"foo"','"&"', '"bar"');
+  concat   
+-----------
+ "foo&bar"
+(1 row)
+```
+
+## [LANGMATCHES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#langmatches)
+
+```sql
+sparql.langmatches(lang_tag rdfnode, pattern rdfnode) → boolean
+```
+
+Checks whether a language tag matches a language pattern (e.g., `en` matches `en-US`).
+Implements the SPARQL 1.1 [LANGMATCHES()](https://www.w3.org/TR/sparql11-query/#func-langMatches) function.
+
+Example:
+
+```sql
+SELECT sparql.langmatches('en', 'en');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('en-US', 'en');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('en', 'de');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT sparql.langmatches('en', '*');
+ langmatches 
+-------------
+ t
+(1 row)
+```
+
+## [REGEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#regex)
+
+```sql
+sparql.regex(value rdfnode, pattern rdfnode, flags rdfnode DEFAULT '') → boolean
+```
+
+Checks if the lexical form matches the given regular expression. Implements the SPARQL 1.1 [REGEX()](https://www.w3.org/TR/sparql11-query/#func-regex) function.
+
+* Supported flags: `i` (case-insensitive)
+
+Example:
+
+```sql
+SELECT sparql.regex('"Hello World"', '^hello', 'i');
+ regex 
+-------
+ t
+(1 row)
+```
+
+## [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
+
+```sql
+sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode, flags rdfnode DEFAULT '') → rdfnode
+
+```
+
+Replaces parts of the **lexical form** using a regular expression. Implements the SPARQL 1.1 [REPLACE()](https://www.w3.org/TR/sparql11-query/#func-replace) function.
+
+* Supports `i`, `m`, and `g` flags.
+
+```sql
+SELECT sparql.replace('"foo bar foo"', 'foo', 'baz', 'g');
+    replace    
+---------------
+ "baz bar baz"
+(1 row)
+```
+
+## [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)
+
+```sql
+sparql.abs(value rdfnode) → numeric
+```
+
+Returns the absolute value of a numeric literal. Implements the SPARQL 1.1 [ABS()](https://www.w3.org/TR/sparql11-query/#func-abs) function.
+
+Examples:
+
+```sql
+SELECT sparql.abs('"-42"^^xsd:int');
+                     abs                      
+----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT sparql.abs('"3.14"^^xsd:decimal');
+                        abs                         
+----------------------------------------------------
+ "3.14"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+```
+
+## [ROUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#round)
+
+```sql
+sparql.round(value rdfnode) → numeric
+```
+
+Rounds the numeric literal to the nearest integer. Implements the SPARQL 1.1 [ROUND()](https://www.w3.org/TR/sparql11-query/#func-round) function.
+
+Examples:
+
+```sql
+SELECT sparql.round('"2.5"^^xsd:decimal');
+                      round                      
+-------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.round('"-2.5"^^xsd:float');
+                     round                      
+------------------------------------------------
+ "-2"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+## [CEIL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ceil)
+
+```sql
+sparql.ceil(value rdfnode) → numeric
+```
+Returns the smallest integer greater than or equal to the numeric value. Implements the SPARQL 1.1 [CEIL()](https://www.w3.org/TR/sparql11-query/#func-ceil) function.
+
+Examples:
+
+```sql
+SELECT sparql.ceil('"3.14"^^xsd:decimal');
+                      ceil                       
+-------------------------------------------------
+ "4"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.ceil('"-2.1"^^xsd:float');
+                      ceil                      
+------------------------------------------------
+ "-2"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+## [FLOOR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#floor)
+
+```sql
+sparql.floor(value rdfnode) → numeric
+```
+
+Returns the greatest integer less than or equal to the numeric value. Implements the SPARQL 1.1 [FLOOR()](https://www.w3.org/TR/sparql11-query/#func-floor) function.
+
+Examples:
+
+```sql
+SELECT sparql.floor('"3.9"^^xsd:decimal');
+                      floor                      
+-------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.floor('"-2.1"^^xsd:float');
+                     floor                      
+------------------------------------------------
+ "-3"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+## [RAND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rand)
+
+```sql
+sparql.rand() → rdfnode
+```
+
+Returns a random floating-point number between 0.0 and 1.0. Implements the SPARQL 1.1 [RAND()](https://www.w3.org/TR/sparql11-query/#idp2130040) function.
+
+Examples:
+
+```sql
+SELECT sparql.rand();
+                               rand                               
+------------------------------------------------------------------
+ "0.14079881274421657"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+```
+
+## [YEAR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#year)
+
+```sql
+sparql.year(value rdfnode) → int
+```
+
+Returns the year component of an xsd:dateTime or xsd:date literal. Implements the SPARQL 1.1 [YEAR()](https://www.w3.org/TR/sparql11-query/#func-year) function.
+
+Example:
+
+```sql
+SELECT sparql.year('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ year 
+------
+ 2025
+```
+
+## [MONTH](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#month)
+
+```sql
+sparql.month(value rdfnode) → int
+```
+Returns the month component (1–12) from a datetime or date. Implements the SPARQL 1.1 [MONTH()](https://www.w3.org/TR/sparql11-query/#func-month) function.
+
+Example:
+
+```sql
+SELECT sparql.month('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ month 
+-------
+     5
+(1 row)
+```
+
+## [DAY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#day)
+
+```sql
+sparql.day(value rdfnode) → int
+```
+
+Returns the day of the month from a date or datetime literal. Implements the SPARQL 1.1 [DAY()](https://www.w3.org/TR/sparql11-query/#func-day) function.
+
+Example:
+
+```sql
+SELECT sparql.day('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ day 
+-----
+  17
+(1 row)
+```
+
+## [HOURS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hours)
+
+```sql
+sparql.hours(value rdfnode) → int
+```
+
+Extracts the hour (0–23) from a datetime literal. Implements the SPARQL 1.1 [HOURS()](https://www.w3.org/TR/sparql11-query/#func-hours) function.
+
+Example:
+
+```sql
+SELECT sparql.hours('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ hours 
+-------
+    14
+(1 row)
+```
+
+## [MINUTES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#minutes)
+
+```sql
+sparql.minutes(value rdfnode) → int
+```
+
+Returns the minute component (0–59) of a datetime literal. Implements the SPARQL 1.1 [MINUTES()](https://www.w3.org/TR/sparql11-query/#func-minutes) function.
+
+Example: 
+
+```sql
+SELECT sparql.minutes('"2025-05-17T14:42:37Z"^^xsd:dateTime');
+ minutes 
+---------
+      42
+(1 row)
+```
+
+## [SECONDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#seconds)
+
+```sql
+sparql.seconds(value rdfnode) → int
+```
+
+Returns the seconds (including fractions) from a datetime literal. Implements the SPARQL 1.1 [SECONDS()](https://www.w3.org/TR/sparql11-query/#func-seconds) function.
+
+Example:
+
+```sql
+SELECT sparql.seconds('"2025-05-17T14:42:37Z"^^xsd:dateTime');
+ seconds 
+---------
+      37
+(1 row)
+```
+
+## [TIMEZONE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#timezone)
+
+```sql
+sparql.timezone(datetime rdfnode) → rdfnode
+```
+
+Returns the timezone offset as a duration literal (e.g., "PT2H"), or NULL if none. Implements the SPARQL 1.1 [TIMEZONE()](https://www.w3.org/TR/sparql11-query/#func-timezone) function.
+
+Example:
+
+```sql
+SELECT sparql.timezone('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
+                          timezone                          
+------------------------------------------------------------
+ "PT2H"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+```
+
+## [TZ](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#tz)
+
+```sql
+sparql.tz(datetime rdfnode) → rdfnode
+```
+
+Returns the timezone offset as a string (e.g., `+02:00` or `Z`). Implements the SPARQL 1.1 [TZ()](https://www.w3.org/TR/sparql11-query/#func-tz) function.
+
+Examples:
+
+```sql
+SELECT sparql.tz('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
+    tz    
+----------
+ "+02:00"
+(1 row)
+
+SELECT sparql.tz('"2025-05-17T08:00:00Z"^^xsd:dateTime');
+ tz  
+-----
+ "Z"
+(1 row)
+```
+
+## [MD5](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#md5)
+
+```sql
+sparql.md5(value rdfnode) → rdfnode
+```
+
+Returns the MD5 hash of the lexical form of the input RDF literal, encoded as a lowercase hexadecimal string. Implements the SPARQL 1.1 [MD5()](https://www.w3.org/TR/sparql11-query/#func-md5) function. The result is returned as a plain literal (xsd:string).
+
+Examples:
+
+```sql
+SELECT sparql.md5('"foo"');
+                md5                 
+------------------------------------
+ "acbd18db4cc2f85cedef654fccc4a4d8"
+(1 row)
+
+SELECT sparql.md5('42'::rdfnode);
+                md5                 
+------------------------------------
+ "a1d0c6e83f027327d8461063f4ac58a6"
+(1 row)
+```
+
+## [LEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex)
+
+```sql
+sparql.lex(value rdfnode) → rdfnode
+```
+
+Extracts the lexical value of a given `rdfnode`. This isa convenience function that is not part of the SPARQL 1.1 standard.
+
+Examples:
+
+```sql
+SELECT sparql.lex('"foo"^^xsd:string');
+ lex 
+-----
+ foo
+(1 row)
+
+SELECT sparql.lex('"foo"@es');
+ lex 
+-----
+ foo
+(1 row)
+```
+
+
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
 
 A *pushdown* is the ability to translate SQL queries so that operations—such as sorting, formatting, and filtering—are performed directly in the data source rather than in PostgreSQL. This feature can significantly reduce the number of records retrieved from the data source.  
 
 For example, if a SQL `LIMIT` clause is not pushed down, the target system will perform a full scan of the data source, prepare the entire result set for transfer, send it to PostgreSQL over the network, and only then will PostgreSQL discard the unnecessary data. Depending on the total number of records, this process can be extremely inefficient.  
 
-The `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, due to fundamental differences between the two languages, this is not always straightforward. To optimize performance, it is often best to keep SQL queries involving foreign tables as simple as possible or to use only the features, data types, and operators described in this section.  
+In a nutshell, the `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, due to fundamental differences between the two languages, this is not always straightforward. As a rule of thumb, it is often best to keep SQL queries involving foreign tables as simple as possible. The `rdf_fdw` supports pushdown of most [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs) and several PostgreSQL instructions, such as `LIMIT` and `IN`/`NOT IN`.
 
-### LIMIT
+### [LIMIT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#limit)
 
 `LIMIT` clauses are pushed down only if the SQL query does not contain aggregates and when all conditions in the `WHERE` clause can be translated to SPARQL.
  
@@ -471,9 +1801,45 @@ The `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, 
 | `FETCH FIRST x ROWS` | `LIMIT x` |
 | `FETCH FIRST ROW ONLY` | `LIMIT 1` |
 
-**OFFSET** pushdown is **not** supported, meaning that OFFSET filters will be applied locally in PostgreSQL. If you need to retrieve records in batches, consider using  [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table).
+**OFFSET** pushdown is **not** supported, meaning that OFFSET filters will be applied locally in PostgreSQL.
 
-### ORDER BY
+Example:
+
+```sql
+SELECT s, p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  sparql.langmatches(sparql.lang(o), 'es')
+FETCH FIRST 5 ROWS ONLY;
+
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+}
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+                    s                     |                      p                       |             o             
+------------------------------------------+----------------------------------------------+---------------------------
+ <http://www.wikidata.org/entity/Q850>    | <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL"@es
+ <http://www.wikidata.org/entity/Q60463>  | <http://www.w3.org/2000/01/rdf-schema#label> | "Ingres"@es
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.wikidata.org/entity/Q215819> | <http://www.w3.org/2000/01/rdf-schema#label> | "Microsoft SQL Server"@es
+ <http://www.wikidata.org/entity/Q80426>  | <http://www.w3.org/2000/01/rdf-schema#label> | "Vectorwise"@es
+(5 rows)
+```
+
+* `FETCH FIRST 5 ROWS ONLY` was pushed down as `LIMIT 5` in the SPARQL query.
+
+### [ORDER BY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#order-by)
 
 `ORDER BY` can be pushed down if the data types can be translated into SPARQL.
 
@@ -482,155 +1848,377 @@ The `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, 
 | `ORDER BY x ASC`, `ORDER BY x` | `ORDER BY ASC(x)`|
 | `ORDER BY x DESC` |`ORDER BY DESC(x)` |
 
+Example:
 
-### DISTINCT
+```sql
+SELECT s, p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  sparql.langmatches(sparql.lang(o), 'es')
+ORDER BY s ASC, o DESC
+FETCH FIRST 5 ROWS ONLY;
+
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+}
+ORDER BY  ASC (?s)  DESC (?o)
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+                     s                      |                      p                       |            o             
+--------------------------------------------+----------------------------------------------+--------------------------
+ <http://www.wikidata.org/entity/Q1012765>  | <http://www.w3.org/2000/01/rdf-schema#label> | "SQL Express Edition"@es
+ <http://www.wikidata.org/entity/Q1050734>  | <http://www.w3.org/2000/01/rdf-schema#label> | "Informix"@es
+ <http://www.wikidata.org/entity/Q12621393> | <http://www.w3.org/2000/01/rdf-schema#label> | "Tibero"@es
+ <http://www.wikidata.org/entity/Q1493683>  | <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL Clúster"@es
+ <http://www.wikidata.org/entity/Q15275385> | <http://www.w3.org/2000/01/rdf-schema#label> | "SingleStore"@es
+(5 rows)
+```
+
+* `ORDER BY s ASC, o DESC` was pushed down as SPARQL `ORDER BY  ASC (?s)  DESC (?o)`
+### [DISTINCT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#distinct)
 
 `DISTINCT` is pushed down to the SPARQL `SELECT` statement just as in SQL. However, if the configured SPARQL query already includes a `DISTINCT` or `REDUCED` modifier, the SQL `DISTINCT` won't be pushed down. Since there is no SPARQL equivalent for `DISTINCT ON`, this feature cannot be pushed down.  
 
-### WHERE
+Example:
 
-The `rdf_fdw` attempts to translate RDF literals to the corresponding data type of the mapped column, which can be challenging due to the flexible nature of RDF literals. Since RDF literals often lack explicit data type declarations, they can represent a wide range of values - for instance, `"wwu"` and `"wwu"^^xsd:string` are considered equivalent. Additionally, RDF triplestores usually don't validate the contents of literals, whereas PostgreSQL performs validation at query time. As a result, queries will fail if a retrieved literal can't be translated to the declared column type. When translating SQL `WHERE` conditions to SPARQL `FILTER` expressions, the rdf_fdw supports the column data types and operators outlined below.
+```sql
+SELECT DISTINCT p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  sparql.langmatches(sparql.lang(o), 'de');
+
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+SELECT DISTINCT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+}
+ORDER BY ASC (?p)  ASC (?o)
+
+INFO:  SPARQL returned 43 records.
+
+                      p                       |                 o                 
+----------------------------------------------+-----------------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "4th Dimension"@de
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Amazon Redshift"@de
+ <http://www.w3.org/2000/01/rdf-schema#label> | "ArcSDE"@de
+...
+ <http://www.w3.org/2000/01/rdf-schema#label> | "dBASE Mac"@de
+(43 rows)
+```
+
+* `DISTINCT` was pushed down to SPARQL.
+
+### [WHERE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#where)
+
+The `rdf_fdw` extension supports pushdown of many SQL expressions in the `WHERE` clause. When applicable, these expressions are translated into SPARQL `FILTER` clauses, allowing filtering to occur directly at the RDF data source. 
+
+The following expressions in the `WHERE` clause are eligible for pushdown:
+
+* Comparisons involving PostgreSQL data types (e.g., `integer`, `text`, `boolean`) or `rdfnode`, when used with the supported operators:
+
+  **Supported Data Types and Operators**
+
+  | Data type                                                  | Operators                             |
+  |------------------------------------------------------------|---------------------------------------|
+  | `rdfnode`                                                  | `=`, `!=`,`<>`, `>`, `>=`, `<`, `<=`  |
+  | `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`, `~~`, `!~~`, `~~*`,`!~~*`                       |
+  | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
+  | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
+  | `boolean`                                                  | `IS`, `IS NOT`                        |
+
+* `IN`/`NOT IN` and `ANY` constructs with constant lists.
+  
+  SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation), as long as the list has the supported data types.
+
+* Nearly all [SPARQL functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-functions), such as `LANG()`, `DATATYPE()`, `STR()`, `isBLANK()`, `isIRI()`, etc.
+
+  Due to their volatile nature, the SPARQL functions `RAND()` and `NOW()` cannot be pushed down, as PostgreSQL wouldn't be able to match the same return value locally and would then filter the records out. All other functions will be translated to `FILTER` expressions.
+
+`WHERE` conditions will **NOT** be pushed down supported if:
+
+* The option `enable_pushdown` is set to `false`.
+* The defined SPARQL query contains a `GROUP BY` clause.
+* The defined SPARQL query contains the solution modifiers: `OFFSET`, `ORDER BY`, `LIMIT`, `DISTINCT`, or `REDUCED`.
+* The definied SPARQL query contains federated queries or subqueries.
+* The `WHERE` condition contains an unsupported data type or operator.
+* The `WHERE` condition contains `OR` logical operators.
 
 
-#### Supported Data Types and Operators
+#### Pushdown Examples
 
-| Data type                                                  | Operators                             |
-|------------------------------------------------------------|---------------------------------------|
-| `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`, `~~`, `!~~`, `~~*`, `!~~*`                       |
-| `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
-| `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
-| `boolean`                                                  | `IS`, `IS NOT`                        |
+For the examples in this section consider this `SERVER` and `FOREIGN TABLE` (Wikidata):
 
-#### IN and ANY constructs
+```SQL
+CREATE SERVER wikidata
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://query.wikidata.org/sparql');
 
-SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation).
+CREATE FOREIGN TABLE rdbms (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 
+    'SELECT * {
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 }'
+);
+```
 
-#### Pattern matching operators LIKE and ILIKE
+1. Pusdown of `WHERE` conditions involving `rdfnode` values and `=` and `!=` operators. All conditions are pushed as `FILTER` expressions.
 
-**Availability**: 1.1.0
+```sql
 
-Expressions using `LIKE` and `ILIKE` - or their equivalent operators `~~` and `~~*` -  are converted to [REGEX](https://www.w3.org/TR/sparql11-query/#func-regex) filters in SPARQL. It is important to notice that pattern matching operations using `LIKE`/`ILIKE` only support the wildcards `%` and `_`, and therefore only these characters will be translated to their `REGEX` equivalents. Any other character that might be potentially used as a wildcard in `REGEX`, such as `^`, `|` or `$`,  will be escaped.
+SELECT s, o FROM rdbms
+WHERE 
+  o = '"PostgreSQL"@es' AND
+  o <> '"Oracle"@es';
 
-#### String Functions
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-The following [string functions](https://www.postgresql.org/docs/current/functions-string.html) are supported by `rdf_fdw` and are pushed down to SPARQL as `FILTER` expressions if whenever possible:
+SELECT ?s ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "PostgreSQL"@es)
+ FILTER(?o != "Oracle"@es)
+}
 
-| SQL | SPARQL| Availability |
-| -- | --- | --- |
-| `LENGTH()` |[`STRLEN()`](https://www.w3.org/TR/sparql11-query/#func-strlen) | 1.2+|
-| `UPPER()` | [`UCASE()`](https://www.w3.org/TR/sparql11-query/#func-ucase)| 1.2+|
-| `LOWER()` |[`LCASE()`](https://www.w3.org/TR/sparql11-query/#func-lcase) | 1.2+|
-| `MD5()` |[`MD5()`](https://www.w3.org/TR/sparql11-query/#func-md5) | 1.2+|
-| `STRBEFORE()` <sup>1</sup>|[`STRBEFORE()`](https://www.w3.org/TR/sparql11-query/#func-strbefore) | 1.4+|
-| `STRAFTER()` <sup>1</sup>|[`STRAFTER()`](https://www.w3.org/TR/sparql11-query/#func-strafter) | 1.4+|
-| `STRSTARTS()` <sup>1,2</sup> |[`STRSTARTS()`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | 1.4+|
-| `STRENDS()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strends) | 1.4+|
-| `STRLANG()` <sup>1</sup>|[`STRENDS()`](https://www.w3.org/TR/sparql11-query/#func-strlang) | 1.4+|
-| `STRDT()` <sup>1</sup>|[`STR()`](https://www.w3.org/TR/sparql11-query/#func-strdt) | 1.4+|
-| `STR()` <sup>1</sup>|[`STR()`](https://www.w3.org/TR/sparql11-query/#func-str) | 1.4+|
-| `DATATYPE()` <sup>1</sup>|[`DATATYPE()`](https://www.w3.org/TR/sparql11-query/#func-datatype) | 1.4+|
-| `CONTAINS()` <sup>1</sup>|[`CONTAINS()`](https://www.w3.org/TR/sparql11-query/#func-contains) | 1.4+|
-| `ENCODE_FOR_URI()` <sup>1</sup>|[`ENCODE_FOR_URI()`](https://www.w3.org/TR/sparql11-query/#func-encode) | 1.4+|
-| `SUBSTRING()` |[`SUBSTR()`](https://www.w3.org/TR/sparql11-query/#func-substr) | 1.2+|
+INFO:  SPARQL returned 1 record.
 
-<sup>1</sup>  These functions are not part of PostgreSQL’s core but are implemented in `rdf_fdw`.
+                    s                     |        o        
+------------------------------------------+-----------------
+ <http://www.wikidata.org/entity/Q192490> | "PostgreSQL"@es
+(1 row)
+```
 
-<sup>2</sup>  The PostgreSQL core function `starts_with(text, text)` provides similar functionality to `STRSTARTS()`.
+2. Pusdown of `WHERE` conditions involving `rdfnode` values and `=`, `>`, and `<` operators. All conditions are pushed as `FILTER` expressions. Note that the `timpestamp` values are automatically cast to the correspondent XSD data type.
 
-> [!IMPORTANT]
-> Unlike SPARQL, which does not return `NULL` in its functions, SQL allows `NULL` values to propagate in expressions. The string functions provided by `rdf_fdw` are **STRICT**, meaning they return `NULL` if any of their arguments are `NULL`. However, when pushed down to SPARQL, they will behave according to SPARQL semantics, which do not involve `NULL` values. Handle NULL values with care and use `COALESCE()` if necessary to avoid unexpected results.
+```sql
+SELECT s, o FROM rdbms
+WHERE 
+  p = '<http://www.wikidata.org/prop/direct/P577>' AND
+  o > '1996-01-01'::timestamp AND o < '1996-12-31'::timestamp;
 
-> [!IMPORTANT]
-> The `ENCODE_FOR_URI()` function *percent-encodes* a given string according to **RFC 3986**, ensuring that it is safe for use in URIs. This function is designed to match the behaviour of the SPARQL 1.1 `ENCODE_FOR_URI()` function and is automatically pushed down when executing SPARQL queries via `rdf_fdw`. However, some triplestore vendors may allow characters like `*` or `@` in unencoded form, which could lead to unexpected behaviour when using this function in the `WHERE` clause. If your target SPARQL endpoint does not strictly enforce **RFC 3986** encoding, consider testing query behaviour to ensure compatibility.
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-#### Mathematical Functions
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.wikidata.org/prop/direct/P577>)
+ FILTER(?o > "1996-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o < "1996-12-31T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+}
 
-The following [mathematical functions](https://www.postgresql.org/docs/current/functions-math.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+INFO:  SPARQL returned 1 record.
 
-| SQL | SPARQL| Availability |
-| -- | --- | --- |
-| `ABS()` | [`ABS()`](https://www.w3.org/TR/sparql11-query/#func-abs)| 1.2+|
-| `CEIL()` |[`CEIL()`](https://www.w3.org/TR/sparql11-query/#func-ceil) | 1.2+|
-| `FLOOR()` |[`FLOOR()`](https://www.w3.org/TR/sparql11-query/#func-floor) | 1.2+|
-| `ROUND()` |[`ROUND()`](https://www.w3.org/TR/sparql11-query/#func-round) | 1.2+|
+                    s                     |                                  o                                  
+------------------------------------------+---------------------------------------------------------------------
+ <http://www.wikidata.org/entity/Q192490> | "1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+```
+3. Pusdown of `WHERE` conditions with `IN` and `ANY` constructs. All conditions are pushed down as `FILTER` expressions.
 
-#### Date Time Functions
+```sql
+SELECT p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  o IN ('"PostgreSQL"@en', '"IBM Db2"@fr', '"MySQL"@es');
 
-The following [date/time functions](https://www.postgresql.org/docs/current/functions-math.html) are pushed down with their correspondent SPARQL `FILTER` expressions:
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-| SQL | SPARQL| Availability |
-| -- | --- | --- |
-| `EXTRACT(YEAR FROM x)`, `DATE_PART('year', x)` | [`YEAR(x)`](https://www.w3.org/TR/sparql11-query/#func-year)|1.2+|
-| `EXTRACT(MONTH FROM x)`, `DATE_PART('month', x)` | [`MONTH(x)`](https://www.w3.org/TR/sparql11-query/#func-month)|1.2+|
-| `EXTRACT(DAY FROM x)`, `DATE_PART('day', x)` | [`DAY(x)`](https://www.w3.org/TR/sparql11-query/#func-day)|1.2+|
-| `EXTRACT(HOUR FROM x)`, `DATE_PART('hour', x)` | [`HOURS(x)`](https://www.w3.org/TR/sparql11-query/#func-hours)|1.2+|
-| `EXTRACT(MINUTE FROM x)`, `DATE_PART('minute', x)` | [`MINUTES(x)`](https://www.w3.org/TR/sparql11-query/#func-minutes)|1.2+|
-| `EXTRACT(SECOND FROM x)`, `DATE_PART('second', x)` | [`SECONDS(x)`](https://www.w3.org/TR/sparql11-query/#func-seconds)|1.2+|
+SELECT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
+}
 
-### Pushdown Examples
+INFO:  SPARQL returned 3 records.
 
- Foreign table columns with the option `literal_type`
+                      p                       |        o        
+----------------------------------------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "IBM Db2"@fr
+(3 rows)
+```
 
-| PostgreSQL Type  | Literal Type   | SQL WHERE Condition                                   | SPARQL FILTER (pushdown)                                                                              |
-|------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| `text`           | `xsd:string`   | `name = 'foo'`                                        |  `FILTER(?s = "foo"^^xsd:string)`                                                              |
-| `text`           | `*`            | `name <> 'foo'`                                       |  `FILTER(STR(?s) != "foo")`                                                                    |
-| `text`           | `*`            | `name ILIKE '%Jon_s'`, ` name ~~* '%Jon_s'`           |  `FILTER(REGEX(?name,".*Jon.s$","i"))`                                                         |
-| `text`           | `*`            | `name LIKE '%foo%'`, `name ~~ '%foo%';`               |  `FILTER(REGEX(?name,".*foo.*"))`                                                              |
-| `text`           | -              | `upper(val) = 'FOO'`                                  |  `FILTER(UCASE(STR(?var)) = "FOO")`                                                            |
-| `text`           | -              | `lower(val) = 'foo'`                                  |  `FILTER(LCASE(STR(?var)) = "foo")`                                                            |
-| `text`           | -              | `md5(name) = 'dd16aacc7f77cec7ed83139f81704577'`      |  `FILTER(MD5(STR(?personname)) = "dd16aacc7f77cec7ed83139f81704577")`                          |
-| `text`           | -              | `substring(name,1,4) = 'foo'`                         |  `FILTER(SUBSTR(STR(?personname), 1, 4) = "foo")`                                              |
-| `text`           | -              | `starts_with(name,'foo')`                             |  `FILTER(STRSTARTS(STR(?partyname), "foo"))`                                                   |
-| `text`           | -              | `length(val) = 42`                                    |  `FILTER(STRLEN(STR(?var)) = 42)`                                                              |
-| `int`            | `xsd:integer`  | `runtime > 42 `                                       |  `FILTER(?runtime > 42)`                                                                       |
-| `int`            | `xsd:integer`  | `runtime > 40+2 `                                     |  `FILTER(?runtime > 42)`                                                                       |
-| `numeric`        | -              | `abs(val) <> 42.73`                                   |  `FILTER(ABS(?var) != 42.73)`                                                                  |
-| `numeric`        | -              | `ceil(val) = 42`                                      |  `FILTER(CEIL(?var) = 42)`                                                                     |
-| `numeric`        | -              | `floor(val) = 42`                                     |  `FILTER(FLOOR(?var) = 42)`                                                                    |
-| `numeric`        | -              | `round(val) = 42`                                     |  `FILTER(ROUND(?var) = 42)`                                                                    |
-| `date`           | `xsd:date`     | `extract(year FROM birthdate) = 1970`                 |  `FILTER(YEAR(?birthdate) = 1970)`                                                             |
-| `date`           | `xsd:date`     | `extract(month FROM birthdate) = 4`                   |  `FILTER(MONTH(?birthdate) = 4)`                                                               |
-| `date`           | `xsd:date`     | `extract(day FROM birthdate) = 8`                     |  `FILTER(DAY(?birthdate) = 8)`                                                                 |
-| `timestamp`      | `xsd:dateTime` | `extract(hour FROM ts) = 14`                          |  `FILTER(HOURS(?ts) = 14)`                                                                     |
-| `timestamp`      | `xsd:dateTime` | `extract(minute FROM ts) = 33`                        |  `FILTER(MINUTES(?ts) = 33)`                                                                   |
-| `timestamp`      | `xsd:dateTime` | `extract(second FROM ts) = 42`                        |  `FILTER(SECONDS(?ts) = 42)`                                                                   |
-| `numeric`        | -              | `val >= 42.73`                                        |  `FILTER(?val >= 42.73)`                                                                       |
-| `date`           | `xsd:date`     | `released BETWEEN '2021-04-01' AND '2021-04-30'`      |  `FILTER(?released >= "2021-04-01"^^xsd:date) FILTER(?released <= "2021-04-30"^^xsd:date)`     |
-| `timestamp`      | `xsd:dateTime` | `modified > '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified > "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |
-| `timestamp`      | `xsd:dateTime` | `modified < '2021-04-06 14:07:00.26'`                 |  `FILTER(?modified < "2021-04-06T14:07:00.260000"^^xsd:dateTime)`                              |
-| `text`           | `xsd:string`   | `country IN ('Germany','France','Portugal')`          |  `FILTER(?country IN ("Germany"^^xsd:string, "France"^^xsd:string, "Portugal"^^xsd:string))`   |
-| `varchar`        | -              | `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany", "France", "Portugal"))`                                   |
-| `name`           | -              | `country = ANY(ARRAY['Germany','France','Portugal'])` |  `FILTER(?country IN ("Germany", "France", "Portugal"))`                                       |
-| `boolean`        | `xsd:boolean`  | `bnode IS TRUE`                                       |  `FILTER(?node = "true"^^xsd:boolean)`                                                         |
-| `boolean`        | `xsd:boolean`  | `bnode IS NOT TRUE`                                   |  `FILTER(?node != "true"^^xsd:boolean)`                                                        |
-| `boolean`        | `xsd:boolean`  | `bnode IS FALSE`                                      |  `FILTER(?node = "false"^^xsd:boolean)`                                                        |
-| `boolean`        | `xsd:boolean`  | `bnode IS NOT FALSE`                                  |  `FILTER(?node != "false"^^xsd:boolean)`                                                       |
+```sql
+SELECT p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  o = ANY(ARRAY['"PostgreSQL"@en'::rdfnode,'"IBM Db2"@fr'::rdfnode,'"MySQL"@es'::rdfnode]);
 
-Foreign table columns with the option `language`
- 
-| PostgreSQL Type  | Language Tag   | SQL WHERE Condition                                   | SPARQL (pushdown)                                                                              |
-|------------------|----------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| `text`           | `en`           | `name = 'foo'`                                        |  `FILTER(?s = "foo"@en)`                                                                       |
-| `name`           | `de`           | `name <> 'foo'`                                       |  `FILTER(?s != "foo"@de)`                                                                      |
-| `varchar`        | `en`           | `country NOT IN ('Germany','France','Portugal')`      |  `FILTER(?country NOT IN ("Germany"@en, "France"@en, "Portugal"@en))`                          |
-| `text`           | `*`            | `name = 'foo'`                                        |  `FILTER(STR(?s) = "foo")`                                                                     |
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-Foreign table columns with the option `expression`
- 
-| PostgreSQL Type  | Expression                        | Literal Type | SQL WHERE Condition | SPARQL (pushdown)                                                                              |
-|------------------|-----------------------------------|--------------|---------------------|------------------------------------------------------------------------------------------------|
-| `boolean`        | `STRSTARTS(STR(?country),"https")`| `xsd:boolean`|`bnode IS TRUE`      |  `FILTER(STRSTARTS(STR(?country),"http") = "true"^^xsd:boolean)`                               |
-| `int`            | `STRLEN(?variable)`               | `xsd:integer`|`strlen > 10`        |  `FILTER(STRLEN(?variable) > 10)`                                                              |
-| `text`           | `UCASE(?variable)`                | -            |`uname = 'FOO'`      |  `FILTER(UCASE(?variable) = "FOO")`                                                            |
+SELECT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
+}
+
+INFO:  SPARQL returned 3 records.
+
+                      p                       |        o        
+----------------------------------------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "IBM Db2"@fr
+(3 rows)
+```
+
+4. Pusdown of `WHERE` conditions involving SPARQL functions. The function calls for `LANGMATCHES()`, `LANG()`, and `STRENDS()` are pushed down in `FILTER` expressions.
+
+```sql
+SELECT s, o FROM rdbms
+WHERE 
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o), 'de') AND
+  sparql.strends(o, sparql.strlang('SQL','de'));
+
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+          ?s ?p ?o
+         
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(STRENDS(?o, "SQL"@de))
+}
+
+INFO:  SPARQL returned 4 records.
+
+                     s                     |        o        
+-------------------------------------------+-----------------
+ <http://www.wikidata.org/entity/Q850>     | "MySQL"@de
+ <http://www.wikidata.org/entity/Q192490>  | "PostgreSQL"@de
+ <http://www.wikidata.org/entity/Q5014224> | "CSQL"@de
+ <http://www.wikidata.org/entity/Q6862049> | "Mimer SQL"@de
+(4 rows)
+```
 
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
 
-These and other examples can be found [here](https://github.com/jimjonesbr/rdf_fdw/tree/main/examples)
+### [LinkedGeoData](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#linkedgeodata)
+
+Retrieve all amenities 100 from Leipzig Central Station that are wheelchair accessible and had its entry modified after January 1st, 2015.
+
+```sql
+CREATE SERVER linkedgeodata 
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
+
+CREATE FOREIGN TABLE leipzig_hbf (
+  hbf_iri    rdfnode OPTIONS (variable '?s'),
+  modified   rdfnode OPTIONS (variable '?mod'),
+  loc_iri    rdfnode OPTIONS (variable '?x'),
+  loc_label  rdfnode OPTIONS (variable '?l'), 
+  wheelchair rdfnode  OPTIONS (variable '?wc')
+
+) SERVER linkedgeodata OPTIONS (
+  log_sparql 'true',
+  sparql '
+PREFIX lgdo: <http://linkedgeodata.org/ontology/>
+PREFIX geom: <http://geovocab.org/geometry#>
+PREFIX ogc: <http://www.opengis.net/ont/geosparql#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT * {
+  ?s owl:sameAs <http://dbpedia.org/resource/Leipzig_Hauptbahnhof> ;
+    geom:geometry [ogc:asWKT ?sg] .
+
+  ?x a lgdo:Amenity ;
+    rdfs:label ?l ;
+	<http://purl.org/dc/terms/modified> ?mod ;
+	<http://linkedgeodata.org/ontology/wheelchair> ?wc ;
+    geom:geometry [ogc:asWKT ?xg] .
+    FILTER(bif:st_intersects (?sg, ?xg, 0.1)) .
+}'); 
+
+SELECT loc_iri, sparql.lex(loc_label), CAST(modified AS timestamp)
+FROM leipzig_hbf
+WHERE 
+  sparql.contains(loc_label, 'bahnhof') AND  
+  modified > '2015-01-01'::date AND 
+  wheelchair = true
+FETCH FIRST 10 ROWS ONLY;
+
+INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+
+PREFIX lgdo: <http://linkedgeodata.org/ontology/>
+PREFIX geom: <http://geovocab.org/geometry#>
+PREFIX ogc: <http://www.opengis.net/ont/geosparql#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?mod ?x ?l ?wc 
+{
+  ?s owl:sameAs <http://dbpedia.org/resource/Leipzig_Hauptbahnhof> ;
+    geom:geometry [ogc:asWKT ?sg] .
+
+  ?x a lgdo:Amenity ;
+    rdfs:label ?l ;
+        <http://purl.org/dc/terms/modified> ?mod ;
+        <http://linkedgeodata.org/ontology/wheelchair> ?wc ;
+    geom:geometry [ogc:asWKT ?xg] .
+    FILTER(bif:st_intersects (?sg, ?xg, 0.1)) .
+
+ ## rdf_fdw pushdown conditions ##
+ FILTER(CONTAINS(?l, "bahnhof"))
+ FILTER(?mod > "2015-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(?wc = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
+}
+LIMIT 10
+
+INFO:  SPARQL returned 2 records.
+
+                     loc_iri                      |            lex            |      modified       
+--------------------------------------------------+---------------------------+---------------------
+ <http://linkedgeodata.org/triplify/way165354553> | Parkplatz am Hauptbahnhof | 2015-03-10 16:46:08
+ <http://linkedgeodata.org/triplify/way90961368>  | Hauptbahnhof, Ostseite    | 2015-04-29 14:13:14
+(2 rows)
+```
+
+In this query we can observe that:
+ 
+* all `WHERE` conditions were pushed down as `FILTER` expressions
+* the `FETCH FIRST 10 ROWS ONLY` was pushed down as `LIMIT 10`
+* the lexical value of the literal in `loc_label` was extracted using the function [LEX()](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex).
+* the `xsd:dateTime` literal in `modified` was successfully converted to `timestamp` using SQL `CAST`.
 
 ### [DBpedia](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#dbpedia)
-
-#### Create a `SERVER` and `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Endpoint (Politicians):
 
 ```sql
 CREATE SERVER dbpedia
@@ -645,7 +2233,6 @@ CREATE FOREIGN TABLE politicians (
   country text    OPTIONS (variable '?country',    nodetype 'literal', language 'en')
 )
 SERVER dbpedia OPTIONS (
-  log_sparql 'true',
   sparql '
     PREFIX dbp: <http://dbpedia.org/property/>
     PREFIX dbo: <http://dbpedia.org/ontology/>
@@ -664,18 +2251,7 @@ SERVER dbpedia OPTIONS (
         FILTER(LANG(?partyname) = "de")
       } 
 ');
-```
 
-In the following SQL query we can observe that: 
-
-* the executed SPARQL query was logged.
-* the SPARQL `SELECT` was modified to retrieve only the columns used in the SQL `SELECT` and `WHERE` clauses.
-* the conditions in the SQL `WHERE` clause were pushed down as SPARQL `FILTER` conditions.
-* the SQL `ORDER BY` clause was pushed down as SPARQL `ORDER BY`.
-* the `FETCH FIRST ... ROWS ONLY` was pushed down as SPARQL `LIMIT`
-* the column `country` has a `language` option, and its value is used as a language tag in the SPARQL expression: `FILTER(?country IN ("Germany"@en, "France"@en))`
-
-```sql
 SELECT name, birthdate, party
 FROM politicians
 WHERE 
@@ -684,10 +2260,11 @@ WHERE
   party <> ''
 ORDER BY birthdate DESC, party ASC
 FETCH FIRST 5 ROWS ONLY;
-NOTICE:  SPARQL query sent to 'https://dbpedia.org/sparql':
 
- PREFIX dbp: <http://dbpedia.org/property/>
- PREFIX dbo: <http://dbpedia.org/ontology/>
+INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX dbo: <http://dbpedia.org/ontology/> 
 
 SELECT ?personname ?birthdate ?partyname ?country 
 {
@@ -701,12 +2278,16 @@ SELECT ?personname ?birthdate ?partyname ?country
           rdfs:label ?partyname .
         FILTER NOT EXISTS {?person dbo:deathDate ?died}
         FILTER(LANG(?partyname) = "de")
-       FILTER(?country IN ("Germany"@en, "France"@en))
- FILTER(?birthdate > "1995-12-31"^^xsd:date)
- FILTER(?partyname != ""^^xsd:string)
+      
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?country IN ("Germany"@en, "France"@en))
+ FILTER(?birthdate > "1995-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(?partyname != ""^^<http://www.w3.org/2001/XMLSchema#string>)
 }
 ORDER BY  DESC (?birthdate)  ASC (?partyname)
 LIMIT 5
+
+INFO:  SPARQL returned 5 records.
 
         name        | birthdate  |                  party                  
 --------------------+------------+-----------------------------------------
@@ -716,304 +2297,19 @@ LIMIT 5
  Niklas Wagener     | 1998-04-16 | Bündnis 90/Die Grünen
  Jakob Blankenburg  | 1997-08-05 | Sozialdemokratische Partei Deutschlands
 (5 rows)
-
 ```
 
-### [Getty Thesaurus](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#getty-thesaurus)
-
-#### Create a `SERVER` and `FOREIGN TABLE` to query the [Getty Thesaurus](http://vocab.getty.edu/sparql) SPARQL endpoint [Non-Italians Who Worked in Italy](http://vocab.getty.edu/queries?toc=&query=SELECT+*+WHERE+%7B%3Fs+a+%3Fo%7D+LIMIT+1&implicit=true&equivalent=false#Non-Italians_Who_Worked_in_Italy):
-
-Find non-Italians who worked in Italy and lived during a given time range
-
-* Having event that took place in tgn:1000080 Italy or any of its descendants
-* Birth date between 1250 and 1780
-* Just for variety, we look for artists as descendants of facets ulan:500000003 "Corporate bodies" or ulan:500000002 "Persons, Artists", rather than having type "artist" as we did in previous queries. In the previous query we used values{..} but we here use filter(in(..)).
-* Not having nationality aat:300111198 Italian or any of its descendants
-
-```sql
-CREATE SERVER getty
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint 'http://vocab.getty.edu/sparql.xml',
-  format 'application/sparql-results+xml'
-);
-
-CREATE FOREIGN TABLE getty_non_italians (
-  uri text   OPTIONS (variable '?x'),
-  name text  OPTIONS (variable '?name'),
-  bio text   OPTIONS (variable '?bio'),
-  birth int  OPTIONS (variable '?birth')
-)
-SERVER getty OPTIONS (
-  log_sparql 'true',
-  sparql '
-  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
-  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-  PREFIX gvp: <http://vocab.getty.edu/ontology#>
-  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-  PREFIX schema: <http://schema.org/>
-  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-
-   SELECT ?x ?name ?bio ?birth {
-  {SELECT DISTINCT ?x
-    {?x foaf:focus/bio:event/(schema:location|(schema:location/gvp:broaderExtended)) tgn:1000080-place}}
- 	 ?x gvp:prefLabelGVP/xl:literalForm ?name;
-	    foaf:focus/gvp:biographyPreferred [
-	    schema:description ?bio;
-       	gvp:estStart ?birth].
-
-  FILTER ("1250"^^xsd:gYear <= ?birth && ?birth <= "1780"^^xsd:gYear)
-  FILTER EXISTS {?x gvp:broaderExtended ?facet.
-  FILTER(?facet in (ulan:500000003, ulan:500000002))}
-  FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
-  '); 
-```
-
-In the following SQL query we can observe that: 
+In this example we can observe that: 
 
 * the executed SPARQL query was logged.
-* all conditions were applied locally (`rdf_fdw` currently does not support sub selects).
-* the columns of the FOREIGN TABLE have only the required option `variable`, as the other options are only necessary for the pushdown feature.
+* the SPARQL `SELECT` was modified to retrieve only the columns used in the SQL `SELECT` and `WHERE` clauses.
+* the conditions in the SQL `WHERE` clause were pushed down as SPARQL `FILTER` conditions.
+* the SQL `ORDER BY` clause was pushed down as SPARQL `ORDER BY`.
+* the `FETCH FIRST ... ROWS ONLY` was pushed down as SPARQL `LIMIT`
+* the column `country` has a `language` option, and its value is used as a language tag in the SPARQL expression: `FILTER(?country IN ("Germany"@en, "France"@en))`
 
-```sql
-SELECT name, bio, birth
-FROM getty_non_italians
-WHERE bio ~~* '%artist%'
-ORDER BY birth 
-LIMIT 10;
-
-NOTICE:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
-
-  PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
-  PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-  PREFIX gvp: <http://vocab.getty.edu/ontology#>
-  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-  PREFIX schema: <http://schema.org/>
-  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-
-   SELECT ?x ?name ?bio ?birth {
-  {SELECT DISTINCT ?x
-    {?x foaf:focus/bio:event/(schema:location|(schema:location/gvp:broaderExtended)) tgn:1000080-place}}
- 	 ?x gvp:prefLabelGVP/xl:literalForm ?name;
-	    foaf:focus/gvp:biographyPreferred [
-	    schema:description ?bio;
-       	gvp:estStart ?birth].
-
-  FILTER ("1250"^^xsd:gYear <= ?birth && ?birth <= "1780"^^xsd:gYear)
-  FILTER EXISTS {?x gvp:broaderExtended ?facet.
-  FILTER(?facet in (ulan:500000003, ulan:500000002))}
-  FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
-  
-
-                name                 |                                  bio                                  | birth 
--------------------------------------+-----------------------------------------------------------------------+-------
- Juán de España                      | Spanish artist and goldsmith, active 1455                             |  1415
- Coecke van Aelst, Pieter, the elder | Flemish artist, architect, and author, 1502-1550                      |  1502
- Worst, Jan                          | Dutch artist, active ca. 1645-1655                                    |  1605
- Mander, Karel van, III              | Dutch portraitist and decorative artist, 1608-1670, active in Denmark |  1608
- Ulft, Jacob van der                 | Dutch artist, 1627-1689                                               |  1627
- Fiammingo, Giacomo                  | Flemish artist, fl. 1655                                              |  1635
- Marotte, Charles                    | French artist, fl. ca.1719-1743                                       |  1699
- Troll, Johann Heinrich              | Swiss artist, 1756-1824                                               |  1756
- Beys, G.                            | French artist, fl. ca.1786-1800                                       |  1766
- Vaucher, Gabriel Constant           | Swiss artist, 1768-1814                                               |  1768
-(10 rows)
-
-```
-
-### [BBC Programmes and Music](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bbc-programmes-and-music)
-
-#### Create a `SERVER` and `FOREIGN TABLE` to query the [BBC Programmes and Music](http://vocab.getty.edu/sparql) SPARQL endpoint (authors and their work)
-
-```sql
-CREATE SERVER bbc
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint 'https://lod.openlinksw.com/sparql',
-  format 'application/sparql-results+xml'
-);
-
-
-CREATE FOREIGN TABLE artists (
-  id text          OPTIONS (variable '?person',  nodetype 'iri'),
-  name text        OPTIONS (variable '?name',    nodetype 'literal'),
-  itemid text      OPTIONS (variable '?created', nodetype 'iri'),
-  title text       OPTIONS (variable '?title',   nodetype 'literal'),
-  description text OPTIONS (variable '?descr',   nodetype 'literal')
-)
-SERVER bbc OPTIONS (
-  log_sparql 'true',
-  sparql '
-  PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
-  PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
-  PREFIX dcterms: <http://purl.org/dc/terms/>
-  PREFIX bibo:    <http://purl.org/ontology/bibo/>
-  PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
-
-  SELECT *
-  {
-    ?person a foaf:Person ;
-      foaf:name ?name ;
-      blterms:hasCreated ?created .
-    ?created a bibo:Book ;
-      dcterms:title ?title ;
-    dcterms:description ?descr
-  } 
-'); 
-```
-
-In the following SQL query we can observe that: 
-
-* the executed SPARQL query was logged.
-* the SPARQL `SELECT` clause was reduced to the columns used in the SQL query
-* `DISTINCT` and `WHERE` and clauses were pushed down.
-* an `ORDER BY` was automatically pushded down due the use of `DISTINCT`
-
-```sql
-SELECT DISTINCT title, description 
-FROM artists
-WHERE name = 'John Lennon';
-
-NOTICE:  SPARQL query sent to 'https://lod.openlinksw.com/sparql':
-
- PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
- PREFIX blterms: <http://www.bl.uk/schemas/bibliographic/blterms#>
- PREFIX dcterms: <http://purl.org/dc/terms/>
- PREFIX bibo:    <http://purl.org/ontology/bibo/>
- PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
-
-SELECT DISTINCT ?name ?title ?descr 
-{
-    ?person a foaf:Person ;
-      foaf:name ?name ;
-      blterms:hasCreated ?created .
-    ?created a bibo:Book ;
-      dcterms:title ?title ;
-    dcterms:description ?descr
-   FILTER(?name = "John Lennon")
-}
-ORDER BY  ASC (?title)  ASC (?descr)
-
-                            title                             |                                                                      description                                
-                                      
---------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------
---------------------------------------
- Sometime in New York City                                    | Limited ed. of 3500 copies.
- All you need is love                                         | Originally published: 2019.
- The John Lennon letters                                      | Originally published: London: Weidenfeld &amp; Nicolson, 2012.
- Imagine John Yoko                                            | In slip case housed in box (37 x 29 x 8 cm).
- Imagine                                                      | Originally published: 2017.
- More Beatles hits arranged for ukulele                       | Words and music by John Lennon and Paul McCartney except Something, words and music by George Harrison.
- The Lennon play : In his own write the Lennon play           | 'Adapted from John Lennon's best-selling books "In his own write" and "A Spaniard in the works".' - Book jacket.
- More Beatles hits arranged for ukulele                       | Publishers no.: NO91245.
- The John Lennon letters                                      | Originally published: 2012.
- Imagine John Yoko                                            | Includes numbered officially stamped giclée print in clothbound portfolio case.
- Last interview : all we are saying, John Lennon and Yoko Ono | Previous ed.: published as The Playboy interviews with John Lennon and Yoko Ono. New York: Playboy Press, 1981; 
-Sevenoaks: New English Library, 1982.
- John Lennon : drawings, performances, films                  | Published in conjunction with the exhibition "The art of John Lennon: drawings, performances, films", Kunsthalle
- Bremen, 21 May to 13 August 1995.
- John Lennon in his own write                                 | Originally published in Great Britain in1964 by Johnathan Cape.
- Sometime in New York City                                    | In box.
- Imagine John Yoko                                            | "This edition is limited to 2,000 copies worldwide, numbered 1-2,000, plus 10 copies retained by the artist, ins
-cribed i-x"--Container.
- Last interview : all we are saying, John Lennon and Yoko Ono | This ed. originally published: London: Sidgwick &amp; Jackson, 2000.
- Imagine John Yoko                                            | Includes index.
- Sometime in New York City                                    | Includes index.
- A Spaniard in the works                                      | Originally published: Great Britain : Johnathan Cape, 1965.
- All you need is love                                         | Board book.
- The Playboy interviews with John Lennon and Yoko Ono         | Originally published: New York : Playboy Press, c1981.
- Skywriting by word of mouth                                  | Originally published: New York: HarperCollins; London: Jonathan Cape, 1986.
- John Lennon in his own write ; and a Spaniard in the works   | Originally published: 1964.
- John Lennon in his own write ; and a Spaniard in the works   | Originally published: 1965.
- Lennon on Lennon : conversations with John Lennon            | "This edition published by arrangement with Chicago Review Press"--Title page verso.
-(25 rows)
-
-```
-
-### [Wikidata](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#wikidata)
-
-#### Create a `SERVER` and `FOREIGN TABLE` to query the [Wikidata](https://query.wikidata.org/sparql) SPARQL endpoint (Places that are below 10 meters above sea level and their geo coordinates)
-
-```sql
-CREATE SERVER wikidata
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint 'https://query.wikidata.org/sparql');
-
-CREATE FOREIGN TABLE places_below_sea_level (
-  wikidata_id text         OPTIONS (variable '?place'),
-  label text               OPTIONS (variable '?label'),
-  wkt geometry(point,4326) OPTIONS (variable '?location'),
-  elevation numeric        OPTIONS (variable '?elev')
-)
-SERVER wikidata OPTIONS (
-  log_sparql 'true',
-  sparql '
-  SELECT *
-  WHERE
-  {
-    ?place rdfs:label ?label .
-    ?place p:P2044/psv:P2044 ?placeElev.
-    ?placeElev wikibase:quantityAmount ?elev.
-    ?placeElev wikibase:quantityUnit ?unit.
-    bind(0.01 as ?km).
-    FILTER( (?elev < ?km*1000 && ?unit = wd:Q11573)
-        || (?elev < ?km*3281 && ?unit = wd:Q3710)
-        || (?elev < ?km      && ?unit = wd:Q828224) ).
-    ?place wdt:P625 ?location.    
-    FILTER(LANG(?label)="en")
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
-  }
-');   
-```
-
-In the following SQL query we can observe that: 
-
-* the executed SPARQL query was logged.
-* the SPARQL `SELECT` clause was reduced to the columns used in the SQL query
-* the `FETCH FIRST 10 ROWS ONLY` was pushded down in a SPARQL `LIMIT`
-
-```sql
-SELECT wikidata_id, label, wkt
-FROM places_below_sea_level
-FETCH FIRST 10 ROWS ONLY;
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?place ?label ?location 
-{
-    ?place rdfs:label ?label .
-    ?place p:P2044/psv:P2044 ?placeElev.
-    ?placeElev wikibase:quantityAmount ?elev.
-    ?placeElev wikibase:quantityUnit ?unit.
-    bind(0.01 as ?km).
-    FILTER( (?elev < ?km*1000 && ?unit = wd:Q11573)
-        || (?elev < ?km*3281 && ?unit = wd:Q3710)
-        || (?elev < ?km      && ?unit = wd:Q828224) ).
-    ?place wdt:P625 ?location.    
-    FILTER(LANG(?label)="en")
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
-  }
-LIMIT 10
-
-               wikidata_id                |      label      |                    wkt                     
-------------------------------------------+-----------------+--------------------------------------------
- http://www.wikidata.org/entity/Q61308849 | Tuktoyaktuk A   | 0101000000295C8FC2F5A060C0EC51B81E855B5140
- http://www.wikidata.org/entity/Q403083   | Ahyi            | 010100000041E3101111216240A9CDA7AAAA6A3440
- http://www.wikidata.org/entity/Q31796625 | Ad Duyūk        | 01010000003AE97DE36BB7414065A54929E8DE3F40
- http://www.wikidata.org/entity/Q54888910 | Lydd Library    | 010100000074B7EBA52902ED3F0C3B8C497F794940
- http://www.wikidata.org/entity/Q27745421 | Écluse de Malon | 0101000000E8F9D346757AFDBFB9FB1C1F2DE64740
- http://www.wikidata.org/entity/Q14204611 | Bilad el-Rum    | 0101000000D578E9263168394021C059B2793A3D40
- http://www.wikidata.org/entity/Q2888647  | Petza'el        | 0101000000F886DEBC9AB841408D05D940A7054040
- http://www.wikidata.org/entity/Q2888816  | Gilgal          | 0101000000272E0948E2B84140539C1F56EAFF3F40
- http://www.wikidata.org/entity/Q4518111  | Chupícuaro      | 0101000000F10DBD79356559C05C30283B4CAD3340
- http://www.wikidata.org/entity/Q2889475  | Na'aran         | 010100000069A1D4C627BA41409EE61CF084F73F40
-(10 rows)
-
-```
 ### [Import data into QGIS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#import-data-into-qgis)
 
-#### Create a `SERVER` and a `FOREIGN TABLE` to query the [DBpedia](https://dbpedia.org/sparql) SPARQL Geographic Information Systems
 The `rdf_fdw` can also be used as a bridge between GIS (Geographic Information Systems) and RDF Triplestores. This example demonstrates how to retrieve geographic coordinates of all German public universities from DBpedia, create WKT (Well Known Text) literals, and import the data into [QGIS](https://qgis.org/) to visualize it on a map.
 
 > [!NOTE]  
@@ -1102,10 +2398,9 @@ Afer that set the geometery column and identifier, and hit **Save**. Finally, fi
 ![geoserver-wfs](examples/img/geoserver-wfs-client.png?raw=true)
 
 ![geoserver-wfs-map](examples/img/geoserver-wfs-map.png?raw=true)
-
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
-To deploy `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 17 should look like this (minimal example):
+To deploy the `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 17 should look like this (minimal example):
 
 ```dockerfile
 FROM postgres:17
@@ -1114,11 +2409,11 @@ RUN apt-get update && \
     apt-get install -y make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 RUN mkdir /extensions
-COPY ./rdf_fdw-1.0.0.tar.gz /extensions/
+COPY ./rdf_fdw-2.0.0.tar.gz /extensions/
 WORKDIR /extensions
 
-RUN tar xvzf rdf_fdw-1.0.0.tar.gz && \
-    cd rdf_fdw-1.0.0 && \
+RUN tar xvzf rdf_fdw-2.0.0.tar.gz && \
+    cd rdf_fdw-2.0.0 && \
     make -j && \
     make install
 ```
@@ -1168,3 +2463,5 @@ Deployment
  $ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_image
  $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
 ```
+
+If you've found a bug or have general comments, do not hesitate to open an issue. Any feedback is much appreciated!
