@@ -38,7 +38,6 @@
 #include "foreign/fdwapi.h"
 #include "foreign/foreign.h"
 #include "libpq/pqsignal.h"
-// #include "mb/pg_wchar.h"
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
@@ -115,7 +114,7 @@
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
 #endif /* PG_VERSION_NUM */
 
-#define FDW_VERSION "1.4.0-dev"
+#define FDW_VERSION "2.0.0-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -193,7 +192,6 @@
 #define RDF_COLUMN_OPTION_NODETYPE_LITERAL "literal"
 #define RDF_COLUMN_OPTION_LANGUAGE "language"
 #define RDF_COLUMN_OPTION_LITERAL_TYPE "literal_type"
-// #define RDF_COLUMN_OPTION_LITERAL_FORMAT "literal_format"
 
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_RAW "raw"
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT "content"
@@ -376,7 +374,6 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
 		{RDF_COLUMN_OPTION_LITERALTYPE, AttributeRelationId, false, false},
 		{RDF_COLUMN_OPTION_LITERAL_TYPE, AttributeRelationId, false, false},
-		//	{RDF_COLUMN_OPTION_LITERAL_FORMAT, AttributeRelationId, false, false},
 		{RDF_COLUMN_OPTION_NODETYPE, AttributeRelationId, false, false},
 		{RDF_COLUMN_OPTION_LANGUAGE, AttributeRelationId, false, false},
 		/* User Mapping */
@@ -416,8 +413,8 @@ typedef struct RDFfdwTriple
 
 typedef struct rdfnode
 {
-	int32 vl_len_;						 // required varlena header
-	char vl_data[FLEXIBLE_ARRAY_MEMBER]; // actual data
+	int32 vl_len_;						 /* required varlena header */
+	char vl_data[FLEXIBLE_ARRAY_MEMBER]; /* actual data */
 } rdfnode;
 
 typedef struct
@@ -454,8 +451,6 @@ extern Datum rdf_fdw_strdt(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_str(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lang(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_datatype(PG_FUNCTION_ARGS);
-//extern Datum rdf_fdw_datatype_text(PG_FUNCTION_ARGS);
-//extern Datum rdf_fdw_datatype_poly(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_iri_in(PG_FUNCTION_ARGS);
@@ -696,8 +691,6 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strdt);
 PG_FUNCTION_INFO_V1(rdf_fdw_str);
 PG_FUNCTION_INFO_V1(rdf_fdw_lang);
 PG_FUNCTION_INFO_V1(rdf_fdw_datatype);
-//PG_FUNCTION_INFO_V1(rdf_fdw_datatype_text);
-//PG_FUNCTION_INFO_V1(rdf_fdw_datatype_poly);
 PG_FUNCTION_INFO_V1(rdf_fdw_arguments_compatible);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri);
 PG_FUNCTION_INFO_V1(rdf_fdw_iri_in);
@@ -1397,26 +1390,26 @@ static char *ExpandDatatypePrefix(char *str)
 	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
 	if (!str || strlen(str) == 0)
-		return ""; // Empty input returns empty string
+		return ""; /* Empty input returns empty string */
 
 	len = strlen(str);
 	/* Strip < > if present */
 	if (str[0] == '<' && str[len - 1] == '>')
 	{
-		stripped_str = palloc(len - 1); // Allocate space for stripped string (len - 2 + null terminator)
+		stripped_str = palloc(len - 1); /* allocate space for stripped string (len - 2 + null terminator) */
 		strncpy(stripped_str, str + 1, len - 2);
-		stripped_str[len - 2] = '\0'; // Null-terminate
+		stripped_str[len - 2] = '\0'; /* NULL-terminate */
 	}
 
 	/* Check for 'xsd:' prefix and expand it */
 	if (strncmp(stripped_str, xsd_prefix, strlen(xsd_prefix)) == 0 && strlen(stripped_str) > strlen(xsd_prefix))
 	{
-		const char *suffix = stripped_str + strlen(xsd_prefix); // Get part after "xsd:"
+		const char *suffix = stripped_str + strlen(xsd_prefix); /* get part after "xsd:" */
 		initStringInfo(&buf);
-		appendStringInfoChar(&buf, '<');	   // Open bracket
-		appendStringInfoString(&buf, xsd_uri); // Add XSD URI
-		appendStringInfoString(&buf, suffix);  // Add suffix
-		appendStringInfoChar(&buf, '>');	   // Close bracket
+		appendStringInfoChar(&buf, '<');	   /* open bracket */
+		appendStringInfoString(&buf, xsd_uri); /* add XSD URI */
+		appendStringInfoString(&buf, suffix);  /* add suffix */
+		appendStringInfoChar(&buf, '>');	   /* close bracket */
 
 		if (stripped_str != str)
 			pfree(stripped_str);
@@ -1426,7 +1419,7 @@ static char *ExpandDatatypePrefix(char *str)
 		return buf.data;
 	}
 
-	/* Return stripped string (or original if no stripping) without < > */
+	/* return stripped string (or original if no stripping) without < > */
 	if (stripped_str != str)
 	{
 		initStringInfo(&buf);
@@ -1545,7 +1538,7 @@ static char *str(char *input)
 	{
 		size_t len = strlen(input);
 		initStringInfo(&buf);
-		appendStringInfo(&buf, "\"%.*s\"", (int)(len - 2), input + 1); // skip '<' and trim '>'
+		appendStringInfo(&buf, "\"%.*s\"", (int)(len - 2), input + 1); /* skip '<' and trim '>' */
 
 		elog(DEBUG1, "%s exit: returning IRI '%s'", __func__, buf.data);
 		return buf.data;
@@ -1599,7 +1592,7 @@ static char *iri(char *input)
 
 	initStringInfo(&buf);
 
-	lexical = lex(input); // Extract the lexical form
+	lexical = lex(input);
 	appendStringInfo(&buf, "<%s>", lexical);
 
 	elog(DEBUG1, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
@@ -1718,19 +1711,19 @@ static char *datatype(char *input)
 		const char *tag = strstr(ptr, "^^");
 		const char *lang_tag = strstr(ptr, "@");
 
-		/* Check for datatype first */
+		/* check for datatype first */
 		if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
 			(!lang_tag || lang_tag > tag)) /* datatype takes precedence */
 		{
 			const char *dt_start = tag + 2; /* skip ^^ */
 			const char *dt_end = dt_start;
 
-			/* Find the end of the datatype */
+			/* find the end of the datatype */
 			if (*dt_start == '<')
 			{
 				while (*dt_end && *dt_end != '>')
 					dt_end++;
-				if (*dt_end != '>') /* Ensure proper closing */
+				if (*dt_end != '>') /* ensure proper closing */
 				{
 					elog(DEBUG1, "%s exit: returning empty string (malformed datatype IRI, missing '>')", __func__);
 					return "";
@@ -1746,7 +1739,7 @@ static char *datatype(char *input)
 			if (dt_start < dt_end)
 			{
 				char *res = "";
-				/* Handle xsd: prefix */
+				/* handle xsd: prefix */
 				if (strncmp(dt_start, "xsd:", 4) == 0 && dt_end - dt_start > 4)
 				{
 					appendStringInfoString(&buf, RDF_XSD_BASE_URI);
@@ -1767,7 +1760,7 @@ static char *datatype(char *input)
 					appendBinaryStringInfo(&buf, dt_start, dt_end - dt_start);
 				}
 
-				/* Ensure no trailing junk */
+				/* ensure no trailing junk */
 				if (*dt_end != '\0')
 				{
 					elog(DEBUG1, "%s exit: returning empty string (trailing chars after datatype)", __func__);
@@ -1780,7 +1773,7 @@ static char *datatype(char *input)
 				return res;
 			}
 		}
-		/* Simple or language-tagged literal */
+		/* simple or language-tagged literal */
 		if ((lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"') ||
 			(len >= 1 && (ptr[len - 1] == '"' || len == 1)))
 		{
@@ -1808,7 +1801,7 @@ static char *MapSPARQLDatatype(Oid pgtype)
 	}
 
 	elog(DEBUG1, "%s exit: returning NULL (unsupported type)", __func__);
-	return NULL; // Unsupported type
+	return NULL;
 }
 
 /*
@@ -1841,16 +1834,16 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 
 		langtag = lang(arg);
 
-		/* 
+		/*
 		 * in RDF 1.1, language-tagged literals (like "foo"@es) have the
 		 * xsd:langString datatype
-		 */		
+		 */
 		if (strlen(langtag) != 0)
 			PG_RETURN_TEXT_P(cstring_to_text(RDF_LANGUAGE_LITERAL_DATATYPE));
 
 		result = datatype(arg);
 
-		/* 
+		/*
 		 * an untyped literal like "" is treated as having the datatype xsd:string
 		 * in RDF 1.1 and SPARQL 1.1.
 		 */
@@ -1868,8 +1861,8 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 			PG_RETURN_NULL();
 
 		langtag = lang(arg);
-		
-		/* 
+
+		/*
 		 * In RDF 1.1, language-tagged literals (like "foo"@es) have the
 		 * xsd:langString datatype:
 		 */
@@ -1878,10 +1871,10 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 
 		result = datatype(arg);
 
-		/* 
+		/*
 		 * an untyped literal like "" is treated as having the datatype xsd:string
 		 * in RDF 1.1 and SPARQL 1.1.
-		 */		
+		 */
 		if (strlen(result) == 0)
 			PG_RETURN_TEXT_P(cstring_to_text(RDF_XSD_STRING));
 
@@ -2008,7 +2001,6 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 	char *lang_str;
 	bool result;
 
-	// bool result = contains(str_in, substr);
 	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
 
 	/* handle NULL or empty inputs */
@@ -2506,7 +2498,7 @@ Datum rdf_fdw_strends(PG_FUNCTION_ARGS)
 	char *substr = text_to_cstring(substr_arg);
 
 	if (!LiteralsCompatible(str, substr))
-		PG_RETURN_NULL(); // Incompatible arguments return NULL per SPARQL
+		PG_RETURN_NULL();
 
 	PG_RETURN_BOOL(strends(str, substr));
 }
@@ -2568,7 +2560,7 @@ static bool langmatches(char *lang_tag, char *pattern)
 	}
 	/* SPARQL rule: prefix match with hyphen, e.g. "en" matches "en-US" */
 	else if (strncasecmp(tag, pat, strlen(pat)) == 0 &&
-	         tag[strlen(pat)] == '-')
+			 tag[strlen(pat)] == '-')
 	{
 		result = true;
 	}
@@ -3539,7 +3531,7 @@ static char *substr_sparql(char *str, int start, int length)
 		 lexical, str_datatype, str_language, str_len);
 
 	if (start > str_len)
-		lexical[0] = '\0'; // empty result
+		lexical[0] = '\0'; /* empty result */
 
 	initStringInfo(&buf);
 
@@ -3705,8 +3697,8 @@ Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
 			str = el;
 		else
 		{
-			char *tmp = concat(str, el); 
-			if (str != el)  // avoid freeing reused pointers
+			char *tmp = concat(str, el);
+			if (str != el) /* avoid freeing reused pointers */
 				pfree(str);
 			str = tmp;
 		}
@@ -5137,7 +5129,7 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 		return NULL;
 
 	CreateTuple(slot, state);
-	// ExecStoreVirtualTuple(slot);  // REQUIRED to return a valid tuple
+
 	elog(DEBUG3, "%s: virtual tuple stored (%d/%d)", __func__, state->rowcount, state->pagesize);
 	elog(DEBUG3, "%s: valid slots = %d", __func__, slot->tts_nvalid);
 
@@ -5269,7 +5261,6 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 				state->rdfTable->cols[i]->language = pstrdup(defGetString(def));
 			}
 		}
-
 	}
 
 #if PG_VERSION_NUM < 130000
@@ -7267,7 +7258,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (left == NULL)
 			{
-				// pfree(opername);
 				elog(DEBUG1, "%s [T_OpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
 				return NULL;
 			}
@@ -7783,7 +7773,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			char *impcast = DeparseExpr(state, foreignrel, linitial(func->args));
 			elog(DEBUG1, "%s exit [T_FuncExpr]: returning '%s' (implicit cast) ", __func__, impcast);
 			return impcast;
-			// return NULL;
 		}
 
 		/* get function name and schema */
@@ -8456,7 +8445,7 @@ static char *DeparseSPARQLPrefix(char *raw_sparql)
 				keyword_position++;
 			}
 
-			//appendStringInfo(&prefixes, "%s>\n", keyword_entry.data);
+			// appendStringInfo(&prefixes, "%s>\n", keyword_entry.data);
 			appendStringInfo(&prefixes, "%s> ", keyword_entry.data);
 		}
 	}
@@ -9020,8 +9009,8 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 
 Datum rdfnode_out(PG_FUNCTION_ARGS)
 {
-	text *lit = PG_GETARG_TEXT_PP(0); // Handles detoasting
-	int len = VARSIZE_ANY_EXHDR(lit); // Get payload length safely
+	text *lit = PG_GETARG_TEXT_PP(0); /* handles detoasting */
+	int len = VARSIZE_ANY_EXHDR(lit); /* get payload length safely */
 	char *out = (char *)palloc(len + 1);
 
 	memcpy(out, VARDATA_ANY(lit), len);
@@ -9060,26 +9049,31 @@ static rdfnode_info parse_rdfnode(rdfnode *node)
 	else if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
 	{
 		result.isString = true;
+		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_STRING);
 	}
 	else if ((result.isNumeric = isNumeric(raw)))
 	{
-		// elog(WARNING,"literal '%s' is numeric ", result.raw);
+		elog(DEBUG2, "literal '%s' is numeric ", result.raw);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DATE) == 0)
 	{
 		result.isDate = true;
+		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_DATE);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DATETIME) == 0)
 	{
 		result.isDateTime = true;
+		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_DATETIME);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DURATION) == 0)
 	{
 		result.isDuration = true;
+		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_DURATION);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_TIME) == 0)
 	{
 		result.isTime = true;
+		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_TIME);
 	}
 	/*
 	 * allow lexicographic comparison for xsd:anyURI literals, aligning with
@@ -9253,7 +9247,6 @@ Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(rdfnode_eq((rdfnode *)node1, (rdfnode *)node2));
 }
 
-// static bool LiteralsComparable(rdfnode_info rdfnode1, rdfnode_info rdfnode2)
 static bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 {
 	rdfnode_info rdfnode1 = parse_rdfnode(n1);
@@ -9292,7 +9285,7 @@ static bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
 	if (!LiteralsComparable(n1, n2))
-		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
 	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
@@ -9410,7 +9403,7 @@ static bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
 	if (!LiteralsComparable(n1, n2))
-		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
 	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
@@ -9527,7 +9520,7 @@ static bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
 	if (!LiteralsComparable(n1, n2))
-		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
 	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
@@ -9644,7 +9637,7 @@ static bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	rdfnode_info rdfnode2 = parse_rdfnode(n2);
 
 	if (!LiteralsComparable(n1, n2))
-		return false; // Unreachable due to error in LiteralsComparable, but kept for safety
+		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
 	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
 	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
@@ -9756,8 +9749,8 @@ Datum rdfnode_ge_rdfnode(PG_FUNCTION_ARGS)
 
 Datum rdfnode_to_text(PG_FUNCTION_ARGS)
 {
-	text *lit = PG_GETARG_TEXT_PP(0); // Safe detoasting
-	int len = VARSIZE_ANY_EXHDR(lit); // Length of the actual data
+	text *lit = PG_GETARG_TEXT_PP(0); /* safe detoasting */
+	int len = VARSIZE_ANY_EXHDR(lit); /* length of the actual data */
 	text *result = (text *)palloc(VARHDRSZ + len);
 
 	SET_VARSIZE(result, VARHDRSZ + len);
@@ -9995,8 +9988,8 @@ Datum numeric_to_rdfnode(PG_FUNCTION_ARGS)
 	StringInfoData buf;
 	initStringInfo(&buf);
 
-	/* Format numeric as an RDF literal */
-	appendStringInfo(&buf, "\"%s\"^^%s", val_str, RDF_XSD_DECIMAL); // XSD for numeric values
+	/* format numeric as an RDF literal */
+	appendStringInfo(&buf, "\"%s\"^^%s", val_str, RDF_XSD_DECIMAL);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
@@ -10343,9 +10336,9 @@ Datum rdfnode_lt_int8(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
 
@@ -10361,9 +10354,9 @@ Datum rdfnode_le_int8(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
 
@@ -10379,9 +10372,9 @@ Datum rdfnode_gt_int8(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
 
@@ -10397,9 +10390,9 @@ Datum rdfnode_ge_int8(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
 
@@ -10415,9 +10408,9 @@ Datum rdfnode_eq_int8(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
 
@@ -10426,7 +10419,6 @@ Datum rdfnode_eq_int8(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-
 Datum rdfnode_neq_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -10434,9 +10426,9 @@ Datum rdfnode_neq_int8(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int8_numeric, Int64GetDatum(val));
 
@@ -10580,9 +10572,9 @@ Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
 
@@ -10598,9 +10590,9 @@ Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
 
@@ -10616,9 +10608,9 @@ Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
 
@@ -10634,9 +10626,9 @@ Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
 
@@ -10652,9 +10644,9 @@ Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
 
@@ -10670,9 +10662,9 @@ Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
 
@@ -10817,9 +10809,9 @@ Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
 
@@ -10835,9 +10827,9 @@ Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
 
@@ -10853,9 +10845,9 @@ Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
 
@@ -10871,9 +10863,9 @@ Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
 
@@ -10889,9 +10881,9 @@ Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
 
@@ -10907,9 +10899,9 @@ Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
-	                                        CStringGetDatum(p.lex),
-	                                        ObjectIdGetDatum(InvalidOid),
-	                                        Int32GetDatum(-1));
+											CStringGetDatum(p.lex),
+											ObjectIdGetDatum(InvalidOid),
+											Int32GetDatum(-1));
 
 	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
 

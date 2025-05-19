@@ -1,23 +1,50 @@
 # Release Notes
 
-## 1.4.0
+## 2.0.0
 Release date: **YYYY-MM-DD**
+
+This is a major release of `rdf_fdw` featuring substantial new features, improved standards compliance, and important infrastructure enhancements. Backward compatibility is preserved, but users are encouraged to review the new features and updated behavior.
 
 ### Enhancements
 
-* Added support for PostgreSQL 18 (currently in development).
-* Added support for `DESCRIBE` SPARQL queries via the `rdf_fdw_describe()` support function.
-* Added the SQL functions `strstarts(text, text)` and `strends(text, text)`, which check if a string starts or ends with a given substring. These functions can be used in SQL queries and are automatically translated to `STRSTARTS` and `STRENDS` in SPARQL when pushed down.
-* Added the SQL functions `isblank`, `isiri`/`isuri`, `iri`/`uri`,`datatype(text)`,`str(text)`, `strdt(text, text)`, `langmatches(text,text)`, `strlang(text, text)`, `encode_for_uri(text)`, `contains(text, text)`, `strstarts(text, text)`, `strends(text, text)`. `strbefore(text, text)` and `strafter(text, text)`, which replicate the behavior of SPARQL’s `isBLANK`, `isIRI`/`isURI`, `IRI`/`URI`,`DATATYPE`,`STR`,`STRDT`,`LANGMATCHES`, `STRLANG`, `ENCODE_FOR_URI`, `CONTAINS`, `STRSTARTS`,`STRENDS`,`STRBEFORE`, and `STRAFTER`. These functions are translated to their SPARQL equivalents when pushed down to the foreign data wrapper.
-* Added the colum option `literal_format` to display the literal's values with their language / data type, or just with their contents.
+* PostgreSQL 18 support (currently in development).
+* SPARQL `DESCRIBE` query support via the new `sparql.describe()` support function.
+* New `rdfnode` data type, enabling:
+  * Representation of RDF literals and IRIs with full lexical fidelity.
+  * Precise round-tripping of SPARQL values within SQL.
+  * Equality and order comparisons with native PostgreSQL types (e.g., `int`, `float`, `text`, `date`).
+* SPARQL 1.1 Built-in Function Support via [SQL queries](https://github.com/jimjonesbr/rdf_fdw?tab=readme-ov-file#sparql-functions).
+  * [Functional Forms](https://www.w3.org/TR/sparql11-query/#func-forms): 
+    * `bound`, `COALESCE` and `sameTerm`.
+  * [Functions on RDF Terms](https://www.w3.org/TR/sparql11-query/#func-rdfTerms):
+    * `isIRI`, `isBlank`, `isLiteral`, `isNumeric`, `str`, `lang`, `datatype`, `IRI`, `BNODE`, `STRDT`, `STRLANG`, `UUID`, and `STRUUID`.
+  * [Functions on Strings](https://www.w3.org/TR/sparql11-query/#func-strings): 
+    * `STRLEN`, `SUBSTR`, `UCASE`, `LCASE`, `STRSTARTS`, `STRENDS`, `CONTAINS`, `STRBEFORE`, `STRAFTER`, `ENCODE_FOR_URI`, `CONCAT`, `langMatches`, `REGEX`, and `REPLACE`.
+  * [Functions on Numerics](https://www.w3.org/TR/sparql11-query/#func-numerics): 
+    * `abs`, `round`, `ceil`, `floor`, and `RAND`.
+  * [Functions on Dates and Times](https://www.w3.org/TR/sparql11-query/#func-date-time): 
+    * `year`, `month`, `day`, `hours`, `minutes`, `seconds`, `timezone`, and `tz`.
+  * [Hash Functions](https://www.w3.org/TR/sparql11-query/#func-hash): 
+    * `md5`.
+
+  These functions are translated to their SPARQL equivalents when pushed down to the foreign data wrapper. 
+
+### Minor Changes
+* The `FOREIGN TABLE` option `log_sparql` is now set to `true`, if omitted. If you don't want to log the SPARQL query, consider using [`ALTER FOREIGN TABLE`](https://github.com/jimjonesbr/rdf_fdw?tab=readme-ov-file#alter-foreign-table-and-alter-server) to disable this option manually, e.g.
+
+  ```sql
+  ALTER FOREIGN TABLE myrdftable OPTIONS (ADD log_sparql 'false');
+  ```
 
 ### Bug Fixes
 
-* Fix query cancellation: this adds `CHECK_FOR_INTERRUPTS()` calls in key execution points of `rdf_fdw` to allow PostgreSQL backends to detect user-initiated query cancellations (e.g., Ctrl+C).
+* Query cancellation support:
+
+  Added `CHECK_FOR_INTERRUPTS()` in key execution points to allow PostgreSQL backends to detect user-initiated query cancellations (e.g., Ctrl+C), improving long-running query handling.
 
 ### External Libraries
 
- * This release adds the dependency of the Redland RDF library `librdf`.
+ * Added a new dependency: Redland RDF Library (`librdf`) — used for parsing and serializing RDF data, and supporting `DESCRIBE` queries.
 
 ## 1.3.0
 Release date: **2024-09-30**

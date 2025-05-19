@@ -1,1 +1,0 @@
-\echo "No change in the SQL instructions."
