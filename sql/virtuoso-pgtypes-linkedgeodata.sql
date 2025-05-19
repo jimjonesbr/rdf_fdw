@@ -1,3 +1,5 @@
+SET timezone TO 'Etc/UTC';
+
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
@@ -33,57 +35,73 @@ SERVER linkedgeodata OPTIONS (
 
 /* SPARQL 17.4.1.7 - RDFterm-equal */
 SELECT * FROM hbf
-WHERE label = 'Gare centrale de Leipzig';
+WHERE label = 'Gare centrale de Leipzig'
+ORDER BY label COLLATE "C";
 
 /* SPARQL 17.4.1.9 - IN */
 SELECT * FROM hbf
-WHERE label IN ('Leipzig Hbf', 'Gare centrale de Leipzig');
+WHERE label IN ('Leipzig Hbf', 'Gare centrale de Leipzig')
+ORDER BY label COLLATE "C";
 
 SELECT label, type FROM hbf
-WHERE label = ANY(ARRAY['Leipzig Hbf', 'Gare centrale de Leipzig']);
+WHERE label = ANY(ARRAY['Leipzig Hbf', 'Gare centrale de Leipzig'])
+ORDER BY label COLLATE "C";
 
 SELECT * FROM hbf
-WHERE fake_string IN ('Leipzig Hbf', 'Gare centrale de Leipzig');
+WHERE fake_string IN ('Leipzig Hbf', 'Gare centrale de Leipzig')
+ORDER BY label COLLATE "C";
 
 /* SPARQL 17.4.1.10 - NOT IN*/
 SELECT * FROM hbf
-WHERE label NOT IN ('foo','bar');
+WHERE label NOT IN ('foo','bar')
+ORDER BY label COLLATE "C";
+
 
 /* SPARQL 15.5 - LIMIT */
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 LIMIT 1;
 
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 FETCH FIRST ROW ONLY;
 
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 FETCH FIRST 2 ROWS ONLY;
 
 /* SPARQL 15.4 - OFFSET */
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 OFFSET 1
 LIMIT 1;
 
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 OFFSET 1
 FETCH FIRST ROW ONLY;
 
 /* SPARQL 15.1 - ORDER BY */
 SELECT * FROM hbf
-ORDER BY label ASC
+ORDER BY label COLLATE "C" ASC
 LIMIT 2;
 
 SELECT * FROM hbf
-ORDER BY label DESC
+ORDER BY label COLLATE "C" DESC
 LIMIT 2;
 
 SELECT * FROM hbf
-ORDER BY label ASC, type DESC
+ORDER BY label COLLATE "C" ASC, type COLLATE "C" DESC
 LIMIT 3;
 
 /* SPARQL 18.2.5.3 - DISTINCT*/
-SELECT DISTINCT label, modified FROM hbf;
-SELECT DISTINCT ON (label, modified) label, modified, version FROM hbf;
+SELECT DISTINCT label COLLATE "C", modified 
+FROM hbf 
+ORDER BY label COLLATE "C", modified;
+
+SELECT DISTINCT ON (label COLLATE "C", modified) label, modified, version 
+FROM hbf
+ORDER BY label COLLATE "C", modified;
 
 /* SPARQL - 17.3 Operator Mapping (pgtypes) */
 SELECT * FROM hbf
@@ -95,9 +113,11 @@ WHERE
   type = 'http://linkedgeodata.org/ontology/RailwayStation'::varchar AND
   fake_timestamptz = '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date = '2018-05-01'::date AND
-  fake_string = 'foo';
+  fake_string = 'foo'
+ORDER BY label COLLATE "C";
 
-SELECT DISTINCT * FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   label <> 'foo' AND
   modified <> '2020-07-12 20:41:25'::timestamp AND
@@ -109,52 +129,62 @@ WHERE
   fake_timestamptz <> '2020-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date <> '2020-05-01'::date AND
   fake_string <> 'bar'
-ORDER BY type;
+ORDER BY label COLLATE "C";
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified > '2014-07-12 20:41:25'::timestamp AND
   version > 01 AND
   lat > 01 AND
   lon > 01 AND
   fake_timestamptz > '2010-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date > '2017-05-01'::date;
+  fake_date > '2017-05-01'::date
+ORDER BY label COLLATE "C";
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified < '2016-07-12 20:41:25'::timestamp AND
   version < 99 AND
   lat < 99 AND
   lon < 99 AND
   fake_timestamptz < '2012-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date < '2019-05-01'::date;
+  fake_date < '2019-05-01'::date
+ORDER BY label COLLATE "C";
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified >= '2015-07-12 20:41:25'::timestamp AND
   version >= 19 AND
   fake_timestamptz >= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date >= '2018-05-01'::date AND
   fake_timestamptz >= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date >= '2018-05-01'::date;
+  fake_date >= '2018-05-01'::date
+ORDER BY label COLLATE "C";
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified <= '2015-07-12 20:41:25'::timestamp AND
   version <= 19 AND
   fake_timestamptz <= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date <= '2018-05-01'::date AND
   fake_timestamptz <= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date <= '2018-05-01'::date;
+  fake_date <= '2018-05-01'::date
+ORDER BY label COLLATE "C";
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified BETWEEN '2014-07-12 20:41:25'::timestamp AND '2016-07-12 20:41:25'::timestamp AND
   version BETWEEN 17 AND 20 AND
   fake_timestamptz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date AND
   fake_timestamptz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date;
+  fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date
+ORDER BY label COLLATE "C";
 
 /* pushdown - PostgreSQL length */
 SELECT label, type FROM hbf
@@ -164,20 +194,23 @@ WHERE
   length(label) < 99 AND
   length(label) <= 24 AND
   length(label) >= 24 AND
-  length(label) BETWEEN 10 AND 88;
+  length(label) BETWEEN 10 AND 88
+ORDER BY label COLLATE "C", type COLLATE "C";
 
 /* pushdown - PostgreSQL abs */
-SELECT DISTINCT label, abs(version) FROM hbf
+SELECT DISTINCT label COLLATE "C", abs(version)
+FROM hbf
 WHERE 
   abs(version) = 19 AND
   abs(version) > 01 AND
   abs(version) >= 19 AND
   abs(version) <  99 AND
   abs(version) <=  19 AND
-  abs(version) BETWEEN 01 AND 99;
+  abs(version) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", abs(version);
 
 /* pushdown - PostgreSQL round */
-SELECT DISTINCT label, round(lat)
+SELECT DISTINCT label COLLATE "C", round(lat)
 FROM hbf 
 WHERE 
   round(lat) = 51 AND
@@ -185,10 +218,11 @@ WHERE
   round(lat) >= 51 AND
   round(lat) < 99 AND
   round(lat) <= 51 AND
-  round(lat) BETWEEN 01 AND 99;
+  round(lat) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", round(lat);
 
 /* pushdown - PostgreSQL ceil */
-SELECT DISTINCT label, ceil(lat)
+SELECT DISTINCT label COLLATE "C", ceil(lat)
 FROM hbf 
 WHERE 
   ceil(lat) = 52 AND
@@ -196,10 +230,11 @@ WHERE
   ceil(lat) >= 52 AND
   ceil(lat) < 99 AND
   ceil(lat) <= 52 AND
-  ceil(lat) BETWEEN 01 AND 99;
+  ceil(lat) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", ceil(lat);
 
 /* pushdown - PostgreSQL floor */
-SELECT DISTINCT label, floor(lat)
+SELECT DISTINCT label COLLATE "C", floor(lat)
 FROM hbf 
 WHERE 
   floor(lat) = 51 AND
@@ -207,7 +242,8 @@ WHERE
   floor(lat) >= 51 AND
   floor(lat) < 99 AND
   floor(lat) <= 51 AND
-  floor(lat) BETWEEN 01 AND 99;
+  floor(lat) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", floor(lat);
 
 /* pushdown - PostgreSQL substring */
 SELECT DISTINCT label, modified

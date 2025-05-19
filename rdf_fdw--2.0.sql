@@ -6,7 +6,7 @@ LANGUAGE C STRICT;
 
 CREATE FUNCTION rdf_fdw_version()
 RETURNS text AS 'MODULE_PATHNAME', 'rdf_fdw_version'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rdf_fdw_validator(text[], oid)
 RETURNS void AS 'MODULE_PATHNAME'
@@ -2989,140 +2989,140 @@ CREATE FUNCTION sparql.rand() RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.strdt(random()::rdfnode,'xsd:double');
 END;
-$$ LANGUAGE plpgsql PARALLEL RESTRICTED STRICT;
+$$ LANGUAGE plpgsql STRICT;
 
 /* SPARQL 17.4.5 Functions on Dates and Times */
 CREATE FUNCTION sparql.now() RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.strdt(pg_catalog.now()::rdfnode, 'xsd:dateTime');
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.year(rdfnode)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(year FROM sparql.lex($1)::date);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.year(text)
 RETURNS int AS $$
 BEGIN
   RETURN sparql.year($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.year(timestamp)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(year FROM $1);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.month(rdfnode)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(month FROM sparql.lex($1)::date);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.month(text)
 RETURNS int AS $$
 BEGIN
   RETURN sparql.month($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.month(timestamp)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(month FROM $1);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.day(rdfnode)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(day FROM sparql.lex($1)::date);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.day(text)
 RETURNS int AS $$
 BEGIN
   RETURN sparql.day($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.day(timestamp)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(day FROM $1);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.hours(rdfnode)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(hour FROM sparql.lex($1)::timestamp);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.hours(text)
 RETURNS int AS $$
 BEGIN
   RETURN sparql.hours($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.hours(timestamp)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(hour FROM $1);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.minutes(rdfnode)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(minute FROM sparql.lex($1)::timestamp);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.minutes(text)
 RETURNS int AS $$
 BEGIN
   RETURN sparql.minutes($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.minutes(timestamp)
 RETURNS int AS $$
 BEGIN
   RETURN EXTRACT(minute FROM $1);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.seconds(rdfnode)
 RETURNS numeric AS $$
 BEGIN
   RETURN EXTRACT(second FROM sparql.lex($1)::timestamp);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.seconds(text)
 RETURNS int AS $$
 BEGIN
   RETURN sparql.seconds($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.seconds(timestamp)
 RETURNS numeric AS $$
 BEGIN
   RETURN EXTRACT(second FROM $1);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE OR REPLACE FUNCTION sparql.timezone(lit rdfnode)
 RETURNS rdfnode AS $$
@@ -3185,7 +3185,7 @@ RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.timezone($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE OR REPLACE FUNCTION sparql.tz(lit rdfnode)
 RETURNS rdfnode AS $$
@@ -3216,7 +3216,7 @@ RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.tz($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 /* SPARQL 17.4.6 Hash Functions */
 CREATE FUNCTION sparql.md5(rdfnode) RETURNS rdfnode
@@ -3228,7 +3228,7 @@ RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.md5($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE PARALLEL SAFE STRICT;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE TYPE triple AS (
   subject rdfnode,
@@ -3238,6 +3238,6 @@ CREATE TYPE triple AS (
 
 CREATE FUNCTION sparql.describe(server text, query text, raw_literal boolean DEFAULT true, base_uri text DEFAULT '')
 RETURNS SETOF triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION sparql.describe(text,text,boolean,text) IS 'Gateway for DESCRIBE SPARQL queries';

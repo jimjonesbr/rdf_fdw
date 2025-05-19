@@ -5020,22 +5020,42 @@ static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid forei
 
 	struct RDFfdwState *state = (struct RDFfdwState *)baserel->fdw_private;
 
-	Path *path = (Path *)create_foreignscan_path(root, baserel,
-												 NULL,			/* default pathtarget */
-												 baserel->rows, /* rows */
-#if PG_VERSION_NUM >= 180000
-												 0,						  /* no disabled plan nodes */
-#endif																	  /* PG_VERSION_NUM */
-												 state->startup_cost,	  /* startup cost */
-												 state->total_cost,		  /* total cost */
-												 NIL,					  /* no pathkeys */
-												 baserel->lateral_relids, /* no required outer relids */
-												 NULL,					  /* no fdw_outerpath */
 #if PG_VERSION_NUM >= 170000
-												 NIL,	/* no fdw_restrictinfo */
-#endif													/* PG_VERSION_NUM */
-												 NULL); /* no fdw_private */
-	add_path(baserel, path);
+    Path *path = (Path *)create_foreignscan_path(root, baserel,
+                                                 NULL,                  /* pathtarget */
+                                                 baserel->rows,
+#if PG_VERSION_NUM >= 180000
+                                                 0,                     /* no parallel pathflags */
+#endif
+                                                 state->startup_cost,
+                                                 state->total_cost,
+                                                 NIL,                   /* pathkeys */
+                                                 baserel->lateral_relids,
+                                                 NULL,                  /* fdw_outerpath */
+                                                 NIL,                   /* fdw_restrictinfo */
+                                                 NULL);                 /* fdw_private */
+#elif PG_VERSION_NUM >= 90600
+    Path *path = (Path *)create_foreignscan_path(root, baserel,
+                                                 NULL,                  /* pathtarget */
+                                                 baserel->rows,
+                                                 state->startup_cost,
+                                                 state->total_cost,
+                                                 NIL,
+                                                 baserel->lateral_relids,
+                                                 NULL,
+                                                 NULL);
+#else /* PG_VERSION_NUM < 90600 (PostgreSQL 9.5) */
+    Path *path = (Path *)create_foreignscan_path(root, baserel,
+                                                 baserel->rows,
+                                                 state->startup_cost,
+                                                 state->total_cost,
+                                                 NIL,
+                                                 baserel->lateral_relids,
+                                                 NULL,
+                                                 NIL);
+#endif
+
+    add_path(baserel, path);
 }
 
 static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid, ForeignPath *best_path, List *tlist, List *scan_clauses, Plan *outer_plan)
@@ -5403,10 +5423,10 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 	{
 		elog(DEBUG2, "%s: setting UserMapping*", __func__);
 		um = (UserMapping *)palloc(sizeof(UserMapping));
-#if PG_VERSION_NUM < 120000
-		um->umid = HeapTupleGetOid(tp);
-#else
-		um->umid = ((Form_pg_user_mapping)GETSTRUCT(tp))->oid;
+#if PG_VERSION_NUM >= 120000
+    um->umid = ((Form_pg_user_mapping) GETSTRUCT(tp))->oid;
+#elif PG_VERSION_NUM >= 90600
+    um->umid = HeapTupleGetOid(tp);
 #endif
 		um->userid = GetUserId();
 		um->serverid = state->server->serverid;
@@ -5894,7 +5914,11 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root)
 {
 
-	List *columnlist = baserel->reltarget->exprs;
+#if PG_VERSION_NUM >= 90600
+    List *columnlist = baserel->reltarget->exprs;
+#else
+    List *columnlist = baserel->reltargetlist;
+#endif
 	List *conditions = baserel->baserestrictinfo;
 	ListCell *cell;
 	StringInfoData select;
@@ -10324,7 +10348,11 @@ Datum rdfnode_to_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	int64 result = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(p.lex)));
+#if PG_VERSION_NUM >= 100000
+    int64 result = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(p.lex)));
+#else
+    int64 result = DatumGetInt64(OidFunctionCall1(F_INT8IN, CStringGetDatum(p.lex)));
+#endif
 
 	PG_RETURN_INT64(result);
 }

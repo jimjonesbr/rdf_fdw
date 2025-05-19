@@ -18,7 +18,7 @@
     "prereqs": {
        "runtime": {
           "requires": {
-             "PostgreSQL": "9.6.0"
+             "PostgreSQL": "9.5.0"
           }
        },
        "test": {

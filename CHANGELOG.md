@@ -7,7 +7,7 @@ This is a major release of `rdf_fdw` featuring substantial new features, improve
 
 ### Enhancements
 
-* PostgreSQL 18 support (currently in development).
+* PostgreSQL 9.5 and 18 (currently in beta1) support.
 * SPARQL `DESCRIBE` query support via the new `sparql.describe()` support function.
 * New `rdfnode` data type, enabling:
   * Representation of RDF literals and IRIs with full lexical fidelity.

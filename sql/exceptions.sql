@@ -125,20 +125,6 @@ DELETE FROM t1;
 /* EXPLAIN isn't supported*/
 EXPLAIN SELECT * FROM t1;
 
-/*
- invalid relation.
- an existing sequence is used instead of a relation on
- 'target_table', so the oid retrieval will not fail.
- it has to check if the oid corresponds to a relation and
- throw an error otherwise.
- */
-CREATE SEQUENCE seq1;
-CALL
-    rdf_fdw_clone_table(
-        foreign_table => 't1',
-        target_table  => 'seq1'
-    );
-
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '

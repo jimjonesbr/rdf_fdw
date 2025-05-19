@@ -1,3 +1,4 @@
+SET timezone TO 'Etc/UTC';
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
@@ -31,7 +32,8 @@ SERVER linkedgeodata OPTIONS (
  ');
 /* SPARQL 17.4.1.7 - RDFterm-equal */
 SELECT * FROM hbf
-WHERE label = 'Gare centrale de Leipzig';
+WHERE label = 'Gare centrale de Leipzig'
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -53,17 +55,18 @@ INFO:  SPARQL returned 6 records.
 
           label           |         modified         | version | wheelchair |   lat   |   lon   |                          type                          | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 --------------------------+--------------------------+---------+------------+---------+---------+--------------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (6 rows)
 
 /* SPARQL 17.4.1.9 - IN */
 SELECT * FROM hbf
-WHERE label IN ('Leipzig Hbf', 'Gare centrale de Leipzig');
+WHERE label IN ('Leipzig Hbf', 'Gare centrale de Leipzig')
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -85,16 +88,17 @@ INFO:  SPARQL returned 6 records.
 
           label           |         modified         | version | wheelchair |   lat   |   lon   |                          type                          | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 --------------------------+--------------------------+---------+------------+---------+---------+--------------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (6 rows)
 
 SELECT label, type FROM hbf
-WHERE label = ANY(ARRAY['Leipzig Hbf', 'Gare centrale de Leipzig']);
+WHERE label = ANY(ARRAY['Leipzig Hbf', 'Gare centrale de Leipzig'])
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?type 
@@ -125,7 +129,8 @@ INFO:  SPARQL returned 6 records.
 (6 rows)
 
 SELECT * FROM hbf
-WHERE fake_string IN ('Leipzig Hbf', 'Gare centrale de Leipzig');
+WHERE fake_string IN ('Leipzig Hbf', 'Gare centrale de Leipzig')
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -151,7 +156,8 @@ INFO:  SPARQL returned 0 records.
 
 /* SPARQL 17.4.1.10 - NOT IN*/
 SELECT * FROM hbf
-WHERE label NOT IN ('foo','bar');
+WHERE label NOT IN ('foo','bar')
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -173,22 +179,23 @@ INFO:  SPARQL returned 12 records.
 
           label           |         modified         | version | wheelchair |   lat   |   lon   |                          type                          | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 --------------------------+--------------------------+---------+------------+---------+---------+--------------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation       | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (12 rows)
 
 /* SPARQL 15.5 - LIMIT */
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 LIMIT 1;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
@@ -209,10 +216,11 @@ INFO:  SPARQL returned 1 record.
 
     label    |         modified         | version | wheelchair |   lat   |   lon   |                type                 | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 -------------+--------------------------+---------+------------+---------+---------+-------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (1 row)
 
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
@@ -233,10 +241,11 @@ INFO:  SPARQL returned 1 record.
 
     label    |         modified         | version | wheelchair |   lat   |   lon   |                type                 | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 -------------+--------------------------+---------+------------+---------+---------+-------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (1 row)
 
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 FETCH FIRST 2 ROWS ONLY;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
@@ -257,12 +266,13 @@ INFO:  SPARQL returned 2 records.
 
     label    |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 -------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (2 rows)
 
 /* SPARQL 15.4 - OFFSET */
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 OFFSET 1
 LIMIT 1;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
@@ -284,10 +294,11 @@ INFO:  SPARQL returned 2 records.
 
     label    |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 -------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (1 row)
 
 SELECT * FROM hbf
+ORDER BY label COLLATE "C"
 OFFSET 1
 FETCH FIRST ROW ONLY;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
@@ -309,12 +320,12 @@ INFO:  SPARQL returned 2 records.
 
     label    |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 -------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (1 row)
 
 /* SPARQL 15.1 - ORDER BY */
 SELECT * FROM hbf
-ORDER BY label ASC
+ORDER BY label COLLATE "C" ASC
 LIMIT 2;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
@@ -329,19 +340,18 @@ SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3
     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type
     FILTER(?s = <http://linkedgeodata.org/triplify/node376142577>)
     }
-ORDER BY  ASC (?label)
 LIMIT 2
 
 INFO:  SPARQL returned 2 records.
 
     label    |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 -------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (2 rows)
 
 SELECT * FROM hbf
-ORDER BY label DESC
+ORDER BY label COLLATE "C" DESC
 LIMIT 2;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
@@ -356,19 +366,18 @@ SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3
     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type
     FILTER(?s = <http://linkedgeodata.org/triplify/node376142577>)
     }
-ORDER BY  DESC (?label)
 LIMIT 2
 
 INFO:  SPARQL returned 2 records.
 
-          label           |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
---------------------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+    label    |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
+-------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (2 rows)
 
 SELECT * FROM hbf
-ORDER BY label ASC, type DESC
+ORDER BY label COLLATE "C" ASC, type COLLATE "C" DESC
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
@@ -383,20 +392,21 @@ SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3
     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type
     FILTER(?s = <http://linkedgeodata.org/triplify/node376142577>)
     }
-ORDER BY  ASC (?label)  DESC (?type)
 LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-    label    |         modified         | version | wheelchair |   lat   |   lon   |                       type                       | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
--------------+--------------------------+---------+------------+---------+---------+--------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station        | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing   | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+    label    |         modified         | version | wheelchair |   lat   |   lon   |                      type                      | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
+-------------+--------------------------+---------+------------+---------+---------+------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node             | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
+ Leipzig Hbf | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature            | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (3 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT*/
-SELECT DISTINCT label, modified FROM hbf;
+SELECT DISTINCT label COLLATE "C", modified 
+FROM hbf 
+ORDER BY label COLLATE "C", modified;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?modified 
@@ -410,7 +420,6 @@ SELECT DISTINCT ?label ?modified
     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type
     FILTER(?s = <http://linkedgeodata.org/triplify/node376142577>)
     }
-ORDER BY  ASC (?label)  ASC (?modified)
 
 INFO:  SPARQL returned 2 records.
 
@@ -420,7 +429,9 @@ INFO:  SPARQL returned 2 records.
  Leipzig Hbf              | Sun Jul 12 20:41:25 2015
 (2 rows)
 
-SELECT DISTINCT ON (label, modified) label, modified, version FROM hbf;
+SELECT DISTINCT ON (label COLLATE "C", modified) label, modified, version 
+FROM hbf
+ORDER BY label COLLATE "C", modified;
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?modified ?version 
@@ -434,7 +445,6 @@ SELECT ?label ?modified ?version
     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type
     FILTER(?s = <http://linkedgeodata.org/triplify/node376142577>)
     }
-ORDER BY  ASC (?label)  ASC (?modified)
 
 INFO:  SPARQL returned 12 records.
 
@@ -454,7 +464,8 @@ WHERE
   type = 'http://linkedgeodata.org/ontology/RailwayStation'::varchar AND
   fake_timestamptz = '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date = '2018-05-01'::date AND
-  fake_string = 'foo';
+  fake_string = 'foo'
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -483,10 +494,11 @@ INFO:  SPARQL returned 1 record.
 
           label           |         modified         | version | wheelchair |   lat   |   lon   |                       type                       | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
 --------------------------+--------------------------+---------+------------+---------+---------+--------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayStation | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 19:45:13.815 2011 UTC
 (1 row)
 
-SELECT DISTINCT * FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   label <> 'foo' AND
   modified <> '2020-07-12 20:41:25'::timestamp AND
@@ -498,10 +510,10 @@ WHERE
   fake_timestamptz <> '2020-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date <> '2020-05-01'::date AND
   fake_string <> 'bar'
-ORDER BY type;
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
-SELECT DISTINCT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
+SELECT DISTINCT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
 {
     ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label .
     ?s <http://purl.org/dc/terms/modified> ?modified .
@@ -527,28 +539,22 @@ SELECT DISTINCT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http
 
 INFO:  SPARQL returned 10 records.
 
-          label           |         modified         | version | wheelchair |   lat   |   lon   |                          type                          | fake_string | fake_date  | fake_time | fake_timetz |         fake_timestamptz         
---------------------------+--------------------------+---------+------------+---------+---------+--------------------------------------------------------+-------------+------------+-----------+-------------+----------------------------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://geovocab.org/spatial#Feature                    | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/meta/Node                     | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/PublicTransportThing | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/RailwayThing         | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | t          | 51.3466 | 12.3831 | http://linkedgeodata.org/ontology/Station              | foo         | 05-01-2018 | 11:30:42  | 14:45:13-05 | Mon Jan 10 11:45:13.815 2011 PST
-(10 rows)
+          label           |         modified         | version |   lat   |   lon   |         fake_timestamptz         | fake_date  
+--------------------------+--------------------------+---------+---------+---------+----------------------------------+------------
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+(2 rows)
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified > '2014-07-12 20:41:25'::timestamp AND
   version > 01 AND
   lat > 01 AND
   lon > 01 AND
   fake_timestamptz > '2010-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date > '2017-05-01'::date;
+  fake_date > '2017-05-01'::date
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -570,24 +576,25 @@ SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?
  FILTER("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime > "2010-01-10T19:45:13.815000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
  FILTER("2018-05-01"^^xsd:date > "2017-05-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
-ORDER BY  ASC (?label)  ASC (?modified)  ASC (?version)  ASC (?lat)  ASC (?lon)  ASC (?tstz)  ASC (?dt)
 
 INFO:  SPARQL returned 2 records.
 
           label           |         modified         | version |   lat   |   lon   |         fake_timestamptz         | fake_date  
 --------------------------+--------------------------+---------+---------+---------+----------------------------------+------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
 (2 rows)
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified < '2016-07-12 20:41:25'::timestamp AND
   version < 99 AND
   lat < 99 AND
   lon < 99 AND
   fake_timestamptz < '2012-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date < '2019-05-01'::date;
+  fake_date < '2019-05-01'::date
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -609,24 +616,25 @@ SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?
  FILTER("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime < "2012-01-10T19:45:13.815000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
  FILTER("2018-05-01"^^xsd:date < "2019-05-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
-ORDER BY  ASC (?label)  ASC (?modified)  ASC (?version)  ASC (?lat)  ASC (?lon)  ASC (?tstz)  ASC (?dt)
 
 INFO:  SPARQL returned 2 records.
 
           label           |         modified         | version |   lat   |   lon   |         fake_timestamptz         | fake_date  
 --------------------------+--------------------------+---------+---------+---------+----------------------------------+------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
 (2 rows)
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified >= '2015-07-12 20:41:25'::timestamp AND
   version >= 19 AND
   fake_timestamptz >= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date >= '2018-05-01'::date AND
   fake_timestamptz >= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date >= '2018-05-01'::date;
+  fake_date >= '2018-05-01'::date
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -648,24 +656,25 @@ SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?
  FILTER("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime >= "2011-01-10T19:45:13.815000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
  FILTER("2018-05-01"^^xsd:date >= "2018-05-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
-ORDER BY  ASC (?label)  ASC (?modified)  ASC (?version)  ASC (?lat)  ASC (?lon)  ASC (?tstz)  ASC (?dt)
 
 INFO:  SPARQL returned 2 records.
 
           label           |         modified         | version |   lat   |   lon   |         fake_timestamptz         | fake_date  
 --------------------------+--------------------------+---------+---------+---------+----------------------------------+------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
 (2 rows)
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified <= '2015-07-12 20:41:25'::timestamp AND
   version <= 19 AND
   fake_timestamptz <= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date <= '2018-05-01'::date AND
   fake_timestamptz <= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date <= '2018-05-01'::date;
+  fake_date <= '2018-05-01'::date
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -687,24 +696,25 @@ SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?
  FILTER("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime <= "2011-01-10T19:45:13.815000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
  FILTER("2018-05-01"^^xsd:date <= "2018-05-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
-ORDER BY  ASC (?label)  ASC (?modified)  ASC (?version)  ASC (?lat)  ASC (?lon)  ASC (?tstz)  ASC (?dt)
 
 INFO:  SPARQL returned 2 records.
 
           label           |         modified         | version |   lat   |   lon   |         fake_timestamptz         | fake_date  
 --------------------------+--------------------------+---------+---------+---------+----------------------------------+------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
 (2 rows)
 
-SELECT DISTINCT label, modified, version, lat, lon, fake_timestamptz, fake_date FROM hbf
+SELECT DISTINCT label COLLATE "C", modified, version, lat, lon, fake_timestamptz, fake_date
+FROM hbf
 WHERE
   modified BETWEEN '2014-07-12 20:41:25'::timestamp AND '2016-07-12 20:41:25'::timestamp AND
   version BETWEEN 17 AND 20 AND
   fake_timestamptz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date AND
   fake_timestamptz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz AND
-  fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date;
+  fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date
+ORDER BY label COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -732,14 +742,13 @@ SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?
  FILTER("2018-05-01"^^xsd:date >= "2017-05-01"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER("2018-05-01"^^xsd:date <= "2019-05-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
-ORDER BY  ASC (?label)  ASC (?modified)  ASC (?version)  ASC (?lat)  ASC (?lon)  ASC (?tstz)  ASC (?dt)
 
 INFO:  SPARQL returned 2 records.
 
           label           |         modified         | version |   lat   |   lon   |         fake_timestamptz         | fake_date  
 --------------------------+--------------------------+---------+---------+---------+----------------------------------+------------
- Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
- Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 11:45:13.815 2011 PST | 05-01-2018
+ Gare centrale de Leipzig | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
+ Leipzig Hbf              | Sun Jul 12 20:41:25 2015 |      19 | 51.3466 | 12.3831 | Mon Jan 10 19:45:13.815 2011 UTC | 05-01-2018
 (2 rows)
 
 /* pushdown - PostgreSQL length */
@@ -750,7 +759,8 @@ WHERE
   length(label) < 99 AND
   length(label) <= 24 AND
   length(label) >= 24 AND
-  length(label) BETWEEN 10 AND 88;
+  length(label) BETWEEN 10 AND 88
+ORDER BY label COLLATE "C", type COLLATE "C";
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT ?label ?type 
@@ -779,22 +789,24 @@ INFO:  SPARQL returned 6 records.
           label           |                          type                          
 --------------------------+--------------------------------------------------------
  Gare centrale de Leipzig | http://geovocab.org/spatial#Feature
- Gare centrale de Leipzig | http://linkedgeodata.org/ontology/RailwayThing
  Gare centrale de Leipzig | http://linkedgeodata.org/meta/Node
- Gare centrale de Leipzig | http://linkedgeodata.org/ontology/RailwayStation
- Gare centrale de Leipzig | http://linkedgeodata.org/ontology/Station
  Gare centrale de Leipzig | http://linkedgeodata.org/ontology/PublicTransportThing
+ Gare centrale de Leipzig | http://linkedgeodata.org/ontology/RailwayStation
+ Gare centrale de Leipzig | http://linkedgeodata.org/ontology/RailwayThing
+ Gare centrale de Leipzig | http://linkedgeodata.org/ontology/Station
 (6 rows)
 
 /* pushdown - PostgreSQL abs */
-SELECT DISTINCT label, abs(version) FROM hbf
+SELECT DISTINCT label COLLATE "C", abs(version)
+FROM hbf
 WHERE 
   abs(version) = 19 AND
   abs(version) > 01 AND
   abs(version) >= 19 AND
   abs(version) <  99 AND
   abs(version) <=  19 AND
-  abs(version) BETWEEN 01 AND 99;
+  abs(version) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", abs(version);
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?version 
@@ -817,7 +829,6 @@ SELECT DISTINCT ?label ?version
  FILTER(ABS(?version) <= 99)
  FILTER(ABS(?version) = 19)
 }
-ORDER BY  ASC (?label)
 
 INFO:  SPARQL returned 2 records.
 
@@ -828,7 +839,7 @@ INFO:  SPARQL returned 2 records.
 (2 rows)
 
 /* pushdown - PostgreSQL round */
-SELECT DISTINCT label, round(lat)
+SELECT DISTINCT label COLLATE "C", round(lat)
 FROM hbf 
 WHERE 
   round(lat) = 51 AND
@@ -836,7 +847,8 @@ WHERE
   round(lat) >= 51 AND
   round(lat) < 99 AND
   round(lat) <= 51 AND
-  round(lat) BETWEEN 01 AND 99;
+  round(lat) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", round(lat);
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?lat 
@@ -859,7 +871,6 @@ SELECT DISTINCT ?label ?lat
  FILTER(ROUND(?lat) <= 99)
  FILTER(ROUND(?lat) = 51)
 }
-ORDER BY  ASC (?label)
 
 INFO:  SPARQL returned 2 records.
 
@@ -870,7 +881,7 @@ INFO:  SPARQL returned 2 records.
 (2 rows)
 
 /* pushdown - PostgreSQL ceil */
-SELECT DISTINCT label, ceil(lat)
+SELECT DISTINCT label COLLATE "C", ceil(lat)
 FROM hbf 
 WHERE 
   ceil(lat) = 52 AND
@@ -878,7 +889,8 @@ WHERE
   ceil(lat) >= 52 AND
   ceil(lat) < 99 AND
   ceil(lat) <= 52 AND
-  ceil(lat) BETWEEN 01 AND 99;
+  ceil(lat) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", ceil(lat);
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?lat 
@@ -901,7 +913,6 @@ SELECT DISTINCT ?label ?lat
  FILTER(CEIL(?lat) <= 99)
  FILTER(CEIL(?lat) = 52)
 }
-ORDER BY  ASC (?label)
 
 INFO:  SPARQL returned 2 records.
 
@@ -912,7 +923,7 @@ INFO:  SPARQL returned 2 records.
 (2 rows)
 
 /* pushdown - PostgreSQL floor */
-SELECT DISTINCT label, floor(lat)
+SELECT DISTINCT label COLLATE "C", floor(lat)
 FROM hbf 
 WHERE 
   floor(lat) = 51 AND
@@ -920,7 +931,8 @@ WHERE
   floor(lat) >= 51 AND
   floor(lat) < 99 AND
   floor(lat) <= 51 AND
-  floor(lat) BETWEEN 01 AND 99;
+  floor(lat) BETWEEN 01 AND 99
+ORDER BY label COLLATE "C", floor(lat);
 INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
 
 SELECT DISTINCT ?label ?lat 
@@ -943,7 +955,6 @@ SELECT DISTINCT ?label ?lat
  FILTER(FLOOR(?lat) <= 99)
  FILTER(FLOOR(?lat) = 51)
 }
-ORDER BY  ASC (?label)
 
 INFO:  SPARQL returned 2 records.
 

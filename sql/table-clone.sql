@@ -360,3 +360,17 @@ CALL rdf_fdw_clone_table(
       commit_page => NULL);
 
 DROP TABLE IF EXISTS t1_local, t2_local;
+
+/*
+ invalid relation.
+ an existing sequence is used instead of a relation on
+ 'target_table', so the oid retrieval will not fail.
+ it has to check if the oid corresponds to a relation and
+ throw an error otherwise.
+ */
+CREATE SEQUENCE seq1;
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 't1',
+        target_table  => 'seq1'
+    );
