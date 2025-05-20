@@ -5792,7 +5792,8 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 		{
 			/* remove crlf */
 			contents[strlen(contents) - 2] = '\0';
-			elog(WARNING, "%s: unsupported header entry: \"%s\"", __func__, contents);
+			elog(DEBUG1, "%s: unsupported header entry: \"%s\"", __func__, contents);
+			elog(DEBUG1, "%s: %s", __func__, mem->memory);
 			return 0;
 		}
 	}
@@ -6205,7 +6206,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(state->curl)) != CURLE_OK; i++)
 			{
-				elog(WARNING, "  %s: request to '%s' failed (%ld)", __func__, state->endpoint, i);
+				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->endpoint, i);
 			}
 		}
 
@@ -6263,10 +6264,10 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 			state->sparql_resultset = pstrdup(chunk.memory);
 
-			elog(DEBUG4, "  %s: xml document \n\n%s", __func__, chunk.memory);
-			elog(DEBUG2, "  %s: http response code = %ld", __func__, response_code);
-			elog(DEBUG2, "  %s: http response size = %ld", __func__, chunk.size);
-			elog(DEBUG2, "  %s: http response header = \n%s", __func__, chunk_header.memory);
+			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);
+			elog(DEBUG2, "%s: http response code = %ld", __func__, response_code);
+			elog(DEBUG2, "%s: http response size = %ld", __func__, chunk.size);
+			elog(DEBUG2, "%s: http response header = \n%s", __func__, chunk_header.memory);
 		}
 	}
 

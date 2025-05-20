@@ -181,9 +181,8 @@ SELECT * FROM sparql.describe('wikidata', 'DESCRIBE http://www.wikidata.org/enti
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 DESCRIBE http://www.wikidata.org/entity/Q61308849
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
 ERROR:  Unable to establish connection to 'https://query.wikidata.org/sparql' (HTTP status 400)
-DETAIL:  Failed writing received data to disk/application (curl error code 23)
+DETAIL:  HTTP response code said error (curl error code 22)
 -- DESCRIBE pattern with a blank node
 SELECT * FROM sparql.describe('wikidata', '_:bnode1');
 ERROR:  invalid DESCRIBE query:
@@ -194,9 +193,8 @@ SELECT * FROM sparql.describe('wikidata', 'DESCRIBE _:bnode1');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 DESCRIBE _:bnode1
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
 ERROR:  Unable to establish connection to 'https://query.wikidata.org/sparql' (HTTP status 400)
-DETAIL:  Failed writing received data to disk/application (curl error code 23)
+DETAIL:  HTTP response code said error (curl error code 22)
 -- malformed entity IRI
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE <htt://i.am.malformed>');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':

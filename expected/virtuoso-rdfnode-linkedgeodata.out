@@ -1082,15 +1082,11 @@ SELECT ?p ?o
  FILTER(ISBLANK(BNODE(?o)))
 }
 
-WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
-WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
-WARNING:    ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (1)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
-WARNING:    ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (2)
-WARNING:  HeaderCallbackFunction: unsupported header entry: "content-type: text/plain"
-WARNING:    ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (3)
+WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (1)
+WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (2)
+WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (3)
 ERROR:  Unable to establish connection to 'http://linkedgeodata.org/sparql' (HTTP status 400)
-DETAIL:  Failed writing received data to disk/application (curl error code 23)
+DETAIL:  HTTP response code said error (curl error code 22)
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf
