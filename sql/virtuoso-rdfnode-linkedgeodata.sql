@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 SET timezone TO 'Etc/UTC';
 
 CREATE SERVER linkedgeodata 

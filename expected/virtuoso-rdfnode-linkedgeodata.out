@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 SET timezone TO 'Etc/UTC';
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -1086,7 +1087,6 @@ WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (1)
 WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (2)
 WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (3)
 ERROR:  Unable to establish connection to 'http://linkedgeodata.org/sparql' (HTTP status 400)
-DETAIL:  HTTP response code said error (curl error code 22)
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf
@@ -1959,5 +1959,3 @@ INFO:  SPARQL returned 1 record.
 
 DROP SERVER linkedgeodata CASCADE;
 NOTICE:  drop cascades to 2 other objects
-DETAIL:  drop cascades to foreign table hbf
-drop cascades to foreign table hbf2
