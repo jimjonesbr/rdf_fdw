@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 --------------------------------- Wikidata (Blazegraph) ---------------------------------
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -182,7 +183,6 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 DESCRIBE http://www.wikidata.org/entity/Q61308849
 
 ERROR:  Unable to establish connection to 'https://query.wikidata.org/sparql' (HTTP status 400)
-DETAIL:  HTTP response code said error (curl error code 22)
 -- DESCRIBE pattern with a blank node
 SELECT * FROM sparql.describe('wikidata', '_:bnode1');
 ERROR:  invalid DESCRIBE query:
@@ -194,7 +194,6 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 DESCRIBE _:bnode1
 
 ERROR:  Unable to establish connection to 'https://query.wikidata.org/sparql' (HTTP status 400)
-DETAIL:  HTTP response code said error (curl error code 22)
 -- malformed entity IRI
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE <htt://i.am.malformed>');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':

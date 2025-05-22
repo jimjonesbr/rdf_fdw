@@ -1,3 +1,4 @@
+\set VERBOSITY terse
 --------------------------------- Wikidata (Blazegraph) ---------------------------------
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
