@@ -114,7 +114,7 @@
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
 #endif /* PG_VERSION_NUM */
 
-#define FDW_VERSION "2.0.0-dev"
+#define FDW_VERSION "2.0.0"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -1112,6 +1112,16 @@ static char *cstring_to_rdfliteral(char *input)
 	return buf.data;
 }
 
+/*
+ * lex
+ * ---
+ *
+ * Extracts the lexical value of a given RDF literal.
+ *
+ * input: RDF literal
+ *
+ * returns: lexical value of an RDF literal
+ */
 static char *lex(char *input)
 {
 	StringInfoData output;
@@ -1285,17 +1295,6 @@ static char *lang(char *input)
 	return "";
 }
 
-/*
- * rdf_fdw_lang
- * ------------
- *
- * PostgreSQL function wrapper for the lang function. Extracts the language tag
- * from an RDF literal provided as a PostgreSQL text argument.
- *
- * input_text: PostgreSQL text type (e.g., "abc"@en, "123"^^xsd:int)
- *
- * returns: PostgreSQL text type representing the language tag or empty string
- */
 Datum rdf_fdw_lang(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
@@ -1342,18 +1341,6 @@ static char *strlang(char *literal, char *language)
 	return buf.data;
 }
 
-/*
- * rdf_fdw_strlang
- * ---------------
- *
- * PostgreSQL function wrapper for the strlang function. Constructs a language-tagged
- * RDF literal from a lexical value and language tag provided as PostgreSQL text arguments.
- *
- * input_text: PostgreSQL text type representing the lexical value (e.g., "abc")
- * lang_tag: PostgreSQL text type representing the language tag (e.g., "en")
- *
- * returns: PostgreSQL text type formatted as a language-tagged RDF literal
- */
 Datum rdf_fdw_strlang(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
@@ -1383,7 +1370,6 @@ static char *ExpandDatatypePrefix(char *str)
 {
 	StringInfoData buf;
 	const char *xsd_prefix = "xsd:";
-	const char *xsd_uri = "http://www.w3.org/2001/XMLSchema#";
 	char *stripped_str = str;
 	size_t len;
 
@@ -1407,7 +1393,7 @@ static char *ExpandDatatypePrefix(char *str)
 		const char *suffix = stripped_str + strlen(xsd_prefix); /* get part after "xsd:" */
 		initStringInfo(&buf);
 		appendStringInfoChar(&buf, '<');	   /* open bracket */
-		appendStringInfoString(&buf, xsd_uri); /* add XSD URI */
+		appendStringInfoString(&buf, RDF_XSD_BASE_URI); /* add XSD URI */
 		appendStringInfoString(&buf, suffix);  /* add suffix */
 		appendStringInfoChar(&buf, '>');	   /* close bracket */
 
@@ -1483,18 +1469,6 @@ static char *strdt(char *literal, char *datatype)
 	return buf.data;
 }
 
-/*
- * rdf_fdw_strdt
- * -------------
- *
- * PostgreSQL function wrapper for the strdt function. Constructs a datatype-tagged
- * RDF literal from a lexical value and datatype IRI provided as PostgreSQL text arguments.
- *
- * input_text: PostgreSQL text type representing the lexical value (e.g., "123")
- * data_type: PostgreSQL text type representing the datatype IRI (e.g., "xsd:int")
- *
- * returns: PostgreSQL text type formatted as a datatype-tagged RDF literal
- */
 Datum rdf_fdw_strdt(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
@@ -1549,18 +1523,6 @@ static char *str(char *input)
 	return result;
 }
 
-/*
- * rdf_fdw_str
- * -----------
- *
- * PostgreSQL function wrapper for the str function. Extracts the lexical value
- * of an RDF literal provided as a PostgreSQL text argument and returns it as a
- * new RDF literal.
- *
- * input_text: PostgreSQL text type (e.g., "abc"@en, "123"^^xsd:int)
- *
- * returns: PostgreSQL text type formatted as an RDF literal
- */
 Datum rdf_fdw_str(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
@@ -1599,13 +1561,6 @@ static char *iri(char *input)
 	return pstrdup(buf.data);
 }
 
-/*
- * rdf_fdw_iri
- * -----------
- *
- * PostgreSQL function wrapper for iri(). Takes a text input, converts it to a
- * C string, processes it with iri(), and returns the result as a PostgreSQL text type.
- */
 Datum rdf_fdw_iri(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
@@ -1648,16 +1603,6 @@ static bool isIRI(char *input)
 	return true;
 }
 
-/*
- * rdf_fdw_isIRI
- * -------------
- *
- * PostgreSQL function wrapper for isIRI. Returns true if the input is an IRI.
- *
- * input_text: PostgreSQL text type
- *
- * returns: PostgreSQL boolean
- */
 Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS)
 {
 	text *input_text;
@@ -1804,17 +1749,6 @@ static char *MapSPARQLDatatype(Oid pgtype)
 	return NULL;
 }
 
-/*
- * rdf_fdw_datatype
- * ----------------
- *
- * PostgreSQL function wrapper for the datatype function. Extracts the datatype
- * URI of an RDF literal provided as a PostgreSQL text argument.
- *
- * str_arg: PostgreSQL text type (e.g., "123"^^xsd:int, "abc"@en, "xyz")
- *
- * returns: PostgreSQL text type representing the datatype URI
- */
 Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 {
 	Oid argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
@@ -1958,17 +1892,6 @@ static char *encode_for_uri(char *str_in)
 	return res;
 }
 
-/*
- * rdf_fdw_encode_for_uri
- * ----------------------
- *
- * PostgreSQL function wrapper for encode_for_uri. Converts a PostgreSQL text
- * input to a URI-encoded string, suitable for use in RDF processing.
- *
- * input: PostgreSQL text type (e.g., "hello world", "\"example\"@en")
- *
- * returns: PostgreSQL text type with URI-encoded result
- */
 Datum rdf_fdw_encode_for_uri(PG_FUNCTION_ARGS)
 {
 	text *input = PG_GETARG_TEXT_PP(0);
@@ -2103,18 +2026,6 @@ static bool LiteralsCompatible(char *literal1, char *literal2)
 	return false;
 }
 
-/*
- * rdf_fdw_arguments_compatible
- * ----------------------------
- *
- * PostgreSQL function wrapper for LiteralsCompatible. Checks if two RDF literals
- * provided as PostgreSQL text arguments are compatible per SPARQL rules.
- *
- * arg1: PostgreSQL text type (e.g., "abc"@en, "123"^^xsd:int)
- * arg2: PostgreSQL text type (e.g., "abc", "456"^^xsd:string)
- *
- * returns: PostgreSQL boolean
- */
 Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS)
 {
 	text *arg1 = PG_GETARG_TEXT_PP(0);
@@ -2392,21 +2303,6 @@ static bool strstarts(char *str, char *substr)
 	return result == 0;
 }
 
-/*
- * rdf_fdw_strstarts
- * -----------------
- *
- * PostgreSQL function wrapper for the strstarts function. Implements the SPARQL
- * STRSTARTS function, returning true if the lexical form of the first argument
- * (string) starts with the lexical form of the second argument (substring), or
- * NULL if arguments are incompatible per SPARQL rules. Delegates core logic to
- * strstarts.
- *
- * str_arg: PostgreSQL text type (e.g., "foobar"@en, "foobar"^^xsd:string)
- * substr_arg: PostgreSQL text type (e.g., "foo", "foo"@en)
- *
- * returns: PostgreSQL boolean or NULL (for incompatible arguments)
- */
 Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
 {
 	text *str_arg = PG_GETARG_TEXT_PP(0);
@@ -2475,21 +2371,6 @@ static bool strends(char *str, char *substr)
 	return result == 0;
 }
 
-/*
- * rdf_fdw_strends
- * ---------------
- *
- * PostgreSQL function wrapper for the strends function. Implements the SPARQL
- * STRENDS function, returning true if the lexical form of the first argument
- * (string) ends with the lexical form of the second argument (substring), or
- * NULL if arguments are incompatible per SPARQL rules. Delegates core logic to
- * strends.
- *
- * str_arg: PostgreSQL text type (e.g., "foobar"@en, "foobar"^^xsd:string)
- * substr_arg: PostgreSQL text type (e.g., "bar", "bar"@en)
- *
- * returns: PostgreSQL boolean or NULL (for incompatible arguments)
- */
 Datum rdf_fdw_strends(PG_FUNCTION_ARGS)
 {
 	text *str_arg = PG_GETARG_TEXT_PP(0);
@@ -2600,18 +2481,6 @@ static bool langmatches(char *lang_tag, char *pattern)
 	return result;
 }
 
-/*
- * rdf_fdw_langmatches
- * -------------------
- *
- * PostgreSQL function wrapper for langmatches(). Takes two text inputs, processes
- * them with langmatches(), and returns a PostgreSQL boolean.
- *
- * lang_tag_text: PostgreSQL text type (e.g., "\"hello\"@en", "en")
- * pattern_text: PostgreSQL text type (e.g., "en-*", "*")
- *
- * returns: PostgreSQL boolean
- */
 Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS)
 {
 	text *lang_tag_text = PG_GETARG_TEXT_PP(0);
@@ -2653,17 +2522,6 @@ static bool isBlank(char *term)
 	return result;
 }
 
-/*
- * rdf_fdw_isBlank
- * ---------------
- *
- * PostgreSQL function wrapper for isBlank(). Takes a text input, checks if it's
- * a blank node, and returns a PostgreSQL boolean.
- *
- * term_text: PostgreSQL text type (e.g., "_:b1", "<http://ex.com>")
- *
- * returns: PostgreSQL boolean
- */
 Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS)
 {
 	text *term_text = PG_GETARG_TEXT_PP(0);
@@ -2786,17 +2644,6 @@ static bool isNumeric(char *term)
 	return false;
 }
 
-/*
- * rdf_fdw_isNumeric
- * -----------------
- *
- * PostgreSQL function wrapper for isNumeric. Checks if an RDF term provided as a
- * PostgreSQL text argument is numeric.
- *
- * input_text: PostgreSQL text type representing the RDF term
- *
- * returns: PostgreSQL boolean type
- */
 Datum rdf_fdw_isNumeric(PG_FUNCTION_ARGS)
 {
 	text *input_text;
@@ -2903,17 +2750,6 @@ static bool isLiteral(char *term)
 	return false;
 }
 
-/*
- * rdf_fdw_isLiteral
- * -----------------
- *
- * PostgreSQL function wrapper for isLiteral. Checks if an RDF term provided as a
- * PostgreSQL text argument is a literal. Returns NULL for NULL input (STRICT).
- *
- * input_text: PostgreSQL text type representing the RDF term
- *
- * returns: PostgreSQL boolean type
- */
 Datum rdf_fdw_isLiteral(PG_FUNCTION_ARGS)
 {
 	text *input_text;
@@ -3021,18 +2857,6 @@ static char *bnode(char *input)
 	return buf.data;
 }
 
-/*
- * rdf_fdw_bnode
- * -------------
- *
- * PostgreSQL function wrapper for SPARQL’s BNODE function. Generates a unique
- * blank node if called with no arguments (BNODE()), or a deterministic blank node
- * based on the input string’s lexical form (BNODE(str)). Returns NULL for NULL input.
- *
- * input_text: PostgreSQL text type (e.g., "xyz", "\"xyz\""), or none for BNODE()
- *
- * returns: PostgreSQL text type (e.g., "_:xyz" or "_:b123")
- */
 Datum rdf_fdw_bnode(PG_FUNCTION_ARGS)
 {
 	char *result;
@@ -3062,6 +2886,7 @@ Datum rdf_fdw_bnode(PG_FUNCTION_ARGS)
 
 /*
  * generate_uuid_v4
+ * ----------------
  * Generates a version 4 (random) UUID per RFC 4122. Returns a lowercase string
  * in the format xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx, where y is 8, 9, A, or B.
  * Uses timestamp and counter for entropy, no external dependencies.
@@ -3273,17 +3098,6 @@ static char *lcase(char *str)
 	return result;
 }
 
-/*
- * rdf_fdw_lcase
- * -------------
- *
- * PostgreSQL function wrapper for lcase. Converts a text input to lowercase.
- * Returns NULL for NULL input (STRICT).
- *
- * input_text: PostgreSQL text type (RDF literal or bare string)
- *
- * returns: PostgreSQL text type
- */
 Datum rdf_fdw_lcase(PG_FUNCTION_ARGS)
 {
 	text *input = PG_GETARG_TEXT_PP(0);
@@ -3383,17 +3197,6 @@ static char *ucase(char *str)
 	return result;
 }
 
-/*
- * rdf_fdw_ucase
- * -------------
- *
- * PostgreSQL function wrapper for ucase. Converts a text input to uppercase.
- * Returns NULL for NULL input (STRICT).
- *
- * input_text: PostgreSQL text type (RDF literal or bare string)
- *
- * returns: PostgreSQL text type
- */
 Datum rdf_fdw_ucase(PG_FUNCTION_ARGS)
 {
 	text *input = PG_GETARG_TEXT_PP(0);
@@ -3826,7 +3629,7 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 
 /*
  * CreateDatum
- * ----------
+ * -----------
  *
  * Creates a Datum from a given value based on the postgres types and modifiers.
  *
@@ -5468,6 +5271,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 
 	elog(DEBUG1, "%s exit", __func__);
 }
+
 /*
  * CStringToConst
  * -----------------
@@ -6889,9 +6693,6 @@ static int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
  *   - Handles language-tagged literals, typed literals, IRIs, or plain strings.
  *   - Applies RDF-specific formatting if requested via the column's literal_format.
  *   - Handles type coercion using the PostgreSQL typinput function for each column.
- *
- * Memory allocations are performed in a temporary context and cleaned up before returning.
- * Any unmatched columns are set to NULL in the tuple slot.
  *
  * Parameters:
  *   slot  - Tuple slot to be filled and returned to the executor.
@@ -8673,7 +8474,7 @@ static char *CreateRegexString(char *str)
  * ---------------
  * Determines if a PostgreSQL data type is string or numeric type
  * so that we can know when to wrap the value with single quotes
- * or leave it as is.
+ * or leave it as-is.
  *
  * type: PostgreSQL data type
  *
@@ -8814,6 +8615,14 @@ static char *FormatSQLExtractField(char *field)
 	return res;
 }
 
+/*
+ * GetRDFNodeOID
+ * ---------------
+ * Gets the Oid of the custom data type 'rdfnode', as it is not part of
+ * PostgreSQL core and will be different in every installation.
+ *
+ * returns Oid of 'rdfnode'
+ */
 static Oid GetRDFNodeOID(void)
 {
 	TypeName *typename = makeTypeNameFromNameList(list_make2(makeString("public"), makeString("rdfnode")));
@@ -8952,6 +8761,7 @@ static bool is_valid_language_tag(const char *lan)
 	regfree(&regex);
 	return is_valid;
 }
+
 Datum rdfnode_in(PG_FUNCTION_ARGS)
 {
 	char *str_in = PG_GETARG_CSTRING(0);
@@ -10104,7 +9914,6 @@ Datum rdfnode_to_float8(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(DirectFunctionCall1(float8in, CStringGetDatum(p.lex)));
 }
 
-/* float8 <-> rdfnode (reverse operators) */
 Datum float8_eq_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 f = PG_GETARG_FLOAT8(0);
@@ -10344,7 +10153,7 @@ Datum float4_ge_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* ## bigint (int8) ## */
+/* bigint (int8) */
 Datum rdfnode_to_int8(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -10584,7 +10393,7 @@ Datum int8_neq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* ## rdfnode OP int (int4) ## */
+/* int (int4) */
 Datum rdfnode_to_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -10702,7 +10511,6 @@ Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* ## int (int4) OP rdfnode ## */
 Datum int4_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	int32 val = PG_GETARG_INT32(0);
@@ -10821,7 +10629,7 @@ Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* ## rdfnode OP int (int2) ## */
+/* smallint (int2) */
 Datum rdfnode_to_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -10939,7 +10747,6 @@ Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* ## smallint (int2) OP rdfnode ## */
 Datum int2_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	int16 val = PG_GETARG_INT16(0);
@@ -11058,7 +10865,7 @@ Datum int2_neq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* timestamptz (timestamp with time zone) OP rdfnode */
+/* timestamp with time zone (timestamptz) */
 Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimestampTz ts = PG_GETARG_TIMESTAMPTZ(0);
@@ -11081,7 +10888,6 @@ Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
 
-/* rdfnode OP timestamptz (timestamp with time zone) */
 Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -11094,7 +10900,7 @@ Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(result);
 }
 
-/* rdfnode OP timestamp */
+/* timestamp */
 Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -11178,7 +10984,6 @@ Datum rdfnode_ge_timestamp(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* timestamp OP rdfnode */
 Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	Timestamp ts = PG_GETARG_TIMESTAMP(0);
@@ -11269,7 +11074,7 @@ Datum timestamp_ge_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* date OP rdfnode */
+/* date */
 Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -11348,7 +11153,6 @@ Datum rdfnode_neq_date(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* rdfnode OP date */
 Datum date_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	DateADT d = PG_GETARG_DATEADT(0);
@@ -11431,7 +11235,7 @@ Datum date_neq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* rdfnode OP time (without time zone) */
+/* time (without time zone) */
 Datum rdfnode_to_time(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -11511,7 +11315,6 @@ Datum rdfnode_neq_time(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* time (without time zone) OP rdfnode */
 Datum time_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT t = PG_GETARG_TIMEADT(0);
@@ -11599,7 +11402,7 @@ Datum time_neq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* rdfnode OP timetz (with time zone) */
+/*  time with time zone (timetz) */
 Datum rdfnode_to_timetz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -11696,7 +11499,6 @@ Datum rdfnode_neq_timetz(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* timetz (with time zone) OP rdfnode */
 Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *t = PG_GETARG_TIMETZADT_P(0);
@@ -11779,7 +11581,7 @@ Datum timetz_neq_rdfnode(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(result);
 }
 
-/* boolean <-> rdfnode */
+/* boolean */
 Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);

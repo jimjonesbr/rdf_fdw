@@ -1,13 +1,13 @@
 # Release Notes
 
 ## 2.0.0
-Release date: **YYYY-MM-DD**
+Release date: **2025-05-22**
 
 This is a major release of `rdf_fdw` featuring substantial new features, improved standards compliance, and important infrastructure enhancements. Backward compatibility is preserved, but users are encouraged to review the new features and updated behavior.
 
 ### Enhancements
 
-* PostgreSQL 9.5 and 18 (currently in beta1) support.
+* PostgreSQL 9.5 and 18 (in beta1 as of this release) support.
 * SPARQL `DESCRIBE` query support via the new `sparql.describe()` support function.
 * New `rdfnode` data type, enabling:
   * Representation of RDF literals and IRIs with full lexical fidelity.
