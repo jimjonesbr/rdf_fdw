@@ -31,7 +31,7 @@
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
 * [librdf](https://librdf.org/): version 1.0.17 or higher.
 * [pkg-config](https://linux.die.net/man/1/pkg-config): pkg-config 0.29.2 or higher.
-* [PostgreSQL](https://www.postgresql.org): version 9.6 or higher.
+* [PostgreSQL](https://www.postgresql.org): version 9.5 or higher.
 * [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to compile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
@@ -560,21 +560,20 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
 
 `rdf_fdw` implements most of the [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs), exposing them as SQL-callable functions under the dedicated `sparql` schema. This avoids conflicts with similarly named built-in PostgreSQL functions such as `round`, `replace`, or `ceil`. These functions operate on RDF values retrieved through `FOREIGN TABLEs` and can be used in SQL queries or as part of pushdown expressions. They adhere closely to SPARQL semantics, including handling of RDF literals, language tags, datatypes, and null propagation rules, enabling expressive and standards-compliant RDF querying directly inside PostgreSQL.
 
-**⚠️ Note on SPARQL Compatibility**
-
-While most RDF triplestores claim SPARQL 1.1 compliance, their behavior often diverges from the standard—particularly in how they handle literals with language tags or datatypes. For example, the following query may produce different results depending on the backend:
-
-```sparql
-SELECT (REPLACE("foo"@en, "o"@de, "xx"@fr) AS ?str) {}
-```
-* Virtuoso: `"fxxxx"`
-* Blazegraph: **Unknown error**: *incompatible operand for REPLACE: "o"@de*
-* GraphDB: `"fxxxx"@en`
-
-Such inconsistencies can lead to unexpected or confusing results. To avoid surprises:
-* Always test how your target triplestore handles tagged or typed literals.
-* Consider simpler (less performant) alternatives like `STR` when working with language-tagged values.
-* Enable the `log_sparql` option in `rdf_fdw` to compare the number of records returned by the SPARQL endpoint with those visible in PostgreSQL. If the counts differ, it likely means some records were filtered out locally due to incompatible behavior in pushdown function evaluation.
+> [!WARNING]  
+> While most RDF triplestores claim SPARQL 1.1 compliance, their behavior often diverges from the standard—particularly in how they handle literals with language tags or datatypes. For example, the following query may produce different results depending on the backend:
+>
+>```sparql
+>SELECT (REPLACE("foo"@en, "o"@de, "xx"@fr) AS ?str) {}
+>```
+>* Virtuoso &rarr; `"fxxxx"`
+>* Blazegraph &rarr; **Unknown error**: *incompatible operand for REPLACE: "o"@de*
+>* GraphDB &rarr; `"fxxxx"@en`
+>
+>Such inconsistencies can lead to unexpected or confusing results. To avoid surprises:
+>* Always test how your target triplestore handles tagged or typed literals.
+>* Consider simpler (less performant) alternatives like `STR` when working with language-tagged values.
+>* Enable the `log_sparql` option in `rdf_fdw` to compare the number of records returned by the SPARQL endpoint with those visible in PostgreSQL. If the counts differ, it likely means some records were filtered out locally due to incompatible behavior in pushdown function evaluation.
 
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 
