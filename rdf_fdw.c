@@ -114,7 +114,7 @@
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
 #endif /* PG_VERSION_NUM */
 
-#define FDW_VERSION "2.0.0"
+#define FDW_VERSION "2.0.1-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -4450,7 +4450,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
 
 						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-						datum = CStringGetDatum(pstrdup((char *)buffer->content));
+						datum = CStringGetDatum(pstrdup((char *)xmlBufferContent(buffer)));
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
 
@@ -4820,7 +4820,6 @@ static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid)
 {
-
 	struct RDFfdwState *state = (struct RDFfdwState *)baserel->fdw_private;
 
 #if PG_VERSION_NUM >= 170000
