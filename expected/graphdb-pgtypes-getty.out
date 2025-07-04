@@ -127,10 +127,10 @@ ORDER BY  ASC (?name)
 
 INFO:  SPARQL returned 6 records.
 
-                   name                    |   lon    | lat  
--------------------------------------------+----------+------
- Netherlands, Europe, World                |   4.8167 | 52.5
- North Holland, Netherlands, Europe, World | 4.816667 | 52.5
+                   name                    |   lon    |  lat  
+-------------------------------------------+----------+-------
+ Netherlands, Europe, World                |   4.8167 |  52.5
+ North Holland, Netherlands, Europe, World | 4.816667 | 52.55
 (2 rows)
 
 /*
@@ -200,19 +200,18 @@ INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
 
 INFO:  SPARQL returned 174 records.
 
-                name                 |                                  bio                                  | birth 
--------------------------------------+-----------------------------------------------------------------------+-------
- Juán de España                      | Spanish artist and goldsmith, active 1455                             |  1415
- Coecke van Aelst, Pieter, the elder | Flemish artist, architect, and author, 1502-1550                      |  1502
- Worst, Jan                          | Dutch artist, active ca. 1645-1655                                    |  1605
- Mander, Karel van, III              | Dutch portraitist and decorative artist, 1608-1670, active in Denmark |  1608
- Ulft, Jacob van der                 | Dutch artist, 1627-1689                                               |  1627
- Fiammingo, Giacomo                  | Flemish artist, fl. 1655                                              |  1635
- Marotte, Charles                    | French artist, fl. ca.1719-1743                                       |  1699
- Troll, Johann Heinrich              | Swiss artist, 1756-1824                                               |  1756
- Beys, G.                            | French artist, fl. ca.1786-1800                                       |  1766
- Vaucher, Gabriel Constant           | Swiss artist, 1768-1814                                               |  1768
-(10 rows)
+           name            |                                  bio                                  | birth 
+---------------------------+-----------------------------------------------------------------------+-------
+ Juán de España            | Spanish artist and goldsmith, active 1455                             |  1415
+ Worst, Jan                | Dutch artist, active ca. 1645-1655                                    |  1605
+ Mander, Karel van, III    | Dutch portraitist and decorative artist, 1608-1670, active in Denmark |  1608
+ Ulft, Jacob van der       | Dutch artist, 1627-1689                                               |  1627
+ Fiammingo, Giacomo        | Flemish artist, fl. 1655                                              |  1635
+ Marotte, Charles          | French artist, fl. ca.1719-1743                                       |  1699
+ Troll, Johann Heinrich    | Swiss artist, 1756-1824                                               |  1756
+ Beys, G.                  | French artist, fl. ca.1786-1800                                       |  1766
+ Vaucher, Gabriel Constant | Swiss artist, 1768-1814                                               |  1768
+(9 rows)
 
 DROP SERVER getty CASCADE;
 NOTICE:  drop cascades to 2 other objects
