@@ -114,7 +114,7 @@
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
 #endif /* PG_VERSION_NUM */
 
-#define FDW_VERSION "2.0.1-dev"
+#define FDW_VERSION "2.1.0-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -178,6 +178,7 @@
 #define RDF_SERVER_OPTION_QUERY_PARAM "query_param"
 #define RDF_SERVER_OPTION_FETCH_SIZE "fetch_size"
 #define RDF_SERVER_OPTION_BASE_URI "base_uri"
+#define RDF_SERVER_OPTION_PREFIX_CONTEXT "prefix_context"
 
 #define RDF_TABLE_OPTION_SPARQL "sparql"
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
@@ -264,6 +265,7 @@ typedef struct RDFfdwState
 	char *endpoint;					   /* SPARQL endpoint set in the CREATE SERVER statement*/
 	char *query_param;				   /* SPARQL query POST parameter used by the endpoint */
 	char *format;					   /* Format in which the RDF triplestore has to reply */
+	char *prefix_context;              /* Prefix context for SPARQL queries */
 	char *proxy;					   /* Proxy for HTTP requests, if necessary. */
 	char *proxy_type;				   /* Proxy protocol (HTTPS, HTTP). */
 	char *proxy_user;				   /* User name for proxy authentication. */
@@ -346,6 +348,12 @@ struct RDFfdwOption
 	bool optfound;	  /* Flag whether options was specified by user */
 };
 
+typedef struct RDFPrefix
+{
+	char *prefix;	/* prefix name, e.g. foaf, dcterms, owl */
+	char *url; 		/* prefix url */
+} RDFPrefix;
+
 static struct RDFfdwOption valid_options[] =
 	{
 		/* Foreign Servers */
@@ -364,6 +372,7 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_QUERY_PARAM, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_FETCH_SIZE, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_BASE_URI, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_PREFIX_CONTEXT, ForeignServerRelationId, false, false},
 		/* Foreign Tables */
 		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 		{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
@@ -958,7 +967,7 @@ static char *DatumToString(Datum datum, Oid type);
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
-static char *DeparseSPARQLPrefix(char *raw_sparql);
+static char *ExtractSPARQLPrefixes(char *raw_sparql);
 static char *CreateRegexString(char *str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
@@ -4271,7 +4280,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		elog(DEBUG2, "orderby_variable = '%s'", orderby_variable);
 	}
 
-	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
+	state->sparql_prefixes = ExtractSPARQLPrefixes(state->raw_sparql);
 	elog(DEBUG2, "sparql_prefixes = \n\n'%s'", state->sparql_prefixes);
 
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
@@ -5177,11 +5186,15 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
+
 			else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 				state->query_param = defGetString(def);
 
 			else if (strcmp(RDF_SERVER_OPTION_BASE_URI, def->defname) == 0)
 				state->base_uri = defGetString(def);
+
+			else if (strcmp(RDF_SERVER_OPTION_PREFIX_CONTEXT, def->defname) == 0)
+				state->prefix_context = defGetString(def);
 		}
 	}
 
@@ -5776,7 +5789,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	/*
 	 * deparse SPARQL PREFIX clauses from raw_sparql, if any
 	 */
-	state->sparql_prefixes = DeparseSPARQLPrefix(state->raw_sparql);
+	state->sparql_prefixes = ExtractSPARQLPrefixes(state->raw_sparql);
 
 	/*
 	 * We create the SPARQL SELECT clause according to the columns used in the
@@ -8226,7 +8239,7 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 }
 
 /*
- * DeparseSPARQLPrefix
+ * ExtractSPARQLPrefixes
  * -------------------
  * Deparses the SPARQL PREFIX entries.
  *
@@ -8234,7 +8247,7 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
  *
  * returns the SPARQL PREFIX entries
  */
-static char *DeparseSPARQLPrefix(char *raw_sparql)
+static char *ExtractSPARQLPrefixes(char *raw_sparql)
 {
 	StringInfoData prefixes;
 	char *open_chars = "\n\t ";
