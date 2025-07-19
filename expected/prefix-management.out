@@ -1,0 +1,103 @@
+SET timezone TO 'Etc/UTC';
+CREATE SERVER wikidata
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint 'https://query.wikidata.org/sparql',
+  prefix_context 'default');
+CREATE FOREIGN TABLE rdbms (
+  p rdfnode OPTIONS (variable '?l'),
+  o rdfnode OPTIONS (variable '?cr')
+)
+SERVER wikidata OPTIONS (
+  log_sparql 'true',
+  sparql '
+  prefix wd: <http://www.wikidata.org/entity/>   PreFiX skos:         <http://www.w3.org/2004/02/skos/core#>
+
+PREFIX        wdt: <http://www.wikidata.org/prop/direct/>
+
+
+SELECT * {
+  ?s skos:altLabel ?l .
+  ?s wdt:P6216 ?cr
+  FILTER (?s = wd:Q192490)
+  FILTER (LANG(?l) ="en")
+}');
+-- Prefixes configured in the default context added
+-- and existing prefixes formatted
+SELECT p, o FROM rdbms;
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+SELECT ?l ?cr 
+{
+  ?s skos:altLabel ?l .
+  ?s wdt:P6216 ?cr
+  FILTER (?s = wd:Q192490)
+  FILTER (LANG(?l) ="en")
+}
+
+INFO:  SPARQL returned 1 record.
+
+       p       |                     o                      
+---------------+--------------------------------------------
+ "Postgres"@en | <http://www.wikidata.org/entity/Q50423863>
+(1 row)
+
+ALTER SERVER wikidata OPTIONS (SET prefix_context 'foo');
+-- Prefix context does not exist. Issuing a WARNING.
+SELECT p, o FROM rdbms;
+WARNING:  no prefixes found for context 'foo'
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+SELECT ?l ?cr 
+{
+  ?s skos:altLabel ?l .
+  ?s wdt:P6216 ?cr
+  FILTER (?s = wd:Q192490)
+  FILTER (LANG(?l) ="en")
+}
+
+INFO:  SPARQL returned 1 record.
+
+       p       |                     o                      
+---------------+--------------------------------------------
+ "Postgres"@en | <http://www.wikidata.org/entity/Q50423863>
+(1 row)
+
+-- No prefix context set. Using only prefixes from the
+-- SPARQL query.
+ALTER SERVER wikidata OPTIONS (DROP prefix_context);
+SELECT p, o FROM rdbms;
+INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+SELECT ?l ?cr 
+{
+  ?s skos:altLabel ?l .
+  ?s wdt:P6216 ?cr
+  FILTER (?s = wd:Q192490)
+  FILTER (LANG(?l) ="en")
+}
+
+INFO:  SPARQL returned 1 record.
+
+       p       |                     o                      
+---------------+--------------------------------------------
+ "Postgres"@en | <http://www.wikidata.org/entity/Q50423863>
+(1 row)
+
+DROP SERVER wikidata CASCADE;
+NOTICE:  drop cascades to foreign table rdbms

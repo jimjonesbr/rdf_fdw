@@ -260,7 +260,7 @@ typedef struct RDFfdwState
 	char *sparql_filter;			   /* SPARQL FILTER clauses based on SQL WHERE conditions */
 	char *sparql_orderby;			   /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
 	char *sparql_limit;				   /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
-	char *sparql_resultset;			   /* Raw string containing the result of a SPARQL query */
+	char *sparql_resultset;			   /* Raw string containing the result of a SPARQL query */	
 	char *raw_sparql;				   /* Raw SPARQL query set in the CREATE TABLE statement */
 	char *endpoint;					   /* SPARQL endpoint set in the CREATE SERVER statement*/
 	char *query_param;				   /* SPARQL query POST parameter used by the endpoint */
@@ -284,6 +284,7 @@ typedef struct RDFfdwState
 	xmlDocPtr xmldoc;				   /* XML document where the result of SPARQL queries will be stored */
 	Oid foreigntableid;				   /* FOREIGN TABLE oid */
 	List *records;					   /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
+	List *prefixes; 		   		   /* List of RDF prefixes used in the SPARQL query and context */
 	struct RDFfdwTable *rdfTable;	   /* All necessary information of the FOREIGN TABLE used in a SQL statement */
 	Cost startup_cost;				   /* startup cost estimate */
 	Cost total_cost;				   /* total cost estimate */
@@ -967,7 +968,7 @@ static char *DatumToString(Datum datum, Oid type);
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
-static char *ExtractSPARQLPrefixes(char *raw_sparql);
+static void ExtractSPARQLPrefixes(struct RDFfdwState *state);
 static char *CreateRegexString(char *str);
 static bool IsStringDataType(Oid type);
 static bool IsFunctionPushable(char *funcname);
@@ -999,6 +1000,8 @@ static Oid GetRDFNodeOID(void);
 static bool isPlainLiteral(char *litral);
 static rdfnode_info parse_rdfnode(rdfnode *node);
 static bool LiteralsComparable(rdfnode *n1, rdfnode *n2);
+static void LoadPrefixes(RDFfdwState *state);
+
 #if PG_VERSION_NUM < 130000
 static void pg_unicode_to_server(pg_wchar c, unsigned char *utf8);
 #endif
@@ -4280,8 +4283,9 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		elog(DEBUG2, "orderby_variable = '%s'", orderby_variable);
 	}
 
-	state->sparql_prefixes = ExtractSPARQLPrefixes(state->raw_sparql);
-	elog(DEBUG2, "sparql_prefixes = \n\n'%s'", state->sparql_prefixes);
+	//state->sparql_prefixes = ExtractSPARQLPrefixes(state->raw_sparql);
+	//elog(DEBUG2, "sparql_prefixes = \n\n'%s'", state->sparql_prefixes);
+	LoadPrefixes(state);
 
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
 	elog(DEBUG2, "sparql_from = \n\n'%s'", state->sparql_from);
@@ -5787,9 +5791,10 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 		SetUsedColumns((Expr *)lfirst(cell), state, baserel->relid);
 
 	/*
-	 * deparse SPARQL PREFIX clauses from raw_sparql, if any
+	 * Load prefixes from the SERVER's 'prefix_context' and from
+	 * the SPARQL query, if any.
 	 */
-	state->sparql_prefixes = ExtractSPARQLPrefixes(state->raw_sparql);
+	LoadPrefixes(state);
 
 	/*
 	 * We create the SPARQL SELECT clause according to the columns used in the
@@ -8241,55 +8246,94 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 /*
  * ExtractSPARQLPrefixes
  * -------------------
- * Deparses the SPARQL PREFIX entries.
+ * Parses the SPARQL PREFIX entries.
  *
- * raw_sparql: SPARQL query set in the CREATE TABLE statement
- *
- * returns the SPARQL PREFIX entries
+ * state  : SPARQL, SERVER and FOREIGN TABLE info
+ * 
+ * returns void
  */
-static char *ExtractSPARQLPrefixes(char *raw_sparql)
+static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 {
-	StringInfoData prefixes;
-	char *open_chars = "\n\t ";
-	char *close_chars = " >\n\t";
-	int nprefix = 0;
+	char *sparql = state->raw_sparql;
+	int p = 0;
+	int end_prefixes = 0;
+	StringInfoData prefix_str;
+	StringInfoData uri_str;
 
-	initStringInfo(&prefixes);
+	initStringInfo(&prefix_str);
+	initStringInfo(&uri_str);
 
 	elog(DEBUG1, "%s called", __func__);
 
-	if (LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, &nprefix, 0) != RDF_KEYWORD_NOT_FOUND)
+	/* Locate where the PREFIX declarations end and the query begins */
+	end_prefixes = LocateKeyword(sparql, "\n\t> ", RDF_SPARQL_KEYWORD_SELECT, " *?\n\t", NULL, 0);
+
+	while (p < end_prefixes)
 	{
-		int keyword_position = 0;
+		/* Skip whitespace */
+		while (p < end_prefixes && isspace(sparql[p]))
+			p++;
 
-		for (int i = 1; i <= nprefix; i++)
+		/* Look for a PREFIX declaration */
+		if (strncasecmp(sparql + p, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0)
 		{
-			StringInfoData keyword_entry;
-			initStringInfo(&keyword_entry);
+			RDFPrefix *entry = palloc(sizeof(RDFPrefix));
 
-			keyword_position = LocateKeyword(raw_sparql, open_chars, RDF_SPARQL_KEYWORD_PREFIX, close_chars, NULL, keyword_position);
+			p += strlen(RDF_SPARQL_KEYWORD_PREFIX);
 
-			if (keyword_position == RDF_KEYWORD_NOT_FOUND)
-				break;
+			/* Skip whitespace after "PREFIX" */
+			while (p < end_prefixes && isspace(sparql[p]))
+				p++;
 
-			while (raw_sparql[keyword_position] != '>' &&
-				   raw_sparql[keyword_position] != '\0')
+			/* Read prefix name (up to ':') */
+			resetStringInfo(&prefix_str);
+			while (p < end_prefixes && !isspace(sparql[p]) && sparql[p] != ':')
 			{
-				appendStringInfo(&keyword_entry, "%c", raw_sparql[keyword_position]);
-
-				if (raw_sparql[keyword_position] == '>')
-					break;
-
-				keyword_position++;
+				appendStringInfoChar(&prefix_str, sparql[p]);
+				p++;
 			}
 
-			// appendStringInfo(&prefixes, "%s>\n", keyword_entry.data);
-			appendStringInfo(&prefixes, "%s> ", keyword_entry.data);
+			/* Expect and skip ':' */
+			if (p >= end_prefixes || sparql[p] != ':')
+				ereport(ERROR, (errmsg("Malformed PREFIX: expected ':' after prefix label")));
+			p++;
+
+			/* Skip whitespace after ':' */
+			while (p < end_prefixes && isspace(sparql[p]))
+				p++;
+
+			/* Expect '<' */
+			if (p >= end_prefixes || sparql[p] != '<')
+				ereport(ERROR, (errmsg("Malformed PREFIX: expected '<' before URI")));
+			p++;
+
+			/* Read URI up to '>' */
+			resetStringInfo(&uri_str);
+			while (p < end_prefixes && sparql[p] != '>')
+			{
+				appendStringInfoChar(&uri_str, sparql[p]);
+				p++;
+			}
+
+			if (p >= end_prefixes || sparql[p] != '>')
+				ereport(ERROR, (errmsg("Malformed PREFIX: unterminated URI")));
+			p++; // Skip '>'
+
+			/* Store the prefix */
+			entry->prefix = pstrdup(prefix_str.data);
+			entry->url = pstrdup(uri_str.data);
+			state->prefixes = lappend(state->prefixes, entry);
+
+			elog(DEBUG1, "Parsed PREFIX: %s -> %s", entry->prefix, entry->url);
+		}
+		else
+		{
+			/* Skip to next line or fail fast? */
+			while (p < end_prefixes && sparql[p] != '\n')
+				p++;
+			p++;
 		}
 	}
-
-	elog(DEBUG1, "%s exit: returning '%s'", __func__, prefixes.data);
-	return prefixes.data;
 }
 
 /*
@@ -12169,4 +12213,69 @@ static char *unescape_unicode(const char *input)
 
 	elog(DEBUG2, "%s: Output='%s'", __func__, buf.data);
 	return buf.data;
+}
+
+static void LoadPrefixes(RDFfdwState *state)
+{
+	int ret;
+	bool isnull;
+	char query[1024];
+	ListCell *cell;
+	StringInfoData prefixes;
+
+	state->prefixes = NIL;
+
+	initStringInfo(&prefixes);
+
+	if (state->prefix_context)
+	{
+		if (SPI_connect() != SPI_OK_CONNECT)
+			elog(ERROR, "rdf_fdw: SPI_connect failed");
+
+		snprintf(query, sizeof(query),
+				 "SELECT prefix, uri FROM sparql.prefixes WHERE context = %s",
+				 quote_literal_cstr(state->prefix_context));
+
+		ret = SPI_execute(query, true, 0);
+
+		if (ret != SPI_OK_SELECT)
+			elog(ERROR, "rdf_fdw: SPI_execute failed: %s", query);
+
+		if (SPI_processed == 0)
+			elog(WARNING, "no prefixes found for context '%s'", state->prefix_context);
+
+		for (int i = 0; i < SPI_processed; i++)
+		{
+			HeapTuple tuple = SPI_tuptable->vals[i];
+			TupleDesc tupdesc = SPI_tuptable->tupdesc;
+			RDFPrefix *entry = palloc(sizeof(RDFPrefix));
+			char *uri;
+			char *prefix = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 1, &isnull));
+
+			if (isnull)
+				elog(WARNING, "%s: NULL prefix skipped", __func__);
+
+			uri = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 2, &isnull));
+
+			if (isnull)
+				elog(WARNING, "%s: NULL URI skipped", __func__);
+
+			entry->prefix = pstrdup(prefix);
+			entry->url = pstrdup(uri);
+
+			state->prefixes = lappend(state->prefixes, entry);
+		}
+
+		SPI_finish();
+	}
+
+	ExtractSPARQLPrefixes(state);
+
+	foreach (cell, state->prefixes)
+	{
+		RDFPrefix *p = (RDFPrefix *)lfirst(cell);
+		appendStringInfo(&prefixes, "PREFIX %s: <%s>\n", p->prefix, p->url);
+	}
+
+	state->sparql_prefixes = prefixes.data;
 }

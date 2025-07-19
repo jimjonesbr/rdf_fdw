@@ -33,6 +33,7 @@ REGRESS = create_extension \
 			rdfnode_ge \
 			pg_datatypes \
 			sparql-functions \
+			prefix-management \
 			virtuoso-pgtypes-linkedgeodata \
 			virtuoso-rdfnode-linkedgeodata \
 			blazegraph-pgtypes-wikidata \
