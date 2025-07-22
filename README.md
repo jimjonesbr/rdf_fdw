@@ -130,6 +130,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `request_max_redirect`         | optional            | Specifies the maximum number of URL redirects allowed. If this limit is reached, any further redirection will result in an error. Leaving this parameter unset or setting it to `0` allows an unlimited number of redirects.
 | `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are appended to the request URL.
 | `query_param`         | optional            | The request parameter in which the SPARQL endpoint expects the query in an HTTP request. Most endpoints expect the SPARQL query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option.
+| `prefix_context`     | optional            | Name of the context where predefined `PREFIX` entries are stored. When set, all prefixes registered in the context are automatically prepended to every generated SPARQL query. If the query also contains its own `PREFIX` declarations, those are appended **after** the context-defined ones. See [Prefix Management](#prefix-management) for more details.
 
 > [!NOTE]  
 > To visualise the foreign server's options use the `psql` meta-command `\des[+]`
