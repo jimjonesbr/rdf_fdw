@@ -1088,22 +1088,22 @@ INFO:  SPARQL returned 1 record.
 SELECT p, o, sparql.datatype(o)
 FROM rdbms
 WHERE
-  p = '<http://schema.org/version>' AND
+  p = '<http://wikiba.se/ontology#statements>' AND
   sparql.datatype(o) = sparql.datatype('"2380862730"^^<http://www.w3.org/2001/XMLSchema#integer>');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://schema.org/version>)
+ FILTER(?p = <http://wikiba.se/ontology#statements>)
  FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#integer>)
 }
 
 INFO:  SPARQL returned 1 record.
 
-              p              |                            o                             |                  datatype                  
------------------------------+----------------------------------------------------------+--------------------------------------------
- <http://schema.org/version> | "2380862730"^^<http://www.w3.org/2001/XMLSchema#integer> | <http://www.w3.org/2001/XMLSchema#integer>
+                   p                    |                         o                         |                  datatype                  
+----------------------------------------+---------------------------------------------------+--------------------------------------------
+ <http://wikiba.se/ontology#statements> | "444"^^<http://www.w3.org/2001/XMLSchema#integer> | <http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
 /* SPARQL 17.4.2.8 - IRI */

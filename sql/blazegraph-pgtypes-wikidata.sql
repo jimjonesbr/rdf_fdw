@@ -38,12 +38,13 @@ SERVER wikidata OPTIONS (
   { ?bank wdt:P527 wd:Q806724. }
   UNION { ?bank wdt:P1454 wd:Q5349747. }
   MINUS { wd:Q806724 wdt:P3113 ?bank. }
+  FILTER(?atm = IRI("http://linkedgeodata.org/triplify/node1126961041"))
 }
 '); 
 
 SELECT atmid, bankname, atmwkt
 FROM atms_munich
-WHERE bankname = 'BBBank';
+WHERE atmid = 'http://linkedgeodata.org/triplify/node1126961041';
 
 
 CREATE FOREIGN TABLE places_below_sea_level (
@@ -187,8 +188,8 @@ DROP TABLE tmp_eu_countries;
 /* Pagination with OFFSET + LIMIT */
 DO $$
 DECLARE 
- chunk_size int := 5;
- max int := 15;
+ chunk_size int := 2;
+ max int := 5;
 BEGIN
 
   CREATE TEMPORARY TABLE local (
@@ -216,7 +217,7 @@ WITH j AS (
 SELECT uri, nativename 
   FROM european_countries
   ORDER BY uri 
-  LIMIT 15
+  LIMIT 5
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
 

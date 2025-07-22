@@ -6,51 +6,37 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql',
         connect_retry '0');
 -- IRI description
 SELECT subject, predicate, object
-FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q123182646>')
 ORDER BY object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-DESCRIBE <http://www.wikidata.org/entity/Q61308849>
+DESCRIBE <http://www.wikidata.org/entity/Q123182646>
 
-                  subject                   |                  predicate                   |                                                                       object                                                                       
---------------------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------
- <http://www.wikidata.org/entity/Q61308849> | <http://wikiba.se/ontology#sitelinks>        | "0"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://www.wikidata.org/entity/Q61308849> | <http://wikiba.se/ontology#identifiers>      | "1"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://www.wikidata.org/entity/Q61308849> | <http://wikiba.se/ontology#statements>       | "14"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P729>   | "1970-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P3999>  | "2015-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/dateModified>             | "2024-05-01T21:36:41Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/version>                  | "2142303130"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6242>  | "2203912"^^<http://www.w3.org/2001/XMLSchema#string>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P2044>  | "4.27"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/description>              | "Meteorological Service of Canada's automatic station for Tuktoyaktuk A (MSC ID: 2203912), Northwest Territories, Canada"@en
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P625>   | "Point(-133.03 69.43)"^^<http://www.opengis.net/ont/geosparql#wktLiteral>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.w3.org/2000/01/rdf-schema#label> | "Tuktoyaktuk A"@en
- <http://www.wikidata.org/entity/Q61308849> | <http://www.w3.org/2000/01/rdf-schema#label> | "Tuktoyaktuk A"@fr
- <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/description>              | "station météorologique automatique du Service météorologique du Canada pour Tuktoyaktuk A (ID SMC: 2203912), Territoire du Nord-Ouest, Canada"@fr
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P4150>  | <http://commons.wikimedia.org/data/main/Data:Weather.gc.ca/Almanac/2203912.tab>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P4150>  | <http://commons.wikimedia.org/data/main/Data:Weather.gc.ca/Monthly/2203912.tab>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P17>    | <http://www.wikidata.org/entity/Q16>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P131>   | <http://www.wikidata.org/entity/Q2007>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P127>   | <http://www.wikidata.org/entity/Q349450>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6339>  | <http://www.wikidata.org/entity/Q59657010>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6339>  | <http://www.wikidata.org/entity/Q59657036>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6339>  | <http://www.wikidata.org/entity/Q59657037>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P31>    | <http://www.wikidata.org/entity/Q846837>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P6242>         | <http://www.wikidata.org/entity/statement/Q61308849-02A58162-D3EC-47BB-B2AA-EA0676AF368A>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P6339>         | <http://www.wikidata.org/entity/statement/Q61308849-0786DB04-849C-4C8A-8101-ED37B1AF78E0>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P4150>         | <http://www.wikidata.org/entity/statement/Q61308849-1EB9EED0-4875-421E-8B2E-6219AAC9E8ED>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P131>          | <http://www.wikidata.org/entity/statement/Q61308849-2263781D-5C40-472F-8E25-283A863322AC>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P2044>         | <http://www.wikidata.org/entity/statement/Q61308849-47EF2A8B-CF42-4202-9E7A-09A7C96CFA6A>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P4150>         | <http://www.wikidata.org/entity/statement/Q61308849-7401E7E4-52D5-4E86-B1DD-62AD8208C7B1>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P6339>         | <http://www.wikidata.org/entity/statement/Q61308849-83C67611-F80B-4349-88DA-53267622A09F>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P17>           | <http://www.wikidata.org/entity/statement/Q61308849-C91974B8-1ED9-4D66-98EF-5DED2BEBA685>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P625>          | <http://www.wikidata.org/entity/statement/Q61308849-C9E20AD4-77F6-4E08-8964-3FC97D9DD286>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P127>          | <http://www.wikidata.org/entity/statement/Q61308849-CF7B236F-0E29-4437-B9F0-C76E1769A919>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P3999>         | <http://www.wikidata.org/entity/statement/Q61308849-D80C6F7C-6B34-46B2-B8B9-9A3594C66CC2>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P729>          | <http://www.wikidata.org/entity/statement/Q61308849-E0C3FF76-E2F4-4697-991A-C1C4F2D32180>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P31>           | <http://www.wikidata.org/entity/statement/Q61308849-F18B724B-7FED-4A1A-8907-E590719DBD36>
- <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/P6339>         | <http://www.wikidata.org/entity/statement/Q61308849-FD14AEB5-5B36-407A-AC85-2F0F67AB6345>
-(37 rows)
+                                      subject                                      |                   predicate                    |                                             object                                             
+-----------------------------------------------------------------------------------+------------------------------------------------+------------------------------------------------------------------------------------------------
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://wikiba.se/ontology#identifiers>        | "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://wikiba.se/ontology#sitelinks>          | "1"^^<http://www.w3.org/2001/XMLSchema#integer>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://schema.org/dateModified>               | "2023-12-29T16:06:26Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://schema.org/version>                    | "2039957927"^^<http://www.w3.org/2001/XMLSchema#integer>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://wikiba.se/ontology#statements>         | "7"^^<http://www.w3.org/2001/XMLSchema#integer>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P625>     | "Point(9.083349952 49.46347064)"^^<http://www.opengis.net/ont/geosparql#wktLiteral>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.w3.org/2004/02/skos/core#altLabel> | "Straßenwetterstation V550"@de
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.w3.org/2000/01/rdf-schema#label>   | "Straßenwetterstation Waldbrunn"@de
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P373>     | "Straßenwetterstation Waldbrunn"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://schema.org/description>                | "Vom DWD genutzte automatische Wetterstation bei Strümpfelbrunn"@de
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P18>      | <http://commons.wikimedia.org/wiki/Special:FilePath/Stra%C3%9Fenwetterstation%20Waldbrunn.jpg>
+ <https://commons.wikimedia.org/wiki/Category:Stra%C3%9Fenwetterstation_Waldbrunn> | <http://schema.org/about>                      | <http://www.wikidata.org/entity/Q123182646>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P17>      | <http://www.wikidata.org/entity/Q183>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P276>     | <http://www.wikidata.org/entity/Q19912720>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P131>     | <http://www.wikidata.org/entity/Q552231>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/direct/P31>      | <http://www.wikidata.org/entity/Q846837>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P131>            | <http://www.wikidata.org/entity/statement/Q123182646-047c9b14-4405-0032-047b-26258d254a45>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P625>            | <http://www.wikidata.org/entity/statement/Q123182646-0720dd2e-4272-8ba6-f2e2-0c7965552e03>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P17>             | <http://www.wikidata.org/entity/statement/Q123182646-1b35e7ba-40b0-c734-da67-0b61f40d4399>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P31>             | <http://www.wikidata.org/entity/statement/Q123182646-1e24e752-4d57-1f05-0f3e-6b56720b04a4>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P18>             | <http://www.wikidata.org/entity/statement/Q123182646-83ef2824-2426-4d1f-8c29-1b6146f63ed2>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P373>            | <http://www.wikidata.org/entity/statement/Q123182646-912c5eab-43ac-ca91-13db-3be896b8f45c>
+ <http://www.wikidata.org/entity/Q123182646>                                       | <http://www.wikidata.org/prop/P276>            | <http://www.wikidata.org/entity/statement/Q123182646-deecc5d8-4e5c-2461-ca32-df296ff24bbc>
+(23 rows)
 
 -- graph pattern description
 SELECT subject, predicate, object

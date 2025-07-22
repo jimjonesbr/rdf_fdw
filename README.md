@@ -16,6 +16,7 @@
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
+  - [Prefix Management](#prefix-management)
   - [rdf_fdw_version](#rdf_fdw_version)
   - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
 - [RDF Node Handling](#rdf-node-handling)
@@ -271,6 +272,77 @@ ALTER FOREIGN TABLE film OPTIONS (DROP enable_pushdown,
 
 ALTER SERVER dbpedia OPTIONS (DROP enable_pushdown);
 ```
+### [Prefix Management](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#prefix-mangement)
+
+To simplify the reuse and sharing of common SPARQL prefixes, `rdf_fdw` provides a prefix management system based on two catalog tables and a suite of helper functions.
+
+This feature enables you to register prefix contexts (named groups of prefixes), and to associate specific prefix -> URI mappings under those contexts. This is especially useful when working with multiple RDF vocabularies or endpoint configurations.
+
+#### [Prefix Context](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#context)
+
+The prefix context is a named container for a set of SPARQL prefixes. It is represented by the table `sparql.prefix_contexts`:
+
+| Column        | Type          | Description                          |
+| ------------- | ------------- | ------------------------------------ |
+| `context`     | `text`        | Primary key; name of the context.    |
+| `description` | `text`        | Optional description of the context. |
+| `modified_at` | `timestamptz` | Timestamp of the last update.        |
+
+##### Functions
+
+**Adding a new context**
+```sql
+sparql.add_context(context_name text, context_description text DEFAULT NULL, override boolean DEFAULT false)
+```
+
+Registers a new context. If override is set to `true` updates the context if it already exists, otherwise, raises an exception on conflict.
+
+**Deleting an existing context**
+
+```sql
+sparql.drop_context(context_name text, cascade boolean DEFAULT false)
+```
+Deletes a context. If cascade is set to `true` deletes all associated prefixes, otherwise raises an exception if dependent prefixes exist.
+
+#### [Prefix](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#prefix)
+
+A prefix maps a shorthand identifier to a full URI within a context. These are stored in `sparql.prefixes`:
+
+| Column        | Type          | Description                       |
+| ------------- | ------------- | --------------------------------- |
+| `prefix`      | `text`        | The SPARQL prefix label.          |
+| `uri`         | `text`        | The fully qualified URI.          |
+| `context`     | `text`        | Foreign key to `prefix_contexts`. |
+| `modified_at` | `timestamptz` | Timestamp of the last update.     |
+
+##### Functions
+
+**Adding a new PREFIX**
+```sql
+sparql.add_prefix(context_name text, prefix_name text, uri text, override boolean DEFAULT false)
+```
+Adds a prefix to a context. If override is set to `true` updates the URI if the prefix already exists. Otherwise raises an exception on conflict.
+
+***Deleting an existing PREFIX**
+
+```sql
+sparql.drop_prefix(context_name text, prefix_name text)
+```
+Removes a prefix from a context. Raises an exception if the prefix does not exist.
+
+**Examples**
+
+```sql
+-- Create a context
+SELECT sparql.add_context('default', 'Default SPARQL prefix context');
+
+-- Add prefixes to it
+SELECT sparql.add_prefix('default', 'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+SELECT sparql.add_prefix('default', 'rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+SELECT sparql.add_prefix('default', 'owl',  'http://www.w3.org/2002/07/owl#');
+SELECT sparql.add_prefix('default', 'xsd',  'http://www.w3.org/2001/XMLSchema#');
+```
+Once registered, these prefixes can be automatically included in generated SPARQL queries for any `rdf_fdw` foreign server that references the associated context.
 
 ### [rdf_fdw_version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_version)
 

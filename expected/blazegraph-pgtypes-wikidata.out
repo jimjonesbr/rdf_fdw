@@ -36,11 +36,12 @@ SERVER wikidata OPTIONS (
   { ?bank wdt:P527 wd:Q806724. }
   UNION { ?bank wdt:P1454 wd:Q5349747. }
   MINUS { wd:Q806724 wdt:P3113 ?bank. }
+  FILTER(?atm = IRI("http://linkedgeodata.org/triplify/node1126961041"))
 }
 '); 
 SELECT atmid, bankname, atmwkt
 FROM atms_munich
-WHERE bankname = 'BBBank';
+WHERE atmid = 'http://linkedgeodata.org/triplify/node1126961041';
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
   PREFIX lgdo: <http://linkedgeodata.org/ontology/>
@@ -64,14 +65,15 @@ INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
   { ?bank wdt:P527 wd:Q806724. }
   UNION { ?bank wdt:P1454 wd:Q5349747. }
   MINUS { wd:Q806724 wdt:P3113 ?bank. }
+  FILTER(?atm = IRI("http://linkedgeodata.org/triplify/node1126961041"))
 }
 
 
-INFO:  SPARQL returned 11 records.
+INFO:  SPARQL returned 1 record.
 
-                      atmid                      | bankname |            atmwkt            
--------------------------------------------------+----------+------------------------------
- http://linkedgeodata.org/triplify/node418977189 | BBBank   | POINT(11.5558547 48.1592738)
+                      atmid                       |   bankname    |            atmwkt            
+--------------------------------------------------+---------------+------------------------------
+ http://linkedgeodata.org/triplify/node1126961041 | Münchner Bank | POINT(11.5810138 48.1163941)
 (1 row)
 
 CREATE FOREIGN TABLE places_below_sea_level (
@@ -352,8 +354,8 @@ DROP TABLE tmp_eu_countries;
 /* Pagination with OFFSET + LIMIT */
 DO $$
 DECLARE 
- chunk_size int := 5;
- max int := 15;
+ chunk_size int := 2;
+ max int := 5;
 BEGIN
 
   CREATE TEMPORARY TABLE local (
@@ -383,22 +385,9 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?country)
-LIMIT 5
+LIMIT 2
 
-INFO:  SPARQL returned 5 records.
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?country ?nativename 
-{
-    wd:Q458 wdt:P150 ?country.
-    OPTIONAL { ?country wdt:P1705 ?nativename }
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-  }
-ORDER BY  ASC (?country)
-LIMIT 10
-
-INFO:  SPARQL returned 10 records.
+INFO:  SPARQL returned 2 records.
 
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
@@ -409,9 +398,9 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?country)
-LIMIT 15
+LIMIT 4
 
-INFO:  SPARQL returned 15 records.
+INFO:  SPARQL returned 4 records.
 
 /* Compare the stored records from the loop with a
  * single query with a LIMIT 'max' */
@@ -419,7 +408,7 @@ WITH j AS (
 SELECT uri, nativename 
   FROM european_countries
   ORDER BY uri 
-  LIMIT 15
+  LIMIT 5
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
@@ -431,9 +420,9 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?country)
-LIMIT 15
+LIMIT 5
 
-INFO:  SPARQL returned 15 records.
+INFO:  SPARQL returned 5 records.
 
  id | name 
 ----+------

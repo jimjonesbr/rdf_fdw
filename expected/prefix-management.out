@@ -1,9 +1,27 @@
 SET timezone TO 'Etc/UTC';
+SELECT sparql.add_context('testctx', 'test context');
+ add_context 
+-------------
+ 
+(1 row)
+
+SELECT sparql.add_prefix('testctx', 'foo', 'http://example.org/foo#');
+ add_prefix 
+------------
+ 
+(1 row)
+
+SELECT sparql.add_prefix('testctx', 'bar', 'http://example.org/bar#');
+ add_prefix 
+------------
+ 
+(1 row)
+
 CREATE SERVER wikidata
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint 'https://query.wikidata.org/sparql',
-  prefix_context 'default');
+  prefix_context 'testctx');
 CREATE FOREIGN TABLE rdbms (
   p rdfnode OPTIONS (variable '?l'),
   o rdfnode OPTIONS (variable '?cr')
@@ -24,14 +42,10 @@ SELECT * {
 }');
 -- Prefixes configured in the default context added
 -- and existing prefixes formatted
-SELECT p, o FROM rdbms;
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX foo: <http://example.org/foo#>
+PREFIX bar: <http://example.org/bar#>
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -53,7 +67,7 @@ INFO:  SPARQL returned 1 record.
 
 ALTER SERVER wikidata OPTIONS (SET prefix_context 'foo');
 -- Prefix context does not exist. Issuing a WARNING.
-SELECT p, o FROM rdbms;
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
 WARNING:  no prefixes found for context 'foo'
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 PREFIX wd: <http://www.wikidata.org/entity/>
@@ -78,7 +92,7 @@ INFO:  SPARQL returned 1 record.
 -- No prefix context set. Using only prefixes from the
 -- SPARQL query.
 ALTER SERVER wikidata OPTIONS (DROP prefix_context);
-SELECT p, o FROM rdbms;
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -98,6 +112,83 @@ INFO:  SPARQL returned 1 record.
 ---------------+--------------------------------------------
  "Postgres"@en | <http://www.wikidata.org/entity/Q50423863>
 (1 row)
+
+\set VERBOSITY terse
+-- Add existing context and prefix (must fail)
+SELECT sparql.add_context('testctx', 'test context');
+ERROR:  prefix context "testctx" already exists
+SELECT sparql.add_prefix('testctx', 'foo', 'http://example.org/foo#');
+ERROR:  prefix "testctx" already exists in context "foo"
+-- Add existing context and prefix forcing overwrite
+SELECT sparql.add_context('testctx', 'test context - updated', true);
+ add_context 
+-------------
+ 
+(1 row)
+
+SELECT sparql.add_prefix('testctx', 'foo', 'http://example.org/foo-updated#', true);
+ add_prefix 
+------------
+ 
+(1 row)
+
+-- Check the prefix context and prefixes
+SELECT context, description FROM sparql.prefix_contexts ORDER BY context COLLATE "C";
+ context |             description             
+---------+-------------------------------------
+ default | Default context for SPARQL prefixes
+ testctx | test context - updated
+(2 rows)
+
+SELECT context, prefix, uri FROM sparql.prefixes ORDER BY context, prefix COLLATE "C";
+ context | prefix |                     uri                     
+---------+--------+---------------------------------------------
+ default | dc     | http://purl.org/dc/elements/1.1/
+ default | foaf   | http://xmlns.com/foaf/0.1/
+ default | owl    | http://www.w3.org/2002/07/owl#
+ default | rdf    | http://www.w3.org/1999/02/22-rdf-syntax-ns#
+ default | rdfs   | http://www.w3.org/2000/01/rdf-schema#
+ default | xsd    | http://www.w3.org/2001/XMLSchema#
+ testctx | bar    | http://example.org/bar#
+ testctx | foo    | http://example.org/foo-updated#
+(8 rows)
+
+-- Drop prefix
+SELECT sparql.drop_prefix('testctx', 'foo');
+ drop_prefix 
+-------------
+ 
+(1 row)
+
+SELECT context, prefix, uri FROM sparql.prefixes WHERE context = 'testctx' ORDER BY prefix COLLATE "C";
+ context | prefix |           uri           
+---------+--------+-------------------------
+ testctx | bar    | http://example.org/bar#
+(1 row)
+
+-- Drop context forcing cascade
+SELECT sparql.drop_context('testctx', true);
+ drop_context 
+--------------
+ 
+(1 row)
+
+SELECT context, description FROM sparql.prefix_contexts ORDER BY context COLLATE "C";
+ context |             description             
+---------+-------------------------------------
+ default | Default context for SPARQL prefixes
+(1 row)
+
+SELECT context, prefix, uri FROM sparql.prefixes ORDER BY context, prefix COLLATE "C";
+ context | prefix |                     uri                     
+---------+--------+---------------------------------------------
+ default | dc     | http://purl.org/dc/elements/1.1/
+ default | foaf   | http://xmlns.com/foaf/0.1/
+ default | owl    | http://www.w3.org/2002/07/owl#
+ default | rdf    | http://www.w3.org/1999/02/22-rdf-syntax-ns#
+ default | rdfs   | http://www.w3.org/2000/01/rdf-schema#
+ default | xsd    | http://www.w3.org/2001/XMLSchema#
+(6 rows)
 
 DROP SERVER wikidata CASCADE;
 NOTICE:  drop cascades to foreign table rdbms

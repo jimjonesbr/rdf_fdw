@@ -7,7 +7,7 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql',
 
 -- IRI description
 SELECT subject, predicate, object
-FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q123182646>')
 ORDER BY object::text COLLATE "C";
 
 -- graph pattern description

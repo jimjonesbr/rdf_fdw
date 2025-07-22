@@ -1,4 +1,22 @@
 # Release Notes
+## 2.1.0
+Release date: **YYYY-MM-DD**
+
+### Enhancements
+
+* SPARQL Prefix Management:
+
+  `rdf_fdw` now includes built-in support for SPARQL prefix management via a structured catalog and helper functions. This feature introduces:
+
+  `prefix_contexts`: Named groups of reusable SPARQL prefixes.
+
+  `prefixes`: Individual prefix → URI mappings associated with a context.
+
+  A suite of SQL functions to add, update, delete, and override contexts and prefixes.
+
+  This enhancement simplifies query generation, reduces redundancy, and makes SPARQL integration more maintainable — especially when dealing with multiple endpoints or vocabularies.
+
+See the Prefix Management section of the README for details and usage examples.
 
 ## 2.0.0
 Release date: **2025-05-22**

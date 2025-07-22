@@ -356,7 +356,7 @@ WHERE
 SELECT p, o, sparql.datatype(o)
 FROM rdbms
 WHERE
-  p = '<http://schema.org/version>' AND
+  p = '<http://wikiba.se/ontology#statements>' AND
   sparql.datatype(o) = sparql.datatype('"2380862730"^^<http://www.w3.org/2001/XMLSchema#integer>');
 
 /* SPARQL 17.4.2.8 - IRI */
