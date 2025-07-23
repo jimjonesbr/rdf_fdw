@@ -18,6 +18,12 @@ Release date: **YYYY-MM-DD**
 
 See the Prefix Management section of the README for details and usage examples.
 
+### Bug Fixes
+
+* Bug fix for NULL RDFNodes:
+    
+    This fixes a bug that could potentially lead the system to crash if the triple store returns a `NULL` value for an specific node (edge case).
+
 ## 2.0.0
 Release date: **2025-05-22**
 
