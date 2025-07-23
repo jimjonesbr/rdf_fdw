@@ -6772,9 +6772,35 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					initStringInfo(&literal_value);
 					node_value = (char *)content;
 
-					elog(DEBUG3, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
-						 __func__, (char *)content, (char *)lang, (char *)datatype, node_type);
+					/*
+					 * Here we skip the column and set the tts_isnull flag accordingly
+					 * if for whatever reason the node's value return NULL.
+					 */
+					if (!node_value)
+					{
+						elog(DEBUG2, "%s: no value found for column '%s' (%s)", __func__, colname, sparqlvar);
 
+						if (content)
+							xmlFree(content);
+						if (lang)
+							xmlFree(lang);
+						if (datatype)
+							xmlFree(datatype);
+						if (literal_value.data)
+							pfree(literal_value.data);
+
+						slot->tts_isnull[i] = true;
+						continue;
+					}
+
+					elog(DEBUG3, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
+						 __func__, node_value, (char *)lang, (char *)datatype, node_type);
+
+					/*
+					 * If the column is an RDFNode, we need to check if it has a
+					 * datatype or a language tag. If it does, we need to format
+					 * it accordingly.
+					 */
 					if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
 					{
 						if (datatype)
@@ -6793,7 +6819,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					slot->tts_isnull[i] = false;
 
 					elog(DEBUG3, "%s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
-					elog(DEBUG3, "%s: value > '%s'", __func__, (char *)content);
+					elog(DEBUG3, "%s: value > '%s'", __func__, node_value);
 
 					/* find the appropriate conversion function */
 					tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
@@ -6832,6 +6858,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						xmlFree(lang);
 					if (datatype)
 						xmlFree(datatype);
+					if (literal_value.data)
+						pfree(literal_value.data);
 				}
 			}
 
