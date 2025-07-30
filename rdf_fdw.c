@@ -179,6 +179,7 @@
 #define RDF_SERVER_OPTION_FETCH_SIZE "fetch_size"
 #define RDF_SERVER_OPTION_BASE_URI "base_uri"
 #define RDF_SERVER_OPTION_PREFIX_CONTEXT "prefix_context"
+#define RDF_SERVER_OPTION_ENABLE_XML_HUGE "enable_xml_huge"
 
 #define RDF_TABLE_OPTION_SPARQL "sparql"
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
@@ -274,6 +275,7 @@ typedef struct RDFfdwState
 	char *base_uri;					   /* Base URI for possible relative references */
 	bool request_redirect;			   /* Enables or disables URL redirecting. */
 	bool enable_pushdown;			   /* Enables or disables pushdown of SQL commands */
+	bool enable_xml_huge;			   /* Enables or disables XML parser to handle huge XML documents */
 	bool is_sparql_parsable;		   /* Marks the query is or not for pushdown*/
 	bool log_sparql;				   /* Enables or disables logging SPARQL queries as NOTICE */
 	bool has_unparsable_conds;		   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
@@ -374,6 +376,7 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_FETCH_SIZE, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_BASE_URI, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_PREFIX_CONTEXT, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_ENABLE_XML_HUGE, ForeignServerRelationId, false, false},
 		/* Foreign Tables */
 		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 		{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
@@ -4459,8 +4462,18 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 					for (value = result->children; value != NULL; value = value->next)
 					{
+						int bytes;
 						xmlBufferPtr buffer = xmlBufferCreate();
-						xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
+						bytes = xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
+
+						if (bytes == -1)
+						{
+							pfree(name.data);
+							xmlBufferFree(buffer);
+							ereport(ERROR,
+									(errcode(ERRCODE_INTERNAL_ERROR),
+									 errmsg("unable to dump XML node '%s' for column '%s'", sparqlvar, colname)));
+						}
 
 						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
 						datum = CStringGetDatum(pstrdup((char *)xmlBufferContent(buffer)));
@@ -4686,6 +4699,16 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 				}
 
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_PUSHDOWN) == 0)
+				{
+					char *enable_pushdown = defGetString(def);
+					if (strcasecmp(enable_pushdown, "true") != 0 && strcasecmp(enable_pushdown, "false") != 0)
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, enable_pushdown),
+								 errhint("this parameter expects boolean values ('true' or 'false')")));
+				}
+
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_XML_HUGE) == 0)
 				{
 					char *enable_pushdown = defGetString(def);
 					if (strcasecmp(enable_pushdown, "true") != 0 && strcasecmp(enable_pushdown, "false") != 0)
@@ -5190,6 +5213,9 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
+			
+			else if (strcmp(RDF_SERVER_OPTION_ENABLE_XML_HUGE, def->defname) == 0)
+				state->enable_xml_huge = defGetBoolean(def);
 
 			else if (strcmp(RDF_SERVER_OPTION_QUERY_PARAM, def->defname) == 0)
 				state->query_param = defGetString(def);
@@ -5753,6 +5779,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 * Setting session's default values.
 	 */
 	state->enable_pushdown = true;
+	state->enable_xml_huge = false;
 	state->log_sparql = true;
 	state->has_unparsable_conds = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
@@ -6122,6 +6149,18 @@ static void LoadRDFData(RDFfdwState *state)
 {
 	xmlNodePtr results;
 	xmlNodePtr root;
+	int options = XML_PARSE_NOBLANKS | XML_PARSE_NONET;
+
+	/* 
+	 * If the user set the 'enable_xml_huge' option, we enable the 
+	 * XML_PARSE_HUGE option, so that we can parse huge XML documents.
+	 * This is useful for SPARQL endpoints that return huge result sets.
+	 */
+	if (state->enable_xml_huge)
+	{
+		options |= XML_PARSE_HUGE;
+		elog(DEBUG1, "%s: enabling XML_PARSE_HUGE", __func__);
+	}
 
 	state->rowcount = 0;
 	state->records = NIL;
@@ -6135,7 +6174,21 @@ static void LoadRDFData(RDFfdwState *state)
 
 	if (state->sparql_query_type == SPARQL_SELECT)
 	{
-		state->xmldoc = xmlReadMemory(state->sparql_resultset, strlen(state->sparql_resultset), NULL, NULL, XML_PARSE_NOBLANKS);
+		state->xmldoc = xmlReadMemory(
+							state->sparql_resultset,
+							strlen(state->sparql_resultset),
+							NULL, NULL,
+							options);
+
+		if (state->xmldoc == NULL)
+		{
+			const xmlError *err = xmlGetLastError();
+			if (err)
+				elog(ERROR, "%s: failed to parse SPARQL XML result: %s", __func__, err->message);
+			else
+				elog(ERROR, "%s: failed to parse SPARQL XML result (unknown error)", __func__);
+		}
+
 		root = xmlDocGetRootElement(state->xmldoc);
 
 		for (results = root->children; results != NULL; results = results->next)

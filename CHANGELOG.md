@@ -18,6 +18,10 @@ Release date: **YYYY-MM-DD**
 
 See the Prefix Management section of the README for details and usage examples.
 
+* Add `enable_xml_huge` server option to support large XML result sets
+
+  The new `enable_xml_huge` option allows users to enable libxml2's `XML_PARSE_HUGE` flag when parsing SPARQL result sets. This is useful for consuming large XML responses that exceed libxml2's default safety limits. By default, this option is disabled for security reasons.
+
 ### Bug Fixes
 
 * Bug fix for NULL RDFNodes:

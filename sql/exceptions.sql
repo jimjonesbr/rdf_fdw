@@ -50,6 +50,16 @@ OPTIONS (
   fetch_size ''
 );
 
+/* 
+  invalid enable_xml_huge value
+*/
+CREATE SERVER rdfserver_error6
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  enable_xml_huge 'foo'
+);
+
 CREATE SERVER testserver
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql');

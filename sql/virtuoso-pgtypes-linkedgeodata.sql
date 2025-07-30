@@ -2,7 +2,8 @@ SET timezone TO 'Etc/UTC';
 
 CREATE SERVER linkedgeodata 
 FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
+OPTIONS (endpoint 'http://linkedgeodata.org/sparql',
+         enable_xml_huge 'false');
 
 CREATE FOREIGN TABLE hbf (
   label         	text OPTIONS (variable '?label', language 'fr'),

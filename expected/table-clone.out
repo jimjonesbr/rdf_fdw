@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS rdf_fdw;
 CREATE SERVER dbpedia
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://dbpedia.org/sparql',

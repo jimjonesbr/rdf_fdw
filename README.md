@@ -68,7 +68,7 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '2.0';
+CREATE EXTENSION rdf_fdw WITH VERSION '2.1';
 ```
 
 To run the predefined regression tests: 
@@ -94,7 +94,7 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '2.0';
+ALTER EXTENSION rdf_fdw UPDATE TO '2.1';
 ```
 
 ## [Usage](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#usage)
@@ -131,6 +131,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are appended to the request URL.
 | `query_param`         | optional            | The request parameter in which the SPARQL endpoint expects the query in an HTTP request. Most endpoints expect the SPARQL query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option.
 | `prefix_context`     | optional            | Name of the context where predefined `PREFIX` entries are stored. When set, all prefixes registered in the context are automatically prepended to every generated SPARQL query. If the query also contains its own `PREFIX` declarations, those are appended **after** the context-defined ones. See [Prefix Management](#prefix-management) for more details.
+| `enable_xml_huge`         | optional            | When set to `true`, the `rdf_fdw` will enable `XML_PARSE_HUGE` while parsing SPARQL XML results. This allows processing of documents with very large text nodes or deeply nested structures, bypassing libxml2's default safety limits. Use of this option is **strongly discouraged unless the SPARQL endpoint is fully trusted**. Enabling `XML_PARSE_HUGE` disables important parser limits designed to protect against resource exhaustion and denial-of-service attacks. For this reason, the option defaults to `false`. This option should only be used in controlled environments where the data provenance is secure and the size and complexity of result sets are known in advance. (default `false`).
 
 > [!NOTE]  
 > To visualise the foreign server's options use the `psql` meta-command `\des[+]`
@@ -2482,11 +2483,11 @@ RUN apt-get update && \
     apt-get install -y make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 RUN mkdir /extensions
-COPY ./rdf_fdw-2.0.0.tar.gz /extensions/
+COPY ./rdf_fdw-2.1.0.tar.gz /extensions/
 WORKDIR /extensions
 
-RUN tar xvzf rdf_fdw-2.0.0.tar.gz && \
-    cd rdf_fdw-2.0.0 && \
+RUN tar xvzf rdf_fdw-2.1.0.tar.gz && \
+    cd rdf_fdw-2.1.0 && \
     make -j && \
     make install
 ```
