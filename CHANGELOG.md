@@ -24,13 +24,17 @@ See the Prefix Management section of the README for details and usage examples.
 
 ### Bug Fixes
 
-* Bug fix for NULL RDFNodes:
+* NULL RDFNodes:
     
-    This fixes a bug that could potentially lead the system to crash if the triple store returns a `NULL` value for an specific node (edge case).
+  This fixes a bug that could potentially lead the system to crash if the triple store returns a `NULL` value for an specific node (edge case).
 
-* Bug fix for xmlParseMemory errors
+* xmlParseMemory errors
 
-  I've now fixed an issue where the system could potentially crash if libxml2 failed to parse a given XML string (for example, due to an out-of-memory error). Previously, there was no mechanism in place to detect this scenario, but I've now added a check to prevent crashes in such cases.
+  An issue has been resolved where the system could potentially crash if libxml2 failed to parse a given XML string (for example, due to an out-of-memory error). A check has been added to detect and prevent such crashes.
+
+* xmlDocGetRootElement failing to get the root element
+
+  A safeguard has been introduced to handle cases where xmlDocGetRootElement fails to parse the root node of an XML document. Instead of proceeding with an empty set, an error message is now displayed to inform the user of the issue.
 
 ## 2.0.0
 Release date: **2025-05-22**
