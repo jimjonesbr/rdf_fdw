@@ -28,6 +28,10 @@ See the Prefix Management section of the README for details and usage examples.
     
     This fixes a bug that could potentially lead the system to crash if the triple store returns a `NULL` value for an specific node (edge case).
 
+* Bug fix for xmlParseMemory errors
+
+  I've now fixed an issue where the system could potentially crash if libxml2 failed to parse a given XML string (for example, due to an out-of-memory error). Previously, there was no mechanism in place to detect this scenario, but I've now added a check to prevent crashes in such cases.
+
 ## 2.0.0
 Release date: **2025-05-22**
 
