@@ -12,11 +12,7 @@ Release date: **YYYY-MM-DD**
 
   `prefixes`: Individual prefix → URI mappings associated with a context.
 
-  A suite of SQL functions to add, update, delete, and override contexts and prefixes.
-
-  This enhancement simplifies query generation, reduces redundancy, and makes SPARQL integration more maintainable — especially when dealing with multiple endpoints or vocabularies.
-
-See the Prefix Management section of the README for details and usage examples.
+  A suite of SQL functions to add, update, delete, and override contexts and prefixes. This enhancement simplifies query generation, reduces redundancy, and makes SPARQL integration more maintainable — especially when dealing with multiple endpoints or vocabularies.
 
 * Add `enable_xml_huge` server option to support large XML result sets
 

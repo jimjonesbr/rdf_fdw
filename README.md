@@ -646,7 +646,7 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
 >
 >Such inconsistencies can lead to unexpected or confusing results. To avoid surprises:
 >* Always test how your target triplestore handles tagged or typed literals.
->* Consider simpler (less performant) alternatives like `STR` when working with language-tagged values.
+>* Consider simpler (less performant) alternatives like [`STR`](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str) when working with language-tagged values.
 >* Enable the `log_sparql` option in `rdf_fdw` to compare the number of records returned by the SPARQL endpoint with those visible in PostgreSQL. If the counts differ, it likely means some records were filtered out locally due to incompatible behavior in pushdown function evaluation.
 
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
@@ -787,31 +787,31 @@ Returns `true` if the given RDF node is a literal, and `false` otherwise. This f
 Examples:
 
 ```sql
-postgres=# SELECT sparql.isliteral('"foo"^^xsd:string');
+SELECT sparql.isliteral('"foo"^^xsd:string');
  isliteral 
 -----------
  t
 (1 row)
 
-postgres=# SELECT sparql.isliteral('"foo"^^@es');
+SELECT sparql.isliteral('"foo"^^@es');
  isliteral 
 -----------
  t
 (1 row)
 
-postgres=# SELECT sparql.isliteral('_:bnode42');
+SELECT sparql.isliteral('_:bnode42');
  isliteral 
 -----------
  f
 (1 row)
 
-postgres=# SELECT sparql.isliteral('<http://foo.bar>');
+SELECT sparql.isliteral('<http://foo.bar>');
  isliteral 
 -----------
  f
 (1 row)
 
-postgres=# SELECT sparql.isliteral(NULL);
+SELECT sparql.isliteral(NULL);
  isliteral 
 -----------
  f
@@ -1156,7 +1156,7 @@ SELECT sparql.substr('"foobar"', 1, 3);
  "foo"
 (1 row)
 
-postgres=# SELECT sparql.substr('"foobar"', 4);
+SELECT sparql.substr('"foobar"', 4);
  substr 
 --------
  "bar"
@@ -1264,7 +1264,7 @@ SELECT sparql.strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
  t
 (1 row)
 
-postgres=# SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
+SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
  strends 
 ---------
  t
@@ -1399,13 +1399,13 @@ SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
  "foo&bar"@en
 (1 row)
 
-postgres=# SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
+SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
                         concat                        
 ------------------------------------------------------
  "foo&bar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-postgres=# SELECT sparql.concat('"foo"','"&"', '"bar"');
+SELECT sparql.concat('"foo"','"&"', '"bar"');
   concat   
 -----------
  "foo&bar"
