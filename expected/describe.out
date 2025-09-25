@@ -120,9 +120,10 @@ describe wd:Q471896
  <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
  <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
  <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
  <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "Kuun kalpeassa valossa"
  <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "La coscienza di un ufficiale"
-(10 rows)
+(11 rows)
 
 -- empty server
 SELECT * FROM sparql.describe('', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>');
