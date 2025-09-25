@@ -362,9 +362,9 @@ Shows the version of the installed `rdf_fdw` and its main libraries.
 
 ```sql
 SELECT rdf_fdw_version();
-                                                                                        rdf_fdw_version                                                                                        
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- rdf_fdw = 2.1.0-dev, libxml/2.9.10, librdf/1.0.17, libcurl/7.74.0 GnuTLS/3.7.1 zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.0 (+libidn2/2.3.0) libssh2/1.9.0 nghttp2/1.43.0 librtmp/2.3
+                                                                                      rdf_fdw_version                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw = 2.1.0, libxml/2.9.10, librdf/1.0.17, libcurl/7.74.0 GnuTLS/3.7.1 zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.0 (+libidn2/2.3.0) libssh2/1.9.0 nghttp2/1.43.0 librtmp/2.3
 (1 row)
 ```
 

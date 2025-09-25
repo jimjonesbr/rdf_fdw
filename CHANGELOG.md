@@ -1,6 +1,6 @@
 # Release Notes
 ## 2.1.0
-Release date: **YYYY-MM-DD**
+Release date: **2025-09-25**
 
 ### Enhancements
 
