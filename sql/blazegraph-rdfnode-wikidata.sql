@@ -144,15 +144,15 @@ WHERE
 SELECT p, o FROM rdbms
 WHERE 
   p = '<http://schema.org/version>'::rdfnode AND
-  o = 2400367977::bigint AND
+  o = 2419449759::bigint AND
   o <> 9999999999::bigint AND
-  o >= 2400367977::bigint AND
-  o <= 2400367977::bigint AND
+  o >= 2419449759::bigint AND
+  o <= 2419449759::bigint AND
   o BETWEEN 2346087000::bigint AND 9999999999::bigint AND
-  2400367977::bigint = o AND
+  2419449759::bigint = o AND
   9999999999::bigint <> o AND
-  2400367977::bigint >= o AND
-  2400367977::bigint <= o;
+  2419449759::bigint >= o AND
+  2419449759::bigint <= o;
 
 /* SPARQL - 17.3 Operator Mapping (real) */
 SELECT p, o FROM rdbms
@@ -357,7 +357,7 @@ SELECT p, o, sparql.datatype(o)
 FROM rdbms
 WHERE
   p = '<http://wikiba.se/ontology#statements>' AND
-  sparql.datatype(o) = sparql.datatype('"2400367977"^^<http://www.w3.org/2001/XMLSchema#integer>');
+  sparql.datatype(o) = sparql.datatype('"2419449759"^^<http://www.w3.org/2001/XMLSchema#integer>');
 
 /* SPARQL 17.4.2.8 - IRI */
 SELECT p, o, sparql.iri(p)
@@ -380,10 +380,10 @@ SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM rdbms
 WHERE 
   p = sparql.iri('<http://schema.org/version>') AND
-  '"2400367977"^^xsd:string'::rdfnode = sparql.strdt(sparql.str(o),'xsd:string') AND
-  sparql.strdt(sparql.str(o),'xsd:string') = '"2400367977"^^xsd:string'::rdfnode  AND
-  sparql.strdt(sparql.str('"2400367977"^^xsd:integer'),'xsd:string') = sparql.strdt(sparql.str(o),'xsd:string') AND
-  sparql.strdt(sparql.str(o),'xsd:string') = sparql.strdt(sparql.str('"2400367977"^^xsd:integer'),'xsd:string');
+  '"2419449759"^^xsd:string'::rdfnode = sparql.strdt(sparql.str(o),'xsd:string') AND
+  sparql.strdt(sparql.str(o),'xsd:string') = '"2419449759"^^xsd:string'::rdfnode  AND
+  sparql.strdt(sparql.str('"2419449759"^^xsd:integer'),'xsd:string') = sparql.strdt(sparql.str(o),'xsd:string') AND
+  sparql.strdt(sparql.str(o),'xsd:string') = sparql.strdt(sparql.str('"2419449759"^^xsd:integer'),'xsd:string');
 
 /* SPARQL 17.4.2.11 - STRLANG */
 SELECT p, o, sparql.strlang(o,'en')
@@ -532,18 +532,18 @@ WHERE
 SELECT p, o, sparql.abs(o) FROM rdbms
 WHERE 
   p = '<http://schema.org/version>'::rdfnode AND
-  sparql.abs(o) = 2400367977::bigint AND
+  sparql.abs(o) = 2419449759::bigint AND
   sparql.abs(o) <> 9999999999::bigint AND
-  sparql.abs(o) >= 2400367977::bigint AND
-  sparql.abs(o) <= 2400367977::bigint AND
+  sparql.abs(o) >= 2419449759::bigint AND
+  sparql.abs(o) <= 2419449759::bigint AND
   sparql.abs(o) BETWEEN 2346087000::bigint AND 9999999999::bigint AND
-  sparql.abs(o) =  '"2400367977"^^xsd:long'::rdfnode AND
+  sparql.abs(o) =  '"2419449759"^^xsd:long'::rdfnode AND
   sparql.abs(o) >  '"1111111111"^^xsd:long'::rdfnode AND
-  sparql.abs(o) >= '"2400367977"^^xsd:long'::rdfnode AND
+  sparql.abs(o) >= '"2419449759"^^xsd:long'::rdfnode AND
   sparql.abs(o) <  '"9999999999"^^xsd:long'::rdfnode AND
-  sparql.abs(o) <= '"2400367977"^^xsd:long'::rdfnode AND
-  2400367977::bigint = sparql.abs(o) AND
-  '"2400367977"^^xsd:long'::rdfnode = sparql.abs(o);
+  sparql.abs(o) <= '"2419449759"^^xsd:long'::rdfnode AND
+  2419449759::bigint = sparql.abs(o) AND
+  '"2419449759"^^xsd:long'::rdfnode = sparql.abs(o);
 
 /* SPARQL 17.4.4.2 - round */
 SELECT p, o, sparql.round(o)
