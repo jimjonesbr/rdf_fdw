@@ -114,7 +114,7 @@
 #define array_create_iterator(arr, slice_ndim) array_create_iterator(arr, slice_ndim, NULL)
 #endif /* PG_VERSION_NUM */
 
-#define FDW_VERSION "2.1.0"
+#define FDW_VERSION "2.2-dev"
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 #define RDF_XML_NAME_TAG "name"
@@ -6063,7 +6063,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			size_t len = strlen(errbuf);
 			fprintf(stderr, "\nlibcurl: (%d) ", res);
 
-			xmlFreeDoc(state->xmldoc);
+			xmlFreeDoc(state->xmldoc); /* xmlFreeDoc is NULL-safe */
 			pfree(chunk.memory);
 			pfree(chunk_header.memory);
 			curl_slist_free_all(headers);
@@ -6172,6 +6172,14 @@ static void LoadRDFData(RDFfdwState *state)
 
 	elog(DEBUG2, "  %s: loading 'xmlroot'", __func__);
 
+	/* Free existing xmldoc before allocating new one */
+	if (state->xmldoc)
+    {
+        elog(DEBUG2, "	%s: freeing existing xmldoc", __func__);
+        xmlFreeDoc(state->xmldoc);
+        state->xmldoc = NULL;
+    }
+
 	if (state->sparql_query_type == SPARQL_SELECT)
 	{
 		state->xmldoc = xmlReadMemory(
@@ -6179,6 +6187,13 @@ static void LoadRDFData(RDFfdwState *state)
 							strlen(state->sparql_resultset),
 							NULL, NULL,
 							options);
+
+		/* We no longer need sparql_resultset, so let's free it */
+		if (state->sparql_resultset)
+		{
+			pfree(state->sparql_resultset);
+			state->sparql_resultset = NULL;
+		}
 
 		if (state->xmldoc == NULL)
 		{
@@ -6882,6 +6897,16 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 					if (!HeapTupleIsValid(tuple))
 					{
+						/* Cleanup before error */
+						if (content)
+							xmlFree(content);
+						if (lang)
+							xmlFree(lang);
+						if (datatype)
+							xmlFree(datatype);
+						if (prop)
+							xmlFree(prop);
+
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
 								 errmsg("cache lookup failed for type %u > column '%s(%s)'", pgtype, name.data, sparqlvar)));
@@ -6908,6 +6933,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						slot->tts_values[i] = OidFunctionCall1(typinput, datum);
 					}
 
+					/* Cleanup after successful processing */
 					if (content)
 						xmlFree(content);
 					if (lang)
@@ -12337,17 +12363,29 @@ static void LoadPrefixes(RDFfdwState *state)
 			char *prefix = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 1, &isnull));
 
 			if (isnull)
+			{
+				pfree(entry);
 				elog(WARNING, "%s: NULL prefix skipped", __func__);
+				continue;
+			}
 
 			uri = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 2, &isnull));
 
 			if (isnull)
+			{
 				elog(WARNING, "%s: NULL URI skipped", __func__);
+				pfree(entry);
+				if (uri)
+					pfree(uri);
+				continue;
+			}
 
 			entry->prefix = pstrdup(prefix);
 			entry->url = pstrdup(uri);
-
 			state->prefixes = lappend(state->prefixes, entry);
+
+			pfree(uri);
+			pfree(prefix);
 		}
 
 		SPI_finish();
