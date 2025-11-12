@@ -208,20 +208,12 @@ ORDER BY subject::text, object::text COLLATE "C";
 INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
 dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>
 
-                     subject                      |                     predicate                      |                                                                                                           object                                                                                                           
---------------------------------------------------+----------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageRevisionID>   | "1105395115"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageLength>       | "1824"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/released>             | "1917-03-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/releaseDate>          | "1917-03-29"^^<http://www.w3.org/2001/XMLSchema#date>
+                     subject                      |                     predicate                      |                                 object                                 
+--------------------------------------------------+----------------------------------------------------+------------------------------------------------------------------------
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/runtime>              | "4"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageID>           | "43826736"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/abstract>             | "Alien Blood is a 1917 silent film drama directed by Burton George and starring Winifred Greenwood. It is taken from a short story, The Alien Blood, by Louise Rice. The film is preserved at the Library of Congress."@en
- <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2000/01/rdf-schema#comment>     | "Alien Blood is a 1917 silent film drama directed by Burton George and starring Winifred Greenwood. It is taken from a short story, The Alien Blood, by Louise Rice. The film is preserved at the Library of Congress."@en
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/name>                 | "Alien Blood"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2000/01/rdf-schema#label>       | "Alien Blood"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://xmlns.com/foaf/0.1/name>                   | "Alien Blood"@en
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/producer>             | "Balboa Amusement Producing Company"@en
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/name>                 | "Alien Blood"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/director>             | "Burton George"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/writer>               | "Captain Leslie T. Peacocke"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/producer>             | "E. D. Horkheimer"@en
@@ -229,48 +221,50 @@ dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/producer>             | "H. M. Horkheimer"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/cinematography>       | "Paul Garnett"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/language>             | "Silent film ..English titles"@en
- <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2000/01/rdf-schema#comment>     | "The Alien Blood è un film muto del 1917 diretto da Burton George."@it
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/abstract>             | "The Alien Blood è un film muto del 1917 diretto da Burton George."@it
- <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2000/01/rdf-schema#label>       | "The Alien Blood"@it
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/country>              | "United States"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://cy.dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://da.dbpedia.org/resource/Alien_Blood>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  | <http://dbpedia.org/ontology/Film>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  | <http://dbpedia.org/ontology/Work>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1910s_American_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/producer>             | <http://dbpedia.org/resource/Balboa_Amusement_Producing_Company>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/producer>             | <http://dbpedia.org/resource/Balboa_Amusement_Producing_Company>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:1910s_American_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1910s_American_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1910s_English-language_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:1917_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1917_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:1917_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1917_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:American_black-and-white_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:American_black-and-white_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:American_black-and-white_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:American_silent_feature_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:American_silent_feature_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:English-language_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Films_based_on_short_fiction>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Films_based_on_short_fiction>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Films_directed_by_Burton_George>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Films_directed_by_Burton_George>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Silent_American_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Silent_American_drama_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Surviving_American_silent_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Surviving_American_silent_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/starring>             | <http://dbpedia.org/resource/Clifford_Grey>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Clifford_Grey>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Surviving_American_silent_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/starring>             | <http://dbpedia.org/resource/Clifford_Grey>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Clifford_Grey>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/starring>             | <http://dbpedia.org/resource/Clifford_Grey>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/writer>               | <http://dbpedia.org/resource/Leslie_T._Peacocke>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Leslie_T._Peacocke>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Library_of_Congress>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:1910s-drama-film-stub>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Based_on>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Film_date>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:IMDb_title>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Infobox_film>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Reflist>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Use_mdy_dates>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/starring>             | <http://dbpedia.org/resource/Winifred_Greenwood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Winifred_Greenwood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/starring>             | <http://dbpedia.org/resource/Winifred_Greenwood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://xmlns.com/foaf/0.1/isPrimaryTopicOf>       | <http://en.wikipedia.org/wiki/Alien_Blood>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/ns/prov#wasDerivedFrom>         | <http://en.wikipedia.org/wiki/Alien_Blood?oldid=1105395115&ns=0>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/ns/prov#wasDerivedFrom>         | <http://en.wikipedia.org/wiki/Alien_Blood?oldid=1281560162&ns=0>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://ht.dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://it.dbpedia.org/resource/The_Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://no.dbpedia.org/resource/Alien_Blood>
@@ -283,9 +277,9 @@ dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  | <http://www.wikidata.org/entity/Q386724>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://yago-knowledge.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <https://global.dbpedia.org/id/YEQR>
- <http://dbpedia.org/resource/Alien_Blood_(film)> | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood_(film)> | <http://dbpedia.org/ontology/wikiPageRedirects>    | <http://dbpedia.org/resource/Alien_Blood>
+ <http://dbpedia.org/resource/Alien_Blood_(film)> | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Alien_Blood>
  <http://en.wikipedia.org/wiki/Alien_Blood>       | <http://xmlns.com/foaf/0.1/primaryTopic>           | <http://dbpedia.org/resource/Alien_Blood>
-(76 rows)
+(70 rows)
 
 DROP SERVER dbpedia;

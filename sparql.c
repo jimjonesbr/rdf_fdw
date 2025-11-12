@@ -1,0 +1,1782 @@
+/*---------------------------------------------------------------------
+ *
+ * sparql.c
+ *   SPARQL-related functions for RDF data manipulation.
+ *
+ * Implements SPARQL 1.1 string functions, accessor functions, and
+ * type checking.
+ *
+ * Copyright (C) 2022-2025 University of Münster, Germany
+ * 
+ *---------------------------------------------------------------------
+ */
+ 
+#include "postgres.h"
+
+#include "rdf_fdw.h"
+#include "rdf_utils.h"
+#include "rdfnode.h"
+#include "sparql.h"
+
+#include "lib/stringinfo.h"
+#include "utils/builtins.h"
+#include "utils/timestamp.h"
+#include <string.h>
+#include <ctype.h>
+
+/*
+ * lex
+ * ---
+ *
+ * Extracts the lexical value of a given RDF literal.
+ *
+ * input: RDF literal
+ *
+ * returns: lexical value of an RDF literal
+ */
+char *lex(char *input)
+{
+    StringInfoData output;
+    const char *start = input;
+    int len = strlen(input);
+
+    initStringInfo(&output);
+    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+
+    if (len == 0)
+        return "";
+
+    /* Handle quoted literal */
+    if (start[0] == '"')
+    {
+        const char *p;
+        start++; /* skip opening quote */
+
+        p = start;
+        while (*p)
+        {
+            if (*p == '"' && *(p - 1) != '\\')
+            {
+                break; /* closing quote found */
+            }
+            if (*p == '\\' && *(p + 1))
+            {
+                appendStringInfoChar(&output, *p);
+                p++;
+            }
+            appendStringInfoChar(&output, *p);
+            p++;
+        }
+
+        /* No closing quote found — malformed, return whole string */
+        if (*p != '"')
+        {
+            resetStringInfo(&output);
+            appendStringInfoString(&output, input);
+            return output.data;
+        }
+
+        /* Successful: return parsed inside quotes */
+        return output.data;
+    }
+
+    /* Handle IRI */
+    if (start[0] == '<')
+    {
+        appendStringInfoString(&output, start);
+        return output.data;
+    }
+
+    /* Unquoted: trim at @ or ^^ only if they indicate language tag or datatype */
+    {
+        const char *at = strchr(start, '@');
+        const char *dt = strstr(start, "^^");
+        const char *cut = NULL;
+
+        if (at && (!dt || at < dt))
+        {
+            const char *tag = at + 1;
+            int letter_count = 0;
+            const char *p = NULL;
+            int is_lang_tag = 0;
+
+            if (*tag && isalpha(*tag))
+            {
+                p = tag;
+                while (*p && isalpha(*p) && letter_count < 8)
+                {
+                    letter_count++;
+                    p++;
+                }
+
+                if (letter_count >= 1 && (!*p || *p == '-' || (*p != '.' && *p != '@')))
+                {
+                    if (*p == '-')
+                    {
+                        p++;
+                        while (*p && (isalnum(*p) || *p == '-'))
+                        {
+                            p++;
+                        }
+                    }
+
+                    if (!*p || (*p != '.' && *p != '@'))
+                    {
+                        is_lang_tag = 1;
+                    }
+                }
+            }
+
+            if (is_lang_tag)
+            {
+                cut = at;
+            }
+        }
+        else if (dt)
+        {
+            cut = dt;
+        }
+
+        if (cut)
+        {
+            appendBinaryStringInfo(&output, start, cut - start);
+        }
+        else
+        {
+            appendStringInfoString(&output, start);
+        }
+    }
+
+    return output.data;
+}
+
+/*
+ * lang
+ * ----
+ *
+ * Extracts the language tag from an RDF literal, if present. Returns an empty
+ * string if no language tag is found or if the input is invalid/empty.
+ *
+ * input: Null-terminated C string representing an RDF literal (e.g., "abc"@en, "123"^^xsd:int)
+ *
+ * returns: Null-terminated C string representing the language tag (e.g., "en") or empty string
+ */
+char *lang(char *input)
+{
+    StringInfoData buf;
+    const char *ptr;
+    char *lexical_form;
+
+    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+
+    if (!input || strlen(input) == 0)
+        return "";
+
+    lexical_form = lex(input);
+    ptr = input;
+
+    /* find the end of the lexical form in the original input */
+    if (*ptr == '"')
+    {
+        ptr++;                       /* skip opening quote */
+        ptr += strlen(lexical_form); /* move to end of lexical form */
+        if (*ptr == '"')
+            ptr++; /* skip closing quote */
+    }
+    else
+    {
+        ptr += strlen(lexical_form); /* unquoted case */
+    }
+
+    /* check for language tag */
+    if (*ptr == '@')
+    {
+        const char *tag_start = ptr + 1;
+        const char *tag_end = tag_start;
+
+        while (*tag_end && (isalnum(*tag_end) || *tag_end == '-' || *tag_end == '_'))
+            tag_end++;
+
+        initStringInfo(&buf);
+        appendBinaryStringInfo(&buf, tag_start, tag_end - tag_start);
+        elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+        return buf.data;
+    }
+
+    elog(DEBUG1, "%s exit: returning empty string", __func__);
+    return "";
+}
+
+/*
+ * strlang
+ * -------
+ *
+ * Constructs an RDF literal by combining a lexical value with a specified
+ * language tag. The result is formatted as a language-tagged RDF literal.
+ *
+ * literal: Null-terminated C string representing an RDF literal or lexical value (e.g., "abc")
+ * language: Null-terminated C string representing the language tag (e.g., "en")
+ *
+ * returns: Null-terminated C string formatted as a language-tagged RDF literal (e.g., "abc"@en)
+ */
+char *strlang(char *literal, char *language)
+{
+    StringInfoData buf;
+    char *lex_language = lex(language);
+    char *lex_literal = lex(literal);
+
+    elog(DEBUG1, "%s called: literal='%s', language='%s'", __func__, literal, language);
+
+    if (strlen(lex_language) == 0)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("language tag cannot be empty")));
+
+    initStringInfo(&buf);
+
+    if (strlen(lex_literal) == 0)
+        appendStringInfo(&buf, "\"\"@%s", lex_language);
+    else
+        appendStringInfo(&buf, "%s@%s", str(literal), lex_language);
+
+    elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+
+    return buf.data;
+}
+
+/*
+ * strstarts
+ * ---------
+ *
+ * Implements the core logic for the SPARQL STRSTARTS function, returning true if
+ * the lexical form of the first argument (string) starts with the lexical form
+ * of the second argument (substring), or false if arguments are incompatible or
+ * the condition fails. An empty substring is considered a prefix of any string,
+ * per SPARQL behavior.
+ *
+ * str: Null-terminated C string representing an RDF literal or value (e.g., "foobar")
+ * substr: Null-terminated C string representing an RDF literal or value (e.g., "foo")
+ *
+ * returns: C boolean (true if string starts with substring, false otherwise or if incompatible)
+ */
+bool strstarts(char *str, char *substr)
+{
+    char *str_lexical = lex(str);
+    char *substr_lexical = lex(substr);
+    size_t str_len = strlen(str_lexical);
+    size_t substr_len = strlen(substr_lexical);
+    int result;
+
+    elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
+
+    if (!LiteralsCompatible(str, substr))
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (incompatible literals)", __func__);
+        return false;
+    }
+
+    if (substr_len == 0)
+    {
+        elog(DEBUG1, "%s exit: returning 'true' (empty substring is a prefix of any string)", __func__);
+        return true;
+    }
+
+    if (substr_len > str_len)
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (substring longer than string cannot be a prefix)", __func__);
+        return false;
+    }
+
+    result = strncmp(str_lexical, substr_lexical, substr_len);
+
+    elog(DEBUG1, "%s exit: returning '%s'", __func__,
+         result == 0 ? "true" : "false");
+
+    return result == 0;
+}
+
+/*
+ * strends
+ * -------
+ *
+ * Implements the core logic for the SPARQL STRENDS function, returning true if
+ * the lexical form of the first argument (string) ends with the lexical form
+ * of the second argument (substring), or false if arguments are incompatible or
+ * the condition fails. An empty substring is considered a suffix of any string,
+ * per SPARQL behavior.
+ *
+ * str: Null-terminated C string representing an RDF literal or value (e.g., "foobar")
+ * substr: Null-terminated C string representing an RDF literal or value (e.g., "bar")
+ *
+ * returns: C boolean (true if string ends with substring, false otherwise or if incompatible)
+ */
+bool strends(char *str, char *substr)
+{
+    char *str_lexical = lex(str);
+    char *substr_lexical = lex(substr);
+    size_t str_len = strlen(str_lexical);
+    size_t substr_len = strlen(substr_lexical);
+    int result;
+
+    elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
+
+    if (!LiteralsCompatible(str, substr))
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (incompatible literals)", __func__);
+        return false;
+    }
+
+    if (substr_len == 0)
+    {
+        elog(DEBUG1, "%s exit: returning 'true' (an empty substring is a suffix of any string)", __func__);
+        return true;
+    }
+
+    if (substr_len > str_len)
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (substring longer than string cannot be a suffix)", __func__);
+        return false;
+    }
+
+    result = strncmp(str_lexical + (str_len - substr_len), substr_lexical, substr_len);
+
+    elog(DEBUG1, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
+
+    return result == 0;
+}
+
+/*
+ * strdt
+ * -----
+ *
+ * Constructs an RDF literal by combining a lexical value with a specified datatype IRI.
+ * Uses ExpandDatatypePrefix to handle prefix expansion (e.g., "xsd:" to full URI) or
+ * retain prefixed/bare forms without angle brackets unless fully expanded.
+ *
+ * literal: Null-terminated C string representing an RDF literal or lexical value (e.g., "123")
+ * datatype: Null-terminated C string representing the datatype IRI (e.g., "xsd:int", "foo:bar")
+ *
+ * returns: Null-terminated C string formatted as a datatype-tagged RDF literal (e.g., "123"^^<http://www.w3.org/2001/XMLSchema#int>, "foo"^^foo:bar)
+ */
+char *strdt(char *literal, char *datatype)
+{
+    StringInfoData buf;
+    char *lex_datatype = lex(datatype);
+
+    elog(DEBUG1, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
+
+    if (strlen(lex_datatype) == 0)
+        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                        errmsg("datatype IRI cannot be empty")));
+
+    if (ContainsWhitespaces(datatype))
+        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                        errmsg("datatype IRI cannot contain whitespaces")));
+
+    initStringInfo(&buf);
+
+    if (isIRI(datatype))
+        appendStringInfo(&buf, "%s^^%s", str(literal), datatype);
+    else
+    {
+        char *expanded_datatype;
+
+        elog(DEBUG2, "%s: data type not an IRI", __func__);
+
+        expanded_datatype = ExpandDatatypePrefix(lex_datatype);
+        appendStringInfo(&buf, "%s^^%s", str(literal), iri(expanded_datatype));
+    }
+
+    elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+
+    return buf.data;
+}
+
+/*
+ * str
+ * ---
+ *
+ * Extracts the lexical value of an RDF literal or the string form of an IRI and returns it as a new RDF literal.
+ * If the input is empty or null, returns an empty RDF literal.
+ *
+ * input: Null-terminated C string representing an RDF literal or IRI (e.g., "abc"@en, "<http://example.org>")
+ *
+ * returns: Null-terminated C string formatted as an RDF literal (e.g., "abc", "http://example.org")
+ */
+char *str(char *input)
+{
+    StringInfoData buf;
+    char *result;
+
+    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+
+    if (!input || input[0] == '\0')
+    {
+        elog(DEBUG1, "%s exit: returning empty literal", __func__);
+        return "\"\"";
+    }
+
+    if (isIRI(input))
+    {
+        size_t len = strlen(input);
+        initStringInfo(&buf);
+        appendStringInfo(&buf, "\"%.*s\"", (int)(len - 2), input + 1); /* skip '<' and trim '>' */
+
+        elog(DEBUG1, "%s exit: returning IRI '%s'", __func__, buf.data);
+        return buf.data;
+    }
+
+    result = cstring_to_rdfliteral(lex(input));
+    elog(DEBUG1, "%s exit: returning literal '%s'", __func__, result);
+    return result;
+}
+
+/*
+ * iri
+ * ---
+ * Converts a string to an IRI by wrapping it in angle brackets (< >), mimicking
+ * SPARQL's IRI() function. Strips quotes and any language tags or datatypes if
+ * present *only* for quoted literals. Raw strings and pre-wrapped IRIs are preserved.
+ */
+char *iri(char *input)
+{
+    StringInfoData buf;
+    char *lexical;
+
+    elog(DEBUG1, "%s called: input='%s'", __func__, input ? input : "(null)");
+
+    if (!input || *input == '\0')
+        return "<>";
+
+    if (isIRI(input))
+        return pstrdup(input);
+
+    initStringInfo(&buf);
+
+    lexical = lex(input);
+    appendStringInfo(&buf, "<%s>", lexical);
+
+    elog(DEBUG1, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
+    return pstrdup(buf.data);
+}
+
+/*
+ * bnode
+ * -----
+ *
+ * Implements SPARQL’s BNODE function. Without arguments (input = NULL), generates
+ * a unique blank node (e.g., "_:b123"). With a string argument, returns a blank node
+ * based on the lexical form of the input (e.g., BNODE("xyz") → "_:xyz"). Invalid
+ * inputs (e.g., IRIs, blank nodes, empty literals) return NULL.
+ *
+ * input: Null-terminated C string (literal or bare string) for BNODE(str), or NULL for BNODE().
+ *
+ * returns: Null-terminated C string representing a blank node (e.g., "_:xyz"), or NULL for invalid inputs.
+ */
+char *bnode(char *input)
+{
+    StringInfoData buf;
+    static uint64 counter = 0; /* Ensure uniqueness for BNODE() */
+
+    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+
+    initStringInfo(&buf);
+
+    if (input == NULL)
+    {
+        /* BNODE(): Generate unique blank node using timestamp and counter */
+        TimestampTz ts = GetCurrentTimestamp();
+        uint64 unique_id = counter++ ^ (uint64)ts;
+        appendStringInfo(&buf, "_:b%llu", (unsigned long long)unique_id);
+    }
+    else
+    {
+        StringInfoData input_buf;
+        char *normalized_input;
+        char *lexical;
+
+        /* Reject IRIs and blank nodes explicitly */
+        if (isIRI(input) || isBlank(input))
+        {
+            elog(DEBUG1, "%s exit: returning NULL (input eiter an IRI or a blank node)", __func__);
+            return NULL;
+        }
+
+        /* Normalize input: quote bare strings */
+        initStringInfo(&input_buf);
+        if (*input != '"' && !strstr(input, "^^") && !strstr(input, "@"))
+        {
+            appendStringInfoChar(&input_buf, '"');
+            appendStringInfoString(&input_buf, input);
+            appendStringInfoChar(&input_buf, '"');
+        }
+        else
+        {
+            appendStringInfoString(&input_buf, input);
+        }
+
+        normalized_input = input_buf.data;
+
+        /* Validate input is a literal */
+        if (!isLiteral(normalized_input))
+        {
+            elog(DEBUG1, "%s exit: returning NULL (input is not a literal)", __func__);
+            return NULL;
+        }
+
+        /* Extract lexical form */
+        lexical = lex(normalized_input);
+        if (!lexical || strlen(lexical) == 0)
+        {
+            elog(DEBUG1, "%s exit: returning NULL (lexical value either NULL or an empty string)", __func__);
+            return NULL;
+        }
+
+        /* Create blank node ID, sanitizing lexical form (alphanumeric or underscore) */
+        appendStringInfoString(&buf, "_:");
+        for (char *p = lexical; *p; p++)
+        {
+            if (isalnum((unsigned char)*p))
+                appendStringInfoChar(&buf, *p);
+            else
+                appendStringInfoChar(&buf, '_');
+        }
+    }
+
+    elog(DEBUG1, "%s exit: returning '%s'", __func__, buf.data);
+    return buf.data;
+}
+
+/*
+ * concat(text, text) returns text
+ *
+ * Implements the SPARQL CONCAT function.
+ *
+ * Concatenates two RDF literals while preserving compatible language tags
+ * or datatype annotations (specifically xsd:string). If both inputs share the
+ * same language tag, the result will carry that tag. If both inputs are typed
+ * as xsd:string, the result is typed as xsd:string.
+ *
+ * Mixing a simple literal with a language-tagged or xsd:string-typed value
+ * results in a plain literal without type or language. Conflicting language
+ * tags or unsupported datatypes raise an error.
+ *
+ * NULL inputs yield NULL. Empty strings are allowed and result in valid RDF
+ * literals.
+ */
+char *concat(char *left, char *right)
+{
+    char *lex1 = lex(left);
+    char *lex2 = lex(right);
+    char *dt1 = datatype(left);
+    char *dt2 = datatype(right);
+    char *lang1 = lang(left);
+    char *lang2 = lang(right);
+    char *result;
+    StringInfoData buf;
+
+    elog(DEBUG1, "%s called: left='%s', right='%s'", __func__, left, right);
+
+    initStringInfo(&buf);
+    appendStringInfoString(&buf, lex1);
+    appendStringInfoString(&buf, lex2);
+
+    /* Check for conflicting language tags */
+    if (strlen(lang1) > 0 && strlen(lang2) > 0 && strcmp(lang1, lang2) != 0)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("CONCAT arguments have conflicting language tags: '%s' and '%s'", lang1, lang2)));
+
+    if ((strlen(dt1) > 0 && strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) != 0) ||
+        (strlen(dt2) > 0 && strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) != 0))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("CONCAT arguments must be simple literals or '%s'", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED)));
+
+    /* only one argument has a datatype */
+    if ((strlen(dt1) != 0 && strlen(dt2) == 0) || (strlen(dt1) == 0 && strlen(dt2) != 0))
+    {
+        result = cstring_to_rdfliteral(buf.data);
+        elog(DEBUG1, "%s exit: returning '%s' (only one argument has a datatype)", __func__, result);
+        return result;
+    }
+
+    /* only one argument has a language tag */
+    if ((strlen(lang1) != 0 && strlen(lang2) == 0) || (strlen(lang1) == 0 && strlen(lang2) != 0))
+    {
+        result = cstring_to_rdfliteral(buf.data);
+        elog(DEBUG1, "%s exit: returning '%s' (only one argument has a language tag)", __func__, result);
+        return result;
+    }
+
+    /* re-wrap result appropriately */
+    if (strlen(lang1) != 0 || strlen(lang2) != 0)
+    {
+        result = strlang(buf.data, strlen(lang1) > 0 ? lang1 : lang2);
+        elog(DEBUG1, "%s exit: returning '%s' (re-wrapping result appropriately)", __func__, result);
+        return result;
+    }
+
+    if ((strlen(dt1) > 0 && strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0) ||
+        (strlen(dt2) > 0 && strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+    {
+        result = strdt(buf.data, RDF_SIMPLE_LITERAL_DATATYPE);
+        elog(DEBUG1, "%s exit: returning '%s' (either left or right argument has a simple literal data type - %s)",
+             __func__, result, RDF_SIMPLE_LITERAL_DATATYPE);
+
+        return result;
+    }
+
+    result = cstring_to_rdfliteral(buf.data);
+
+    elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+    return result;
+}
+
+/*
+ * isIRI
+ * -----
+ * Checks if a string is an RDF IRI. A valid IRI must:
+ * - Start with '<' and end with '>'
+ * - Not contain spaces or quote characters
+ * - May be absolute (with a colon) or relative (e.g., <foo>)
+ *   according to SPARQL 1.1.
+ */
+bool isIRI(char *input)
+{
+    size_t len;
+    size_t i;
+
+    if (input == NULL || (len = strlen(input)) < 3)
+        return false;
+
+    /* Must be enclosed in <...> */
+    if (input[0] != '<' || input[len - 1] != '>')
+        return false;
+
+    /* Check for illegal characters inside the IRI */
+    for (i = 1; i < len - 1; i++)
+    {
+        char c = input[i];
+        if (c == '"' || c == ' ' || c == '\n' || c == '\r' || c == '\t')
+            return false;
+    }
+
+    /* All checks passed — valid IRI (absolute or relative) */
+    return true;
+}
+
+/*
+ * isBlank
+ * -------
+ *
+ * Mimics SPARQL's isBlank function. Checks if the input is a blank node.
+ * Returns true if the term starts with "_:", false otherwise.
+ *
+ * term: Null-terminated C string, an RDF term (e.g., "_:b1", "<http://ex.com>", "\"hello\"")
+ *
+ * returns: Boolean (true if blank node, false otherwise)
+ */
+bool isBlank(char *term)
+{
+    bool result;
+    elog(DEBUG1, "%s called: term='%s'", __func__, term);
+
+    /* Handle NULL or empty input */
+    if (!term || strlen(term) == 0)
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+        return false;
+    }
+
+    /* Check if term starts with "_:" and has at least 3 characters */
+    result = (strncmp(term, "_:", 2) == 0) && strlen(term) > 2;
+
+    elog(DEBUG1, "%s exit: returning '%s'", __func__, result ? "true" : "false");
+    return result;
+}
+
+/*
+ * isLiteral
+ * ---------
+ *
+ * Checks if an RDF term is a literal per SPARQL 1.1 spec. Returns true for simple
+ * literals (e.g., "\"hello\""), language-tagged literals (e.g., "\"hello\"@en"),
+ * or typed literals (e.g., "\"12\"^^xsd:integer"). Returns false for IRIs
+ * (e.g., "<http://example.org>"), blank nodes (e.g., "_:bnode"), bare numbers
+ * (e.g., "123"), empty strings, or invalid inputs.
+ *
+ * term: Null-terminated C string representing an RDF term
+ *
+ * returns: Boolean (1 for literal, 0 otherwise)
+ */
+bool isLiteral(char *term)
+{
+    const char *ptr;
+    int len;
+
+    elog(DEBUG1, "%s called: term='%s'", __func__, term);
+
+    if (!term || *term == '\0')
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (term either NULL or has no '\\0')", __func__);
+        return false;
+    }
+
+    /* Exclude IRIs and blank nodes first */
+    if (isIRI(term) || isBlank(term))
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (either an IRI or a blank node)", __func__);
+        return false;
+    }
+
+    /* Normalize input */
+    ptr = cstring_to_rdfliteral(term);
+    len = strlen(ptr);
+
+    /* Check for valid quoted literal */
+    if (*ptr == '"')
+    {
+        if (len >= 2)
+        {
+            const char *tag = strstr(ptr, "^^");
+            const char *lang_tag = strstr(ptr, "@");
+
+            /* Typed literal: has ^^ followed by datatype */
+            if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
+                (!lang_tag || lang_tag > tag))
+            {
+                const char *dt_start = tag + 2;
+                if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
+                {
+                    elog(DEBUG1, "%s exit: returning 'true' (valid datatype)", __func__);
+                    return true;
+                } /* Valid datatype */
+            }
+            /* Language-tagged literal: has @ with language tag */
+            else if (lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"' &&
+                     *(lang_tag + 1) != '\0')
+            {
+                elog(DEBUG1, "%s exit: returning 'true' (literal has a language tag)", __func__);
+                return true;
+            }
+            /* Simple literal: quoted string, no ^^ or @ */
+            else if (ptr[len - 1] == '"')
+            {
+                elog(DEBUG1, "%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
+                return true;
+            }
+        }
+        else if (len == 1)
+        {
+            /* Empty quoted literal "" */
+            elog(DEBUG1, "%s exit: returning 'true' (empty quoted literal)", __func__);
+            return true;
+        }
+    }
+
+    /* Invalid or non-literal */
+    elog(DEBUG1, "%s exit: returning 'false' (invalid or non-literal)", __func__);
+    return false;
+}
+
+/*
+ * langmatches
+ * -----------
+ *
+ * Mimics SPARQL's LANGMATCHES function. Compares a language tag against a pattern,
+ * supporting basic matching and wildcards (*). Case-insensitive per RFC 4647.
+ * Returns true if the language tag matches the pattern, false otherwise.
+ *
+ * lang_tag: Null-terminated C string, typically a language tag (e.g., "en" from lang())
+ * pattern: Null-terminated C string, language range (e.g., "en", "en-*", "*")
+ *
+ * returns: Boolean (true if lang_tag matches pattern, false otherwise)
+ */
+bool langmatches(char *lang_tag, char *pattern)
+{
+    char *tag;
+    char *pat;
+    bool result;
+
+    elog(DEBUG1, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag, pattern);
+
+    /* Handle NULL inputs */
+    if (!lang_tag || !pattern)
+    {
+        elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+        return false;
+    }
+
+    pattern = lex(pattern);
+    tag = lex(lang_tag); /* e.g., "en" from lang('"foo"@en') */
+    /* Handle pattern: bare string or quoted literal */
+    if (pattern[0] == '"' && strrchr(pattern, '"') > pattern)
+        pat = lex(pattern); /* e.g., "\"en\"" -> "en" */
+    else
+        pat = pattern; /* e.g., "en" as-is */
+
+    /* Empty tag only matches "*" pattern (case-insensitive) */
+    if (strlen(tag) == 0)
+    {
+        result = (strcasecmp(pat, "*") == 0);
+        elog(DEBUG1, "%s exit: returning '%s' (empty tag, pattern='%s')",
+             __func__, result ? "true" : "false", pat);
+        return result;
+    }
+
+    /* Exact match (case-insensitive) */
+    if (strcasecmp(tag, pat) == 0)
+    {
+        result = true;
+    }
+    /* Wildcard match: "*" matches any non-empty tag */
+    else if (strcasecmp(pat, "*") == 0)
+    {
+        result = true;
+    }
+    /* SPARQL rule: prefix match with hyphen, e.g. "en" matches "en-US" */
+    else if (strncasecmp(tag, pat, strlen(pat)) == 0 &&
+             tag[strlen(pat)] == '-')
+    {
+        result = true;
+    }
+    /* Prefix match with wildcard (e.g., "en-*" matches "en" or "en-us") */
+    else if (strchr(pat, '*'))
+    {
+        char *prefix_end = strchr(pat, '*');
+        size_t prefix_len = prefix_end - pat;
+        size_t tag_len = strlen(tag);
+
+        if (prefix_len > 0 && tag_len >= (prefix_len - 1) &&
+            strncasecmp(tag, pat, prefix_len - 1) == 0)
+        {
+            if (tag_len == prefix_len - 1 ||
+                (tag_len > prefix_len && tag[prefix_len - 1] == '-' && prefix_end[1] == '\0'))
+            {
+                result = true;
+            }
+            else
+            {
+                result = false;
+            }
+        }
+        else
+        {
+            result = false;
+        }
+    }
+    else
+    {
+        result = false;
+    }
+
+    elog(DEBUG1, "%s exit: returning '%s' (tag='%s', pat='%s')",
+         __func__, result ? "true" : "false", tag, pat);
+
+    return result;
+}
+
+/*
+ * datatype
+ * --------
+ *
+ * Extracts the datatype URI of an RDF literal, following SPARQL 1.1 conventions.
+ * Returns "" for simple literals and language-tagged literals (unbound per spec).
+ * For typed literals (e.g., xsd: types), constructs the full URI using RDF_XSD_BASE_URI.
+ * Returns "" for invalid or unrecognized inputs.
+ *
+ * input: Null-terminated C string representing an RDF literal (e.g., "123"^^xsd:int, "abc"@en, "xyz")
+ *
+ * returns: Null-terminated C string representing the datatype URI (e.g., "http://www.w3.org/2001/XMLSchema#int")
+ */
+char *datatype(char *input)
+{
+    StringInfoData buf;
+    const char *ptr;
+    int len;
+
+    elog(DEBUG1, "%s called: input='%s'", __func__, input ? input : "(null)");
+
+    if (input == NULL || *input == '\0')
+    {
+        elog(DEBUG1, "%s exit: returning empty string for NULL or empty input", __func__);
+        return "";
+    }
+
+    ptr = cstring_to_rdfliteral(input);
+    len = strlen(ptr);
+
+    initStringInfo(&buf);
+
+    if (*ptr == '"')
+    {
+        const char *tag = strstr(ptr, "^^");
+        const char *lang_tag = strstr(ptr, "@");
+
+        /* check for datatype first */
+        if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
+            (!lang_tag || lang_tag > tag)) /* datatype takes precedence */
+        {
+            const char *dt_start = tag + 2; /* skip ^^ */
+            const char *dt_end = dt_start;
+
+            /* find the end of the datatype */
+            if (*dt_start == '<')
+            {
+                while (*dt_end && *dt_end != '>')
+                    dt_end++;
+                if (*dt_end != '>') /* ensure proper closing */
+                {
+                    elog(DEBUG1, "%s exit: returning empty string (malformed datatype IRI, missing '>')", __func__);
+                    return "";
+                }
+                dt_end++; /* include > */
+            }
+            else
+            {
+                while (*dt_end && *dt_end != ' ' && *dt_end != '>' && *dt_end != '@')
+                    dt_end++;
+            }
+
+            if (dt_start < dt_end)
+            {
+                char *res = "";
+                /* handle xsd: prefix */
+                if (strncmp(dt_start, "xsd:", 4) == 0 && dt_end - dt_start > 4)
+                {
+                    appendStringInfoString(&buf, RDF_XSD_BASE_URI);
+                    appendBinaryStringInfo(&buf, dt_start + 4, dt_end - (dt_start + 4));
+                }
+                else if (*dt_start == '<' && *(dt_end - 1) == '>' &&
+                         strncmp(dt_start + 1, "xsd:", 4) == 0 && dt_end - dt_start > 6)
+                {
+                    appendStringInfoString(&buf, RDF_XSD_BASE_URI);
+                    appendBinaryStringInfo(&buf, dt_start + 5, dt_end - (dt_start + 6));
+                }
+                else if (*dt_start == '<' && *(dt_end - 1) == '>')
+                {
+                    appendBinaryStringInfo(&buf, dt_start + 1, dt_end - dt_start - 2);
+                }
+                else
+                {
+                    appendBinaryStringInfo(&buf, dt_start, dt_end - dt_start);
+                }
+
+                /* ensure no trailing junk */
+                if (*dt_end != '\0')
+                {
+                    elog(DEBUG1, "%s exit: returning empty string (trailing chars after datatype)", __func__);
+                    return res;
+                }
+
+                res = iri(buf.data);
+
+                elog(DEBUG1, "%s exit: returning '%s'", __func__, res);
+                return res;
+            }
+        }
+        /* simple or language-tagged literal */
+        if ((lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"') ||
+            (len >= 1 && (ptr[len - 1] == '"' || len == 1)))
+        {
+            elog(DEBUG1, "%s exit: returning empty string (simple/language-tagged literal)", __func__);
+            return "";
+        }
+    }
+
+    /* Not a valid literal */
+    elog(DEBUG1, "%s exit: returning empty string (not a valid literal)", __func__);
+    return "";
+}
+
+/*
+ * encode_for_uri
+ * --------------
+ *
+ * Encodes a string for use in a URI by percent-encoding all characters except
+ * those defined as unreserved in RFC 3986 (alphanumeric, hyphen, period,
+ * underscore, and tilde). If the input starts with a quote, it is treated as an
+ * RDF literal and processed accordingly.
+ *
+ * str: Null-terminated C string to encode (e.g., "hello world", "\"example\"@en")
+ *
+ * returns: Null-terminated C string with URI-encoded result, formatted as an RDF literal
+ */
+char *encode_for_uri(char *str_in)
+{
+    const char *unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
+    size_t in_len;
+    char *res;
+
+    StringInfoData buf;
+    initStringInfo(&buf);
+
+    elog(DEBUG1, "%s called: str='%s'", __func__, str_in);
+
+    str_in = lex(str_in);
+    in_len = strlen(str_in);
+
+    elog(DEBUG2, "%s: encoding string: '%s', length: %zu", __func__, str_in, in_len);
+
+    for (size_t i = 0; i < in_len; i++)
+    {
+        unsigned char c = (unsigned char)str_in[i];
+        if (strchr(unreserved, c))
+            appendStringInfoChar(&buf, c);
+        else
+            appendStringInfo(&buf, "%%%02X", c);
+    }
+
+    res = cstring_to_rdfliteral(buf.data);
+
+    elog(DEBUG1, "%s exit: returning => '%s'", __func__, res);
+    return res;
+}
+
+/*
+ * generate_uuid_v4
+ * ----------------
+ * Generates a version 4 (random) UUID per RFC 4122. Returns a lowercase string
+ * in the format xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx, where y is 8, 9, A, or B.
+ * Uses timestamp and counter for entropy, no external dependencies.
+ *
+ * Returns: Null-terminated C string (e.g., "123e4567-e89b-12d3-a456-426614174000")
+ */
+char *generate_uuid_v4(void)
+{
+    StringInfoData buf;
+    static uint64 counter = 0;
+    uint64 seed;
+    uint8_t bytes[16];
+    char *result;
+    int i;
+
+    elog(DEBUG1, "%s called", __func__);
+
+    initStringInfo(&buf);
+
+    /* Use timestamp and counter for pseudo-randomness */
+    seed = (uint64)GetCurrentTimestamp() ^ counter++;
+
+    /* Generate 16 bytes of pseudo-random data */
+    for (i = 0; i < 16; i++)
+    {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff; /* Linear congruential generator */
+        bytes[i] = (uint8_t)(seed >> 16);
+    }
+
+    /* Set version (4) and variant (y = 8, 9, A, B) */
+    bytes[6] = (bytes[6] & 0x0F) | 0x40; /* Version 4 */
+    bytes[8] = (bytes[8] & 0x3F) | 0x80; /* Variant: 10xx */
+
+    /* Format as xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx */
+    appendStringInfo(&buf, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                     bytes[0], bytes[1], bytes[2], bytes[3],
+                     bytes[4], bytes[5],
+                     bytes[6], bytes[7],
+                     bytes[8], bytes[9],
+                     bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+
+    result = pstrdup(buf.data);
+    pfree(buf.data);
+
+    elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+    return result;
+}
+
+/*
+ * substr_sparql
+ * -------------
+ * Implements SPARQL's SUBSTR(str, start, length) function.
+ * Converts RDF literal or bare string into substring while preserving language/datatype tag.
+ *
+ * str     : Input RDF literal or bare string.
+ * start   : 1-based index (inclusive).
+ * length  : Optional substring length (0 or negative is invalid).
+ *
+ * Returns a new RDF literal string with the appropriate tag preserved.
+ */
+char *substr_sparql(char *str, int start, int length)
+{
+	char *lexical;
+	char *str_datatype;
+	char *str_language;
+	StringInfoData buf;
+	char *result;
+	int str_len, i;
+
+	elog(DEBUG1, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
+
+	if (!str)
+		ereport(ERROR,
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
+				 errmsg("SUBSTR cannot be NULL")));
+
+	if (start < 1)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("SUBSTR start position must be >= 1")));
+
+	if (isIRI(str) || isBlank(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("SUBSTR not allowed on IRI or blank node: %s", str)));
+
+	lexical = lex(str);
+	str_datatype = datatype(str);
+	str_language = lang(str);
+	str_len = strlen(lexical);
+
+	elog(DEBUG1, "%s: lexical='%s', datatype='%s', language='%s', length=%d", __func__,
+		 lexical, str_datatype, str_language, str_len);
+
+	if (start > str_len)
+		lexical[0] = '\0'; /* empty result */
+
+	initStringInfo(&buf);
+
+	for (i = start - 1; i < str_len; i++)
+	{
+		if (length >= 0 && (i - (start - 1)) >= length)
+			break;
+		appendStringInfoChar(&buf, lexical[i]);
+	}
+
+	if (strlen(str_language) > 0)
+		result = strlang(buf.data, str_language);
+	else if (strlen(str_datatype) > 0)
+		result = strdt(buf.data, str_datatype);
+	else
+		result = cstring_to_rdfliteral(buf.data);
+
+	pfree(buf.data);
+
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+	return result;
+}
+
+/*
+ * lcase
+ * -----
+ *
+ * Implements SPARQL’s LCASE function. Converts the lexical form of a string literal
+ * (simple, xsd:string, or language-tagged) to lowercase (ASCII A-Z to a-z, non-ASCII
+ * preserved). Preserves the original datatype or language tag. Errors on IRIs, blank
+ * nodes, non-string literals, or invalid inputs. Bare strings are treated as simple literals.
+ *
+ * str: Null-terminated C string (RDF literal or bare string, e.g., "BAR", "\"BAR\"@en")
+ *
+ * returns: Null-terminated C string (lowercase RDF literal)
+ */
+char *lcase(char *str)
+{
+	char *lexical;
+	char *str_datatype;
+	char *str_language;
+	char *result;
+	StringInfoData buf;
+	int i;
+	int len;
+
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+
+	if (!str)
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("LCASE cannot be NULL")));
+
+	if (strlen(str) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning empty literal (str is an empty string)", __func__);
+		return cstring_to_rdfliteral("");
+	}
+
+	/* Check for IRIs or blank nodes */
+	if (isIRI(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("LCASE does not allow IRIs: %s", str)));
+
+	if (isBlank(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("LCASE does not allow blank nodes: %s", str)));
+
+	lexical = lex(str);
+
+	if (lexical == NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("LCASE failed to extract lexical value: %s", str)));
+
+	str_datatype = datatype(str);
+
+	if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("LCASE does not allow non-string literals: %s",
+						str_datatype)));
+
+	str_language = lang(str);
+
+	initStringInfo(&buf);
+
+	elog(DEBUG1, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+
+	/* Convert to lowercase (ASCII for simplicity) */
+	len = strlen(lexical);
+	for (i = 0; i < len; i++)
+	{
+		char c = lexical[i];
+		if (c >= 'A' && c <= 'Z')
+			c = c + ('a' - 'A');
+		appendStringInfoChar(&buf, c);
+	}
+
+	if (strlen(str_language) != 0)
+		result = strlang(buf.data, str_language);
+	else if (strlen(str_datatype) != 0)
+		result = strdt(buf.data, str_datatype);
+	else
+		result = cstring_to_rdfliteral(buf.data);
+
+	pfree(buf.data);
+
+	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+	return result;
+}
+
+/*
+ * ucase
+ * -----
+ *
+ * Implements SPARQL’s UCASE function. Converts the lexical form of a string literal
+ * (simple, xsd:string, or language-tagged) to uppercase (ASCII a-z to A-Z, non-ASCII
+ * preserved). Preserves the original datatype or language tag. Errors on IRIs, blank
+ * nodes, non-string literals, or invalid inputs. Bare strings are treated as simple literals.
+ *
+ * str: Null-terminated C string (RDF literal or bare string, e.g., "bar", "\"bar\"@en")
+ *
+ * returns: Null-terminated C string (uppercase RDF literal)
+ */
+char *ucase(char *str)
+{
+	char *lexical;
+	char *str_datatype;
+	char *str_language;
+	char *result;
+	StringInfoData buf;
+	int i;
+	int len;
+
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+
+	if (!str)
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("LCASE cannot be NULL")));
+
+	if (strlen(str) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning empty literal (str is an empty string)", __func__);
+		return cstring_to_rdfliteral("");
+	}
+
+	/* Check for IRIs or blank nodes */
+	if (isIRI(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("UCASE does not allow IRIs: %s", str)));
+
+	if (isBlank(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("UCASE does not allow blank nodes: %s", str)));
+
+	lexical = lex(str);
+
+	if (lexical == NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("UCASE failed to extract lexical value: %s", str)));
+
+	str_datatype = datatype(str);
+
+	if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("UCASE does not allow non-string literals: %s",
+						str_datatype)));
+
+	str_language = lang(str);
+
+	initStringInfo(&buf);
+
+	elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+
+	/* Convert to uppercase (ASCII only) */
+	len = strlen(lexical);
+	for (i = 0; i < len; i++)
+	{
+		char c = lexical[i];
+		if (c >= 'a' && c <= 'z')
+			c = c - ('a' - 'A');
+		appendStringInfoChar(&buf, c);
+	}
+
+	if (strlen(str_language) != 0)
+		result = strlang(buf.data, str_language);
+	else if (strlen(str_datatype) != 0)
+		result = strdt(buf.data, str_datatype);
+	else
+		result = cstring_to_rdfliteral(buf.data);
+
+	pfree(buf.data);
+
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+	return result;
+}
+
+/*
+ * isNumeric
+ * ---------
+ *
+ * Checks if an RDF term is numeric per SPARQL spec. Returns true if the term is a
+ * bare number (e.g., "12") or a literal with a numeric datatype (e.g., xsd:integer,
+ * xsd:nonNegativeInteger) and valid numeric lexical form. Returns false otherwise.
+ *
+ * term: Null-terminated C string representing an RDF term (e.g., "12", "12"^^xsd:integer)
+ *
+ * returns: Boolean indicating if the term is numeric
+ */
+bool isNumeric(char *term)
+{
+	char *lexical;
+	char *datatype_uri;
+	bool is_bare_number = false;
+	char *endptr;
+
+	elog(DEBUG1, "%s called: term='%s'", __func__, term);
+
+	if (!term || strlen(term) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (term either NULL or an empty string)", __func__);
+		return false;
+	}
+
+	/* Check if term is a bare number (e.g., "12") */
+	if (term[0] != '"' && !strstr(term, "^^") && !strstr(term, "@"))
+	{
+		lexical = term;
+		is_bare_number = true;
+	}
+	else
+	{
+		/* Extract lexical value using datatype’s helper */
+		lexical = lex(term); /* From datatype/strdt codebase */
+	}
+
+	/* Validate lexical form as numeric (integers, decimals, or scientific notation) */
+	if (!lexical || strlen(lexical) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
+		return false;
+	}
+
+	strtod(lexical, &endptr);
+	if (*endptr != '\0') /* not a valid number, e.g., "abc" */
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (not a valid number)", __func__);
+		return false;
+	}
+
+	/* Bare numbers are numeric */
+	if (is_bare_number)
+	{
+		elog(DEBUG1, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
+		return true;
+	}
+
+	/* Get datatype using datatype function */
+	datatype_uri = datatype(term);
+	if (strlen(datatype_uri) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (no datatype or invalid literal)", __func__);
+		return false;
+	} /* No datatype or invalid literal (e.g., "12") */
+
+	/* Check for numeric datatypes */
+	if (strcmp(datatype_uri, RDF_XSD_INTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_POSITIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_NEGATIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_NONPOSITIVEINTEGER) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_LONG) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_INT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_BYTE) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_SHORT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDLONG) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDINT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDSHORT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_UNSIGNEDBYTE) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_DOUBLE) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_FLOAT) == 0 ||
+		strcmp(datatype_uri, RDF_XSD_DECIMAL) == 0)
+	{
+		/* Special case for xsd:byte: SPARQL requires values to be integers between -128 and 127.
+		 * For example, isNumeric("1200"^^xsd:byte) returns false because 1200 exceeds 127.
+		 * We parse the lexical value to ensure it’s a valid integer and check its range. */
+		if (strcmp(datatype_uri, RDF_XSD_BYTE) == 0)
+		{
+			/* Ensure the entire string is a valid integer and within xsd:byte range */
+			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
+			{
+				elog(DEBUG1, "%s exit: returning 'false' (not a pure integer)", __func__);
+				return false;
+			}
+
+			elog(DEBUG1, "%s exit: returning 'true' (valid xsd:byte)", __func__);
+			return true; /* Valid xsd:byte, e.g., "100" */
+		}
+		/* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
+		 * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
+		 * Accept them as numeric. */
+
+		elog(DEBUG1, "%s exit: returning 'true'", __func__);
+		return true;
+	}
+
+	elog(DEBUG1, "%s exit: returning 'false'", __func__);
+	return false;
+}
+
+/*
+ * contains
+ * --------
+ *
+ * Implements SPARQL’s CONTAINS(str, substr) function. Returns true if the lexical
+ * form of str contains the lexical form of substr as a contiguous subsequence;
+ * false otherwise. Matching is case-sensitive per SPARQL.
+ *
+ * str_in    : Null-terminated C string representing an RDF term or bare string
+ * substr_in : Null-terminated C string representing an RDF term or bare string
+ *
+ * returns: Boolean (true if substr occurs within str’s lexical form; false on
+ *          mismatch, incompatible language tags, or invalid/empty input)
+ */
+bool contains(char *str_in, char *substr_in)
+{
+	char *str_lex;
+	char *substr_lex;
+	char *lang_str;
+	bool result;
+
+	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
+
+	/* handle NULL or empty inputs */
+	if (!str_in || !substr_in || strlen(str_in) == 0 || strlen(substr_in) == 0)
+	{
+		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+		return false;
+	}
+
+	lang_str = lang(str_in);
+
+	if (strlen(lang_str) != 0)
+	{
+		char *lang_substr = lang(substr_in);
+
+		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
+		{
+			elog(DEBUG1, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
+			return NULL;
+		}
+	}
+
+	/* extract lexical values (strips quotes, tags, etc.) */
+	str_lex = lex(str_in);
+	substr_lex = lex(substr_in);
+
+	/* check if substr is in str using strstr */
+	result = (strstr(str_lex, substr_lex) != NULL);
+
+	elog(DEBUG1, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
+		 __func__, result ? "true" : "false", str_lex, substr_lex);
+
+	return result;
+}
+
+/*
+ * strbefore
+ * -----------------
+ *
+ * Implements the SPARQL STRBEFORE function, returning the substring of the first
+ * argument before the first occurrence of the second argument (delimiter). The
+ * result preserves the language tag or datatype of the first argument as present
+ * in the input syntax. Simple literals remain simple in the output.
+ *
+ * str: the input string (e.g., "abc"@en, "abc"^^xsd:string)
+ * delimiter: the delimiter string (e.g., "b", "b"@en)
+ *
+ * returns: cstring representing the RDF literal before the delimiter
+ */
+char *strbefore(char *str, char *delimiter)
+{
+	char *str_lexical;
+	char *delimiter_lexical;
+	char *lang1;
+	char *dt1 = "";
+	char *pos;
+	char *result;
+
+	elog(DEBUG1, "%s called: str='%s', delimiter='%s", __func__, str, delimiter);
+
+	str_lexical = lex(str);
+	delimiter_lexical = lex(delimiter);
+	lang1 = lang(str);
+
+	/* extract datatypes if no language tags */
+	if (strlen(lang1) == 0)
+		dt1 = datatype(str);
+
+	if (!LiteralsCompatible(str, delimiter))
+	{
+		elog(DEBUG1, "%s exit: returning NULL (literals no compatible)", __func__);
+		return NULL;
+	}
+
+	if ((pos = strstr(str_lexical, delimiter_lexical)) != NULL)
+	{
+		size_t before_len = pos - str_lexical;
+		StringInfoData buf;
+		initStringInfo(&buf);
+
+		if (strlen(lang1) > 0)
+		{
+			appendBinaryStringInfo(&buf, str_lexical, before_len);
+			result = strlang(buf.data, lang1);
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			return result;
+		}
+		else if (strlen(dt1) > 0 && /* only for explicit ^^ */
+				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+		{
+			appendBinaryStringInfo(&buf, str_lexical, before_len);
+			result = cstring_to_rdfliteral(buf.data);
+			if (strstr(result, "^^") == NULL)
+			{
+				result = strdt(buf.data, dt1);
+			}
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			return result;
+		}
+		else
+		{
+			/* simple literal or implicit xsd:string */
+			appendBinaryStringInfo(&buf, str_lexical, before_len);
+			result = cstring_to_rdfliteral(buf.data);
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			return result;
+		}
+	}
+
+	/* delimiter not found */
+	if (strlen(dt1) > 0 &&
+		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+	{
+		result = cstring_to_rdfliteral("");
+		if (strstr(result, "^^") == NULL)
+		{
+			StringInfoData typed_buf;
+			initStringInfo(&typed_buf);
+			appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
+			result = typed_buf.data;
+		}
+
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+		return result;
+	}
+
+	result = cstring_to_rdfliteral("");
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+
+	return result;
+}
+
+
+/*
+ * strafter
+ * ----------------
+ *
+ * Implements the SPARQL STRAFTER function, returning the substring of the first
+ * argument after the first occurrence of the second argument (delimiter). The
+ * result preserves the language tag or datatype of the first argument as present
+ * in the input syntax, always wrapped in double quotes as a valid RDF literal.
+ * Returns an empty simple literal if the delimiter is not found.
+ *
+ * str: the input string (e.g., "abc"@en, "abc"^^xsd:string)
+ * delimiter: the delimiter string (e.g., "b", "b"@en)
+ *
+ * returns: a cstring representing the RDF literal after the delimiter
+ */
+char *strafter(char *str, char *delimiter)
+{
+    char *lexstr;
+    char *lexdelimiter;
+	char *lang1;
+	char *dt1 = "";
+	char *pos;
+	bool has_explicit_datatype = false;
+	char *result;
+
+	elog(DEBUG1, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
+
+	lexstr = lex(str);
+	lexdelimiter = lex(delimiter);
+	lang1 = lang(str);
+
+	/* extract datatype if no language tag */
+	if (strlen(lang1) == 0)
+		dt1 = datatype(str);
+
+	/* check if arg1 has an explicit datatype in the input syntax */
+	if (strlen(lang1) == 0 && strstr(str, "^^") != NULL)
+		has_explicit_datatype = true;
+
+	if ((pos = strstr(lexstr, lexdelimiter)) != NULL)
+	{
+		size_t delimiter_len = strlen(lexdelimiter);
+		char *after_start = pos + delimiter_len;
+		size_t after_len = strlen(lexstr) - (after_start - lexstr);
+
+		StringInfoData buf;
+		initStringInfo(&buf);
+
+		if (strlen(lang1) > 0)
+		{
+			appendBinaryStringInfo(&buf, after_start, after_len);
+			result = strlang(buf.data, lang1);
+			pfree(buf.data);
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			return result;
+		}
+		else if (has_explicit_datatype && strlen(dt1) > 0 &&
+				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+		{
+			appendBinaryStringInfo(&buf, after_start, after_len);
+			result = cstring_to_rdfliteral(buf.data);
+			if (strstr(result, "^^") == NULL)
+			{
+				result = strdt(buf.data, dt1);
+			}
+			pfree(buf.data);
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			return result;
+		}
+		else
+		{
+			/* simple literal or implicit xsd:string */
+			appendBinaryStringInfo(&buf, after_start, after_len);
+			result = cstring_to_rdfliteral(buf.data);
+			pfree(buf.data);
+
+			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			return result;
+		}
+	}
+
+	/* delimiter not found */
+	if (has_explicit_datatype && strlen(dt1) > 0 &&
+		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+	{
+		result = cstring_to_rdfliteral("");
+		if (strstr(result, "^^") == NULL)
+		{
+			StringInfoData typed_buf;
+			initStringInfo(&typed_buf);
+			appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
+			result = typed_buf.data;
+		}
+
+		elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+		return result;
+	}
+
+	result = cstring_to_rdfliteral("");
+	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+	return result;
+}
+
+/*
+ * count_utf8_chars
+ * ----------------
+ *
+ * Counts Unicode characters (code points) in a UTF-8 string.
+ * Returns the number of characters, not bytes.
+ */
+static int count_utf8_chars(const char *str)
+{
+	int char_count = 0;
+
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+
+	while (*str)
+	{
+		/* Skip continuation bytes (0x80-0xBF) */
+		if ((*str & 0xC0) != 0x80)
+			char_count++;
+		str++;
+	}
+
+	elog(DEBUG1, "%s exit: returning '%d'", __func__, char_count);
+	return char_count;
+}
+
+int strlen_rdf(char *str)
+{
+	char *lexical;
+	char *dt;
+	int result;
+
+	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+
+	if (!str)
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("STRLEN cannot be NULL")));
+
+	if (strlen(str) == 0)
+		return 0;
+
+	/* Check for IRIs or blank nodes */
+	if (isIRI(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("STRLEN does not allow IRIs: %s", str)));
+
+	if (isBlank(str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("STRLEN does not allow blank nodes: %s", str)));
+
+	dt = datatype(str);
+
+	/* Validate string literal */
+	if (!IsRDFStringLiteral(dt))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("STRLEN does not allow non-string literals: %s", dt)));
+
+	lexical = lex(str);
+	result = count_utf8_chars(lexical);
+
+	elog(DEBUG1, "%s exit: returning '%d'", __func__, result);
+	return result;
+}
+
