@@ -14,7 +14,9 @@ SHLIB_LINK := $(shell $(CURL_CONFIG) --libs) \
 
 PG_CPPFLAGS = $(shell xml2-config --cflags) \
 	$(shell $(RDF_CONFIG) --cflags raptor2) \
-	$(shell $(RDF_CONFIG) --cflags redland)
+	$(shell $(RDF_CONFIG) --cflags redland) \
+	-DRDF_FDW_CC="\"$(CC)\"" \
+	-DRDF_FDW_BUILD_DATE="\"$(shell date -u +'%Y-%m-%d %H:%M:%S UTC')\""
 
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 
@@ -26,6 +28,7 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
 #REGRESS = table-clone
 
 REGRESS += create_extension \
+			version \
 			rdfnode_in \
 			rdfnode_eq \
 			rdfnode_neq \

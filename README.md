@@ -18,6 +18,7 @@
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
   - [Prefix Management](#prefix-management)
   - [rdf_fdw_version](#rdf_fdw_version)
+  - [rdf_fdw_settings](#rdf_fdw_settings)
   - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
 - [RDF Node Handling](#rdf-node-handling)
 - [SPARQL Functions](#sparql-functions)
@@ -354,7 +355,7 @@ text rdf_fdw_version();
 
 **Description**
 
-Shows the version of the installed `rdf_fdw` and its main libraries.
+Returns comprehensive version information for `rdf_fdw`, PostgreSQL, compiler, and all dependencies (libxml, librdf, libcurl) in a single formatted string.
 
 -------
 
@@ -362,10 +363,43 @@ Shows the version of the installed `rdf_fdw` and its main libraries.
 
 ```sql
 SELECT rdf_fdw_version();
-                                                                                      rdf_fdw_version                                                                                      
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- rdf_fdw = 2.1.0, libxml/2.9.10, librdf/1.0.17, libcurl/7.74.0 GnuTLS/3.7.1 zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.0 (+libidn2/2.3.0) libssh2/1.9.0 nghttp2/1.43.0 librtmp/2.3
+                                                      rdf_fdw_version                                                       
+----------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.2-dev (PostgreSQL 17.5 (Debian 17.5-1.pgdg110+1), compiled by gcc, libxml 2.9.10, librdf 1.0.17, libcurl 7.74.0)
 (1 row)
+```
+
+### [rdf_fdw_settings](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_settings)
+
+```sql
+VIEW rdf_fdw_settings(component text, version text);
+```
+
+**Description**
+
+A system view that provides detailed version information for `rdf_fdw` and all its dependencies, including core libraries (PostgreSQL, libxml, librdf, libcurl) and optional components (SSL, zlib, libSSH, nghttp2), along with compiler and build information. Returns individual component names and their corresponding versions for convenient programmatic access.
+
+-------
+
+**Usage**
+
+```sql
+SELECT * FROM rdf_fdw_settings;
+
+ component  |            version             
+------------+--------------------------------
+ rdf_fdw    | 2.2-dev
+ PostgreSQL | 17.5 (Debian 17.5-1.pgdg110+1)
+ libxml     | 2.9.10
+ librdf     | 1.0.17
+ libcurl    | 7.74.0
+ ssl        | GnuTLS/3.7.1
+ zlib       | 1.2.11
+ libSSH     | libssh2/1.9.0
+ nghttp2    | 1.43.0
+ compiler   | gcc
+ built      | 2025-11-13 09:08:02 UTC
+(11 rows)
 ```
 
 ### [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table)

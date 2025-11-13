@@ -8,6 +8,36 @@ CREATE FUNCTION rdf_fdw_version()
 RETURNS text AS 'MODULE_PATHNAME', 'rdf_fdw_version'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION rdf_fdw_settings()
+RETURNS text AS 'MODULE_PATHNAME', 'rdf_fdw_settings'
+LANGUAGE C IMMUTABLE STRICT;
+
+COMMENT ON FUNCTION rdf_fdw_version() IS 'Returns rdf_fdw version and dependency information';
+COMMENT ON FUNCTION rdf_fdw_settings() IS 'Returns detailed dependency information including optional components';
+
+CREATE VIEW rdf_fdw_settings AS
+    WITH version_string AS (
+        SELECT rdf_fdw_settings() AS v
+    )
+    SELECT component, version
+    FROM version_string,
+    LATERAL (VALUES
+        ('rdf_fdw',    substring(v from 'rdf_fdw\s+([^\s,]+)')),
+        ('PostgreSQL', substring(v from 'PostgreSQL\s+([^,]+)')),
+        ('libxml',     substring(v from 'libxml\s+([^,]+)')),
+        ('librdf',     substring(v from 'librdf\s+([^,]+)')),
+        ('libcurl',    substring(v from 'libcurl\s+([^,]+)')),
+        ('ssl',        substring(v from ',ssl\s+([^,]+)')),
+        ('zlib',       substring(v from ',zlib\s+([^,]+)')),
+        ('libSSH',     substring(v from ',libSSH\s+([^,]+)')),
+        ('nghttp2',    substring(v from ',nghttp2\s+([^,]+)')),
+        ('compiler',   substring(v from 'compiled by\s+([^,]+)')),
+        ('built',      substring(v from 'built on\s+([^,]+)'))
+    ) AS components(component, version)
+    WHERE version IS NOT NULL;
+
+COMMENT ON VIEW rdf_fdw_settings IS 'Parse detailed dependency information into component versions';
+
 CREATE FUNCTION rdf_fdw_validator(text[], oid)
 RETURNS void AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT;

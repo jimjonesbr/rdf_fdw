@@ -195,6 +195,7 @@ Oid RDFNODEOID = InvalidOid;
 extern Datum rdf_fdw_handler(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_validator(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_version(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_settings(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_describe(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS);
@@ -435,6 +436,7 @@ extern Datum interval_ge_rdfnode(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(rdf_fdw_handler);
 PG_FUNCTION_INFO_V1(rdf_fdw_validator);
 PG_FUNCTION_INFO_V1(rdf_fdw_version);
+PG_FUNCTION_INFO_V1(rdf_fdw_settings);
 PG_FUNCTION_INFO_V1(rdf_fdw_clone_table);
 PG_FUNCTION_INFO_V1(rdf_fdw_describe);
 PG_FUNCTION_INFO_V1(rdf_fdw_strstarts);
@@ -731,12 +733,55 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 {
 	StringInfoData buffer;
+	curl_version_info_data *ver = curl_version_info(CURLVERSION_NOW);
+
 	initStringInfo(&buffer);
 
-	appendStringInfo(&buffer, "rdf_fdw = %s,", FDW_VERSION);
-	appendStringInfo(&buffer, " libxml/%s,", LIBXML_DOTTED_VERSION);
-	appendStringInfo(&buffer, " librdf/%s,", librdf_version_string);
-	appendStringInfo(&buffer, " %s", curl_version());
+	appendStringInfo(&buffer, "rdf_fdw %s (PostgreSQL %s",
+					 FDW_VERSION,
+					 PG_VERSION);
+
+#ifdef RDF_FDW_CC
+	appendStringInfo(&buffer, ", compiled by %s", RDF_FDW_CC);
+#endif
+
+	appendStringInfo(&buffer, ", libxml %s, librdf %s, libcurl %s)",
+					 LIBXML_DOTTED_VERSION,
+					 librdf_version_string,
+					 ver->version);
+
+	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
+}
+
+Datum rdf_fdw_settings(PG_FUNCTION_ARGS)
+{
+	StringInfoData buffer;
+	curl_version_info_data *ver = curl_version_info(CURLVERSION_NOW);
+
+	initStringInfo(&buffer);
+
+	appendStringInfo(&buffer, "rdf_fdw %s,", FDW_VERSION);
+	appendStringInfo(&buffer, "PostgreSQL %s,", PG_VERSION);
+	appendStringInfo(&buffer, "libxml %s,", LIBXML_DOTTED_VERSION);
+	appendStringInfo(&buffer, "librdf %s,", librdf_version_string);
+	appendStringInfo(&buffer, "libcurl %s,", ver->version);
+
+	if (ver->ssl_version)
+		appendStringInfo(&buffer, "ssl %s,", ver->ssl_version);
+	if (ver->libz_version)
+		appendStringInfo(&buffer, "zlib %s,", ver->libz_version);
+	if (ver->libssh_version)
+		appendStringInfo(&buffer, "libSSH %s,", ver->libssh_version);
+	if (ver->nghttp2_version)
+		appendStringInfo(&buffer, "nghttp2 %s,", ver->nghttp2_version);
+
+#ifdef RDF_FDW_CC
+	appendStringInfo(&buffer, "compiled by %s,", RDF_FDW_CC);
+#endif
+
+#ifdef RDF_FDW_BUILD_DATE
+	appendStringInfo(&buffer, "built on %s", RDF_FDW_BUILD_DATE);
+#endif
 
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
 }

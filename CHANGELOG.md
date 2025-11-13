@@ -1,7 +1,13 @@
 # Release Notes
 ## 2.2.0
 Release date: **yyyy-mm-dd**
+
 ### Enhancements
+
+* Enhanced version information:
+
+  The `rdf_fdw_version()` function now returns a comprehensive version string that includes PostgreSQL version, compiler information, and all dependency versions (libxml, librdf, libcurl) in a single formatted output. A new `rdf_fdw_settings()` function provides extended dependency information including optional components like SSL, zlib, libSSH, and nghttp2. The `rdf_fdw_settings` view parses this extended information into a table format for convenient programmatic access to individual component versions.
+
 ### Bug Fixes
 
 # Release Notes
