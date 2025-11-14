@@ -497,38 +497,38 @@ INFO:  SPARQL returned 1 record.
 SELECT p, o FROM rdbms
 WHERE 
   p = '<http://schema.org/version>'::rdfnode AND
-  o = 2419449759::bigint AND
+  o = 2429126274::bigint AND
   o <> 9999999999::bigint AND
-  o >= 2419449759::bigint AND
-  o <= 2419449759::bigint AND
+  o >= 2429126274::bigint AND
+  o <= 2429126274::bigint AND
   o BETWEEN 2346087000::bigint AND 9999999999::bigint AND
-  2419449759::bigint = o AND
+  2429126274::bigint = o AND
   9999999999::bigint <> o AND
-  2419449759::bigint >= o AND
-  2419449759::bigint <= o;
+  2429126274::bigint >= o AND
+  2429126274::bigint <= o;
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://schema.org/version>)
- FILTER(?o = 2419449759)
+ FILTER(?o = 2429126274)
  FILTER(?o != 9999999999)
- FILTER(?o >= 2419449759)
- FILTER(?o <= 2419449759)
+ FILTER(?o >= 2429126274)
+ FILTER(?o <= 2429126274)
  FILTER(?o >= 2346087000)
  FILTER(?o <= 9999999999)
- FILTER(2419449759 = ?o)
+ FILTER(2429126274 = ?o)
  FILTER(9999999999 != ?o)
- FILTER(2419449759 >= ?o)
- FILTER(2419449759 <= ?o)
+ FILTER(2429126274 >= ?o)
+ FILTER(2429126274 <= ?o)
 }
 
 INFO:  SPARQL returned 1 record.
 
               p              |                            o                             
 -----------------------------+----------------------------------------------------------
- <http://schema.org/version> | "2419449759"^^<http://www.w3.org/2001/XMLSchema#integer>
+ <http://schema.org/version> | "2429126274"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (real) */
@@ -1035,7 +1035,7 @@ INFO:  SPARQL returned 1 record.
 
               p              |                            o                             | isnumeric | isnumeric 
 -----------------------------+----------------------------------------------------------+-----------+-----------
- <http://schema.org/version> | "2419449759"^^<http://www.w3.org/2001/XMLSchema#integer> | t         | f
+ <http://schema.org/version> | "2429126274"^^<http://www.w3.org/2001/XMLSchema#integer> | t         | f
 (1 row)
 
 /* SPARQL 17.4.2.5 - str */
@@ -1089,7 +1089,7 @@ SELECT p, o, sparql.datatype(o)
 FROM rdbms
 WHERE
   p = '<http://wikiba.se/ontology#statements>' AND
-  sparql.datatype(o) = sparql.datatype('"2419449759"^^<http://www.w3.org/2001/XMLSchema#integer>');
+  sparql.datatype(o) = sparql.datatype('"2429126274"^^<http://www.w3.org/2001/XMLSchema#integer>');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?p ?o 
@@ -1103,7 +1103,7 @@ INFO:  SPARQL returned 1 record.
 
                    p                    |                         o                         |                  datatype                  
 ----------------------------------------+---------------------------------------------------+--------------------------------------------
- <http://wikiba.se/ontology#statements> | "449"^^<http://www.w3.org/2001/XMLSchema#integer> | <http://www.w3.org/2001/XMLSchema#integer>
+ <http://wikiba.se/ontology#statements> | "450"^^<http://www.w3.org/2001/XMLSchema#integer> | <http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
 /* SPARQL 17.4.2.8 - IRI */
@@ -1159,27 +1159,27 @@ SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM rdbms
 WHERE 
   p = sparql.iri('<http://schema.org/version>') AND
-  '"2419449759"^^xsd:string'::rdfnode = sparql.strdt(sparql.str(o),'xsd:string') AND
-  sparql.strdt(sparql.str(o),'xsd:string') = '"2419449759"^^xsd:string'::rdfnode  AND
-  sparql.strdt(sparql.str('"2419449759"^^xsd:integer'),'xsd:string') = sparql.strdt(sparql.str(o),'xsd:string') AND
-  sparql.strdt(sparql.str(o),'xsd:string') = sparql.strdt(sparql.str('"2419449759"^^xsd:integer'),'xsd:string');
+  '"2429126274"^^xsd:string'::rdfnode = sparql.strdt(sparql.str(o),'xsd:string') AND
+  sparql.strdt(sparql.str(o),'xsd:string') = '"2429126274"^^xsd:string'::rdfnode  AND
+  sparql.strdt(sparql.str('"2429126274"^^xsd:integer'),'xsd:string') = sparql.strdt(sparql.str(o),'xsd:string') AND
+  sparql.strdt(sparql.str(o),'xsd:string') = sparql.strdt(sparql.str('"2429126274"^^xsd:integer'),'xsd:string');
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://schema.org/version>)
- FILTER("2419449759"^^<http://www.w3.org/2001/XMLSchema#string> = STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>))
- FILTER(STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>) = "2419449759"^^<http://www.w3.org/2001/XMLSchema#string>)
- FILTER("2419449759"^^<http://www.w3.org/2001/XMLSchema#string> = STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>))
- FILTER(STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>) = "2419449759"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER("2429126274"^^<http://www.w3.org/2001/XMLSchema#string> = STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>) = "2429126274"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER("2429126274"^^<http://www.w3.org/2001/XMLSchema#string> = STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>))
+ FILTER(STRDT(STR(?o), <http://www.w3.org/2001/XMLSchema#string>) = "2429126274"^^<http://www.w3.org/2001/XMLSchema#string>)
 }
 
 INFO:  SPARQL returned 1 record.
 
               p              |                            o                             |                          strdt                          
 -----------------------------+----------------------------------------------------------+---------------------------------------------------------
- <http://schema.org/version> | "2419449759"^^<http://www.w3.org/2001/XMLSchema#integer> | "2419449759"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://schema.org/version> | "2429126274"^^<http://www.w3.org/2001/XMLSchema#integer> | "2429126274"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 /* SPARQL 17.4.2.11 - STRLANG */
@@ -1593,44 +1593,44 @@ INFO:  SPARQL returned 1 record.
 SELECT p, o, sparql.abs(o) FROM rdbms
 WHERE 
   p = '<http://schema.org/version>'::rdfnode AND
-  sparql.abs(o) = 2419449759::bigint AND
+  sparql.abs(o) = 2429126274::bigint AND
   sparql.abs(o) <> 9999999999::bigint AND
-  sparql.abs(o) >= 2419449759::bigint AND
-  sparql.abs(o) <= 2419449759::bigint AND
+  sparql.abs(o) >= 2429126274::bigint AND
+  sparql.abs(o) <= 2429126274::bigint AND
   sparql.abs(o) BETWEEN 2346087000::bigint AND 9999999999::bigint AND
-  sparql.abs(o) =  '"2419449759"^^xsd:long'::rdfnode AND
+  sparql.abs(o) =  '"2429126274"^^xsd:long'::rdfnode AND
   sparql.abs(o) >  '"1111111111"^^xsd:long'::rdfnode AND
-  sparql.abs(o) >= '"2419449759"^^xsd:long'::rdfnode AND
+  sparql.abs(o) >= '"2429126274"^^xsd:long'::rdfnode AND
   sparql.abs(o) <  '"9999999999"^^xsd:long'::rdfnode AND
-  sparql.abs(o) <= '"2419449759"^^xsd:long'::rdfnode AND
-  2419449759::bigint = sparql.abs(o) AND
-  '"2419449759"^^xsd:long'::rdfnode = sparql.abs(o);
+  sparql.abs(o) <= '"2429126274"^^xsd:long'::rdfnode AND
+  2429126274::bigint = sparql.abs(o) AND
+  '"2429126274"^^xsd:long'::rdfnode = sparql.abs(o);
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://schema.org/version>)
- FILTER(ABS(?o) = 2419449759)
+ FILTER(ABS(?o) = 2429126274)
  FILTER(ABS(?o) != 9999999999)
- FILTER(ABS(?o) >= 2419449759)
- FILTER(ABS(?o) <= 2419449759)
+ FILTER(ABS(?o) >= 2429126274)
+ FILTER(ABS(?o) <= 2429126274)
  FILTER(ABS(?o) >= 2346087000)
  FILTER(ABS(?o) <= 9999999999)
- FILTER(ABS(?o) = "2419449759"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ABS(?o) = "2429126274"^^<http://www.w3.org/2001/XMLSchema#long>)
  FILTER(ABS(?o) > "1111111111"^^<http://www.w3.org/2001/XMLSchema#long>)
- FILTER(ABS(?o) >= "2419449759"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(ABS(?o) >= "2429126274"^^<http://www.w3.org/2001/XMLSchema#long>)
  FILTER(ABS(?o) < "9999999999"^^<http://www.w3.org/2001/XMLSchema#long>)
- FILTER(ABS(?o) <= "2419449759"^^<http://www.w3.org/2001/XMLSchema#long>)
- FILTER(2419449759 = ABS(?o))
- FILTER("2419449759"^^<http://www.w3.org/2001/XMLSchema#long> = ABS(?o))
+ FILTER(ABS(?o) <= "2429126274"^^<http://www.w3.org/2001/XMLSchema#long>)
+ FILTER(2429126274 = ABS(?o))
+ FILTER("2429126274"^^<http://www.w3.org/2001/XMLSchema#long> = ABS(?o))
 }
 
 INFO:  SPARQL returned 1 record.
 
               p              |                            o                             |                           abs                            
 -----------------------------+----------------------------------------------------------+----------------------------------------------------------
- <http://schema.org/version> | "2419449759"^^<http://www.w3.org/2001/XMLSchema#integer> | "2419449759"^^<http://www.w3.org/2001/XMLSchema#integer>
+ <http://schema.org/version> | "2429126274"^^<http://www.w3.org/2001/XMLSchema#integer> | "2429126274"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
 /* SPARQL 17.4.4.2 - round */

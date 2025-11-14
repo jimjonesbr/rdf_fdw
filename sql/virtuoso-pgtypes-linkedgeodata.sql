@@ -270,7 +270,7 @@ SELECT DISTINCT label, md5(label)
 FROM hbf
 WHERE md5(label) = '0ef548c961d447732b145dc39df17df4';
 
-/* non-pushable query (MINUS) */
+/* non-pushable table (SPARQL query contains MINUS) */
 CREATE FOREIGN TABLE hbf_np1 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -289,7 +289,7 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np1
 WHERE p = 'http://linkedgeodata.org/ontology/operator';
 
-/* non-pushable query (UNION) */
+/* non-pushable table (SPARQL query contains UNION) */
 CREATE FOREIGN TABLE hbf_np2 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -309,7 +309,7 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np2
 WHERE p = 'http://geovocab.org/geometry#geometry';
 
-/* non-pushable quer (LIMIT) */
+/* non-pushable table (SPARQL query contains LIMIT) */
 CREATE FOREIGN TABLE hbf_np3 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -321,7 +321,7 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np3
 WHERE p = 'http://www.w3.org/2000/01/rdf-schema#label';
 
-/* non-pushable quer (ORDER BY) */
+/* non-pushable table (SPARQL query contains ORDER BY) */
 CREATE FOREIGN TABLE hbf_np4 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -333,7 +333,7 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf_np4
 WHERE p = 'http://www.w3.org/2000/01/rdf-schema#label';
 
-/* non-pushable quer (GROUP BY) */
+/* non-pushable table (SPARQL query contains GROUP BY) */
 CREATE FOREIGN TABLE hbf_np5 (
   p text OPTIONS (variable '?p'),
   c int OPTIONS (variable '?c')

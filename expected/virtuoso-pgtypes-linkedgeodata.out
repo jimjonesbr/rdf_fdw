@@ -1041,7 +1041,7 @@ INFO:  SPARQL returned 1 record.
  Gare centrale de Leipzig | 0ef548c961d447732b145dc39df17df4
 (1 row)
 
-/* non-pushable query (MINUS) */
+/* non-pushable table (SPARQL query contains MINUS) */
 CREATE FOREIGN TABLE hbf_np1 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -1075,7 +1075,7 @@ INFO:  SPARQL returned 24 records.
  http://linkedgeodata.org/ontology/operator | DB Station&Service AG
 (1 row)
 
-/* non-pushable query (UNION) */
+/* non-pushable table (SPARQL query contains UNION) */
 CREATE FOREIGN TABLE hbf_np2 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -1111,7 +1111,7 @@ INFO:  SPARQL returned 26 records.
  http://geovocab.org/geometry#geometry | http://linkedgeodata.org/geometry/node376142577
 (1 row)
 
-/* non-pushable quer (LIMIT) */
+/* non-pushable table (SPARQL query contains LIMIT) */
 CREATE FOREIGN TABLE hbf_np3 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -1132,7 +1132,7 @@ INFO:  SPARQL returned 10 records.
  http://www.w3.org/2000/01/rdf-schema#label | Gare centrale de Leipzig
 (2 rows)
 
-/* non-pushable quer (ORDER BY) */
+/* non-pushable table (SPARQL query contains ORDER BY) */
 CREATE FOREIGN TABLE hbf_np4 (
   p text OPTIONS (variable '?p'),
   o text OPTIONS (variable '?o')
@@ -1153,7 +1153,7 @@ INFO:  SPARQL returned 25 records.
  http://www.w3.org/2000/01/rdf-schema#label | Gare centrale de Leipzig
 (2 rows)
 
-/* non-pushable quer (GROUP BY) */
+/* non-pushable table (SPARQL query contains GROUP BY) */
 CREATE FOREIGN TABLE hbf_np5 (
   p text OPTIONS (variable '?p'),
   c int OPTIONS (variable '?c')
