@@ -1,0 +1,188 @@
+SET datestyle = 'ISO, YMD';
+SET timezone = 'UTC';
+SELECT 42::int2::rdfnode;
+                    rdfnode                     
+------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#short>
+(1 row)
+
+SELECT 4273::int4::rdfnode;
+                    rdfnode                     
+------------------------------------------------
+ "4273"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT 123456789101112::int8::rdfnode;
+                          rdfnode                           
+------------------------------------------------------------
+ "123456789101112"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT 42.12345::numeric::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "42.12345"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT 42.1234::float4::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "42.1234"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+SELECT 42.123456650::float8::rdfnode;
+                         rdfnode                          
+----------------------------------------------------------
+ "42.12345665"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT 42.12345::double precision::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "42.12345"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT true::rdfnode;
+                      rdfnode                       
+----------------------------------------------------
+ "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT false::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "false"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT '"rdf_fdw"'::rdfnode;
+  rdfnode  
+-----------
+ "rdf_fdw"
+(1 row)
+
+SELECT '"rdf_fdw"@en'::rdfnode;
+   rdfnode    
+--------------
+ "rdf_fdw"@en
+(1 row)
+
+SELECT '2025-01-01'::date::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '18:30:25'::time without time zone::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "18:30:25"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "2025-01-01T18:30:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '2025-01-01 18:30:25 UTC'::timestamp with time zone::rdfnode;
+                                  rdfnode                                   
+----------------------------------------------------------------------------
+ "2025-01-01T18:30:25.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '1 year 2 months 3 weeks 4 days 5 hours 6 minutes 7 seconds'::interval::rdfnode;
+                            rdfnode                             
+----------------------------------------------------------------
+ "P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '"42"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode::int2;
+ int2 
+------
+   42
+(1 row)
+
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode::int4;
+ int4 
+------
+ 4273
+(1 row)
+
+SELECT '"123456789101112"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode::int8;
+      int8       
+-----------------
+ 123456789101112
+(1 row)
+
+SELECT '"42.12345"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
+ numeric  
+----------
+ 42.12345
+(1 row)
+
+SELECT '"42.1234"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode::float4;
+ float4  
+---------
+ 42.1234
+(1 row)
+
+SELECT '"42.123456650"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode::float8;
+   float8    
+-------------
+ 42.12345665
+(1 row)
+
+SELECT '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
+ bool 
+------
+ t
+(1 row)
+
+SELECT '"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
+ bool 
+------
+ f
+(1 row)
+
+SELECT '"rdf_fdw"'::rdfnode::text;
+   text    
+-----------
+ "rdf_fdw"
+(1 row)
+
+SELECT '"rdf_fdw"@en'::rdfnode::text;
+     text     
+--------------
+ "rdf_fdw"@en
+(1 row)
+
+SELECT '"2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
+    date    
+------------
+ 2025-01-01
+(1 row)
+
+SELECT '"18:30:25"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode::time without time zone;
+   time   
+----------
+ 18:30:25
+(1 row)
+
+SELECT '"2025-01-01T18:30:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp without time zone;
+      timestamp      
+---------------------
+ 2025-01-01 18:30:25
+(1 row)
+
+SELECT '"2025-01-01T18:30:25Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp with time zone;
+      timestamptz       
+------------------------
+ 2025-01-01 18:30:25+00
+(1 row)
+
+SELECT '"P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode::interval;
+                   interval                    
+-----------------------------------------------
+ @ 1 year 2 mons 25 days 5 hours 6 mins 7 secs
+(1 row)
+

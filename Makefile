@@ -36,6 +36,7 @@ REGRESS += create_extension \
 			rdfnode_gt \
 			rdfnode_le \
 			rdfnode_ge \
+			rdfnode_cast \
 			pg_datatypes \
 			sparql-functions \
 			prefix-management \

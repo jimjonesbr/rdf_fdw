@@ -1,0 +1,35 @@
+SET datestyle = 'ISO, YMD';
+SET timezone = 'UTC';
+
+SELECT 42::int2::rdfnode;
+SELECT 4273::int4::rdfnode;
+SELECT 123456789101112::int8::rdfnode;
+SELECT 42.12345::numeric::rdfnode;
+SELECT 42.1234::float4::rdfnode;
+SELECT 42.123456650::float8::rdfnode;
+SELECT 42.12345::double precision::rdfnode;
+SELECT true::rdfnode;
+SELECT false::rdfnode;
+SELECT '"rdf_fdw"'::rdfnode;
+SELECT '"rdf_fdw"@en'::rdfnode;
+SELECT '2025-01-01'::date::rdfnode;
+SELECT '18:30:25'::time without time zone::rdfnode;
+SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;
+SELECT '2025-01-01 18:30:25 UTC'::timestamp with time zone::rdfnode;
+SELECT '1 year 2 months 3 weeks 4 days 5 hours 6 minutes 7 seconds'::interval::rdfnode;
+
+SELECT '"42"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode::int2;
+SELECT '"4273"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode::int4;
+SELECT '"123456789101112"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode::int8;
+SELECT '"42.12345"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
+SELECT '"42.1234"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode::float4;
+SELECT '"42.123456650"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode::float8;
+SELECT '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
+SELECT '"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
+SELECT '"rdf_fdw"'::rdfnode::text;
+SELECT '"rdf_fdw"@en'::rdfnode::text;
+SELECT '"2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
+SELECT '"18:30:25"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode::time without time zone;
+SELECT '"2025-01-01T18:30:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp without time zone;
+SELECT '"2025-01-01T18:30:25Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp with time zone;
+SELECT '"P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode::interval;
