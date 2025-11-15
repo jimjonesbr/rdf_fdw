@@ -683,6 +683,55 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
 >* Consider simpler (less performant) alternatives like [`STR`](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str) when working with language-tagged values.
 >* Enable the `log_sparql` option in `rdf_fdw` to compare the number of records returned by the SPARQL endpoint with those visible in PostgreSQL. If the counts differ, it likely means some records were filtered out locally due to incompatible behavior in pushdown function evaluation.
 
+### [SUM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sum)
+
+```sql
+sparql.sum(value rdfnode) → rdfnode
+```
+
+Computes the sum of numeric `rdfnode` values with XSD type promotion according to SPARQL 1.1 specification ([section 18.5.1.3](https://www.w3.org/TR/sparql11-query/#aggregates)). The function follows XPath type promotion rules where numeric types are promoted in the hierarchy: `xsd:integer` < `xsd:decimal` < `xsd:float` < `xsd:double`. The result type is determined by the highest type encountered during aggregation.
+
+Examples:
+
+```sql
+-- Sum of integers returns integer
+SELECT sparql.sum(val) 
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             ('"20"^^xsd:integer'::rdfnode),
+             ('"30"^^xsd:integer'::rdfnode)) AS t(val);
+                       sum                        
+--------------------------------------------------
+ "60"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Mixing integer and decimal promotes to decimal
+SELECT sparql.sum(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode), 
+             ('"20.5"^^xsd:decimal'::rdfnode),
+             ('"30"^^xsd:integer'::rdfnode)) AS t(val);
+                        sum                         
+----------------------------------------------------
+ "60.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Mixing with float promotes to float
+SELECT sparql.sum(val)
+FROM (VALUES ('"10.5"^^xsd:decimal'::rdfnode),
+             ('"20.3"^^xsd:decimal'::rdfnode),
+             ('"5"^^xsd:float'::rdfnode)) AS t(val);
+                       sum                        
+--------------------------------------------------
+ "35.8"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+> [!NOTE]  
+> The `SUM` aggregate follows SPARQL semantics:
+>* NULL values are skipped during aggregation
+>* Returns NULL if no non-NULL values are aggregated
+>* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
+>* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
+
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 
 ```sql

@@ -4,6 +4,10 @@ Release date: **yyyy-mm-dd**
 
 ### Enhancements
 
+* SPARQL SUM aggregate function:
+
+  A new `sparql.sum(rdfnode)` aggregate function has been added that computes the sum of numeric rdfnode values with proper XSD type promotion according to SPARQL 1.1 specification (section 18.5.1.3). The function follows XPath type promotion rules: integer < decimal < float < double. For example, summing integers returns an integer, but mixing integers and decimals promotes the result to decimal. This provides a modular infrastructure for future SPARQL aggregate functions (AVG, MIN, MAX, etc.).
+
 * Enhanced version information:
 
   The `rdf_fdw_version()` function now returns a comprehensive version string that includes PostgreSQL version, compiler information, and all dependency versions (libxml, librdf, libcurl) in a single formatted output. A new `rdf_fdw_settings()` function provides extended dependency information including optional components like SSL, zlib, libSSH, and nghttp2. The `rdf_fdw_settings` view parses this extended information into a table format for convenient programmatic access to individual component versions.

@@ -16,6 +16,30 @@
 #define SPARQL_H
 
 #include "postgres.h"
+#include "utils/numeric.h"
+
+/*
+ * XSD numeric type promotion hierarchy for SPARQL aggregates.
+ * Based on SPARQL 1.1 spec section 18.5.1.3 and XPath type promotion rules.
+ */
+typedef enum
+{
+	XSD_TYPE_INTEGER = 0,  /* xsd:integer and subtypes (int, long, short, byte, etc.) */
+	XSD_TYPE_DECIMAL = 1,  /* xsd:decimal */
+	XSD_TYPE_FLOAT = 2,    /* xsd:float */
+	XSD_TYPE_DOUBLE = 3    /* xsd:double */
+} XsdNumericType;
+
+/*
+ * State for numeric aggregate functions that need type promotion tracking.
+ * Used by SUM, AVG, etc.
+ */
+typedef struct
+{
+	Numeric sum;              /* accumulated numeric value */
+	XsdNumericType maxType;   /* highest type seen so far (for promotion) */
+} NumericAggState;
+
 
 /* 17.4.2 Functions on RDF Terms */
 extern bool isIRI(char *input);
@@ -47,5 +71,11 @@ extern bool langmatches(char *lang_tag, char *pattern);
 /* Custom functions */
 extern char *lex(char *input);
 extern char *generate_uuid_v4(void);
+extern XsdNumericType get_xsd_numeric_type(const char *dtype);
+extern const char *get_xsd_datatype_uri(XsdNumericType type);
+
+/* SPARQL Aggregate Functions */
+extern Datum sparql_sum_rdfnode_sfunc(PG_FUNCTION_ARGS);
+extern Datum sparql_sum_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 
 #endif /* SPARQL_H */

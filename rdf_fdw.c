@@ -471,6 +471,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_md5);
 PG_FUNCTION_INFO_V1(rdf_fdw_bound);
 PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
 PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
+PG_FUNCTION_INFO_V1(rdf_fdw_sum_sfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_sum_finalfunc);
 
 /* rdfnode (custom data type) */
 PG_FUNCTION_INFO_V1(rdfnode_in);
@@ -8717,4 +8719,44 @@ static void LoadPrefixes(RDFfdwState *state)
 	}
 
 	state->sparql_prefixes = prefixes.data;
+}
+
+/*
+ * rdf_fdw_sum_sfunc
+ * -----------------
+ * Wrapper for SPARQL SUM aggregate transition function.
+ * Handles PostgreSQL aggregate context validation and NULL handling.
+ */
+Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
+{
+	MemoryContext aggcontext;
+	
+	elog(DEBUG1, "%s called", __func__);
+	
+	/* Verify we're being called as an aggregate */
+	if (!AggCheckCallContext(fcinfo, &aggcontext))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("sparql_sum_rdfnode_sfunc called in non-aggregate context")));
+	
+	/* Delegate to the actual implementation in sparql.c */
+	return sparql_sum_rdfnode_sfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_sum_finalfunc
+ * ---------------------
+ * Wrapper for SPARQL SUM aggregate final function.
+ * Handles NULL state (no rows aggregated).
+ */
+Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
+{
+	elog(DEBUG1, "%s called", __func__);
+	
+	/* Return NULL if no rows were aggregated */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_NULL();
+	
+	/* Delegate to the actual implementation in sparql.c */
+	return sparql_sum_rdfnode_finalfunc(fcinfo);
 }

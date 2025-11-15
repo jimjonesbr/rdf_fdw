@@ -1,0 +1,61 @@
+-- Test 1: Sum of integers → should return integer (not decimal)
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+
+-- Test 2: Sum of decimals → should return decimal
+WITH j (val) AS (
+    VALUES
+        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20.3"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+
+-- Test 3: Sum of integer + decimal → should return decimal (type promotion)
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+
+-- Test 4: Sum of decimal + float → should return float (type promotion)
+WITH j (val) AS (
+    VALUES
+        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20.3"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
+        ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+
+-- Test 5: Sum of integer + decimal + double → should return double (highest type wins)
+WITH j (val) AS (
+    VALUES
+        ('"10.4"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"30.4"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+
+-- Test 6: Sum of single value → should preserve original type
+WITH j (val) AS (
+    VALUES
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+
+-- Test 7: Test integer subtypes (xsd:int, xsd:long, etc.) → should return integer
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+

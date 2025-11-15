@@ -3272,6 +3272,23 @@ LANGUAGE C IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION sparql.describe(text,text,boolean,text) IS 'Gateway for DESCRIBE SPARQL queries';
 
+-- SUM aggregate for rdfnode
+CREATE FUNCTION sparql.sum_rdfnode_sfunc(internal, rdfnode)
+RETURNS internal AS 'MODULE_PATHNAME', 'rdf_fdw_sum_sfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE FUNCTION sparql.sum_rdfnode_finalfunc(internal)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdf_fdw_sum_finalfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE sparql.sum(rdfnode) (
+    SFUNC = sparql.sum_rdfnode_sfunc,
+    STYPE = internal,
+    FINALFUNC = sparql.sum_rdfnode_finalfunc
+);
+
+COMMENT ON AGGREGATE sparql.sum(rdfnode) IS 'Computes the sum of numeric rdfnode values with XSD type promotion (integer < decimal < float < double)';
+
 -- Prefix Management
 CREATE TABLE sparql.prefix_contexts (
     context text PRIMARY KEY CHECK (context <> ''),

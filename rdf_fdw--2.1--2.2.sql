@@ -26,3 +26,20 @@ CREATE VIEW rdf_fdw_settings AS
     WHERE version IS NOT NULL;
 
 COMMENT ON VIEW rdf_fdw_settings IS 'Parse detailed dependency information into component versions';
+
+-- SUM aggregate for rdfnode
+CREATE FUNCTION sparql.sum_rdfnode_sfunc(internal, rdfnode)
+RETURNS internal AS 'MODULE_PATHNAME', 'rdf_fdw_sum_sfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE FUNCTION sparql.sum_rdfnode_finalfunc(internal)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdf_fdw_sum_finalfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE sparql.sum(rdfnode) (
+    SFUNC = sparql.sum_rdfnode_sfunc,
+    STYPE = internal,
+    FINALFUNC = sparql.sum_rdfnode_finalfunc
+);
+
+COMMENT ON AGGREGATE sparql.sum(rdfnode) IS 'Computes the sum of numeric rdfnode values with XSD type promotion (integer < decimal < float < double)';
