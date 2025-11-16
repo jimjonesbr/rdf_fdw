@@ -32,11 +32,12 @@ typedef enum
 
 /*
  * State for numeric aggregate functions that need type promotion tracking.
- * Used by SUM, AVG, etc.
+ * Used by SUM, AVG, MIN, MAX, COUNT, etc.
  */
 typedef struct
 {
-	Numeric sum;              /* accumulated numeric value */
+	Numeric sum;              /* accumulated numeric value (SUM, AVG) */
+	int64 count;              /* count of non-NULL values (AVG, COUNT) */
 	XsdNumericType maxType;   /* highest type seen so far (for promotion) */
 } NumericAggState;
 
@@ -75,7 +76,9 @@ extern XsdNumericType get_xsd_numeric_type(const char *dtype);
 extern const char *get_xsd_datatype_uri(XsdNumericType type);
 
 /* SPARQL Aggregate Functions */
-extern Datum sparql_sum_rdfnode_sfunc(PG_FUNCTION_ARGS);
-extern Datum sparql_sum_rdfnode_finalfunc(PG_FUNCTION_ARGS);
+extern Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS);
+extern Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS);
+extern Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS);
+extern Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 
 #endif /* SPARQL_H */

@@ -1841,116 +1841,242 @@ const char *get_xsd_datatype_uri(XsdNumericType type)
 }
 
 /*
- * sparql_sum_rdfnode_sfunc
- * -------------------------
+ * sum_rdfnode_sfunc
+ * -----------------
  * Aggregate transition function for SUM(rdfnode).
  * Converts rdfnode to numeric and accumulates the sum.
- * 
+ *
  * State is stored as NumericAggState to track both sum and result type.
- * 
+ *
  * Note: Aggregate context validation is handled by the wrapper in rdf_fdw.c
  */
-Datum sparql_sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
+Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
 {
-	NumericAggState *state;
-	MemoryContext aggcontext;
-	MemoryContext oldcontext;
-	rdfnode *node;
-	rdfnode_info parsed;
-	Datum rdf_numeric;
-	XsdNumericType inputType;
-	
-	/* Get the aggregate memory context (already validated by wrapper) */
-	AggCheckCallContext(fcinfo, &aggcontext);
-	
-	/* Get current state (NULL on first call) */
-	if (PG_ARGISNULL(0))
-		state = NULL;
-	else
-		state = (NumericAggState *)PG_GETARG_POINTER(0);
-	
-	/* Skip NULL input values */
-	if (PG_ARGISNULL(1))
-	{
-		if (state == NULL)
-			PG_RETURN_NULL();
-		PG_RETURN_POINTER(state);
-	}
-	
-	/* Get the rdfnode and parse it */
-	node = (rdfnode *)PG_GETARG_POINTER(1);
-	parsed = parse_rdfnode(node);
-	
-	/* Only sum numeric literals */
-	if (!parsed.isNumeric)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("cannot sum non-numeric rdfnode: %s", parsed.raw)));
-	
-	/* Determine the XSD type of this input */
-	inputType = get_xsd_numeric_type(parsed.dtype);
-	
-	/* Convert rdfnode lexical value to numeric */
-	rdf_numeric = DirectFunctionCall3(numeric_in,
-									  CStringGetDatum(parsed.lex),
-									  ObjectIdGetDatum(InvalidOid),
-									  Int32GetDatum(-1));
-	
-	/* Initialize or update state */
-	if (state == NULL)
-	{
-		/* First row: allocate state in aggregate context */
-		oldcontext = MemoryContextSwitchTo(aggcontext);
-		state = (NumericAggState *)palloc(sizeof(NumericAggState));
-		/* Copy the numeric value - using numeric_uplus effectively duplicates it */
-		state->sum = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
-		state->maxType = inputType;
-		MemoryContextSwitchTo(oldcontext);
-	}
-	else
-	{
-		/* Add to accumulator - need to be in aggcontext for the result */
-		oldcontext = MemoryContextSwitchTo(aggcontext);
-		state->sum = DatumGetNumeric(DirectFunctionCall2(numeric_add,
-														 NumericGetDatum(state->sum),
-														 rdf_numeric));
-		/* Track the highest type seen (type promotion: integer < decimal < float < double) */
-		if (inputType > state->maxType)
-			state->maxType = inputType;
-		MemoryContextSwitchTo(oldcontext);
-	}
-	
-	PG_RETURN_POINTER(state);
+    NumericAggState *state;
+    MemoryContext aggcontext;
+    MemoryContext oldcontext;
+    rdfnode *node;
+    rdfnode_info parsed;
+    Datum rdf_numeric;
+    XsdNumericType inputType;
+
+    if (!AggCheckCallContext(fcinfo, &aggcontext))
+        elog(ERROR, "%s must be called as aggregate", __func__);
+
+    /* Get current state (NULL on first call) */
+    if (PG_ARGISNULL(0))
+        state = NULL;
+    else
+        state = (NumericAggState *)PG_GETARG_POINTER(0);
+
+    /* Skip NULL input values */
+    if (PG_ARGISNULL(1))
+    {
+        if (state == NULL)
+            PG_RETURN_NULL();
+        PG_RETURN_POINTER(state);
+    }
+
+    /* Get the rdfnode and parse it */
+    node = (rdfnode *)PG_GETARG_TEXT_PP(1);
+    parsed = parse_rdfnode(node);
+
+    /* Only sum numeric literals */
+    if (!parsed.isNumeric)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("cannot sum non-numeric rdfnode: %s", parsed.raw)));
+
+    /* Determine the XSD type of this input */
+    inputType = get_xsd_numeric_type(parsed.dtype);
+
+    /* Convert rdfnode lexical value to numeric */
+    rdf_numeric = DirectFunctionCall3(numeric_in,
+                                      CStringGetDatum(parsed.lex),
+                                      ObjectIdGetDatum(InvalidOid),
+                                      Int32GetDatum(-1));
+
+    /* Initialize or update state */
+    if (state == NULL)
+    {
+        /* First row: allocate state in aggregate context */
+        oldcontext = MemoryContextSwitchTo(aggcontext);
+        state = (NumericAggState *)palloc(sizeof(NumericAggState));
+        /* Copy the numeric value - using numeric_uplus effectively duplicates it */
+        state->sum = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        state->count = 0; /* Not used by SUM */
+        state->maxType = inputType;
+        MemoryContextSwitchTo(oldcontext);
+    }
+    else
+    {
+        /* Add to accumulator - need to be in aggcontext for the result */
+        oldcontext = MemoryContextSwitchTo(aggcontext);
+        state->sum = DatumGetNumeric(DirectFunctionCall2(numeric_add,
+                                                         NumericGetDatum(state->sum),
+                                                         rdf_numeric));
+        /* Track the highest type seen (type promotion: integer < decimal < float < double) */
+        if (inputType > state->maxType)
+            state->maxType = inputType;
+        MemoryContextSwitchTo(oldcontext);
+    }
+
+    PG_RETURN_POINTER(state);
 }
 
 /*
- * sparql_sum_rdfnode_finalfunc
- * -----------------------------
+ * sum_rdfnode_finalfunc
+ * ---------------------
  * Final function for SUM(rdfnode).
  * Converts the accumulated numeric sum back to rdfnode with proper type promotion.
- * 
+ *
  * Note: NULL state handling is done by the wrapper in rdf_fdw.c
  */
-Datum sparql_sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
+Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
-	NumericAggState *state;
-	char *sum_str;
-	const char *datatype_uri;
-	StringInfoData buf;
-	
-	/* Get the state (already validated as non-NULL by wrapper) */
-	state = (NumericAggState *)PG_GETARG_POINTER(0);
-	
-	/* Convert numeric to string */
-	sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(state->sum)));
-	
-	/* Get the appropriate XSD datatype based on type promotion */
-	datatype_uri = get_xsd_datatype_uri(state->maxType);
-	
-	/* Format as typed literal rdfnode using strdt() */
-	buf.data = strdt(sum_str, (char *)datatype_uri);
-	
-	pfree(sum_str);
-	
-	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
+    NumericAggState *state;
+    char *sum_str;
+    char *result;
+    const char *datatype_uri;
+
+    /* Get the state (already validated as non-NULL by wrapper) */
+    state = (NumericAggState *)PG_GETARG_POINTER(0);
+
+    /* Convert numeric to string */
+    sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(state->sum)));
+
+    /* Get the appropriate XSD datatype based on type promotion */
+    datatype_uri = get_xsd_datatype_uri(state->maxType);
+
+    /* Format as typed literal rdfnode using strdt() */
+    result = strdt(sum_str, (char *)datatype_uri);
+
+    pfree(sum_str);
+
+    PG_RETURN_TEXT_P(cstring_to_text(result));
+}
+
+/*
+ * avg_rdfnode_sfunc
+ * -----------------
+ * Aggregate transition function for AVG(rdfnode).
+ * Accumulates sum and count for computing average.
+ *
+ * Note: Aggregate context validation and NULL input handling done by wrapper in rdf_fdw.c
+ */
+Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
+{
+    NumericAggState *state;
+    MemoryContext aggcontext;
+    MemoryContext oldcontext;
+    rdfnode *node;
+    rdfnode_info parsed;
+    Datum rdf_numeric;
+    XsdNumericType inputType;
+
+    if (!AggCheckCallContext(fcinfo, &aggcontext))
+        elog(ERROR, "%s must be called as aggregate", __func__);
+
+    /* Get current state (NULL on first call) */
+    if (PG_ARGISNULL(0))
+        state = NULL;
+    else
+        state = (NumericAggState *)PG_GETARG_POINTER(0);
+
+    /* Skip NULL input values */
+    if (PG_ARGISNULL(1))
+    {
+        if (state == NULL)
+            PG_RETURN_NULL();
+        PG_RETURN_POINTER(state);
+    }
+
+    /* Get the rdfnode and parse it */
+    node = (rdfnode *)PG_GETARG_TEXT_PP(1);
+    parsed = parse_rdfnode(node);
+
+    /* Only average numeric literals */
+    if (!parsed.isNumeric)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("cannot average non-numeric rdfnode: %s", parsed.raw)));
+
+    /* Determine the XSD type of this input */
+    inputType = get_xsd_numeric_type(parsed.dtype);
+
+    /* Convert rdfnode lexical value to numeric */
+    rdf_numeric = DirectFunctionCall3(numeric_in,
+                                      CStringGetDatum(parsed.lex),
+                                      ObjectIdGetDatum(InvalidOid),
+                                      Int32GetDatum(-1));
+
+    /* Initialize or update state */
+    if (state == NULL)
+    {
+        /* First row: allocate state in aggregate context */
+        oldcontext = MemoryContextSwitchTo(aggcontext);
+        state = (NumericAggState *)palloc(sizeof(NumericAggState));
+        state->sum = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        state->count = 1;
+        state->maxType = inputType;
+        MemoryContextSwitchTo(oldcontext);
+    }
+    else
+    {
+        /* Add to accumulator */
+        oldcontext = MemoryContextSwitchTo(aggcontext);
+        state->sum = DatumGetNumeric(DirectFunctionCall2(numeric_add,
+                                                         NumericGetDatum(state->sum),
+                                                         rdf_numeric));
+        state->count++;
+        /* Track the highest type seen (type promotion: integer < decimal < float < double) */
+        if (inputType > state->maxType)
+            state->maxType = inputType;
+        MemoryContextSwitchTo(oldcontext);
+    }
+
+    PG_RETURN_POINTER(state);
+}
+
+/*
+ * avg_rdfnode_finalfunc
+ * ---------------------
+ * Final function for AVG(rdfnode).
+ * Computes average by dividing sum by count, with proper type promotion.
+ *
+ * Note: NULL state handling is done by the wrapper in rdf_fdw.c
+ */
+Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
+{
+    NumericAggState *state;
+    Numeric count_numeric;
+    Numeric avg_numeric;
+    char *avg_str;
+    char *result;
+    const char *datatype_uri;
+
+    /* Get the state (already validated as non-NULL by wrapper) */
+    state = (NumericAggState *)PG_GETARG_POINTER(0);
+
+    /* Convert count to numeric for division */
+    count_numeric = DatumGetNumeric(DirectFunctionCall1(int8_numeric,
+                                                        Int64GetDatum(state->count)));
+
+    /* Compute average: sum / count */
+    avg_numeric = DatumGetNumeric(DirectFunctionCall2(numeric_div,
+                                                      NumericGetDatum(state->sum),
+                                                      NumericGetDatum(count_numeric)));
+
+    /* Convert result to string */
+    avg_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_numeric)));
+
+    /* Get the appropriate XSD datatype based on type promotion */
+    datatype_uri = get_xsd_datatype_uri(state->maxType);
+
+    /* Format as typed literal rdfnode using strdt() */
+    result = strdt(avg_str, (char *)datatype_uri);
+
+    pfree(avg_str);
+
+    PG_RETURN_TEXT_P(cstring_to_text(result));
 }

@@ -726,11 +726,58 @@ FROM (VALUES ('"10.5"^^xsd:decimal'::rdfnode),
 ```
 
 > [!NOTE]  
-> The `SUM` aggregate follows SPARQL semantics:
+> The `SUM` aggregate follows SPARQL 1.1 semantics:
 >* NULL values are skipped during aggregation
->* Returns NULL if no non-NULL values are aggregated
+>* Returns `"0"^^xsd:integer` if no non-NULL values are aggregated (differs from SQL standard)
 >* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
 >* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
+
+### [AVG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#avg)
+
+```sql
+sparql.avg(value rdfnode) → rdfnode
+```
+
+Computes the average (arithmetic mean) of numeric `rdfnode` values with XSD type promotion according to SPARQL 1.1 specification ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)). Like `SUM`, the function follows XPath type promotion rules: `xsd:integer` < `xsd:decimal` < `xsd:float` < `xsd:double`. The result type is determined by the highest type encountered during aggregation.
+
+Examples:
+
+```sql
+-- Average of integers returns integer
+SELECT sparql.avg(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             ('"20"^^xsd:integer'::rdfnode),
+             ('"30"^^xsd:integer'::rdfnode)) AS t(val);
+                                avg                                
+-------------------------------------------------------------------
+ "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Mixing integer and decimal promotes to decimal
+SELECT sparql.avg(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             ('"20.5"^^xsd:decimal'::rdfnode),
+             ('"30"^^xsd:integer'::rdfnode)) AS t(val);
+                                avg                                
+-------------------------------------------------------------------
+ "20.1666666666666667"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- NULL values are skipped
+SELECT sparql.avg(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             (NULL::rdfnode),
+             ('"30"^^xsd:integer'::rdfnode)) AS t(val);
+                                avg                                
+-------------------------------------------------------------------
+ "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+```
+
+> [!NOTE]  
+> The `AVG` aggregate follows SPARQL 1.1 semantics:
+>* NULL values are skipped during aggregation
+>* Returns `"0"^^xsd:integer` if no non-NULL values are aggregated (differs from SQL standard)
 
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 

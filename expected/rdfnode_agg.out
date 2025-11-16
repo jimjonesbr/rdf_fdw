@@ -1,3 +1,6 @@
+-- ==========================================
+-- SPARQL SUM() Aggregate Tests
+-- ==========================================
 -- Test 1: Sum of integers → should return integer (not decimal)
 WITH j (val) AS (
     VALUES
@@ -74,7 +77,7 @@ SELECT sparql.sum(val) FROM j;
  "42"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 7: Test integer subtypes (xsd:int, xsd:long, etc.) → should return integer
+-- Test 7: Sum with integer subtypes (xsd:int, xsd:long, etc.) → should return integer
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode),
@@ -87,3 +90,270 @@ SELECT sparql.sum(val) FROM j;
  "60"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
+-- Test 8: Sum with all four numeric types → should promote to double
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"5.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"2.5"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
+        ('"3.0"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                        sum                        
+---------------------------------------------------
+ "21.0"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 9: Sum with integer + float (type promotion)
+WITH j (val) AS (
+    VALUES
+        ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"0.1"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                        sum                        
+---------------------------------------------------
+ "100.1"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+-- Test 10: Sum with negative integers
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"-3"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                       sum                       
+-------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 11: Sum resulting in negative value
+WITH j (val) AS (
+    VALUES
+        ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"-20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                        sum                        
+---------------------------------------------------
+ "-15"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 12: Sum with zero values
+WITH j (val) AS (
+    VALUES
+        ('"0"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"0"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                       sum                        
+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 13: Sum resulting in zero
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"-10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                       sum                       
+-------------------------------------------------
+ "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 14: Sum with NULL values → should skip NULLs
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        (NULL::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                       sum                        
+--------------------------------------------------
+ "40"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 15: Sum of all NULLs → should return "0"^^xsd:integer per SPARQL 1.1
+WITH j (val) AS (
+    VALUES
+        (NULL::rdfnode),
+        (NULL::rdfnode),
+        (NULL::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+                       sum                       
+-------------------------------------------------
+ "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 16: Sum of empty set (no rows) → should return "0"^^xsd:integer per SPARQL 1.1
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j WHERE val IS NULL;
+                       sum                       
+-------------------------------------------------
+ "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- ==========================================
+-- SPARQL AVG() Aggregate Tests
+-- ==========================================
+-- Test 17: Average of integers → should return integer
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                avg                                
+-------------------------------------------------------------------
+ "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 18: Average of decimals → should return decimal
+WITH j (val) AS (
+    VALUES
+        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20.3"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                avg                                
+-------------------------------------------------------------------
+ "20.3333333333333333"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 19: Average of integer + decimal → should return decimal (type promotion)
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                avg                                
+-------------------------------------------------------------------
+ "20.1666666666666667"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 20: Average of single value → should preserve original type
+WITH j (val) AS (
+    VALUES
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                avg                                
+-------------------------------------------------------------------
+ "42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 21: Average with all four numeric types → should promote to double
+WITH j (val) AS (
+    VALUES
+        ('"12"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"8.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"4.0"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
+        ('"16.0"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                               avg                                
+------------------------------------------------------------------
+ "10.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 22: Average with negative decimals
+WITH j (val) AS (
+    VALUES
+        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"-5.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"-2.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                 avg                                  
+----------------------------------------------------------------------
+ "1.00000000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 23: Average with zero in the mix
+WITH j (val) AS (
+    VALUES
+        ('"0.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"10.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                avg                                
+-------------------------------------------------------------------
+ "10.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 24: Average with NULL values → should skip NULLs
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        (NULL::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                                avg                                
+-------------------------------------------------------------------
+ "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 25: Average of all NULLs → should return "0"^^xsd:integer per SPARQL 1.1
+WITH j (val) AS (
+    VALUES
+        (NULL::rdfnode),
+        (NULL::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+                       avg                       
+-------------------------------------------------
+ "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 26: Average of empty set (no rows) → should return "0"^^xsd:integer per SPARQL 1.1
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j WHERE val IS NULL;
+                       avg                       
+-------------------------------------------------
+ "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- ==========================================
+-- Error Cases
+-- ==========================================
+-- Test 27: SUM on non-numeric rdfnode → should error
+WITH j (val) AS (
+    VALUES
+        ('"not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+ERROR:  cannot sum non-numeric rdfnode: "not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>
+-- Test 28: AVG on non-numeric rdfnode → should error
+WITH j (val) AS (
+    VALUES
+        ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
+)
+SELECT sparql.avg(val) FROM j;
+ERROR:  cannot average non-numeric rdfnode: "2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+-- Test 29: SUM with mixed numeric and non-numeric → should error
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"text"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.sum(val) FROM j;
+ERROR:  cannot sum non-numeric rdfnode: "text"^^<http://www.w3.org/2001/XMLSchema#string>

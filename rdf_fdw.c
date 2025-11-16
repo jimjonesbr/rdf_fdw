@@ -473,6 +473,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
 PG_FUNCTION_INFO_V1(rdf_fdw_coalesce);
 PG_FUNCTION_INFO_V1(rdf_fdw_sum_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_sum_finalfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_avg_sfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_avg_finalfunc);
 
 /* rdfnode (custom data type) */
 PG_FUNCTION_INFO_V1(rdfnode_in);
@@ -8730,33 +8732,83 @@ static void LoadPrefixes(RDFfdwState *state)
 Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
 {
 	MemoryContext aggcontext;
-	
+
 	elog(DEBUG1, "%s called", __func__);
-	
+
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("sparql_sum_rdfnode_sfunc called in non-aggregate context")));
-	
-	/* Delegate to the actual implementation in sparql.c */
-	return sparql_sum_rdfnode_sfunc(fcinfo);
+				 errmsg("sum_rdfnode_sfunc called in non-aggregate context")));
+
+	/* Delegate to the actual implementation in sum_rdfnode_sfunc() */
+	return sum_rdfnode_sfunc(fcinfo);
 }
 
 /*
  * rdf_fdw_sum_finalfunc
  * ---------------------
  * Wrapper for SPARQL SUM aggregate final function.
- * Handles NULL state (no rows aggregated).
+ * Per SPARQL 1.1 spec (18.5.1.3): returns "0"^^xsd:integer for empty sets.
  */
 Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 {
+	char *result;
+
 	elog(DEBUG1, "%s called", __func__);
-	
-	/* Return NULL if no rows were aggregated */
+
+	/* SPARQL 1.1: SUM of empty set returns 0, not NULL */
 	if (PG_ARGISNULL(0))
-		PG_RETURN_NULL();
-	
+	{
+		result = strdt("0", RDF_XSD_INTEGER);
+		PG_RETURN_TEXT_P(cstring_to_text(result));
+	}
+
 	/* Delegate to the actual implementation in sparql.c */
-	return sparql_sum_rdfnode_finalfunc(fcinfo);
+	return sum_rdfnode_finalfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_avg_sfunc
+ * -----------------
+ * Wrapper for SPARQL AVG aggregate transition function.
+ * Handles PostgreSQL aggregate context validation and NULL handling.
+ */
+Datum rdf_fdw_avg_sfunc(PG_FUNCTION_ARGS)
+{
+	MemoryContext aggcontext;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Verify we're being called as an aggregate */
+	if (!AggCheckCallContext(fcinfo, &aggcontext))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("avg_rdfnode_sfunc called in non-aggregate context")));
+
+	/* Delegate to the actual implementation in sparql.c */
+	return avg_rdfnode_sfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_avg_finalfunc
+ * ---------------------
+ * Wrapper for SPARQL AVG aggregate final function.
+ * Per SPARQL 1.1 spec (18.5.1.4): returns "0"^^xsd:integer for empty sets.
+ */
+Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
+{
+	char *result;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* SPARQL 1.1: AVG of empty set returns 0, not NULL */
+	if (PG_ARGISNULL(0))
+	{
+		result = strdt("0", RDF_XSD_INTEGER);
+		PG_RETURN_TEXT_P(cstring_to_text(result));
+	}
+
+	/* Delegate to the actual implementation in avg_rdfnode_finalfunc() */
+	return avg_rdfnode_finalfunc(fcinfo);
 }
