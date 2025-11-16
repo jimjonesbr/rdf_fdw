@@ -31,16 +31,15 @@ typedef enum
 } XsdNumericType;
 
 /*
- * State for numeric aggregate functions that need type promotion tracking.
- * Used by SUM, AVG, MIN, MAX, COUNT, etc.
+ * State for numeric aggregate functions.
+ * Used by SUM, AVG, MIN, MAX, and COUNT aggregates.
  */
 typedef struct
 {
-	Numeric sum;              /* accumulated numeric value (SUM, AVG) */
-	int64 count;              /* count of non-NULL values (AVG, COUNT) */
-	XsdNumericType maxType;   /* highest type seen so far (for promotion) */
+    Numeric value;          /* accumulated value (SUM), current min/max (MIN/MAX), or sum for average (AVG) */
+    int64 count;            /* count of non-NULL values (AVG, COUNT) - unused for SUM, MIN, MAX */
+    XsdNumericType maxType; /* highest type seen so far (for type promotion) */
 } NumericAggState;
-
 
 /* 17.4.2 Functions on RDF Terms */
 extern bool isIRI(char *input);
@@ -80,5 +79,7 @@ extern Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 extern Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS);
+extern Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS);
+extern Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 
 #endif /* SPARQL_H */

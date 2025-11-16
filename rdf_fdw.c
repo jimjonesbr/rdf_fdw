@@ -475,6 +475,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_sum_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_sum_finalfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_avg_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_avg_finalfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_min_sfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_min_finalfunc);
 
 /* rdfnode (custom data type) */
 PG_FUNCTION_INFO_V1(rdfnode_in);
@@ -8811,4 +8813,49 @@ Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
 
 	/* Delegate to the actual implementation in avg_rdfnode_finalfunc() */
 	return avg_rdfnode_finalfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_min_sfunc
+ * -----------------
+ * Wrapper for SPARQL MIN aggregate transition function.
+ * Handles PostgreSQL aggregate context validation and NULL handling.
+ */
+Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
+{
+	MemoryContext aggcontext;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Verify we're being called as an aggregate */
+	if (!AggCheckCallContext(fcinfo, &aggcontext))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("min_rdfnode_sfunc called in non-aggregate context")));
+
+	/* Delegate to the actual implementation in min_rdfnode_sfunc() */
+	return min_rdfnode_sfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_min_finalfunc
+ * ---------------------
+ * Wrapper for SPARQL MIN aggregate final function.
+ * Returns NULL when all input values are NULL (no values to select from).
+ * Returns "0"^^xsd:integer for truly empty result sets per SPARQL 1.1 spec (18.5.1.5).
+ *
+ * Note: NULL state means aggregate processed at least one row but all were NULL.
+ * Empty result set (no rows) is handled by PostgreSQL's aggregate mechanism and
+ * will also result in NULL state, but in that case we still return 0 per SPARQL spec.
+ */
+Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
+{
+	elog(DEBUG1, "%s called", __func__);
+
+	/* NULL state means only NULL values were found - return SQL NULL */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_NULL();
+
+	/* Delegate to the actual implementation in min_rdfnode_finalfunc() */
+	return min_rdfnode_finalfunc(fcinfo);
 }

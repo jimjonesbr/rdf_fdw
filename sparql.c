@@ -1860,8 +1860,8 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
     Datum rdf_numeric;
     XsdNumericType inputType;
 
-    if (!AggCheckCallContext(fcinfo, &aggcontext))
-        elog(ERROR, "%s must be called as aggregate", __func__);
+    /* Get the aggregate memory context */
+    AggCheckCallContext(fcinfo, &aggcontext);
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
@@ -1903,7 +1903,7 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
         oldcontext = MemoryContextSwitchTo(aggcontext);
         state = (NumericAggState *)palloc(sizeof(NumericAggState));
         /* Copy the numeric value - using numeric_uplus effectively duplicates it */
-        state->sum = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        state->value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
         state->count = 0; /* Not used by SUM */
         state->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
@@ -1912,8 +1912,8 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
     {
         /* Add to accumulator - need to be in aggcontext for the result */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state->sum = DatumGetNumeric(DirectFunctionCall2(numeric_add,
-                                                         NumericGetDatum(state->sum),
+        state->value = DatumGetNumeric(DirectFunctionCall2(numeric_add,
+                                                         NumericGetDatum(state->value),
                                                          rdf_numeric));
         /* Track the highest type seen (type promotion: integer < decimal < float < double) */
         if (inputType > state->maxType)
@@ -1943,7 +1943,7 @@ Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     state = (NumericAggState *)PG_GETARG_POINTER(0);
 
     /* Convert numeric to string */
-    sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(state->sum)));
+    sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(state->value)));
 
     /* Get the appropriate XSD datatype based on type promotion */
     datatype_uri = get_xsd_datatype_uri(state->maxType);
@@ -1974,8 +1974,8 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
     Datum rdf_numeric;
     XsdNumericType inputType;
 
-    if (!AggCheckCallContext(fcinfo, &aggcontext))
-        elog(ERROR, "%s must be called as aggregate", __func__);
+    /* Get the aggregate memory context */
+    AggCheckCallContext(fcinfo, &aggcontext);
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
@@ -2016,7 +2016,7 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
         /* First row: allocate state in aggregate context */
         oldcontext = MemoryContextSwitchTo(aggcontext);
         state = (NumericAggState *)palloc(sizeof(NumericAggState));
-        state->sum = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        state->value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
         state->count = 1;
         state->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
@@ -2025,8 +2025,8 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
     {
         /* Add to accumulator */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state->sum = DatumGetNumeric(DirectFunctionCall2(numeric_add,
-                                                         NumericGetDatum(state->sum),
+        state->value = DatumGetNumeric(DirectFunctionCall2(numeric_add,
+                                                         NumericGetDatum(state->value),
                                                          rdf_numeric));
         state->count++;
         /* Track the highest type seen (type promotion: integer < decimal < float < double) */
@@ -2059,12 +2059,11 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     state = (NumericAggState *)PG_GETARG_POINTER(0);
 
     /* Convert count to numeric for division */
-    count_numeric = DatumGetNumeric(DirectFunctionCall1(int8_numeric,
-                                                        Int64GetDatum(state->count)));
+    count_numeric = DatumGetNumeric(DirectFunctionCall1(int8_numeric, Int64GetDatum(state->count)));
 
     /* Compute average: sum / count */
     avg_numeric = DatumGetNumeric(DirectFunctionCall2(numeric_div,
-                                                      NumericGetDatum(state->sum),
+                                                      NumericGetDatum(state->value),
                                                       NumericGetDatum(count_numeric)));
 
     /* Convert result to string */
@@ -2077,6 +2076,133 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     result = strdt(avg_str, (char *)datatype_uri);
 
     pfree(avg_str);
+
+    PG_RETURN_TEXT_P(cstring_to_text(result));
+}
+
+/*
+ * min_rdfnode_sfunc
+ * -----------------
+ * Aggregate transition function for MIN(rdfnode).
+ * Compares rdfnode values and keeps track of the minimum.
+ *
+ * Note: Aggregate context validation and NULL input handling done by wrapper in rdf_fdw.c
+ */
+Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS)
+{
+    NumericAggState *state;
+    MemoryContext aggcontext;
+    MemoryContext oldcontext;
+    rdfnode *node;
+    rdfnode_info parsed;
+    Datum rdf_numeric;
+    XsdNumericType inputType;
+    Numeric input_value;
+    int cmp;
+
+    /* Get the aggregate memory context */
+    AggCheckCallContext(fcinfo, &aggcontext);
+
+    /* Get current state (NULL on first call) */
+    if (PG_ARGISNULL(0))
+        state = NULL;
+    else
+        state = (NumericAggState *)PG_GETARG_POINTER(0);
+
+    /* Skip NULL input values */
+    if (PG_ARGISNULL(1))
+    {
+        if (state == NULL)
+            PG_RETURN_NULL();
+        PG_RETURN_POINTER(state);
+    }
+
+    /* Get the rdfnode and parse it */
+    node = (rdfnode *)PG_GETARG_TEXT_PP(1);
+    parsed = parse_rdfnode(node);
+
+    /* Only process numeric literals */
+    if (!parsed.isNumeric)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("cannot find minimum of non-numeric rdfnode: %s", parsed.raw)));
+
+    /* Determine the XSD type of this input */
+    inputType = get_xsd_numeric_type(parsed.dtype);
+
+    /* Convert rdfnode lexical value to numeric */
+    rdf_numeric = DirectFunctionCall3(numeric_in,
+                                      CStringGetDatum(parsed.lex),
+                                      ObjectIdGetDatum(InvalidOid),
+                                      Int32GetDatum(-1));
+    input_value = DatumGetNumeric(rdf_numeric);
+
+    /* Initialize or update state */
+    if (state == NULL)
+    {
+        /* First row: allocate state in aggregate context */
+        oldcontext = MemoryContextSwitchTo(aggcontext);
+        state = (NumericAggState *)palloc(sizeof(NumericAggState));
+        state->value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        state->maxType = inputType;
+        state->count = 0; /* Unused for MIN */
+        MemoryContextSwitchTo(oldcontext);
+    }
+    else
+    {
+        /* Compare with current minimum */
+        cmp = DatumGetInt32(DirectFunctionCall2(numeric_cmp,
+                                                NumericGetDatum(input_value),
+                                                NumericGetDatum(state->value)));
+
+        if (cmp < 0)
+        {
+            /* New minimum found - update state */
+            oldcontext = MemoryContextSwitchTo(aggcontext);
+            state->value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+            state->maxType = inputType;
+            MemoryContextSwitchTo(oldcontext);
+        }
+        else if (cmp == 0)
+        {
+            /* Equal values - promote type if necessary */
+            if (inputType > state->maxType)
+                state->maxType = inputType;
+        }
+        /* If cmp > 0, current state already has the minimum */
+    }
+
+    PG_RETURN_POINTER(state);
+}
+
+/*
+ * min_rdfnode_finalfunc
+ * ---------------------
+ * Final function for MIN(rdfnode).
+ * Converts the minimum numeric value back to rdfnode with proper type.
+ *
+ * Note: NULL state handling is done by the wrapper in rdf_fdw.c
+ */
+Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS)
+{
+    NumericAggState *state;
+    char *min_str;
+    char *result;
+    const char *datatype_uri;
+
+    /* Get the state (already validated as non-NULL by wrapper) */
+    state = (NumericAggState *)PG_GETARG_POINTER(0);
+
+    /* Convert numeric to string */
+    min_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(state->value)));
+
+    /* Get the appropriate XSD datatype */
+    datatype_uri = get_xsd_datatype_uri(state->maxType);
+
+    /* Format as typed literal rdfnode using strdt() */
+    result = strdt(min_str, (char *)datatype_uri);
+
+    pfree(min_str);
 
     PG_RETURN_TEXT_P(cstring_to_text(result));
 }

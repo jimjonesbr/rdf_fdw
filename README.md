@@ -778,6 +778,45 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 > The `AVG` aggregate follows SPARQL 1.1 semantics:
 >* NULL values are skipped during aggregation
 >* Returns `"0"^^xsd:integer` if no non-NULL values are aggregated (differs from SQL standard)
+>* Division by count is performed using PostgreSQL's numeric division
+
+### [MIN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#min)
+
+```sql
+sparql.min(value rdfnode) → rdfnode
+```
+
+Returns the minimum numeric `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.5](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the minimum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison.
+
+Examples:
+
+```sql
+-- Minimum of integers
+SELECT sparql.min(val)
+FROM (VALUES ('"30"^^xsd:integer'::rdfnode),
+             ('"10"^^xsd:integer'::rdfnode),
+             ('"20"^^xsd:integer'::rdfnode)) AS t(val);
+                       min                        
+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Minimum with negative values
+SELECT sparql.min(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             ('"-5"^^xsd:integer'::rdfnode),
+             ('"3"^^xsd:integer'::rdfnode)) AS t(val);
+                       min                        
+--------------------------------------------------
+ "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+```
+
+> [!NOTE]  
+> The `MIN` aggregate follows SPARQL 1.1 semantics with SQL-compatible NULL handling:
+>* NULL values are skipped during aggregation
+>* Returns SQL NULL when all input values are NULL (no value to select)
+>* Returns SQL NULL for empty result sets (no rows match WHERE clause)
 
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 

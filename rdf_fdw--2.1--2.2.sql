@@ -61,3 +61,19 @@ CREATE AGGREGATE sparql.avg(rdfnode) (
 
 COMMENT ON AGGREGATE sparql.avg(rdfnode) IS 'Computes the average of numeric rdfnode values with XSD type promotion (integer < decimal < float < double)';
 
+-- MIN aggregate for rdfnode
+CREATE FUNCTION sparql.min_rdfnode_sfunc(internal, rdfnode)
+RETURNS internal AS 'MODULE_PATHNAME', 'rdf_fdw_min_sfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE FUNCTION sparql.min_rdfnode_finalfunc(internal)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdf_fdw_min_finalfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE sparql.min(rdfnode) (
+    SFUNC = sparql.min_rdfnode_sfunc,
+    STYPE = internal,
+    FINALFUNC = sparql.min_rdfnode_finalfunc
+);
+
+COMMENT ON AGGREGATE sparql.min(rdfnode) IS 'Returns the minimum numeric rdfnode value';

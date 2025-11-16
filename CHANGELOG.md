@@ -12,6 +12,10 @@ Release date: **yyyy-mm-dd**
 
   A new `sparql.avg(rdfnode)` aggregate function has been added that computes the average (arithmetic mean) of numeric rdfnode values with the same XSD type promotion rules as SUM. The function divides the sum by the count of non-NULL values to produce the average result.
 
+* SPARQL MIN aggregate function:
+
+  A new `sparql.min(rdfnode)` aggregate function has been added that returns the minimum numeric rdfnode value according to SPARQL 1.1 specification (section 18.5.1.5). The function preserves the XSD datatype of the minimum value found and skips NULL values during aggregation. Returns SQL NULL when all input values are NULL, aligning with standard triple store behavior (Virtuoso, Blazegraph).
+
 * Enhanced version information:
 
   The `rdf_fdw_version()` function now returns a comprehensive version string that includes PostgreSQL version, compiler information, and all dependency versions (libxml, librdf, libcurl) in a single formatted output. A new `rdf_fdw_settings()` function provides extended dependency information including optional components like SSL, zlib, libSSH, and nghttp2. The `rdf_fdw_settings` view parses this extended information into a table format for convenient programmatic access to individual component versions.
