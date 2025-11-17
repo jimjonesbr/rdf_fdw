@@ -861,6 +861,81 @@ FROM (VALUES ('"-10"^^xsd:integer'::rdfnode),
 >* Returns SQL NULL when all input values are NULL (no value to select)
 >* Returns SQL NULL for empty result sets (no rows match WHERE clause)
 
+### [GROUP_CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#group_concat)
+
+```sql
+sparql.group_concat(value rdfnode, separator text) → rdfnode
+```
+
+Concatenates string representations of RDF terms into a single `xsd:string` literal according to SPARQL 1.1 specification ([section 18.5.1.7](https://www.w3.org/TR/sparql11-query/#aggregates)). The function extracts lexical values from all RDF term types (literals, IRIs, typed values) and joins them using the specified separator. Unlike PostgreSQL's `string_agg`, the separator parameter is required.
+
+RDF term serialization rules:
+* **Typed literals**: Extract lexical value only (strip `^^datatype`)
+* **Language-tagged literals**: Extract lexical value only (strip `@lang`)
+* **IRIs**: Extract URI string (strip angle brackets `< >`)
+* **Plain literals**: Use as-is
+
+Examples:
+
+```sql
+-- Concatenate strings with default space separator
+SELECT sparql.group_concat(val, ' ')
+FROM (VALUES ('"apple"^^xsd:string'::rdfnode),
+             ('"banana"^^xsd:string'::rdfnode),
+             ('"cherry"^^xsd:string'::rdfnode)) AS t(val);
+                           group_concat                           
+------------------------------------------------------------------
+ "apple banana cherry"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+-- Concatenate with custom separator
+SELECT sparql.group_concat(val, ', ')
+FROM (VALUES ('"apple"^^xsd:string'::rdfnode),
+             ('"banana"^^xsd:string'::rdfnode),
+             ('"cherry"^^xsd:string'::rdfnode)) AS t(val);
+                            group_concat                            
+--------------------------------------------------------------------
+ "apple, banana, cherry"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+-- Mixed RDF types (integers, strings, floats)
+SELECT sparql.group_concat(val, ' | ')
+FROM (VALUES ('"42"^^xsd:integer'::rdfnode),
+             ('"hello"^^xsd:string'::rdfnode),
+             ('"3.14"^^xsd:float'::rdfnode)) AS t(val);
+                          group_concat                          
+----------------------------------------------------------------
+ "42 | hello | 3.14"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+-- IRIs extract URI without angle brackets
+SELECT sparql.group_concat(val, '; ')
+FROM (VALUES ('<http://example.org/resource1>'::rdfnode),
+             ('<http://example.org/resource2>'::rdfnode)) AS t(val);
+                                              group_concat                                               
+---------------------------------------------------------------------------------------------------------
+ "http://example.org/resource1; http://example.org/resource2"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+-- Language-tagged strings extract lexical value
+SELECT sparql.group_concat(val, ', ')
+FROM (VALUES ('"hello"@en'::rdfnode),
+             ('"bonjour"@fr'::rdfnode),
+             ('"hola"@es'::rdfnode)) AS t(val);
+                           group_concat                            
+-------------------------------------------------------------------
+ "hello, bonjour, hola"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+```
+
+> [!NOTE]  
+> The `GROUP_CONCAT` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.7](https://www.w3.org/TR/sparql11-query/#aggregates)):
+>* NULL values (unbound variables) are skipped during aggregation
+>* Returns empty string `""^^xsd:string` for empty sets or when all values are NULL
+>* Handles all RDF term types: literals (typed/language-tagged), IRIs, plain values
+>* Unlike PostgreSQL's `string_agg`, the separator parameter is required (no default)
+>* SPARQL 1.1 specifies space `" "` as the default separator, but must be explicitly provided in this implementation
+
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 
 ```sql

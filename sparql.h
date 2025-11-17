@@ -17,6 +17,7 @@
 
 #include "postgres.h"
 #include "utils/numeric.h"
+#include "lib/stringinfo.h"
 
 /*
  * XSD numeric type promotion hierarchy for SPARQL aggregates.
@@ -39,14 +40,17 @@ typedef enum
  *   - AVG: uses numeric_value, count, maxType, has_input
  *   - MIN/MAX: uses rdfnode_value (raw text with datatype)
  *   - COUNT: uses count only
+ *   - GROUP_CONCAT: uses result_str, separator, has_input
  */
 typedef struct
 {
     Numeric numeric_value;  /* accumulated numeric value (SUM), sum for average (AVG) */
     text *rdfnode_value;    /* current min/max as full rdfnode text (MIN/MAX) */
+    StringInfo result_str;  /* accumulated concatenated string (GROUP_CONCAT) */
+    text *separator;        /* separator between values (GROUP_CONCAT) */
     int64 count;            /* count of non-NULL values (AVG, COUNT) */
     XsdNumericType maxType; /* highest numeric type seen (for type promotion in SUM/AVG) */
-    bool has_input;         /* true if any input values were processed (even non-numeric) */
+    bool has_input;         /* true if any input values were processed (SUM/AVG/GROUP_CONCAT) */
 } RdfnodeAggState;
 
 /* 17.4.2 Functions on RDF Terms */
@@ -91,5 +95,7 @@ extern Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 extern Datum max_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS);
+extern Datum group_concat_sfunc(PG_FUNCTION_ARGS);
+extern Datum group_concat_finalfunc(PG_FUNCTION_ARGS);
 
 #endif /* SPARQL_H */

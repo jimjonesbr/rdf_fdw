@@ -479,6 +479,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_min_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_min_finalfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_max_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_max_finalfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_group_concat_sfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_group_concat_finalfunc);
 
 /* rdfnode (custom data type) */
 PG_FUNCTION_INFO_V1(rdfnode_in);
@@ -8731,7 +8733,7 @@ static void LoadPrefixes(RDFfdwState *state)
  * rdf_fdw_sum_sfunc
  * -----------------
  * Wrapper for SPARQL SUM aggregate transition function.
- * Handles PostgreSQL aggregate context validation and NULL handling.
+ * Handles PostgreSQL aggregate context validation before delegating.
  */
 Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8795,7 +8797,7 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_avg_sfunc
  * -----------------
  * Wrapper for SPARQL AVG aggregate transition function.
- * Handles PostgreSQL aggregate context validation and NULL handling.
+ * Handles PostgreSQL aggregate context validation before delegating.
  */
 Datum rdf_fdw_avg_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8856,7 +8858,7 @@ Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_min_sfunc
  * -----------------
  * Wrapper for SPARQL MIN aggregate transition function.
- * Handles PostgreSQL aggregate context validation and NULL handling.
+ * Handles PostgreSQL aggregate context validation before delegating.
  */
 Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8878,12 +8880,10 @@ Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_min_finalfunc
  * ---------------------
  * Wrapper for SPARQL MIN aggregate final function.
- * Returns NULL when all input values are NULL (no values to select from).
- * Returns "0"^^xsd:integer for truly empty result sets per SPARQL 1.1 spec (18.5.1.5).
+ * Returns NULL when all input values are NULL or for empty result sets.
  *
- * Note: NULL state means aggregate processed at least one row but all were NULL.
- * Empty result set (no rows) is handled by PostgreSQL's aggregate mechanism and
- * will also result in NULL state, but in that case we still return 0 per SPARQL spec.
+ * Per SPARQL 1.1 Section 18.5.1.5, MIN returns unbound (SQL NULL)
+ * when there are no values to select from.
  */
 Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
 {
@@ -8901,7 +8901,7 @@ Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_max_sfunc
  * -----------------
  * Wrapper for SPARQL MAX aggregate transition function.
- * Handles PostgreSQL aggregate context validation and NULL handling.
+ * Handles PostgreSQL aggregate context validation before delegating.
  */
 Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8923,11 +8923,10 @@ Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_max_finalfunc
  * ---------------------
  * Wrapper for SPARQL MAX aggregate final function.
- * Returns NULL when all input values are NULL (no values to select from).
+ * Returns NULL when all input values are NULL or for empty result sets.
  *
- * Note: NULL state means aggregate processed at least one row but all were NULL.
- * Empty result set (no rows) is handled by PostgreSQL's aggregate mechanism and
- * will also result in NULL state, but in that case we still return NULL.
+ * Per SPARQL 1.1 Section 18.5.1.6, MAX returns unbound (SQL NULL)
+ * when there are no values to select from.
  */
 Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 {
@@ -8939,4 +8938,48 @@ Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 
 	/* Delegate to the actual implementation in max_rdfnode_finalfunc() */
 	return max_rdfnode_finalfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_group_concat_sfunc
+ * ---------------------------
+ * Wrapper for SPARQL GROUP_CONCAT aggregate state transition function.
+ * Handles PostgreSQL aggregate context validation before delegating.
+ */
+Datum rdf_fdw_group_concat_sfunc(PG_FUNCTION_ARGS)
+{
+	MemoryContext aggcontext;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Verify we're being called as an aggregate */
+	if (!AggCheckCallContext(fcinfo, &aggcontext))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("group_concat_rdfnode_sfunc called in non-aggregate context")));
+
+	/* Delegate to the actual implementation in group_concat_sfunc() */
+	return group_concat_sfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_group_concat_finalfunc
+ * -------------------------------
+ * Wrapper for SPARQL GROUP_CONCAT aggregate final function.
+ * Returns empty string when called with NULL state (empty result set).
+ *
+ * Per SPARQL 1.1 Section 18.5.1.7, GROUP_CONCAT of an empty set should
+ * produce an empty string, not NULL. This differs from PostgreSQL's
+ * string_agg which returns NULL for empty sets.
+ */
+Datum rdf_fdw_group_concat_finalfunc(PG_FUNCTION_ARGS)
+{
+	elog(DEBUG1, "%s called", __func__);
+
+	/* NULL state means empty result set - return empty string per SPARQL spec */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_TEXT_P(cstring_to_text(""));
+
+	/* Delegate to the actual implementation in group_concat_finalfunc() */
+	return group_concat_finalfunc(fcinfo);
 }

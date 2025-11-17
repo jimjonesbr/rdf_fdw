@@ -891,3 +891,142 @@ WITH j (val) AS (
         ('"not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
 SELECT sparql.avg(val) FROM j;
+
+-- ==========================================
+-- SPARQL GROUP_CONCAT() Aggregate Tests
+-- ==========================================
+
+-- Test 103: GROUP_CONCAT with default separator (space)
+WITH j (val) AS (
+    VALUES
+        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"banana"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"cherry"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ' ') FROM j;
+
+-- Test 104: GROUP_CONCAT with custom separator (comma)
+WITH j (val) AS (
+    VALUES
+        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"banana"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"cherry"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+
+-- Test 105: GROUP_CONCAT with integers → should convert to strings
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.group_concat(val, '-') FROM j;
+
+-- Test 106: GROUP_CONCAT with mixed types → should handle all RDF terms
+WITH j (val) AS (
+    VALUES
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"hello"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"3.14"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ' | ') FROM j;
+
+-- Test 107: GROUP_CONCAT with IRIs → should extract URI
+WITH j (val) AS (
+    VALUES
+        ('<http://example.org/resource1>'::rdfnode),
+        ('<http://example.org/resource2>'::rdfnode),
+        ('<http://example.org/resource3>'::rdfnode)
+)
+SELECT sparql.group_concat(val, '; ') FROM j;
+
+-- Test 108: GROUP_CONCAT with language-tagged strings → should extract lexical value
+WITH j (val) AS (
+    VALUES
+        ('"hello"@en'::rdfnode),
+        ('"bonjour"@fr'::rdfnode),
+        ('"hola"@es'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+
+-- Test 109: GROUP_CONCAT with NULL value → should skip NULL
+WITH j (val) AS (
+    VALUES
+        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        (NULL::rdfnode),
+        ('"cherry"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+
+-- Test 110: GROUP_CONCAT with all NULL → should return empty string
+WITH j (val) AS (
+    VALUES
+        (NULL::rdfnode),
+        (NULL::rdfnode),
+        (NULL::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+
+-- Test 111: GROUP_CONCAT with empty set → should return empty string
+SELECT sparql.group_concat(val, ', ') 
+FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
+
+-- Test 112: GROUP_CONCAT with single value
+WITH j (val) AS (
+    VALUES
+        ('"only-one"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+
+-- Test 113: GROUP_CONCAT with dates → should convert to string
+WITH j (val) AS (
+    VALUES
+        ('"2024-01-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
+        ('"2024-02-20"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
+        ('"2024-03-25"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ' to ') FROM j;
+
+-- Test 114: GROUP_CONCAT with booleans → should convert to string
+WITH j (val) AS (
+    VALUES
+        ('"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode),
+        ('"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+
+-- Test 115: GROUP_CONCAT with empty string separator
+WITH j (val) AS (
+    VALUES
+        ('"a"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"b"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"c"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, '') FROM j;
+
+-- Test 116: GROUP_CONCAT with newline separator
+WITH j (val) AS (
+    VALUES
+        ('"line1"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"line2"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"line3"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, E'\n') FROM j;
+
+-- Test 117: GROUP_CONCAT with very long separator
+WITH j (val) AS (
+    VALUES
+        ('"first"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"second"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ' --- SEPARATOR --- ') FROM j;
+
+-- Test 118: GROUP_CONCAT with decimals → should preserve precision
+WITH j (val) AS (
+    VALUES
+        ('"10.50"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20.30"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"30.20"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;

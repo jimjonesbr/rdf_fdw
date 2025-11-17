@@ -94,3 +94,21 @@ CREATE AGGREGATE sparql.max(rdfnode) (
 );
 
 COMMENT ON AGGREGATE sparql.max(rdfnode) IS 'Returns the maximum numeric rdfnode value';
+
+-- GROUP_CONCAT aggregate for rdfnode
+CREATE FUNCTION sparql.group_concat_rdfnode_sfunc(internal, rdfnode, text)
+RETURNS internal AS 'MODULE_PATHNAME', 'rdf_fdw_group_concat_sfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE FUNCTION sparql.group_concat_rdfnode_finalfunc(internal)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdf_fdw_group_concat_finalfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE sparql.group_concat(rdfnode, text) (
+    SFUNC = sparql.group_concat_rdfnode_sfunc,
+    STYPE = internal,
+    FINALFUNC = sparql.group_concat_rdfnode_finalfunc
+);
+
+COMMENT ON AGGREGATE sparql.group_concat(rdfnode, text) IS 
+'SPARQL 1.1 GROUP_CONCAT aggregate: concatenates string representations of RDF terms with specified separator';

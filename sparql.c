@@ -2289,3 +2289,134 @@ Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     /* Return the stored maximum rdfnode */
     PG_RETURN_TEXT_P(state->rdfnode_value);
 }
+
+/*
+ * group_concat_sfunc
+ * ------------------
+ * Transition function for GROUP_CONCAT(rdfnode [, separator]).
+ *
+ * Accumulates string representations of RDF terms, separated by a
+ * delimiter. Per SPARQL 1.1 Section 18.5.1.7, the default separator
+ * is a single space character.
+ *
+ * RDF term serialization follows SPARQL rules:
+ * - Typed literals: extract lexical value only (strip ^^datatype)
+ * - Language-tagged: extract lexical value only (strip @lang)
+ * - IRIs: use URI string (strip angle brackets)
+ * - Plain literals: use as-is
+ *
+ * NULL/unbound values are skipped during aggregation.
+ */
+Datum group_concat_sfunc(PG_FUNCTION_ARGS)
+{
+    MemoryContext aggcontext;
+    MemoryContext oldcontext;
+    RdfnodeAggState *state;
+    text *input_node;
+    rdfnode_info parsed;
+    char *str_value;
+
+    if (!AggCheckCallContext(fcinfo, &aggcontext))
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("aggregate function called in non-aggregate context")));
+
+    /* Get the current state */
+    state = PG_ARGISNULL(0) ? NULL : (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    /* Skip NULL input values */
+    if (PG_ARGISNULL(1))
+    {
+        if (state == NULL)
+            PG_RETURN_NULL();
+        PG_RETURN_POINTER(state);
+    }
+
+    /* Get the input rdfnode */
+    input_node = PG_GETARG_TEXT_PP(1);
+    parsed = parse_rdfnode((rdfnode *)input_node);
+
+    /* Extract lexical value based on RDF term type */
+    if (parsed.isIRI)
+    {
+        /* For IRIs, remove angle brackets: <http://example.org> → http://example.org */
+        size_t len = strlen(parsed.raw);
+        if (len > 2 && parsed.raw[0] == '<' && parsed.raw[len - 1] == '>')
+        {
+            str_value = palloc(len - 1);
+            memcpy(str_value, parsed.raw + 1, len - 2);
+            str_value[len - 2] = '\0';
+        }
+        else
+        {
+            str_value = pstrdup(parsed.raw);
+        }
+    }
+    else
+    {
+        /* For literals, use the lexical value (already extracted by parse_rdfnode) */
+        str_value = parsed.lex;
+    }
+
+    /* Initialize state on first value */
+    if (state == NULL)
+    {
+        oldcontext = MemoryContextSwitchTo(aggcontext);
+        state = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
+        state->result_str = makeStringInfo();
+
+        /* Get separator (arg 2), default to space if not provided */
+        if (PG_NARGS() > 2 && !PG_ARGISNULL(2))
+        {
+            /* Copy the separator into aggregate memory context */
+            state->separator = PG_GETARG_TEXT_P_COPY(2);
+        }
+        else
+            state->separator = cstring_to_text(" "); /* SPARQL 1.1 default */
+
+        state->has_input = false;
+        MemoryContextSwitchTo(oldcontext);
+    }
+
+    /* Add separator if not the first value */
+    oldcontext = MemoryContextSwitchTo(aggcontext);
+    if (state->has_input)
+    {
+        appendStringInfoString(state->result_str, text_to_cstring(state->separator));
+    }
+
+    /* Append the string value */
+    appendStringInfoString(state->result_str, str_value);
+    state->has_input = true;
+    MemoryContextSwitchTo(oldcontext);
+
+    PG_RETURN_POINTER(state);
+}
+
+/*
+ * group_concat_finalfunc
+ * ----------------------
+ * Final function for GROUP_CONCAT(rdfnode [, separator]).
+ *
+ * Returns the concatenated string as a simple literal (plain literal
+ * without datatype or language tag), matching SPARQL 1.1 semantics.
+ * Returns empty string for empty result sets (per SPARQL 1.1).
+ *
+ * Note: NULL state handling is done by the wrapper in rdf_fdw.c
+ */
+Datum group_concat_finalfunc(PG_FUNCTION_ARGS)
+{
+    RdfnodeAggState *state;
+    char *literal;
+    text *result;
+
+    /* Get the state (already validated as non-NULL by wrapper) */
+    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    /* Convert to simple literal (plain literal without datatype) */
+    literal = cstring_to_rdfliteral(state->result_str->data);
+
+    /* Return as rdfnode (text type) */
+    result = cstring_to_text(literal);
+    PG_RETURN_TEXT_P(result);
+}
