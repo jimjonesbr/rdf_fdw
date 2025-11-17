@@ -95,6 +95,8 @@ extern Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 extern Datum max_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS);
+extern Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS);
+extern Datum sample_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 extern Datum group_concat_sfunc(PG_FUNCTION_ARGS);
 extern Datum group_concat_finalfunc(PG_FUNCTION_ARGS);
 

@@ -1482,3 +1482,133 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  "10.50, 20.30, 30.20"
 (1 row)
 
+-- ==========================================
+-- SPARQL SAMPLE() Aggregate Tests
+-- ==========================================
+-- Test 119: SAMPLE with single integer value → should return that value
+WITH j (val) AS (
+    VALUES
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+                      sample                      
+--------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 120: SAMPLE with multiple integers → should return first non-NULL value
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+                      sample                      
+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 121: SAMPLE with NULLs at start → should skip NULLs and return first non-NULL
+WITH j (val) AS (
+    VALUES
+        (NULL::rdfnode),
+        (NULL::rdfnode),
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"99"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+                      sample                      
+--------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 122: SAMPLE with all NULLs → should return NULL
+WITH j (val) AS (
+    VALUES
+        (NULL::rdfnode),
+        (NULL::rdfnode),
+        (NULL::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+ sample 
+--------
+ 
+(1 row)
+
+-- Test 123: SAMPLE with empty set → should return NULL
+WITH j (val) AS (
+    SELECT NULL::rdfnode WHERE false
+)
+SELECT sparql.sample(val) FROM j;
+ sample 
+--------
+ 
+(1 row)
+
+-- Test 124: SAMPLE with mixed numeric types → should return first value (with its original type)
+WITH j (val) AS (
+    VALUES
+        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"30.7"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+                       sample                       
+----------------------------------------------------
+ "10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 125: SAMPLE with strings → should return first string
+WITH j (val) AS (
+    VALUES
+        ('"apple"'::rdfnode),
+        ('"banana"'::rdfnode),
+        ('"cherry"'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+ sample  
+---------
+ "apple"
+(1 row)
+
+-- Test 126: SAMPLE with IRIs → should return first IRI
+WITH j (val) AS (
+    VALUES
+        ('<http://example.org/resource1>'::rdfnode),
+        ('<http://example.org/resource2>'::rdfnode),
+        ('<http://example.org/resource3>'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+             sample             
+--------------------------------
+ <http://example.org/resource1>
+(1 row)
+
+-- Test 127: SAMPLE with language-tagged literals → should return first with language tag preserved
+WITH j (val) AS (
+    VALUES
+        ('"hello"@en'::rdfnode),
+        ('"bonjour"@fr'::rdfnode),
+        ('"hola"@es'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+   sample   
+------------
+ "hello"@en
+(1 row)
+
+-- Test 128: SAMPLE with mixed types (IRI, literal, numeric) → should return first value
+WITH j (val) AS (
+    VALUES
+        ('<http://example.org/resource1>'::rdfnode),
+        ('"some text"'::rdfnode),
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"hello"@en'::rdfnode)
+)
+SELECT sparql.sample(val) FROM j;
+             sample             
+--------------------------------
+ <http://example.org/resource1>
+(1 row)
+

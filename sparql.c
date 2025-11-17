@@ -2291,6 +2291,80 @@ Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 }
 
 /*
+ * sample_rdfnode_sfunc
+ * --------------------
+ * Aggregate transition function for SAMPLE(rdfnode).
+ * Returns an arbitrary value from the aggregate group.
+ *
+ * Per SPARQL 1.1 Section 18.5.1.8, SAMPLE returns an "arbitrary value"
+ * from the multiset passed to it. The spec explicitly states the result
+ * is non-deterministic.
+ *
+ * This implementation follows the common industry practice of returning
+ * the first non-NULL value encountered. While deterministic, this is
+ * acceptable as the spec allows implementation-defined behavior for 
+ * "arbitrary".
+ */
+Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS)
+{
+    RdfnodeAggState *state;
+    MemoryContext aggcontext;
+    MemoryContext oldcontext;
+    text *input_node;
+
+    /* Get the aggregate memory context */
+    AggCheckCallContext(fcinfo, &aggcontext);
+
+    /* Get current state (NULL on first call) */
+    if (PG_ARGISNULL(0))
+        state = NULL;
+    else
+        state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    /* Skip NULL input values */
+    if (PG_ARGISNULL(1))
+    {
+        if (state == NULL)
+            PG_RETURN_NULL();
+        PG_RETURN_POINTER(state);
+    }
+
+    /* If we already have a value, keep it (first value wins) */
+    if (state != NULL)
+        PG_RETURN_POINTER(state);
+
+    /* Get the input rdfnode */
+    input_node = PG_GETARG_TEXT_PP(1);
+
+    /* First non-NULL value: allocate state and store it */
+    oldcontext = MemoryContextSwitchTo(aggcontext);
+    state = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
+    state->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
+    MemoryContextSwitchTo(oldcontext);
+
+    PG_RETURN_POINTER(state);
+}
+
+/*
+ * sample_rdfnode_finalfunc
+ * ------------------------
+ * Final function for SAMPLE(rdfnode).
+ * Returns the arbitrary value stored (first non-NULL value encountered).
+ *
+ * Note: NULL state handling is done by the wrapper in rdf_fdw.c
+ */
+Datum sample_rdfnode_finalfunc(PG_FUNCTION_ARGS)
+{
+    RdfnodeAggState *state;
+
+    /* Get the state (already validated as non-NULL by wrapper) */
+    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    /* Return the stored sample value */
+    PG_RETURN_TEXT_P(state->rdfnode_value);
+}
+
+/*
  * group_concat_sfunc
  * ------------------
  * Transition function for GROUP_CONCAT(rdfnode [, separator]).

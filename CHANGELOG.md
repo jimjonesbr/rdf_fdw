@@ -24,6 +24,10 @@ Release date: **yyyy-mm-dd**
 
   A new `sparql.group_concat(rdfnode, text)` aggregate function has been added that concatenates string representations of RDF terms into a single xsd:string literal according to SPARQL 1.1 specification (section 18.5.1.7). The function extracts lexical values from all RDF term types (literals, IRIs, typed values) and joins them using a specified separator. RDF term serialization follows SPARQL rules: typed literals extract lexical value only (strip ^^datatype), language-tagged literals extract lexical value only (strip @lang), IRIs extract URI string (strip angle brackets), and plain literals are used as-is. Returns empty string for empty sets or when all values are NULL, per SPARQL 1.1 semantics.
 
+* SPARQL SAMPLE aggregate function:
+
+  A new `sparql.sample(rdfnode)` aggregate function has been added that returns an arbitrary value from the aggregate group according to SPARQL 1.1 specification (section 18.5.1.8). The function implements the common industry practice of returning the first non-NULL value encountered, which is deterministic but acceptable per the spec's allowance for implementation-defined "arbitrary" behavior. This approach is used by major triple stores including Virtuoso, Blazegraph, and Jena ARQ. The function preserves the original type and all metadata (datatype, language tag) of the selected value, and returns NULL for empty sets or when all values are NULL.
+
 * Enhanced version information:
 
   The `rdf_fdw_version()` function now returns a comprehensive version string that includes PostgreSQL version, compiler information, and all dependency versions (libxml, librdf, libcurl) in a single formatted output. A new `rdf_fdw_settings()` function provides extended dependency information including optional components like SSL, zlib, libSSH, and nghttp2. The `rdf_fdw_settings` view parses this extended information into a table format for convenient programmatic access to individual component versions.

@@ -936,6 +936,56 @@ FROM (VALUES ('"hello"@en'::rdfnode),
 >* Unlike PostgreSQL's `string_agg`, the separator parameter is required (no default)
 >* SPARQL 1.1 specifies space `" "` as the default separator, but must be explicitly provided in this implementation
 
+### [SAMPLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sample)
+
+```sql
+sparql.sample(value rdfnode) → rdfnode
+```
+
+Returns an arbitrary value from the aggregate group. This implements the SPARQL 1.1 `SAMPLE` aggregate function ([section 18.5.1.8](https://www.w3.org/TR/sparql11-query/#aggregates)), which is useful for selecting a representative value when you don't care which specific value is chosen.
+
+Examples:
+
+```sql
+-- Sample from multiple integers (returns first non-NULL value)
+SELECT sparql.sample(val)
+FROM (VALUES ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+             ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+             ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)) AS t(val);
+                      sample                      
+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Sample with mixed types (preserves original type)
+SELECT sparql.sample(val)
+FROM (VALUES ('<http://example.org/resource1>'::rdfnode),
+             ('"some text"'::rdfnode),
+             ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)) AS t(val);
+             sample             
+--------------------------------
+ <http://example.org/resource1>
+(1 row)
+
+-- Sample with language-tagged strings (preserves language tag)
+SELECT sparql.sample(val)
+FROM (VALUES ('"hello"@en'::rdfnode),
+             ('"bonjour"@fr'::rdfnode),
+             ('"hola"@es'::rdfnode)) AS t(val);
+   sample   
+------------
+ "hello"@en
+(1 row)
+```
+
+> [!NOTE]  
+> The `SAMPLE` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.8](https://www.w3.org/TR/sparql11-query/#aggregates)):
+>* Returns an "arbitrary value" from the input multiset - implementation-defined behavior
+>* This implementation returns the **first non-NULL value** encountered (deterministic)
+>* NULL values (unbound variables) are skipped during aggregation
+>* Returns NULL for empty sets or when all values are NULL
+>* Preserves the original type and all metadata (datatype, language tag) of the selected value
+
 ### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 
 ```sql

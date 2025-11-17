@@ -479,6 +479,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_min_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_min_finalfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_max_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_max_finalfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_sample_sfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_sample_finalfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_group_concat_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_group_concat_finalfunc);
 
@@ -8938,6 +8940,49 @@ Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 
 	/* Delegate to the actual implementation in max_rdfnode_finalfunc() */
 	return max_rdfnode_finalfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_sample_sfunc
+ * --------------------
+ * Wrapper for SPARQL SAMPLE aggregate transition function.
+ * Handles PostgreSQL aggregate context validation before delegating.
+ */
+Datum rdf_fdw_sample_sfunc(PG_FUNCTION_ARGS)
+{
+	MemoryContext aggcontext;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Verify we're being called as an aggregate */
+	if (!AggCheckCallContext(fcinfo, &aggcontext))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("sample_rdfnode_sfunc called in non-aggregate context")));
+
+	/* Delegate to the actual implementation in sample_rdfnode_sfunc() */
+	return sample_rdfnode_sfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_sample_finalfunc
+ * ------------------------
+ * Wrapper for SPARQL SAMPLE aggregate final function.
+ * Returns NULL when all input values are NULL or for empty result sets.
+ *
+ * Per SPARQL 1.1 Section 18.5.1.8, SAMPLE returns unbound (SQL NULL)
+ * when there are no non-NULL values in the input.
+ */
+Datum rdf_fdw_sample_finalfunc(PG_FUNCTION_ARGS)
+{
+	elog(DEBUG1, "%s called", __func__);
+
+	/* NULL state means only NULL values were found - return SQL NULL */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_NULL();
+
+	/* Delegate to the actual implementation in sample_rdfnode_finalfunc() */
+	return sample_rdfnode_finalfunc(fcinfo);
 }
 
 /*
