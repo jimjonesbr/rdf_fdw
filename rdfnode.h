@@ -43,6 +43,7 @@ extern bool rdfnode_gt(rdfnode *n1, rdfnode *n2);
 extern bool rdfnode_lt(rdfnode *n1, rdfnode *n2);
 
 extern bool LiteralsComparable(rdfnode *n1, rdfnode *n2);
+extern int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2);
 extern rdfnode_info parse_rdfnode(rdfnode *node);
 
 #endif /* RDFNODE_H */

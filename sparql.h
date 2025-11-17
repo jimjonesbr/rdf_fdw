@@ -31,15 +31,23 @@ typedef enum
 } XsdNumericType;
 
 /*
- * State for numeric aggregate functions.
- * Used by SUM, AVG, MIN, MAX, and COUNT aggregates.
+ * RdfnodeAggState
+ * ---------------
+ * Unified state structure for all rdfnode aggregate functions.
+ * Different aggregates use different fields:
+ *   - SUM: uses numeric_value, maxType, has_input
+ *   - AVG: uses numeric_value, count, maxType, has_input
+ *   - MIN/MAX: uses rdfnode_value (raw text with datatype)
+ *   - COUNT: uses count only
  */
 typedef struct
 {
-    Numeric value;          /* accumulated value (SUM), current min/max (MIN/MAX), or sum for average (AVG) */
-    int64 count;            /* count of non-NULL values (AVG, COUNT) - unused for SUM, MIN, MAX */
-    XsdNumericType maxType; /* highest type seen so far (for type promotion) */
-} NumericAggState;
+    Numeric numeric_value;  /* accumulated numeric value (SUM), sum for average (AVG) */
+    text *rdfnode_value;    /* current min/max as full rdfnode text (MIN/MAX) */
+    int64 count;            /* count of non-NULL values (AVG, COUNT) */
+    XsdNumericType maxType; /* highest numeric type seen (for type promotion in SUM/AVG) */
+    bool has_input;         /* true if any input values were processed (even non-numeric) */
+} RdfnodeAggState;
 
 /* 17.4.2 Functions on RDF Terms */
 extern bool isIRI(char *input);
@@ -81,5 +89,7 @@ extern Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 extern Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS);
 extern Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS);
+extern Datum max_rdfnode_sfunc(PG_FUNCTION_ARGS);
+extern Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS);
 
 #endif /* SPARQL_H */

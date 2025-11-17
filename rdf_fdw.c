@@ -477,6 +477,8 @@ PG_FUNCTION_INFO_V1(rdf_fdw_avg_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_avg_finalfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_min_sfunc);
 PG_FUNCTION_INFO_V1(rdf_fdw_min_finalfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_max_sfunc);
+PG_FUNCTION_INFO_V1(rdf_fdw_max_finalfunc);
 
 /* rdfnode (custom data type) */
 PG_FUNCTION_INFO_V1(rdfnode_in);
@@ -8751,23 +8753,42 @@ Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_sum_finalfunc
  * ---------------------
  * Wrapper for SPARQL SUM aggregate final function.
- * Per SPARQL 1.1 spec (18.5.1.3): returns "0"^^xsd:integer for empty sets.
+ *
+ * Per SPARQL 1.1 Section 18.5.1.3: Sum({}) = 0
+ * However, when ALL input values produce type errors (non-numeric),
+ * the aggregate returns NULL (unbound result).
+ * The distinction is:
+ * - Empty input set (no rows) or all NULL: returns "0"^^xsd:integer
+ * - All values are non-numeric (type errors): returns NULL
  */
 Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 {
+	RdfnodeAggState *state;
 	char *result;
 
-	elog(DEBUG1, "%s called", __func__);
-
-	/* SPARQL 1.1: SUM of empty set returns 0, not NULL */
-	if (PG_ARGISNULL(0))
+	/* Check if we have state */
+	if (!PG_ARGISNULL(0))
 	{
-		result = strdt("0", RDF_XSD_INTEGER);
-		PG_RETURN_TEXT_P(cstring_to_text(result));
+		state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+		if (state != NULL && state->has_input)
+		{
+			/* We saw input values */
+			if (state->numeric_value == NULL)
+			{
+				/* All input was non-numeric (type errors) - return NULL */
+				PG_RETURN_NULL();
+			}
+
+			/* Have numeric result - delegate to actual implementation */
+			return sum_rdfnode_finalfunc(fcinfo);
+		}
 	}
 
-	/* Delegate to the actual implementation in sparql.c */
-	return sum_rdfnode_finalfunc(fcinfo);
+	/* No input at all (empty set) or all NULL values
+	 * Per SPARQL 1.1 Section 18.5.1.3: SUM({}) = 0 */
+	result = strdt("0", RDF_XSD_INTEGER);
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -8796,23 +8817,39 @@ Datum rdf_fdw_avg_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_avg_finalfunc
  * ---------------------
  * Wrapper for SPARQL AVG aggregate final function.
- * Per SPARQL 1.1 spec (18.5.1.4): returns "0"^^xsd:integer for empty sets.
+ *
+ * Per SPARQL 1.1 Section 18.5.1.4: Avg is defined in terms of Sum and Count.
+ * Avg({}) = 0/0 = 0. However, when ALL input values produce type errors,
+ * the aggregate returns NULL (unbound result). Same logic as SUM.
  */
 Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
 {
+	RdfnodeAggState *state;
 	char *result;
 
-	elog(DEBUG1, "%s called", __func__);
-
-	/* SPARQL 1.1: AVG of empty set returns 0, not NULL */
-	if (PG_ARGISNULL(0))
+	/* Check if we have state */
+	if (!PG_ARGISNULL(0))
 	{
-		result = strdt("0", RDF_XSD_INTEGER);
-		PG_RETURN_TEXT_P(cstring_to_text(result));
+		state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+		if (state != NULL && state->has_input)
+		{
+			/* We saw input values */
+			if (state->numeric_value == NULL)
+			{
+				/* All input was non-numeric (type errors) - return NULL */
+				PG_RETURN_NULL();
+			}
+
+			/* Have numeric result - delegate to actual implementation */
+			return avg_rdfnode_finalfunc(fcinfo);
+		}
 	}
 
-	/* Delegate to the actual implementation in avg_rdfnode_finalfunc() */
-	return avg_rdfnode_finalfunc(fcinfo);
+	/* No input at all (empty set) or all NULL values
+	 * Per SPARQL 1.1 Section 18.5.1.4: AVG({}) = 0/0 = 0 */
+	result = strdt("0", RDF_XSD_INTEGER);
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 /*
@@ -8858,4 +8895,48 @@ Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
 
 	/* Delegate to the actual implementation in min_rdfnode_finalfunc() */
 	return min_rdfnode_finalfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_max_sfunc
+ * -----------------
+ * Wrapper for SPARQL MAX aggregate transition function.
+ * Handles PostgreSQL aggregate context validation and NULL handling.
+ */
+Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
+{
+	MemoryContext aggcontext;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Verify we're being called as an aggregate */
+	if (!AggCheckCallContext(fcinfo, &aggcontext))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("max_rdfnode_sfunc called in non-aggregate context")));
+
+	/* Delegate to the actual implementation in max_rdfnode_sfunc() */
+	return max_rdfnode_sfunc(fcinfo);
+}
+
+/*
+ * rdf_fdw_max_finalfunc
+ * ---------------------
+ * Wrapper for SPARQL MAX aggregate final function.
+ * Returns NULL when all input values are NULL (no values to select from).
+ *
+ * Note: NULL state means aggregate processed at least one row but all were NULL.
+ * Empty result set (no rows) is handled by PostgreSQL's aggregate mechanism and
+ * will also result in NULL state, but in that case we still return NULL.
+ */
+Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
+{
+	elog(DEBUG1, "%s called", __func__);
+
+	/* NULL state means only NULL values were found - return SQL NULL */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_NULL();
+
+	/* Delegate to the actual implementation in max_rdfnode_finalfunc() */
+	return max_rdfnode_finalfunc(fcinfo);
 }

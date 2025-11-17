@@ -3321,6 +3321,21 @@ CREATE AGGREGATE sparql.min(rdfnode) (
     FINALFUNC = sparql.min_rdfnode_finalfunc
 );
 
+-- MAX aggregate for rdfnode
+CREATE FUNCTION sparql.max_rdfnode_sfunc(internal, rdfnode)
+RETURNS internal AS 'MODULE_PATHNAME', 'rdf_fdw_max_sfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE FUNCTION sparql.max_rdfnode_finalfunc(internal)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdf_fdw_max_finalfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE sparql.max(rdfnode) (
+    SFUNC = sparql.max_rdfnode_sfunc,
+    STYPE = internal,
+    FINALFUNC = sparql.max_rdfnode_finalfunc
+);
+
 COMMENT ON AGGREGATE sparql.min(rdfnode) IS 'Returns the minimum numeric rdfnode value';
 
 -- Prefix Management

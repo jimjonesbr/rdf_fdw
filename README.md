@@ -726,9 +726,11 @@ FROM (VALUES ('"10.5"^^xsd:decimal'::rdfnode),
 ```
 
 > [!NOTE]  
-> The `SUM` aggregate follows SPARQL 1.1 semantics:
->* NULL values are skipped during aggregation
->* Returns `"0"^^xsd:integer` if no non-NULL values are aggregated (differs from SQL standard)
+> The `SUM` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.3](https://www.w3.org/TR/sparql11-query/#aggregates)):
+>* NULL values (unbound variables) are skipped during aggregation
+>* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: "The sum of no bindings is 0")
+>* Non-numeric values cause type errors and are excluded from the aggregate (similar to NULL)
+>* Returns SQL NULL if all values are non-numeric (no numeric values to sum)
 >* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
 >* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
 
@@ -775,10 +777,13 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 ```
 
 > [!NOTE]  
-> The `AVG` aggregate follows SPARQL 1.1 semantics:
->* NULL values are skipped during aggregation
->* Returns `"0"^^xsd:integer` if no non-NULL values are aggregated (differs from SQL standard)
+> The `AVG` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)):
+>* NULL values (unbound variables) are skipped during aggregation
+>* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: "Avg({}) = 0/0 = 0")
+>* Non-numeric values cause type errors and are excluded from the aggregate (similar to NULL)
+>* Returns SQL NULL if all values are non-numeric (no numeric values to average)
 >* Division by count is performed using PostgreSQL's numeric division
+>* Type promotion follows the same rules as SUM (integer → decimal → float → double)
 
 ### [MIN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#min)
 
@@ -814,6 +819,44 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 
 > [!NOTE]  
 > The `MIN` aggregate follows SPARQL 1.1 semantics with SQL-compatible NULL handling:
+>* NULL values are skipped during aggregation
+>* Returns SQL NULL when all input values are NULL (no value to select)
+>* Returns SQL NULL for empty result sets (no rows match WHERE clause)
+
+### [MAX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#max)
+
+```sql
+sparql.max(value rdfnode) → rdfnode
+```
+
+Returns the maximum numeric `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.6](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the maximum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison.
+
+Examples:
+
+```sql
+-- Maximum of integers
+SELECT sparql.max(val)
+FROM (VALUES ('"30"^^xsd:integer'::rdfnode),
+             ('"10"^^xsd:integer'::rdfnode),
+             ('"20"^^xsd:integer'::rdfnode)) AS t(val);
+                       max                        
+--------------------------------------------------
+ "30"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Maximum with negative values
+SELECT sparql.max(val)
+FROM (VALUES ('"-10"^^xsd:integer'::rdfnode),
+             ('"-5"^^xsd:integer'::rdfnode),
+             ('"-20"^^xsd:integer'::rdfnode)) AS t(val);
+                       max                        
+--------------------------------------------------
+ "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+```
+
+> [!NOTE]  
+> The `MAX` aggregate follows SPARQL 1.1 semantics with SQL-compatible NULL handling:
 >* NULL values are skipped during aggregation
 >* Returns SQL NULL when all input values are NULL (no value to select)
 >* Returns SQL NULL for empty result sets (no rows match WHERE clause)
