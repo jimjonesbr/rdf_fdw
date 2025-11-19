@@ -4,29 +4,9 @@ Release date: **yyyy-mm-dd**
 
 ### Enhancements
 
-* SPARQL SUM aggregate function:
+* SPARQL aggregate functions:
 
-  A new `sparql.sum(rdfnode)` aggregate function has been added that computes the sum of numeric rdfnode values with proper XSD type promotion according to SPARQL 1.1 specification (section 18.5.1.3). The function follows XPath type promotion rules: integer < decimal < float < double. For example, summing integers returns an integer, but mixing integers and decimals promotes the result to decimal. This provides a modular infrastructure for future SPARQL aggregate functions (AVG, MIN, MAX, etc.).
-
-* SPARQL AVG aggregate function:
-
-  A new `sparql.avg(rdfnode)` aggregate function has been added that computes the average (arithmetic mean) of numeric rdfnode values with the same XSD type promotion rules as SUM. The function divides the sum by the count of non-NULL values to produce the average result.
-
-* SPARQL MIN aggregate function:
-
-  A new `sparql.min(rdfnode)` aggregate function has been added that returns the minimum numeric rdfnode value according to SPARQL 1.1 specification (section 18.5.1.5). The function preserves the XSD datatype of the minimum value found and skips NULL values during aggregation. Returns SQL NULL when all input values are NULL, aligning with standard triple store behavior (Virtuoso, Blazegraph).
-
-* SPARQL MAX aggregate function:
-
-  A new `sparql.max(rdfnode)` aggregate function has been added that returns the maximum numeric rdfnode value according to SPARQL 1.1 specification (section 18.5.1.6). The function preserves the XSD datatype of the maximum value found and skips NULL values during aggregation. Like MIN, returns SQL NULL when all input values are NULL, aligning with standard triple store behavior.
-
-* SPARQL GROUP_CONCAT aggregate function:
-
-  A new `sparql.group_concat(rdfnode, text)` aggregate function has been added that concatenates string representations of RDF terms into a single xsd:string literal according to SPARQL 1.1 specification (section 18.5.1.7). The function extracts lexical values from all RDF term types (literals, IRIs, typed values) and joins them using a specified separator. RDF term serialization follows SPARQL rules: typed literals extract lexical value only (strip ^^datatype), language-tagged literals extract lexical value only (strip @lang), IRIs extract URI string (strip angle brackets), and plain literals are used as-is. Returns empty string for empty sets or when all values are NULL, per SPARQL 1.1 semantics.
-
-* SPARQL SAMPLE aggregate function:
-
-  A new `sparql.sample(rdfnode)` aggregate function has been added that returns an arbitrary value from the aggregate group according to SPARQL 1.1 specification (section 18.5.1.8). The function implements the common industry practice of returning the first non-NULL value encountered, which is deterministic but acceptable per the spec's allowance for implementation-defined "arbitrary" behavior. This approach is used by major triple stores including Virtuoso, Blazegraph, and Jena ARQ. The function preserves the original type and all metadata (datatype, language tag) of the selected value, and returns NULL for empty sets or when all values are NULL.
+  Added support for SPARQL-style aggregate functions `sparql.sum`, `sparql.avg`, `sparql.min`, `sparql.max`, `sparql.group_concat`, and `sparql.sample` in SQL queries. These functions are now fully implemented and can be used for local aggregation in PostgreSQL, improving compatibility with SPARQL semantics and enabling more expressive analytics on RDF data. Aggregate pushdown to the SPARQL endpoint is not yet supported; all aggregation is performed locally by PostgreSQL.
 
 * Enhanced version information:
 
