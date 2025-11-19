@@ -2197,6 +2197,9 @@ For example, if a SQL `LIMIT` clause is not pushed down, the target system will 
 
 In a nutshell, the `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, due to fundamental differences between the two languages, this is not always straightforward. As a rule of thumb, it is often best to keep SQL queries involving foreign tables as simple as possible. The `rdf_fdw` supports pushdown of most [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs) and several PostgreSQL instructions, such as `LIMIT` and `IN`/`NOT IN`.
 
+> [!NOTE]  
+> Aggregate pushdown is not currently supported. While aggregate functions (such as `sparql.sum`, `sparql.avg`, `sparql.min`, `sparql.max`, `sparql.group_concat`, `sparql.sample`, etc.) are implemented and usable in SQL queries, they are always evaluated locally by PostgreSQL. The SPARQL endpoint does not perform aggregation for these queries! If you need remote aggregation, you must embed the aggregate in the foreign table's SPARQL option or run the query directly against the endpoint.
+
 ### [LIMIT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#limit)
 
 `LIMIT` clauses are pushed down only if the SQL query does not contain aggregates and when all conditions in the `WHERE` clause can be translated to SPARQL.
