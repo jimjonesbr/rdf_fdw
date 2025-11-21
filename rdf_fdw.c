@@ -40,6 +40,10 @@
 #include "catalog/pg_user_mapping.h"
 #include "catalog/pg_type.h"
 #include "commands/defrem.h"
+#if PG_VERSION_NUM >= 180000
+#include "commands/explain_format.h"
+#include "commands/explain_state.h"
+#endif
 #include "commands/explain.h"
 #include "commands/vacuum.h"
 #include "foreign/fdwapi.h"
@@ -688,6 +692,7 @@ static void rdfGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid, ForeignPath *best_path, List *tlist, List *scan_clauses, Plan *outer_plan);
 static void rdfBeginForeignScan(ForeignScanState *node, int eflags);
+static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es);
 static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node);
 static void rdfReScanForeignScan(ForeignScanState *node);
 static void rdfEndForeignScan(ForeignScanState *node);
@@ -733,6 +738,7 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	fdwroutine->GetForeignPaths = rdfGetForeignPaths;
 	fdwroutine->GetForeignPlan = rdfGetForeignPlan;
 	fdwroutine->BeginForeignScan = rdfBeginForeignScan;
+	fdwroutine->ExplainForeignScan = rdfExplainForeignScan;
 	fdwroutine->IterateForeignScan = rdfIterateForeignScan;
 	fdwroutine->ReScanForeignScan = rdfReScanForeignScan;
 	fdwroutine->EndForeignScan = rdfEndForeignScan;
@@ -2698,12 +2704,16 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 	ForeignScan *fs = (ForeignScan *)node->ss.ps.plan;
 	struct RDFfdwState *state;
 
-	if (eflags & EXEC_FLAG_EXPLAIN_ONLY)
-		return;
-
 	elog(DEBUG1, "%s called", __func__);
 
 	state = DeserializePlanData(fs->fdw_private);
+
+	if (eflags & EXEC_FLAG_EXPLAIN_ONLY)
+    {
+        /* Only set up enough state for EXPLAIN diagnostics */
+        node->fdw_state = (void *)state;
+        return;
+    }
 
 	elog(DEBUG2, "%s: initializing XML parser", __func__);
 	xmlInitParser();
@@ -2711,6 +2721,35 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 	LoadRDFData(state);
 	state->rowcount = 0;
 	node->fdw_state = (void *)state;
+}
+
+static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es)
+{
+	RDFfdwState *state = (RDFfdwState *)node->fdw_state;
+
+	if (state)
+	{
+		if (state->enable_pushdown)
+		{
+			ExplainPropertyText("Pushdown", "enabled", es);
+
+			if (state->sparql_select && strlen(state->sparql_select) > 0)
+				ExplainPropertyText("Remote Select", state->sparql_select, es);
+
+			if (state->has_unparsable_conds)
+				ExplainPropertyText("Remote Filter", "not pushable", es);
+			else if (state->sparql_filter_expr && strlen(state->sparql_filter_expr) > 0)
+				ExplainPropertyText("Remote Filter", state->sparql_filter_expr, es);
+
+			if (state->sparql_orderby && strlen(state->sparql_orderby) > 0)
+				ExplainPropertyText("Remote Sort Key", state->sparql_orderby, es);
+
+			if (state->sparql_limit && strlen(state->sparql_limit) > 0)
+				ExplainPropertyText("Remote Limit", state->sparql_limit, es);
+		}
+		else
+			ExplainPropertyText("Pushdown", "disabled", es);
+	}
 }
 
 static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
@@ -3082,6 +3121,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, CStringToConst(state->sparql_from));
 	result = lappend(result, CStringToConst(state->sparql_where));
 	result = lappend(result, CStringToConst(state->sparql_filter));
+	result = lappend(result, CStringToConst(state->sparql_filter_expr));
 	result = lappend(result, CStringToConst(state->sparql_orderby));
 	result = lappend(result, CStringToConst(state->sparql_limit));
 	result = lappend(result, CStringToConst(state->raw_sparql));
@@ -3187,6 +3227,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	cell = list_next(list, cell);
 
 	state->sparql_filter = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
+
+	state->sparql_filter_expr = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
 	state->sparql_orderby = ConstToCString(lfirst(cell));
@@ -5626,10 +5669,13 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	List *conditions = baserel->baserestrictinfo;
 	ListCell *cell;
 	StringInfoData where_clause;
+	StringInfoData filter_expr;
 
 	elog(DEBUG1, "%s called", __func__);
 
 	initStringInfo(&where_clause);
+	initStringInfo(&filter_expr);
+
 	foreach (cell, conditions)
 	{
 		/* deparse expression for pushdown */
@@ -5641,6 +5687,12 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 		{
 			/* append new FILTER clause to query string */
 			appendStringInfo(&where_clause, " FILTER(%s)\n", pstrdup(where));
+
+			if (filter_expr.len > 0)
+				appendStringInfo(&filter_expr, " && (%s)", pstrdup(where));
+			else
+				appendStringInfo(&filter_expr, "((%s)", pstrdup(where));
+
 			pfree(where);
 		}
 		else
@@ -5649,6 +5701,11 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 			elog(DEBUG1, "  %s: condition cannot be pushed down.", __func__);
 		}
 	}
+
+	if (filter_expr.len > 0)
+		appendStringInfo(&filter_expr, ")");
+
+	state->sparql_filter_expr = filter_expr.data;
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, where_clause.data);
 	return where_clause.data;

@@ -20,6 +20,7 @@
   - [rdf_fdw_version](#rdf_fdw_version)
   - [rdf_fdw_settings](#rdf_fdw_settings)
   - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
+  - [EXPLAIN and Diagnostics](#explain-and-diagnostics)
 - [RDF Node Handling](#rdf-node-handling)
 - [SPARQL Functions](#sparql-functions)
 - [SPARQL Describe](#sparql-describe)
@@ -499,6 +500,42 @@ SELECT * FROM t1_local;
  http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
  http://dbpedia.org/resource/Münster                       | Münster             |      60.0
  http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
+(13 rows)
+```
+### [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics)
+
+The `rdf_fdw` extension provides detailed diagnostics in PostgreSQL EXPLAIN output to help users understand which SQL clauses are pushed down to the remote SPARQL endpoint.
+
+The plan output includes FDW-specific lines for each Foreign Scan node:
+* `Pushdown: enabled` or `Pushdown: disabled`
+* `Remote Filter:` shows the SPARQL FILTER expression(s) generated from SQL WHERE clauses.  
+  If the WHERE clause contains expressions that cannot be translated to SPARQL, the plan will display `Remote Filter: not pushable` to indicate that filtering is performed locally in PostgreSQL.
+* `Remote Sort Key:` shows the SPARQL ORDER BY clause if sorting is pushed down.
+* `Remote Limit:` shows the SPARQL LIMIT clause if limiting is pushed down.
+* `Remote Select:` shows the SPARQL SELECT clause generated for the query.
+
+**Example:**
+```sql
+EXPLAIN (VERBOSE)
+SELECT p, o FROM ft
+WHERE sparql.isnumeric(o) AND o > 100
+ORDER BY o DESC
+LIMIT 3;
+                                     QUERY PLAN                                      
+-------------------------------------------------------------------------------------
+ Limit  (cost=20012.92..20012.93 rows=3 width=64)
+   Output: p, o
+   ->  Sort  (cost=20012.92..20015.42 rows=1000 width=64)
+         Output: p, o
+         Sort Key: ft.o DESC
+         ->  Foreign Scan on public.ft  (cost=10000.00..20000.00 rows=1000 width=64)
+               Output: p, o
+               Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+               Pushdown: enabled
+               Remote Select: ?p ?o 
+               Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
+               Remote Sort Key: DESC (?o)
+               Remote Limit: LIMIT 3
 (13 rows)
 ```
 

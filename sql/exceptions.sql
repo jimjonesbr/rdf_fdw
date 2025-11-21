@@ -132,9 +132,6 @@ INSERT INTO t1 (name) VALUES ('foo');
 UPDATE t1 SET name = 'foo';
 DELETE FROM t1;
 
-/* EXPLAIN isn't supported*/
-EXPLAIN SELECT * FROM t1;
-
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '

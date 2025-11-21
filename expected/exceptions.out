@@ -147,13 +147,6 @@ UPDATE t1 SET name = 'foo';
 ERROR:  cannot update foreign table "t1"
 DELETE FROM t1;
 ERROR:  cannot delete from foreign table "t1"
-/* EXPLAIN isn't supported*/
-EXPLAIN SELECT * FROM t1;
-                            QUERY PLAN                            
-------------------------------------------------------------------
- Foreign Scan on t1  (cost=10000.00..20000.00 rows=1000 width=32)
-(1 row)
-
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '

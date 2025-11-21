@@ -38,6 +38,7 @@ REGRESS += create_extension \
 			rdfnode_ge \
 			rdfnode_agg \
 			rdfnode_cast \
+			explain \
 			pg_datatypes \
 			sparql-functions \
 			prefix-management \

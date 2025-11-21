@@ -168,6 +168,7 @@ typedef struct RDFfdwState
 	char *sparql_from;				   /* SPARQL FROM clause entries*/
 	char *sparql_where;				   /* SPARQL WHERE clause */
 	char *sparql_filter;			   /* SPARQL FILTER clauses based on SQL WHERE conditions */
+	char *sparql_filter_expr;          /* SPARQL FILTER clauses as single expression (for EXPLAIN output) */
 	char *sparql_orderby;			   /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
 	char *sparql_limit;				   /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
 	char *sparql_resultset;			   /* Raw string containing the result of a SPARQL query */	
