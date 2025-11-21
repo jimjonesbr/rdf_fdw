@@ -112,3 +112,20 @@ CREATE AGGREGATE sparql.group_concat(rdfnode, text) (
 
 COMMENT ON AGGREGATE sparql.group_concat(rdfnode, text) IS 
 'SPARQL 1.1 GROUP_CONCAT aggregate: concatenates string representations of RDF terms with specified separator';
+
+-- SAMPLE aggregate for rdfnode
+CREATE FUNCTION sparql.sample_rdfnode_sfunc(internal, rdfnode)
+RETURNS internal AS 'MODULE_PATHNAME', 'rdf_fdw_sample_sfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE FUNCTION sparql.sample_rdfnode_finalfunc(internal)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdf_fdw_sample_finalfunc'
+LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE sparql.sample(rdfnode) (
+    SFUNC = sparql.sample_rdfnode_sfunc,
+    STYPE = internal,
+    FINALFUNC = sparql.sample_rdfnode_finalfunc
+);
+
+COMMENT ON AGGREGATE sparql.sample(rdfnode) IS 'Returns an arbitrary (first non-NULL) value from the aggregate group per SPARQL 1.1 Section 18.5.1.8';
