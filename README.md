@@ -516,27 +516,24 @@ The plan output includes FDW-specific lines for each Foreign Scan node:
 
 **Example:**
 ```sql
-EXPLAIN (VERBOSE)
+EXPLAIN
 SELECT p, o FROM ft
 WHERE sparql.isnumeric(o) AND o > 100
 ORDER BY o DESC
 LIMIT 3;
-                                     QUERY PLAN                                      
--------------------------------------------------------------------------------------
+                                  QUERY PLAN                                  
+------------------------------------------------------------------------------
  Limit  (cost=20012.92..20012.93 rows=3 width=64)
-   Output: p, o
    ->  Sort  (cost=20012.92..20015.42 rows=1000 width=64)
-         Output: p, o
-         Sort Key: ft.o DESC
-         ->  Foreign Scan on public.ft  (cost=10000.00..20000.00 rows=1000 width=64)
-               Output: p, o
-               Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+         Sort Key: o DESC
+         ->  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
+               Filter: (sparql.isnumeric(o) AND (o > 100))
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
                Remote Sort Key: DESC (?o)
                Remote Limit: LIMIT 3
-(13 rows)
+(10 rows)
 ```
 
 ## [RDF Node Handling](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf-node-handling)
