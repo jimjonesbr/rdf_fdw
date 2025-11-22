@@ -28,6 +28,7 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
 #REGRESS = table-clone
 
 REGRESS += create_extension \
+			upgrade \
 			version \
 			rdfnode_in \
 			rdfnode_eq \

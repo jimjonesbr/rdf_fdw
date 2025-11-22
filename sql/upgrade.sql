@@ -1,0 +1,17 @@
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+
+CREATE SERVER fs FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (endpoint 'http://example.com/sparql');
+
+CREATE FOREIGN TABLE ft (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+) SERVER fs OPTIONS 
+  (sparql 'SELECT ?s ?p ?o WHERE { }');
+
+ALTER EXTENSION rdf_fdw UPDATE TO '2.2';
+
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+
+DROP SERVER fs CASCADE;
