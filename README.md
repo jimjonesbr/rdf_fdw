@@ -30,21 +30,21 @@
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
 
+* [PostgreSQL](https://www.postgresql.org): version 9.5 or higher.
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
 * [librdf](https://librdf.org/): version 1.0.17 or higher.
 * [pkg-config](https://linux.die.net/man/1/pkg-config): pkg-config 0.29.2 or higher.
-* [PostgreSQL](https://www.postgresql.org): version 9.5 or higher.
 * [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to compile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
 
 ```shell
-apt-get install -y make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 ```
 
 > [!NOTE]  
-> `postgresql-server-dev-17` only installs the libraries for PostgreSQL 17. Change it if you're using another PostgreSQL version.
+> `postgresql-server-dev-18` only installs the libraries for PostgreSQL 18. Change it if you're using another PostgreSQL version.
 
 ## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
 
@@ -364,9 +364,9 @@ Returns comprehensive version information for `rdf_fdw`, PostgreSQL, compiler, a
 
 ```sql
 SELECT rdf_fdw_version();
-                                                      rdf_fdw_version                                                       
-----------------------------------------------------------------------------------------------------------------------------
- rdf_fdw 2.2-dev (PostgreSQL 17.5 (Debian 17.5-1.pgdg110+1), compiled by gcc, libxml 2.9.10, librdf 1.0.17, libcurl 7.74.0)
+                                                      rdf_fdw_version                                                      
+---------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.2-dev (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, librdf 1.0.17, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -386,20 +386,19 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 
 ```sql
 SELECT * FROM rdf_fdw_settings;
-
- component  |            version             
-------------+--------------------------------
+ component  |            version            
+------------+-------------------------------
  rdf_fdw    | 2.2-dev
- PostgreSQL | 17.5 (Debian 17.5-1.pgdg110+1)
- libxml     | 2.9.10
+ PostgreSQL | 18.1 (Debian 18.1-1.pgdg13+2)
+ libxml     | 2.9.14
  librdf     | 1.0.17
- libcurl    | 7.74.0
- ssl        | GnuTLS/3.7.1
- zlib       | 1.2.11
- libSSH     | libssh2/1.9.0
- nghttp2    | 1.43.0
+ libcurl    | 8.14.1
+ ssl        | GnuTLS/3.8.9
+ zlib       | 1.3.1
+ libSSH     | libssh2/1.11.1
+ nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2025-11-13 09:08:02 UTC
+ built      | 2025-11-26 18:55:06 UTC
 (11 rows)
 ```
 
@@ -2232,7 +2231,7 @@ For example, if a SQL `LIMIT` clause is not pushed down, the target system will 
 In a nutshell, the `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, due to fundamental differences between the two languages, this is not always straightforward. As a rule of thumb, it is often best to keep SQL queries involving foreign tables as simple as possible. The `rdf_fdw` supports pushdown of most [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs) and several PostgreSQL instructions, such as `LIMIT` and `IN`/`NOT IN`.
 
 > [!NOTE]  
-> Aggregate pushdown is not currently supported. While aggregate functions (such as `sparql.sum`, `sparql.avg`, `sparql.min`, `sparql.max`, `sparql.group_concat`, `sparql.sample`, etc.) are implemented and usable in SQL queries, they are always evaluated locally by PostgreSQL. The SPARQL endpoint does not perform aggregation for these queries! If you need remote aggregation, you must embed the aggregate in the foreign table's SPARQL option or run the query directly against the endpoint.
+> Aggregate pushdown is currently **not** supported. While aggregate functions (such as `sparql.sum`, `sparql.avg`, `sparql.min`, `sparql.max`, `sparql.group_concat`, `sparql.sample`, etc.) are implemented and usable in SQL queries, they are always evaluated locally by PostgreSQL. The SPARQL endpoint does not perform aggregation for these queries! If you need remote aggregation, you must embed the aggregate in the foreign table's SPARQL option or run the query directly against the endpoint.
 
 ### [LIMIT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#limit)
 
