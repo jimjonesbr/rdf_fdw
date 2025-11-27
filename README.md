@@ -506,6 +506,7 @@ SELECT * FROM t1_local;
 The `rdf_fdw` extension provides detailed diagnostics in PostgreSQL EXPLAIN output to help users understand which SQL clauses are pushed down to the remote SPARQL endpoint.
 
 The plan output includes FDW-specific lines for each Foreign Scan node:
+* `Foreign Server:` shows the foreign server related to the qeu
 * `Pushdown: enabled` or `Pushdown: disabled`
 * `Remote Filter:` shows the SPARQL FILTER expression(s) generated from SQL WHERE clauses.  
   If the WHERE clause contains expressions that cannot be translated to SPARQL, the plan will display `Remote Filter: not pushable` to indicate that filtering is performed locally in PostgreSQL.
@@ -519,7 +520,7 @@ EXPLAIN
 SELECT p, o FROM ft
 WHERE sparql.isnumeric(o) AND o > 100
 ORDER BY o DESC
-LIMIT 3;
+FETCH FIRST 3 ROWS ONLY;
                                   QUERY PLAN                                  
 ------------------------------------------------------------------------------
  Limit  (cost=20012.92..20012.93 rows=3 width=64)
@@ -527,12 +528,13 @@ LIMIT 3;
          Sort Key: o DESC
          ->  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
                Filter: (sparql.isnumeric(o) AND (o > 100))
+               Foreign Server: linkedgeodata
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
-               Remote Sort Key: DESC (?o)
+               Remote Sort Key:   DESC (?o)
                Remote Limit: LIMIT 3
-(10 rows)
+(11 rows)
 ```
 
 ## [RDF Node Handling](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf-node-handling)

@@ -16,9 +16,10 @@ SELECT p, o FROM ft;
                             QUERY PLAN                            
 ------------------------------------------------------------------
  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
+   Foreign Server: wikidata
    Pushdown: enabled
    Remote Select: ?p ?o 
-(3 rows)
+(4 rows)
 
 EXPLAIN
 SELECT p, o FROM ft
@@ -27,10 +28,11 @@ WHERE sparql.isnumeric(o) AND o > 100;
 ------------------------------------------------------------------
  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
    Filter: (sparql.isnumeric(o) AND (o > 100))
+   Foreign Server: wikidata
    Pushdown: enabled
    Remote Select: ?p ?o 
    Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
-(5 rows)
+(6 rows)
 
 EXPLAIN
 SELECT p, o FROM ft
@@ -42,11 +44,12 @@ ORDER BY o DESC;
    Sort Key: o DESC
    ->  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
          Filter: (sparql.isnumeric(o) AND (o > 100))
+         Foreign Server: wikidata
          Pushdown: enabled
          Remote Select: ?p ?o 
          Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
          Remote Sort Key:   DESC (?o)
-(8 rows)
+(9 rows)
 
 EXPLAIN
 SELECT p, o FROM ft
@@ -60,12 +63,13 @@ LIMIT 3;
          Sort Key: o DESC
          ->  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
                Filter: (sparql.isnumeric(o) AND (o > 100))
+               Foreign Server: wikidata
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
                Remote Sort Key:   DESC (?o)
                Remote Limit: LIMIT 3
-(10 rows)
+(11 rows)
 
 EXPLAIN
 SELECT p, o FROM ft
@@ -79,22 +83,24 @@ LIMIT 3;
          Sort Key: o DESC
          ->  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
                Filter: ((sparql.isnumeric(o) AND (o > 100)) OR (p IS NOT NULL))
+               Foreign Server: wikidata
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: not pushable
                Remote Sort Key:   DESC (?o)
-(9 rows)
+(10 rows)
 
 /* EXPLAIN (VERBOSE) */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM ft;
-        QUERY PLAN         
----------------------------
+         QUERY PLAN         
+----------------------------
  Foreign Scan on public.ft
    Output: p, o
+   Foreign Server: wikidata
    Pushdown: enabled
    Remote Select: ?p ?o 
-(4 rows)
+(5 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM ft
@@ -104,10 +110,11 @@ WHERE sparql.isnumeric(o) AND o > 100;
  Foreign Scan on public.ft
    Output: p, o
    Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+   Foreign Server: wikidata
    Pushdown: enabled
    Remote Select: ?p ?o 
    Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
-(6 rows)
+(7 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM ft
@@ -121,11 +128,12 @@ ORDER BY o DESC;
    ->  Foreign Scan on public.ft
          Output: p, o
          Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+         Foreign Server: wikidata
          Pushdown: enabled
          Remote Select: ?p ?o 
          Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
          Remote Sort Key:   DESC (?o)
-(10 rows)
+(11 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM ft
@@ -142,12 +150,13 @@ LIMIT 3;
          ->  Foreign Scan on public.ft
                Output: p, o
                Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+               Foreign Server: wikidata
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
                Remote Sort Key:   DESC (?o)
                Remote Limit: LIMIT 3
-(13 rows)
+(14 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o, sparql.sum(o) FROM ft
@@ -168,11 +177,12 @@ LIMIT 3;
                ->  Foreign Scan on public.ft
                      Output: p, o
                      Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+                     Foreign Server: wikidata
                      Pushdown: enabled
                      Remote Select: ?p ?o 
                      Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
                      Remote Sort Key:   DESC (?o)  ASC (?p)
-(15 rows)
+(16 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o, sparql.sum(o) FROM ft
@@ -193,11 +203,12 @@ LIMIT 3;
                ->  Foreign Scan on public.ft
                      Output: p, o
                      Filter: ((sparql.isnumeric(ft.o) AND (ft.o > 100)) OR (ft.p IS NOT NULL))
+                     Foreign Server: wikidata
                      Pushdown: enabled
                      Remote Select: ?p ?o 
                      Remote Filter: not pushable
                      Remote Sort Key:   DESC (?o)  ASC (?p)
-(15 rows)
+(16 rows)
 
 /* EXPLAIN (VERBOSE) with pushdown disabled */
 ALTER FOREIGN TABLE ft OPTIONS (enable_pushdown 'false');
@@ -216,8 +227,9 @@ LIMIT 3;
          ->  Foreign Scan on public.ft
                Output: sparql.str(o), sparql.datatype(o), o
                Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
+               Foreign Server: wikidata
                Pushdown: disabled
-(9 rows)
+(10 rows)
 
 DROP SERVER wikidata CASCADE;
 NOTICE:  drop cascades to foreign table ft

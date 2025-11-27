@@ -2729,6 +2729,9 @@ static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es)
 
 	if (state)
 	{
+		if (state->server && state->server->servername)
+			ExplainPropertyText("Foreign Server", state->server->servername, es);
+
 		if (state->enable_pushdown)
 		{
 			ExplainPropertyText("Pushdown", "enabled", es);
@@ -3185,6 +3188,8 @@ static List *SerializePlanData(RDFfdwState *state)
 		result = lappend(result, IntToConst(state->rdfTable->cols[i]->pushable));
 	}
 
+	result = lappend(result, CStringToConst(state->server->servername));
+
 	elog(DEBUG1, "%s exit", __func__);
 	return result;
 }
@@ -3343,6 +3348,10 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 		state->rdfTable->cols[i]->pushable = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 		cell = list_next(list, cell);
 	}
+
+	state->server = (ForeignServer *)palloc0(sizeof(ForeignServer));
+	state->server->servername = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
 
 	elog(DEBUG1, "%s exit", __func__);
 	return state;
