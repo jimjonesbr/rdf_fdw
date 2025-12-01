@@ -176,7 +176,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 Columns can use **one** of two data type categories:
 
 #### RDF Node
-The custom `rdfnode` type is designed to handle full RDF nodes, including both IRIs and literals with optional language tags or datatypes. It preserves the structure and semantics of RDF terms and is ideal when you need to manipulate or inspect RDF-specific details. Columns of this type only support the `variable`.
+The custom `rdfnode` type is designed to handle full RDF nodes, including both IRIs and literals with optional language tags or datatypes. It preserves the structure and semantics of RDF terms and is ideal when you need to manipulate or inspect RDF-specific details. Columns of this type only support the `variable` column option.
 
 **Column Options**
 
@@ -503,38 +503,43 @@ SELECT * FROM t1_local;
 ```
 ### [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics)
 
-The `rdf_fdw` extension provides detailed diagnostics in PostgreSQL EXPLAIN output to help users understand which SQL clauses are pushed down to the remote SPARQL endpoint.
+The `rdf_fdw` extension provides detailed diagnostics in PostgreSQL [EXPLAIN](https://www.postgresql.org/docs/current/sql-explain.html) output to help users understand which SQL clauses are pushed down to the remote SPARQL endpoint.
 
 The plan output includes FDW-specific lines for each Foreign Scan node:
-* `Foreign Server:` shows the foreign server related to the qeu
+* `Foreign Server:` shows the foreign server related to the queried foreign table.
 * `Pushdown: enabled` or `Pushdown: disabled`
 * `Remote Filter:` shows the SPARQL FILTER expression(s) generated from SQL WHERE clauses.  
-  If the WHERE clause contains expressions that cannot be translated to SPARQL, the plan will display `Remote Filter: not pushable` to indicate that filtering is performed locally in PostgreSQL.
+  If the WHERE clause cannot be translated to SPARQL FILTER expressions, the plan will display `Remote Filter: not pushable` to indicate that filtering is performed locally in PostgreSQL.
 * `Remote Sort Key:` shows the SPARQL ORDER BY clause if sorting is pushed down.
 * `Remote Limit:` shows the SPARQL LIMIT clause if limiting is pushed down.
 * `Remote Select:` shows the SPARQL SELECT clause generated for the query.
 
 **Example:**
 ```sql
-EXPLAIN
+EXPLAIN (ANALYSE, COSTS OFF)
 SELECT p, o FROM ft
-WHERE sparql.isnumeric(o) AND o > 100
+WHERE sparql.isnumeric(o) AND o > 42
 ORDER BY o DESC
 FETCH FIRST 3 ROWS ONLY;
-                                  QUERY PLAN                                  
-------------------------------------------------------------------------------
- Limit  (cost=20012.92..20012.93 rows=3 width=64)
-   ->  Sort  (cost=20012.92..20015.42 rows=1000 width=64)
+                                 QUERY PLAN                                  
+-----------------------------------------------------------------------------
+ Limit (actual time=0.383..0.387 rows=3.00 loops=1)
+   ->  Sort (actual time=0.381..0.382 rows=3.00 loops=1)
          Sort Key: o DESC
-         ->  Foreign Scan on ft  (cost=10000.00..20000.00 rows=1000 width=64)
-               Filter: (sparql.isnumeric(o) AND (o > 100))
-               Foreign Server: linkedgeodata
+         Sort Method: quicksort  Memory: 25kB
+         ->  Foreign Scan on ft (actual time=0.201..0.357 rows=3.00 loops=1)
+               Filter: (sparql.isnumeric(o) AND (o > 42))
+               Foreign Server: wikidata
                Pushdown: enabled
                Remote Select: ?p ?o 
-               Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
-               Remote Sort Key:   DESC (?o)
+               Remote Filter: ((ISNUMERIC(?o)) && (?o > 42))
+               Remote Sort Key: DESC (?o)
                Remote Limit: LIMIT 3
-(11 rows)
+ Planning:
+   Buffers: shared hit=4
+ Planning Time: 0.138 ms
+ Execution Time: 378.805 ms
+(16 rows)
 ```
 
 ## [RDF Node Handling](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf-node-handling)
@@ -545,7 +550,7 @@ The `rdf_fdw` extension introduces a custom data type called `rdfnode` that repr
 - **Literals with language tags** (e.g., `"foo"@es`)
 - **Typed literals** (e.g., `"42"^^xsd:integer`)
 
-This type is useful when you want to inspect or preserve the full structure of RDF terms—including their language tags or datatypes—rather than just working with the value.
+This type is useful when you want to inspect or preserve the full structure of RDF terms—including their language tags or datatypes—rather than just working with their values.
 
 ### Casting Between `rdfnode` and Native PostgreSQL Types
 
@@ -623,7 +628,7 @@ You can define foreign table columns using either:
 In short:
 
 * Use rdfnode when you need full RDF semantics or access to SPARQL-specific features.
-* Use native types when you prefer SQL-like convenience and don’t require RDF semantics or SPARQL functions.
+* Use native types when you prefer SQL-like convenience and don't require RDF semantics or SPARQL functions.
 
 ### Comparison of `rdfnode` with Native PostgreSQL Types
 
@@ -716,7 +721,7 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
 >Such inconsistencies can lead to unexpected or confusing results. To avoid surprises:
 >* Always test how your target triplestore handles tagged or typed literals.
 >* Consider simpler (less performant) alternatives like [`STR`](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str) when working with language-tagged values.
->* Enable the `log_sparql` option in `rdf_fdw` to compare the number of records returned by the SPARQL endpoint with those visible in PostgreSQL. If the counts differ, it likely means some records were filtered out locally due to incompatible behavior in pushdown function evaluation.
+>* To verify the accuracy of results, compare the number of records returned by the SPARQL endpoint with those stored in PostgreSQL. You can do this by analyzing the [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics) output or by reviewing the SPARQL query logs generated using the `log_sparql` table option. If the SPARQL query yields more records than are displayed on the client side, it may indicate that some records were filtered out locally due to inconsistencies in pushdown function evaluation.
 
 ### [SUM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sum)
 
@@ -2852,10 +2857,10 @@ Afer that set the geometery column and identifier, and hit **Save**. Finally, fi
 To deploy the `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 17 should look like this (minimal example):
 
 ```dockerfile
-FROM postgres:17
+FROM postgres:18
 
 RUN apt-get update && \
-    apt-get install -y make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+    apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 RUN mkdir /extensions
 COPY ./rdf_fdw-2.1.0.tar.gz /extensions/
@@ -2893,10 +2898,10 @@ Dockerfile
 
 
 ```dockerfile
-FROM postgres:17
+FROM postgres:18
 
 RUN apt-get update && \
-    apt-get install -y git make gcc postgresql-server-dev-17 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 WORKDIR /
 
