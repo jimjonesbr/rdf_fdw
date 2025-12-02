@@ -55,9 +55,26 @@ char *lex(char *input)
         p = start;
         while (*p)
         {
-            if (*p == '"' && *(p - 1) != '\\')
+            if (*p == '"')
             {
-                break; /* closing quote found */
+                /* Check for doubled quote escape ("") */
+                if (*(p + 1) && *(p + 1) == '"')
+                {
+                    /* Escaped quote: append one quote and skip both */
+                    appendStringInfoChar(&output, '"');
+                    p += 2;
+                    continue;
+                }
+                /* Check for backslash escape (\") */
+                if (p > start && *(p - 1) == '\\')
+                {
+                    /* Already appended by previous iteration */
+                    appendStringInfoChar(&output, *p);
+                    p++;
+                    continue;
+                }
+                /* Unescaped quote: closing quote found */
+                break;
             }
             if (*p == '\\' && *(p + 1))
             {
@@ -1846,13 +1863,19 @@ const char *get_xsd_datatype_uri(XsdNumericType type)
  * Aggregate transition function for SUM(rdfnode).
  * Converts rdfnode to numeric and accumulates the sum.
  *
+ * Strict numeric-only policy:
+ * - If any non-numeric value is present, returns NULL (unbound).
+ * - Type promotion: integer < decimal < float < double.
+ * - Example: SUM({1, 2, 3}) = 6; SUM({1, 2, "string"}) = NULL.
+ *
  * State is stored as RdfnodeAggState to track both sum and result type.
  *
- * Note: Aggregate context validation is handled by the wrapper in rdf_fdw.c
+ * Note: Aggregate context validation is handled by the wrapper in
+ *       rdf_fdw.c
  */
 Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     MemoryContext aggcontext;
     MemoryContext oldcontext;
     rdfnode *node;
@@ -1865,46 +1888,54 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
-        state = NULL;
+        aggstate = NULL;
     else
-        state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+        aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
     /* Skip NULL input values */
     if (PG_ARGISNULL(1))
     {
-        if (state == NULL)
+        if (aggstate == NULL)
             PG_RETURN_NULL();
-        PG_RETURN_POINTER(state);
+        PG_RETURN_POINTER(aggstate);
     }
 
     /* Get the rdfnode and parse it */
     node = (rdfnode *)PG_GETARG_TEXT_PP(1);
     parsed = parse_rdfnode(node);
 
-    /* Mark that we received input (even if non-numeric).
-     * This distinguishes SUM({}) from SUM({"string"}) per SPARQL 1.1 spec. */
-    if (state == NULL)
+    /*
+     * Mark that we received input (even if non-numeric).
+     * This distinguishes SUM({}) from SUM({"string"}) per SPARQL 1.1.
+     */
+    if (aggstate == NULL)
     {
         /* Initialize state to track that we saw input */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state = (RdfnodeAggState *)palloc0(sizeof(RdfnodeAggState));
-        state->has_input = true;
+        aggstate = (RdfnodeAggState *)palloc0(sizeof(RdfnodeAggState));
+        aggstate->has_input = true;
+        aggstate->has_non_numeric = false;
         MemoryContextSwitchTo(oldcontext);
     }
     else
     {
-        state->has_input = true;
+        aggstate->has_input = true;
     }
 
-    /* Per SPARQL 1.1 spec Section 18.5.1.3: type errors are excluded from aggregates.
-     * Non-numeric values are skipped (not included in the sum). Examples:
-     * - SUM({1, 2, "string", 3}) = 6 (sums numeric values only)
-     * - SUM({"string", "another"}) = NULL (no numeric values to sum)
-     * This aligns with Blazegraph and GraphDB behavior. */
+    /*
+     * Per SPARQL 1.1 spec Section 18.5.1.3: SUM returns an error if any
+     * values are not numeric. Errors are excluded from the aggregate, so
+     * if any non-numeric values are present, the entire SUM aggregate
+     * returns unbound (NULL). Examples:
+     * - SUM({1, 2, 3}) = 6 (all numeric)
+     * - SUM({1, 2, "string"}) = NULL (mixed types cause error)
+     * - SUM({"string"}) = NULL (all non-numeric)
+     */
     if (!parsed.isNumeric)
     {
-        /* Non-numeric value - skip it but keep state to track we saw input */
-        PG_RETURN_POINTER(state);
+        /* Non-numeric value - mark as error and skip it */
+        aggstate->has_non_numeric = true;
+        PG_RETURN_POINTER(aggstate);
     }
 
     /* Determine the XSD type of this input */
@@ -1917,28 +1948,33 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
                                       Int32GetDatum(-1));
 
     /* Initialize or update numeric accumulator */
-    if (state->numeric_value == NULL)
+    if (aggstate->numeric_value == NULL)
     {
         /* First numeric value */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state->numeric_value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
-        state->maxType = inputType;
+        aggstate->numeric_value = DatumGetNumeric(
+            DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        aggstate->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
     }
     else
     {
-        /* Add to accumulator - need to be in aggcontext for the result */
+        /* Add to accumulator - need to be in aggcontext for result */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state->numeric_value = DatumGetNumeric(DirectFunctionCall2(numeric_add,
-                                                                   NumericGetDatum(state->numeric_value),
-                                                                   rdf_numeric));
-        /* Track the highest type seen (type promotion: integer < decimal < float < double) */
-        if (inputType > state->maxType)
-            state->maxType = inputType;
+        aggstate->numeric_value = DatumGetNumeric(
+            DirectFunctionCall2(numeric_add,
+                               NumericGetDatum(aggstate->numeric_value),
+                               rdf_numeric));
+        /*
+         * Track the highest type seen (type promotion:
+         * integer < decimal < float < double)
+         */
+        if (inputType > aggstate->maxType)
+            aggstate->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
     }
 
-    PG_RETURN_POINTER(state);
+    PG_RETURN_POINTER(aggstate);
 }
 
 /*
@@ -1951,26 +1987,27 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
  */
 Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     char *sum_str;
     char *result;
     const char *datatype_uri;
 
     /* Get the state (already validated as non-NULL by wrapper) */
-    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-    /* If state is NULL (shouldn't happen if wrapper works), return "0" for backward compat */
-    if (state == NULL)
-    {
-        result = strdt("0", RDF_XSD_INTEGER);
-        PG_RETURN_TEXT_P(cstring_to_text(result));
-    }
+    /* If state is NULL (no rows), return NULL per SPARQL (unbound) */
+    if (aggstate == NULL)
+        PG_RETURN_NULL();
+
+    /* If no numeric values were summed, return NULL (unbound per SPARQL) */
+    if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)
+        PG_RETURN_NULL();
 
     /* Convert numeric to string */
-    sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(state->numeric_value)));
+    sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(aggstate->numeric_value)));
 
     /* Get the appropriate XSD datatype based on type promotion */
-    datatype_uri = get_xsd_datatype_uri(state->maxType);
+    datatype_uri = get_xsd_datatype_uri(aggstate->maxType);
 
     /* Format as typed literal rdfnode using strdt() */
     result = strdt(sum_str, (char *)datatype_uri);
@@ -1990,7 +2027,7 @@ Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
  */
 Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     MemoryContext aggcontext;
     MemoryContext oldcontext;
     rdfnode *node;
@@ -2003,16 +2040,16 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
-        state = NULL;
+        aggstate = NULL;
     else
-        state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+        aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
     /* Skip NULL input values */
     if (PG_ARGISNULL(1))
     {
-        if (state == NULL)
+        if (aggstate == NULL)
             PG_RETURN_NULL();
-        PG_RETURN_POINTER(state);
+        PG_RETURN_POINTER(aggstate);
     }
 
     /* Get the rdfnode and parse it */
@@ -2021,29 +2058,33 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
 
     /* Mark that we received input (even if non-numeric).
      * This distinguishes AVG({}) from AVG({"string"}) per SPARQL 1.1 spec. */
-    if (state == NULL)
+    if (aggstate == NULL)
     {
         /* Initialize state to track that we saw input */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state = (RdfnodeAggState *)palloc0(sizeof(RdfnodeAggState));
-        state->has_input = true;
+        aggstate = (RdfnodeAggState *)palloc0(sizeof(RdfnodeAggState));
+        aggstate->has_input = true;
+        aggstate->has_non_numeric = false;
         MemoryContextSwitchTo(oldcontext);
     }
     else
     {
-        state->has_input = true;
+        aggstate->has_input = true;
     }
 
     /*
-     * Per SPARQL 1.1 spec Section 18.5.1.4: AVG is defined in terms of SUM and COUNT.
-     * Type errors (non-numeric values) are excluded from the aggregate. Examples:
-     * - AVG({10, 20, "string"}) = 15 (averages numeric values only)
-     * - AVG({"string", "another"}) = NULL (no numeric values to average)
+     * Per SPARQL 1.1 spec Section 18.5.1.4: AVG returns an error if any values are not numeric.
+     * Errors are excluded from the aggregate, so if any non-numeric values are present,
+     * the entire AVG aggregate returns unbound (NULL). Examples:
+     * - AVG({10, 20, 30}) = 20 (all numeric)
+     * - AVG({10, 20, "string"}) = NULL (mixed types cause error)
+     * - AVG({"string"}) = NULL (all non-numeric)
      */
     if (!parsed.isNumeric)
     {
-        /* Non-numeric value - skip it but keep state to track we saw input */
-        PG_RETURN_POINTER(state);
+        /* Non-numeric value - mark as error and skip it */
+        aggstate->has_non_numeric = true;
+        PG_RETURN_POINTER(aggstate);
     }
 
     /* Determine the XSD type of this input */
@@ -2056,30 +2097,30 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
                                       Int32GetDatum(-1));
 
     /* Initialize or update numeric accumulator */
-    if (state->numeric_value == NULL)
+    if (aggstate->numeric_value == NULL)
     {
         /* First numeric value */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state->numeric_value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
-        state->count = 1;
-        state->maxType = inputType;
+        aggstate->numeric_value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
+        aggstate->count = 1;
+        aggstate->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
     }
     else
     {
         /* Add to accumulator */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state->numeric_value = DatumGetNumeric(DirectFunctionCall2(numeric_add,
-                                                                   NumericGetDatum(state->numeric_value),
+        aggstate->numeric_value = DatumGetNumeric(DirectFunctionCall2(numeric_add,
+                                                                   NumericGetDatum(aggstate->numeric_value),
                                                                    rdf_numeric));
-        state->count++;
+        aggstate->count++;
         /* Track the highest type seen (type promotion: integer < decimal < float < double) */
-        if (inputType > state->maxType)
-            state->maxType = inputType;
+        if (inputType > aggstate->maxType)
+            aggstate->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
     }
 
-    PG_RETURN_POINTER(state);
+    PG_RETURN_POINTER(aggstate);
 }
 
 /*
@@ -2092,29 +2133,91 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
  */
 Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     Numeric count_numeric;
     Numeric avg_numeric;
+    Numeric avg_trunc0;
     char *avg_str;
     char *result;
     const char *datatype_uri;
+    XsdNumericType outType;
+    bool is_exact_integer = false;
 
     /* Get the state (already validated as non-NULL by wrapper) */
-    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    /* If state is NULL (no rows), return NULL per SPARQL (unbound) */
+    if (aggstate == NULL)
+        PG_RETURN_NULL();
+
+    /* If no numeric values were aggregated, return NULL (unbound per SPARQL) */
+    if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)
+        PG_RETURN_NULL();
 
     /* Convert count to numeric for division */
-    count_numeric = DatumGetNumeric(DirectFunctionCall1(int8_numeric, Int64GetDatum(state->count)));
+    count_numeric = DatumGetNumeric(DirectFunctionCall1(int8_numeric, Int64GetDatum(aggstate->count)));
 
     /* Compute average: sum / count */
     avg_numeric = DatumGetNumeric(DirectFunctionCall2(numeric_div,
-                                                      NumericGetDatum(state->numeric_value),
+                                                      NumericGetDatum(aggstate->numeric_value),
                                                       NumericGetDatum(count_numeric)));
 
-    /* Convert result to string */
-    avg_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_numeric)));
+    /* Determine output type for AVG:
+     * - If any double was seen, use xsd:double
+     * - else if any float was seen, use xsd:float
+     * - else use xsd:decimal (even if the average is an exact integer)
+     *   This ensures AVG over integer-only inputs yields xsd:decimal, e.g., 42.0
+     */
+    outType = aggstate->maxType;
 
-    /* Get the appropriate XSD datatype based on type promotion */
-    datatype_uri = get_xsd_datatype_uri(state->maxType);
+    /* Check exact-integer condition by truncating scale to 0 and comparing */
+    avg_trunc0 = DatumGetNumeric(DirectFunctionCall2(numeric_trunc,
+                                                     NumericGetDatum(avg_numeric),
+                                                     Int32GetDatum(0)));
+    is_exact_integer = DatumGetBool(DirectFunctionCall2(numeric_eq,
+                                                        NumericGetDatum(avg_numeric),
+                                                        NumericGetDatum(avg_trunc0)));
+
+    if (outType == XSD_TYPE_DOUBLE)
+    {
+        /* keep double */
+    }
+    else if (outType == XSD_TYPE_FLOAT)
+    {
+        /* keep float */
+    }
+    else
+    {
+        /* For integer-only or decimal inputs, return decimal */
+        outType = XSD_TYPE_DECIMAL;
+    }
+
+    /* Convert result to string.
+     * For xsd:decimal and exact-integer values, append ".0" to match common SPARQL engine output. */
+    if (outType == XSD_TYPE_DECIMAL)
+    {
+        if (is_exact_integer)
+        {
+            char *int_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_trunc0)));
+            StringInfoData buf;
+            initStringInfo(&buf);
+            appendStringInfo(&buf, "%s.0", int_str);
+            avg_str = buf.data;
+            pfree(int_str);
+        }
+        else
+        {
+            avg_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_numeric)));
+        }
+    }
+    else
+    {
+        /* float/double: use native textual form */
+        avg_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_numeric)));
+    }
+
+    /* Map chosen type to XSD URI */
+    datatype_uri = get_xsd_datatype_uri(outType);
 
     /* Format as typed literal rdfnode using strdt() */
     result = strdt(avg_str, (char *)datatype_uri);
@@ -2125,67 +2228,133 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 }
 
 /*
+ * get_rdfnode_category_rank
+ * -------------------------
+ * Returns a category rank for an rdfnode to support 
+ * mixed-type aggregate ordering. Lower rank = lower
+ * priority for MAX, higher priority for MIN.
+ *
+ * Category order (low → high):
+ *   0: string-like (plain literal, xsd:string, language-tagged)
+ *   1: numeric (xsd:integer, xsd:decimal, xsd:float, etc.)
+ *   2: dateTime
+ *   3: date
+ *   4: time
+ *   5: duration
+ *   6: other
+ */
+static int
+get_rdfnode_category_rank(rdfnode_info parsed)
+{
+    if (strlen(parsed.lang) > 0 || parsed.isPlainLiteral || parsed.isString)
+        return 0;
+    if (parsed.isNumeric)
+        return 1;
+    if (parsed.isDateTime)
+        return 2;
+    if (parsed.isDate)
+        return 3;
+    if (parsed.isTime)
+        return 4;
+    if (parsed.isDuration)
+        return 5;
+    return 6;
+}
+
+/*
  * min_rdfnode_sfunc
  * -----------------
  * Aggregate transition function for MIN(rdfnode).
  * Compares rdfnode values and keeps track of the minimum.
- * Uses semantic comparison: numeric values compared numerically, others lexically.
  *
- * Note: Aggregate context validation and NULL input handling done by wrapper in rdf_fdw.c
+ * Mixed-type policy (Fuseki-compatible):
+ * - Assigns each term to a category (string-like < numeric < temporal).
+ * - MIN selects the lowest category present; ties resolved by comparator.
+ * - Example: MIN({"zebra"^^xsd:string, 42, "mango"^^xsd:string}) →
+ *   "mango"^^xsd:string (string category wins; lexical minimum among
+ *   strings).
+ *
+ * Note: Aggregate context validation and NULL input handling done by
+ *       wrapper in rdf_fdw.c
  */
 Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     MemoryContext aggcontext;
     MemoryContext oldcontext;
     text *input_node;
+    rdfnode_info input_parsed;
+    rdfnode_info current_parsed;
 
     /* Get the aggregate memory context */
     AggCheckCallContext(fcinfo, &aggcontext);
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
-        state = NULL;
+        aggstate = NULL;
     else
-        state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+        aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
     /* Skip NULL input values */
     if (PG_ARGISNULL(1))
     {
-        if (state == NULL)
+        if (aggstate == NULL)
             PG_RETURN_NULL();
-        PG_RETURN_POINTER(state);
+        PG_RETURN_POINTER(aggstate);
     }
 
-    /* Get the input rdfnode */
+    /* Get and parse the input rdfnode */
     input_node = PG_GETARG_TEXT_PP(1);
+    input_parsed = parse_rdfnode((rdfnode *)input_node);
 
-    /* Initialize or update state */
-    if (state == NULL)
+    if (aggstate == NULL)
     {
         /* First row: allocate state and store the rdfnode */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
-        state->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
+        aggstate = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
+        aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
         MemoryContextSwitchTo(oldcontext);
+        PG_RETURN_POINTER(aggstate);
     }
-    else
-    {
-        /* Compare using SPARQL term ordering (allows mixed datatypes) */
-        int cmp = rdfnode_cmp_for_aggregate((rdfnode *)input_node,
-                                            (rdfnode *)state->rdfnode_value);
 
-        if (cmp < 0)
+    /* Parse current value for category-based comparison */
+    current_parsed = parse_rdfnode((rdfnode *)aggstate->rdfnode_value);
+    /*
+     * Choose the smallest category present, then the minimum within
+     * that category.
+     */
+    {
+        int rank_in = get_rdfnode_category_rank(input_parsed);
+        int rank_cur = get_rdfnode_category_rank(current_parsed);
+
+        if (rank_in < rank_cur)
         {
-            /* New minimum found - update state */
+            /* Input has lower category → new minimum */
             oldcontext = MemoryContextSwitchTo(aggcontext);
-            pfree(state->rdfnode_value);
-            state->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
+            pfree(aggstate->rdfnode_value);
+            aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(
+                PointerGetDatum(input_node));
             MemoryContextSwitchTo(oldcontext);
         }
+        else if (rank_in == rank_cur)
+        {
+            /* Same category → use comparator */
+            int cmp = rdfnode_cmp_for_aggregate(
+                (rdfnode *)input_node,
+                (rdfnode *)aggstate->rdfnode_value);
+            if (cmp < 0)
+            {
+                oldcontext = MemoryContextSwitchTo(aggcontext);
+                pfree(aggstate->rdfnode_value);
+                aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(
+                    PointerGetDatum(input_node));
+                MemoryContextSwitchTo(oldcontext);
+            }
+        }
+        /* rank_in > rank_cur: keep current (higher category) */
     }
 
-    PG_RETURN_POINTER(state);
+    PG_RETURN_POINTER(aggstate);
 }
 
 /*
@@ -2198,13 +2367,16 @@ Datum min_rdfnode_sfunc(PG_FUNCTION_ARGS)
  */
 Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
 
     /* Get the state (already validated as non-NULL by wrapper) */
-    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    if (aggstate == NULL || aggstate->rdfnode_value == NULL)
+        PG_RETURN_NULL();
 
     /* Return the stored minimum rdfnode */
-    PG_RETURN_TEXT_P(state->rdfnode_value);
+    PG_RETURN_TEXT_P(aggstate->rdfnode_value);
 }
 
 /*
@@ -2212,82 +2384,116 @@ Datum min_rdfnode_finalfunc(PG_FUNCTION_ARGS)
  * -----------------
  * Aggregate transition function for MAX(rdfnode).
  * Compares rdfnode values and keeps track of the maximum.
- * Uses semantic comparison: numeric values compared numerically, others lexically.
  *
- * Note: Aggregate context validation and NULL input handling done by wrapper in rdf_fdw.c
+ * Mixed-type policy:
+ * - Assigns each term to a category (string-like < numeric < temporal).
+ * - MAX selects the highest category present; ties resolved by comparator.
+ * - Example: MAX({42, "2023-01-01"^^xsd:date}) → "2023-01-01"^^xsd:date
+ *   (date category wins over numeric).
+ *
+ * Note: Aggregate context validation and NULL input handling done by
+ *       wrapper in rdf_fdw.c
  */
 Datum max_rdfnode_sfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     MemoryContext aggcontext;
     MemoryContext oldcontext;
     text *input_node;
+    rdfnode_info input_parsed;
+    rdfnode_info current_parsed;
 
     /* Get the aggregate memory context */
     AggCheckCallContext(fcinfo, &aggcontext);
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
-        state = NULL;
+        aggstate = NULL;
     else
-        state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+        aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
     /* Skip NULL input values */
     if (PG_ARGISNULL(1))
     {
-        if (state == NULL)
+        if (aggstate == NULL)
             PG_RETURN_NULL();
-        PG_RETURN_POINTER(state);
+        PG_RETURN_POINTER(aggstate);
     }
 
-    /* Get the input rdfnode */
+    /* Get and parse the input rdfnode */
     input_node = PG_GETARG_TEXT_PP(1);
+    input_parsed = parse_rdfnode((rdfnode *)input_node);
 
-    /* Initialize or update state */
-    if (state == NULL)
+    if (aggstate == NULL)
     {
         /* First row: allocate state and store the rdfnode */
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
-        state->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
+        aggstate = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
+        aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
         MemoryContextSwitchTo(oldcontext);
+        PG_RETURN_POINTER(aggstate);
     }
-    else
-    {
-        /* Compare using SPARQL term ordering (allows mixed datatypes) */
-        int cmp = rdfnode_cmp_for_aggregate((rdfnode *)input_node,
-                                            (rdfnode *)state->rdfnode_value);
 
-        if (cmp > 0)
+    current_parsed = parse_rdfnode((rdfnode *)aggstate->rdfnode_value);
+
+    /*
+     * Choose the largest category present, then the maximum within
+     * that category.
+     */
+    {
+        int rank_in = get_rdfnode_category_rank(input_parsed);
+        int rank_cur = get_rdfnode_category_rank(current_parsed);
+
+        if (rank_in > rank_cur)
         {
-            /* New maximum found - update state */
+            /* Input has higher category → new maximum */
             oldcontext = MemoryContextSwitchTo(aggcontext);
-            pfree(state->rdfnode_value);
-            state->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
+            pfree(aggstate->rdfnode_value);
+            aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(
+                PointerGetDatum(input_node));
             MemoryContextSwitchTo(oldcontext);
         }
+        else if (rank_in == rank_cur)
+        {
+            /* Same category → use comparator */
+            int cmp = rdfnode_cmp_for_aggregate(
+                (rdfnode *)input_node,
+                (rdfnode *)aggstate->rdfnode_value);
+            if (cmp > 0)
+            {
+                oldcontext = MemoryContextSwitchTo(aggcontext);
+                pfree(aggstate->rdfnode_value);
+                aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(
+                    PointerGetDatum(input_node));
+                MemoryContextSwitchTo(oldcontext);
+            }
+        }
+        /* rank_in < rank_cur: keep current (higher category) */
     }
 
-    PG_RETURN_POINTER(state);
+    PG_RETURN_POINTER(aggstate);
 }
 
 /*
  * max_rdfnode_finalfunc
  * ---------------------
  * Final function for MAX(rdfnode).
- * Returns the maximum rdfnode value stored as text.
+ * Returns the maximum rdfnode value stored as text, or NULL if no values were aggregated.
  *
  * Note: NULL state handling is done by the wrapper in rdf_fdw.c
  */
 Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
 
     /* Get the state (already validated as non-NULL by wrapper) */
-    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    if (aggstate == NULL || aggstate->rdfnode_value == NULL)
+        PG_RETURN_NULL();
 
     /* Return the stored maximum rdfnode */
-    PG_RETURN_TEXT_P(state->rdfnode_value);
+    PG_RETURN_TEXT_P(aggstate->rdfnode_value);
 }
 
 /*
@@ -2307,7 +2513,7 @@ Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS)
  */
 Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     MemoryContext aggcontext;
     MemoryContext oldcontext;
     text *input_node;
@@ -2317,32 +2523,32 @@ Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS)
 
     /* Get current state (NULL on first call) */
     if (PG_ARGISNULL(0))
-        state = NULL;
+        aggstate = NULL;
     else
-        state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+        aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
     /* Skip NULL input values */
     if (PG_ARGISNULL(1))
     {
-        if (state == NULL)
+        if (aggstate == NULL)
             PG_RETURN_NULL();
-        PG_RETURN_POINTER(state);
+        PG_RETURN_POINTER(aggstate);
     }
 
     /* If we already have a value, keep it (first value wins) */
-    if (state != NULL)
-        PG_RETURN_POINTER(state);
+    if (aggstate != NULL)
+        PG_RETURN_POINTER(aggstate);
 
     /* Get the input rdfnode */
     input_node = PG_GETARG_TEXT_PP(1);
 
     /* First non-NULL value: allocate state and store it */
     oldcontext = MemoryContextSwitchTo(aggcontext);
-    state = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
-    state->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
+    aggstate = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
+    aggstate->rdfnode_value = (text *)PG_DETOAST_DATUM_COPY(PointerGetDatum(input_node));
     MemoryContextSwitchTo(oldcontext);
 
-    PG_RETURN_POINTER(state);
+    PG_RETURN_POINTER(aggstate);
 }
 
 /*
@@ -2355,13 +2561,16 @@ Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS)
  */
 Datum sample_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
 
     /* Get the state (already validated as non-NULL by wrapper) */
-    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+
+    if (aggstate == NULL || aggstate->rdfnode_value == NULL)
+        PG_RETURN_NULL();
 
     /* Return the stored sample value */
-    PG_RETURN_TEXT_P(state->rdfnode_value);
+    PG_RETURN_TEXT_P(aggstate->rdfnode_value);
 }
 
 /*
@@ -2385,7 +2594,7 @@ Datum group_concat_sfunc(PG_FUNCTION_ARGS)
 {
     MemoryContext aggcontext;
     MemoryContext oldcontext;
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     text *input_node;
     rdfnode_info parsed;
     char *str_value;
@@ -2396,14 +2605,14 @@ Datum group_concat_sfunc(PG_FUNCTION_ARGS)
                  errmsg("aggregate function called in non-aggregate context")));
 
     /* Get the current state */
-    state = PG_ARGISNULL(0) ? NULL : (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = PG_ARGISNULL(0) ? NULL : (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
     /* Skip NULL input values */
     if (PG_ARGISNULL(1))
     {
-        if (state == NULL)
+        if (aggstate == NULL)
             PG_RETURN_NULL();
-        PG_RETURN_POINTER(state);
+        PG_RETURN_POINTER(aggstate);
     }
 
     /* Get the input rdfnode */
@@ -2433,38 +2642,37 @@ Datum group_concat_sfunc(PG_FUNCTION_ARGS)
     }
 
     /* Initialize state on first value */
-    if (state == NULL)
+    if (aggstate == NULL)
     {
         oldcontext = MemoryContextSwitchTo(aggcontext);
-        state = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
-        state->result_str = makeStringInfo();
-
+        aggstate = (RdfnodeAggState *)palloc(sizeof(RdfnodeAggState));
+        aggstate->result_str = makeStringInfo();
         /* Get separator (arg 2), default to space if not provided */
         if (PG_NARGS() > 2 && !PG_ARGISNULL(2))
         {
             /* Copy the separator into aggregate memory context */
-            state->separator = PG_GETARG_TEXT_P_COPY(2);
+            aggstate->separator = PG_GETARG_TEXT_P_COPY(2);
         }
         else
-            state->separator = cstring_to_text(" "); /* SPARQL 1.1 default */
+            aggstate->separator = cstring_to_text(" "); /* SPARQL 1.1 default */
 
-        state->has_input = false;
+        aggstate->has_input = false;
         MemoryContextSwitchTo(oldcontext);
     }
 
     /* Add separator if not the first value */
     oldcontext = MemoryContextSwitchTo(aggcontext);
-    if (state->has_input)
+    if (aggstate->has_input)
     {
-        appendStringInfoString(state->result_str, text_to_cstring(state->separator));
+        appendStringInfoString(aggstate->result_str, text_to_cstring(aggstate->separator));
     }
 
     /* Append the string value */
-    appendStringInfoString(state->result_str, str_value);
-    state->has_input = true;
+    appendStringInfoString(aggstate->result_str, str_value);
+    aggstate->has_input = true;
     MemoryContextSwitchTo(oldcontext);
 
-    PG_RETURN_POINTER(state);
+    PG_RETURN_POINTER(aggstate);
 }
 
 /*
@@ -2480,15 +2688,21 @@ Datum group_concat_sfunc(PG_FUNCTION_ARGS)
  */
 Datum group_concat_finalfunc(PG_FUNCTION_ARGS)
 {
-    RdfnodeAggState *state;
+    RdfnodeAggState *aggstate;
     char *literal;
     text *result;
 
     /* Get the state (already validated as non-NULL by wrapper) */
-    state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+    aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
+    if (aggstate == NULL || aggstate->result_str == NULL)
+    {
+        /* No input values: return empty simple literal */
+        result = cstring_to_text("");
+        PG_RETURN_TEXT_P(result);
+    }
     /* Convert to simple literal (plain literal without datatype) */
-    literal = cstring_to_rdfliteral(state->result_str->data);
+    literal = cstring_to_rdfliteral(aggstate->result_str->data);
 
     /* Return as rdfnode (text type) */
     result = cstring_to_text(literal);

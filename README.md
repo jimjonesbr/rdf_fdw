@@ -23,6 +23,14 @@
   - [EXPLAIN and Diagnostics](#explain-and-diagnostics)
 - [RDF Node Handling](#rdf-node-handling)
 - [SPARQL Functions](#sparql-functions)
+  - [Aggregates](#aggregates)
+  - [Functional Forms](#functional-forms)
+  - [Functions on RDF Terms](#functions-on-rdf-terms)
+  - [Functions on Strings](#functions-on-strings)
+  - [Functions on Numerics](#functions-on-numerics)
+  - [Functions on Dates and Times](#functions-on-dates-and-times)
+  - [Hash Functions](#hash-functions)
+  - [Custom Functions](#custom-functions)
 - [SPARQL Describe](#sparql-describe)
 - [Pushdown](#pushdown)
 - [Examples](#examples)
@@ -723,7 +731,35 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
 >* Consider simpler (less performant) alternatives like [`STR`](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str) when working with language-tagged values.
 >* To verify the accuracy of results, compare the number of records returned by the SPARQL endpoint with those stored in PostgreSQL. You can do this by analyzing the [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics) output or by reviewing the SPARQL query logs generated using the `log_sparql` table option. If the SPARQL query yields more records than are displayed on the client side, it may indicate that some records were filtered out locally due to inconsistencies in pushdown function evaluation.
 
-### [SUM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sum)
+### [Aggregates](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#aggregates)
+
+
+> [!NOTE]  
+> **Aggregate semantics and NULL/UNDEF handling**
+>
+> SPARQL 1.1 aggregates operate over multisets after excluding unbound (UNDEF) and error results. If, after exclusion, no values remain:
+> - GROUP_CONCAT → empty string
+> - SUM, AVG, MIN, MAX → unbound (NULL)
+>
+> See: SPARQL 1.1 Query — Aggregates (§18), SUM/AVG/MIN/MAX (§18.5.1.3–§18.5.1.6), ORDER BY semantics (§15.1).
+> 
+> `rdf_fdw` treats SQL NULLs as SPARQL UNDEF. During aggregation, UNDEF values are excluded (skipped). Example:
+>
+> ```sql
+> WITH j (val) AS (
+>    VALUES
+>        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+>        (NULL::rdfnode),
+>        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+>)
+>SELECT sparql.sum(val), sparql.avg(val) FROM j;
+>                       sum                        |                        avg                         
+>--------------------------------------------------+----------------------------------------------------
+> "40"^^<http://www.w3.org/2001/XMLSchema#integer> | "20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
+>(1 row)
+>```
+
+#### [SUM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sum)
 
 ```sql
 sparql.sum(value rdfnode) → rdfnode
@@ -774,7 +810,7 @@ FROM (VALUES ('"10.5"^^xsd:decimal'::rdfnode),
 >* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
 >* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
 
-### [AVG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#avg)
+#### [AVG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#avg)
 
 ```sql
 sparql.avg(value rdfnode) → rdfnode
@@ -785,17 +821,16 @@ Computes the average (arithmetic mean) of numeric `rdfnode` values with XSD type
 Examples:
 
 ```sql
--- Average of integers returns integer
+-- Average of integers returns decimal
 SELECT sparql.avg(val)
 FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
              ('"20"^^xsd:integer'::rdfnode),
              ('"30"^^xsd:integer'::rdfnode)) AS t(val);
-                                avg                                
--------------------------------------------------------------------
- "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+                        avg                         
+----------------------------------------------------
+ "20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Mixing integer and decimal promotes to decimal
 SELECT sparql.avg(val)
 FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
              ('"20.5"^^xsd:decimal'::rdfnode),
@@ -810,22 +845,13 @@ SELECT sparql.avg(val)
 FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
              (NULL::rdfnode),
              ('"30"^^xsd:integer'::rdfnode)) AS t(val);
-                                avg                                
--------------------------------------------------------------------
- "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+                        avg                         
+----------------------------------------------------
+ "20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 ```
 
-> [!NOTE]  
-> The `AVG` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)):
->* NULL values (unbound variables) are skipped during aggregation
->* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: "Avg({}) = 0/0 = 0")
->* Non-numeric values cause type errors and are excluded from the aggregate (similar to NULL)
->* Returns SQL NULL if all values are non-numeric (no numeric values to average)
->* Division by count is performed using PostgreSQL's numeric division
->* Type promotion follows the same rules as SUM (integer → decimal → float → double)
-
-### [MIN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#min)
+#### [MIN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#min)
 
 ```sql
 sparql.min(value rdfnode) → rdfnode
@@ -855,15 +881,20 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 --------------------------------------------------
  "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
+
+-- NULL values skipped
+SELECT sparql.min(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             (NULL::rdfnode),
+             ('"3"^^xsd:integer'::rdfnode)) AS t(val);
+                       min                       
+-------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
 ```
 
-> [!NOTE]  
-> The `MIN` aggregate follows SPARQL 1.1 semantics with SQL-compatible NULL handling:
->* NULL values are skipped during aggregation
->* Returns SQL NULL when all input values are NULL (no value to select)
->* Returns SQL NULL for empty result sets (no rows match WHERE clause)
 
-### [MAX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#max)
+#### [MAX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#max)
 
 ```sql
 sparql.max(value rdfnode) → rdfnode
@@ -893,15 +924,19 @@ FROM (VALUES ('"-10"^^xsd:integer'::rdfnode),
 --------------------------------------------------
  "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
+
+-- NULL value skipped
+SELECT sparql.max(val)
+FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
+             (NULL::rdfnode),
+             ('"3"^^xsd:integer'::rdfnode)) AS t(val);
+                       max                        
+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
 ```
 
-> [!NOTE]  
-> The `MAX` aggregate follows SPARQL 1.1 semantics with SQL-compatible NULL handling:
->* NULL values are skipped during aggregation
->* Returns SQL NULL when all input values are NULL (no value to select)
->* Returns SQL NULL for empty result sets (no rows match WHERE clause)
-
-### [GROUP_CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#group_concat)
+#### [GROUP_CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#group_concat)
 
 ```sql
 sparql.group_concat(value rdfnode, separator text) → rdfnode
@@ -923,9 +958,9 @@ SELECT sparql.group_concat(val, ' ')
 FROM (VALUES ('"apple"^^xsd:string'::rdfnode),
              ('"banana"^^xsd:string'::rdfnode),
              ('"cherry"^^xsd:string'::rdfnode)) AS t(val);
-                           group_concat                           
-------------------------------------------------------------------
- "apple banana cherry"^^<http://www.w3.org/2001/XMLSchema#string>
+     group_concat      
+-----------------------
+ "apple banana cherry"
 (1 row)
 
 -- Concatenate with custom separator
@@ -933,9 +968,9 @@ SELECT sparql.group_concat(val, ', ')
 FROM (VALUES ('"apple"^^xsd:string'::rdfnode),
              ('"banana"^^xsd:string'::rdfnode),
              ('"cherry"^^xsd:string'::rdfnode)) AS t(val);
-                            group_concat                            
---------------------------------------------------------------------
- "apple, banana, cherry"^^<http://www.w3.org/2001/XMLSchema#string>
+      group_concat       
+-------------------------
+ "apple, banana, cherry"
 (1 row)
 
 -- Mixed RDF types (integers, strings, floats)
@@ -943,18 +978,18 @@ SELECT sparql.group_concat(val, ' | ')
 FROM (VALUES ('"42"^^xsd:integer'::rdfnode),
              ('"hello"^^xsd:string'::rdfnode),
              ('"3.14"^^xsd:float'::rdfnode)) AS t(val);
-                          group_concat                          
-----------------------------------------------------------------
- "42 | hello | 3.14"^^<http://www.w3.org/2001/XMLSchema#string>
+    group_concat     
+---------------------
+ "42 | hello | 3.14"
 (1 row)
 
 -- IRIs extract URI without angle brackets
 SELECT sparql.group_concat(val, '; ')
 FROM (VALUES ('<http://example.org/resource1>'::rdfnode),
              ('<http://example.org/resource2>'::rdfnode)) AS t(val);
-                                              group_concat                                               
----------------------------------------------------------------------------------------------------------
- "http://example.org/resource1; http://example.org/resource2"^^<http://www.w3.org/2001/XMLSchema#string>
+                         group_concat                         
+--------------------------------------------------------------
+ "http://example.org/resource1; http://example.org/resource2"
 (1 row)
 
 -- Language-tagged strings extract lexical value
@@ -962,21 +997,23 @@ SELECT sparql.group_concat(val, ', ')
 FROM (VALUES ('"hello"@en'::rdfnode),
              ('"bonjour"@fr'::rdfnode),
              ('"hola"@es'::rdfnode)) AS t(val);
-                           group_concat                            
--------------------------------------------------------------------
- "hello, bonjour, hola"^^<http://www.w3.org/2001/XMLSchema#string>
+      group_concat      
+------------------------
+ "hello, bonjour, hola"
+(1 row)
+
+-- NULL value skipped
+SELECT sparql.group_concat(val, ' ')
+FROM (VALUES ('"apple"^^xsd:string'::rdfnode),
+             (NULL::rdfnode),
+             ('"cherry"^^xsd:string'::rdfnode)) AS t(val);
+  group_concat  
+----------------
+ "apple cherry"
 (1 row)
 ```
 
-> [!NOTE]  
-> The `GROUP_CONCAT` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.7](https://www.w3.org/TR/sparql11-query/#aggregates)):
->* NULL values (unbound variables) are skipped during aggregation
->* Returns empty string `""^^xsd:string` for empty sets or when all values are NULL
->* Handles all RDF term types: literals (typed/language-tagged), IRIs, plain values
->* Unlike PostgreSQL's `string_agg`, the separator parameter is required (no default)
->* SPARQL 1.1 specifies space `" "` as the default separator, but must be explicitly provided in this implementation
-
-### [SAMPLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sample)
+#### [SAMPLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sample)
 
 ```sql
 sparql.sample(value rdfnode) → rdfnode
@@ -1018,15 +1055,9 @@ FROM (VALUES ('"hello"@en'::rdfnode),
 (1 row)
 ```
 
-> [!NOTE]  
-> The `SAMPLE` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.8](https://www.w3.org/TR/sparql11-query/#aggregates)):
->* Returns an "arbitrary value" from the input multiset - implementation-defined behavior
->* This implementation returns the **first non-NULL value** encountered (deterministic)
->* NULL values (unbound variables) are skipped during aggregation
->* Returns NULL for empty sets or when all values are NULL
->* Preserves the original type and all metadata (datatype, language tag) of the selected value
+### [Functional Forms](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functional-forms)
 
-### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
+#### [BOUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bound)
 
 ```sql
 sparql.bound(value rdfnode) → boolean
@@ -1043,7 +1074,7 @@ SELECT sparql.bound(NULL), sparql.bound('"NaN"^^xsd:double');
 (1 row)
 ```
 
-### [COALESCE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#coalesce)
+#### [COALESCE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#coalesce)
 
 ```sql
 sparql.coalesce(value1 rdfnode, value2 rdfnode, ... ) → rdfnode
@@ -1061,7 +1092,7 @@ Example:
 (1 row)
 ```
 
-### [SAMETERM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sameterm)
+#### [SAMETERM](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sameterm)
 
 ```sql
 sparql.sameTerm(a rdfnode, b rdfnode) → boolean
@@ -1094,7 +1125,9 @@ SELECT sparql.sameterm('"foo"@en', '"foo"@fr');
 > [!NOTE]  
 > Use `sameterm` when you need exact RDF identity, including type and language tag. For value-based comparison with implicit coercion, use `=` instead.
 
-## [isIRI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isiri)
+### [Functions on RDF Terms](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-rdf-terms)
+
+#### [isIRI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isiri)
 
 ```sql
 sparql.isiri(value rdfnode) → boolean
@@ -1132,7 +1165,7 @@ SELECT sparql.isIRI(NULL);
 > [!NOTE]  
 > isURI is an alternate spelling for the isIRI function.
 
-## [isBLANK](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isblank)
+#### [isBLANK](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isblank)
 ```sql
 sparql.isblank(value rdfnode) → boolean
 ```
@@ -1153,7 +1186,7 @@ SELECT sparql.isblank('"foo"^^xsd:string');
 (1 row)
 ```
 
-## [isLITERAL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isliteral)
+#### [isLITERAL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isliteral)
 
 ```sql
 sparql.isliteral(value rdfnode) → boolean
@@ -1195,7 +1228,7 @@ SELECT sparql.isliteral(NULL);
 (1 row)
 ```
 
-## [isNUMERIC](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isnumeric)
+#### [isNUMERIC](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#isnumeric)
 
 ```sql
 sparql.isnumeric(term rdfnode) → boolean
@@ -1231,7 +1264,7 @@ SELECT sparql.isnumeric(NULL);
 (1 row)
 ```
 
-## [STR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str)
+#### [STR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str)
 
 ```sql
 sparql.str(value rdfnode) → rdfnode
@@ -1260,7 +1293,7 @@ SELECT sparql.str('<http://foo.bar>');
 (1 row)
 ```
 
-## [LANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lang)
+#### [LANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lang)
 
 ```sql
 sparql.str(value rdfnode) → rdfnode
@@ -1288,7 +1321,7 @@ SELECT sparql.lang('"foo"^^xsd:string');
 (1 row)
 ```
 
-## [DATATYPE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#datatype)
+#### [DATATYPE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#datatype)
 
 ```sql
 sparql.datatype(value rdfnode) → rdfnode
@@ -1340,7 +1373,7 @@ SELECT sparql.datatype('_:bnode42');
 > [!NOTE]  
 > Keep in mind that some triplestores (like Virtuoso) return `xsd:anyURI` for IRIs, but this behaviour is not defined in SPARQL 1.1 and is not standard-compliant.
 
-## [IRI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#iri)
+#### [IRI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#iri)
 
 ```sql
 sparql.iri(value rdfnode) → rdfnode
@@ -1358,7 +1391,7 @@ SELECT sparql.iri('http://foo.bar');
 (1 row)
 ```
 
-## [BNODE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bnode)
+#### [BNODE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#bnode)
 
 ```sql
 sparql.bnode(value rdfnode DEFAULT NULL) → rdfnode
@@ -1387,7 +1420,7 @@ SELECT sparql.bnode();
 (1 row)
 ```
 
-## [STRDT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strdt)
+#### [STRDT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strdt)
 
 ```sql
 sparql.strdt(lexical rdfnode, datatype_iri rdfnode) → rdfnode
@@ -1417,7 +1450,7 @@ SELECT sparql.strdt('"2025-01-01"^^xsd:string', 'http://www.w3.org/2001/XMLSchem
 (1 row)
 ```
 
-## [STLANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlang)
+#### [STLANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlang)
 
 ```sql
 sparql.strlang(lexical rdfnode, lang_tag rdfnode) → rdfnode
@@ -1440,7 +1473,7 @@ SELECT sparql.strlang('"foo"@pt','es');
 (1 row)
 ```
 
-## [UUID](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#uuid)
+#### [UUID](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#uuid)
 
 ```sql
 sparql.uuid() → rdfnode
@@ -1458,7 +1491,7 @@ SELECT sparql.uuid();
 (1 row)
 ```
 
-## [STRUUID](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#struuid)
+#### [STRUUID](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#struuid)
 
 ```sql
 sparql.struuid() → rdfnode
@@ -1476,7 +1509,9 @@ SELECT sparql.struuid();
 (1 row)
 ```
 
-## [STRLEN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlen)
+### [Functions on Strings](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-strings)
+
+#### [STRLEN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlen)
 
 ```sql
 sparql.strlen(value rdfnode) → int
@@ -1512,7 +1547,7 @@ SELECT sparql.strlen('"42"^^xsd:int');
 (1 row)
 ```
 
-## [SUBSTR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#substr)
+#### [SUBSTR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#substr)
 
 ```sql
 sparql.substr(value rdfnode, start int, length int DEFAULT NULL) → rdfnode
@@ -1540,7 +1575,7 @@ SELECT sparql.substr('"foobar"', 4);
 (1 row)
 ```
 
-## [UCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ucase)
+#### [UCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ucase)
 
 ```sql
 sparql.ucase(value rdfnode) → rdfnode
@@ -1600,7 +1635,7 @@ SELECT sparql.lcase('"FOO"^^xsd:string');
 (1 row)
 ```
 
-## [STRSTARTS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strstarts)
+#### [STRSTARTS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strstarts)
 
 ```sql
 sparql.strstarts(value rdfnode, prefix rdfnode) → boolean
@@ -1624,7 +1659,7 @@ SELECT sparql.strstarts('"foobar"@en', '"foo"^^xsd:string');
 (1 row)
 ```
 
-## [STRENDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strends)
+#### [STRENDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strends)
 
 ```sql
 sparql.strends(value rdfnode, suffix rdfnode) → boolean
@@ -1648,7 +1683,7 @@ SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
 (1 row)
 ```
 
-## [CONTAINS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#contains)
+#### [CONTAINS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#contains)
 
 ```sql
 sparql.contains(value rdfnode, substring rdfnode) → boolean
@@ -1672,7 +1707,7 @@ SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"@en');
 (1 row)
 ```
 
-## [STRBEFORE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strbefore)
+#### [STRBEFORE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strbefore)
 
 ```sql
 sparql.strbefore(value rdfnode, delimiter rdfnode) → rdfnode
@@ -1708,7 +1743,7 @@ SELECT sparql.strbefore('"foobar"','"bar"');
 (1 row)
 ```
 
-## [STRAFTER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strafter)
+#### [STRAFTER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strafter)
 
 ```sql
 sparql.strafter(value rdfnode, delimiter rdfnode) → rdfnode
@@ -1744,7 +1779,7 @@ SELECT sparql.strafter('"foobar"','"foo"');
 (1 row)
 ```
 
-## [ENCODE_FOR_URI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#encode_for_uri)
+#### [ENCODE_FOR_URI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#encode_for_uri)
 
 ```sql
 sparql.encode_for_uri(value rdfnode) → rdfnode
@@ -1760,7 +1795,7 @@ SELECT sparql.encode_for_uri('"foo&bar!"');
 (1 row)
 ```
 
-## [CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#concat)
+#### [CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#concat)
 
 ```sql
 sparql.concat(value1 rdfnode, value2 rdfnode, ...) → rdfnode
@@ -1789,7 +1824,7 @@ SELECT sparql.concat('"foo"','"&"', '"bar"');
 (1 row)
 ```
 
-## [LANGMATCHES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#langmatches)
+#### [LANGMATCHES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#langmatches)
 
 ```sql
 sparql.langmatches(lang_tag rdfnode, pattern rdfnode) → boolean
@@ -1826,7 +1861,7 @@ SELECT sparql.langmatches('en', '*');
 (1 row)
 ```
 
-## [REGEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#regex)
+#### [REGEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#regex)
 
 ```sql
 sparql.regex(value rdfnode, pattern rdfnode, flags rdfnode DEFAULT '') → boolean
@@ -1846,7 +1881,7 @@ SELECT sparql.regex('"Hello World"', '^hello', 'i');
 (1 row)
 ```
 
-## [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
+#### [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
 
 ```sql
 sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode, flags rdfnode DEFAULT '') → rdfnode
@@ -1864,8 +1899,9 @@ SELECT sparql.replace('"foo bar foo"', 'foo', 'baz', 'g');
  "baz bar baz"
 (1 row)
 ```
+### [Functions on Numerics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-numerics)
 
-## [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)
+#### [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)
 
 ```sql
 sparql.abs(value rdfnode) → numeric
@@ -1889,7 +1925,7 @@ SELECT sparql.abs('"3.14"^^xsd:decimal');
 (1 row)
 ```
 
-## [ROUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#round)
+#### [ROUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#round)
 
 ```sql
 sparql.round(value rdfnode) → numeric
@@ -1913,7 +1949,7 @@ SELECT sparql.round('"-2.5"^^xsd:float');
 (1 row)
 ```
 
-## [CEIL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ceil)
+#### [CEIL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ceil)
 
 ```sql
 sparql.ceil(value rdfnode) → numeric
@@ -1936,7 +1972,7 @@ SELECT sparql.ceil('"-2.1"^^xsd:float');
 (1 row)
 ```
 
-## [FLOOR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#floor)
+#### [FLOOR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#floor)
 
 ```sql
 sparql.floor(value rdfnode) → numeric
@@ -1960,7 +1996,7 @@ SELECT sparql.floor('"-2.1"^^xsd:float');
 (1 row)
 ```
 
-## [RAND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rand)
+#### [RAND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rand)
 
 ```sql
 sparql.rand() → rdfnode
@@ -1978,7 +2014,9 @@ SELECT sparql.rand();
 (1 row)
 ```
 
-## [YEAR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#year)
+### [Functions on Dates and Times](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-dates-and-times)
+
+#### [YEAR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#year)
 
 ```sql
 sparql.year(value rdfnode) → int
@@ -1995,7 +2033,7 @@ SELECT sparql.year('"2025-05-17T14:00:00Z"^^xsd:dateTime');
  2025
 ```
 
-## [MONTH](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#month)
+#### [MONTH](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#month)
 
 ```sql
 sparql.month(value rdfnode) → int
@@ -2012,7 +2050,7 @@ SELECT sparql.month('"2025-05-17T14:00:00Z"^^xsd:dateTime');
 (1 row)
 ```
 
-## [DAY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#day)
+#### [DAY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#day)
 
 ```sql
 sparql.day(value rdfnode) → int
@@ -2030,7 +2068,7 @@ SELECT sparql.day('"2025-05-17T14:00:00Z"^^xsd:dateTime');
 (1 row)
 ```
 
-## [HOURS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hours)
+#### [HOURS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hours)
 
 ```sql
 sparql.hours(value rdfnode) → int
@@ -2048,7 +2086,7 @@ SELECT sparql.hours('"2025-05-17T14:00:00Z"^^xsd:dateTime');
 (1 row)
 ```
 
-## [MINUTES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#minutes)
+#### [MINUTES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#minutes)
 
 ```sql
 sparql.minutes(value rdfnode) → int
@@ -2066,7 +2104,7 @@ SELECT sparql.minutes('"2025-05-17T14:42:37Z"^^xsd:dateTime');
 (1 row)
 ```
 
-## [SECONDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#seconds)
+#### [SECONDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#seconds)
 
 ```sql
 sparql.seconds(value rdfnode) → int
@@ -2084,7 +2122,7 @@ SELECT sparql.seconds('"2025-05-17T14:42:37Z"^^xsd:dateTime');
 (1 row)
 ```
 
-## [TIMEZONE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#timezone)
+#### [TIMEZONE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#timezone)
 
 ```sql
 sparql.timezone(datetime rdfnode) → rdfnode
@@ -2102,7 +2140,7 @@ SELECT sparql.timezone('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
 (1 row)
 ```
 
-## [TZ](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#tz)
+#### [TZ](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#tz)
 
 ```sql
 sparql.tz(datetime rdfnode) → rdfnode
@@ -2126,7 +2164,9 @@ SELECT sparql.tz('"2025-05-17T08:00:00Z"^^xsd:dateTime');
 (1 row)
 ```
 
-## [MD5](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#md5)
+### [Hash Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hash-functions)
+
+#### [MD5](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#md5)
 
 ```sql
 sparql.md5(value rdfnode) → rdfnode
@@ -2150,7 +2190,9 @@ SELECT sparql.md5('42'::rdfnode);
 (1 row)
 ```
 
-## [LEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex)
+### [Custom Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#custom-functions)
+
+#### [LEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex)
 
 ```sql
 sparql.lex(value rdfnode) → rdfnode

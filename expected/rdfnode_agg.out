@@ -1,96 +1,96 @@
 -- ==========================================
--- SPARQL SUM() Aggregate Tests
+-- SPARQL SUM()/AVG() Aggregate Tests
 -- ==========================================
--- Test 1: Sum of integers → should return integer (not decimal)
+-- Test 1: sum/avg of integers
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "60"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                        avg                         
+--------------------------------------------------+----------------------------------------------------
+ "60"^^<http://www.w3.org/2001/XMLSchema#integer> | "20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 2: Sum of decimals → should return decimal
+-- Test 2: sum/avg of decimals
 WITH j (val) AS (
     VALUES
         ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"20.3"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                        sum                         
-----------------------------------------------------
- "61.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                        sum                         |                                avg                                
+----------------------------------------------------+-------------------------------------------------------------------
+ "61.0"^^<http://www.w3.org/2001/XMLSchema#decimal> | "20.3333333333333333"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 3: Sum of integer + decimal → should return decimal (type promotion)
+-- Test 3: sum/avg of integer + decimal
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"20.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                        sum                         
-----------------------------------------------------
- "60.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                        sum                         |                                avg                                
+----------------------------------------------------+-------------------------------------------------------------------
+ "60.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "20.1666666666666667"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 4: Sum of decimal + float → should return float (type promotion)
+-- Test 4: sum/avg of decimal + float
 WITH j (val) AS (
     VALUES
         ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"20.3"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
         ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "35.8"^^<http://www.w3.org/2001/XMLSchema#float>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                               avg                               
+--------------------------------------------------+-----------------------------------------------------------------
+ "35.8"^^<http://www.w3.org/2001/XMLSchema#float> | "11.9333333333333333"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
--- Test 5: Sum of integer + decimal + double → should return double (highest type wins)
+-- Test 5: sum/avg of integer + decimal + double
 WITH j (val) AS (
     VALUES
         ('"10.4"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"30.4"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                        sum                        
----------------------------------------------------
- "60.8"^^<http://www.w3.org/2001/XMLSchema#double>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                        sum                        |                               avg                                
+---------------------------------------------------+------------------------------------------------------------------
+ "60.8"^^<http://www.w3.org/2001/XMLSchema#double> | "20.2666666666666667"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
--- Test 6: Sum of single value → should preserve original type
+-- Test 6: sum/avg of single value
 WITH j (val) AS (
     VALUES
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                        avg                         
+--------------------------------------------------+----------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#integer> | "42.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 7: Sum with integer subtypes (xsd:int, xsd:long, etc.) → should return integer
+-- Test 7: sum/avg with integer subtypes (xsd:int, xsd:long)
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode),
         ('"20"^^<http://www.w3.org/2001/XMLSchema#long>'::rdfnode),
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "60"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                        avg                         
+--------------------------------------------------+----------------------------------------------------
+ "60"^^<http://www.w3.org/2001/XMLSchema#integer> | "20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 8: Sum with all four numeric types → should promote to double
+-- Test 8: sum/avg with all four numeric types
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -98,296 +98,287 @@ WITH j (val) AS (
         ('"2.5"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
         ('"3.0"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                        sum                        
----------------------------------------------------
- "21.0"^^<http://www.w3.org/2001/XMLSchema#double>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                        sum                        |                               avg                               
+---------------------------------------------------+-----------------------------------------------------------------
+ "21.0"^^<http://www.w3.org/2001/XMLSchema#double> | "5.2500000000000000"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
--- Test 9: Sum with integer + float (type promotion)
+-- Test 9: sum/avg with integer + float (type promotion)
 WITH j (val) AS (
     VALUES
         ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"0.1"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                        sum                        
----------------------------------------------------
- "100.1"^^<http://www.w3.org/2001/XMLSchema#float>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                        sum                        |                               avg                               
+---------------------------------------------------+-----------------------------------------------------------------
+ "100.1"^^<http://www.w3.org/2001/XMLSchema#float> | "50.0500000000000000"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
--- Test 10: Sum with negative integers
+-- Test 10: sum/avg with negative integers
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-3"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                       
--------------------------------------------------
- "2"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                       |                                 avg                                  
+-------------------------------------------------+----------------------------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#integer> | "0.66666666666666666667"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 11: Sum resulting in negative value
+-- Test 11: sum/avg resulting in negative value
 WITH j (val) AS (
     VALUES
         ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                        sum                        
----------------------------------------------------
- "-15"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                        sum                        |                                avg                                
+---------------------------------------------------+-------------------------------------------------------------------
+ "-15"^^<http://www.w3.org/2001/XMLSchema#integer> | "-7.5000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 12: Sum with zero values
+-- Test 12: sum/avg with zero values
 WITH j (val) AS (
     VALUES
         ('"0"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"0"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                               avg                                
+--------------------------------------------------+------------------------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer> | "3.3333333333333333"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 13: Sum resulting in zero
+-- Test 13: sum/avg resulting in zero
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                       
--------------------------------------------------
- "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                       |                        avg                        
+-------------------------------------------------+---------------------------------------------------
+ "0"^^<http://www.w3.org/2001/XMLSchema#integer> | "0.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 14: Sum with NULL values → should skip NULLs
+-- Test 14: sum/avg with NULL values
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         (NULL::rdfnode),
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "40"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                        avg                         
+--------------------------------------------------+----------------------------------------------------
+ "40"^^<http://www.w3.org/2001/XMLSchema#integer> | "20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 15: Sum of all NULLs → should return "0"^^xsd:integer per SPARQL 1.1
+-- Test 15: sum/avg of all NULLs
 WITH j (val) AS (
     VALUES
         (NULL::rdfnode),
         (NULL::rdfnode),
         (NULL::rdfnode)
 )
-SELECT sparql.sum(val) FROM j;
-                       sum                       
--------------------------------------------------
- "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
 (1 row)
 
--- Test 16: Sum of empty set (no rows) → should return "0"^^xsd:integer per SPARQL 1.1
+-- Test 16: sum/avg of empty set (no rows)
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.sum(val) FROM j WHERE val IS NULL;
-                       sum                       
--------------------------------------------------
- "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j WHERE val IS NULL;
+ sum | avg 
+-----+-----
+     | 
 (1 row)
 
--- ==========================================
--- SPARQL AVG() Aggregate Tests
--- ==========================================
--- Test 17: Average of integers → should return integer
+-- Test 17: sum/avg with xsd:string mixed in
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"20"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
 (1 row)
 
--- Test 18: Average of decimals → should return decimal
+-- Test 18: sum/avg with non-numeric only 
 WITH j (val) AS (
     VALUES
-        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"20.3"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
+        ('"not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "20.3333333333333333"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
 (1 row)
 
--- Test 19: Average of integer + decimal → should return decimal (type promotion)
+-- Test 19: sum/avg on multiple xsd:string
+WITH j (val) AS (
+    VALUES
+        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"banana"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.avg(val), sparql.sum(val) FROM j;
+ avg | sum 
+-----+-----
+     | 
+(1 row)
+
+-- Test 20: sum/avg on xsd:date
+WITH j (val) AS (
+    VALUES
+        ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
+        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
+(1 row)
+
+-- Test 21: sum/avg on xsd:dateTime 
+WITH j (val) AS (
+    VALUES
+        ('"2023-01-01T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode),
+        ('"2023-06-15T15:45:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
+(1 row)
+
+-- Test 22: sum/avg on xsd:time 
+WITH j (val) AS (
+    VALUES
+        ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode),
+        ('"15:45:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
+(1 row)
+
+-- Test 23: sum/avg on xsd:duration 
+WITH j (val) AS (
+    VALUES
+        ('"P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
+        ('"P2M"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
+(1 row)
+
+-- Test 24: sum/avg on xsd:boolean
+WITH j (val) AS (
+    VALUES
+        ('"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode),
+        ('"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
+(1 row)
+
+-- Test 25: sum/avg with mixed numeric and xsd:date
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"20.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+        ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "20.1666666666666667"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
 (1 row)
 
--- Test 20: Average of single value → should preserve original type
-WITH j (val) AS (
-    VALUES
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
--- Test 21: Average with all four numeric types → should promote to double
-WITH j (val) AS (
-    VALUES
-        ('"12"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"8.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"4.0"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
-        ('"16.0"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                               avg                                
-------------------------------------------------------------------
- "10.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#double>
-(1 row)
-
--- Test 22: Average with negative decimals
-WITH j (val) AS (
-    VALUES
-        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"-5.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"-2.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                                 avg                                  
-----------------------------------------------------------------------
- "1.00000000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
--- Test 23: Average with zero in the mix
-WITH j (val) AS (
-    VALUES
-        ('"0.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"10.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"20.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "10.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
--- Test 24: Average with NULL values → should skip NULLs
+-- Test 26: sum/avg with mixed numeric and xsd:string
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        (NULL::rdfnode),
-        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+        ('"text"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "20.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 25: Average of all NULLs → should return "0"^^xsd:integer per SPARQL 1.1
-WITH j (val) AS (
-    VALUES
-        (NULL::rdfnode),
-        (NULL::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                       avg                       
--------------------------------------------------
- "0"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 26: Average of empty set (no rows) → should return "0"^^xsd:integer per SPARQL 1.1
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j WHERE val IS NULL;
-                       avg                       
--------------------------------------------------
- "0"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum | avg 
+-----+-----
+     | 
 (1 row)
 
 -- ==========================================
--- SPARQL MIN() Aggregate Tests
+-- SPARQL MIN/MAX() Aggregate Tests
 -- ==========================================
--- Test 27: Minimum of integers → should return integer
+-- Test 27: min/max of integers
 WITH j (val) AS (
     VALUES
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer> | "30"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 28: Minimum of decimals → should return decimal
+-- Test 28: min/max of decimals
 WITH j (val) AS (
     VALUES
         ('"30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"20.3"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                         
-----------------------------------------------------
- "10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                        max                         
+----------------------------------------------------+----------------------------------------------------
+ "10.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 29: Minimum of integer + decimal → should preserve type of minimum value
+-- Test 29: min/max of integer + decimal
 WITH j (val) AS (
     VALUES
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                         
-----------------------------------------------------
- "10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                       max                        
+----------------------------------------------------+--------------------------------------------------
+ "10.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "30"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 30: Minimum with float values
+-- Test 30: min/max with float values
 WITH j (val) AS (
     VALUES
         ('"30.5"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
         ('"10.1"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
         ('"20.3"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "10.1"^^<http://www.w3.org/2001/XMLSchema#float>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "10.1"^^<http://www.w3.org/2001/XMLSchema#float> | "30.5"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
--- Test 31: Minimum with mixed types → should preserve type of minimum value
+-- Test 31: min/max with mixed types
 WITH j (val) AS (
     VALUES
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -395,63 +386,63 @@ WITH j (val) AS (
         ('"10.0"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
         ('"20.0"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                        
----------------------------------------------------
- "5.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                        |                       max                        
+---------------------------------------------------+--------------------------------------------------
+ "5.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "30"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 32: Minimum of single value → should preserve original type
+-- Test 32: min/max of single value
 WITH j (val) AS (
     VALUES
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#integer> | "42"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 33: Minimum with negative integers
+-- Test 33: min/max with negative integers
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"3"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "-5"^^<http://www.w3.org/2001/XMLSchema#integer> | "10"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 34: Minimum with all negative values
+-- Test 34: min/max with all negative values
 WITH j (val) AS (
     VALUES
         ('"-10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                        
----------------------------------------------------
- "-20"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                        |                       max                        
+---------------------------------------------------+--------------------------------------------------
+ "-20"^^<http://www.w3.org/2001/XMLSchema#integer> | "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 35: Minimum with zero values
+-- Test 35: min/max with zero values
 WITH j (val) AS (
     VALUES
         ('"0"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "-5"^^<http://www.w3.org/2001/XMLSchema#integer> | "10"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 40: Minimum with NULL values → should skip NULLs
+-- Test 36: min/max with NULL values
 WITH j (val) AS (
     VALUES
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -460,404 +451,139 @@ WITH j (val) AS (
         (NULL::rdfnode),
         ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer> | "30"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 41: Minimum of all NULLs → should return NULL (no values to select from)
+-- Test 37: min/max of all NULLs
 WITH j (val) AS (
     VALUES
         (NULL::rdfnode),
         (NULL::rdfnode),
         (NULL::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
- min 
------
- 
+SELECT sparql.min(val), sparql.max(val) FROM j;
+ min | max 
+-----+-----
+     | 
 (1 row)
 
--- Test 42: Minimum of empty set (no rows) → should return NULL (no rows to aggregate)
+-- Test 38: min/max of empty set (no rows)
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j WHERE val IS NULL;
- min 
------
- 
+SELECT sparql.min(val), sparql.max(val) FROM j WHERE val IS NULL;
+ min | max 
+-----+-----
+     | 
 (1 row)
 
--- Test 43: Minimum with equal values → should preserve type
+-- Test 39: min/max with equal values
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"10.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer> | "10"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 44: MIN on multiple strings → should return lexically smallest
+-- Test 40: min/max on multiple strings
 WITH j (val) AS (
     VALUES
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
         ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
         ('"mango"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                         
-----------------------------------------------------
- "apple"^^<http://www.w3.org/2001/XMLSchema#string>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                        max                         
+----------------------------------------------------+----------------------------------------------------
+ "apple"^^<http://www.w3.org/2001/XMLSchema#string> | "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
--- Test 45: MIN on dates → should return earliest date
+-- Test 41: min/max on dates
 WITH j (val) AS (
     VALUES
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
         ('"2021-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
         ('"2025-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                          min                          
--------------------------------------------------------
- "2021-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                          min                          |                          max                          
+-------------------------------------------------------+-------------------------------------------------------
+ "2021-01-01"^^<http://www.w3.org/2001/XMLSchema#date> | "2025-12-31"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
--- Test 46: MIN on single non-numeric value → should return that value
+-- Test 42: min/max on single non-numeric value → should return that value
 WITH j (val) AS (
     VALUES
         ('"single-string"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                            min                             
-------------------------------------------------------------
- "single-string"^^<http://www.w3.org/2001/XMLSchema#string>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                            min                             |                            max                             
+------------------------------------------------------------+------------------------------------------------------------
+ "single-string"^^<http://www.w3.org/2001/XMLSchema#string> | "single-string"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
--- ==========================================
--- SPARQL MAX() Aggregate Tests
--- ==========================================
--- Test 47: Maximum of integers → should return integer
-WITH j (val) AS (
-    VALUES
-        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "30"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 48: Maximum of decimals → should return decimal
-WITH j (val) AS (
-    VALUES
-        ('"30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"20.3"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "30.2"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
--- Test 49: Maximum of integer + decimal → should preserve type of maximum value
-WITH j (val) AS (
-    VALUES
-        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "30"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 50: Maximum with float values
-WITH j (val) AS (
-    VALUES
-        ('"30.5"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
-        ('"10.1"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
-        ('"20.3"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "30.5"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-
--- Test 51: Maximum with mixed types → should preserve type of maximum value
-WITH j (val) AS (
-    VALUES
-        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"5.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"10.0"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
-        ('"20.0"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "30"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 52: Maximum of single value → should preserve original type
-WITH j (val) AS (
-    VALUES
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 53: Maximum with negative integers
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"3"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 54: Maximum with all negative values
-WITH j (val) AS (
-    VALUES
-        ('"-10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"-20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "-5"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 55: Maximum with zero values
-WITH j (val) AS (
-    VALUES
-        ('"0"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"-5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 56: Maximum with NULL values → should skip NULLs
-WITH j (val) AS (
-    VALUES
-        ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        (NULL::rdfnode),
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        (NULL::rdfnode),
-        ('"20"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "30"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 57: Maximum of all NULLs → should return NULL (no values to select from)
-WITH j (val) AS (
-    VALUES
-        (NULL::rdfnode),
-        (NULL::rdfnode),
-        (NULL::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
- max 
------
- 
-(1 row)
-
--- Test 58: Maximum of empty set (no rows) → should return NULL (no rows to aggregate)
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j WHERE val IS NULL;
- max 
------
- 
-(1 row)
-
--- Test 59: Maximum with equal values → should preserve type
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"10.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                       max                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 60: MAX on multiple strings → should return lexically largest
-WITH j (val) AS (
-    VALUES
-        ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"mango"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- Test 61: MAX on dates → should return latest date
-WITH j (val) AS (
-    VALUES
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"2021-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"2025-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                          max                          
--------------------------------------------------------
- "2025-12-31"^^<http://www.w3.org/2001/XMLSchema#date>
-(1 row)
-
--- Test 62: MAX on single non-numeric value → should return that value
-WITH j (val) AS (
-    VALUES
-        ('"single-string"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                            max                             
-------------------------------------------------------------
- "single-string"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- ==========================================
--- SPARQL Term Ordering: Mixed-Type Tests
--- ==========================================
--- These tests verify SPARQL 1.1 Section 15.1 term ordering:
--- IRIs < lang-tagged < plain literals < numerics < temporals < xsd:string < other
--- Test 63: MIN with numeric + string → numeric comes first (typeOrder 3 < 8)
+-- Test 43: min/max with numeric + string
 WITH j (val) AS (
     VALUES
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"mango"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                       max                        
+----------------------------------------------------+--------------------------------------------------
+ "mango"^^<http://www.w3.org/2001/XMLSchema#string> | "42"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 64: MAX with numeric + string → string comes last (typeOrder 8 > 3)
-WITH j (val) AS (
-    VALUES
-        ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"mango"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- Test 65: MIN with numeric + date → numeric comes first (typeOrder 3 < 5)
+-- Test 44: min/max with numeric + date
 WITH j (val) AS (
     VALUES
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
         ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"2021-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                        
----------------------------------------------------
- "100"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                        |                          max                          
+---------------------------------------------------+-------------------------------------------------------
+ "100"^^<http://www.w3.org/2001/XMLSchema#integer> | "2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
--- Test 66: MAX with numeric + date → date comes last (typeOrder 5 > 3)
-WITH j (val) AS (
-    VALUES
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"2021-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                          max                          
--------------------------------------------------------
- "2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>
-(1 row)
-
--- Test 67: MIN with date + string → date comes first (typeOrder 5 < 8)
+-- Test 45: min/max with date + string
 WITH j (val) AS (
     VALUES
         ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                          min                          
--------------------------------------------------------
- "2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                          max                          
+----------------------------------------------------+-------------------------------------------------------
+ "apple"^^<http://www.w3.org/2001/XMLSchema#string> | "2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
--- Test 68: MAX with date + string → string comes last (typeOrder 8 > 5)
-WITH j (val) AS (
-    VALUES
-        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- Test 69: MIN with numeric + dateTime → numeric comes first (typeOrder 3 < 4)
+-- Test 46: min/max with numeric + dateTime
 WITH j (val) AS (
     VALUES
         ('"2023-06-15T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode),
         ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"2021-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                       
--------------------------------------------------
- "5"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                       |                                max                                 
+-------------------------------------------------+--------------------------------------------------------------------
+ "5"^^<http://www.w3.org/2001/XMLSchema#integer> | "2023-06-15T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
--- Test 70: MAX with numeric + dateTime → dateTime comes last (typeOrder 4 > 3)
-WITH j (val) AS (
-    VALUES
-        ('"2023-06-15T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode),
-        ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"2021-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                                max                                 
---------------------------------------------------------------------
- "2023-06-15T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-
--- Test 71: MIN with all category types → numeric wins
+-- Test 47: min/max with multiple category types
 WITH j (val) AS (
     VALUES
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -865,131 +591,65 @@ WITH j (val) AS (
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
         ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                         max                         
+----------------------------------------------------+-----------------------------------------------------
+ "zebra"^^<http://www.w3.org/2001/XMLSchema#string> | "10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
--- Test 72: MAX with all category types → string wins
-WITH j (val) AS (
-    VALUES
-        ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- Test 73: MIN with IRI + numeric + string → IRI comes first (typeOrder 0)
+-- Test 48: min/max with IRI + numeric + string
 WITH j (val) AS (
     VALUES
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('<http://example.org/resource/1>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-               min               
----------------------------------
- <http://example.org/resource/1>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+               min               |                       max                        
+---------------------------------+--------------------------------------------------
+ <http://example.org/resource/1> | "42"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 74: MAX with IRI + numeric + string → string comes last (typeOrder 8)
-WITH j (val) AS (
-    VALUES
-        ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('<http://example.org/resource/1>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- Test 75: MIN with lang-tagged + numeric → lang-tagged comes first (typeOrder 1 < 3)
+-- Test 49: min/max with lang-tagged + numeric
 WITH j (val) AS (
     VALUES
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"hello"@en'::rdfnode),
         ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-    min     
-------------
- "hello"@en
+SELECT sparql.min(val), sparql.max(val) FROM j;
+    min     |                        max                        
+------------+---------------------------------------------------
+ "hello"@en | "100"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 76: MAX with lang-tagged + numeric → numeric comes last (typeOrder 3 > 1)
-WITH j (val) AS (
-    VALUES
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"hello"@en'::rdfnode),
-        ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                        
----------------------------------------------------
- "100"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 77: MIN with plain literal + numeric → plain comes first (typeOrder 2 < 3)
+-- Test 50: min/max with plain literal + numeric
 WITH j (val) AS (
     VALUES
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"plain-text"'::rdfnode),
         ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-     min      
---------------
- "plain-text"
+SELECT sparql.min(val), sparql.max(val) FROM j;
+     min      |                        max                        
+--------------+---------------------------------------------------
+ "plain-text" | "100"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 78: MAX with plain literal + numeric → numeric comes last (typeOrder 3 > 2)
-WITH j (val) AS (
-    VALUES
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"plain-text"'::rdfnode),
-        ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                        
----------------------------------------------------
- "100"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 79: MIN with time + duration → time comes first (typeOrder 6 < 7)
+-- Test 51: min/max with time + duration
 WITH j (val) AS (
     VALUES
         ('"P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
         ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode),
         ('"P2M"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                         min                         
------------------------------------------------------
- "10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                         min                         |                        max                         
+-----------------------------------------------------+----------------------------------------------------
+ "10:30:00"^^<http://www.w3.org/2001/XMLSchema#time> | "P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>
 (1 row)
 
--- Test 80: MAX with time + duration → duration comes last (typeOrder 7 > 6)
-WITH j (val) AS (
-    VALUES
-        ('"P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
-        ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode),
-        ('"P2M"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>
-(1 row)
-
--- Test 81: MIN with comprehensive mix (IRI, lang, plain, numeric, temporal, string)
+-- Test 52: min/max with comprehensive mix (IRI, lang, plain, numeric, temporal, string)
 WITH j (val) AS (
     VALUES
         ('"string-value"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -999,29 +659,13 @@ WITH j (val) AS (
         ('"plain"'::rdfnode),
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-           min           
--------------------------
- <http://example.org/id>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+           min           |                          max                          
+-------------------------+-------------------------------------------------------
+ <http://example.org/id> | "2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
--- Test 82: MAX with comprehensive mix (IRI, lang, plain, numeric, temporal, string)
-WITH j (val) AS (
-    VALUES
-        ('"string-value"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('<http://example.org/id>'::rdfnode),
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"labeled"@en'::rdfnode),
-        ('"plain"'::rdfnode),
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                            max                            
------------------------------------------------------------
- "string-value"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- Test 83: MIN with multiple numerics of different types in mix → smallest numeric value
+-- Test 53: min/max with multiple numerics of different types in mix
 WITH j (val) AS (
     VALUES
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1029,13 +673,13 @@ WITH j (val) AS (
         ('"100"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
         ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                        min                        
----------------------------------------------------
- "5.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                          max                          
+----------------------------------------------------+-------------------------------------------------------
+ "zebra"^^<http://www.w3.org/2001/XMLSchema#string> | "2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
--- Test 84: MAX with multiple temporals of different types → latest temporal value
+-- Test 54: min/max with multiple temporals of different types
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -1044,13 +688,13 @@ WITH j (val) AS (
         ('"2021-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode),
         ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "apple"^^<http://www.w3.org/2001/XMLSchema#string>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                          max                          
+----------------------------------------------------+-------------------------------------------------------
+ "apple"^^<http://www.w3.org/2001/XMLSchema#string> | "2025-12-31"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
--- Test 85: MIN with NULL in mixed-type set → should skip NULL
+-- Test 55: min/max with NULL in mixed-type set
 WITH j (val) AS (
     VALUES
         ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1058,230 +702,16 @@ WITH j (val) AS (
         (NULL::rdfnode),
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
-SELECT sparql.min(val) FROM j;
-                       min                        
---------------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 86: MAX with NULL in mixed-type set → should skip NULL
-WITH j (val) AS (
-    VALUES
-        ('"zebra"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        (NULL::rdfnode),
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.max(val) FROM j;
-                        max                         
-----------------------------------------------------
- "zebra"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
--- ==========================================
--- Error Cases: SUM() and AVG() with Non-Numeric Types
--- ==========================================
--- SPARQL 1.1 Section 18.5.1.3 (Sum) and 18.5.1.4 (Avg):
--- SUM and AVG operate on numeric values. When non-numeric values are encountered,
--- they produce type errors which are excluded from the aggregate (similar to NULL).
--- If all values are non-numeric, the aggregate returns NULL (unbound result).
--- This behavior aligns with Blazegraph and GraphDB implementations.
--- Note: Virtuoso has non-conformant behavior (returns partial sums).
--- Test 87: SUM on string → should return NULL (no numeric values)
-WITH j (val) AS (
-    VALUES
-        ('"not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
- sum 
------
- 
-(1 row)
-
--- Test 88: SUM on xsd:date → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
- sum 
------
- 
-(1 row)
-
--- Test 89: SUM on xsd:dateTime → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"2023-01-01T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode),
-        ('"2023-06-15T15:45:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
- sum 
------
- 
-(1 row)
-
--- Test 90: SUM on xsd:time → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode),
-        ('"15:45:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
- sum 
------
- 
-(1 row)
-
--- Test 91: SUM on xsd:duration → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
-        ('"P2M"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
- sum 
------
- 
-(1 row)
-
--- Test 92: SUM on xsd:boolean → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode),
-        ('"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
- sum 
------
- 
-(1 row)
-
--- Test 93: SUM with mixed numeric and xsd:date → should return sum of numeric only (10)
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 94: SUM with mixed numeric and xsd:string → should return sum of numeric only (10)
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"text"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.sum(val) FROM j;
-                       sum                        
---------------------------------------------------
- "10"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 95: AVG on xsd:date → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
-        ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
- avg 
------
- 
-(1 row)
-
--- Test 96: AVG on xsd:dateTime → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"2023-01-01T10:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode),
-        ('"2023-06-15T15:45:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
- avg 
------
- 
-(1 row)
-
--- Test 97: AVG on xsd:time → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode),
-        ('"15:45:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
- avg 
------
- 
-(1 row)
-
--- Test 98: AVG on xsd:duration → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"P1Y"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
-        ('"P2M"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
- avg 
------
- 
-(1 row)
-
--- Test 99: AVG on xsd:string → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
-        ('"banana"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
- avg 
------
- 
-(1 row)
-
--- Test 100: AVG on xsd:boolean → should return NULL
-WITH j (val) AS (
-    VALUES
-        ('"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode),
-        ('"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
- avg 
------
- 
-(1 row)
-
--- Test 101: AVG with mixed numeric and xsd:time → should return avg of numeric only (42)
-WITH j (val) AS (
-    VALUES
-        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"10:30:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "42.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
-(1 row)
-
--- Test 102: AVG with mixed numeric and xsd:string → should return avg of numeric only (10)
-WITH j (val) AS (
-    VALUES
-        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
-        ('"not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
-)
-SELECT sparql.avg(val) FROM j;
-                                avg                                
--------------------------------------------------------------------
- "10.0000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer>
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                        min                         |                          max                          
+----------------------------------------------------+-------------------------------------------------------
+ "zebra"^^<http://www.w3.org/2001/XMLSchema#string> | "2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
 -- ==========================================
 -- SPARQL GROUP_CONCAT() Aggregate Tests
 -- ==========================================
--- Test 103: GROUP_CONCAT with default separator (space)
+-- Test 56: GROUP_CONCAT with default separator (space)
 WITH j (val) AS (
     VALUES
         ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1294,7 +724,7 @@ SELECT sparql.group_concat(val, ' ') FROM j;
  "apple banana cherry"
 (1 row)
 
--- Test 104: GROUP_CONCAT with custom separator (comma)
+-- Test 57: GROUP_CONCAT with custom separator (comma)
 WITH j (val) AS (
     VALUES
         ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1307,7 +737,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  "apple, banana, cherry"
 (1 row)
 
--- Test 105: GROUP_CONCAT with integers → should convert to strings
+-- Test 58: GROUP_CONCAT with integers
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -1320,7 +750,7 @@ SELECT sparql.group_concat(val, '-') FROM j;
  "10-20-30"
 (1 row)
 
--- Test 106: GROUP_CONCAT with mixed types → should handle all RDF terms
+-- Test 59: GROUP_CONCAT with mixed types
 WITH j (val) AS (
     VALUES
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -1333,7 +763,7 @@ SELECT sparql.group_concat(val, ' | ') FROM j;
  "42 | hello | 3.14"
 (1 row)
 
--- Test 107: GROUP_CONCAT with IRIs → should extract URI
+-- Test 60: GROUP_CONCAT with IRIs
 WITH j (val) AS (
     VALUES
         ('<http://example.org/resource1>'::rdfnode),
@@ -1346,7 +776,7 @@ SELECT sparql.group_concat(val, '; ') FROM j;
  "http://example.org/resource1; http://example.org/resource2; http://example.org/resource3"
 (1 row)
 
--- Test 108: GROUP_CONCAT with language-tagged strings → should extract lexical value
+-- Test 61: GROUP_CONCAT with language-tagged strings
 WITH j (val) AS (
     VALUES
         ('"hello"@en'::rdfnode),
@@ -1359,7 +789,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  "hello, bonjour, hola"
 (1 row)
 
--- Test 109: GROUP_CONCAT with NULL value → should skip NULL
+-- Test 62: GROUP_CONCAT with NULL value
 WITH j (val) AS (
     VALUES
         ('"apple"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1372,7 +802,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  "apple, cherry"
 (1 row)
 
--- Test 110: GROUP_CONCAT with all NULL → should return empty string
+-- Test 63: GROUP_CONCAT with all NULL
 WITH j (val) AS (
     VALUES
         (NULL::rdfnode),
@@ -1385,7 +815,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  
 (1 row)
 
--- Test 111: GROUP_CONCAT with empty set → should return empty string
+-- Test 64: GROUP_CONCAT with empty set
 SELECT sparql.group_concat(val, ', ') 
 FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
  group_concat 
@@ -1393,7 +823,7 @@ FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
  
 (1 row)
 
--- Test 112: GROUP_CONCAT with single value
+-- Test 65: GROUP_CONCAT with single value
 WITH j (val) AS (
     VALUES
         ('"only-one"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
@@ -1404,7 +834,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  "only-one"
 (1 row)
 
--- Test 113: GROUP_CONCAT with dates → should convert to string
+-- Test 66: GROUP_CONCAT with dates
 WITH j (val) AS (
     VALUES
         ('"2024-01-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode),
@@ -1417,7 +847,7 @@ SELECT sparql.group_concat(val, ' to ') FROM j;
  "2024-01-15 to 2024-02-20 to 2024-03-25"
 (1 row)
 
--- Test 114: GROUP_CONCAT with booleans → should convert to string
+-- Test 67: GROUP_CONCAT with booleans
 WITH j (val) AS (
     VALUES
         ('"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode),
@@ -1429,7 +859,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
  "true, false"
 (1 row)
 
--- Test 115: GROUP_CONCAT with empty string separator
+-- Test 68: GROUP_CONCAT with empty string separator
 WITH j (val) AS (
     VALUES
         ('"a"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1442,7 +872,7 @@ SELECT sparql.group_concat(val, '') FROM j;
  "abc"
 (1 row)
 
--- Test 116: GROUP_CONCAT with newline separator
+-- Test 69: GROUP_CONCAT with newline separator
 WITH j (val) AS (
     VALUES
         ('"line1"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1457,7 +887,7 @@ SELECT sparql.group_concat(val, E'\n') FROM j;
  line3"
 (1 row)
 
--- Test 117: GROUP_CONCAT with very long separator
+-- Test 70: GROUP_CONCAT with very long separator
 WITH j (val) AS (
     VALUES
         ('"first"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
@@ -1469,7 +899,7 @@ SELECT sparql.group_concat(val, ' --- SEPARATOR --- ') FROM j;
  "first --- SEPARATOR --- second"
 (1 row)
 
--- Test 118: GROUP_CONCAT with decimals → should preserve precision
+-- Test 71: GROUP_CONCAT with decimals
 WITH j (val) AS (
     VALUES
         ('"10.50"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
@@ -1485,7 +915,7 @@ SELECT sparql.group_concat(val, ', ') FROM j;
 -- ==========================================
 -- SPARQL SAMPLE() Aggregate Tests
 -- ==========================================
--- Test 119: SAMPLE with single integer value → should return that value
+-- Test 72: SAMPLE with single integer value
 WITH j (val) AS (
     VALUES
         ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
@@ -1496,7 +926,7 @@ SELECT sparql.sample(val) FROM j;
  "42"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 120: SAMPLE with multiple integers → should return first non-NULL value
+-- Test 73: SAMPLE with multiple integers
 WITH j (val) AS (
     VALUES
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
@@ -1509,7 +939,7 @@ SELECT sparql.sample(val) FROM j;
  "10"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 121: SAMPLE with NULLs at start → should skip NULLs and return first non-NULL
+-- Test 74: SAMPLE with NULLs at start
 WITH j (val) AS (
     VALUES
         (NULL::rdfnode),
@@ -1523,7 +953,7 @@ SELECT sparql.sample(val) FROM j;
  "42"^^<http://www.w3.org/2001/XMLSchema#integer>
 (1 row)
 
--- Test 122: SAMPLE with all NULLs → should return NULL
+-- Test 75: SAMPLE with all NULLs
 WITH j (val) AS (
     VALUES
         (NULL::rdfnode),
@@ -1536,7 +966,7 @@ SELECT sparql.sample(val) FROM j;
  
 (1 row)
 
--- Test 123: SAMPLE with empty set → should return NULL
+-- Test 76: SAMPLE with empty set
 WITH j (val) AS (
     SELECT NULL::rdfnode WHERE false
 )
@@ -1546,7 +976,7 @@ SELECT sparql.sample(val) FROM j;
  
 (1 row)
 
--- Test 124: SAMPLE with mixed numeric types → should return first value (with its original type)
+-- Test 77: SAMPLE with mixed numeric types
 WITH j (val) AS (
     VALUES
         ('"10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
@@ -1559,7 +989,7 @@ SELECT sparql.sample(val) FROM j;
  "10.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
--- Test 125: SAMPLE with strings → should return first string
+-- Test 78: SAMPLE with strings
 WITH j (val) AS (
     VALUES
         ('"apple"'::rdfnode),
@@ -1572,7 +1002,7 @@ SELECT sparql.sample(val) FROM j;
  "apple"
 (1 row)
 
--- Test 126: SAMPLE with IRIs → should return first IRI
+-- Test 79: SAMPLE with IRIs
 WITH j (val) AS (
     VALUES
         ('<http://example.org/resource1>'::rdfnode),
@@ -1585,7 +1015,7 @@ SELECT sparql.sample(val) FROM j;
  <http://example.org/resource1>
 (1 row)
 
--- Test 127: SAMPLE with language-tagged literals → should return first with language tag preserved
+-- Test 80: SAMPLE with language-tagged literals
 WITH j (val) AS (
     VALUES
         ('"hello"@en'::rdfnode),
@@ -1598,7 +1028,7 @@ SELECT sparql.sample(val) FROM j;
  "hello"@en
 (1 row)
 
--- Test 128: SAMPLE with mixed types (IRI, literal, numeric) → should return first value
+-- Test 81: SAMPLE with mixed types (IRI, literal, numeric) → should return first value
 WITH j (val) AS (
     VALUES
         ('<http://example.org/resource1>'::rdfnode),
@@ -1610,5 +1040,106 @@ SELECT sparql.sample(val) FROM j;
              sample             
 --------------------------------
  <http://example.org/resource1>
+(1 row)
+
+/* == Corner Cases == */
+-- Test 82: sum/avg with very large integers near PostgreSQL numeric limits
+WITH j (val) AS (
+    VALUES
+        ('"999999999999999999999999999"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"1"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                                    sum                                     |                                     avg                                     
+----------------------------------------------------------------------------+-----------------------------------------------------------------------------
+ "1000000000000000000000000000"^^<http://www.w3.org/2001/XMLSchema#integer> | "500000000000000000000000000.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+-- Test 83: sum/avg with infinity
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                          sum                          |                          avg                          
+-------------------------------------------------------+-------------------------------------------------------
+ "Infinity"^^<http://www.w3.org/2001/XMLSchema#double> | "Infinity"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 84: sum/avg with NaN
+WITH j (val) AS (
+    VALUES
+        ('"NaN"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                       avg                        
+--------------------------------------------------+--------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#double> | "NaN"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 85: min/max with blank nodes
+WITH j (val) AS (
+    VALUES
+        ('_:b1'::rdfnode),
+        ('_:b2'::rdfnode),
+        ('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+ min  |                       max                        
+------+--------------------------------------------------
+ _:b1 | "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 86: min/max with same text, different languages
+WITH j (val) AS (
+    VALUES
+        ('"hello"@en'::rdfnode),
+        ('"hello"@en-US'::rdfnode),
+        ('"hello"@en-GB'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+    min     |      max      
+------------+---------------
+ "hello"@en | "hello"@en-US
+(1 row)
+
+-- Test 87: GROUP_CONCAT with quotes, separators in values
+WITH j (val) AS (
+    VALUES
+        ('"text with ""quotes"""^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"text, with, commas"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.group_concat(val, ', ') FROM j;
+                group_concat                
+--------------------------------------------
+ "text with \"quotes\", text, with, commas"
+(1 row)
+
+-- Test 88: min/max when 10 (int) vs 10.0 (decimal) vs 10.0 (float)
+WITH j (val) AS (
+    VALUES
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode),
+        ('"10.0"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode),
+        ('"10.0"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                       min                        |                       max                        
+--------------------------------------------------+--------------------------------------------------
+ "10"^^<http://www.w3.org/2001/XMLSchema#integer> | "10"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+-- Test 89: min/max with empty strings and whitespace
+WITH j (val) AS (
+    VALUES
+        ('""^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('" "^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode),
+        ('"a"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+                      min                      |                      max                       
+-----------------------------------------------+------------------------------------------------
+ ""^^<http://www.w3.org/2001/XMLSchema#string> | "a"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 

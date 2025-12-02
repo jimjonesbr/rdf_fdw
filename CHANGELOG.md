@@ -18,9 +18,9 @@ Release date: **yyyy-mm-dd**
 
 ### Bug Fixes
 
-* Fixed SUM and AVG aggregates to return "0" for empty sets:
+* Fix `lex()` to correctly handle doubled-quote escapes in literals.
 
-  The SUM and AVG aggregate functions now correctly return `"0"^^xsd:integer` for empty result sets (no rows matching WHERE clause) or when all values are NULL, per SPARQL 1.1 specification. Previously, these aggregates incorrectly returned NULL. The fix distinguishes between empty sets (returns "0") and all-non-numeric inputs (returns NULL), ensuring compliance with standard triple store behavior tested in Virtuoso and GraphDB.
+  RDF literals containing double-quotes were being truncated, leading to invalid results of `sparql.lex()` or any function that depends on it. This has now being fixed.
 
 # Release Notes
 ## 2.1.0

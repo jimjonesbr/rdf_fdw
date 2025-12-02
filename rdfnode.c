@@ -669,9 +669,11 @@ static int getSparqlTermOrder(rdfnode_info *node)
  *      date < time < duration < string < other
  * 3. Within same type: use type-specific comparison
  *
- * This allows MIN/MAX to work with mixed datatypes, e.g.:
- *   MIN("zebra"^^xsd:string, "42"^^xsd:integer, "mango"^^xsd:string)
- *   Returns: "42"^^xsd:integer (numeric < string in term order)
+ * Note: This comparator defines a consistent cross-type order only.
+ * Aggregate functions MIN/MAX may apply additional mixed-type policies
+ * (e.g., Fuseki-style: MIN prefers non-numeric when mixed; MAX prefers
+ * numeric when mixed). Within a chosen category, this comparator is
+ * still used to compare values.
  */
 int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 {

@@ -75,13 +75,13 @@ LIMIT 5
 
 INFO:  SPARQL returned 5 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+                        p                        |        o         
+-------------------------------------------------+------------------
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزیرک مان"@fa
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "मैन द्वीप"@hi
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "Man-sziget"@hu
 (5 rows)
 
 /* SPARQL 15.5 - LIMIT */
@@ -141,7 +141,6 @@ INFO:  SPARQL returned 15 records.
 
                        p                       |                           o                           
 -----------------------------------------------+-------------------------------------------------------
- <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fa_1299522612953>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fr_1299522612977>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hi_1299522613002>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hu_1299522613031>
@@ -151,6 +150,7 @@ INFO:  SPARQL returned 15 records.
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_lo_1299522613159>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pl_1299522613194>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pt_1299522613232>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_ru_1299522613270>
 (10 rows)
 
 SELECT p, o FROM country
@@ -170,7 +170,6 @@ INFO:  SPARQL returned 15 records.
 
                        p                       |                           o                           
 -----------------------------------------------+-------------------------------------------------------
- <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fa_1299522612953>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_fr_1299522612977>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hi_1299522613002>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_hu_1299522613031>
@@ -180,6 +179,7 @@ INFO:  SPARQL returned 15 records.
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_lo_1299522613159>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pl_1299522613194>
  <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_pt_1299522613232>
+ <http://www.w3.org/2008/05/skos-xl#prefLabel> | <http://aims.fao.org/aos/agrovoc/xl_ru_1299522613270>
 (10 rows)
 
 /* SPARQL 15.1 - ORDER BY */
@@ -199,9 +199,9 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+                        p                        |        o         
+-------------------------------------------------+------------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة مان"@ar
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
 (3 rows)
@@ -222,11 +222,11 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
+                        p                        |        o         
+-------------------------------------------------+------------------
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة مان"@ar
 (3 rows)
 
 SELECT p, o FROM country
@@ -245,11 +245,11 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
+                        p                        |        o         
+-------------------------------------------------+------------------
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة مان"@ar
 (3 rows)
 
 SELECT p, o FROM country
@@ -293,10 +293,10 @@ LIMIT 8
 
 INFO:  SPARQL returned 8 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
+                        p                        |        o         
+-------------------------------------------------+------------------
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "востраў Мэн"@be
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة مان"@ar
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزیرک مان"@fa
 (3 rows)
 
@@ -332,9 +332,9 @@ ORDER BY  ASC (?p)
 
 INFO:  SPARQL returned 25 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+                        p                        |       o        
+-------------------------------------------------+----------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة مان"@ar
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (text) */
@@ -657,12 +657,11 @@ SELECT ?p ?o
  FILTER(?o = "2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-                  p                  |                                 o                                  
--------------------------------------+--------------------------------------------------------------------
- <http://purl.org/dc/terms/modified> | "2024-02-13T14:30:39"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
+ p | o 
+---+---
+(0 rows)
 
 /* SPARQL - 17.3 Operator Mapping (timestamptz) */
 SELECT p, o FROM country
@@ -929,11 +928,11 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                        p                        |         o          
--------------------------------------------------+--------------------
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزيرة الإنسان"@ar
+                        p                        |        o         
+-------------------------------------------------+------------------
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Ostrov Man"@cs
  <http://www.w3.org/2004/02/skos/core#prefLabel> | "Isle of Man"@en
+ <http://www.w3.org/2004/02/skos/core#prefLabel> | "جزیرک مان"@fa
 (3 rows)
 
 /* SPARQL 17.4.2.1 - isIRI */
@@ -1505,12 +1504,13 @@ SELECT ?p ?o
  FILTER(LANGMATCHES(LANG(?o), "fr"))
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 2 records.
 
-                        p                        |        o        | langmatches | langmatches | langmatches 
--------------------------------------------------+-----------------+-------------+-------------+-------------
- <http://www.w3.org/2004/02/skos/core#prefLabel> | "Île de Man"@fr | t           | t           | f
-(1 row)
+                          p                          |                                                    o                                                    | langmatches | langmatches | langmatches 
+-----------------------------------------------------+---------------------------------------------------------------------------------------------------------+-------------+-------------+-------------
+ <http://www.w3.org/2004/02/skos/core#prefLabel>     | "Île de Man"@fr                                                                                         | t           | t           | f
+ <http://www.w3.org/2004/02/skos/core#editorialNote> | "Nom abrégé pour les listes et les tableaux: Île de Man. Nom complet: l'Île de Man (FAO NOCS, 2025)"@fr | t           | t           | f
+(2 rows)
 
 /* SPARQL 17.4.3.14 - REGEX */
 SELECT p, o

@@ -8833,32 +8833,33 @@ Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
  */
 Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 {
-	RdfnodeAggState *state;
-	char *result;
+	RdfnodeAggState *aggstate;
 
-	/* Check if we have state */
-	if (!PG_ARGISNULL(0))
-	{
-		state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+	/* 
+	 * If called with NULL state (empty set or all-NULL inputs),
+	 * return SQL NULL to match SPARQL 1.1 semantics for unbound
+	 * results. 
+	 */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_NULL();
 
-		if (state != NULL && state->has_input)
-		{
-			/* We saw input values */
-			if (state->numeric_value == NULL)
-			{
-				/* All input was non-numeric (type errors) - return NULL */
-				PG_RETURN_NULL();
-			}
+	/* Extract state pointer */
+	aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-			/* Have numeric result - delegate to actual implementation */
-			return sum_rdfnode_finalfunc(fcinfo);
-		}
-	}
+	/* Defensive: if state pointer is NULL, treat as empty and return NULL */
+	if (aggstate == NULL)
+		PG_RETURN_NULL();
 
-	/* No input at all (empty set) or all NULL values
-	 * Per SPARQL 1.1 Section 18.5.1.3: SUM({}) = 0 */
-	result = strdt("0", RDF_XSD_INTEGER);
-	PG_RETURN_TEXT_P(cstring_to_text(result));
+	/* If we saw input values but none were numeric, return NULL (type errors) */
+	if (aggstate->has_input && aggstate->numeric_value == NULL)
+		PG_RETURN_NULL();
+
+	/* If no input was recorded, return NULL (empty group) */
+	if (!aggstate->has_input)
+		PG_RETURN_NULL();
+
+	/* Have numeric result - delegate to actual implementation */
+	return sum_rdfnode_finalfunc(fcinfo);
 }
 
 /*
@@ -8888,45 +8889,46 @@ Datum rdf_fdw_avg_sfunc(PG_FUNCTION_ARGS)
  * ---------------------
  * Wrapper for SPARQL AVG aggregate final function.
  *
- * Per SPARQL 1.1 Section 18.5.1.4: Avg is defined in terms of Sum and Count.
- * Avg({}) = 0/0 = 0. However, when ALL input values produce type errors,
- * the aggregate returns NULL (unbound result). Same logic as SUM.
+ * Per SPARQL 1.1 Section 18.5.1.4: Avg is defined in terms
+ * of Sum and Count. Avg({}) = 0/0 = 0. However, when ALL
+ * input values produce type errors, the aggregate returns
+ * NULL (unbound result). Same logic as SUM.
  */
 Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
 {
-	RdfnodeAggState *state;
-	char *result;
+	RdfnodeAggState *aggstate;
 
-	/* Check if we have state */
-	if (!PG_ARGISNULL(0))
-	{
-		state = (RdfnodeAggState *)PG_GETARG_POINTER(0);
+	/* 
+	 * If called with NULL aggstate (empty set or all-NULL
+	 * inputs), return SQL NULL to match SPARQL 1.1 semantics
+	 * for unbound results. */
+	if (PG_ARGISNULL(0))
+		PG_RETURN_NULL();
 
-		if (state != NULL && state->has_input)
-		{
-			/* We saw input values */
-			if (state->numeric_value == NULL)
-			{
-				/* All input was non-numeric (type errors) - return NULL */
-				PG_RETURN_NULL();
-			}
+	/* Extract state pointer */
+	aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-			/* Have numeric result - delegate to actual implementation */
-			return avg_rdfnode_finalfunc(fcinfo);
-		}
-	}
+	/* If state pointer is NULL, treat as empty and return NULL */
+	if (aggstate == NULL)
+		PG_RETURN_NULL();
 
-	/* No input at all (empty set) or all NULL values
-	 * Per SPARQL 1.1 Section 18.5.1.4: AVG({}) = 0/0 = 0 */
-	result = strdt("0", RDF_XSD_INTEGER);
-	PG_RETURN_TEXT_P(cstring_to_text(result));
+	/* If we saw input values but none were numeric, return NULL */
+	if (aggstate->has_input && aggstate->numeric_value == NULL)
+		PG_RETURN_NULL();
+
+	/* If no input was recorded, return NULL (empty group) */
+	if (!aggstate->has_input)
+		PG_RETURN_NULL();
+
+	return avg_rdfnode_finalfunc(fcinfo);
 }
 
 /*
  * rdf_fdw_min_sfunc
  * -----------------
  * Wrapper for SPARQL MIN aggregate transition function.
- * Handles PostgreSQL aggregate context validation before delegating.
+ * Handles PostgreSQL aggregate context validation before
+ * delegating.
  */
 Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8948,10 +8950,11 @@ Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_min_finalfunc
  * ---------------------
  * Wrapper for SPARQL MIN aggregate final function.
- * Returns NULL when all input values are NULL or for empty result sets.
+ * Returns NULL when all input values are NULL or for
+ * empty result sets.
  *
- * Per SPARQL 1.1 Section 18.5.1.5, MIN returns unbound (SQL NULL)
- * when there are no values to select from.
+ * Per SPARQL 1.1 Section 18.5.1.5, MIN returns unbound
+ * (SQL NULL) when there are no values to select from.
  */
 Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
 {
@@ -8969,7 +8972,8 @@ Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_max_sfunc
  * -----------------
  * Wrapper for SPARQL MAX aggregate transition function.
- * Handles PostgreSQL aggregate context validation before delegating.
+ * Handles PostgreSQL aggregate context validation before
+ * delegating.
  */
 Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8991,10 +8995,11 @@ Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_max_finalfunc
  * ---------------------
  * Wrapper for SPARQL MAX aggregate final function.
- * Returns NULL when all input values are NULL or for empty result sets.
+ * Returns NULL when all input values are NULL or for
+ * empty result sets.
  *
- * Per SPARQL 1.1 Section 18.5.1.6, MAX returns unbound (SQL NULL)
- * when there are no values to select from.
+ * Per SPARQL 1.1 Section 18.5.1.6, MAX returns unbound
+ * (SQL NULL) when there are no values to select from.
  */
 Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 {
@@ -9011,8 +9016,9 @@ Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 /*
  * rdf_fdw_sample_sfunc
  * --------------------
- * Wrapper for SPARQL SAMPLE aggregate transition function.
- * Handles PostgreSQL aggregate context validation before delegating.
+ * Wrapper for SPARQL SAMPLE aggregate transition
+ * function.Handles PostgreSQL aggregate context
+ * validation before delegating.
  */
 Datum rdf_fdw_sample_sfunc(PG_FUNCTION_ARGS)
 {
@@ -9034,10 +9040,11 @@ Datum rdf_fdw_sample_sfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_sample_finalfunc
  * ------------------------
  * Wrapper for SPARQL SAMPLE aggregate final function.
- * Returns NULL when all input values are NULL or for empty result sets.
+ * Returns NULL when all input values are NULL or for
+ * empty result sets.
  *
- * Per SPARQL 1.1 Section 18.5.1.8, SAMPLE returns unbound (SQL NULL)
- * when there are no non-NULL values in the input.
+ * Per SPARQL 1.1 Section 18.5.1.8, SAMPLE returns unbound
+ * (SQL NULL) when there are no non-NULL values in the input.
  */
 Datum rdf_fdw_sample_finalfunc(PG_FUNCTION_ARGS)
 {
@@ -9054,8 +9061,9 @@ Datum rdf_fdw_sample_finalfunc(PG_FUNCTION_ARGS)
 /*
  * rdf_fdw_group_concat_sfunc
  * ---------------------------
- * Wrapper for SPARQL GROUP_CONCAT aggregate state transition function.
- * Handles PostgreSQL aggregate context validation before delegating.
+ * Wrapper for SPARQL GROUP_CONCAT aggregate state
+ * transition function. Handles PostgreSQL aggregate
+ * context validation before delegating.
  */
 Datum rdf_fdw_group_concat_sfunc(PG_FUNCTION_ARGS)
 {
@@ -9076,12 +9084,14 @@ Datum rdf_fdw_group_concat_sfunc(PG_FUNCTION_ARGS)
 /*
  * rdf_fdw_group_concat_finalfunc
  * -------------------------------
- * Wrapper for SPARQL GROUP_CONCAT aggregate final function.
- * Returns empty string when called with NULL state (empty result set).
+ * Wrapper for SPARQL GROUP_CONCAT aggregate final
+ * function. Returns empty string when called with NULL
+ * aggstate (empty result set).
  *
- * Per SPARQL 1.1 Section 18.5.1.7, GROUP_CONCAT of an empty set should
- * produce an empty string, not NULL. This differs from PostgreSQL's
- * string_agg which returns NULL for empty sets.
+ * Per SPARQL 1.1 Section 18.5.1.7, GROUP_CONCAT of an
+ * empty set should produce an empty string, not NULL.
+ * This differs from PostgreSQL's string_agg which returns
+ * NULL for empty sets.
  */
 Datum rdf_fdw_group_concat_finalfunc(PG_FUNCTION_ARGS)
 {

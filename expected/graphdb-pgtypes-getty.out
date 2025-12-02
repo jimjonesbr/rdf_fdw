@@ -55,7 +55,7 @@ SELECT DISTINCT ?name ?lon ?lat
   }
 ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 
-INFO:  SPARQL returned 19666 records.
+INFO:  SPARQL returned 19667 records.
 
                        name                       |   lon    |    lat    
 --------------------------------------------------+----------+-----------
@@ -142,10 +142,10 @@ ORDER BY  ASC (?name)
 
 INFO:  SPARQL returned 6 records.
 
-                   name                    |   lon    |    lat    
--------------------------------------------+----------+-----------
- Netherlands, Europe, World                |   4.8167 |      52.5
- North Holland, Netherlands, Europe, World | 4.816667 | 52.583333
+                   name                    |   lon    | lat  
+-------------------------------------------+----------+------
+ Netherlands, Europe, World                |   4.8167 | 52.5
+ North Holland, Netherlands, Europe, World | 4.816667 | 52.5
 (2 rows)
 
 /*
