@@ -25,8 +25,6 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
   if (v[1] < 10) printf("%d%02d", v[1], v[2]); \
   else print v[1] }')
 
-#REGRESS = table-clone
-
 REGRESS += create_extension \
 			upgrade \
 			version \
@@ -43,6 +41,7 @@ REGRESS += create_extension \
 			pg_datatypes \
 			sparql-functions \
 			prefix-management \
+			table-clone \
 			virtuoso-pgtypes-linkedgeodata \
 			virtuoso-rdfnode-linkedgeodata \
 			blazegraph-pgtypes-wikidata \
