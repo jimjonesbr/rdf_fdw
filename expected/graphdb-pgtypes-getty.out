@@ -25,7 +25,7 @@ SERVER getty OPTIONS (
   WHERE {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
-    foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
+    foaf:focus [ontogeo:within(50.00 3.00 52.00 3.00)] ;
     gvp:parentString ?name .
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
@@ -47,7 +47,7 @@ SELECT DISTINCT ?name ?lon ?lat
 {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
-    foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
+    foaf:focus [ontogeo:within(50.00 3.00 52.00 3.00)] ;
     gvp:parentString ?name .
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
@@ -55,21 +55,18 @@ SELECT DISTINCT ?name ?lon ?lat
   }
 ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 
-INFO:  SPARQL returned 19667 records.
+INFO:  SPARQL returned 7 records.
 
-                       name                       |   lon    |    lat    
---------------------------------------------------+----------+-----------
- Limburg, Flanders, Belgium, Europe, World        |  5.44198 | 50.787231
- Limburg, Flanders, Belgium, Europe, World        | 5.378992 | 50.787296
- Limburg, Flanders, Belgium, Europe, World        | 5.175732 | 50.787592
- East Flanders, Flanders, Belgium, Europe, World  | 3.986098 | 50.787634
- East Flanders, Flanders, Belgium, Europe, World  | 3.816052 | 50.787787
- Vlaams-Brabant, Flanders, Belgium, Europe, World | 4.197696 | 50.787941
- Vlaams-Brabant, Flanders, Belgium, Europe, World | 4.837764 | 50.788137
- West Flanders, Flanders, Belgium, Europe, World  | 3.450666 | 50.788186
- East Flanders, Flanders, Belgium, Europe, World  | 3.960753 | 50.788248
- East Flanders, Flanders, Belgium, Europe, World  | 3.753994 | 50.788325
-(10 rows)
+                          name                          | lon |    lat    
+--------------------------------------------------------+-----+-----------
+ Hainaut, Province de, Wallonia, Belgium, Europe, World |   3 | 50.766667
+ West Flanders, Flanders, Belgium, Europe, World        |   3 | 50.983333
+ Flanders, Belgium, Europe, World                       |   3 |        51
+ West Flanders, Flanders, Belgium, Europe, World        |   3 |      51.1
+ West Flanders, Flanders, Belgium, Europe, World        |   3 | 51.116667
+ West Flanders, Flanders, Belgium, Europe, World        |   3 | 51.133333
+ West Flanders, Flanders, Belgium, Europe, World        |   3 |     51.25
+(7 rows)
 
 SELECT uri, lon, lat
 FROM getty_places
@@ -88,7 +85,7 @@ SELECT ?place ?name ?lon ?lat
 {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
-    foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
+    foaf:focus [ontogeo:within(50.00 3.00 52.00 3.00)] ;
     gvp:parentString ?name .
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
@@ -102,17 +99,17 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-                uri                 |   lon    |    lat    
-------------------------------------+----------+-----------
- http://vocab.getty.edu/tgn/7241965 | 3.390464 | 50.899208
- http://vocab.getty.edu/tgn/7250496 |  3.39086 | 50.839573
- http://vocab.getty.edu/tgn/7251247 | 3.391555 | 51.161424
+                uri                 | lon |    lat    
+------------------------------------+-----+-----------
+ http://vocab.getty.edu/tgn/7240365 |   3 | 51.133333
+ http://vocab.getty.edu/tgn/7237990 |   3 | 51.116667
+ http://vocab.getty.edu/tgn/7248650 |   3 | 51.116667
 (3 rows)
 
 SELECT * FROM (
   SELECT DISTINCT ON (name) name, lon, lat
   FROM getty_places
-  WHERE lat BETWEEN 52.50 AND 52.60 AND lon BETWEEN 4.81 AND 4.82) j
+  WHERE lat BETWEEN 51.10 AND 52.10 AND lon BETWEEN 2.9 AND 3.0) j
 ORDER BY lat
 LIMIT 3;
 INFO:  SPARQL query sent to 'http://vocab.getty.edu/sparql.xml':
@@ -126,27 +123,26 @@ SELECT ?name ?lon ?lat
 {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
-    foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
+    foaf:focus [ontogeo:within(50.00 3.00 52.00 3.00)] ;
     gvp:parentString ?name .
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
     geo:long ?lon
   
  ## rdf_fdw pushdown conditions ##
- FILTER(?lat >= 52.50)
- FILTER(?lat <= 52.60)
- FILTER(?lon >= 4.81)
- FILTER(?lon <= 4.82)
+ FILTER(?lat >= 51.10)
+ FILTER(?lat <= 52.10)
+ FILTER(?lon >= 2.9)
+ FILTER(?lon <= 3.0)
 }
 ORDER BY  ASC (?name)
 
-INFO:  SPARQL returned 6 records.
+INFO:  SPARQL returned 5 records.
 
-                   name                    |   lon    | lat  
--------------------------------------------+----------+------
- Netherlands, Europe, World                |   4.8167 | 52.5
- North Holland, Netherlands, Europe, World | 4.816667 | 52.5
-(2 rows)
+                      name                       | lon |    lat    
+-------------------------------------------------+-----+-----------
+ West Flanders, Flanders, Belgium, Europe, World |   3 | 51.133333
+(1 row)
 
 /*
  * == Non-Italians Who Worked in Italy ==

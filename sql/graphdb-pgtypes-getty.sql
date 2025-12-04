@@ -27,7 +27,7 @@ SERVER getty OPTIONS (
   WHERE {
   ?place skos:inScheme tgn: ;
     foaf:focus ?geouri ;
-    foaf:focus [ontogeo:within(50.787185 3.389722 53.542265 7.169019)] ;
+    foaf:focus [ontogeo:within(50.00 3.00 52.00 3.00)] ;
     gvp:parentString ?name .
   ?geouri a schema:Place ;
    	geo:lat ?lat ;
@@ -51,7 +51,7 @@ LIMIT 3;
 SELECT * FROM (
   SELECT DISTINCT ON (name) name, lon, lat
   FROM getty_places
-  WHERE lat BETWEEN 52.50 AND 52.60 AND lon BETWEEN 4.81 AND 4.82) j
+  WHERE lat BETWEEN 51.10 AND 52.10 AND lon BETWEEN 2.9 AND 3.0) j
 ORDER BY lat
 LIMIT 3;
 
