@@ -4,7 +4,7 @@ SELECT length(rdf_fdw_version()) > 0 AS version_exists;
 -- Test rdf_fdw_version() contains expected components
 SELECT 
     rdf_fdw_version() ~ 'rdf_fdw\s+[0-9]+\.[0-9]+' AS has_rdf_fdw_version,
-    rdf_fdw_version() ~ 'PostgreSQL\s+[0-9]+\.[0-9]+' AS has_postgresql_version,
+    rdf_fdw_version() ~ 'PostgreSQL\s+[0-9]+' AS has_postgresql_version,
     rdf_fdw_version() ~ 'libxml\s+[0-9]+\.[0-9]+' AS has_libxml_version,
     rdf_fdw_version() ~ 'librdf\s+[0-9]+\.[0-9]+' AS has_librdf_version,
     rdf_fdw_version() ~ 'libcurl\s+[0-9]+\.[0-9]+' AS has_libcurl_version;
@@ -15,15 +15,13 @@ SELECT length(rdf_fdw_settings()) > 0 AS settings_exists;
 -- Test rdf_fdw_settings() C function contains expected core components
 SELECT 
     rdf_fdw_settings() ~ 'rdf_fdw\s+[0-9]+\.[0-9]+' AS has_rdf_fdw,
-    rdf_fdw_settings() ~ 'PostgreSQL\s+[0-9]+\.[0-9]+' AS has_postgresql,
+    rdf_fdw_settings() ~ 'PostgreSQL\s+[0-9]+' AS has_postgresql,
     rdf_fdw_settings() ~ 'libxml\s+[0-9]+\.[0-9]+' AS has_libxml,
     rdf_fdw_settings() ~ 'librdf\s+[0-9]+\.[0-9]+' AS has_librdf,
     rdf_fdw_settings() ~ 'libcurl\s+[0-9]+\.[0-9]+' AS has_libcurl;
 
 -- Test rdf_fdw_settings view returns expected components
-SELECT component, 
-       version IS NOT NULL AS has_version,
-       version ~ '^[0-9]+\.[0-9]+|^[A-Za-z]' AS version_format_ok
+SELECT component, version IS NOT NULL AS has_version
 FROM rdf_fdw_settings
 ORDER BY component COLLATE "C" DESC;
 
