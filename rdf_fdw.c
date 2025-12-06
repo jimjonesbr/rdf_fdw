@@ -8801,7 +8801,8 @@ static void LoadPrefixes(RDFfdwState *state)
  * rdf_fdw_sum_sfunc
  * -----------------
  * Wrapper for SPARQL SUM aggregate transition function.
- * Handles PostgreSQL aggregate context validation before delegating.
+ * Handles PostgreSQL aggregate context validation before
+ * delegating.
  */
 Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8815,7 +8816,10 @@ Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("sum_rdfnode_sfunc called in non-aggregate context")));
 
-	/* Delegate to the actual implementation in sum_rdfnode_sfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * sum_rdfnode_sfunc()
+	 */
 	return sum_rdfnode_sfunc(fcinfo);
 }
 
@@ -8846,11 +8850,14 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 	/* Extract state pointer */
 	aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-	/* Defensive: if state pointer is NULL, treat as empty and return NULL */
+	/* If state pointer is NULL, treat as empty and return NULL */
 	if (aggstate == NULL)
 		PG_RETURN_NULL();
 
-	/* If we saw input values but none were numeric, return NULL (type errors) */
+	/* 
+	 * If we saw input values but none were numeric, return NULL
+	 * (type errors)
+	 */
 	if (aggstate->has_input && aggstate->numeric_value == NULL)
 		PG_RETURN_NULL();
 
@@ -8866,7 +8873,8 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
  * rdf_fdw_avg_sfunc
  * -----------------
  * Wrapper for SPARQL AVG aggregate transition function.
- * Handles PostgreSQL aggregate context validation before delegating.
+ * Handles PostgreSQL aggregate context validation before
+ * delegating.
  */
 Datum rdf_fdw_avg_sfunc(PG_FUNCTION_ARGS)
 {
@@ -8942,7 +8950,10 @@ Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("min_rdfnode_sfunc called in non-aggregate context")));
 
-	/* Delegate to the actual implementation in min_rdfnode_sfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * min_rdfnode_sfunc()
+	 */
 	return min_rdfnode_sfunc(fcinfo);
 }
 
@@ -8960,11 +8971,14 @@ Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
 {
 	elog(DEBUG1, "%s called", __func__);
 
-	/* NULL state means only NULL values were found - return SQL NULL */
+	/* NULL state means only NULL values were found */
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
 
-	/* Delegate to the actual implementation in min_rdfnode_finalfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * min_rdfnode_finalfunc()
+	 */
 	return min_rdfnode_finalfunc(fcinfo);
 }
 
@@ -8987,7 +9001,10 @@ Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("max_rdfnode_sfunc called in non-aggregate context")));
 
-	/* Delegate to the actual implementation in max_rdfnode_sfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * max_rdfnode_sfunc()
+	 */
 	return max_rdfnode_sfunc(fcinfo);
 }
 
@@ -9005,11 +9022,14 @@ Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 {
 	elog(DEBUG1, "%s called", __func__);
 
-	/* NULL state means only NULL values were found - return SQL NULL */
+	/* NULL state means only NULL values were found */
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
 
-	/* Delegate to the actual implementation in max_rdfnode_finalfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * max_rdfnode_finalfunc()
+	 */
 	return max_rdfnode_finalfunc(fcinfo);
 }
 
@@ -9032,7 +9052,10 @@ Datum rdf_fdw_sample_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("sample_rdfnode_sfunc called in non-aggregate context")));
 
-	/* Delegate to the actual implementation in sample_rdfnode_sfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * sample_rdfnode_sfunc()
+	 */
 	return sample_rdfnode_sfunc(fcinfo);
 }
 
@@ -9050,11 +9073,14 @@ Datum rdf_fdw_sample_finalfunc(PG_FUNCTION_ARGS)
 {
 	elog(DEBUG1, "%s called", __func__);
 
-	/* NULL state means only NULL values were found - return SQL NULL */
+	/* NULL state means only NULL values were found */
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
 
-	/* Delegate to the actual implementation in sample_rdfnode_finalfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * sample_rdfnode_finalfunc()
+	 */
 	return sample_rdfnode_finalfunc(fcinfo);
 }
 
@@ -9077,30 +9103,37 @@ Datum rdf_fdw_group_concat_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("group_concat_rdfnode_sfunc called in non-aggregate context")));
 
-	/* Delegate to the actual implementation in group_concat_sfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * group_concat_sfunc()
+	 */
 	return group_concat_sfunc(fcinfo);
 }
 
 /*
  * rdf_fdw_group_concat_finalfunc
- * -------------------------------
- * Wrapper for SPARQL GROUP_CONCAT aggregate final
- * function. Returns empty string when called with NULL
- * aggstate (empty result set).
+ * -----------------------------
+ * Wrapper for SPARQL GROUP_CONCAT aggregate final function. Returns empty
+ * string when called with NULL aggstate (empty result set).
  *
- * Per SPARQL 1.1 Section 18.5.1.7, GROUP_CONCAT of an
- * empty set should produce an empty string, not NULL.
- * This differs from PostgreSQL's string_agg which returns
- * NULL for empty sets.
+ * Per SPARQL 1.1 Section 18.5.1.7, GROUP_CONCAT of an empty set should
+ * produce an empty string, not NULL. This differs from PostgreSQL's
+ * string_agg which returns NULL for empty sets.
  */
 Datum rdf_fdw_group_concat_finalfunc(PG_FUNCTION_ARGS)
 {
 	elog(DEBUG1, "%s called", __func__);
 
-	/* NULL state means empty result set - return empty string per SPARQL spec */
+	/* 
+	 * NULL state means empty result set - return empty
+	 * string per SPARQL spec
+	 */
 	if (PG_ARGISNULL(0))
 		PG_RETURN_TEXT_P(cstring_to_text(""));
 
-	/* Delegate to the actual implementation in group_concat_finalfunc() */
+	/* 
+	 * Delegate to the actual implementation in
+	 * group_concat_finalfunc()
+	 */
 	return group_concat_finalfunc(fcinfo);
 }

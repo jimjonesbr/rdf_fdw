@@ -171,12 +171,14 @@ char *lex(char *input)
  * lang
  * ----
  *
- * Extracts the language tag from an RDF literal, if present. Returns an empty
- * string if no language tag is found or if the input is invalid/empty.
+ * Extracts the language tag from an RDF literal, if present. Returns an
+ * empty string if no language tag is found or if the input is invalid/empty.
  *
- * input: Null-terminated C string representing an RDF literal (e.g., "abc"@en, "123"^^xsd:int)
+ * input: Null-terminated C string representing an RDF literal (e.g.,
+ * "abc"@en, "123"^^xsd:int)
  *
- * returns: Null-terminated C string representing the language tag (e.g., "en") or empty string
+ * returns: Null-terminated C string representing the language tag (e.g.,
+ * "en") or empty string
  */
 char *lang(char *input)
 {
@@ -231,10 +233,13 @@ char *lang(char *input)
  * Constructs an RDF literal by combining a lexical value with a specified
  * language tag. The result is formatted as a language-tagged RDF literal.
  *
- * literal: Null-terminated C string representing an RDF literal or lexical value (e.g., "abc")
- * language: Null-terminated C string representing the language tag (e.g., "en")
+ * literal: Null-terminated C string representing an RDF literal or lexical
+ * value (e.g., "abc")
+ * language: Null-terminated C string representing the language tag (e.g.,
+ * "en")
  *
- * returns: Null-terminated C string formatted as a language-tagged RDF literal (e.g., "abc"@en)
+ * returns: Null-terminated C string formatted as a language-tagged RDF
+ * literal (e.g., "abc"@en)
  */
 char *strlang(char *literal, char *language)
 {
@@ -265,16 +270,19 @@ char *strlang(char *literal, char *language)
  * strstarts
  * ---------
  *
- * Implements the core logic for the SPARQL STRSTARTS function, returning true if
- * the lexical form of the first argument (string) starts with the lexical form
- * of the second argument (substring), or false if arguments are incompatible or
- * the condition fails. An empty substring is considered a prefix of any string,
- * per SPARQL behavior.
+ * Implements the core logic for the SPARQL STRSTARTS function, returning true
+ * if the lexical form of the first argument (string) starts with the lexical
+ * form of the second argument (substring), or false if arguments are
+ * incompatible or the condition fails. An empty substring is considered a
+ * prefix of any string, per SPARQL behavior.
  *
- * str: Null-terminated C string representing an RDF literal or value (e.g., "foobar")
- * substr: Null-terminated C string representing an RDF literal or value (e.g., "foo")
+ * str: Null-terminated C string representing an RDF literal or value
+ * (e.g., "foobar")
+ * substr: Null-terminated C string representing an RDF literal or value
+ * (e.g., "foo")
  *
- * returns: C boolean (true if string starts with substring, false otherwise or if incompatible)
+ * returns: C boolean (true if string starts with substring, false otherwise
+ * or if incompatible)
  */
 bool strstarts(char *str, char *substr)
 {
@@ -316,16 +324,19 @@ bool strstarts(char *str, char *substr)
  * strends
  * -------
  *
- * Implements the core logic for the SPARQL STRENDS function, returning true if
- * the lexical form of the first argument (string) ends with the lexical form
- * of the second argument (substring), or false if arguments are incompatible or
- * the condition fails. An empty substring is considered a suffix of any string,
- * per SPARQL behavior.
+ * Implements the core logic for the SPARQL STRENDS function, returning true
+ * if the lexical form of the first argument (string) ends with the lexical
+ * form of the second argument (substring), or false if arguments are
+ * incompatible or the condition fails. An empty substring is considered a
+ * suffix of any string, per SPARQL behavior.
  *
- * str: Null-terminated C string representing an RDF literal or value (e.g., "foobar")
- * substr: Null-terminated C string representing an RDF literal or value (e.g., "bar")
+ * str: Null-terminated C string representing an RDF literal or value
+ * (e.g., "foobar")
+ * substr: Null-terminated C string representing an RDF literal or value
+ * (e.g., "bar")
  *
- * returns: C boolean (true if string ends with substring, false otherwise or if incompatible)
+ * returns: C boolean (true if string ends with substring, false otherwise
+ * or if incompatible)
  */
 bool strends(char *str, char *substr)
 {
@@ -366,14 +377,19 @@ bool strends(char *str, char *substr)
  * strdt
  * -----
  *
- * Constructs an RDF literal by combining a lexical value with a specified datatype IRI.
- * Uses ExpandDatatypePrefix to handle prefix expansion (e.g., "xsd:" to full URI) or
- * retain prefixed/bare forms without angle brackets unless fully expanded.
+ * Constructs an RDF literal by combining a lexical value with a specified
+ * datatype IRI. Uses ExpandDatatypePrefix to handle prefix expansion
+ * (e.g., "xsd:" to full URI) or retain prefixed/bare forms without angle
+ * brackets unless fully expanded.
  *
- * literal: Null-terminated C string representing an RDF literal or lexical value (e.g., "123")
- * datatype: Null-terminated C string representing the datatype IRI (e.g., "xsd:int", "foo:bar")
+ * literal: Null-terminated C string representing an RDF literal or lexical
+ * value (e.g., "123")
+ * datatype: Null-terminated C string representing the datatype IRI
+ * (e.g., "xsd:int", "foo:bar")
  *
- * returns: Null-terminated C string formatted as a datatype-tagged RDF literal (e.g., "123"^^<http://www.w3.org/2001/XMLSchema#int>, "foo"^^foo:bar)
+ * returns: Null-terminated C string formatted as a datatype-tagged RDF
+ * literal (e.g., "123"^^<http://www.w3.org/2001/XMLSchema#int>,
+ * "foo"^^foo:bar)
  */
 char *strdt(char *literal, char *datatype)
 {
@@ -413,12 +429,15 @@ char *strdt(char *literal, char *datatype)
  * str
  * ---
  *
- * Extracts the lexical value of an RDF literal or the string form of an IRI and returns it as a new RDF literal.
- * If the input is empty or null, returns an empty RDF literal.
+ * Extracts the lexical value of an RDF literal or the string form of an IRI
+ * and returns it as a new RDF literal. If the input is empty or null,
+ * returns an empty RDF literal.
  *
- * input: Null-terminated C string representing an RDF literal or IRI (e.g., "abc"@en, "<http://example.org>")
+ * input: Null-terminated C string representing an RDF literal or IRI
+ * (e.g., "abc"@en, "<http://example.org>")
  *
- * returns: Null-terminated C string formatted as an RDF literal (e.g., "abc", "http://example.org")
+ * returns: Null-terminated C string formatted as an RDF literal
+ * (e.g., "abc", "http://example.org")
  */
 char *str(char *input)
 {
@@ -451,9 +470,10 @@ char *str(char *input)
 /*
  * iri
  * ---
- * Converts a string to an IRI by wrapping it in angle brackets (< >), mimicking
- * SPARQL's IRI() function. Strips quotes and any language tags or datatypes if
- * present *only* for quoted literals. Raw strings and pre-wrapped IRIs are preserved.
+ * Converts a string to an IRI by wrapping it in angle brackets (< >),
+ * mimicking SPARQL's IRI() function. Strips quotes and any language tags or
+ * datatypes if present *only* for quoted literals. Raw strings and
+ * pre-wrapped IRIs are preserved.
  */
 char *iri(char *input)
 {
@@ -481,14 +501,17 @@ char *iri(char *input)
  * bnode
  * -----
  *
- * Implements SPARQL’s BNODE function. Without arguments (input = NULL), generates
- * a unique blank node (e.g., "_:b123"). With a string argument, returns a blank node
- * based on the lexical form of the input (e.g., BNODE("xyz") → "_:xyz"). Invalid
- * inputs (e.g., IRIs, blank nodes, empty literals) return NULL.
+ * Implements SPARQL’s BNODE function. Without arguments (input = NULL),
+ * generates a unique blank node (e.g., "_:b123"). With a string argument,
+ * returns a blank node based on the lexical form of the input (e.g.,
+ * BNODE("xyz") → "_:xyz"). Invalid inputs (e.g., IRIs, blank nodes, empty
+ * literals) return NULL.
  *
- * input: Null-terminated C string (literal or bare string) for BNODE(str), or NULL for BNODE().
+ * input: Null-terminated C string (literal or bare string) for BNODE(str),
+ * or NULL for BNODE().
  *
- * returns: Null-terminated C string representing a blank node (e.g., "_:xyz"), or NULL for invalid inputs.
+ * returns: Null-terminated C string representing a blank node (e.g.,
+ * "_:xyz"), or NULL for invalid inputs.
  */
 char *bnode(char *input)
 {
@@ -570,9 +593,9 @@ char *bnode(char *input)
  * Implements the SPARQL CONCAT function.
  *
  * Concatenates two RDF literals while preserving compatible language tags
- * or datatype annotations (specifically xsd:string). If both inputs share the
- * same language tag, the result will carry that tag. If both inputs are typed
- * as xsd:string, the result is typed as xsd:string.
+ * or datatype annotations (specifically xsd:string). If both inputs share
+ * the same language tag, the result will carry that tag. If both inputs are
+ * typed as xsd:string, the result is typed as xsd:string.
  *
  * Mixing a simple literal with a language-tagged or xsd:string-typed value
  * results in a plain literal without type or language. Conflicting language
@@ -656,8 +679,8 @@ char *concat(char *left, char *right)
  * Checks if a string is an RDF IRI. A valid IRI must:
  * - Start with '<' and end with '>'
  * - Not contain spaces or quote characters
- * - May be absolute (with a colon) or relative (e.g., <foo>)
- *   according to SPARQL 1.1.
+ * - May be absolute (with a colon) or relative (e.g., <foo>) according to
+ *   SPARQL 1.1.
  */
 bool isIRI(char *input)
 {
@@ -2555,9 +2578,11 @@ Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS)
  * sample_rdfnode_finalfunc
  * ------------------------
  * Final function for SAMPLE(rdfnode).
- * Returns the arbitrary value stored (first non-NULL value encountered).
+ * Returns the arbitrary value stored (first non-NULL
+ * value encountered).
  *
- * Note: NULL state handling is done by the wrapper in rdf_fdw.c
+ * Note: NULL state handling is done by the wrapper in
+ * rdf_fdw.c
  */
 Datum sample_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
