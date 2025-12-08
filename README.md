@@ -372,9 +372,9 @@ Returns comprehensive version information for `rdf_fdw`, PostgreSQL, compiler, a
 
 ```sql
 SELECT rdf_fdw_version();
-                                                    rdf_fdw_version                                                    
------------------------------------------------------------------------------------------------------------------------
- rdf_fdw 2.2 (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, librdf 1.0.17, libcurl 8.14.1)
+                                                      rdf_fdw_version                                                      
+---------------------------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.3-dev (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, librdf 1.0.17, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -396,7 +396,7 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
- rdf_fdw    | 2.2
+ rdf_fdw    | 2.3-dev
  PostgreSQL | 18.1 (Debian 18.1-1.pgdg13+2)
  libxml     | 2.9.14
  librdf     | 1.0.17
@@ -406,7 +406,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2025-12-07 11:45:49 UTC
+ built      | 2025-12-08 05:52:53 UTC
 (11 rows)
 ```
 

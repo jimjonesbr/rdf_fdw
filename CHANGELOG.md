@@ -1,4 +1,11 @@
 # Release Notes
+## 2.3.0
+Release date: **YYYY-MM-DD**
+
+### Enhancements
+### Bug Fixes
+
+# Release Notes
 ## 2.2.0
 Release date: **2025-12-07**
 

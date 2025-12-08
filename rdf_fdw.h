@@ -21,7 +21,7 @@
 #include <libxml/tree.h>     /* xmlDocPtr, xmlNodePtr */
 
 /* Version */
-#define FDW_VERSION "2.2"
+#define FDW_VERSION "2.3-dev"
 
 /* Request status codes */
 #define REQUEST_SUCCESS 0
