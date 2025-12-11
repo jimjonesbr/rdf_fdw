@@ -683,7 +683,7 @@ INFO:  SPARQL returned 35 records.
 /*** Exception tests ***/
 /* COPY .. FROM must fail - not supported */
 COPY ft (subject, predicate, object) FROM STDIN WITH (DELIMITER ' ');
-ERROR:  COPY FROM is not supported by rdf_fdw
+ERROR:  cannot copy to foreign table "ft"
 /* INSERT must fail - all columns must be of type rdfnode */
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 INSERT INTO ft (subject, predicate, object) VALUES

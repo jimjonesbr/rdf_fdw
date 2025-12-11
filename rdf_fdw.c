@@ -703,7 +703,12 @@ static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan, Index re
 static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinfo, List *fdw_private, int subplan_index, int eflags);
 static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo);
-
+#if PG_VERSION_NUM >= 110000
+static void rdfBeginForeignInsert(ModifyTableState *mtstate, ResultRelInfo *rinfo);
+static void rdfEndForeignInsert(EState *estate, ResultRelInfo *rinfo);
+static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
+static Oid GetRelOidFromName(char *relname, char *code);
+#endif /*PG_VERSION_NUM */
 static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value);
 static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
@@ -718,10 +723,6 @@ static struct RDFfdwState *DeserializePlanData(List *list);
 static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
-#if PG_VERSION_NUM >= 110000
-static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
-static Oid GetRelOidFromName(char *relname, char *code);
-#endif /*PG_VERSION_NUM */
 static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrelid);
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
@@ -753,6 +754,10 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	fdwroutine->BeginForeignModify = rdfBeginForeignModify;
 	fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
 	fdwroutine->EndForeignModify = rdfEndForeignModify;
+#if PG_VERSION_NUM >= 110000
+	fdwroutine->BeginForeignInsert = rdfBeginForeignInsert;
+	fdwroutine->EndForeignInsert = rdfEndForeignInsert;
+#endif /*PG_VERSION_NUM */
 
 	PG_RETURN_POINTER(fdwroutine);
 }
@@ -3028,6 +3033,23 @@ static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo)
 
 	elog(DEBUG1, "%s exit", __func__);
 }
+
+#if PG_VERSION_NUM >= 110000
+static void rdfBeginForeignInsert(ModifyTableState *mtstate,
+								  ResultRelInfo *resultRelInfo)
+{
+	ereport(ERROR,
+			(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+			 errmsg("COPY FROM is not supported by rdf_fdw")));
+}
+
+static void rdfEndForeignInsert(EState *estate, ResultRelInfo *resultRelInfo)
+{
+	ereport(ERROR,
+			(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+			 errmsg("COPY FROM is not supported by rdf_fdw")));
+}
+#endif /*PG_VERSION_NUM >= 110000*/
 
 static void LoadRDFTableInfo(RDFfdwState *state)
 {

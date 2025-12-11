@@ -117,7 +117,19 @@ SELECT s, p, o FROM rdbms_wikidata;
 SELECT * FROM rdbms_fuseki 
 ORDER BY o::text COLLATE "C";
 
+COPY (
+  SELECT s, p , o
+  FROM rdbms_fuseki 
+  ORDER BY o::text COLLATE "C"
+) TO STDOUT DELIMITER E' ';
+
 /*** Exception tests ***/
+
+/* COPY .. FROM must fail - not supported */
+COPY ft (subject, predicate, object) FROM STDIN WITH (DELIMITER ' ');
+<https://www.uni-muenster.de> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "42"^^<http://www.w3.org/2001/XMLSchema#int>
+<https://www.uni-muenster.de> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "37"^^<http://www.w3.org/2001/XMLSchema#int>
+\.
 
 /* INSERT must fail - all columns must be of type rdfnode */
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
