@@ -15,6 +15,7 @@
 
 #include <curl/curl.h>
 #include <libxml/tree.h>
+#include <ctype.h>
 #include "librdf.h"
 
 #include "sparql.h"
@@ -159,7 +160,8 @@ struct MemoryStruct
 static struct RDFfdwOption valid_options[] =
 	{
 		/* Foreign Servers */
-		{RDF_SERVER_OPTION_ENDPOINT, ForeignServerRelationId, true, false},
+		{RDF_SERVER_OPTION_SELECT_URL, ForeignServerRelationId, true, false},
+		{RDF_SERVER_OPTION_UPDATE_URL, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_FORMAT, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_HTTP_PROXY, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_HTTPS_PROXY, ForeignServerRelationId, false, false},
@@ -178,6 +180,7 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_ENABLE_XML_HUGE, ForeignServerRelationId, false, false},
 		/* Foreign Tables */
 		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
+		{RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, ForeignTableRelationId, false, false},
 		{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
 		{RDF_TABLE_OPTION_ENABLE_PUSHDOWN, ForeignTableRelationId, false, false},
 		{RDF_TABLE_OPTION_FETCH_SIZE, ForeignTableRelationId, false, false},
@@ -696,9 +699,10 @@ static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es);
 static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node);
 static void rdfReScanForeignScan(ForeignScanState *node);
 static void rdfEndForeignScan(ForeignScanState *node);
-// static TupleTableSlot *rdfExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
-// static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
-// static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan, Index resultRelation, int subplan_index);
+static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinfo, List *fdw_private, int subplan_index, int eflags);
+static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo);
 
 static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value);
 static List *DescribeIRI(RDFfdwState *state);
@@ -711,7 +715,6 @@ static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
 static List *SerializePlanData(RDFfdwState *state);
 static struct RDFfdwState *DeserializePlanData(List *list);
-static int CheckURL(char *url);
 static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root);
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname);
 static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root);
@@ -734,6 +737,8 @@ static void LoadPrefixes(RDFfdwState *state);
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
 	FdwRoutine *fdwroutine = makeNode(FdwRoutine);
+
+	/* Scan callbacks */
 	fdwroutine->GetForeignRelSize = rdfGetForeignRelSize;
 	fdwroutine->GetForeignPaths = rdfGetForeignPaths;
 	fdwroutine->GetForeignPlan = rdfGetForeignPlan;
@@ -742,9 +747,13 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	fdwroutine->IterateForeignScan = rdfIterateForeignScan;
 	fdwroutine->ReScanForeignScan = rdfReScanForeignScan;
 	fdwroutine->EndForeignScan = rdfEndForeignScan;
-	// fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
-	// fdwroutine->ExecForeignUpdate = rdfExecForeignUpdate;
-	// fdwroutine->ExecForeignDelete = rdfExecForeignDelete;
+
+	/* Modify callbacks (for INSERT/UPDATE/DELETE) */
+	fdwroutine->PlanForeignModify = rdfPlanForeignModify;
+	fdwroutine->BeginForeignModify = rdfBeginForeignModify;
+	fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
+	fdwroutine->EndForeignModify = rdfEndForeignModify;
+
 	PG_RETURN_POINTER(fdwroutine);
 }
 
@@ -2389,7 +2398,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 							 errmsg("empty value in option '%s'", opt->optname)));
 				}
 
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENDPOINT) == 0 ||
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_SELECT_URL) == 0 ||
 					strcmp(opt->optname, RDF_SERVER_OPTION_HTTP_PROXY) == 0 ||
 					strcmp(opt->optname, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
 				{
@@ -2814,6 +2823,212 @@ static void rdfEndForeignScan(ForeignScanState *node)
 	elog(DEBUG1, "%s exit: so long .. \n", __func__);
 }
 
+static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan,
+								  Index resultRelation, int subplan_index)
+{
+	elog(DEBUG1, "%s called", __func__);
+	/* We don't need to pass any private data to execution */
+	return NIL;
+}
+
+static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinfo,
+								  List *fdw_private, int subplan_index, int eflags)
+{
+	RDFfdwState *state;
+	Relation rel = rinfo->ri_RelationDesc;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Create and initialize the FDW state */
+	state = (RDFfdwState *)palloc0(sizeof(RDFfdwState));
+	state->foreigntableid = RelationGetRelid(rel);
+	state->enable_pushdown = true;
+	state->enable_xml_huge = false;
+	state->log_sparql = true;
+	state->has_unparsable_conds = false;
+	state->query_param = RDF_DEFAULT_QUERY_PARAM;
+	state->format = RDF_DEFAULT_FORMAT;
+	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+	state->max_retries = RDF_DEFAULT_MAXRETRY;
+	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
+	state->foreign_table = GetForeignTable(state->foreigntableid);
+	state->server = GetForeignServer(state->foreign_table->serverid);
+	state->sparql_query_type = SPARQL_INSERT;
+
+	/* Load server, table, and user mapping info */
+	LoadRDFServerInfo(state);
+	LoadRDFTableInfo(state);
+	LoadRDFUserMapping(state);
+	/* Load prefixes from the SERVER's 'prefix_context' */
+	LoadPrefixes(state);
+
+	if (CheckURL(state->endpoint) != REQUEST_SUCCESS)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+				 errmsg("invalid %s: '%s'", RDF_SERVER_OPTION_UPDATE_URL, state->endpoint)));
+
+	/* Check if triple graph pattern is provided */
+	if (!state->sparql_update_pattern || strlen(state->sparql_update_pattern) == 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+				 errmsg("INSERT operation requires a valid triple pattern in '%s'", RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN),
+				 errhint("Check the '%s' option in the FOREIGN TABLE.", RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
+
+	/* Validate SPARQL update pattern and variable mapping */
+	ValidateSPARQLUpdatePattern(state);
+
+	/* Create temporary memory context for per-row allocations */
+	state->temp_cxt = AllocSetContextCreate(CurrentMemoryContext,
+											"rdf_fdw temporary context",
+											ALLOCSET_DEFAULT_SIZES);
+
+	/* Store state in ResultRelInfo */
+	rinfo->ri_FdwState = state;
+
+	elog(DEBUG1, "%s exit", __func__);
+}
+
+static TupleTableSlot *rdfExecForeignInsert(EState *estate,
+											ResultRelInfo *rinfo,
+											TupleTableSlot *slot,
+											TupleTableSlot *planSlot)
+{
+	RDFfdwState *state;
+	TupleDesc tupdesc = slot->tts_tupleDescriptor;
+	MemoryContext oldcontext;
+	StringInfoData sparql_insert, final_query;
+	int len;
+	Datum datum;
+	bool isnull;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	RDFNODEOID = GetRDFNodeOID();
+
+	/* State must be initialized by rdfBeginForeignModify */
+	state = (RDFfdwState *)rinfo->ri_FdwState;
+	if (!state)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("%s failed to initialize state", __func__)));
+
+	/* Switch to temporary context for per-row allocations */
+	MemoryContextReset(state->temp_cxt);
+	oldcontext = MemoryContextSwitchTo(state->temp_cxt);
+
+	/* Start building the SPARQL INSERT DATA query */
+	initStringInfo(&sparql_insert);
+	appendStringInfoString(&sparql_insert, state->sparql_update_pattern);
+
+	/* Substitute variables (placeholders) with actual values */
+	for (int i = 0; i < tupdesc->natts; i++)
+	{
+		RDFfdwColumn *col = state->rdfTable->cols[i];
+		char *sparql_var = col->sparqlvar;
+		char *value_str;
+		char *replaced;
+
+		/* Skip columns without SPARQL variable mapping */
+		if (!sparql_var || strlen(sparql_var) == 0)
+			continue;
+
+		/* Check if this SPARQL variable exists in the template */
+		if (strstr(sparql_insert.data, sparql_var) == NULL)
+		{
+			elog(DEBUG2, "%s: SPARQL variable '%s' not found in SPARQL template, skipping",
+				 __func__, sparql_var);
+			continue;
+		}
+
+		/* Get the attribute value from the slot */
+		datum = slot_getattr(slot, i + 1, &isnull);
+
+		/* Skip NULL values - they won't produce valid triples */
+		if (isnull)
+		{
+			elog(DEBUG2, "%s: column '%s' (variable '%s') is NULL, skipping row",
+				 __func__, col->name, sparql_var);
+
+			/* Switch back to old context before returning */
+			MemoryContextSwitchTo(oldcontext);
+
+			/* Return the slot unchanged - this row will be skipped */
+			return slot;
+		}
+
+		/* Ensure the column is of rdfnode type */
+		if (col->pgtype != RDFNODEOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
+
+		/* Convert the datum to string representation */
+		value_str = DatumToString(datum, col->pgtype);
+
+		/* Replace the variable placeholder with the actual value */
+		replaced = str_replace(sparql_insert.data, sparql_var, value_str);
+		resetStringInfo(&sparql_insert);
+		appendStringInfoString(&sparql_insert, replaced);
+	}
+
+	/* Strip trailing whitespace and dots from the triple pattern */
+	len = strlen(sparql_insert.data);
+	while (len > 0 && (sparql_insert.data[len - 1] == '.' ||
+					   isspace((unsigned char)sparql_insert.data[len - 1])))
+	{
+		sparql_insert.data[len - 1] = '\0';
+		len--;
+		sparql_insert.len = len;
+	}
+
+	/* Wrap the triple pattern in INSERT DATA { } */
+	initStringInfo(&final_query);
+
+	if (state->prefix_context)
+	{
+		appendStringInfoString(&final_query, state->sparql_prefixes);
+		appendStringInfoString(&final_query, "\n");
+	}
+	appendStringInfoString(&final_query, "INSERT DATA {\n  ");
+	appendStringInfoString(&final_query, sparql_insert.data);
+	appendStringInfoString(&final_query, "\n}");
+
+	elog(DEBUG1, "%s: executing INSERT for row: %s", __func__, sparql_insert.data);
+	elog(DEBUG2, "%s: final SPARQL query:\n%s", __func__, final_query.data);
+
+	/* Set the SPARQL query text */
+	state->sparql_query_type = SPARQL_INSERT;
+	state->sparql = final_query.data;
+
+	/* Execute the INSERT immediately */
+	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+	{
+		MemoryContextSwitchTo(oldcontext);
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("%s: failed to execute SPARQL INSERT", __func__)));
+	}
+
+	/* Clean up temp context for next row */
+	MemoryContextSwitchTo(oldcontext);
+
+	elog(DEBUG1, "%s exit (row inserted)", __func__);
+
+	return slot;
+}
+
+static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo)
+{
+	RDFfdwState *state = (RDFfdwState *)rinfo->ri_FdwState;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	if (state)
+		pfree(state);
+
+	elog(DEBUG1, "%s exit", __func__);
+}
+
 static void LoadRDFTableInfo(RDFfdwState *state)
 {
 	ListCell *cell;
@@ -2926,6 +3141,11 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			state->raw_sparql = defGetString(def);
 			state->is_sparql_parsable = IsSPARQLParsable(state);
 		}
+		else if (strcmp(RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, def->defname) == 0)
+		{
+			state->sparql_update_pattern = defGetString(def);
+			//state->is_sparql_parsable = IsSPARQLParsable(state);
+		}
 		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0)
 			state->log_sparql = defGetBoolean(def);
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
@@ -2947,7 +3167,12 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 		{
 			DefElem *def = lfirst_node(DefElem, cell);
 
-			if (strcmp(RDF_SERVER_OPTION_ENDPOINT, def->defname) == 0)
+			if (strcmp(RDF_SERVER_OPTION_UPDATE_URL, def->defname) == 0 &&
+				state->sparql_query_type == SPARQL_INSERT)
+				state->endpoint = defGetString(def);
+
+			else if (strcmp(RDF_SERVER_OPTION_SELECT_URL, def->defname) == 0 &&
+					 !state->endpoint)
 				state->endpoint = defGetString(def);
 
 			else if (strcmp(RDF_SERVER_OPTION_FORMAT, def->defname) == 0)
@@ -3448,38 +3673,6 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
 }
 
 /*
- * CheckURL
- * --------
- * CheckS if an URL is valid.
- *
- * url: URL to be validated.
- *
- * returns REQUEST_SUCCESS or REQUEST_FAIL
- */
-static int CheckURL(char *url)
-{
-	CURLUcode code;
-	CURLU *handler = curl_url();
-
-	elog(DEBUG1, "%s called: '%s'", __func__, url);
-
-	code = curl_url_set(handler, CURLUPART_URL, url, 0);
-
-	curl_url_cleanup(handler);
-
-	elog(DEBUG2, "  %s handler return code: %u", __func__, code);
-
-	if (code != 0)
-	{
-		elog(DEBUG2, "%s: invalid URL (%u) > '%s'", __func__, code, url);
-		return code;
-	}
-
-	elog(DEBUG1, "%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
-	return REQUEST_SUCCESS;
-}
-
-/*
  * GetRDFColumn
  * -------------
  * Returns the RDFfdwColumn mapped to the table column in `columname`
@@ -3703,15 +3896,28 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	appendStringInfo(&accept_header, "Accept: %s", state->format);
 
 	if (state->log_sparql)
-		elog(INFO, "SPARQL query sent to '%s':\n%s\n", state->endpoint, state->sparql);
+		elog(INFO, "SPARQL query sent to '%s':\n%s\n", state->server->servername, state->sparql);
 
-	initStringInfo(&url_buffer);
-	appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
+	/* For SPARQL UPDATE operations (INSERT, DELETE, UPDATE), use different approach */
+	if (state->sparql_query_type == SPARQL_INSERT)
+	{
+		/* SPARQL UPDATE: send the update query directly in POST body with application/sparql-update */
+		elog(DEBUG1, "%s: using SPARQL UPDATE protocol", __func__);
 
-	if (state->custom_params)
-		appendStringInfo(&url_buffer, "&%s", curl_easy_escape(state->curl, state->custom_params, 0));
+		/* No need to build URL parameters for UPDATE */
+		initStringInfo(&url_buffer);
+	}
+	else
+	{
+		/* SPARQL SELECT/DESCRIBE: use URL-encoded form parameters */
+		initStringInfo(&url_buffer);
+		appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
 
-	elog(DEBUG2, "  %s: url build > %s?%s", __func__, state->endpoint, url_buffer.data);
+		if (state->custom_params)
+			appendStringInfo(&url_buffer, "&%s", curl_easy_escape(state->curl, state->custom_params, 0));
+
+		elog(DEBUG2, "  %s: url built > %s?%s", __func__, state->endpoint, url_buffer.data);
+	}
 
 	if (state->curl)
 	{
@@ -3775,7 +3981,21 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		}
 
 		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
-		curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, url_buffer.data);
+
+		/* Set POST data based on query type */
+		if (state->sparql_query_type == SPARQL_INSERT)
+		{
+			/* For SPARQL UPDATE: send raw SPARQL update in POST body */
+			elog(DEBUG1, "%s: setting SPARQL UPDATE body: %s", __func__, state->sparql);
+			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, state->sparql);
+			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(state->sparql));
+		}
+		else
+		{
+			/* For SPARQL SELECT/DESCRIBE: send URL-encoded parameters */
+			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, url_buffer.data);
+		}
+
 		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, HeaderCallbackFunction);
 		curl_easy_setopt(state->curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
 		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -3798,7 +4018,19 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		appendStringInfo(&user_agent, "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
 		curl_easy_setopt(state->curl, CURLOPT_USERAGENT, user_agent.data);
 
-		headers = curl_slist_append(headers, accept_header.data);
+		/* Set headers based on query type */
+		if (state->sparql_query_type == SPARQL_INSERT)
+		{
+			/* For SPARQL UPDATE: use application/sparql-update content type */
+			headers = curl_slist_append(headers, "Content-Type: application/sparql-update");
+			elog(DEBUG1, "%s: setting Content-Type: application/sparql-update", __func__);
+		}
+		else
+		{
+			/* For SPARQL SELECT/DESCRIBE: use standard accept header */
+			headers = curl_slist_append(headers, accept_header.data);
+		}
+
 		curl_easy_setopt(state->curl, CURLOPT_HTTPHEADER, headers);
 
 		if (state->user && state->password)
@@ -3821,7 +4053,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(state->curl)) != CURLE_OK; i++)
 			{
-				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->endpoint, i);
+				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i);
 			}
 		}
 
@@ -3864,7 +4096,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				else
 					ereport(ERROR,
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->endpoint, response_code),
+							 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->server->servername, response_code),
 							 errdetail("%s (curl error code %u)", curl_easy_strerror(res), res)));
 			}
 			else

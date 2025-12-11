@@ -40,8 +40,14 @@ REGRESS += create_extension \
 			explain \
 			pg_datatypes \
 			sparql-functions \
-			prefix-management \
-			table-clone \
+			prefix-management
+
+# Skip INSERT test if SKIP_UPDATE_TEST is set (e.g., when running with act)
+ifndef SKIP_UPDATE_TEST
+  REGRESS += insert-fuseki
+endif
+
+REGRESS += table-clone \
 			virtuoso-pgtypes-linkedgeodata \
 			virtuoso-rdfnode-linkedgeodata \
 			blazegraph-pgtypes-wikidata \

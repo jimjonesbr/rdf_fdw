@@ -19,7 +19,7 @@
 #include "utils/rel.h"       /* Relation */
 #include <curl/curl.h>       /* CURL */
 #include <libxml/tree.h>     /* xmlDocPtr, xmlNodePtr */
-
+#include "lib/stringinfo.h"  /* StringInfoData */
 /* Version */
 #define FDW_VERSION "2.3-dev"
 
@@ -29,6 +29,7 @@
 
 /* Table options */
 #define RDF_TABLE_OPTION_SPARQL "sparql"
+#define RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN "sparql_update_pattern"
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
 #define RDF_TABLE_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
 #define RDF_TABLE_OPTION_FETCH_SIZE "fetch_size"
@@ -129,7 +130,8 @@
 #define RDF_USERMAPPING_OPTION_PASSWORD "password"
 
 /* Server options */
-#define RDF_SERVER_OPTION_ENDPOINT "endpoint"
+#define RDF_SERVER_OPTION_SELECT_URL "endpoint"
+#define RDF_SERVER_OPTION_UPDATE_URL "update_url"
 #define RDF_SERVER_OPTION_FORMAT "format"
 #define RDF_SERVER_OPTION_CUSTOMPARAM "custom"
 #define RDF_SERVER_OPTION_CONNECTTIMEOUT "connect_timeout"
@@ -152,7 +154,8 @@ extern Oid RDFNODEOID;
 typedef enum RDFfdwQueryType
 {
 	SPARQL_SELECT,
-	SPARQL_DESCRIBE
+	SPARQL_DESCRIBE,
+	SPARQL_INSERT
 } RDFfdwQueryType;
 
 typedef struct RDFfdwState
@@ -171,7 +174,8 @@ typedef struct RDFfdwState
 	char *sparql_filter_expr;          /* SPARQL FILTER clauses as single expression (for EXPLAIN output) */
 	char *sparql_orderby;			   /* SPARQL ORDER BY clause based on the SQL ORDER BY clause */
 	char *sparql_limit;				   /* SPARQL LIMIT clause based on SQL LIMIT and FETCH clause */
-	char *sparql_resultset;			   /* Raw string containing the result of a SPARQL query */	
+	char *sparql_resultset;			   /* Raw string containing the result of a SPARQL query */
+	char *sparql_update_pattern;       /* SPARQL triple pattern for INSERT/DELETE/UPDATE queries */
 	char *raw_sparql;				   /* Raw SPARQL query set in the CREATE TABLE statement */
 	char *endpoint;					   /* SPARQL endpoint set in the CREATE SERVER statement*/
 	char *query_param;				   /* SPARQL query POST parameter used by the endpoint */
@@ -206,6 +210,7 @@ typedef struct RDFfdwState
 	MemoryContext rdfctxt;			   /* Memory Context for data manipulation */
 	CURL *curl;						   /* CURL request handler */
 	RDFfdwQueryType sparql_query_type; /* SPARQL Query type: SELECT, DESCRIBE */
+	MemoryContext temp_cxt;			   /* Temporary memory context for per-row allocations during INSERT */
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;

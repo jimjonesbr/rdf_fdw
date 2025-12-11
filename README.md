@@ -32,6 +32,8 @@
   - [Hash Functions](#hash-functions)
   - [Custom Functions](#custom-functions)
 - [SPARQL Describe](#sparql-describe)
+- [Data Modification](#data-modification)
+  - [INSERT](#insert)
 - [Pushdown](#pushdown)
 - [Examples](#examples)
 - [Deploy with Docker](#deploy-with-docker)
@@ -180,6 +182,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | `sparql`      | **required**    | The raw SPARQL query to be executed    |
 | `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown. Default `true`  |
 | `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. Overrides the `SERVER` option `enable_pushdown` |
+| `update_url`      | optional    | Some triple stores have a different URL for SELECT and update related queries (e.g. Apache Fuseki). If this is the case with your triple store, place the URL in this option. If omitted, the URL one set at `sparql` will be used.    |
 
 Columns can use **one** of two data type categories:
 
@@ -2270,6 +2273,117 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
  http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P625   | "Point(-133.03 69.43)"^^<http://www.opengis.net/ont/geosparql#wktLiteral>
 (37 rows)
 ```
+
+## [Data Modification](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#data-modification)
+
+The `rdf_fdw` extension supports data modification operations (INSERT, UPDATE, DELETE) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
+
+> [!NOTE]  
+> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL INSERT DATA statements.
+
+### [INSERT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#insert)
+
+The `INSERT` statement allows you to add new RDF triples to a triplestore. Each row inserted into a `FOREIGN TABLE` is converted into a SPARQL `INSERT DATA` statement and sent to the remote SPARQL endpoint.
+
+#### Requirements
+
+To use `INSERT` operations, your `FOREIGN TABLE` must:
+
+1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be inserted
+2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g. `OPTIONS (variable '?s')`). If a variable is not mapped to any column, the operation will fail during validation.
+3. **Use `rdfnode` columns** - INSERT operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
+
+#### Column Behavior
+
+* **NULL values** - Rows containing any NULL values in mapped columns are **skipped entirely**. This prevents incomplete or invalid triples from being inserted.
+* **Unused columns** - Columns without a SPARQL variable mapping (no `variable` option) are silently ignored during INSERT operations.
+
+#### SPARQL Update Pattern
+
+The `sparql_update_pattern` option specifies a SPARQL triple pattern template. It can contain:
+
+* **SPARQL variables** (e.g., `?s`, `?p`, `?o`) that match column `variable` options
+* **Multiple triple patterns** separated by dots, allowing you to insert multiple triples per row
+* **RDF prefixes and full IRIs** for predicates and objects
+* **Literal values with language tags or datatypes**
+
+Variables in the pattern are substituted with actual values from each inserted row.
+
+#### Example: Basic INSERT
+
+```sql
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'false',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+
+ -- Insert a triple
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de>',
+  '<http://www.w3.org/2000/01/rdf-schema#label>',
+  '"Westfälische Wilhelms-Universität Münster"@de');
+
+SELECT * FROM ft;
+            subject            |                  predicate                   |                     object                     
+-------------------------------+----------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+```
+
+#### Example: Multiple Triples Per Row
+
+You can insert multiple RDF triples in a single INSERT statement by specifying multiple triple patterns in the `sparql_update_pattern`:
+
+```sql
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true', 
+  sparql 
+    'SELECT * WHERE {
+     ?s ?p ?o .
+     ?s a <http://dbpedia.org/resource/University>}',
+  sparql_update_pattern 
+    '?s ?p ?o .
+     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/resource/University>'
+);
+
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de>',
+  '<http://www.w3.org/2000/01/rdf-schema#label>',
+  '"Westfälische Wilhelms-Universität Münster"@de');
+
+SELECT * FROM ft;
+            subject            |                     predicate                     |                     object                     
+-------------------------------+---------------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://dbpedia.org/resource/University>
+(2 rows)
+```
+
+> [!IMPORTANT]  
+> **SPARQL endpoints do not support PostgreSQL transactions.** Each `INSERT` is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
+>
+> ```sql
+> BEGIN;
+> INSERT INTO ft VALUES ('<http://ex.org/s>', '<http://ex.org/p>', '"foo"');
+> -- Triple is now in the triplestore
+> ROLLBACK; -- PostgreSQL rolls back, but the triple remains in the target triplestore
 
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
 

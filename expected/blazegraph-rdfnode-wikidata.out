@@ -15,7 +15,7 @@ SELECT p, o FROM rdbms
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   o = '"PostgreSQL"@de';
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -38,7 +38,7 @@ WHERE
   o IN ('"PostgreSQL"@de', 
         '"PostgreSQL"@es',
 		'"PostgreSQL"@fr');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -64,7 +64,7 @@ WHERE
             '"PostgreSQL"@es',
 		    '"PostgreSQL"@fr')
 LIMIT 5;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -89,7 +89,7 @@ INFO:  SPARQL returned 5 records.
 SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 LIMIT 5;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -112,7 +112,7 @@ INFO:  SPARQL returned 5 records.
 SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 FETCH FIRST 5 ROWS ONLY;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -137,7 +137,7 @@ SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 OFFSET 5 ROWS
 FETCH FIRST 10 ROWS ONLY;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -166,7 +166,7 @@ SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 OFFSET 5 ROWS
 LIMIT 10;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -196,7 +196,7 @@ SELECT p FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC
 LIMIT 3;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p 
 {wd:Q192490 ?p ?o
@@ -219,7 +219,7 @@ SELECT p FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p ASC
 LIMIT 3;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p 
 {wd:Q192490 ?p ?o
@@ -242,7 +242,7 @@ SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC, o ASC
 LIMIT 3;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -266,7 +266,7 @@ WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY p DESC, o ASC
 OFFSET 5
 LIMIT 2;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -289,7 +289,7 @@ WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
 ORDER BY 1 DESC, 2 ASC
 OFFSET 5
 LIMIT 10;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -318,7 +318,7 @@ INFO:  SPARQL returned 15 records.
 /* SPARQL 18.2.5.3 - DISTINCT */
 SELECT DISTINCT p FROM rdbms
 WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT DISTINCT ?p 
 {wd:Q192490 ?p ?o
@@ -337,7 +337,7 @@ INFO:  SPARQL returned 1 record.
 -- DISTINCT ON is not supported, therefore it won't be pushed down.
 SELECT DISTINCT ON (p) p,o FROM rdbms
 WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -362,7 +362,7 @@ WHERE
   sparql.str(o) <= '"PostgreSQL Europe"' AND
   sparql.str(o) BETWEEN '"Postgre"' AND '"PostgreSQL Europe"'
 LIMIT 3;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -394,7 +394,7 @@ WHERE
   sparql.str(o) <= '"PostgreSQL Europe"'::rdfnode AND
   sparql.str(o) BETWEEN 'Postgre'::rdfnode AND '"PostgreSQL Europe"'::rdfnode
 LIMIT 3;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -430,7 +430,7 @@ WHERE
   10000::smallint <> o AND
   31360::smallint >= o AND
   31360::smallint <= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -468,7 +468,7 @@ WHERE
   10000::int <> o AND
   31360::int >= o AND
   31360::int <= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -506,7 +506,7 @@ WHERE
   9999999999::bigint <> o AND
   2429126274::bigint >= o AND
   2429126274::bigint <= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -544,7 +544,7 @@ WHERE
   10000::real <> o AND
   31360.5::real >= o AND
   31359.5::real <= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -582,7 +582,7 @@ WHERE
   10000.99::double precision <> o AND
   31360.5::double precision >= o AND
   31359.5::double precision <= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -620,7 +620,7 @@ WHERE
   10000.99::numeric <> o AND
   31360.5::numeric >= o AND
   31359.5::numeric <= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -658,7 +658,7 @@ WHERE
   '2000-01-31 18:30:00'::timestamp <> o AND
   '1996-01-01 00:00:00'::timestamp <= o AND
   '1996-01-01 00:00:00'::timestamp >= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -695,7 +695,7 @@ WHERE
   '2000-01-31 18:30:00'::timestamptz <> o AND
   '1996-01-01 00:00:00'::timestamptz <= o AND
   '1996-01-01 00:00:00'::timestamptz >= o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -732,7 +732,7 @@ WHERE
   '2000-01-01'::date <> sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
   '1996-01-01'::date <= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
   '1996-01-01'::date >= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -770,7 +770,7 @@ WHERE
   '23:00:00 PST'::timetz <> sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
   '00:00:00 PST'::timetz <= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
   '00:00:00 PST'::timetz >= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -802,7 +802,7 @@ WHERE
   o <> true AND
   false <> o AND
   true <> o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -836,7 +836,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'es') AND
   sparql.bound(o) AND
   NOT sparql.bound(x);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o ?x 
 {wd:Q192490 ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }
@@ -862,7 +862,7 @@ WHERE
   sparql.coalesce(x, x, o) = '"PostgreSQL"@de' AND
   sparql.coalesce(x, p) = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.coalesce(x, x, p) = '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o ?x 
 {wd:Q192490 ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }
@@ -888,7 +888,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.sameterm(o,'"PostgreSQL"@fr') AND
   sparql.sameterm(p,'<http://www.w3.org/2000/01/rdf-schema#label>');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -911,7 +911,7 @@ FROM rdbms
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   o IN ('"PostgreSQL"@de'::rdfnode, '"PostgreSQL"@en', sparql.strlang('PostgreSQL','es'));
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -936,7 +936,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   o NOT IN ('"PostgreSQL"@de'::rdfnode, '"PostgreSQL"@en', sparql.strlang('PostgreSQL','es'))
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -961,7 +961,7 @@ WHERE
   p = '<http://www.wikidata.org/prop/direct/P8408>' AND
   sparql.isIRI(p) AND
   NOT sparql.isIRI(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -980,7 +980,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.2.2 - isBlank */
 SELECT p, o, sparql.isblank(o) FROM rdbms
 WHERE sparql.isblank(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1000,7 +1000,7 @@ WHERE
   p = '<http://www.wikidata.org/prop/direct/P8408>' AND
   sparql.isliteral(o) AND 
   NOT sparql.isliteral(p);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1022,7 +1022,7 @@ WHERE
   p = '<http://schema.org/version>' AND
   sparql.isnumeric(o) AND
   NOT sparql.isnumeric(p);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1045,7 +1045,7 @@ WHERE
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.str(o) = sparql.str('"PostgreSQL"@fr')
 FETCH FIRST ROW ONLY;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1068,7 +1068,7 @@ FROM rdbms
 WHERE 
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.lang(o) = sparql.lang('"PostgreSQL"@pt');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1090,7 +1090,7 @@ FROM rdbms
 WHERE
   p = '<http://wikiba.se/ontology#statements>' AND
   sparql.datatype(o) = sparql.datatype('"2429126274"^^<http://www.w3.org/2001/XMLSchema#integer>');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1114,7 +1114,7 @@ WHERE
   sparql.iri('<http://www.wikidata.org/prop/direct/P13337>') = sparql.iri(p) AND
   sparql.iri('http://www.wikidata.org/prop/direct/P13337') = p AND
   p = sparql.iri('http://www.wikidata.org/prop/direct/P13337');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1138,7 +1138,7 @@ FROM rdbms
 WHERE 
   p = '<http://www.wikidata.org/prop/direct/P13337>' AND
   sparql.isblank(sparql.bnode(o));
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1163,7 +1163,7 @@ WHERE
   sparql.strdt(sparql.str(o),'xsd:string') = '"2429126274"^^xsd:string'::rdfnode  AND
   sparql.strdt(sparql.str('"2429126274"^^xsd:integer'),'xsd:string') = sparql.strdt(sparql.str(o),'xsd:string') AND
   sparql.strdt(sparql.str(o),'xsd:string') = sparql.strdt(sparql.str('"2429126274"^^xsd:integer'),'xsd:string');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1192,7 +1192,7 @@ WHERE
   sparql.strlang('"PostgreSQL"', 'en') = sparql.strlang(sparql.str(o),'en') AND
   sparql.strlang('"PostgreSQL"', 'en') = '"PostgreSQL"@en' AND
   '"PostgreSQL"@en' = sparql.strlang('"PostgreSQL"', 'en');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1233,7 +1233,7 @@ WHERE
   sparql.strlen(o) = sparql.strlen('"PostgreSQL"@de') AND
   sparql.strlen(o) = 10 AND
   10 = sparql.strlen(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1258,7 +1258,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'es') AND
   sparql.substr(o, 8, 3) = sparql.substr('"PostgreSQL"@es', 8, 3) AND
   sparql.substr('"PostgreSQL"@es', 8, 3) = sparql.substr(o, 8, 3);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1284,7 +1284,7 @@ WHERE
   sparql.ucase(o) = sparql.ucase('"PostgreSQL"@fr') AND
   sparql.ucase(o) = '"POSTGRESQL"@fr' AND
   '"POSTGRESQL"@fr' = sparql.ucase(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1310,7 +1310,7 @@ WHERE
   sparql.lcase(o) = sparql.lcase('"PostgreSQL"@es') AND
   sparql.lcase(o) = '"postgresql"@es' AND
   '"postgresql"@es' = sparql.lcase(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1335,7 +1335,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o),'de') AND
   sparql.strstarts(o,'"Postgre"@de');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1359,7 +1359,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o),'fr') AND
   sparql.strends(o,'"SQL"');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1384,7 +1384,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'it') AND
   sparql.contains(o,'"SQL"@') AND
   sparql.contains(o,'"Postgre"');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1411,7 +1411,7 @@ WHERE
   sparql.strbefore(sparql.str(o), '"SQL"') = sparql.strbefore(sparql.str('"PostgreSQL"@fr'),'"SQL"') AND
   sparql.strbefore(sparql.str(o), '"SQL"') = '"Postgre"' AND
   '"Postgre"' = sparql.strbefore(sparql.str(o), '"SQL"');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1439,7 +1439,7 @@ WHERE
   sparql.strafter(sparql.str(o), '"Postgre"') = sparql.strafter(sparql.str('"PostgreSQL"@es'),'"Postgre"') AND
   sparql.strafter(sparql.str(o), '"Postgre"') = '"SQL"'::rdfnode AND
   '"SQL"' = sparql.strafter(sparql.str(o), '"Postgre"');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1467,7 +1467,7 @@ WHERE
   sparql.encode_for_uri(o) = sparql.encode_for_uri('"relationales Datenbankmanagementsystem"@de') AND
   sparql.encode_for_uri(o) = '"relationales%20Datenbankmanagementsystem"' AND 
   '"relationales%20Datenbankmanagementsystem"' = sparql.encode_for_uri(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1494,7 +1494,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'es') AND
   sparql.concat(o,' Global') = sparql.concat('"PostgreSQL"@es','" Global"') AND
   sparql.concat('"PostgreSQL"@es','" Global"') = sparql.concat(o,' Global');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1517,7 +1517,7 @@ SELECT p, o, sparql.langmatches(sparql.lang(o),'*'),  sparql.langmatches(sparql.
 FROM rdbms 
 WHERE sparql.langmatches(sparql.lang(o),'fr')
 ORDER BY p, o;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1543,7 +1543,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'it') AND
   sparql.regex(o, sparql.ucase('postgres'), 'i') AND 
   sparql.regex(o, '^pOs','i') ;
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1570,7 +1570,7 @@ WHERE
   sparql.replace(sparql.str(o),'Postgre','My') = '"MySQL"'::rdfnode AND
   '"MySQL"' = sparql.replace(sparql.str(o),'Postgre','My') AND
   sparql.replace(sparql.str(o), 'POSTGRE', 'My','i') = sparql.replace('"PostgreSQL"', 'POSTGRE', 'My','i');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1605,7 +1605,7 @@ WHERE
   sparql.abs(o) <= '"2429126274"^^xsd:long'::rdfnode AND
   2429126274::bigint = sparql.abs(o) AND
   '"2429126274"^^xsd:long'::rdfnode = sparql.abs(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1650,7 +1650,7 @@ WHERE
   sparql.round(o) <= '"31360"^^xsd:decimal'::rdfnode AND
   sparql.round(31359.9) = sparql.round(o) AND
   sparql.round('"31359.9"^^xsd:decimal'::rdfnode) = sparql.round(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1694,7 +1694,7 @@ WHERE
   sparql.ceil(o) <= sparql.ceil('"31359.5"^^xsd:decimal'::rdfnode)  AND
   sparql.ceil(31359.5) = sparql.ceil(o) AND
   sparql.ceil('"31359.5"^^xsd:decimal'::rdfnode) = sparql.ceil(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1738,7 +1738,7 @@ WHERE
   sparql.floor(o) <= sparql.floor('"31360.5"^^xsd:decimal'::rdfnode)  AND
   sparql.floor(31360.5) = sparql.floor(o) AND
   sparql.floor('"31360.5"^^xsd:decimal'::rdfnode) = sparql.floor(o);
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1795,7 +1795,7 @@ WHERE
   sparql.year(o) < sparql.year('"2000-01-12T20:00:00"^^xsd:dateTime') AND
   sparql.year(o) >= sparql.year('"1996-01-01T00:00:00Z"^^xsd:dateTime') AND
   sparql.year(o) <= sparql.year('"1996-01-01T00:00:00Z"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1835,7 +1835,7 @@ WHERE
   sparql.month(o) < sparql.month('"2000-12-12T20:00:00"^^xsd:dateTime') AND
   sparql.month(o) >= sparql.month('"1996-07-08T00:00:00Z"^^xsd:dateTime') AND
   sparql.month(o) <= sparql.month('"1996-07-08T00:00:00Z"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1875,7 +1875,7 @@ WHERE
   sparql.day(o) < sparql.day('"2000-12-30T20:00:00"^^xsd:dateTime') AND
   sparql.day(o) >= sparql.day('"1996-07-08T00:00:00Z"^^xsd:dateTime') AND
   sparql.day(o) <= sparql.day('"1996-07-08T00:00:00Z"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1915,7 +1915,7 @@ WHERE
   sparql.hours(o) < sparql.hours('"2000-12-30T23:00:00"^^xsd:dateTime') AND
   sparql.hours(o) >= sparql.hours('"1996-07-08T00:00:00Z"^^xsd:dateTime') AND
   sparql.hours(o) <= sparql.hours('"1996-07-08T00:00:00Z"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1954,7 +1954,7 @@ WHERE
   sparql.minutes(o) < sparql.minutes('"2000-12-30T23:59:59"^^xsd:dateTime') AND
   sparql.minutes(o) >= sparql.minutes('"1996-07-08T00:00:00Z"^^xsd:dateTime') AND
   sparql.minutes(o) <= sparql.minutes('"1996-07-08T00:00:00Z"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -1993,7 +1993,7 @@ WHERE
   sparql.seconds(o) < sparql.seconds('"2000-12-30T23:59:59"^^xsd:dateTime') AND
   sparql.seconds(o) >= sparql.seconds('"1996-07-08T00:00:00Z"^^xsd:dateTime') AND
   sparql.seconds(o) <= sparql.seconds('"1996-07-08T00:00:00Z"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o
@@ -2038,7 +2038,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o),'en') AND
   sparql.md5(o) = sparql.md5('"PostgreSQL"@en');
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o

@@ -24,5 +24,7 @@ jobs:
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - uses: actions/checkout@v2
-      - name: Build and Regression Tests 
-        run: pg-build-test
+      - name: Build and Regression Tests
+        run: |
+          export SKIP_UPDATE_TEST=1
+          pg-build-test

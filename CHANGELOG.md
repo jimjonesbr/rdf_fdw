@@ -3,7 +3,8 @@
 Release date: **YYYY-MM-DD**
 
 ### Enhancements
-### Bug Fixes
+
+* INSERT support: added per-row INSERT DATA support via the `sparql_update_pattern` option on foreign tables. Each row inserted into a `FOREIGN TABLE` is converted into a SPARQL `INSERT DATA` statement and sent to the configured SPARQL UPDATE endpoint. Supports multi-row INSERT batching and multiple triple patterns per row.
 
 # Release Notes
 ## 2.2.0

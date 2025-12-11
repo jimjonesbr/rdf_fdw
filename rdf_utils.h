@@ -47,7 +47,9 @@ extern bool is_valid_xsd_time(const char *lexical);
 extern bool is_valid_xsd_dateTime(const char *lexical);
 extern bool is_valid_xsd_int(const char *lexical);
 extern bool is_valid_xsd_double(const char *lexical);
-
+extern int CheckURL(char *url);
+extern void ValidateSPARQLUpdatePattern(RDFfdwState *state);
+extern char *str_replace(const char *source, const char *search, const char *replace);
 /* PostgreSQL to RDF Type Mapping */
 extern char *MapSPARQLDatatype(Oid pgtype);
 

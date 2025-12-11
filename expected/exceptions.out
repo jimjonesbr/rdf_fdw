@@ -105,7 +105,7 @@ CREATE FOREIGN TABLE table_error4 (
    sparql 'SELECT * WHERE {?s ?p ?o}');
 SELECT * FROM table_error4
 LIMIT 3;
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
+INFO:  SPARQL query sent to 'testserver':
 
 SELECT ?foo 
 {?s ?p ?o}
@@ -131,7 +131,7 @@ CREATE FOREIGN TABLE table_error5 (
   log_sparql 'foo');
 ERROR:  invalid log_sparql: 'foo'
 HINT:  this parameter expects boolean values ('true' or 'false')
-/* INSERT, UPDATE and DELETE not supported */
+/* UPDATE and DELETE not supported */
 CREATE SERVER testserver2
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
@@ -141,8 +141,6 @@ CREATE FOREIGN TABLE t1 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS 
   (sparql 'SELECT ?s WHERE {?s ?p ?o} LIMIT 1', log_sparql 'true');
-INSERT INTO t1 (name) VALUES ('foo');
-ERROR:  cannot insert into foreign table "t1"
 UPDATE t1 SET name = 'foo';
 ERROR:  cannot update foreign table "t1"
 DELETE FROM t1;

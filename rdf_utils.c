@@ -1112,3 +1112,293 @@ int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, 
 	elog(DEBUG1, "%s exit: returning '%d' (keyword_position)", __func__, keyword_position);
 	return keyword_position;
 }
+
+/*
+ * CheckURL
+ * --------
+ * CheckS if an URL is valid.
+ *
+ * url: URL to be validated.
+ *
+ * returns REQUEST_SUCCESS or REQUEST_FAIL
+ */
+int CheckURL(char *url)
+{
+	CURLUcode code;
+	CURLU *handler = curl_url();
+
+	elog(DEBUG1, "%s called: '%s'", __func__, url);
+
+	code = curl_url_set(handler, CURLUPART_URL, url, 0);
+
+	curl_url_cleanup(handler);
+
+	elog(DEBUG2, "  %s handler return code: %u", __func__, code);
+
+	if (code != 0)
+	{
+		elog(DEBUG2, "%s: invalid URL (%u) > '%s'", __func__, code, url);
+		return code;
+	}
+
+	elog(DEBUG1, "%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
+	return REQUEST_SUCCESS;
+}
+
+/*
+ * ValidateSPARQLUpdatePattern
+ * ----------------------------
+ *
+ * Validates the sparql_update_pattern to ensure it is suitable
+ * for INSERT operations:
+ * 1. Contains at least one valid triple pattern (subject, predicate,
+ *    and object)
+ * 2. All SPARQL variables have corresponding table columns with
+ *    matching variable options
+ *
+ * This prevents empty or invalid patterns from generating malformed
+ * SPARQL UPDATE statements.
+ *
+ * Throws an ERROR if:
+ * - The pattern is empty or contains no valid triple patterns
+ * - A variable in the pattern has no matching column
+ */
+void ValidateSPARQLUpdatePattern(RDFfdwState *state)
+{
+	const char *pos;
+	const char *pattern = state->sparql_update_pattern;
+	bool has_triple = false;
+
+	/* Check for at least one valid triple pattern (must have at least 3 components) */
+	{
+		const char *p = pattern;
+		int component_count = 0;
+		bool in_uri = false;
+		bool in_literal = false;
+		bool in_var = false;
+
+		while (*p)
+		{
+			/* Skip whitespace between components */
+			if (isspace((unsigned char)*p))
+			{
+				if (in_var)
+				{
+					component_count++;
+					in_var = false;
+				}
+				p++;
+				continue;
+			}
+
+			/* Handle URIs <...> */
+			if (*p == '<')
+			{
+				in_uri = true;
+				p++;
+				continue;
+			}
+			if (in_uri && *p == '>')
+			{
+				in_uri = false;
+				component_count++;
+				p++;
+				continue;
+			}
+			if (in_uri)
+			{
+				p++;
+				continue;
+			}
+
+			/* Handle literals "..." */
+			if (*p == '"' && !in_literal)
+			{
+				in_literal = true;
+				p++;
+				continue;
+			}
+			if (*p == '"' && in_literal && (p == pattern || *(p - 1) != '\\'))
+			{
+				in_literal = false;
+				component_count++;
+				/* Skip language tags or datatypes */
+				p++;
+				if (*p == '@' || (*p == '^' && *(p + 1) == '^'))
+				{
+					while (*p && !isspace((unsigned char)*p) && *p != '.')
+						p++;
+				}
+				continue;
+			}
+			if (in_literal)
+			{
+				p++;
+				continue;
+			}
+
+			/* Handle variables ?var or $var */
+			if ((*p == '?' || *p == '$') && !in_var)
+			{
+				in_var = true;
+				p++;
+				continue;
+			}
+			if (in_var)
+			{
+				if (!isalnum((unsigned char)*p) && *p != '_')
+				{
+					component_count++;
+					in_var = false;
+					/* Don't increment p, re-process this character */
+					continue;
+				}
+				p++;
+				continue;
+			}
+
+			/* Handle triple terminator */
+			if (*p == '.')
+			{
+				if (in_var)
+				{
+					component_count++;
+					in_var = false;
+				}
+				if (component_count >= 3)
+				{
+					has_triple = true;
+					break;
+				}
+				/* Reset for next potential triple */
+				component_count = 0;
+				p++;
+				continue;
+			}
+
+			/* Other characters (bare words, prefixed names like ex:Thing) */
+			if (isalnum((unsigned char)*p) || *p == ':' || *p == '_')
+			{
+				/* Scan to end of token */
+				while (*p && (isalnum((unsigned char)*p) || *p == ':' || *p == '_' || *p == '-'))
+					p++;
+				component_count++;
+				continue;
+			}
+
+			/* Unknown character, skip */
+			p++;
+		}
+
+		/* Check if we ended with a variable */
+		if (in_var)
+			component_count++;
+
+		/* Final check: did we accumulate at least 3 components? */
+		if (component_count >= 3)
+			has_triple = true;
+	}
+
+	if (!has_triple)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+				 errmsg("'%s' contains no valid triple patterns",
+						RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN),
+				 errhint("A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'")));
+	}
+
+	/* Check that all variables in template have corresponding columns */
+	pos = pattern;
+	while ((pos = strchr(pos, '?')) != NULL)
+	{
+		StringInfoData var_name;
+		bool found = false;
+		int j = 0;
+
+		/* Extract variable name (alphanumeric after ?) */
+		initStringInfo(&var_name);
+		pos++; /* Skip the ? */
+		while (isalnum((unsigned char)pos[j]) || pos[j] == '_')
+		{
+			appendStringInfoChar(&var_name, pos[j]);
+			j++;
+		}
+
+		if (var_name.len > 0)
+		{
+			/* Check if a column maps to this variable */
+			for (int k = 0; k < state->numcols; k++)
+			{
+				if (state->rdfTable->cols[k]->sparqlvar)
+				{
+					/* Build the full variable name with ? prefix for comparison */
+					StringInfoData full_var;
+					initStringInfo(&full_var);
+					appendStringInfoString(&full_var, "?");
+					appendStringInfoString(&full_var, var_name.data);
+
+					if (strcmp(state->rdfTable->cols[k]->sparqlvar, full_var.data) == 0)
+					{
+						found = true;
+						pfree(full_var.data);
+						break;
+					}
+					pfree(full_var.data);
+				}
+			}
+
+			/* Report error immediately if variable not found */
+			if (!found)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+						 errmsg("SPARQL variable '?%s' in '%s' is not mapped to any table column",
+								var_name.data, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
+			}
+		}
+
+		pfree(var_name.data);
+		pos += j;
+	}
+}
+
+/*
+ * str_replace
+ * -----------
+ * Replace all occurrences of 'search' with 'replace' in 'source'.
+ * Returns a newly allocated string.
+ *
+ * source  : the original string
+ * search  : the substring to search for
+ * replace : the replacement string
+ *
+ * returns a new string with replacements made
+ */
+char *str_replace(const char *source, const char *search, const char *replace)
+{
+	StringInfoData result;
+	const char *pos = source;
+	const char *found;
+	size_t search_len = strlen(search);
+	size_t replace_len = strlen(replace);
+
+	initStringInfo(&result);
+
+	while ((found = strstr(pos, search)) != NULL)
+	{
+		/* Append everything before the match */
+		appendBinaryStringInfo(&result, pos, found - pos);
+
+		/* Append the replacement */
+		appendBinaryStringInfo(&result, replace, replace_len);
+
+		/* Move past the match */
+		pos = found + search_len;
+	}
+
+	/* Append any remaining text */
+	appendStringInfoString(&result, pos);
+
+	return result.data;
+}

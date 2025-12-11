@@ -16,7 +16,7 @@ SELECT p, o FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   o = '"Leipzig Hbf"';
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -37,7 +37,7 @@ SELECT p, o FROM hbf
 WHERE
   o IN ('"Leipzig Hbf"', 
         '"Gare centrale de Leipzig"@fr');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -59,7 +59,7 @@ SELECT p, o FROM hbf
 WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.lang(o) NOT IN ('de','es');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -80,7 +80,7 @@ INFO:  SPARQL returned 2 records.
 SELECT p, o FROM hbf
 WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 LIMIT 5;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -103,7 +103,7 @@ INFO:  SPARQL returned 5 records.
 SELECT p, o FROM hbf
 WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 FETCH FIRST 5 ROWS ONLY;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -128,7 +128,7 @@ SELECT p, o FROM hbf
 WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 OFFSET 5 ROWS
 FETCH FIRST 10 ROWS ONLY;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -148,7 +148,7 @@ SELECT p, o FROM hbf
 WHERE p = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
 OFFSET 5 ROWS
 LIMIT 10;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -168,7 +168,7 @@ INFO:  SPARQL returned 6 records.
 SELECT o FROM hbf
 ORDER BY p DESC
 LIMIT 3;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
@@ -187,7 +187,7 @@ INFO:  SPARQL returned 3 records.
 SELECT p FROM hbf
 ORDER BY o ASC
 LIMIT 3;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
@@ -206,7 +206,7 @@ INFO:  SPARQL returned 3 records.
 SELECT p, o FROM hbf
 ORDER BY p DESC, o ASC
 LIMIT 3;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
@@ -226,7 +226,7 @@ SELECT p, o FROM hbf
 ORDER BY p DESC, o ASC
 OFFSET 5
 LIMIT 2;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
@@ -245,7 +245,7 @@ SELECT p,o FROM hbf
 ORDER BY 1 DESC, 2 ASC
 OFFSET 5
 LIMIT 10;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}
@@ -271,7 +271,7 @@ INFO:  SPARQL returned 15 records.
 /* SPARQL 18.2.5.3 - DISTINCT */
 SELECT DISTINCT p FROM hbf
 WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?p 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -290,7 +290,7 @@ INFO:  SPARQL returned 1 record.
 -- DISTINCT ON is not supported, therefore it won't be pushed down.
 SELECT DISTINCT ON (p) p,o FROM hbf
 WHERE p = '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -314,7 +314,7 @@ WHERE
   p >= '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   p <= '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   p BETWEEN '<http://www.w3.org/2000/01/rdf-schema#label>' AND '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -343,7 +343,7 @@ WHERE
   p >= '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND
   p <= '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND
   p BETWEEN '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode AND '<http://www.w3.org/2000/01/rdf-schema#label>'::rdfnode;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -377,7 +377,7 @@ WHERE
   20::smallint <> o AND
   19::smallint >= o AND
   19::smallint <= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -415,7 +415,7 @@ WHERE
   999999::int <> o AND
   32586907::int >= o AND
   32586907::int <= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -453,7 +453,7 @@ WHERE
   999999::bigint <> o AND
   32586907::bigint >= o AND
   32586907::bigint <= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -489,7 +489,7 @@ WHERE
   13.40::real <> o AND
   12.01::real <= o AND
   14.01::real >= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -523,7 +523,7 @@ WHERE
   13.40::double precision <> o AND
   12.01::double precision <= o AND
   14.01::double precision >= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -557,7 +557,7 @@ WHERE
   13.40::numeric <> o AND
   12.01::numeric <= o AND
   14.01::numeric >= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -591,7 +591,7 @@ WHERE
   '2020-01-31 18:30:00'::timestamp <> o AND
   '2015-07-12 20:40:00'::timestamp <= o AND
   '2015-07-12 21:00:00'::timestamp >= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -625,7 +625,7 @@ WHERE
   '2020-01-31 18:30:00'::timestamptz <> o AND
   '2015-07-12 08:40:00'::timestamptz <= o AND
   '2015-07-13 21:00:00'::timestamptz >= o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -661,7 +661,7 @@ WHERE
   '2025-02-02'::date <> sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
   '2015-07-12'::date <= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date') AND
   '2015-07-13'::date >= sparql.strdt(sparql.substr(sparql.str(o), 1, 10),'xsd:date');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -708,7 +708,7 @@ WHERE
   '23:00:00'::timetz <> sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
   '20:41:25'::timetz <= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time') AND
   '20:41:25'::timetz >= sparql.strdt(sparql.substr(sparql.str(o), 12, 8),'xsd:time');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -740,7 +740,7 @@ WHERE
   o <> false AND
   true = o AND
   false <> o;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -775,7 +775,7 @@ WHERE
   sparql.langmatches(sparql.lang(o),'fr') AND
   sparql.bound(o) AND
   NOT sparql.bound(x);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o ?x 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }
@@ -801,7 +801,7 @@ WHERE
   sparql.coalesce(x, x, o) = '"Gare centrale de Leipzig"@fr' AND
   sparql.coalesce(x, p) = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.coalesce(x, x, p) = '<http://www.w3.org/2000/01/rdf-schema#label>';
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o ?x 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o OPTIONAL { ?o <http://foo.bar> ?x }
@@ -827,7 +827,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.sameterm(o,'"Gare centrale de Leipzig"@fr') AND
   sparql.sameterm(p,'<http://www.w3.org/2000/01/rdf-schema#label>');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -850,7 +850,7 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   o IN ('"Gare centrale de Leipzig"@fr'::rdfnode, '"Leipzig Hbf"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -873,7 +873,7 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   o NOT IN ('"foo"@es'::rdfnode, '"Berlin Hbf"', '"bar"^^xsd:string');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -895,7 +895,7 @@ SELECT p, o, sparql.isIRI(p) FROM hbf
 WHERE 
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.isIRI(p);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -916,7 +916,7 @@ INFO:  SPARQL returned 2 records.
 SELECT p, o, sparql.isblank(o)
 FROM hbf
 WHERE sparql.isblank(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -937,7 +937,7 @@ WHERE
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.isliteral(o) AND 
   NOT sparql.isliteral(p);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -961,7 +961,7 @@ WHERE
   p = '<http://linkedgeodata.org/ontology/changeset>' AND
   sparql.isnumeric(o) AND
   NOT sparql.isnumeric(p);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -983,7 +983,7 @@ FROM hbf
 WHERE 
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.str(o) = sparql.str('"Gare centrale de Leipzig"@fr');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1005,7 +1005,7 @@ FROM hbf
 WHERE 
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.lang(o) = sparql.lang('"Gare centrale de Leipzig"@fr');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1027,7 +1027,7 @@ FROM hbf
 WHERE
   p = '<http://linkedgeodata.org/ontology/version>' AND
   sparql.datatype(o) = sparql.datatype('"19"^^<http://www.w3.org/2001/XMLSchema#int>');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1051,7 +1051,7 @@ WHERE
   sparql.iri('http://linkedgeodata.org/ontology/short_name') = sparql.iri(p) AND
   sparql.iri('http://linkedgeodata.org/ontology/short_name') = p AND
   p = sparql.iri('http://linkedgeodata.org/ontology/short_name');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1075,7 +1075,7 @@ FROM hbf
 WHERE 
   p = '<http://linkedgeodata.org/ontology/short_name>' AND
   sparql.isblank(sparql.bnode(o));
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1084,10 +1084,10 @@ SELECT ?p ?o
  FILTER(ISBLANK(BNODE(?o)))
 }
 
-WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (1)
-WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (2)
-WARNING:  ExecuteSPARQL: request to 'http://linkedgeodata.org/sparql' failed (3)
-ERROR:  Unable to establish connection to 'http://linkedgeodata.org/sparql' (HTTP status 400)
+WARNING:  ExecuteSPARQL: request to 'linkedgeodata' failed (1)
+WARNING:  ExecuteSPARQL: request to 'linkedgeodata' failed (2)
+WARNING:  ExecuteSPARQL: request to 'linkedgeodata' failed (3)
+ERROR:  Unable to establish connection to 'linkedgeodata' (HTTP status 400)
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf
@@ -1097,7 +1097,7 @@ WHERE
   sparql.strdt(o,'xsd:string') = sparql.strdt('"Gare centrale de Leipzig"@fr', 'xsd:string') AND
   sparql.strdt(o,'xsd:string') = '"Gare centrale de Leipzig"^^xsd:string' AND
   '"Gare centrale de Leipzig"^^xsd:string' = sparql.strdt(o,'xsd:string');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1125,7 +1125,7 @@ WHERE
   sparql.strlang('"Leipzig Hbf"', 'en') = sparql.strlang(o,'en') AND
   sparql.strlang('"Leipzig Hbf"', 'en') = '"Leipzig Hbf"@en' AND
   '"Leipzig Hbf"@en' = sparql.strlang('"Leipzig Hbf"', 'en');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1164,7 +1164,7 @@ WHERE
   sparql.strlen(o) = sparql.strlen('"Leipzig Hbf"') AND
   sparql.strlen(o) = 11 AND
   11 = sparql.strlen(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1186,7 +1186,7 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.substr(o, 9, 3) = sparql.substr('"Leipzig Hbf"', 9, 3);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1210,7 +1210,7 @@ WHERE
   sparql.ucase(o) = sparql.ucase('"Gare centrale de Leipzig"@fr') AND
   sparql.ucase(o) = '"GARE CENTRALE DE LEIPZIG"@fr' AND
   '"GARE CENTRALE DE LEIPZIG"@fr' = sparql.ucase(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1236,7 +1236,7 @@ WHERE
   sparql.lcase(o) = sparql.lcase('"Gare centrale de Leipzig"@fr') AND
   sparql.lcase(o) = '"gare centrale de leipzig"@fr' AND
   '"gare centrale de leipzig"@fr' = sparql.lcase(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1260,7 +1260,7 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.strstarts(o,'"Gare"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1282,7 +1282,7 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.strends(o,'"Leipzig"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1305,7 +1305,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND  
   sparql.contains(o,'"Gare"') AND
   sparql.contains(o,'"Leipzig"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1330,7 +1330,7 @@ WHERE
   sparql.strbefore(sparql.str(o), '"centrale"') = sparql.strbefore(sparql.str('"Gare centrale de Leipzig"@fr'),'"centrale"') AND
   sparql.strbefore(sparql.str(o), '"centrale"') = '"Gare "' AND
   '"Gare "' = sparql.strbefore(sparql.str(o), '"centrale"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1356,7 +1356,7 @@ WHERE
   sparql.strafter(sparql.str(o), '"centrale"') = sparql.strafter(sparql.str('"Gare centrale de Leipzig"@fr'),'"centrale"') AND
   sparql.strafter(sparql.str(o), '"centrale"') = '" de Leipzig"' AND
   '" de Leipzig"' = sparql.strafter(sparql.str(o), '"centrale"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1382,7 +1382,7 @@ WHERE
   sparql.encode_for_uri(o) = sparql.encode_for_uri('"Gare centrale de Leipzig"@fr') AND
   sparql.encode_for_uri(o) = '"Gare%20centrale%20de%20Leipzig"' AND 
   '"Gare%20centrale%20de%20Leipzig"' = sparql.encode_for_uri(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1407,7 +1407,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.concat(o,'') = sparql.concat('"Gare centrale de"','" Leipzig"@fr') AND
   sparql.concat('"Gare centrale de"','" Leipzig"@fr') = sparql.concat(o,'');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1428,7 +1428,7 @@ INFO:  SPARQL returned 1 record.
 SELECT p, o, sparql.langmatches(sparql.lang(o),'*'),  sparql.langmatches(sparql.lang(o),'fr'),  sparql.langmatches(sparql.lang(o),'de')
 FROM hbf 
 WHERE sparql.langmatches(sparql.lang(o),'fr');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1450,7 +1450,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.regex(o, sparql.ucase('leipzig'), 'i') AND 
   sparql.regex(o, '^lEi','i') ;
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1474,7 +1474,7 @@ WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.replace(o,'Leipzig','Münster') = sparql.replace(sparql.strlang('Gare centrale de Leipzig','fr'),'Leipzig','Münster') AND
   sparql.replace(o, 'LEIPZIG', 'Münster','i') = sparql.replace('"Gare centrale de Leipzig"@fr', 'LEIPZIG', 'Münster','i');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1508,7 +1508,7 @@ WHERE
   sparql.abs(o) <=  '"32586907"^^xsd:int'::rdfnode AND
   32586907 = sparql.abs(o) AND
   '"32586907"^^xsd:int'::rdfnode = sparql.abs(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1552,7 +1552,7 @@ WHERE
   sparql.round(o) <= '"51"^^xsd:int'::rdfnode AND
   51 = sparql.round(o) AND
   '"51"^^xsd:int'::rdfnode = sparql.round(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1596,7 +1596,7 @@ WHERE
   sparql.ceil(o) <= '"52"^^xsd:int'::rdfnode AND
   52 = sparql.ceil(o) AND
   '"52"^^xsd:int'::rdfnode = sparql.ceil(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1640,7 +1640,7 @@ WHERE
   sparql.floor(o) <= '"51"^^xsd:int'::rdfnode AND
   51 = sparql.floor(o) AND
   '"51"^^xsd:int'::rdfnode = sparql.floor(o);
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1697,7 +1697,7 @@ WHERE
   sparql.year(o) < sparql.year('"9999-01-12T20:00:00"^^xsd:dateTime') AND
   sparql.year(o) >= sparql.year('"2015-07-12T20:41:25"^^xsd:dateTime') AND
   sparql.year(o) <= sparql.year('"2015-07-12T20:41:25"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1737,7 +1737,7 @@ WHERE
   sparql.month(o) < sparql.month('"9999-12-12T20:00:00"^^xsd:dateTime') AND
   sparql.month(o) >= sparql.month('"2015-07-12T20:41:25"^^xsd:dateTime') AND
   sparql.month(o) <= sparql.month('"2015-07-12T20:41:25"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1777,7 +1777,7 @@ WHERE
   sparql.day(o) < sparql.day('"9999-12-30T20:00:00"^^xsd:dateTime') AND
   sparql.day(o) >= sparql.day('"2015-07-12T20:41:25"^^xsd:dateTime') AND
   sparql.day(o) <= sparql.day('"2015-07-12T20:41:25"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1817,7 +1817,7 @@ WHERE
   sparql.hours(o) < sparql.hours('"9999-12-30T23:00:00"^^xsd:dateTime') AND
   sparql.hours(o) >= sparql.hours('"2015-07-12T20:41:25"^^xsd:dateTime') AND
   sparql.hours(o) <= sparql.hours('"2015-07-12T20:41:25"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1857,7 +1857,7 @@ WHERE
   sparql.minutes(o) < sparql.minutes('"9999-12-30T23:59:00"^^xsd:dateTime') AND
   sparql.minutes(o) >= sparql.minutes('"2015-07-12T20:41:25"^^xsd:dateTime') AND
   sparql.minutes(o) <= sparql.minutes('"2015-07-12T20:41:25"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1897,7 +1897,7 @@ WHERE
   sparql.seconds(o) < sparql.seconds('"9999-12-30T23:59:59"^^xsd:dateTime') AND
   sparql.seconds(o) >= sparql.seconds('"2015-07-12T20:41:25"^^xsd:dateTime') AND
   sparql.seconds(o) <= sparql.seconds('"2015-07-12T20:41:25"^^xsd:dateTime');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o
@@ -1942,7 +1942,7 @@ FROM hbf
 WHERE 
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.md5(o) = sparql.md5('"Leipzig Hbf"');
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
+INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?p ?o 
 {<http://linkedgeodata.org/triplify/node376142577> ?p ?o

@@ -116,7 +116,7 @@ CREATE FOREIGN TABLE table_error5 (
   log_sparql 'foo');
 
 
-/* INSERT, UPDATE and DELETE not supported */
+/* UPDATE and DELETE not supported */
 CREATE SERVER testserver2
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
@@ -128,7 +128,6 @@ CREATE FOREIGN TABLE t1 (
 ) SERVER testserver2 OPTIONS 
   (sparql 'SELECT ?s WHERE {?s ?p ?o} LIMIT 1', log_sparql 'true');
 
-INSERT INTO t1 (name) VALUES ('foo');
 UPDATE t1 SET name = 'foo';
 DELETE FROM t1;
 

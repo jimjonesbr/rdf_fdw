@@ -45,7 +45,7 @@ ordering_column: 'NOT SET'
 ordering sparql variable: '?p'
 sort_order: 'ASC'
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -55,7 +55,7 @@ OFFSET 0 LIMIT 100
 INFO:  SPARQL returned 58 records.
 
 INFO:  [0 - 100]: 58 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -157,7 +157,7 @@ ordering_column: 'o'
 ordering sparql variable: '?o'
 sort_order: 'ASC'
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -167,7 +167,7 @@ OFFSET 0 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [0 - 2]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -177,7 +177,7 @@ OFFSET 2 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [2 - 4]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -187,7 +187,7 @@ OFFSET 4 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [4 - 6]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -197,7 +197,7 @@ OFFSET 6 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [6 - 8]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -253,7 +253,7 @@ ordering_column: 'o'
 ordering sparql variable: '?o'
 sort_order: 'DESC'
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -263,7 +263,7 @@ OFFSET 0 LIMIT 100
 INFO:  SPARQL returned 58 records.
 
 INFO:  [0 - 100]: 58 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -348,7 +348,7 @@ CALL
         fetch_size => 4,
         max_records => 15
     );
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -357,7 +357,7 @@ OFFSET 0 LIMIT 4
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -366,7 +366,7 @@ OFFSET 4 LIMIT 4
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -375,7 +375,7 @@ OFFSET 8 LIMIT 4
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -417,7 +417,7 @@ CALL
         fetch_size => 4,
         max_records => 15
     );
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -426,7 +426,7 @@ OFFSET 0 LIMIT 4
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -435,7 +435,7 @@ OFFSET 4 LIMIT 4
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -444,7 +444,7 @@ OFFSET 8 LIMIT 4
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -516,7 +516,7 @@ ordering_column: 'o'
 ordering sparql variable: '?o'
 sort_order: 'ASC'
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -526,7 +526,7 @@ OFFSET 10 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [10 - 12]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -536,7 +536,7 @@ OFFSET 12 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [12 - 14]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
@@ -546,7 +546,7 @@ OFFSET 14 LIMIT 2
 INFO:  SPARQL returned 2 records.
 
 INFO:  [14 - 16]: 2 records inserted
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
 {wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}

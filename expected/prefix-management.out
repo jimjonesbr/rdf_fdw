@@ -43,7 +43,7 @@ SELECT * {
 -- Prefixes configured in the default context added
 -- and existing prefixes formatted
 SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 PREFIX foo: <http://example.org/foo#>
 PREFIX bar: <http://example.org/bar#>
 PREFIX wd: <http://www.wikidata.org/entity/>
@@ -69,7 +69,7 @@ ALTER SERVER wikidata OPTIONS (SET prefix_context 'foo');
 -- Prefix context does not exist. Issuing a WARNING.
 SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
 WARNING:  no prefixes found for context 'foo'
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -93,7 +93,7 @@ INFO:  SPARQL returned 1 record.
 -- SPARQL query.
 ALTER SERVER wikidata OPTIONS (DROP prefix_context);
 SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
+INFO:  SPARQL query sent to 'wikidata':
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
