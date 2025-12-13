@@ -6,6 +6,17 @@ Release date: **YYYY-MM-DD**
 
 * INSERT support: added per-row INSERT DATA support via the `sparql_update_pattern` option on foreign tables. Each row inserted into a `FOREIGN TABLE` is converted into a SPARQL `INSERT DATA` statement and sent to the configured SPARQL UPDATE endpoint. Supports multi-row INSERT batching and multiple triple patterns per row.
 
+* DELETE support: added per-row DELETE DATA support for deleting triples from RDF triplestores. DELETE operations on `FOREIGN TABLE`s are translated into SPARQL DELETE DATA requests using concrete triple values retrieved from a prior SELECT operation. Each matching row is converted into a fully-specified DELETE DATA statement and sent to the configured SPARQL UPDATE endpoint. Supports bulk DELETE operations and complex WHERE conditions with multiple predicates.
+
+### Bug Fixes
+
+* Empty literals not being deleted: Fixed a bug where empty literals (e.g., `""@pt`) were not triggering DELETE operations. The issue occurred because `xmlNodeGetContent()` returns NULL for empty content, which caused tuples to be incorrectly marked as NULL, preventing the DELETE callback from executing.
+
+* Literals with escaped quotes corrupted during round-trip: Fixed a critical bug where literals containing escaped quotes (e.g., `"\"WWU\""@en`) were being corrupted when retrieved from SPARQL results. The `CreateTuple()` function was incorrectly reparsing raw XML text content as RDF syntax, causing quote characters to be interpreted as literal delimiters rather than data. This has been fixed by constructing `rdfnode` values directly from raw lexical content and manually appending language tags or datatypes.
+
+* Control characters not properly escaped in SPARQL statements: Control characters (newlines, tabs, carriage returns) in literals are now properly escaped in SPARQL INSERT and DELETE statements, ensuring correct round-trip behavior.
+
+
 # Release Notes
 ## 2.2.0
 Release date: **2025-12-07**

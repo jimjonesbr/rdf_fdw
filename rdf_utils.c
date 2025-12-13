@@ -1402,3 +1402,97 @@ char *str_replace(const char *source, const char *search, const char *replace)
 
 	return result.data;
 }
+/*
+ * EscapeSPARQLLiteral
+ * -------------------
+ *
+ * Escapes special characters in an RDF literal for use in SPARQL UPDATE operations.
+ * Handles newlines, carriage returns, and tabs that are stored as actual bytes in
+ * PostgreSQL but must be represented as escape sequences in SPARQL.
+ *
+ * This function is specifically for INSERT/DELETE operations where the rdfnode
+ * output may contain actual newline bytes (0x0A) that need to be converted to
+ * the SPARQL escape sequence "\n".
+ *
+ * input: RDF literal string (e.g., "Line1\nLine2"@en where \n is byte 0x0A)
+ *
+ * returns: SPARQL-safe literal (e.g., "Line1\\nLine2"@en where \\n is two chars)
+ */
+char *EscapeSPARQLLiteral(const char *input)
+{
+StringInfoData result;
+const char *ptr;
+const char *closing_quote = NULL;
+const char *lang_or_type = NULL;
+
+if (!input || strlen(input) == 0)
+return (char *)input;
+
+/* Check if this is an IRI - no escaping needed */
+if (input[0] == '<')
+return (char *)input;
+
+/* Check if this is a quoted literal */
+if (input[0] != '"')
+return (char *)input;
+
+initStringInfo(&result);
+
+/* Find the closing quote (not preceded by backslash) */
+ptr = input + 1; /* skip opening quote */
+while (*ptr != '\0')
+{
+if (*ptr == '"' && (ptr == input + 1 || *(ptr - 1) != '\\'))
+{
+closing_quote = ptr;
+/* Check what follows the closing quote */
+if (ptr[1] == '@' || (ptr[1] == '^' && ptr[2] == '^') || ptr[1] == '\0')
+{
+lang_or_type = ptr + 1; /* Point to @lang or ^^type or end of string */
+break;
+}
+}
+ptr++;
+}
+
+if (!closing_quote)
+{
+/* Malformed literal - return as-is */
+return (char *)input;
+}
+
+/* Escape the content between quotes */
+appendStringInfoChar(&result, '"'); /* opening quote */
+ptr = input + 1; /* reset to start of content */
+
+while (ptr < closing_quote)
+{
+switch (*ptr)
+{
+case '\n':
+appendStringInfoString(&result, "\\n");
+break;
+case '\r':
+appendStringInfoString(&result, "\\r");
+break;
+case '\t':
+appendStringInfoString(&result, "\\t");
+break;
+default:
+appendStringInfoChar(&result, *ptr);
+break;
+}
+ptr++;
+}
+
+/* Add closing quote */
+appendStringInfoChar(&result, '"');
+
+/* Add language tag or datatype if present */
+if (lang_or_type && *lang_or_type != '\0')
+{
+appendStringInfoString(&result, lang_or_type);
+}
+
+return result.data;
+}

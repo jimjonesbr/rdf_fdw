@@ -131,7 +131,7 @@ ORDER BY predicate, object::text COLLATE "C";
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?s ?p ?o 
+SELECT ?s ?p ?foo ?o 
 {?s ?p ?o}
 
 INFO:  SPARQL returned 9 records.
@@ -141,13 +141,13 @@ INFO:  SPARQL returned 9 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> | "🐘"
  <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>    | "http://dbpedia.org/resource/University"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>       | "added via rdf_fdw 🐘"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | ""@es
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische                                      +
                                |                                                      | Wilhelms-Universität                               +
                                |                                                      |  Münster"@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische .. Wilhelms-Universität . Münster"@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische \"Wilhelms-Universität\" Münster"@de
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | 
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | 
 (9 rows)
 

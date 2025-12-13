@@ -52,9 +52,9 @@ SELECT ?p ?o
 ORDER BY ASC(?p) 
 OFFSET 0 LIMIT 100
 
-INFO:  SPARQL returned 58 records.
+INFO:  SPARQL returned 59 records.
 
-INFO:  [0 - 100]: 58 records inserted
+INFO:  [0 - 100]: 59 records inserted
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -65,8 +65,8 @@ OFFSET 100 LIMIT 100
 INFO:  SPARQL returned 0 records.
 
 SELECT * FROM public.t1 ORDER BY o::text COLLATE "C";
-                      p                       |          o          
-----------------------------------------------+---------------------
+                      p                       |           o            
+----------------------------------------------+------------------------
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
@@ -121,11 +121,12 @@ SELECT * FROM public.t1 ORDER BY o::text COLLATE "C";
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "পোস্টগ্রেএসকিউএল"
  "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"
  "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"
  "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"
-(58 rows)
+(59 rows)
 
 /*
  * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
@@ -260,9 +261,9 @@ SELECT ?p ?o
 ORDER BY DESC(?o) 
 OFFSET 0 LIMIT 100
 
-INFO:  SPARQL returned 58 records.
+INFO:  SPARQL returned 59 records.
 
-INFO:  [0 - 100]: 58 records inserted
+INFO:  [0 - 100]: 59 records inserted
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -273,8 +274,8 @@ OFFSET 100 LIMIT 100
 INFO:  SPARQL returned 0 records.
 
 SELECT * FROM public.t3 ORDER BY o::text COLLATE "C";
-                      p                       |          o          
-----------------------------------------------+---------------------
+                      p                       |           o            
+----------------------------------------------+------------------------
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
@@ -329,11 +330,12 @@ SELECT * FROM public.t3 ORDER BY o::text COLLATE "C";
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "পোস্টগ্রেএসকিউএল"
  "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"
  "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"
  "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"
-(58 rows)
+(59 rows)
 
 /*
  * 'public.t4' only partially matches the columns of 'public.ft'.

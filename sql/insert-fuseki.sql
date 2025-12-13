@@ -17,7 +17,7 @@ CREATE FOREIGN TABLE ft (
   object    rdfnode OPTIONS (variable '?o') 
 )
 SERVER fuseki OPTIONS (
-  log_sparql 'true',
+  log_sparql 'false',
   sparql 'SELECT * {?s ?p ?o}',
   sparql_update_pattern 
     '?s ?p ?o .
@@ -176,7 +176,6 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern ' ');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
-
 
 DROP SERVER fuseki CASCADE;
 DROP SERVER wikidata CASCADE;

@@ -1,0 +1,513 @@
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+/* bulk INSERT triples */
+INSERT INTO ft (subject, predicate, object)
+SELECT
+  sparql.iri('<https://www.uni-muenster.de/rdf_fdw/delete-test>'),
+  sparql.iri('http://www.w3.org/1999/02/22-rdf-syntax-ns#value'),
+  i::rdfnode
+FROM generate_series(1,10) AS j (i);
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "2"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "3"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "4"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "5"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "8"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "10"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+/* DELETE single triple */
+DELETE FROM ft WHERE object = 8::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "8"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "8"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+SELECT * FROM ft WHERE object = 8::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "8"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE range of triples */
+DELETE FROM ft WHERE object BETWEEN 2::rdfnode AND 5::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o >= "2"^^<http://www.w3.org/2001/XMLSchema#int>)
+ FILTER(?o <= "5"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "2"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "3"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "4"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "5"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+SELECT * FROM ft WHERE object BETWEEN 2::rdfnode AND 5::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o >= "2"^^<http://www.w3.org/2001/XMLSchema#int>)
+ FILTER(?o <= "5"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with special character */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"🐘"@de');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de
+}
+
+DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "🐘"@de)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de
+}
+
+SELECT * FROM ft WHERE object = '"🐘"@de'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "🐘"@de)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with empty literal */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '""@pt');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> ""@pt
+}
+
+DELETE FROM ft WHERE object = sparql.strlang('""', 'pt')::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = ""@pt)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> ""@pt
+}
+
+SELECT * FROM ft WHERE object = sparql.strlang('""', 'pt')::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = ""@pt)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE with compound WHERE condition */
+DELETE FROM ft WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'
+  AND predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'
+  AND object = 10::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de/rdf_fdw/delete-test>)
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#value>)
+ FILTER(?o = "10"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "10"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+SELECT * FROM ft 
+WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'
+  AND predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'
+  AND object = 10::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de/rdf_fdw/delete-test>)
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#value>)
+ FILTER(?o = "10"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with typed literal */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>
+}
+
+DELETE FROM ft WHERE object = sparql.strdt('rdf_fdw','<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"
+}
+
+SELECT * FROM ft WHERE object = sparql.strdt('rdf_fdw','<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with very long IRI */
+INSERT INTO ft (subject, predicate, object) VALUES
+  (('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode,
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>
+}
+
+DELETE FROM ft WHERE subject = ('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"
+}
+
+SELECT * FROM ft WHERE subject = ('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE non-existent triple (should succeed silently with DELETE 0) */
+DELETE FROM ft WHERE object = 'foo'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "foo")
+}
+
+INFO:  SPARQL returned 0 records.
+
+/* DELETE with literals containing escaped quotes */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"\"WWU\""@en');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "\"WWU\""@en
+}
+
+DELETE FROM ft WHERE object = '"\"WWU\""@en'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "\"WWU\""@en)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "\"WWU\""@en
+}
+
+SELECT * FROM ft WHERE object = '"\"WWU\""@en'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "\"WWU\""@en)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE with literals containing newline */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  E'"Line1\nLine2"@en');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "Line1\nLine2"@en
+}
+
+DELETE FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "Line1\nLine2"@en)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "Line1\nLine2"@en
+}
+
+SELECT * FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "Line1\nLine2"@en)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* bulk DELETE all inserted triples */
+SELECT count(*) FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 4 records.
+
+ count 
+-------
+     4
+(1 row)
+
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+SELECT count(*) FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 0 records.
+
+ count 
+-------
+     0
+(1 row)
+
+DROP SERVER fuseki CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki

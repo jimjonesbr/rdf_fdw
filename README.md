@@ -2384,6 +2384,56 @@ SELECT * FROM ft;
 > INSERT INTO ft VALUES ('<http://ex.org/s>', '<http://ex.org/p>', '"foo"');
 > -- Triple is now in the triplestore
 > ROLLBACK; -- PostgreSQL rolls back, but the triple remains in the target triplestore
+> ```
+
+### [DELETE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#delete)
+
+The `DELETE` statement allows you to remove RDF triples from a triplestore. Each row deleted from a `FOREIGN TABLE` is converted into a SPARQL `DELETE DATA` statement and sent to the remote SPARQL endpoint.
+
+#### Requirements
+
+To use `DELETE` operations, your `FOREIGN TABLE` must:
+
+1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be deleted
+2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g. `OPTIONS (variable '?s')`).
+3. **Use `rdfnode` columns** - DELETE operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
+
+> [!NOTE]  
+> When a `DELETE` statement is issued, the `rdf_fdw` must first issue a `SELECT` statement to identify and retrieve all affected triples. These triples are then loaded into memory and are used to create SPARQL `DELETE DATA` statements, which are then sent back to the triplestore for deletion.
+
+#### Example:
+
+```sql
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+
+DELETE FROM ft 
+WHERE object = '"Westfälische Wilhelms-Universität Münster"@de'::rdfnode;
+```
+
+> [!IMPORTANT]  
+> **SPARQL endpoints do not support PostgreSQL transactions.** Each `DELETE` is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
+>
+> ```sql
+> BEGIN;
+> DELETE FROM ft WHERE object = '"foo"';
+> -- Triple is now removed from the triplestore
+> ROLLBACK; -- PostgreSQL rolls back, but the triple remains deleted in the target triplestore
+> ```
 
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
 

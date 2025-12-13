@@ -129,7 +129,6 @@ CREATE FOREIGN TABLE t1 (
   (sparql 'SELECT ?s WHERE {?s ?p ?o} LIMIT 1', log_sparql 'true');
 
 UPDATE t1 SET name = 'foo';
-DELETE FROM t1;
 
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
