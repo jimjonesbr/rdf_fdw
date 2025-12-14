@@ -1,0 +1,456 @@
+\pset null '(null)'
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische Wilhelms-Universität Münster"@de');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                     object                     
+-------------------------------+----------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+UPDATE ft SET
+  object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "University of Münster"@en
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |           object           
+-------------------------------+----------------------------------------------+----------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "University of Münster"@en
+(1 row)
+
+UPDATE ft 
+SET object = '""'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "University of Münster"@en
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> ""
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   | object 
+-------------------------------+----------------------------------------------+--------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | ""
+(1 row)
+
+UPDATE ft 
+SET object = '🐘'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> ""
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "🐘"
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   | object 
+-------------------------------+----------------------------------------------+--------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "🐘"
+(1 row)
+
+/* update using existing column */
+UPDATE ft 
+SET object = predicate
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "🐘"
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#label>
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                    object                    
+-------------------------------+----------------------------------------------+----------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | <http://www.w3.org/2000/01/rdf-schema#label>
+(1 row)
+
+/* update literals with quotes */
+UPDATE ft 
+SET object = '"\"text with quotes\""'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#label>
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "\"text with quotes\""
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |         object         
+-------------------------------+----------------------------------------------+------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "\"text with quotes\""
+(1 row)
+
+/* update literals containing newlines */
+UPDATE ft 
+SET object = '"text \n newline"'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "\"text with quotes\""
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text \n newline"
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |  object   
+-------------------------------+----------------------------------------------+-----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "text    +
+                               |                                              |  newline"
+(1 row)
+
+/* update to xsd:string literal (Fuseki might omit xsd:string datatype) */
+UPDATE ft 
+SET object = '"text xsd string"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text \n newline"
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text xsd string"^^<http://www.w3.org/2001/XMLSchema#string>
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |      object       
+-------------------------------+----------------------------------------------+-------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "text xsd string"
+(1 row)
+
+/* update to xsd:int literal */
+UPDATE ft 
+SET object = 42::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text xsd string"
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42"^^<http://www.w3.org/2001/XMLSchema#int>
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                    object                    
+-------------------------------+----------------------------------------------+----------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+/* update to xsd:decimal literal */
+UPDATE ft 
+SET object = 42.37::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42"^^<http://www.w3.org/2001/XMLSchema#int>
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal>
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                       object                        
+-------------------------------+----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* update to xsd:long literal */
+UPDATE ft 
+SET object = 423712345678911::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal>
+};
+INSERT DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long>
+}
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                           object                           
+-------------------------------+----------------------------------------------+------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+/* update with NULL - must fail (after SELECT since FDW must fetch OLD values first) */
+UPDATE ft 
+SET object = NULL
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  NULL value in column "object" violates RDF constraint
+DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns
+HINT:  RDF triples require all components to be non-NULL. Filter NULL values in your query or provide default values.
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                           object                           
+-------------------------------+----------------------------------------------+------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+/* cleanup */
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA {
+  <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long>
+}
+
+DROP SERVER fuseki CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki

@@ -34,6 +34,8 @@
 - [SPARQL Describe](#sparql-describe)
 - [Data Modification](#data-modification)
   - [INSERT](#insert)
+  - [UPDATE](#update)
+  - [DELETE](#delete)
 - [Pushdown](#pushdown)
 - [Examples](#examples)
 - [Deploy with Docker](#deploy-with-docker)
@@ -94,7 +96,7 @@ $ make PGUSER=postgres installcheck
 > `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory, or retrieve data in chunks using `rdf_fdw_clone_table` or a custom script.
 
 
-## [Update](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update)
+## [Update Extension](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update)
 
 To update the extension's version you must first build and install the binaries and then run `ALTER EXTENSION`:
 
@@ -2279,7 +2281,7 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 The `rdf_fdw` extension supports data modification operations (INSERT, UPDATE, DELETE) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
 
 > [!NOTE]  
-> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL INSERT DATA statements.
+> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL UPDATE statements (INSERT DATA, UPDATE via DELETE+INSERT, or DELETE DATA).
 
 ### [INSERT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#insert)
 
@@ -2384,6 +2386,84 @@ SELECT * FROM ft;
 > INSERT INTO ft VALUES ('<http://ex.org/s>', '<http://ex.org/p>', '"foo"');
 > -- Triple is now in the triplestore
 > ROLLBACK; -- PostgreSQL rolls back, but the triple remains in the target triplestore
+> ```
+
+### [UPDATE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-sql)
+
+The `UPDATE` statement allows you to modify existing RDF triples in a triplestore. Since SPARQL does not have a direct UPDATE syntax, each row update is implemented as a combination of `DELETE DATA` (removing old triples) followed by `INSERT DATA` (adding new triples).
+
+#### Requirements
+
+To use `UPDATE` operations, your `FOREIGN TABLE` must:
+
+1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be modified
+2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g. `OPTIONS (variable '?s')`).
+3. **Use `rdfnode` columns** - UPDATE operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
+
+> [!NOTE]  
+> When an `UPDATE` statement is issued, the `rdf_fdw` performs the following steps:
+> 1. Issues a `SELECT` statement to retrieve the current values (OLD values) of all affected rows
+> 2. For each row, generates a `DELETE DATA` statement using the OLD values
+> 3. Generates an `INSERT DATA` statement using the NEW values from the SET clause
+> 4. Combines both into a single SPARQL UPDATE request and sends it to the endpoint
+
+#### Column Behavior
+
+* **Modified columns** - Columns specified in the SET clause will use their NEW values in the INSERT portion
+* **Unmodified columns** - Columns not in the SET clause will preserve their current values in both DELETE and INSERT portions
+* **NULL values** - It is not allowed to SET a rdfnode column to NULL. Doing so will raise an error.
+
+#### Example: Update Single Column
+
+```sql
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"University of Münster"@en');
+
+SELECT * FROM ft;
+            subject            |                  predicate                   |           object           
+-------------------------------+----------------------------------------------+----------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "University of Münster"@en
+(1 row)
+
+UPDATE ft SET
+  object = '"Westfälische Wilhelms-Universität Münster"@de'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+
+SELECT * FROM ft;
+            subject            |                  predicate                   |                     object                     
+-------------------------------+----------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+```
+> [!IMPORTANT]  
+> **SPARQL endpoints do not support PostgreSQL transactions.** Each `UPDATE` is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
+>
+> ```sql
+> BEGIN;
+> UPDATE ft SET object = '"new value"' WHERE subject = '<http://ex.org/s>';
+> -- Triples are now modified in the triplestore
+> ROLLBACK; -- PostgreSQL rolls back, but changes remain in the target triplestore
 > ```
 
 ### [DELETE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#delete)

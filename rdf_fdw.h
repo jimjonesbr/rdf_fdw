@@ -156,7 +156,8 @@ typedef enum RDFfdwQueryType
 	SPARQL_SELECT,
 	SPARQL_DESCRIBE,
 	SPARQL_INSERT,
-	SPARQL_DELETE
+	SPARQL_DELETE,
+	SPARQL_UPDATE
 } RDFfdwQueryType;
 
 typedef struct RDFfdwState

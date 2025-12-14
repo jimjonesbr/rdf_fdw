@@ -115,8 +115,6 @@ CREATE FOREIGN TABLE table_error5 (
   (sparql 'SELECT * WHERE {?s ?p ?o}',
   log_sparql 'foo');
 
-
-/* UPDATE and DELETE not supported */
 CREATE SERVER testserver2
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
@@ -127,8 +125,6 @@ CREATE FOREIGN TABLE t1 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS 
   (sparql 'SELECT ?s WHERE {?s ?p ?o} LIMIT 1', log_sparql 'true');
-
-UPDATE t1 SET name = 'foo';
 
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')

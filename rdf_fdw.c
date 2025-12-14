@@ -711,6 +711,7 @@ static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan, Index re
 static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinfo, List *fdw_private, int subplan_index, int eflags);
 static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+static TupleTableSlot *rdfExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo);
 #if PG_VERSION_NUM >= 110000
 static void rdfBeginForeignInsert(ModifyTableState *mtstate, ResultRelInfo *rinfo);
@@ -763,6 +764,7 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	fdwroutine->PlanForeignModify = rdfPlanForeignModify;
 	fdwroutine->BeginForeignModify = rdfBeginForeignModify;
 	fdwroutine->ExecForeignInsert = rdfExecForeignInsert;
+	fdwroutine->ExecForeignUpdate = rdfExecForeignUpdate;
 	fdwroutine->ExecForeignDelete = rdfExecForeignDelete;
 	fdwroutine->EndForeignModify = rdfEndForeignModify;
 #if PG_VERSION_NUM >= 110000
@@ -2924,10 +2926,12 @@ static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan,
 	elog(DEBUG1, "%s called, operation: %d", __func__, operation);
 
 	/*
-	 * For DELETE operations, we need to retrieve all columns from the foreign table
-	 * so we can properly construct the DELETE pattern with variable substitution.
+	 * For DELETE and UPDATE operations, we need to retrieve all columns from 
+	 * the foreign table so we can properly construct the DELETE pattern with 
+	 * variable substitution. For UPDATE, we need the OLD values to construct
+	 * the DELETE part of the DELETE/INSERT operation.
 	 */
-	if (operation == CMD_DELETE)
+	if (operation == CMD_DELETE || operation == CMD_UPDATE)
 	{
 		Relation rel;
 		TupleDesc tupdesc;
@@ -2962,14 +2966,15 @@ static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan,
 		table_close(rel, NoLock);
 #endif
 
-		elog(DEBUG1, "%s: DELETE operation - returning %d target attributes",
-			 __func__, list_length(targetAttrs));
+		elog(DEBUG1, "%s: %s operation - returning %d target attributes",
+			 __func__, (operation == CMD_DELETE) ? "DELETE" : "UPDATE",
+			 list_length(targetAttrs));
 
 		/* Return the list of attributes to fetch */
 		return list_make1(targetAttrs);
 	}
 
-	/* For INSERT and UPDATE, we don't need to fetch anything */
+	/* For INSERT, we don't need to fetch anything */
 	return NIL;
 }
 
@@ -2983,7 +2988,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	elog(DEBUG1, "%s called", __func__);
 
 	/* Validate operation type */
-	if (operation != CMD_INSERT && operation != CMD_DELETE)
+	if (operation != CMD_INSERT && operation != CMD_DELETE && operation != CMD_UPDATE)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 				 errmsg("unsupported operation type: %d", operation)));
@@ -3008,12 +3013,14 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	/*
 	 * Set query type based on operation.
 	 * This is needed for LoadRDFServerInfo to select the correct endpoint URL
-	 * (update_url for INSERT/DELETE vs endpoint for SELECT).
+	 * (update_url for INSERT/DELETE/UPDATE vs endpoint for SELECT).
 	 */
 	if (operation == CMD_INSERT)
 		state->sparql_query_type = SPARQL_INSERT;
 	else if (operation == CMD_DELETE)
 		state->sparql_query_type = SPARQL_DELETE;
+	else if (operation == CMD_UPDATE)
+		state->sparql_query_type = SPARQL_UPDATE;
 
 	/* Load server, table, user mapping info, and prefixes */
 	LoadRDFServerInfo(state);
@@ -3029,7 +3036,14 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	/* Check if triple graph pattern is provided */
 	if (!state->sparql_update_pattern || strlen(state->sparql_update_pattern) == 0)
 	{
-		const char *op_name = (operation == CMD_INSERT) ? "INSERT" : "DELETE";
+		const char *op_name;
+		if (operation == CMD_INSERT)
+			op_name = "INSERT";
+		else if (operation == CMD_DELETE)
+			op_name = "DELETE";
+		else
+			op_name = "UPDATE";
+
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 				 errmsg("%s operation requires a valid triple pattern in '%s'", 
@@ -3104,17 +3118,15 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 		/* Get the attribute value from the slot */
 		datum = slot_getattr(slot, i + 1, &isnull);
 
-		/* Skip NULL values - they won't produce valid triples */
+		/* Raise error for NULL values - they violate RDF data model */
 		if (isnull)
 		{
-			elog(DEBUG2, "%s: column '%s' (variable '%s') is NULL, skipping row",
-				 __func__, col->name, sparql_var);
-
-			/* Switch back to old context before returning */
-			MemoryContextSwitchTo(oldcontext);
-
-			/* Return the slot unchanged - this row will be skipped */
-			return slot;
+			ereport(ERROR,
+					(errcode(ERRCODE_NOT_NULL_VIOLATION),
+					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
+					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
+					 errhint("RDF triples require all components to be non-NULL. "
+							"Filter NULL values in your query or provide default values.")));
 		}
 
 		/* Ensure the column is of rdfnode type */
@@ -3376,6 +3388,317 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	return slot;
 }
 
+/*
+ * rdfExecForeignUpdate
+ * --------------------
+ * Execute an UPDATE operation on the foreign RDF triplestore.
+ *
+ * In SPARQL, UPDATE is implemented as a DELETE followed by an INSERT.
+ * This function:
+ * 1. Retrieves OLD values from junk attributes in planSlot
+ * 2. Constructs a DELETE pattern using OLD values
+ * 3. Constructs an INSERT pattern using NEW values from slot
+ * 4. Wraps both in a SPARQL DELETE { } INSERT { } WHERE { } statement
+ * 5. Executes the combined operation via ExecuteSPARQL()
+ *
+ * The sparql_update_pattern acts as a template where SPARQL variables
+ * (e.g., ?s, ?p, ?o) are replaced with actual values from both the
+ * OLD tuple (for DELETE) and NEW tuple (for INSERT).
+ *
+ * Returns the slot if successful, or throws an ERROR on failure.
+ */
+static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
+											ResultRelInfo *rinfo,
+											TupleTableSlot *slot,
+											TupleTableSlot *planSlot)
+{
+	RDFfdwState *state;
+	TupleDesc tupdesc = slot->tts_tupleDescriptor;
+	MemoryContext oldcontext;
+	StringInfoData sparql_delete, sparql_insert, final_query;
+	int len;
+	Datum datum;
+	bool isnull;
+
+	elog(DEBUG1, "%s called", __func__);
+
+	/* State must be initialized by rdfBeginForeignModify */
+	state = (RDFfdwState *)rinfo->ri_FdwState;
+	if (!state)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("%s failed to initialize state", __func__)));
+
+	/*
+	 * For UPDATE, planSlot contains the OLD tuple with junk attributes
+	 * set by rdfAddForeignUpdateTargets, and slot contains the NEW values.
+	 */
+	if (planSlot == NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("%s: planSlot is NULL", __func__)));
+
+	/* Switch to temporary context for per-row allocations */
+	MemoryContextReset(state->temp_cxt);
+	oldcontext = MemoryContextSwitchTo(state->temp_cxt);
+
+	/* Build DELETE part using OLD values from planSlot (junk attributes) */
+	initStringInfo(&sparql_delete);
+	appendStringInfoString(&sparql_delete, state->sparql_update_pattern);
+
+	/*
+	 * Substitute variables with OLD values for the DELETE clause.
+	 * For UPDATE, planSlot contains both NEW values (from SET clause) and
+	 * OLD values (as junk attributes). We need to find the junk attribute
+	 * for each column by name to get the OLD values.
+	 */
+	for (int i = 0; i < state->numcols; i++)
+	{
+		RDFfdwColumn *col = state->rdfTable->cols[i];
+		char *sparql_var = col->sparqlvar;
+		char *value_str;
+		char *replaced;
+		AttrNumber junk_attno;
+
+		elog(DEBUG2, "%s [%d] DELETE: column loaded: %s, sparql_var: %s",
+			 __func__, i, col->name,
+			 sparql_var ? sparql_var : "(null)");
+
+		/* Skip columns without SPARQL variable mapping */
+		if (!sparql_var || strlen(sparql_var) == 0)
+		{
+			elog(DEBUG2, "%s [%d] DELETE: skipping column '%s' - no SPARQL variable",
+				 __func__, i, col->name);
+			continue;
+		}
+
+		/* Check if this SPARQL variable exists in the template */
+		if (strstr(sparql_delete.data, sparql_var) == NULL)
+		{
+			elog(DEBUG2, "%s: DELETE: SPARQL variable '%s' not found in template '%s', skipping",
+				 __func__, sparql_var, sparql_delete.data);
+			continue;
+		}
+
+		/*
+		 * Find the junk attribute for this column by name.
+		 * The junk attributes were added by rdfAddForeignUpdateTargets and contain
+		 * the OLD values. We search planSlot's tuple descriptor for a resjunk
+		 * attribute with the same name as our column.
+		 */
+		junk_attno = 0;
+		{
+			TupleDesc planDesc = planSlot->tts_tupleDescriptor;
+			for (int j = 0; j < planDesc->natts; j++)
+			{
+				Form_pg_attribute attr = TupleDescAttr(planDesc, j);
+
+				/* Look for a junk attribute (attnum > numcols) with matching name */
+				if (!attr->attisdropped &&
+					attr->attnum > state->numcols &&
+					strcmp(NameStr(attr->attname), col->name) == 0)
+				{
+					junk_attno = attr->attnum;
+					break;
+				}
+			}
+		}
+
+		if (junk_attno > 0)
+		{
+			/* Get the OLD value from junk attribute (modified column) */
+			datum = ExecGetJunkAttribute(planSlot, junk_attno, &isnull);
+		}
+		else
+		{
+			/*
+			 * No junk attribute found - this is either the key column or an unmodified column.
+			 * Get the OLD value from the regular slot which contains current values for
+			 * unmodified columns.
+			 */
+			datum = slot_getattr(slot, col->pgattnum, &isnull);
+		}
+
+		if (isnull)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_NOT_NULL_VIOLATION),
+					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
+					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
+					 errhint("RDF triples require all components to be non-NULL. "
+							 "Filter NULL values in your query or provide default values.")));
+		}
+
+		/* Ensure the column is of rdfnode type */
+		if (col->pgtype != RDFNODEOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
+
+		/* Convert the datum to string representation */
+		value_str = DatumToString(datum, col->pgtype);
+
+		/* Check if escaping is needed for control characters */
+		{
+			bool needs_escaping = false;
+			for (const char *p = value_str; *p; p++)
+			{
+				if (*p == '\n' || *p == '\r' || *p == '\t')
+				{
+					needs_escaping = true;
+					break;
+				}
+			}
+
+			/* Only escape if control characters were found */
+			if (needs_escaping)
+				value_str = EscapeSPARQLLiteral(value_str);
+		}
+
+		elog(DEBUG2, "%s: DELETE: column '%s' OLD value: %s", __func__, col->name, value_str);
+
+		/* Replace the variable placeholder with the actual OLD value */
+		replaced = str_replace(sparql_delete.data, sparql_var, value_str);
+		resetStringInfo(&sparql_delete);
+		appendStringInfoString(&sparql_delete, replaced);
+	}
+
+	/* Strip trailing whitespace and dots from the DELETE pattern */
+	len = strlen(sparql_delete.data);
+	while (len > 0 && (sparql_delete.data[len - 1] == '.' ||
+					   isspace((unsigned char)sparql_delete.data[len - 1])))
+	{
+		sparql_delete.data[len - 1] = '\0';
+		len--;
+		sparql_delete.len = len;
+	}
+
+	/* Build INSERT part using NEW values from slot */
+	initStringInfo(&sparql_insert);
+	appendStringInfoString(&sparql_insert, state->sparql_update_pattern);
+
+	/* Substitute variables with NEW values for the INSERT clause */
+	for (int i = 0; i < tupdesc->natts; i++)
+	{
+		RDFfdwColumn *col = state->rdfTable->cols[i];
+		char *sparql_var = col->sparqlvar;
+		char *value_str;
+		char *replaced;
+
+		/* Skip columns without SPARQL variable mapping */
+		if (!sparql_var || strlen(sparql_var) == 0)
+			continue;
+
+		/* Check if this SPARQL variable exists in the template */
+		if (strstr(sparql_insert.data, sparql_var) == NULL)
+		{
+			elog(DEBUG2, "%s: INSERT: SPARQL variable '%s' not found in template, skipping",
+				 __func__, sparql_var);
+			continue;
+		}
+
+		/* Get the NEW attribute value from the slot */
+		datum = slot_getattr(slot, i + 1, &isnull);
+
+		/* Raise error for NULL values - they violate RDF data model */
+		if (isnull)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_NOT_NULL_VIOLATION),
+					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
+					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
+					 errhint("RDF triples require all components to be non-NULL. "
+							 "Filter NULL values in your query or provide default values.")));
+		}
+
+		/* Ensure the column is of rdfnode type */
+		if (col->pgtype != RDFNODEOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
+
+		/* Convert the datum to string representation */
+		value_str = DatumToString(datum, col->pgtype);
+
+		/* Check if escaping is needed for control characters */
+		{
+			bool needs_escaping = false;
+			for (const char *p = value_str; *p; p++)
+			{
+				if (*p == '\n' || *p == '\r' || *p == '\t')
+				{
+					needs_escaping = true;
+					break;
+				}
+			}
+
+			/* Only escape if control characters were found */
+			if (needs_escaping)
+				value_str = EscapeSPARQLLiteral(value_str);
+		}
+
+		elog(DEBUG2, "%s: INSERT: column '%s' NEW value: %s", __func__, col->name, value_str);
+
+		/* Replace the variable placeholder with the actual NEW value */
+		replaced = str_replace(sparql_insert.data, sparql_var, value_str);
+		resetStringInfo(&sparql_insert);
+		appendStringInfoString(&sparql_insert, replaced);
+	}
+
+	/* Strip trailing whitespace and dots from the INSERT pattern */
+	len = strlen(sparql_insert.data);
+	while (len > 0 && (sparql_insert.data[len - 1] == '.' ||
+					   isspace((unsigned char)sparql_insert.data[len - 1])))
+	{
+		sparql_insert.data[len - 1] = '\0';
+		len--;
+		sparql_insert.len = len;
+	}
+
+	/* Build the final UPDATE query using DELETE/INSERT */
+	initStringInfo(&final_query);
+
+	if (state->prefix_context)
+	{
+		appendStringInfoString(&final_query, state->sparql_prefixes);
+		appendStringInfoString(&final_query, "\n");
+	}
+
+	/*
+	 * SPARQL UPDATE uses DELETE { old_pattern } INSERT { new_pattern } WHERE { }
+	 * For fully-specified triples (no variables), we can use an empty WHERE clause.
+	 */
+	appendStringInfoString(&final_query, "DELETE DATA {\n  ");
+	appendStringInfoString(&final_query, sparql_delete.data);
+	appendStringInfoString(&final_query, "\n};\n");
+	appendStringInfoString(&final_query, "INSERT DATA {\n  ");
+	appendStringInfoString(&final_query, sparql_insert.data);
+	appendStringInfoString(&final_query, "\n}");
+
+	elog(DEBUG1, "%s: executing UPDATE (DELETE + INSERT)", __func__);
+	elog(DEBUG2, "%s: final SPARQL query:\n%s", __func__, final_query.data);
+
+	/* Set the SPARQL query text */
+	state->sparql_query_type = SPARQL_UPDATE;
+	state->sparql = final_query.data;
+
+	/* Execute the UPDATE (DELETE + INSERT) immediately */
+	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+	{
+		MemoryContextSwitchTo(oldcontext);
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("%s: failed to execute SPARQL UPDATE", __func__)));
+	}
+
+	/* Clean up temp context for next row */
+	MemoryContextSwitchTo(oldcontext);
+
+	elog(DEBUG1, "%s exit (row updated)", __func__);
+
+	return slot;
+}
+
 static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo)
 {
 	RDFfdwState *state = (RDFfdwState *)rinfo->ri_FdwState;
@@ -3544,7 +3867,9 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			DefElem *def = lfirst_node(DefElem, cell);
 
 			if (strcmp(RDF_SERVER_OPTION_UPDATE_URL, def->defname) == 0 &&
-				(state->sparql_query_type == SPARQL_INSERT || state->sparql_query_type == SPARQL_DELETE))
+				(state->sparql_query_type == SPARQL_INSERT || 
+				 state->sparql_query_type == SPARQL_DELETE ||
+				 state->sparql_query_type == SPARQL_UPDATE))
 				state->endpoint = defGetString(def);
 
 			else if (strcmp(RDF_SERVER_OPTION_SELECT_URL, def->defname) == 0 &&
@@ -4284,7 +4609,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	elog(DEBUG1, "%s called for %s operation", __func__,
 		(state->sparql_query_type == SPARQL_INSERT) ? "INSERT" :
-		(state->sparql_query_type == SPARQL_DELETE) ? "DELETE" : "SELECT/DESCRIBE");
+		(state->sparql_query_type == SPARQL_DELETE) ? "DELETE" :
+		(state->sparql_query_type == SPARQL_UPDATE) ? "UPDATE" : "SELECT/DESCRIBE");
 
 	curl_global_init(CURL_GLOBAL_ALL);
 	state->curl = curl_easy_init();
@@ -4296,7 +4622,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		elog(INFO, "SPARQL query sent to '%s':\n%s\n", state->server->servername, state->sparql);
 
 	/* For SPARQL UPDATE operations (INSERT, DELETE, UPDATE), use different approach */
-	if (state->sparql_query_type == SPARQL_INSERT || state->sparql_query_type == SPARQL_DELETE)
+	if (state->sparql_query_type == SPARQL_INSERT || 
+		state->sparql_query_type == SPARQL_DELETE || 
+		state->sparql_query_type == SPARQL_UPDATE)
 	{
 		/* SPARQL UPDATE: send the update query directly in POST body with application/sparql-update */
 		elog(DEBUG1, "%s: using SPARQL UPDATE protocol", __func__);
@@ -4380,7 +4708,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
 
 		/* Set POST data based on query type */
-		if (state->sparql_query_type == SPARQL_INSERT || state->sparql_query_type == SPARQL_DELETE)
+		if (state->sparql_query_type == SPARQL_INSERT || 
+			state->sparql_query_type == SPARQL_DELETE || 
+			state->sparql_query_type == SPARQL_UPDATE)
 		{
 			/* For SPARQL UPDATE: send raw SPARQL update in POST body */
 			elog(DEBUG1, "%s: setting SPARQL UPDATE body: %s", __func__, state->sparql);
@@ -4416,7 +4746,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_USERAGENT, user_agent.data);
 
 		/* Set headers based on query type */
-		if (state->sparql_query_type == SPARQL_INSERT || state->sparql_query_type == SPARQL_DELETE)
+		if (state->sparql_query_type == SPARQL_INSERT || 
+			state->sparql_query_type == SPARQL_DELETE || 
+			state->sparql_query_type == SPARQL_UPDATE)
 		{
 			/* For SPARQL UPDATE: use application/sparql-update content type */
 			headers = curl_slist_append(headers, "Content-Type: application/sparql-update");
@@ -5067,24 +5399,30 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					node_value = (char *)content;
 
 					/*
-					 * For empty literals (like ""@pt), xmlNodeGetContent may return NULL.
-					 * Treat NULL as an empty string to properly handle empty RDF literals.
+					 * For empty RDF literals (like "" or ""@en or ""^^xsd:string),
+					 * xmlNodeGetContent may return NULL when the element is empty.
+					 * We need to distinguish between:
+					 * 1. Empty literal "" - a valid RDF value (empty string)
+					 * 2. Unbound variable - absence of binding (SQL NULL)
+					 *
+					 * If we're inside a <literal>, <uri>, or <bnode> element,
+					 * then NULL content means empty string, not unbound.
 					 */
 					if (!node_value)
 					{
-						/* Check if this is an empty literal with lang or datatype */
-						if (lang || datatype)
+						/* Check if this is a bound RDF term (literal, uri, or bnode) */
+						if (xmlStrcmp(node_type, (xmlChar *)"literal") == 0 ||
+							xmlStrcmp(node_type, (xmlChar *)"uri") == 0 ||
+							xmlStrcmp(node_type, (xmlChar *)"bnode") == 0)
 						{
-							/* Empty literal - use empty string */
+							/* Empty RDF term - use empty string */
 							node_value = "";
-							elog(DEBUG2, "%s: empty literal for column '%s' (%s) with lang='%s' datatype='%s'", 
-								 __func__, colname, sparqlvar, 
-								 lang ? (char*)lang : "(null)",
-								 datatype ? (char*)datatype : "(null)");
+							elog(DEBUG2, "%s: empty %s for column '%s' (%s)", 
+								 __func__, (char*)node_type, colname, sparqlvar);
 						}
 						else
 						{
-							/* Truly NULL value - skip column */
+							/* Unbound variable or unexpected element - treat as NULL */
 							elog(DEBUG2, "%s: no value found for column '%s' (%s)", __func__, colname, sparqlvar);
 
 							if (content)

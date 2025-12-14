@@ -131,7 +131,6 @@ CREATE FOREIGN TABLE table_error5 (
   log_sparql 'foo');
 ERROR:  invalid log_sparql: 'foo'
 HINT:  this parameter expects boolean values ('true' or 'false')
-/* UPDATE and DELETE not supported */
 CREATE SERVER testserver2
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
@@ -141,8 +140,6 @@ CREATE FOREIGN TABLE t1 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS 
   (sparql 'SELECT ?s WHERE {?s ?p ?o} LIMIT 1', log_sparql 'true');
-UPDATE t1 SET name = 'foo';
-ERROR:  cannot update foreign table "t1"
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
 ) SERVER testserver2 OPTIONS (sparql '

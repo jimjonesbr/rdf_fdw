@@ -29,7 +29,6 @@ INSERT INTO ft (subject, predicate, object) VALUES
 
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University'),
-('<https://www.uni-muenster.de>', NULL, '"will be skipped"^^<http://www.w3.org/2001/XMLSchema#string>'),
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', ''),
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '""'),
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '""@es'),
@@ -45,6 +44,14 @@ ALTER SERVER fuseki OPTIONS (ADD update_url 'http://fuseki:3030/dt/update',
 
 SELECT subject, predicate, object FROM ft
 ORDER BY predicate, object::text COLLATE "C";
+
+/* Test DEFAULT values handling */
+ALTER FOREIGN TABLE ft ALTER COLUMN object SET DEFAULT '"default literal"'::rdfnode;
+INSERT INTO ft (subject, predicate) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#altLabel>');
+SELECT subject, predicate, object FROM ft 
+WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#altLabel>';
+ALTER FOREIGN TABLE ft ALTER COLUMN object DROP DEFAULT;
 
 /* insert large literal */
 ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'false'); -- disable logging to not flood the ouput file
@@ -177,5 +184,11 @@ ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern ' ');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 
+/* invalid value - NULL value */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', NULL);
+
+/* cleanup */
 DROP SERVER fuseki CASCADE;
 DROP SERVER wikidata CASCADE;

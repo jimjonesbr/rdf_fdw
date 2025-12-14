@@ -8,7 +8,11 @@ Release date: **YYYY-MM-DD**
 
 * DELETE support: added per-row DELETE DATA support for deleting triples from RDF triplestores. DELETE operations on `FOREIGN TABLE`s are translated into SPARQL DELETE DATA requests using concrete triple values retrieved from a prior SELECT operation. Each matching row is converted into a fully-specified DELETE DATA statement and sent to the configured SPARQL UPDATE endpoint. Supports bulk DELETE operations and complex WHERE conditions with multiple predicates.
 
+* UPDATE support: added per-row UPDATE support for modifying triples in RDF triplestores. UPDATE operations on `FOREIGN TABLE`s are translated into a combination of SPARQL DELETE DATA and INSERT DATA statements. The implementation first retrieves the OLD values via a SELECT query, then generates a DELETE DATA statement to remove the old triple(s), followed by an INSERT DATA statement with the NEW values. This approach follows the SPARQL UPDATE protocol since SPARQL has no direct UPDATE syntax. Supports single-column and multi-column updates with complex WHERE conditions.
+
 ### Bug Fixes
+
+* Empty RDF literals incorrectly returned as NULL: Fixed a bug where empty RDF literals (e.g., `""`, `""@en`, or `""^^xsd:string`) were being incorrectly returned as SQL NULL values instead of empty strings. The issue occurred in `CreateTuple()` where `xmlNodeGetContent()` returns NULL for empty XML elements. The fix now properly distinguishes between empty RDF terms (valid empty strings) and unbound SPARQL variables (SQL NULL) by checking the XML element type (`<literal>`, `<uri>`, or `<bnode>`).
 
 * Empty literals not being deleted: Fixed a bug where empty literals (e.g., `""@pt`) were not triggering DELETE operations. The issue occurred because `xmlNodeGetContent()` returns NULL for empty content, which caused tuples to be incorrectly marked as NULL, preventing the DELETE callback from executing.
 

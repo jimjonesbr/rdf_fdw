@@ -45,7 +45,8 @@ REGRESS += create_extension \
 # Skip INSERT test if SKIP_UPDATE_TEST is set (e.g., when running with act)
 ifndef SKIP_UPDATE_TEST
   REGRESS += delete-fuseki \
-			insert-fuseki
+  			 update-fuseki \
+			 insert-fuseki
 endif
 
 REGRESS += table-clone \
