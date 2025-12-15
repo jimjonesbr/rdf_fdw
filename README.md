@@ -1239,7 +1239,7 @@ SELECT sparql.isliteral(NULL);
 sparql.isnumeric(term rdfnode) → boolean
 ```
 
-Returns `true` if the RDF node is a literal with a numeric datatype (such as `xsd:int`, `xsd:decimal`, etc.), and `false` otherwise. See the SPARQL 1.1 section on [Operand Data Types](https://www.w3.org/TR/sparql11-query/#operandDataTypes) for more details.
+Returns `true` if the RDF node is a literal with a numeric datatype (such as `xsd:int`, `xsd:dateTime`, etc.), and `false` otherwise. See the SPARQL 1.1 section on [Operand Data Types](https://www.w3.org/TR/sparql11-query/#operandDataTypes) for more details.
 
 Examples:
 
@@ -1514,687 +1514,6 @@ SELECT sparql.struuid();
 (1 row)
 ```
 
-### [Functions on Strings](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-strings)
-
-#### [STRLEN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlen)
-
-```sql
-sparql.strlen(value rdfnode) → int
-```
-
-Returns the number of characters in the **lexical form** of the RDF node. Implements the SPARQL 1.1 [STRLEN()](https://www.w3.org/TR/sparql11-query/#func-strlen) function.
-
-Examples:
-
-```sql
-SELECT sparql.strlen('"foo"');
- strlen 
---------
-      3
-(1 row)
-
-SELECT sparql.strlen('"foo"@de');
- strlen 
---------
-      3
-(1 row)
-
-SELECT sparql.strlen('"foo"^^xsd:string');
- strlen 
---------
-      3
-(1 row)
-
-SELECT sparql.strlen('"42"^^xsd:int');
- strlen 
---------
-      2
-(1 row)
-```
-
-#### [SUBSTR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#substr)
-
-```sql
-sparql.substr(value rdfnode, start int, length int DEFAULT NULL) → rdfnode
-```
-
-Extracts a substring from the lexical form of the RDF node. Implements the SPARQL 1.1 [SUBSTR()](https://www.w3.org/TR/sparql11-query/#func-substr) function.
-
-* The start index is 1-based.
-* If length is omitted, returns everything to the end of the string.
-* returns `NULL` if any of the arguments is `NULL`
-
-Examples:
-
-```sql
-SELECT sparql.substr('"foobar"', 1, 3);
- substr 
---------
- "foo"
-(1 row)
-
-SELECT sparql.substr('"foobar"', 4);
- substr 
---------
- "bar"
-(1 row)
-```
-
-#### [UCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ucase)
-
-```sql
-sparql.ucase(value rdfnode) → rdfnode
-```
-
-Converts the **lexical form** of the literal to uppercase. Implements the SPARQL 1.1 [UCASE()](https://www.w3.org/TR/sparql11-query/#func-ucase) function.
-
-Examples:
-
-```sql
-SELECT sparql.ucase('"foo"');
- ucase 
--------
- "FOO"
-(1 row)
-
-SELECT sparql.ucase('"foo"@en');
-  ucase   
-----------
- "FOO"@en
-(1 row)
-
-SELECT sparql.ucase('"foo"^^xsd:string');
-                      ucase                       
---------------------------------------------------
- "FOO"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-```
-
-## [LCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lcase)
-
-```sql
-sparql.lcase(value rdfnode) → rdfnode
-```
-
-Converts the **lexical form** of the literal to lowercase. Implements the SPARQL 1.1 [LCASE()](https://www.w3.org/TR/sparql11-query/#func-lcase) function.
-
-Examples:
-
-```sql
-SELECT sparql.lcase('"FOO"');
- lcase 
--------
- "foo"
-(1 row)
-
-SELECT sparql.lcase('"FOO"@en');
-  lcase   
-----------
- "foo"@en
-(1 row)
-
-SELECT sparql.lcase('"FOO"^^xsd:string');
-                      lcase                       
---------------------------------------------------
- "foo"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-```
-
-#### [STRSTARTS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strstarts)
-
-```sql
-sparql.strstarts(value rdfnode, prefix rdfnode) → boolean
-```
-
-Returns `true` if the **lexical form** of the RDF node starts with the given string. Implements the SPARQL 1.1 [STRSTARTS()](https://www.w3.org/TR/sparql11-query/#func-strstarts) function.
-
-Examples:
-
-```sql
-SELECT sparql.strstarts('"foobar"^^xsd:string', '"foo"^^xsd:string');
- strstarts 
------------
- t
-(1 row)
-
-SELECT sparql.strstarts('"foobar"@en', '"foo"^^xsd:string');
- strstarts 
------------
- t
-(1 row)
-```
-
-#### [STRENDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strends)
-
-```sql
-sparql.strends(value rdfnode, suffix rdfnode) → boolean
-```
-
-Returns `true` if the **lexical form** of the RDF node ends with the given string. Implements the SPARQL 1.1 [STRENDS() ](https://www.w3.org/TR/sparql11-query/#func-strends)function.
-
-Examples:
-
-```sql
-SELECT sparql.strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
- strends 
----------
- t
-(1 row)
-
-SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
- strends 
----------
- t
-(1 row)
-```
-
-#### [CONTAINS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#contains)
-
-```sql
-sparql.contains(value rdfnode, substring rdfnode) → boolean
-```
-
-Returns `true` if the **lexical form** of the RDF node contains the given substring. Implements the SPARQL 1.1 [CONTAINS()](https://www.w3.org/TR/sparql11-query/#func-contains) function.
-
-Examples:
-
-```sql
-SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"');
- contains 
-----------
- t
-(1 row)
-
-SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"@en');
- contains 
-----------
- t
-(1 row)
-```
-
-#### [STRBEFORE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strbefore)
-
-```sql
-sparql.strbefore(value rdfnode, delimiter rdfnode) → rdfnode
-```
-
-Returns the substring before the first occurrence of the delimiter in the **lexical form**. If the delimiter is not found, returns an empty string. Implements the SPARQL 1.1 [STRBEFORE()](https://www.w3.org/TR/sparql11-query/#func-strbefore) function.
-
-Examples:
-
-```sql
-SELECT sparql.strbefore('"foobar"^^xsd:string','"bar"^^xsd:string');
-                    strbefore                     
---------------------------------------------------
- "foo"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
-SELECT sparql.strbefore('"foobar"@en','"bar"^^xsd:string');
- strbefore 
------------
- "foo"@en
-(1 row)
-
-SELECT sparql.strbefore('"foobar"','"bar"^^xsd:string');
- strbefore 
------------
- "foo"
-(1 row)
-
-SELECT sparql.strbefore('"foobar"','"bar"');
- strbefore 
------------
- "foo"
-(1 row)
-```
-
-#### [STRAFTER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strafter)
-
-```sql
-sparql.strafter(value rdfnode, delimiter rdfnode) → rdfnode
-```
-
-Returns the substring after the first occurrence of the delimiter in the **lexical form**. If the delimiter is not found, returns an empty string. Implements the SPARQL 1.1 [STRAFTER()](https://www.w3.org/TR/sparql11-query/#func-strafter) function.
-
-Examples:
-
-```sql
-SELECT sparql.strafter('"foobar"^^xsd:string','"foo"^^xsd:string');
-                     strafter                     
---------------------------------------------------
- "bar"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
-SELECT sparql.strafter('"foobar"@en','"foo"^^xsd:string');
- strafter 
-----------
- "bar"@en
-(1 row)
-
-SELECT sparql.strafter('"foobar"','"foo"^^xsd:string');
- strafter 
-----------
- "bar"
-(1 row)
-
-SELECT sparql.strafter('"foobar"','"foo"');
- strafter 
-----------
- "bar"
-(1 row)
-```
-
-#### [ENCODE_FOR_URI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#encode_for_uri)
-
-```sql
-sparql.encode_for_uri(value rdfnode) → rdfnode
-```
-
-Returns a URI-safe version of the lexical form by percent-encoding special characters. Implements the SPARQL 1.1 [ENCODE_FOR_URI()](https://www.w3.org/TR/sparql11-query/#func-encode) function.
-
-```sql
-SELECT sparql.encode_for_uri('"foo&bar!"');
- encode_for_uri 
-----------------
- "foo%26bar%21"
-(1 row)
-```
-
-#### [CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#concat)
-
-```sql
-sparql.concat(value1 rdfnode, value2 rdfnode, ...) → rdfnode
-```
-
-Concatenates all input strings into one. Implements the SPARQL 1.1 [CONCAT()](https://www.w3.org/TR/sparql11-query/#func-concat) function.
-
-
-```sql
-SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
-    concat    
---------------
- "foo&bar"@en
-(1 row)
-
-SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
-                        concat                        
-------------------------------------------------------
- "foo&bar"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
-SELECT sparql.concat('"foo"','"&"', '"bar"');
-  concat   
------------
- "foo&bar"
-(1 row)
-```
-
-#### [LANGMATCHES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#langmatches)
-
-```sql
-sparql.langmatches(lang_tag rdfnode, pattern rdfnode) → boolean
-```
-
-Checks whether a language tag matches a language pattern (e.g., `en` matches `en-US`).
-Implements the SPARQL 1.1 [LANGMATCHES()](https://www.w3.org/TR/sparql11-query/#func-langMatches) function.
-
-Example:
-
-```sql
-SELECT sparql.langmatches('en', 'en');
- langmatches 
--------------
- t
-(1 row)
-
-SELECT sparql.langmatches('en-US', 'en');
- langmatches 
--------------
- t
-(1 row)
-
-SELECT sparql.langmatches('en', 'de');
- langmatches 
--------------
- f
-(1 row)
-
-SELECT sparql.langmatches('en', '*');
- langmatches 
--------------
- t
-(1 row)
-```
-
-#### [REGEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#regex)
-
-```sql
-sparql.regex(value rdfnode, pattern rdfnode, flags rdfnode DEFAULT '') → boolean
-```
-
-Checks if the lexical form matches the given regular expression. Implements the SPARQL 1.1 [REGEX()](https://www.w3.org/TR/sparql11-query/#func-regex) function.
-
-* Supported flags: `i` (case-insensitive)
-
-Example:
-
-```sql
-SELECT sparql.regex('"Hello World"', '^hello', 'i');
- regex 
--------
- t
-(1 row)
-```
-
-#### [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
-
-```sql
-sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode, flags rdfnode DEFAULT '') → rdfnode
-
-```
-
-Replaces parts of the **lexical form** using a regular expression. Implements the SPARQL 1.1 [REPLACE()](https://www.w3.org/TR/sparql11-query/#func-replace) function.
-
-* Supports `i`, `m`, and `g` flags.
-
-```sql
-SELECT sparql.replace('"foo bar foo"', 'foo', 'baz', 'g');
-    replace    
----------------
- "baz bar baz"
-(1 row)
-```
-### [Functions on Numerics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-numerics)
-
-#### [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)
-
-```sql
-sparql.abs(value rdfnode) → numeric
-```
-
-Returns the absolute value of a numeric literal. Implements the SPARQL 1.1 [ABS()](https://www.w3.org/TR/sparql11-query/#func-abs) function.
-
-Examples:
-
-```sql
-SELECT sparql.abs('"-42"^^xsd:int');
-                     abs                      
-----------------------------------------------
- "42"^^<http://www.w3.org/2001/XMLSchema#int>
-(1 row)
-
-SELECT sparql.abs('"3.14"^^xsd:decimal');
-                        abs                         
-----------------------------------------------------
- "3.14"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-```
-
-#### [ROUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#round)
-
-```sql
-sparql.round(value rdfnode) → numeric
-```
-
-Rounds the numeric literal to the nearest integer. Implements the SPARQL 1.1 [ROUND()](https://www.w3.org/TR/sparql11-query/#func-round) function.
-
-Examples:
-
-```sql
-SELECT sparql.round('"2.5"^^xsd:decimal');
-                      round                      
--------------------------------------------------
- "3"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
-SELECT sparql.round('"-2.5"^^xsd:float');
-                     round                      
-------------------------------------------------
- "-2"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-```
-
-#### [CEIL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ceil)
-
-```sql
-sparql.ceil(value rdfnode) → numeric
-```
-Returns the smallest integer greater than or equal to the numeric value. Implements the SPARQL 1.1 [CEIL()](https://www.w3.org/TR/sparql11-query/#func-ceil) function.
-
-Examples:
-
-```sql
-SELECT sparql.ceil('"3.14"^^xsd:decimal');
-                      ceil                       
--------------------------------------------------
- "4"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
-SELECT sparql.ceil('"-2.1"^^xsd:float');
-                      ceil                      
-------------------------------------------------
- "-2"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-```
-
-#### [FLOOR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#floor)
-
-```sql
-sparql.floor(value rdfnode) → numeric
-```
-
-Returns the greatest integer less than or equal to the numeric value. Implements the SPARQL 1.1 [FLOOR()](https://www.w3.org/TR/sparql11-query/#func-floor) function.
-
-Examples:
-
-```sql
-SELECT sparql.floor('"3.9"^^xsd:decimal');
-                      floor                      
--------------------------------------------------
- "3"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
-SELECT sparql.floor('"-2.1"^^xsd:float');
-                     floor                      
-------------------------------------------------
- "-3"^^<http://www.w3.org/2001/XMLSchema#float>
-(1 row)
-```
-
-#### [RAND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rand)
-
-```sql
-sparql.rand() → rdfnode
-```
-
-Returns a random floating-point number between 0.0 and 1.0. Implements the SPARQL 1.1 [RAND()](https://www.w3.org/TR/sparql11-query/#idp2130040) function.
-
-Examples:
-
-```sql
-SELECT sparql.rand();
-                               rand                               
-------------------------------------------------------------------
- "0.14079881274421657"^^<http://www.w3.org/2001/XMLSchema#double>
-(1 row)
-```
-
-### [Functions on Dates and Times](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-dates-and-times)
-
-#### [YEAR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#year)
-
-```sql
-sparql.year(value rdfnode) → int
-```
-
-Returns the year component of an xsd:dateTime or xsd:date literal. Implements the SPARQL 1.1 [YEAR()](https://www.w3.org/TR/sparql11-query/#func-year) function.
-
-Example:
-
-```sql
-SELECT sparql.year('"2025-05-17T14:00:00Z"^^xsd:dateTime');
- year 
-------
- 2025
-```
-
-#### [MONTH](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#month)
-
-```sql
-sparql.month(value rdfnode) → int
-```
-Returns the month component (1–12) from a datetime or date. Implements the SPARQL 1.1 [MONTH()](https://www.w3.org/TR/sparql11-query/#func-month) function.
-
-Example:
-
-```sql
-SELECT sparql.month('"2025-05-17T14:00:00Z"^^xsd:dateTime');
- month 
--------
-     5
-(1 row)
-```
-
-#### [DAY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#day)
-
-```sql
-sparql.day(value rdfnode) → int
-```
-
-Returns the day of the month from a date or datetime literal. Implements the SPARQL 1.1 [DAY()](https://www.w3.org/TR/sparql11-query/#func-day) function.
-
-Example:
-
-```sql
-SELECT sparql.day('"2025-05-17T14:00:00Z"^^xsd:dateTime');
- day 
------
-  17
-(1 row)
-```
-
-#### [HOURS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hours)
-
-```sql
-sparql.hours(value rdfnode) → int
-```
-
-Extracts the hour (0–23) from a datetime literal. Implements the SPARQL 1.1 [HOURS()](https://www.w3.org/TR/sparql11-query/#func-hours) function.
-
-Example:
-
-```sql
-SELECT sparql.hours('"2025-05-17T14:00:00Z"^^xsd:dateTime');
- hours 
--------
-    14
-(1 row)
-```
-
-#### [MINUTES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#minutes)
-
-```sql
-sparql.minutes(value rdfnode) → int
-```
-
-Returns the minute component (0–59) of a datetime literal. Implements the SPARQL 1.1 [MINUTES()](https://www.w3.org/TR/sparql11-query/#func-minutes) function.
-
-Example: 
-
-```sql
-SELECT sparql.minutes('"2025-05-17T14:42:37Z"^^xsd:dateTime');
- minutes 
----------
-      42
-(1 row)
-```
-
-#### [SECONDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#seconds)
-
-```sql
-sparql.seconds(value rdfnode) → int
-```
-
-Returns the seconds (including fractions) from a datetime literal. Implements the SPARQL 1.1 [SECONDS()](https://www.w3.org/TR/sparql11-query/#func-seconds) function.
-
-Example:
-
-```sql
-SELECT sparql.seconds('"2025-05-17T14:42:37Z"^^xsd:dateTime');
- seconds 
----------
-      37
-(1 row)
-```
-
-#### [TIMEZONE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#timezone)
-
-```sql
-sparql.timezone(datetime rdfnode) → rdfnode
-```
-
-Returns the timezone offset as a duration literal (e.g., "PT2H"), or NULL if none. Implements the SPARQL 1.1 [TIMEZONE()](https://www.w3.org/TR/sparql11-query/#func-timezone) function.
-
-Example:
-
-```sql
-SELECT sparql.timezone('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
-                          timezone                          
-------------------------------------------------------------
- "PT2H"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
-(1 row)
-```
-
-#### [TZ](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#tz)
-
-```sql
-sparql.tz(datetime rdfnode) → rdfnode
-```
-
-Returns the timezone offset as a string (e.g., `+02:00` or `Z`). Implements the SPARQL 1.1 [TZ()](https://www.w3.org/TR/sparql11-query/#func-tz) function.
-
-Examples:
-
-```sql
-SELECT sparql.tz('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
-    tz    
-----------
- "+02:00"
-(1 row)
-
-SELECT sparql.tz('"2025-05-17T08:00:00Z"^^xsd:dateTime');
- tz  
------
- "Z"
-(1 row)
-```
-
-### [Hash Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hash-functions)
-
-#### [MD5](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#md5)
-
-```sql
-sparql.md5(value rdfnode) → rdfnode
-```
-
-Returns the MD5 hash of the lexical form of the input RDF literal, encoded as a lowercase hexadecimal string. Implements the SPARQL 1.1 [MD5()](https://www.w3.org/TR/sparql11-query/#func-md5) function. The result is returned as a plain literal (xsd:string).
-
-Examples:
-
-```sql
-SELECT sparql.md5('"foo"');
-                md5                 
-------------------------------------
- "acbd18db4cc2f85cedef654fccc4a4d8"
-(1 row)
-
-SELECT sparql.md5('42'::rdfnode);
-                md5                 
-------------------------------------
- "a1d0c6e83f027327d8461063f4ac58a6"
-(1 row)
-```
-
 ### [Custom Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#custom-functions)
 
 #### [LEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex)
@@ -2254,7 +1573,7 @@ Returns a table with the following `rdfnode` columns:
 
 ```sql
 CREATE SERVER wikidata
-FOREIGN DATA WRAPPER rdf_fdw
+FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (endpoint 'https://query.wikidata.org/sparql');
 
 SELECT subject, predicate, object
@@ -2278,40 +1597,63 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 
 ## [Data Modification](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#data-modification)
 
-The `rdf_fdw` extension supports data modification operations (INSERT, UPDATE, DELETE) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
+The `rdf_fdw` extension supports data modification operations (`INSERT`, `UPDATE`, `DELETE`) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
 
 > [!NOTE]  
-> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL UPDATE statements (INSERT DATA, UPDATE via DELETE+INSERT, or DELETE DATA).
+> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL UPDATE statements.
+
+### General Requirements
+
+To use data modification operations, your `FOREIGN TABLE` must:
+
+1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be modified.
+2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g., `OPTIONS (variable '?s')`).
+3. **Use `rdfnode` columns** - Data modification operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
+
+> [!IMPORTANT]  
+> **SPARQL endpoints do not support PostgreSQL transactions.** Each operation is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
+
+### NULL Value Handling
+
+* **NULL values are not allowed** - Any attempt to insert or update a triple with a NULL component will raise an error. This prevents incomplete or invalid triples from being written to the triplestore.
 
 ### [INSERT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#insert)
 
 The `INSERT` statement allows you to add new RDF triples to a triplestore. Each row inserted into a `FOREIGN TABLE` is converted into a SPARQL `INSERT DATA` statement and sent to the remote SPARQL endpoint.
 
-#### Requirements
+### Usage:
 
-To use `INSERT` operations, your `FOREIGN TABLE` must:
+```sql
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de>',
+  '<http://www.w3.org/2000/01/rdf-schema#label>',
+  '"Westfälische Wilhelms-Universität Münster"@de');
+```
 
-1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be inserted
-2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g. `OPTIONS (variable '?s')`). If a variable is not mapped to any column, the operation will fail during validation.
-3. **Use `rdfnode` columns** - INSERT operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
+### [UPDATE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-sql)
 
-#### Column Behavior
+The `UPDATE` statement allows you to modify existing RDF triples in a triplestore. Since SPARQL does not have a direct UPDATE syntax, each row update is implemented as a combination of `DELETE DATA` (removing old triples) followed by `INSERT DATA` (adding new triples).
 
-* **NULL values** - Rows containing any NULL values in mapped columns are **skipped entirely**. This prevents incomplete or invalid triples from being inserted.
-* **Unused columns** - Columns without a SPARQL variable mapping (no `variable` option) are silently ignored during INSERT operations.
+### Usage:
 
-#### SPARQL Update Pattern
+```sql
+UPDATE ft SET
+  object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+```
 
-The `sparql_update_pattern` option specifies a SPARQL triple pattern template. It can contain:
+### [DELETE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#delete)
 
-* **SPARQL variables** (e.g., `?s`, `?p`, `?o`) that match column `variable` options
-* **Multiple triple patterns** separated by dots, allowing you to insert multiple triples per row
-* **RDF prefixes and full IRIs** for predicates and objects
-* **Literal values with language tags or datatypes**
+The `DELETE` statement allows you to remove RDF triples from a triplestore. Each row deleted from a `FOREIGN TABLE` is converted into a SPARQL `DELETE DATA` statement and sent to the remote SPARQL endpoint.
 
-Variables in the pattern are substituted with actual values from each inserted row.
+#### Usage:
 
-#### Example: Basic INSERT
+```sql
+DELETE FROM ft 
+WHERE object = '"Westfälische Wilhelms-Universität Münster"@de'::rdfnode;
+```
+### Example:
 
 ```sql
 CREATE SERVER fuseki
@@ -2327,110 +1669,19 @@ CREATE FOREIGN TABLE ft (
 )
 SERVER fuseki OPTIONS (
   log_sparql 'false',
-  sparql 'SELECT * WHERE {?s ?p ?o}',
-  sparql_update_pattern '?s ?p ?o .'
-);
-
- -- Insert a triple
-INSERT INTO ft (subject, predicate, object) VALUES
-  ('<https://www.uni-muenster.de>',
-  '<http://www.w3.org/2000/01/rdf-schema#label>',
-  '"Westfälische Wilhelms-Universität Münster"@de');
-
-SELECT * FROM ft;
-            subject            |                  predicate                   |                     object                     
--------------------------------+----------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
-(1 row)
-```
-
-#### Example: Multiple Triples Per Row
-
-You can insert multiple RDF triples in a single INSERT statement by specifying multiple triple patterns in the `sparql_update_pattern`:
-
-```sql
-CREATE FOREIGN TABLE ft (
-  subject   rdfnode OPTIONS (variable '?s'),
-  predicate rdfnode OPTIONS (variable '?p'),
-  object    rdfnode OPTIONS (variable '?o') 
-)
-SERVER fuseki OPTIONS (
-  log_sparql 'true', 
   sparql 
-    'SELECT * WHERE {
-     ?s ?p ?o .
-     ?s a <http://dbpedia.org/resource/University>}',
+    $$
+     SELECT * 
+     WHERE {
+       ?s ?p ?o .
+       ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://dbpedia.org/resource/University>      
+     }
+    $$,
   sparql_update_pattern 
-    '?s ?p ?o .
-     ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/resource/University>'
-);
-
-INSERT INTO ft (subject, predicate, object) VALUES
-  ('<https://www.uni-muenster.de>',
-  '<http://www.w3.org/2000/01/rdf-schema#label>',
-  '"Westfälische Wilhelms-Universität Münster"@de');
-
-SELECT * FROM ft;
-            subject            |                     predicate                     |                     object                     
--------------------------------+---------------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://dbpedia.org/resource/University>
-(2 rows)
-```
-
-> [!IMPORTANT]  
-> **SPARQL endpoints do not support PostgreSQL transactions.** Each `INSERT` is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
->
-> ```sql
-> BEGIN;
-> INSERT INTO ft VALUES ('<http://ex.org/s>', '<http://ex.org/p>', '"foo"');
-> -- Triple is now in the triplestore
-> ROLLBACK; -- PostgreSQL rolls back, but the triple remains in the target triplestore
-> ```
-
-### [UPDATE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-sql)
-
-The `UPDATE` statement allows you to modify existing RDF triples in a triplestore. Since SPARQL does not have a direct UPDATE syntax, each row update is implemented as a combination of `DELETE DATA` (removing old triples) followed by `INSERT DATA` (adding new triples).
-
-#### Requirements
-
-To use `UPDATE` operations, your `FOREIGN TABLE` must:
-
-1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be modified
-2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g. `OPTIONS (variable '?s')`).
-3. **Use `rdfnode` columns** - UPDATE operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
-
-> [!NOTE]  
-> When an `UPDATE` statement is issued, the `rdf_fdw` performs the following steps:
-> 1. Issues a `SELECT` statement to retrieve the current values (OLD values) of all affected rows
-> 2. For each row, generates a `DELETE DATA` statement using the OLD values
-> 3. Generates an `INSERT DATA` statement using the NEW values from the SET clause
-> 4. Combines both into a single SPARQL UPDATE request and sends it to the endpoint
-
-#### Column Behavior
-
-* **Modified columns** - Columns specified in the SET clause will use their NEW values in the INSERT portion
-* **Unmodified columns** - Columns not in the SET clause will preserve their current values in both DELETE and INSERT portions
-* **NULL values** - It is not allowed to SET a rdfnode column to NULL. Doing so will raise an error.
-
-#### Example: Update Single Column
-
-```sql
-CREATE SERVER fuseki
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
-
-CREATE FOREIGN TABLE ft (
-  subject   rdfnode OPTIONS (variable '?s'),
-  predicate rdfnode OPTIONS (variable '?p'),
-  object    rdfnode OPTIONS (variable '?o') 
-)
-SERVER fuseki OPTIONS (
-  log_sparql 'true',
-  sparql 'SELECT * WHERE {?s ?p ?o}',
-  sparql_update_pattern '?s ?p ?o .'
+    $$
+      ?s ?p ?o .
+      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://dbpedia.org/resource/University>
+    $$
 );
 
 CREATE USER MAPPING FOR postgres
@@ -2440,10 +1691,11 @@ INSERT INTO ft (subject, predicate, object)
 VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"University of Münster"@en');
 
 SELECT * FROM ft;
-            subject            |                  predicate                   |           object           
--------------------------------+----------------------------------------------+----------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "University of Münster"@en
-(1 row)
+            subject            |                     predicate                     |                  object                   
+-------------------------------+---------------------------------------------------+-------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <https://dbpedia.org/resource/University>
+(2 rows)
 
 UPDATE ft SET
   object = '"Westfälische Wilhelms-Universität Münster"@de'
@@ -2451,70 +1703,20 @@ WHERE subject = '<https://www.uni-muenster.de>'
   AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
 
 SELECT * FROM ft;
-            subject            |                  predicate                   |                     object                     
--------------------------------+----------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
-(1 row)
+            subject            |                     predicate                     |                     object                     
+-------------------------------+---------------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <https://dbpedia.org/resource/University>
+(2 rows)
+
+DELETE FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+
+SELECT * FROM ft;
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 ```
-> [!IMPORTANT]  
-> **SPARQL endpoints do not support PostgreSQL transactions.** Each `UPDATE` is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
->
-> ```sql
-> BEGIN;
-> UPDATE ft SET object = '"new value"' WHERE subject = '<http://ex.org/s>';
-> -- Triples are now modified in the triplestore
-> ROLLBACK; -- PostgreSQL rolls back, but changes remain in the target triplestore
-> ```
-
-### [DELETE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#delete)
-
-The `DELETE` statement allows you to remove RDF triples from a triplestore. Each row deleted from a `FOREIGN TABLE` is converted into a SPARQL `DELETE DATA` statement and sent to the remote SPARQL endpoint.
-
-#### Requirements
-
-To use `DELETE` operations, your `FOREIGN TABLE` must:
-
-1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be deleted
-2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g. `OPTIONS (variable '?s')`).
-3. **Use `rdfnode` columns** - DELETE operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
-
-> [!NOTE]  
-> When a `DELETE` statement is issued, the `rdf_fdw` must first issue a `SELECT` statement to identify and retrieve all affected triples. These triples are then loaded into memory and are used to create SPARQL `DELETE DATA` statements, which are then sent back to the triplestore for deletion.
-
-#### Example:
-
-```sql
-CREATE SERVER fuseki
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
-
-CREATE FOREIGN TABLE ft (
-  subject   rdfnode OPTIONS (variable '?s'),
-  predicate rdfnode OPTIONS (variable '?p'),
-  object    rdfnode OPTIONS (variable '?o') 
-)
-SERVER fuseki OPTIONS (
-  log_sparql 'true',
-  sparql 'SELECT * WHERE {?s ?p ?o}',
-  sparql_update_pattern '?s ?p ?o .'
-);
-
-DELETE FROM ft 
-WHERE object = '"Westfälische Wilhelms-Universität Münster"@de'::rdfnode;
-```
-
-> [!IMPORTANT]  
-> **SPARQL endpoints do not support PostgreSQL transactions.** Each `DELETE` is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
->
-> ```sql
-> BEGIN;
-> DELETE FROM ft WHERE object = '"foo"';
-> -- Triple is now removed from the triplestore
-> ROLLBACK; -- PostgreSQL rolls back, but the triple remains deleted in the target triplestore
-> ```
-
 ## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
 
 A *pushdown* is the ability to translate SQL queries so that operations—such as sorting, formatting, and filtering—are performed directly in the data source rather than in PostgreSQL. This feature can significantly reduce the number of records retrieved from the data source.  
@@ -2562,14 +1764,10 @@ LIMIT 5
 
 INFO:  SPARQL returned 5 records.
 
-                    s                     |                      p                       |             o             
-------------------------------------------+----------------------------------------------+---------------------------
- <http://www.wikidata.org/entity/Q850>    | <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL"@es
- <http://www.wikidata.org/entity/Q60463>  | <http://www.w3.org/2000/01/rdf-schema#label> | "Ingres"@es
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
- <http://www.wikidata.org/entity/Q215819> | <http://www.w3.org/2000/01/rdf-schema#label> | "Microsoft SQL Server"@es
- <http://www.wikidata.org/entity/Q80426>  | <http://www.w3.org/2000/01/rdf-schema#label> | "Vectorwise"@es
-(5 rows)
+                    s                     |        o        
+------------------------------------------+-----------------
+ <http://www.wikidata.org/entity/Q192490> | "PostgreSQL"@es
+(1 row)
 ```
 
 * `FETCH FIRST 5 ROWS ONLY` was pushed down as `LIMIT 5` in the SPARQL query.
@@ -2586,7 +1784,7 @@ INFO:  SPARQL returned 5 records.
 Example:
 
 ```sql
-SELECT s, p, o FROM rdbms
+SELECT s, o FROM rdbms
 WHERE 
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.langmatches(sparql.lang(o), 'es')
@@ -2609,13 +1807,13 @@ LIMIT 5
 
 INFO:  SPARQL returned 5 records.
 
-                     s                      |                      p                       |            o             
---------------------------------------------+----------------------------------------------+--------------------------
- <http://www.wikidata.org/entity/Q1012765>  | <http://www.w3.org/2000/01/rdf-schema#label> | "SQL Express Edition"@es
- <http://www.wikidata.org/entity/Q1050734>  | <http://www.w3.org/2000/01/rdf-schema#label> | "Informix"@es
- <http://www.wikidata.org/entity/Q12621393> | <http://www.w3.org/2000/01/rdf-schema#label> | "Tibero"@es
- <http://www.wikidata.org/entity/Q1493683>  | <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL Clúster"@es
- <http://www.wikidata.org/entity/Q15275385> | <http://www.w3.org/2000/01/rdf-schema#label> | "SingleStore"@es
+                     s                     |        o        
+-------------------------------------------+-----------------
+ <http://www.wikidata.org/entity/Q1012765>  | "SQL Express Edition"@es
+ <http://www.wikidata.org/entity/Q1050734>  | "Informix"@es
+ <http://www.wikidata.org/entity/Q12621393> | "Tibero"@es
+ <http://www.wikidata.org/entity/Q1493683>  | "MySQL Clúster"@es
+ <http://www.wikidata.org/entity/Q15275385> | "SingleStore"@es
 (5 rows)
 ```
 
@@ -2647,14 +1845,14 @@ ORDER BY ASC (?p)  ASC (?o)
 
 INFO:  SPARQL returned 43 records.
 
-                      p                       |                 o                 
-----------------------------------------------+-----------------------------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "4th Dimension"@de
- <http://www.w3.org/2000/01/rdf-schema#label> | "Amazon Redshift"@de
- <http://www.w3.org/2000/01/rdf-schema#label> | "ArcSDE"@de
-...
- <http://www.w3.org/2000/01/rdf-schema#label> | "dBASE Mac"@de
-(43 rows)
+        name        | birthdate  |                  party                  
+--------------------+------------+-----------------------------------------
+ Louis Boyard       | 2000-08-26 | La France insoumise
+ Klara Schedlich    | 2000-01-04 | Bündnis 90/Die Grünen
+ Pierrick Berteloot | 1999-01-11 | Rassemblement National
+ Niklas Wagener     | 1998-04-16 | Bündnis 90/Die Grünen
+ Jakob Blankenburg  | 1997-08-05 | Sozialdemokratische Partei Deutschlands
+(5 rows)
 ```
 
 * `DISTINCT` was pushed down to SPARQL.
@@ -2757,7 +1955,7 @@ INFO:  SPARQL returned 1 record.
 ```sql
 SELECT s, o FROM rdbms
 WHERE 
-  p = '<http://www.wikidata.org/prop/direct/P577>' AND
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   o > '1996-01-01'::timestamp AND o < '1996-12-31'::timestamp;
 
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
@@ -2768,7 +1966,7 @@ SELECT ?s ?p ?o
           ?s ?p ?o
          
  ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.wikidata.org/prop/direct/P577>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(?o > "1996-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
  FILTER(?o < "1996-12-31T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
@@ -2790,10 +1988,11 @@ WHERE
 
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-SELECT ?p ?o 
+SELECT ?s ?p ?o 
 {
       ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o         
+          ?s ?p ?o
+         
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
  FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
@@ -2817,7 +2016,7 @@ WHERE
 
 INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
 
-SELECT ?p ?o 
+SELECT ?s ?p ?o 
 {
       ?s wdt:P31 wd:Q3932296 .
           ?s ?p ?o
@@ -2925,7 +2124,7 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
 SELECT ?mod ?x ?l ?wc 
 {
-  ?s owl:sameAs <http://dbpedia.org/resource/Leipzig_Hauptbahnhof> ;
+      ?s owl:sameAs <http://dbpedia.org/resource/Leipzig_Hauptbahnhof> ;
     geom:geometry [ogc:asWKT ?sg] .
 
   ?x a lgdo:Amenity ;
@@ -3094,7 +2293,6 @@ FROM german_public_universities
 Finally give the layer a name, select the geometry column and press **Load**.
 
 ![unis](examples/img/qgis-map.png?raw=true)
-
 ### [Publish FOREIGN TABLE as WFS layer in GeoServer](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#publish-foreign-table-as-wfs-layer-in-geoserver)
 
 Just like with an ordinary `TABLE` in PostgreSQL, it is possible to create and publish `FOREIGN TABLES` as WFS layers in GeoServer. 
