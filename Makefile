@@ -42,11 +42,14 @@ REGRESS += create_extension \
 			sparql-functions \
 			prefix-management
 
-# Skip INSERT test if SKIP_UPDATE_TEST is set (e.g., when running with act)
 ifndef SKIP_UPDATE_TEST
   REGRESS += delete-fuseki \
   			 update-fuseki \
 			 insert-fuseki
+endif
+
+ifndef SKIP_STRESS_TEST
+  REGRESS += stress-fuseki
 endif
 
 REGRESS += table-clone \

@@ -190,5 +190,6 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', NULL);
 
 /* cleanup */
+DELETE FROM ft;
 DROP SERVER fuseki CASCADE;
 DROP SERVER wikidata CASCADE;

@@ -27,4 +27,5 @@ jobs:
       - name: Build and Regression Tests
         run: |
           export SKIP_UPDATE_TEST=1
+          export SKIP_STRESS_TEST=1          
           pg-build-test

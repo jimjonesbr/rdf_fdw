@@ -661,6 +661,7 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', NULL);
 ERROR:  NULL value in column "object" violates RDF constraint
 /* cleanup */
+DELETE FROM ft;
 DROP SERVER fuseki CASCADE;
 NOTICE:  drop cascades to 3 other objects
 DROP SERVER wikidata CASCADE;
