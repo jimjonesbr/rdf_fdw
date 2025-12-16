@@ -86,6 +86,7 @@
 #define RDF_RDFXML_FORMAT "application/rdf+xml"
 #define RDF_DEFAULT_QUERY_PARAM "query"
 #define RDF_DEFAULT_FETCH_SIZE 100
+#define RDF_DEFAULT_BATCH_SIZE 50
 
 /* RDF base URIs */
 #define RDF_DEFAULT_BASE_URI "http://rdf_fdw.postgresql.org/"
@@ -148,6 +149,7 @@
 #define RDF_SERVER_OPTION_BASE_URI "base_uri"
 #define RDF_SERVER_OPTION_PREFIX_CONTEXT "prefix_context"
 #define RDF_SERVER_OPTION_ENABLE_XML_HUGE "enable_xml_huge"
+#define RDF_SERVER_OPTION_BATCH_SIZE "batch_size" 
 
 extern Oid RDFNODEOID;
 
@@ -223,6 +225,9 @@ typedef struct RDFfdwState
 	int offset;
 	int fetch_size;
 	int inserted_records;
+	int batch_size; 				   /* Number of rows to batch for INSERT/UPDATE/DELETE */
+	int batch_count;				   /* Current number of rows in the batch buffer */
+	StringInfoData batch_statements;   /* Buffer for batched SPARQL statements */
 } RDFfdwState;
 
 typedef struct RDFfdwTable

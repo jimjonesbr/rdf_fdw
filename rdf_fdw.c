@@ -178,6 +178,7 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_BASE_URI, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_PREFIX_CONTEXT, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_ENABLE_XML_HUGE, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_BATCH_SIZE, ForeignServerRelationId, false, false},
 		/* Foreign Tables */
 		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 		{RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, ForeignTableRelationId, false, false},
@@ -2476,6 +2477,21 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					}
 				}
 
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_BATCH_SIZE) == 0)
+				{
+					char *endptr;
+					char *batch_size_str = defGetString(def);
+					long batch_size_val = strtol(batch_size_str, &endptr, 0);
+
+					if (batch_size_str[0] == '\0' || *endptr != '\0' || batch_size_val < 0)
+					{
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, batch_size_str),
+								 errhint("expected values are positive integers (number of records)")));
+					}
+				}
+
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_PUSHDOWN) == 0)
 				{
 					char *enable_pushdown = defGetString(def);
@@ -3005,6 +3021,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
+	state->batch_size = RDF_DEFAULT_BATCH_SIZE;
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
 
@@ -3059,10 +3076,57 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 											"rdf_fdw temporary context",
 											ALLOCSET_DEFAULT_SIZES);
 
+	/* Initialize batch processing */
+	state->batch_count = 0;
+	initStringInfo(&state->batch_statements);
+
 	/* Store state in ResultRelInfo */
 	rinfo->ri_FdwState = state;
 
 	elog(DEBUG1, "%s exit", __func__);
+}
+
+/*
+ * FlushBatchStatements
+ * --------------------
+ * Execute accumulated batch SPARQL statements.
+ */
+static void FlushBatchStatements(RDFfdwState *state)
+{
+	StringInfoData final_query;
+
+	if (state->batch_count == 0)
+		return;
+
+	elog(DEBUG1, "%s: flushing batch of %d statements", __func__, state->batch_count);
+
+	initStringInfo(&final_query);
+
+	/* Add prefixes if needed */
+	if (state->prefix_context)
+	{
+		appendStringInfoString(&final_query, state->sparql_prefixes);
+		appendStringInfoString(&final_query, "\n");
+	}
+
+	/* Append all batched statements */
+	appendStringInfoString(&final_query, state->batch_statements.data);
+
+	/* Execute the batched statements */
+	state->sparql = final_query.data;
+
+	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("failed to execute batched SPARQL statements")));
+	}
+
+	/* Reset batch buffer */
+	resetStringInfo(&state->batch_statements);
+	state->batch_count = 0;
+
+	elog(DEBUG1, "%s: batch flushed successfully", __func__);
 }
 
 static TupleTableSlot *rdfExecForeignInsert(EState *estate,
@@ -3073,7 +3137,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 	RDFfdwState *state;
 	TupleDesc tupdesc = slot->tts_tupleDescriptor;
 	MemoryContext oldcontext;
-	StringInfoData sparql_insert, final_query;
+	StringInfoData sparql_insert;
 	int len;
 	Datum datum;
 	bool isnull;
@@ -3171,38 +3235,28 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 		sparql_insert.len = len;
 	}
 
-	/* Wrap the triple pattern in INSERT DATA { } */
-	initStringInfo(&final_query);
+	/* Add this statement to the batch buffer */
+	appendStringInfoString(&state->batch_statements, "INSERT DATA { ");
+	appendStringInfoString(&state->batch_statements, sparql_insert.data);
+	appendStringInfoString(&state->batch_statements, " };\n");
 
-	if (state->prefix_context)
-	{
-		appendStringInfoString(&final_query, state->sparql_prefixes);
-		appendStringInfoString(&final_query, "\n");
-	}
-	appendStringInfoString(&final_query, "INSERT DATA {\n  ");
-	appendStringInfoString(&final_query, sparql_insert.data);
-	appendStringInfoString(&final_query, "\n}");
-
-	elog(DEBUG1, "%s: executing INSERT for row: %s", __func__, sparql_insert.data);
-	elog(DEBUG2, "%s: final SPARQL query:\n%s", __func__, final_query.data);
-
-	/* Set the SPARQL query text */
+	state->batch_count++;
 	state->sparql_query_type = SPARQL_INSERT;
-	state->sparql = final_query.data;
 
-	/* Execute the INSERT immediately */
-	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+	elog(DEBUG1, "%s: added row to batch (%d/%d)", __func__, state->batch_count, state->batch_size);
+
+	/* Flush batch if it's full */
+	if (state->batch_count >= state->batch_size)
 	{
 		MemoryContextSwitchTo(oldcontext);
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("%s: failed to execute SPARQL INSERT", __func__)));
+		FlushBatchStatements(state);
+		oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 	}
 
 	/* Clean up temp context for next row */
 	MemoryContextSwitchTo(oldcontext);
 
-	elog(DEBUG1, "%s exit (row inserted)", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 
 	return slot;
 }
@@ -3235,7 +3289,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 {
 	RDFfdwState *state;
 	MemoryContext oldcontext;
-	StringInfoData sparql_delete, final_query;
+	StringInfoData sparql_delete;
 	int len;
 	Datum datum;
 	bool isnull;
@@ -3353,60 +3407,33 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 		sparql_delete.len = len;
 	}
 
-	/* Build the final DELETE DATA query */
-	initStringInfo(&final_query);
+	/* Add this statement to the batch buffer */
+	appendStringInfoString(&state->batch_statements, "DELETE DATA { ");
+	appendStringInfoString(&state->batch_statements, sparql_delete.data);
+	appendStringInfoString(&state->batch_statements, " };\n");
 
-	if (state->prefix_context)
-	{
-		appendStringInfoString(&final_query, state->sparql_prefixes);
-		appendStringInfoString(&final_query, "\n");
-	}
-
-	/* Use DELETE DATA for fully-specified triples */
-	appendStringInfoString(&final_query, "DELETE DATA {\n  ");
-	appendStringInfoString(&final_query, sparql_delete.data);
-	appendStringInfoString(&final_query, "\n}");
-
-	/* Set the SPARQL query text */
+	state->batch_count++;
 	state->sparql_query_type = SPARQL_DELETE;
-	state->sparql = final_query.data;
 
-	/* Execute the DELETE immediately */
-	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+	elog(DEBUG1, "%s: added row to batch (%d/%d)", __func__, state->batch_count, state->batch_size);
+
+	/* Flush batch if it's full */
+	if (state->batch_count >= state->batch_size)
 	{
 		MemoryContextSwitchTo(oldcontext);
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("%s: failed to execute SPARQL DELETE", __func__)));
+		FlushBatchStatements(state);
+		oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 	}
 
 	/* Clean up temp context for next row */
 	MemoryContextSwitchTo(oldcontext);
 
-	elog(DEBUG1, "%s exit (row deleted)", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 
-	return slot;
+	/* Return planSlot (contains OLD values for RETURNING clause) */
+	return planSlot;
 }
 
-/*
- * rdfExecForeignUpdate
- * --------------------
- * Execute an UPDATE operation on the foreign RDF triplestore.
- *
- * In SPARQL, UPDATE is implemented as a DELETE followed by an INSERT.
- * This function:
- * 1. Retrieves OLD values from junk attributes in planSlot
- * 2. Constructs a DELETE pattern using OLD values
- * 3. Constructs an INSERT pattern using NEW values from slot
- * 4. Wraps both in a SPARQL DELETE { } INSERT { } WHERE { } statement
- * 5. Executes the combined operation via ExecuteSPARQL()
- *
- * The sparql_update_pattern acts as a template where SPARQL variables
- * (e.g., ?s, ?p, ?o) are replaced with actual values from both the
- * OLD tuple (for DELETE) and NEW tuple (for INSERT).
- *
- * Returns the slot if successful, or throws an ERROR on failure.
- */
 static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 											ResultRelInfo *rinfo,
 											TupleTableSlot *slot,
@@ -3665,36 +3692,34 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 	}
 
 	/*
+	 * Add this UPDATE statement (DELETE + INSERT) to the batch buffer.
 	 * SPARQL UPDATE uses DELETE { old_pattern } INSERT { new_pattern } WHERE { }
 	 * For fully-specified triples (no variables), we can use an empty WHERE clause.
 	 */
-	appendStringInfoString(&final_query, "DELETE DATA {\n  ");
-	appendStringInfoString(&final_query, sparql_delete.data);
-	appendStringInfoString(&final_query, "\n};\n");
-	appendStringInfoString(&final_query, "INSERT DATA {\n  ");
-	appendStringInfoString(&final_query, sparql_insert.data);
-	appendStringInfoString(&final_query, "\n}");
+	appendStringInfoString(&state->batch_statements, "DELETE DATA { ");
+	appendStringInfoString(&state->batch_statements, sparql_delete.data);
+	appendStringInfoString(&state->batch_statements, " };\n");
+	appendStringInfoString(&state->batch_statements, "INSERT DATA { ");
+	appendStringInfoString(&state->batch_statements, sparql_insert.data);
+	appendStringInfoString(&state->batch_statements, " };\n");
 
-	elog(DEBUG1, "%s: executing UPDATE (DELETE + INSERT)", __func__);
-	elog(DEBUG2, "%s: final SPARQL query:\n%s", __func__, final_query.data);
-
-	/* Set the SPARQL query text */
+	state->batch_count++;
 	state->sparql_query_type = SPARQL_UPDATE;
-	state->sparql = final_query.data;
 
-	/* Execute the UPDATE (DELETE + INSERT) immediately */
-	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+	elog(DEBUG1, "%s: added row to batch (%d/%d)", __func__, state->batch_count, state->batch_size);
+
+	/* Flush batch if it's full */
+	if (state->batch_count >= state->batch_size)
 	{
 		MemoryContextSwitchTo(oldcontext);
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("%s: failed to execute SPARQL UPDATE", __func__)));
+		FlushBatchStatements(state);
+		oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 	}
 
 	/* Clean up temp context for next row */
 	MemoryContextSwitchTo(oldcontext);
 
-	elog(DEBUG1, "%s exit (row updated)", __func__);
+	elog(DEBUG1, "%s exit", __func__);
 
 	return slot;
 }
@@ -3706,7 +3731,13 @@ static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo)
 	elog(DEBUG1, "%s called", __func__);
 
 	if (state)
+	{
+		/* Flush any remaining batched statements */
+		if (state->batch_count > 0)
+			FlushBatchStatements(state);
+
 		pfree(state);
+	}
 
 	elog(DEBUG1, "%s exit", __func__);
 }
@@ -3904,6 +3935,12 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 				char *fetch_size_str = defGetString(def);
 				state->fetch_size = strtol(fetch_size_str, &tailpt, 0);
 			}
+			else if (strcmp(RDF_SERVER_OPTION_BATCH_SIZE, def->defname) == 0)
+			{
+				char *tailpt;
+				char *batch_size_str = defGetString(def);
+				state->batch_size = strtol(batch_size_str, &tailpt, 0);
+			}
 			else if (strcmp(RDF_SERVER_OPTION_CONNECTRETRY, def->defname) == 0)
 			{
 				char *tailpt;
@@ -4073,7 +4110,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->connect_timeout));
 	result = lappend(result, IntToConst((int)state->max_retries));
 	result = lappend(result, OidToConst(state->foreigntableid));
-
+	
 	elog(DEBUG2, "%s: serializing table with %d columns", __func__, state->numcols);
 	for (int i = 0; i < state->numcols; ++i)
 	{
@@ -4115,6 +4152,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	}
 
 	result = lappend(result, CStringToConst(state->server->servername));
+	result = lappend(result, IntToConst((int)state->batch_size));
 
 	elog(DEBUG1, "%s exit", __func__);
 	return result;
@@ -4277,6 +4315,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 
 	state->server = (ForeignServer *)palloc0(sizeof(ForeignServer));
 	state->server->servername = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
+
+	state->batch_size = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
 	elog(DEBUG1, "%s exit", __func__);

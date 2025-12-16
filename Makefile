@@ -27,6 +27,9 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
 
 REGRESS += create_extension \
 			upgrade \
+			create-server \
+			create-foreign-table \
+			create-user-mapping \
 			version \
 			rdfnode_in \
 			rdfnode_eq \
@@ -63,9 +66,9 @@ REGRESS += table-clone \
 
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
 
-ifeq ($(shell [ "$(MAJORVERSION)" != "906" ] && [ "$(MAJORVERSION)" != "10" ] && echo yes),yes)
-  REGRESS += exceptions
-endif
+#ifeq ($(shell [ "$(MAJORVERSION)" != "906" ] && [ "$(MAJORVERSION)" != "10" ] && echo yes),yes)
+#  REGRESS += exceptions
+#endif
 
 $(info Tests to run: $(REGRESS))
 

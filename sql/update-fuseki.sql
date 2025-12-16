@@ -100,6 +100,14 @@ WHERE subject = '<https://www.uni-muenster.de>'
   AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
 SELECT * FROM ft;
 
+/* update with RETURNING */
+UPDATE ft SET
+  object = '"Westfälische Wilhelms-Universität Münster"@de'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
+RETURNING OLD.subject, OLD.predicate, OLD.object,
+          NEW.subject AS new_subject, NEW.predicate AS new_predicate, NEW.object AS new_object;
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER fuseki CASCADE;

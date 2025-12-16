@@ -412,27 +412,9 @@ WHERE subject = '<https://www.uni-muenster.de>'
   AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
 RETURNING OLD.subject, OLD.predicate, OLD.object,
           NEW.subject AS new_subject, NEW.predicate AS new_predicate, NEW.object AS new_object;
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?s = <https://www.uni-muenster.de>)
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
-}
-
-INFO:  SPARQL returned 1 record.
-
-INFO:  SPARQL query sent to 'fuseki':
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long> };
-INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de };
-
-
-            subject            |                  predicate                   |                           object                           |          new_subject          |                new_predicate                 |                   new_object                   
--------------------------------+----------------------------------------------+------------------------------------------------------------+-------------------------------+----------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long> | <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
-(1 row)
-
+ERROR:  missing FROM-clause entry for table "old"
+LINE 6: RETURNING OLD.subject, OLD.predicate, OLD.object,
+                  ^
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':
@@ -443,7 +425,7 @@ SELECT ?s ?p ?o
 INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'fuseki':
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long> };
 
 
 DROP SERVER fuseki CASCADE;

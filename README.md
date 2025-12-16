@@ -133,6 +133,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | Server Option | Type          | Description                                                                                                        |
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
 | `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
+| `batch_size` | optional            | Number of rows to batch together when performing INSERT, UPDATE, or DELETE operations. Instead of sending one HTTP request per row, multiple operations are accumulated and sent as a single SPARQL UPDATE request. This significantly improves performance for bulk modifications by reducing network overhead. For example, inserting 1 million rows with `batch_size` of 1000 sends only 1000 requests instead of 1 million. (default `50`)
 | `enable_pushdown` | optional            | Globally enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL (default `true`)
 | `format` | optional            | The `rdf_fdw` expects the result sets to be encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which is typically enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, some products deviate from this standard and expect a different value, e.g. `xml`, `rdf-xml`. If the expected parameter differs from the official MIME type, it should be specified explicitly (default `application/sparql-results+xml`).
 | `http_proxy` | optional            | Proxy for HTTP requests.
@@ -734,7 +735,7 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
 >Such inconsistencies can lead to unexpected or confusing results. To avoid surprises:
 >* Always test how your target triplestore handles tagged or typed literals.
 >* Consider simpler (less performant) alternatives like [`STR`](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#str) when working with language-tagged values.
->* To verify the accuracy of results, compare the number of records returned by the SPARQL endpoint with those stored in PostgreSQL. You can do this by analyzing the [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics) output or by reviewing the SPARQL query logs generated using the `log_sparql` table option. If the SPARQL query yields more records than are displayed on the client side, it may indicate that some records were filtered out locally due to inconsistencies in pushdown function evaluation.
+>* Verify the accuracy of results, compare the number of records returned by the SPARQL endpoint with those stored in PostgreSQL. You can do this by analyzing the [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics) output or by reviewing the SPARQL query logs generated using the `log_sparql` table option. If the SPARQL query yields more records than are displayed on the client side, it may indicate that some records were filtered out locally due to inconsistencies in pushdown function evaluation.
 
 ### [Aggregates](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#aggregates)
 

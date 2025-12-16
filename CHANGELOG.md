@@ -10,6 +10,8 @@ Release date: **YYYY-MM-DD**
 
 * UPDATE support: added per-row UPDATE support for modifying triples in RDF triplestores. UPDATE operations on `FOREIGN TABLE`s are translated into a combination of SPARQL DELETE DATA and INSERT DATA statements. The implementation first retrieves the OLD values via a SELECT query, then generates a DELETE DATA statement to remove the old triple(s), followed by an INSERT DATA statement with the NEW values. This approach follows the SPARQL UPDATE protocol since SPARQL has no direct UPDATE syntax. Supports single-column and multi-column updates with complex WHERE conditions.
 
+* Batch processing for data modifications: added `batch_size` server option to significantly improve the performance of bulk INSERT, UPDATE, and DELETE operations. Instead of sending one HTTP request per row, multiple operations are now accumulated and sent as a single SPARQL UPDATE request containing multiple semicolon-separated statements. The default `batch_size` is 50, and can be configured per server. For example, inserting 1 million rows with a `batch_size` of 1000 sends only 1000 HTTP requests instead of 1 million, dramatically reducing network overhead and execution time. This optimization applies to all data modification operations while maintaining correctness and ACID properties.
+
 ### Bug Fixes
 
 * Empty RDF literals incorrectly returned as NULL: Fixed a bug where empty RDF literals (e.g., `""`, `""@en`, or `""^^xsd:string`) were being incorrectly returned as SQL NULL values instead of empty strings. The issue occurred in `CreateTuple()` where `xmlNodeGetContent()` returns NULL for empty XML elements. The fix now properly distinguishes between empty RDF terms (valid empty strings) and unbound SPARQL variables (SQL NULL) by checking the XML element type (`<literal>`, `<uri>`, or `<bnode>`).
@@ -19,6 +21,8 @@ Release date: **YYYY-MM-DD**
 * Literals with escaped quotes corrupted during round-trip: Fixed a critical bug where literals containing escaped quotes (e.g., `"\"WWU\""@en`) were being corrupted when retrieved from SPARQL results. The `CreateTuple()` function was incorrectly reparsing raw XML text content as RDF syntax, causing quote characters to be interpreted as literal delimiters rather than data. This has been fixed by constructing `rdfnode` values directly from raw lexical content and manually appending language tags or datatypes.
 
 * Control characters not properly escaped in SPARQL statements: Control characters (newlines, tabs, carriage returns) in literals are now properly escaped in SPARQL INSERT and DELETE statements, ensuring correct round-trip behavior.
+
+* DELETE RETURNING clause returned empty values: Fixed a bug where DELETE operations with a RETURNING clause were returning empty values instead of the deleted row data. The issue was in `rdfExecForeignDelete()` which was incorrectly returning the empty NEW slot instead of the planSlot containing the OLD (deleted) values. This has been fixed to properly return the planSlot, making RETURNING work correctly for DELETE operations.
 
 
 # Release Notes

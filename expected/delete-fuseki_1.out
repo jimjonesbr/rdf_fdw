@@ -399,25 +399,9 @@ INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 
 DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode
 RETURNING OLD.subject, OLD.predicate, OLD.object;
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "🐘"@de)
-}
-
-INFO:  SPARQL returned 1 record.
-
-INFO:  SPARQL query sent to 'fuseki':
-DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
-
-
-                      subject                      |                   predicate                    | object  
----------------------------------------------------+------------------------------------------------+---------
- <https://www.uni-muenster.de/rdf_fdw/delete-test> | <http://www.w3.org/2000/01/rdf-schema#comment> | "🐘"@de
-(1 row)
-
+ERROR:  missing FROM-clause entry for table "old"
+LINE 2: RETURNING OLD.subject, OLD.predicate, OLD.object;
+                  ^
 /* bulk DELETE all inserted triples */
 SELECT count(*) FROM ft;
 INFO:  SPARQL query sent to 'fuseki':
@@ -425,11 +409,11 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 5 records.
 
  count 
 -------
-     4
+     5
 (1 row)
 
 DELETE FROM ft;
@@ -438,13 +422,14 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 5 records.
 
 INFO:  SPARQL query sent to 'fuseki':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
 
 
 SELECT count(*) FROM ft;

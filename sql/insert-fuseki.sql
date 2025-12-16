@@ -5,7 +5,8 @@ CREATE SERVER fuseki
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint 'http://fuseki:3030/dt/update', -- this tests if the regular endpoint is used for updates
-  prefix_context 'testctx'); 
+  prefix_context 'testctx',
+  batch_size '5'); 
 
 CREATE USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (user 'admin', password 'secret');
@@ -70,6 +71,11 @@ SELECT
 FROM generate_series(1,100) AS j (i);
 
 SELECT count(*) FROM ft;
+
+/* insert with RETURNING */
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Universidade de Münster"@pt')
+RETURNING *;
 
 /* 
  * Here we transfer data from Wikidata to Fuseki. 

@@ -94,6 +94,14 @@ INSERT INTO ft (subject, predicate, object) VALUES
 DELETE FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
 SELECT * FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
 
+/* DELETE triple with RETURNING */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"🐘"@de');
+DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode
+RETURNING OLD.subject, OLD.predicate, OLD.object;
+
 /* bulk DELETE all inserted triples */
 SELECT count(*) FROM ft;
 DELETE FROM ft;

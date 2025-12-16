@@ -14,7 +14,8 @@ CREATE SERVER fuseki
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint 'http://fuseki:3030/dt/update', -- this tests if the regular endpoint is used for updates
-  prefix_context 'testctx'); 
+  prefix_context 'testctx',
+  batch_size '5'); 
 CREATE USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (user 'admin', password 'secret');
 CREATE FOREIGN TABLE ft (
@@ -99,6 +100,15 @@ SELECT count(*) FROM ft;
    111
 (1 row)
 
+/* insert with RETURNING */
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Universidade de Münster"@pt')
+RETURNING *;
+            subject            |                  predicate                   | foo |            object            
+-------------------------------+----------------------------------------------+-----+------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> |     | "Universidade de Münster"@pt
+(1 row)
+
 /* 
  * Here we transfer data from Wikidata to Fuseki. 
  * The NAMED GRAPH is manually specified in the sparql
@@ -148,352 +158,177 @@ SELECT s, p, o FROM rdbms_wikidata;
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL"@ar .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "পোস্টজিআরই"@bn .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@ca .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@de .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
-    }
-}
+    } };
+
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@en .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پست گر اس کیوال"@fa .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پستگر اسکیوال"@fa .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@fr .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@hu .
-    }
-}
+    } };
+
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@it .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@ja .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポスグレ"@ja .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポストグレスキューエル"@ja .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@lv .
-    }
-}
+    } };
+
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PgSQL"@pl .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@pl .
-    }
-}
+    } };
+
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@pt .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@sr .
-    }
-}
+    } };
+
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@sv .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "போசுகிரசு"@ta .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL"@th .
-    }
-}
+    } };
+
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA {
-  
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "โพสต์เกรส"@th .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh-hant .
-    }
-}
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA {
-  
+    } };
+INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh-tw .
-    }
-}
+    } };
+
 
 SELECT * FROM rdbms_fuseki 
 ORDER BY o::text COLLATE "C";

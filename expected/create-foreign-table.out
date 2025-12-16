@@ -1,103 +1,30 @@
-/*
- invalid foreign server option
- 'foo' ins't a valid endpoint URL
-*/
-CREATE SERVER rdfserver_error1 
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint 'foo'
-);
-ERROR:  invalid endpoint: 'foo'
-/* 
-  empty foreign server option
-  empty endpoints are not allowed
-*/
-CREATE SERVER rdfserver_error2
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint ''
-);
-ERROR:  empty value in option 'endpoint'
-/* 
-  invalid enable_pushdown value
-*/
-CREATE SERVER rdfserver_error3
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql',
-  enable_pushdown 'foo'
-);
-ERROR:  invalid enable_pushdown: 'foo'
-HINT:  this parameter expects boolean values ('true' or 'false')
-/*
-  invalid fetch_size
-  nevative fetch_size
- */
-CREATE SERVER rdfserver_error4
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql',
-  fetch_size '-1'
-);
-ERROR:  invalid fetch_size: '-1'
-HINT:  expected values are positive integers
-/*
-  invalid fetch_size
-  empty string
- */
-CREATE SERVER rdfserver_error5
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql',
-  fetch_size ''
-);
-ERROR:  empty value in option 'fetch_size'
-/* 
-  invalid enable_xml_huge value
-*/
-CREATE SERVER rdfserver_error6
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql',
-  enable_xml_huge 'foo'
-);
-ERROR:  invalid enable_xml_huge: 'foo'
-HINT:  this parameter expects boolean values ('true' or 'false')
 CREATE SERVER testserver
 FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
-/* 
-  invalid colum option 
-  OPTION 'foo' does not exist
-*/
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql'
+);
+/* invalid column option - OPTION 'foo' does not exist */
 CREATE FOREIGN TABLE table_error1 (
   name text OPTIONS (foo '?s')
 ) SERVER testserver OPTIONS 
   (sparql 'SELECT * WHERE {?s ?p ?o}');
 ERROR:  invalid rdf_fdw option 'foo'
-/* 
-  empty colum option 
-  the column OPTION 'variable' cannot be empty.
-*/
+/* invalid column option - the column OPTION 'variable' cannot be empty. */
 CREATE FOREIGN TABLE table_error2 (
   name text OPTIONS (variable '')
 ) SERVER testserver OPTIONS 
   (sparql 'SELECT * WHERE {?s ?p ?o}');
 ERROR:  empty value in option 'variable'
-/* 
-  invalid foreign table option 
-  SERVER option 'foo' does not exist.  
-*/
+/* invalid foreign table option - SERVER option 'foo' does not exist.  */
 CREATE FOREIGN TABLE table_error3 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver OPTIONS 
   (foo 'SELECT * WHERE {?s ?p ?o}');
 ERROR:  invalid rdf_fdw option 'foo'
 /* 
-  invalid foreign table option 
-  SPARQL variable '?foo' does not exist in the SPARQL query.
-  the query will return only empty rows.
-*/
+ * invalid foreign table option - SPARQL variable '?foo' does not exist 
+ * in the SPARQL query. The query will return only empty rows.
+ */
 CREATE FOREIGN TABLE table_error4 (
   name text OPTIONS (variable '?foo')
 ) SERVER testserver OPTIONS 
@@ -120,10 +47,7 @@ INFO:  SPARQL returned 3 records.
  
 (3 rows)
 
-/* 
-  invalid foreign table option 
-  log_sparql must be boolean
-*/
+/* invalid foreign table option - log_sparql must be boolean */
 CREATE FOREIGN TABLE table_error5 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver OPTIONS 
@@ -131,18 +55,13 @@ CREATE FOREIGN TABLE table_error5 (
   log_sparql 'foo');
 ERROR:  invalid log_sparql: 'foo'
 HINT:  this parameter expects boolean values ('true' or 'false')
-CREATE SERVER testserver2
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql'
-);
 CREATE FOREIGN TABLE t1 (
   name text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS 
+) SERVER testserver OPTIONS 
   (sparql 'SELECT ?s WHERE {?s ?p ?o} LIMIT 1', log_sparql 'true');
 /* invalid SPARQL - missing closing curly braces (\n)*/
 CREATE FOREIGN TABLE t2 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql '
+) SERVER testserver OPTIONS (sparql '
   SELECT ?s {?s ?p ?o '); 
 ERROR:  unable to parse SPARQL WHERE clause:
 
@@ -150,19 +69,19 @@ ERROR:  unable to parse SPARQL WHERE clause:
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
 /* invalid SPARQL - missing closing curly braces */
 CREATE FOREIGN TABLE t3 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o'); 
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o'); 
 ERROR:  unable to parse SPARQL WHERE clause:
 SELECT ?s {?s ?p ?o
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
 /* invalid SPARQL - missing closing curly braces (\t) */
 CREATE FOREIGN TABLE t4 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql '  SELECT ?s {?s ?p ?o'); 
+) SERVER testserver OPTIONS (sparql '  SELECT ?s {?s ?p ?o'); 
 ERROR:  unable to parse SPARQL WHERE clause:
   SELECT ?s {?s ?p ?o
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
 /* invalid SPARQL - missing opening curly braces (\n)*/
 CREATE FOREIGN TABLE t5 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql '
+) SERVER testserver OPTIONS (sparql '
   SELECT ?s ?s ?p ?o}'); 
 ERROR:  unable to parse SPARQL WHERE clause:
 
@@ -170,98 +89,79 @@ ERROR:  unable to parse SPARQL WHERE clause:
 HINT:  The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'
 /* missing SELECT  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql '?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql '?s {?s ?p ?o}');
 ERROR:  unable to parse SPARQL SELECT clause:
 ?s {?s ?p ?o}.
 /* empty nodetype  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype '')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  empty value in option 'nodetype'
 /* invalid nodetype  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', nodetype 'foo')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid nodetype: 'foo'
 HINT:  this parameter expects node types ('iri' or 'literal')
 /* invalid literaltype - contains whitespaces  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', literaltype ' xsd:string')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid literaltype: ' xsd:string'
 HINT:  whitespaces are not allwoed in 'literal_type' option
 /* invalid language - contains whitespaces  */
 CREATE FOREIGN TABLE t7 (s text OPTIONS (variable '?s', language 'de ')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid language: 'de '
 HINT:  whitespaces are not allwoed in 'language' option
 /* invalid combination of 'literaltype' and 'language'  */
 CREATE FOREIGN TABLE t8 (s text OPTIONS (variable '?s', literaltype 'iri', language 'es')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid language: 'es'
 HINT:  the parameters 'literal_type' and 'language' cannot be combined
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t9 (s text OPTIONS (variable 's', expression 'now()')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid variable: 's'
 HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t10 (s text OPTIONS (variable '?a-z', expression 'now()')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid variable: '?a-z'
 HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t11 (s text OPTIONS (variable '?a$z', expression 'now()')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid variable: '?a$z'
 HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t12 (s text OPTIONS (variable '?a?z', expression 'now()')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid variable: '?a?z'
 HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
 /* invalid 'variable' */
 CREATE FOREIGN TABLE t13 (s text OPTIONS (variable ' ?a', expression 'now()')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 ERROR:  invalid variable: ' ?a'
 HINT:  a query variable must start with either "?" or "$"; the "?" or "$" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.
-/* 
-  invalid foreign table option 
-  fetch_size empty
-*/
+/* invalid foreign table option - fetch_size empty */
 CREATE FOREIGN TABLE t14 (
   name text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '');
 ERROR:  empty value in option 'fetch_size'
-/* 
-  invalid foreign table option 
-  fetch_size negative
-*/
+/* invalid foreign table option - fetch_size negative */
 CREATE FOREIGN TABLE t15 (
   name text OPTIONS (variable '?s')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 ERROR:  invalid fetch_size: '-1'
 HINT:  expected values are positive integers
-/*
- empty user name
-*/
-CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user '', password 'foo');
-ERROR:  empty value in option 'user'
-/*
- empty password
-*/
-CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'foo', password '');
-ERROR:  empty value in option 'password'
-/*
- invalid option
-*/
-CREATE USER MAPPING FOR postgres SERVER testserver2 OPTIONS (user 'jim', foo 'bar');
-ERROR:  invalid rdf_fdw option 'foo'
 /* invalid option for rdfnode column*/
 CREATE FOREIGN TABLE t16 (
   name rdfnode OPTIONS (variable '?s', expression 'STR(?s)')
-) SERVER testserver2 OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 SELECT * FROM t16;
 ERROR:  invalid option "expression" for column "name"
 HINT:  rdfnode columns accept only the "variable" option
-DROP SERVER testserver2 CASCADE;
-NOTICE:  drop cascades to 2 other objects
-DETAIL:  drop cascades to foreign table t1
+/* clean up */
+DROP SERVER testserver CASCADE;
+NOTICE:  drop cascades to 3 other objects
+DETAIL:  drop cascades to foreign table table_error4
+drop cascades to foreign table t1
 drop cascades to foreign table t16
