@@ -2854,7 +2854,7 @@ static void rdfEndForeignScan(ForeignScanState *node)
 		}
 	}
 
-	elog(DEBUG1, "%s exit: so long .. \n", __func__);
+	elog(DEBUG1, "%s exit rdf_fdw: so long .. \n", __func__);
 }
 
 /*
@@ -3027,11 +3027,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 
 	RDFNODEOID = GetRDFNodeOID();
 
-	/*
-	 * Set query type based on operation.
-	 * This is needed for LoadRDFServerInfo to select the correct endpoint URL
-	 * (update_url for INSERT/DELETE/UPDATE vs endpoint for SELECT).
-	 */
+	/* Set query type based on operation. */
 	if (operation == CMD_INSERT)
 		state->sparql_query_type = SPARQL_INSERT;
 	else if (operation == CMD_DELETE)
@@ -3087,11 +3083,11 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 }
 
 /*
- * FlushBatchStatements
+ * FlushSPARQLStatements
  * --------------------
  * Execute accumulated batch SPARQL statements.
  */
-static void FlushBatchStatements(RDFfdwState *state)
+static void FlushSPARQLStatements(RDFfdwState *state)
 {
 	StringInfoData final_query;
 
@@ -3166,6 +3162,14 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 		char *sparql_var = col->sparqlvar;
 		char *value_str;
 		char *replaced;
+		bool needs_escaping = false;
+
+		/* Ensure the column is of rdfnode type */
+		if (col->pgtype != RDFNODEOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
+
 
 		/* Skip columns without SPARQL variable mapping */
 		if (!sparql_var || strlen(sparql_var) == 0)
@@ -3184,40 +3188,30 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 
 		/* Raise error for NULL values - they violate RDF data model */
 		if (isnull)
-		{
 			ereport(ERROR,
 					(errcode(ERRCODE_NOT_NULL_VIOLATION),
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
 					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
 							"Filter NULL values in your query or provide default values.")));
-		}
-
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
 
 		/* Check if escaping is needed for control characters */
+		for (const char *p = value_str; *p; p++)
 		{
-			bool needs_escaping = false;
-			for (const char *p = value_str; *p; p++)
+			if (*p == '\n' || *p == '\r' || *p == '\t')
 			{
-				if (*p == '\n' || *p == '\r' || *p == '\t')
-				{
-					needs_escaping = true;
-					break;
-				}
+				needs_escaping = true;
+				break;
 			}
-
-			/* Only escape if control characters were found */
-			if (needs_escaping)
-				value_str = EscapeSPARQLLiteral(value_str);
 		}
+
+		/* Only escape if control characters were found */
+		if (needs_escaping)
+			value_str = EscapeSPARQLLiteral(value_str);
+		
 
 		/* Replace the variable placeholder with the actual value */
 		replaced = str_replace(sparql_insert.data, sparql_var, value_str);
@@ -3236,9 +3230,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 	}
 
 	/* Add this statement to the batch buffer */
-	appendStringInfoString(&state->batch_statements, "INSERT DATA { ");
-	appendStringInfoString(&state->batch_statements, sparql_insert.data);
-	appendStringInfoString(&state->batch_statements, " };\n");
+	appendStringInfo(&state->batch_statements, "INSERT DATA { %s };\n", sparql_insert.data);
 
 	state->batch_count++;
 	state->sparql_query_type = SPARQL_INSERT;
@@ -3249,7 +3241,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 	if (state->batch_count >= state->batch_size)
 	{
 		MemoryContextSwitchTo(oldcontext);
-		FlushBatchStatements(state);
+		FlushSPARQLStatements(state);
 		oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 	}
 
@@ -3261,27 +3253,6 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 	return slot;
 }
 
-/*
- * rdfExecForeignDelete
- * --------------------
- * Execute a DELETE operation on the foreign RDF triplestore.
- *
- * This function deletes triples from the triplestore based
- * on the sparql_update_pattern defined in the FOREIGN TABLE
- * options. The pattern acts as a template where SPARQL
- * variables (e.g., ?s, ?p, ?o) are replaced with actual
- * values from the tuple being deleted.
- *
- * The function:
- * 1. Retrieves values from junk attributes in planSlot
- *    (the OLD row values)
- * 2. Substitutes variables in the sparql_update_pattern
- *    with actual values
- * 3. Wraps the pattern in a SPARQL DELETE DATA { } statement
- * 4. Executes the DELETE via ExecuteSPARQL()
- *
- * Returns the slot if successful, or throws an ERROR on failure.
- */
 static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 											ResultRelInfo *rinfo,
 											TupleTableSlot *slot,
@@ -3421,7 +3392,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	if (state->batch_count >= state->batch_size)
 	{
 		MemoryContextSwitchTo(oldcontext);
-		FlushBatchStatements(state);
+		FlushSPARQLStatements(state);
 		oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 	}
 
@@ -3463,7 +3434,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 	if (planSlot == NULL)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
-				 errmsg("%s: planSlot is NULL", __func__)));
+				 errmsg("%s: unable to access OLD tuples", __func__)));
 
 	/* Switch to temporary context for per-row allocations */
 	MemoryContextReset(state->temp_cxt);
@@ -3486,6 +3457,13 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		char *value_str;
 		char *replaced;
 		AttrNumber junk_attno;
+		bool needs_escaping = false;
+
+		/* Ensure the column is of rdfnode type */
+		if (col->pgtype != RDFNODEOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		elog(DEBUG2, "%s [%d] DELETE: column loaded: %s, sparql_var: %s",
 			 __func__, i, col->name,
@@ -3547,40 +3525,30 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		}
 
 		if (isnull)
-		{
 			ereport(ERROR,
 					(errcode(ERRCODE_NOT_NULL_VIOLATION),
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
 					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
 							 "Filter NULL values in your query or provide default values.")));
-		}
-
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
 
 		/* Check if escaping is needed for control characters */
+		for (const char *p = value_str; *p; p++)
 		{
-			bool needs_escaping = false;
-			for (const char *p = value_str; *p; p++)
+			if (*p == '\n' || *p == '\r' || *p == '\t')
 			{
-				if (*p == '\n' || *p == '\r' || *p == '\t')
-				{
-					needs_escaping = true;
-					break;
-				}
+				needs_escaping = true;
+				break;
 			}
-
-			/* Only escape if control characters were found */
-			if (needs_escaping)
-				value_str = EscapeSPARQLLiteral(value_str);
 		}
+
+		/* Only escape if control characters were found */
+		if (needs_escaping)
+			value_str = EscapeSPARQLLiteral(value_str);
+
 
 		elog(DEBUG2, "%s: DELETE: column '%s' OLD value: %s", __func__, col->name, value_str);
 
@@ -3611,6 +3579,13 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		char *sparql_var = col->sparqlvar;
 		char *value_str;
 		char *replaced;
+		bool needs_escaping = false;
+
+		/* Ensure the column is of rdfnode type */
+		if (col->pgtype != RDFNODEOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		/* Skip columns without SPARQL variable mapping */
 		if (!sparql_var || strlen(sparql_var) == 0)
@@ -3629,40 +3604,29 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 
 		/* Raise error for NULL values - they violate RDF data model */
 		if (isnull)
-		{
 			ereport(ERROR,
 					(errcode(ERRCODE_NOT_NULL_VIOLATION),
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
 					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
 							 "Filter NULL values in your query or provide default values.")));
-		}
-
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
 
 		/* Check if escaping is needed for control characters */
+		for (const char *p = value_str; *p; p++)
 		{
-			bool needs_escaping = false;
-			for (const char *p = value_str; *p; p++)
+			if (*p == '\n' || *p == '\r' || *p == '\t')
 			{
-				if (*p == '\n' || *p == '\r' || *p == '\t')
-				{
-					needs_escaping = true;
-					break;
-				}
+				needs_escaping = true;
+				break;
 			}
-
-			/* Only escape if control characters were found */
-			if (needs_escaping)
-				value_str = EscapeSPARQLLiteral(value_str);
 		}
+
+		/* Only escape if control characters were found */
+		if (needs_escaping)
+			value_str = EscapeSPARQLLiteral(value_str);
 
 		elog(DEBUG2, "%s: INSERT: column '%s' NEW value: %s", __func__, col->name, value_str);
 
@@ -3696,12 +3660,8 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 	 * SPARQL UPDATE uses DELETE { old_pattern } INSERT { new_pattern } WHERE { }
 	 * For fully-specified triples (no variables), we can use an empty WHERE clause.
 	 */
-	appendStringInfoString(&state->batch_statements, "DELETE DATA { ");
-	appendStringInfoString(&state->batch_statements, sparql_delete.data);
-	appendStringInfoString(&state->batch_statements, " };\n");
-	appendStringInfoString(&state->batch_statements, "INSERT DATA { ");
-	appendStringInfoString(&state->batch_statements, sparql_insert.data);
-	appendStringInfoString(&state->batch_statements, " };\n");
+	appendStringInfo(&state->batch_statements, "DELETE DATA { %s };\n", sparql_delete.data);
+	appendStringInfo(&state->batch_statements, "INSERT DATA { %s };\n", sparql_insert.data);
 
 	state->batch_count++;
 	state->sparql_query_type = SPARQL_UPDATE;
@@ -3712,7 +3672,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 	if (state->batch_count >= state->batch_size)
 	{
 		MemoryContextSwitchTo(oldcontext);
-		FlushBatchStatements(state);
+		FlushSPARQLStatements(state);
 		oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 	}
 
@@ -3734,7 +3694,7 @@ static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo)
 	{
 		/* Flush any remaining batched statements */
 		if (state->batch_count > 0)
-			FlushBatchStatements(state);
+			FlushSPARQLStatements(state);
 
 		pfree(state);
 	}

@@ -133,7 +133,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | Server Option | Type          | Description                                                                                                        |
 |---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
 | `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
-| `batch_size` | optional            | Number of rows to batch together when performing INSERT, UPDATE, or DELETE operations. Instead of sending one HTTP request per row, multiple operations are accumulated and sent as a single SPARQL UPDATE request. This significantly improves performance for bulk modifications by reducing network overhead. For example, inserting 1 million rows with `batch_size` of 1000 sends only 1000 requests instead of 1 million. (default `50`)
+| `batch_size` | optional            | Number of rows to batch together when performing `INSERT`, `UPDATE`, or `DELETE` operations. Instead of sending one HTTP request per row, multiple operations are accumulated and sent as a single SPARQL UPDATE request. This significantly improves performance for bulk modifications by reducing network overhead. For example, inserting 5,000 rows with a `batch_size` of 100 will send only 50 requests instead of 5,000. You may want to adjust this option based on the capacity and limits of your triplestore, as very large batches may exceed endpoint or transaction limits, while very small batches may not provide optimal performance. (default `50`)
 | `enable_pushdown` | optional            | Globally enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL (default `true`)
 | `format` | optional            | The `rdf_fdw` expects the result sets to be encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which is typically enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, some products deviate from this standard and expect a different value, e.g. `xml`, `rdf-xml`. If the expected parameter differs from the official MIME type, it should be specified explicitly (default `application/sparql-results+xml`).
 | `http_proxy` | optional            | Proxy for HTTP requests.
@@ -187,7 +187,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. Overrides the `SERVER` option `enable_pushdown` |
 | `update_url`      | optional    | Some triple stores have a different URL for SELECT and update related queries (e.g. Apache Fuseki). If this is the case with your triple store, place the URL in this option. If omitted, the URL one set at `sparql` will be used.    |
 
-Columns can use **one** of two data type categories:
+Columns can use either **RDF Node** (recommended) or **PostgreSQL native** data types:
 
 #### RDF Node
 The custom `rdfnode` type is designed to handle full RDF nodes, including both IRIs and literals with optional language tags or datatypes. It preserves the structure and semantics of RDF terms and is ideal when you need to manipulate or inspect RDF-specific details. Columns of this type only support the `variable` column option.
@@ -341,7 +341,7 @@ sparql.add_prefix(context_name text, prefix_name text, uri text, override boolea
 ```
 Adds a prefix to a context. If override is set to `true` updates the URI if the prefix already exists. Otherwise raises an exception on conflict.
 
-***Deleting an existing PREFIX**
+**Deleting an existing PREFIX**
 
 ```sql
 sparql.drop_prefix(context_name text, prefix_name text)
@@ -2339,7 +2339,7 @@ Afer that set the geometery column and identifier, and hit **Save**. Finally, fi
 ![geoserver-wfs-map](examples/img/geoserver-wfs-map.png?raw=true)
 ## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
 
-To deploy the `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 17 should look like this (minimal example):
+To deploy the `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 18 should look like this (minimal example):
 
 ```dockerfile
 FROM postgres:18
@@ -2348,11 +2348,11 @@ RUN apt-get update && \
     apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
 
 RUN mkdir /extensions
-COPY ./rdf_fdw-2.1.0.tar.gz /extensions/
+COPY ./rdf_fdw-2.2.0.tar.gz /extensions/
 WORKDIR /extensions
 
-RUN tar xvzf rdf_fdw-2.1.0.tar.gz && \
-    cd rdf_fdw-2.1.0 && \
+RUN tar xvzf rdf_fdw-2.2.0.tar.gz && \
+    cd rdf_fdw-2.2.0 && \
     make -j && \
     make install
 ```
