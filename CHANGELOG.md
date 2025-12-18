@@ -10,7 +10,7 @@ Release date: **YYYY-MM-DD**
 
 * UPDATE support: added per-row UPDATE support for modifying triples in RDF triplestores. UPDATE operations on `FOREIGN TABLE`s are translated into a combination of SPARQL DELETE DATA and INSERT DATA statements. The implementation first retrieves the OLD values via a SELECT query, then generates a DELETE DATA statement to remove the old triple(s), followed by an INSERT DATA statement with the NEW values. This approach follows the SPARQL UPDATE protocol since SPARQL has no direct UPDATE syntax. Supports single-column and multi-column updates with complex WHERE conditions.
 
-* Batch processing for data modifications: added `batch_size` server option to significantly improve the performance of bulk INSERT, UPDATE, and DELETE operations. Instead of sending one HTTP request per row, multiple operations are now accumulated and sent as a single SPARQL UPDATE request containing multiple semicolon-separated statements. The default `batch_size` is 50, and can be configured per server. For example, inserting 1 million rows with a `batch_size` of 1000 sends only 1000 HTTP requests instead of 1 million, dramatically reducing network overhead and execution time. This optimization applies to all data modification operations while maintaining correctness and ACID properties.
+* Batch processing for data modifications: added `batch_size` server option to significantly improve the performance of bulk INSERT, UPDATE, and DELETE operations. Instead of sending one HTTP request per row, multiple operations are now accumulated and sent as a single SPARQL UPDATE request containing multiple semicolon-separated statements. The default `batch_size` is 50, and can be configured per server. For example, inserting 1 million rows with a `batch_size` of 1000 sends only 1000 HTTP requests instead of 1 million, dramatically reducing network overhead and execution time.
 
 ### Bug Fixes
 
@@ -23,6 +23,8 @@ Release date: **YYYY-MM-DD**
 * Control characters not properly escaped in SPARQL statements: Control characters (newlines, tabs, carriage returns) in literals are now properly escaped in SPARQL INSERT and DELETE statements, ensuring correct round-trip behavior.
 
 * DELETE RETURNING clause returned empty values: Fixed a bug where DELETE operations with a RETURNING clause were returning empty values instead of the deleted row data. The issue was in `rdfExecForeignDelete()` which was incorrectly returning the empty NEW slot instead of the planSlot containing the OLD (deleted) values. This has been fixed to properly return the planSlot, making RETURNING work correctly for DELETE operations.
+
+* DESCRIBE queries with large result sets caused severe performance degradation: Fixed a critical performance issue where `sparql.describe()` queries returning large result sets (e.g., 1 million triples) took several hours to complete. The root cause was in `DescribeIRI()`, which used `librdf_parser_parse_string_into_model()` to build a complete in-memory RDF graph model before extracting triples. This has been replaced with `librdf_parser_parse_string_as_stream()`, which processes RDF/XML on-the-fly without constructing an intermediate graph database. This dramatically reduces memory footprint and brings DESCRIBE query performance in line with SELECT queries handling similar-sized result sets.
 
 
 # Release Notes

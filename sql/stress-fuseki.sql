@@ -50,7 +50,38 @@ FROM generate_series(1,1000000) AS g(i);
 SELECT * FROM ft
 LIMIT 5;
 
-/* deleting 100k triples */
+/* selecting one million triples from the foreign table */
+CREATE UNLOGGED TABLE temp_ft AS SELECT * FROM ft;
+SELECT count(*) FROM temp_ft;
+SELECT * FROM temp_ft
+WHERE 
+  subject = '<https://www.uni-muenster.de>'::rdfnode AND
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+DROP TABLE temp_ft;
+
+/* cloning one million triples from the foreign table */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.ft_clone',
+        fetch_size => 100000,
+        create_table => true,
+        verbose => true
+    );
+DROP TABLE ft_clone;
+
+/* describing subject with one million triples */
+CREATE UNLOGGED TABLE temp_describe AS
+SELECT subject, predicate, object
+FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+SELECT count(*) FROM temp_describe;
+SELECT * FROM temp_describe
+WHERE 
+  subject = '<https://www.uni-muenster.de>'::rdfnode AND
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+DROP TABLE temp_describe;
+
+/* deleting a million triples */
 DELETE FROM ft;
 
 SELECT * FROM ft;

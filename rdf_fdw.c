@@ -1481,8 +1481,6 @@ static List *DescribeIRI(RDFfdwState *state)
 {
 	List *result = NIL;
 	librdf_world *world = librdf_new_world();
-	librdf_storage *storage = librdf_new_storage(world, "memory", NULL, NULL);
-	librdf_model *model = librdf_new_model(world, storage, NULL);
 	librdf_parser *parser = librdf_new_parser(world, "rdfxml", NULL, NULL);
 	librdf_uri *uri = librdf_new_uri(world, (const unsigned char *)state->base_uri);
 	librdf_stream *stream = NULL;
@@ -1498,13 +1496,13 @@ static List *DescribeIRI(RDFfdwState *state)
 		if (strcmp(state->base_uri, RDF_DEFAULT_BASE_URI) != 0)
 			elog(DEBUG2, "%s: parsing RDF/XML result set (base '%s')", __func__, state->base_uri);
 
-		if (librdf_parser_parse_string_into_model(parser, (const unsigned char *)state->sparql_resultset, uri, model))
+		stream = librdf_parser_parse_string_as_stream(parser, (const unsigned char *)state->sparql_resultset, uri);
+
+		if (!stream)
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_ERROR),
 					 errmsg("unable to parse RDF/XML"),
 					 errhint("base URI: %s", state->base_uri)));
-
-		stream = librdf_model_as_stream(model);
 
 		while (!librdf_stream_end(stream))
 		{
@@ -1567,10 +1565,6 @@ static List *DescribeIRI(RDFfdwState *state)
 	{
 		if (stream)
 			librdf_free_stream(stream);
-		if (model)
-			librdf_free_model(model);
-		if (storage)
-			librdf_free_storage(storage);
 		if (parser)
 			librdf_free_parser(parser);
 		if (uri)
@@ -1582,8 +1576,6 @@ static List *DescribeIRI(RDFfdwState *state)
 	PG_END_TRY();
 
 	librdf_free_stream(stream);
-	librdf_free_model(model);
-	librdf_free_storage(storage);
 	librdf_free_parser(parser);
 	librdf_free_uri(uri);
 	librdf_free_world(world);

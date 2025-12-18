@@ -59,7 +59,106 @@ LIMIT 5;
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "5"^^<http://www.w3.org/2001/XMLSchema#int>
 (5 rows)
 
-/* deleting 100k triples */
+/* selecting one million triples from the foreign table */
+CREATE UNLOGGED TABLE temp_ft AS SELECT * FROM ft;
+SELECT count(*) FROM temp_ft;
+  count  
+---------
+ 1000000
+(1 row)
+
+SELECT * FROM temp_ft
+WHERE 
+  subject = '<https://www.uni-muenster.de>'::rdfnode AND
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+            subject            |                  predicate                   |                      object                      
+-------------------------------+----------------------------------------------+--------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500000"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500001"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500002"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500003"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500004"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500005"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500006"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500007"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500008"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500009"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500010"^^<http://www.w3.org/2001/XMLSchema#int>
+(11 rows)
+
+DROP TABLE temp_ft;
+/* cloning one million triples from the foreign table */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.ft_clone',
+        fetch_size => 100000,
+        create_table => true,
+        verbose => true
+    );
+INFO:  Target TABLE "public.ft_clone" created based on FOREIGN TABLE "public.ft":
+
+  CREATE TABLE public.ft_clone AS SELECT * FROM public.ft WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft'
+target_table: 'public.ft_clone'
+create_table: 'true'
+fetch_size: 100000
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 100000]: 100000 records inserted
+INFO:  [100000 - 200000]: 100000 records inserted
+INFO:  [200000 - 300000]: 100000 records inserted
+INFO:  [300000 - 400000]: 100000 records inserted
+INFO:  [400000 - 500000]: 100000 records inserted
+INFO:  [500000 - 600000]: 100000 records inserted
+INFO:  [600000 - 700000]: 100000 records inserted
+INFO:  [700000 - 800000]: 100000 records inserted
+INFO:  [800000 - 900000]: 100000 records inserted
+INFO:  [900000 - 1000000]: 100000 records inserted
+DROP TABLE ft_clone;
+/* describing subject with one million triples */
+CREATE UNLOGGED TABLE temp_describe AS
+SELECT subject, predicate, object
+FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+INFO:  SPARQL query sent to 'fuseki':
+DESCRIBE <https://www.uni-muenster.de>
+
+SELECT count(*) FROM temp_describe;
+  count  
+---------
+ 1000000
+(1 row)
+
+SELECT * FROM temp_describe
+WHERE 
+  subject = '<https://www.uni-muenster.de>'::rdfnode AND
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+            subject            |                  predicate                   |                      object                      
+-------------------------------+----------------------------------------------+--------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500000"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500001"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500002"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500003"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500004"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500005"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500006"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500007"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500008"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500009"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500010"^^<http://www.w3.org/2001/XMLSchema#int>
+(11 rows)
+
+DROP TABLE temp_describe;
+/* deleting a million triples */
 DELETE FROM ft;
 SELECT * FROM ft;
  subject | predicate | object 
