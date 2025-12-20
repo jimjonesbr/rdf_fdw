@@ -6,7 +6,8 @@ OPTIONS (
 /*
  * this USER MAPPING must be ignored, as the triplestore does not require user authentication
  */
-CREATE USER MAPPING FOR postgres SERVER wikidata OPTIONS (user 'foo', password 'bar');
+CREATE USER u1;
+CREATE USER MAPPING FOR u1 SERVER wikidata OPTIONS (user 'foo', password 'bar');
 
 CREATE FOREIGN TABLE atms_munich (
 atmid text     OPTIONS (variable '?atm'),
@@ -221,4 +222,6 @@ SELECT uri, nativename
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
 
+/* clean up */
 DROP SERVER wikidata CASCADE;
+DROP USER u1;

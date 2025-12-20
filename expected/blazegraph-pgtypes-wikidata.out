@@ -5,7 +5,8 @@ OPTIONS (
 /*
  * this USER MAPPING must be ignored, as the triplestore does not require user authentication
  */
-CREATE USER MAPPING FOR postgres SERVER wikidata OPTIONS (user 'foo', password 'bar');
+CREATE USER u1;
+CREATE USER MAPPING FOR u1 SERVER wikidata OPTIONS (user 'foo', password 'bar');
 CREATE FOREIGN TABLE atms_munich (
 atmid text     OPTIONS (variable '?atm'),
 atmwkt text    OPTIONS (variable '?geometry', literaltype 'geo:wktLiteral'),
@@ -428,9 +429,11 @@ INFO:  SPARQL returned 5 records.
 ----+------
 (0 rows)
 
+/* clean up */
 DROP SERVER wikidata CASCADE;
 NOTICE:  drop cascades to 4 other objects
-DETAIL:  drop cascades to user mapping for postgres on server wikidata
+DETAIL:  drop cascades to user mapping for u1 on server wikidata
 drop cascades to foreign table atms_munich
 drop cascades to foreign table places_below_sea_level
 drop cascades to foreign table european_countries
+DROP USER u1;
