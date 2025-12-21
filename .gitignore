@@ -51,10 +51,25 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# regress tests results
+# Regression tests results
 results
 regression.out
 regression.diffs
 
+# Debian package build artifacts
+build-*
+debian/.debhelper
+debian/files
+debian/postgresql-*-rdf-fdw/
+debian/postgresql-*-rdf-fdw.substvars
+debian/*.log
+debian/tmp/
+debian/packages/
+*.deb
+*.ddeb
+*.changes
+*.buildinfo
+
+# IDE files and local scripts
 local-tests/
 .vscode/

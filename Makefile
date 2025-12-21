@@ -45,25 +45,26 @@ REGRESS += create_extension \
 			sparql-functions \
 			prefix-management
 
-ifndef SKIP_UPDATE_TEST
+ifndef SKIP_UPDATE_TESTS
   REGRESS += delete-fuseki \
   			 update-fuseki \
 			 insert-fuseki
 endif
 
-ifndef SKIP_STRESS_TEST
+ifndef SKIP_STRESS_TESTS
   REGRESS += stress-fuseki
 endif
 
-REGRESS += table-clone \
-			virtuoso-pgtypes-linkedgeodata \
-			virtuoso-rdfnode-linkedgeodata \
-			blazegraph-pgtypes-wikidata \
-			blazegraph-rdfnode-wikidata \
-			graphdb-pgtypes-getty \
-			graphdb-rdfnode-agrovoc \
-			describe
-
+ifndef SKIP_EXTERNAL_TESTS
+  REGRESS += table-clone \
+			 virtuoso-pgtypes-linkedgeodata \
+			 virtuoso-rdfnode-linkedgeodata \
+			 blazegraph-pgtypes-wikidata \
+			 blazegraph-rdfnode-wikidata \
+			 graphdb-pgtypes-getty \
+			 graphdb-rdfnode-agrovoc \
+			 describe
+endif
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
 
 #ifeq ($(shell [ "$(MAJORVERSION)" != "906" ] && [ "$(MAJORVERSION)" != "10" ] && echo yes),yes)

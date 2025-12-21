@@ -1,0 +1,5 @@
+postgresql-rdf-fdw (2.3.0-1) UNRELEASED; urgency=medium
+
+  * Initial Debian package release
+
+ -- Jim Jones <jim.jones@uni-muenster.de>  Sat, 20 Dec 2025 12:32:11 +0100

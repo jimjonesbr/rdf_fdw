@@ -1,0 +1,37 @@
+Source: postgresql-rdf-fdw
+Section: database
+Priority: optional
+Maintainer: Jim Jones <jim.jones@uni-muenster.de>
+Build-Depends: debhelper-compat (= 13),
+               postgresql-all (>= 217~),
+               postgresql-server-dev-all (>= 217~),
+               libxml2-dev,
+               libcurl4-gnutls-dev,
+               librdf0-dev,
+               pkg-config
+Standards-Version: 4.6.2
+Homepage: https://github.com/jimjonesbr/rdf_fdw
+Vcs-Git: https://github.com/jimjonesbr/rdf_fdw.git
+Vcs-Browser: https://github.com/jimjonesbr/rdf_fdw
+Rules-Requires-Root: no
+
+Package: postgresql-PGVERSION-rdf-fdw
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         ${postgresql:Depends},
+         libxml2,
+         libcurl4,
+         librdf0
+Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
+ rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
+ to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
+ clauses and includes built-in implementations of most SPARQL 1.1 functions.
+ .
+ Features:
+  * Access RDF triplestores via SPARQL endpoints
+  * Pushdown of SQL clauses (WHERE, ORDER BY, LIMIT, etc.)
+  * Support for SPARQL 1.1 functions
+  * Custom RDF node data type
+  * Data modification support (INSERT, UPDATE, DELETE)
+  * Prefix management for SPARQL queries

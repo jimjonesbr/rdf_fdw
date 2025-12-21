@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+
+# Enable hardening
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# Skip tests that depend on external services
+export SKIP_EXTERNAL_TESTS = 1
+export SKIP_STRESS_TESTS = 1
+export SKIP_UPDATE_TESTS = 1
+
+# Include PostgreSQL build system
+include /usr/share/postgresql-common/pgxs_debian_control.mk
+
+debian/control: debian/control.in
+	pg_buildext updatecontrol
+
+%:
+	dh $@ --with pgxs
+
+override_dh_auto_build:
+	+pg_buildext build build-%v
+
+override_dh_auto_install:
+	+pg_buildext install build-%v postgresql-%v-rdf-fdw
+
+override_dh_auto_clean:
+	+pg_buildext clean build-%v
+	dh_auto_clean
