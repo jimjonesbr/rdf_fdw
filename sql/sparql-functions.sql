@@ -428,6 +428,7 @@ SELECT sparql.substr('""', 42);
 SELECT sparql.substr('', 42);
 SELECT sparql.substr(NULL, 42);
 SELECT sparql.substr('"foo"', NULL);
+SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de'::rdfnode, 1, 24);
 
 /* CONCAT */
 SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');

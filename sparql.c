@@ -20,6 +20,7 @@
 
 #include "lib/stringinfo.h"
 #include "catalog/pg_collation.h"
+#include "mb/pg_wchar.h"
 #include "utils/builtins.h"
 #include "utils/timestamp.h"
 #include <string.h>
@@ -1143,9 +1144,10 @@ char *substr_sparql(char *str, int start, int length)
 	char *lexical;
 	char *str_datatype;
 	char *str_language;
-	StringInfoData buf;
 	char *result;
-	int str_len, i;
+	text *input_text;
+	text *substr_text;
+	int str_len;
 
 	elog(DEBUG1, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
 
@@ -1167,31 +1169,55 @@ char *substr_sparql(char *str, int start, int length)
 	lexical = lex(str);
 	str_datatype = datatype(str);
 	str_language = lang(str);
-	str_len = strlen(lexical);
 
-	elog(DEBUG1, "%s: lexical='%s', datatype='%s', language='%s', length=%d", __func__,
-		 lexical, str_datatype, str_language, str_len);
+	elog(DEBUG1, "%s: lexical='%s', datatype='%s', language='%s'", __func__,
+		 lexical, str_datatype, str_language);
 
+	/* Check if start is beyond string length - return empty string */
+	str_len = pg_mbstrlen(lexical);
 	if (start > str_len)
-		lexical[0] = '\0'; /* empty result */
-
-	initStringInfo(&buf);
-
-	for (i = start - 1; i < str_len; i++)
 	{
-		if (length >= 0 && (i - (start - 1)) >= length)
-			break;
-		appendStringInfoChar(&buf, lexical[i]);
+		if (strlen(str_language) > 0)
+			return strlang("", str_language);
+		else if (strlen(str_datatype) > 0)
+			return strdt("", str_datatype);
+		else
+			return cstring_to_rdfliteral("");
 	}
 
-	if (strlen(str_language) > 0)
-		result = strlang(buf.data, str_language);
-	else if (strlen(str_datatype) > 0)
-		result = strdt(buf.data, str_datatype);
+	/* Use PostgreSQL's text_substr which handles UTF-8 correctly */
+	input_text = cstring_to_text(lexical);
+	
+	if (length >= 0)
+	{
+		/* text_substr is 1-based and handles UTF-8 character boundaries */
+		substr_text = DatumGetTextP(DirectFunctionCall3(
+			text_substr,
+			PointerGetDatum(input_text),
+			Int32GetDatum(start),
+			Int32GetDatum(length)));
+	}
 	else
-		result = cstring_to_rdfliteral(buf.data);
+	{
+		/* No length specified - take from start to end */
+		substr_text = DatumGetTextP(DirectFunctionCall3(
+			text_substr,
+			PointerGetDatum(input_text),
+			Int32GetDatum(start),
+			Int32GetDatum(str_len - start + 1)));
+	}
 
-	pfree(buf.data);
+	lexical = text_to_cstring(substr_text);
+
+	if (strlen(str_language) > 0)
+		result = strlang(lexical, str_language);
+	else if (strlen(str_datatype) > 0)
+		result = strdt(lexical, str_datatype);
+	else
+		result = cstring_to_rdfliteral(lexical);
+
+	pfree(input_text);
+	pfree(substr_text);
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
