@@ -19,6 +19,7 @@
 #include "sparql.h"
 
 #include "lib/stringinfo.h"
+#include "catalog/pg_collation.h"
 #include "utils/builtins.h"
 #include "utils/timestamp.h"
 #include <string.h>
@@ -1215,9 +1216,6 @@ char *lcase(char *str)
 	char *str_datatype;
 	char *str_language;
 	char *result;
-	StringInfoData buf;
-	int i;
-	int len;
 
 	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
@@ -1260,30 +1258,33 @@ char *lcase(char *str)
 
 	str_language = lang(str);
 
-	initStringInfo(&buf);
-
 	elog(DEBUG1, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
-	/* Convert to lowercase (ASCII for simplicity) */
-	len = strlen(lexical);
-	for (i = 0; i < len; i++)
-	{
-		char c = lexical[i];
-		if (c >= 'A' && c <= 'Z')
-			c = c + ('a' - 'A');
-		appendStringInfoChar(&buf, c);
-	}
+    /* Convert to lowercase using PostgreSQL's multibyte-aware function */
+    {
+        text *input_text = cstring_to_text(lexical);
+        Datum lower_datum = DirectFunctionCall3Coll(
+            lower,
+            DEFAULT_COLLATION_OID,
+            PointerGetDatum(input_text),
+            BoolGetDatum(false),
+            (Datum)0);
+        text *lower_text = DatumGetTextP(lower_datum);
+        char *lowercase = text_to_cstring(lower_text);
 
-	if (strlen(str_language) != 0)
-		result = strlang(buf.data, str_language);
-	else if (strlen(str_datatype) != 0)
-		result = strdt(buf.data, str_datatype);
-	else
-		result = cstring_to_rdfliteral(buf.data);
+        if (strlen(str_language) != 0)
+            result = strlang(lowercase, str_language);
+        else if (strlen(str_datatype) != 0)
+            result = strdt(lowercase, str_datatype);
+        else
+            result = cstring_to_rdfliteral(lowercase);
 
-	pfree(buf.data);
+        pfree(lowercase);
+        pfree(lower_text);
+        pfree(input_text);
+    }
 
-	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+    elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -1306,9 +1307,6 @@ char *ucase(char *str)
 	char *str_datatype;
 	char *str_language;
 	char *result;
-	StringInfoData buf;
-	int i;
-	int len;
 
 	elog(DEBUG1, "%s called: str='%s'", __func__, str);
 
@@ -1351,30 +1349,33 @@ char *ucase(char *str)
 
 	str_language = lang(str);
 
-	initStringInfo(&buf);
-
 	elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
-	/* Convert to uppercase (ASCII only) */
-	len = strlen(lexical);
-	for (i = 0; i < len; i++)
-	{
-		char c = lexical[i];
-		if (c >= 'a' && c <= 'z')
-			c = c - ('a' - 'A');
-		appendStringInfoChar(&buf, c);
-	}
+    /* Convert to uppercase using PostgreSQL's multibyte-aware function */
+    {
+        text *input_text = cstring_to_text(lexical);
+        Datum upper_datum = DirectFunctionCall3Coll(
+            upper,
+            DEFAULT_COLLATION_OID,
+            PointerGetDatum(input_text),
+            BoolGetDatum(false),
+            (Datum)0);
+        text *upper_text = DatumGetTextP(upper_datum);
+        char *uppercase = text_to_cstring(upper_text);
 
-	if (strlen(str_language) != 0)
-		result = strlang(buf.data, str_language);
-	else if (strlen(str_datatype) != 0)
-		result = strdt(buf.data, str_datatype);
-	else
-		result = cstring_to_rdfliteral(buf.data);
+        if (strlen(str_language) != 0)
+            result = strlang(uppercase, str_language);
+        else if (strlen(str_datatype) != 0)
+            result = strdt(uppercase, str_datatype);
+        else
+            result = cstring_to_rdfliteral(uppercase);
 
-	pfree(buf.data);
+        pfree(uppercase);
+        pfree(upper_text);
+        pfree(input_text);
+    }
 
-	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+    elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
 	return result;
 }
 

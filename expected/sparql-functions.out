@@ -1967,6 +1967,12 @@ SELECT sparql.lcase('"BAR"^^xsd:string'), sparql.lcase(sparql.strdt('BAR','xsd:s
  "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
+SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"@de');
+             lcase             
+-------------------------------
+ "łóòáàâæäéèêíìîóòøôöúùûüþ"@de
+(1 row)
+
 SELECT sparql.lcase('<http://example.org>');
 ERROR:  LCASE does not allow IRIs: <http://example.org>
 SELECT sparql.lcase('_:xyz');
@@ -2048,6 +2054,12 @@ SELECT sparql.ucase('"bar"^^xsd:string'), sparql.ucase(sparql.strdt('bar','xsd:s
                       ucase                       |                      ucase                       
 --------------------------------------------------+--------------------------------------------------
  "BAR"^^<http://www.w3.org/2001/XMLSchema#string> | "BAR"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de');
+             ucase             
+-------------------------------
+ "ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"@de
 (1 row)
 
 SELECT sparql.ucase('<http://example.org>');
