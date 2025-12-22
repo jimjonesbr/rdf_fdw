@@ -537,11 +537,19 @@ char *bnode(char *input)
         char *normalized_input;
         char *lexical;
 
-        /* Reject IRIs and blank nodes explicitly */
-        if (isIRI(input) || isBlank(input))
+        /* Reject IRIs explicitly */
+        if (isIRI(input))
         {
-            elog(DEBUG1, "%s exit: returning NULL (input eiter an IRI or a blank node)", __func__);
+            elog(DEBUG1, "%s exit: returning NULL (input is an IRI)", __func__);
             return NULL;
+        }
+
+        /* If input is already a blank node, return it as-is (idempotent behavior) */
+        if (isBlank(input))
+        {
+            elog(DEBUG1, "%s exit: returning input as-is (already a blank node)", __func__);
+            appendStringInfoString(&buf, input);
+            return buf.data;
         }
 
         /* Normalize input: quote bare strings */

@@ -5685,8 +5685,8 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		constant = (Const *)expr;
 		if (constant->constisnull)
 		{
-			initStringInfo(&result);
-			appendStringInfo(&result, "NULL");
+			elog(DEBUG1, "%s [T_Const]: returning NULL (constant is NULL)", __func__);
+			return NULL;
 		}
 		else
 		{

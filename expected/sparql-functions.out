@@ -1911,9 +1911,9 @@ SELECT sparql.bnode('<http://example.org>');
 (1 row)
 
 SELECT sparql.bnode('_:bnode');
- bnode 
--------
- NULL
+  bnode  
+---------
+ _:bnode
 (1 row)
 
 SELECT sparql.bnode('');
