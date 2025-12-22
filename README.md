@@ -2,7 +2,7 @@
 ---------------------------------------------
 # RDF Triplestore Foreign Data Wrapper for PostgreSQL (rdf_fdw)
 
-`rdf_fdw` is a PostgreSQL Foreign Data Wrapper that enables seamless access to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL clauses and includes built-in implementations of most SPARQL 1.1 functions.
+`rdf_fdw` is a PostgreSQL Foreign Data Wrapper that enables seamless integration with RDF triplestores via SPARQL endpoints. It supports querying RDF data using SQL, with advanced features including pushdown of SQL clauses (WHERE, LIMIT, ORDER BY, DISTINCT), data modification operations (INSERT, UPDATE, DELETE), and built-in implementations of SPARQL 1.1 functions. The extension introduces a custom `rdfnode` data type for native RDF term handling and provides tools for prefix management, making it easier to work with RDF vocabularies directly from PostgreSQL.
 
 ![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
 
@@ -1512,6 +1512,687 @@ SELECT sparql.struuid();
                 struuid                 
 ----------------------------------------
  "25a55e10-f789-4aab-bb7f-05f2ba495fd2"
+(1 row)
+```
+
+### [Functions on Strings](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-strings)
+
+#### [STRLEN](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlen)
+
+```sql
+sparql.strlen(value rdfnode) → int
+```
+
+Returns the number of characters in the **lexical form** of the RDF node. Implements the SPARQL 1.1 [STRLEN()](https://www.w3.org/TR/sparql11-query/#func-strlen) function.
+
+Examples:
+
+```sql
+SELECT sparql.strlen('"foo"');
+ strlen 
+--------
+      3
+(1 row)
+
+SELECT sparql.strlen('"foo"@de');
+ strlen 
+--------
+      3
+(1 row)
+
+SELECT sparql.strlen('"foo"^^xsd:string');
+ strlen 
+--------
+      3
+(1 row)
+
+SELECT sparql.strlen('"42"^^xsd:int');
+ strlen 
+--------
+      2
+(1 row)
+```
+
+#### [SUBSTR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#substr)
+
+```sql
+sparql.substr(value rdfnode, start int, length int DEFAULT NULL) → rdfnode
+```
+
+Extracts a substring from the lexical form of the RDF node. Implements the SPARQL 1.1 [SUBSTR()](https://www.w3.org/TR/sparql11-query/#func-substr) function.
+
+* The start index is 1-based.
+* If length is omitted, returns everything to the end of the string.
+* returns `NULL` if any of the arguments is `NULL`
+
+Examples:
+
+```sql
+SELECT sparql.substr('"foobar"', 1, 3);
+ substr 
+--------
+ "foo"
+(1 row)
+
+SELECT sparql.substr('"foobar"', 4);
+ substr 
+--------
+ "bar"
+(1 row)
+```
+
+#### [UCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ucase)
+
+```sql
+sparql.ucase(value rdfnode) → rdfnode
+```
+
+Converts the **lexical form** of the literal to uppercase. Implements the SPARQL 1.1 [UCASE()](https://www.w3.org/TR/sparql11-query/#func-ucase) function.
+
+Examples:
+
+```sql
+SELECT sparql.ucase('"foo"');
+ ucase 
+-------
+ "FOO"
+(1 row)
+
+SELECT sparql.ucase('"foo"@en');
+  ucase   
+----------
+ "FOO"@en
+(1 row)
+
+SELECT sparql.ucase('"foo"^^xsd:string');
+                      ucase                       
+--------------------------------------------------
+ "FOO"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+```
+
+#### [LCASE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lcase)
+
+```sql
+sparql.lcase(value rdfnode) → rdfnode
+```
+
+Converts the **lexical form** of the literal to lowercase. Implements the SPARQL 1.1 [LCASE()](https://www.w3.org/TR/sparql11-query/#func-lcase) function.
+
+Examples:
+
+```sql
+SELECT sparql.lcase('"FOO"');
+ lcase 
+-------
+ "foo"
+(1 row)
+
+SELECT sparql.lcase('"FOO"@en');
+  lcase   
+----------
+ "foo"@en
+(1 row)
+
+SELECT sparql.lcase('"FOO"^^xsd:string');
+                      lcase                       
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+```
+
+#### [STRSTARTS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strstarts)
+
+```sql
+sparql.strstarts(value rdfnode, prefix rdfnode) → boolean
+```
+
+Returns `true` if the **lexical form** of the RDF node starts with the given string. Implements the SPARQL 1.1 [STRSTARTS()](https://www.w3.org/TR/sparql11-query/#func-strstarts) function.
+
+Examples:
+
+```sql
+SELECT sparql.strstarts('"foobar"^^xsd:string', '"foo"^^xsd:string');
+ strstarts 
+-----------
+ t
+(1 row)
+
+SELECT sparql.strstarts('"foobar"@en', '"foo"^^xsd:string');
+ strstarts 
+-----------
+ t
+(1 row)
+```
+
+#### [STRENDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strends)
+
+```sql
+sparql.strends(value rdfnode, suffix rdfnode) → boolean
+```
+
+Returns `true` if the **lexical form** of the RDF node ends with the given string. Implements the SPARQL 1.1 [STRENDS() ](https://www.w3.org/TR/sparql11-query/#func-strends)function.
+
+Examples:
+
+```sql
+SELECT sparql.strends('"foobar"^^xsd:string', '"bar"^^xsd:string');
+ strends 
+---------
+ t
+(1 row)
+
+SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
+ strends 
+---------
+ t
+(1 row)
+```
+
+#### [CONTAINS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#contains)
+
+```sql
+sparql.contains(value rdfnode, substring rdfnode) → boolean
+```
+
+Returns `true` if the **lexical form** of the RDF node contains the given substring. Implements the SPARQL 1.1 [CONTAINS()](https://www.w3.org/TR/sparql11-query/#func-contains) function.
+
+Examples:
+
+```sql
+SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"');
+ contains 
+----------
+ t
+(1 row)
+
+SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"@en');
+ contains 
+----------
+ t
+(1 row)
+```
+
+#### [STRBEFORE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strbefore)
+
+```sql
+sparql.strbefore(value rdfnode, delimiter rdfnode) → rdfnode
+```
+
+Returns the substring before the first occurrence of the delimiter in the **lexical form**. If the delimiter is not found, returns an empty string. Implements the SPARQL 1.1 [STRBEFORE()](https://www.w3.org/TR/sparql11-query/#func-strbefore) function.
+
+Examples:
+
+```sql
+SELECT sparql.strbefore('"foobar"^^xsd:string','"bar"^^xsd:string');
+                    strbefore                     
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.strbefore('"foobar"@en','"bar"^^xsd:string');
+ strbefore 
+-----------
+ "foo"@en
+(1 row)
+
+SELECT sparql.strbefore('"foobar"','"bar"^^xsd:string');
+ strbefore 
+-----------
+ "foo"
+(1 row)
+
+SELECT sparql.strbefore('"foobar"','"bar"');
+ strbefore 
+-----------
+ "foo"
+(1 row)
+```
+
+#### [STRAFTER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strafter)
+
+```sql
+sparql.strafter(value rdfnode, delimiter rdfnode) → rdfnode
+```
+
+Returns the substring after the first occurrence of the delimiter in the **lexical form**. If the delimiter is not found, returns an empty string. Implements the SPARQL 1.1 [STRAFTER()](https://www.w3.org/TR/sparql11-query/#func-strafter) function.
+
+Examples:
+
+```sql
+SELECT sparql.strafter('"foobar"^^xsd:string','"foo"^^xsd:string');
+                     strafter                     
+--------------------------------------------------
+ "bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.strafter('"foobar"@en','"foo"^^xsd:string');
+ strafter 
+----------
+ "bar"@en
+(1 row)
+
+SELECT sparql.strafter('"foobar"','"foo"^^xsd:string');
+ strafter 
+----------
+ "bar"
+(1 row)
+
+SELECT sparql.strafter('"foobar"','"foo"');
+ strafter 
+----------
+ "bar"
+(1 row)
+```
+
+#### [ENCODE_FOR_URI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#encode_for_uri)
+
+```sql
+sparql.encode_for_uri(value rdfnode) → rdfnode
+```
+
+Returns a URI-safe version of the lexical form by percent-encoding special characters. Implements the SPARQL 1.1 [ENCODE_FOR_URI()](https://www.w3.org/TR/sparql11-query/#func-encode) function.
+
+```sql
+SELECT sparql.encode_for_uri('"foo&bar!"');
+ encode_for_uri 
+----------------
+ "foo%26bar%21"
+(1 row)
+```
+
+#### [CONCAT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#concat)
+
+```sql
+sparql.concat(value1 rdfnode, value2 rdfnode, ...) → rdfnode
+```
+
+Concatenates all input strings into one. Implements the SPARQL 1.1 [CONCAT()](https://www.w3.org/TR/sparql11-query/#func-concat) function.
+
+
+```sql
+SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
+    concat    
+--------------
+ "foo&bar"@en
+(1 row)
+
+SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
+                        concat                        
+------------------------------------------------------
+ "foo&bar"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT sparql.concat('"foo"','"&"', '"bar"');
+  concat   
+-----------
+ "foo&bar"
+(1 row)
+```
+
+#### [LANGMATCHES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#langmatches)
+
+```sql
+sparql.langmatches(lang_tag rdfnode, pattern rdfnode) → boolean
+```
+
+Checks whether a language tag matches a language pattern (e.g., `en` matches `en-US`).
+Implements the SPARQL 1.1 [LANGMATCHES()](https://www.w3.org/TR/sparql11-query/#func-langMatches) function.
+
+Example:
+
+```sql
+SELECT sparql.langmatches('en', 'en');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('en-US', 'en');
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('en', 'de');
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT sparql.langmatches('en', '*');
+ langmatches 
+-------------
+ t
+(1 row)
+```
+
+#### [REGEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#regex)
+
+```sql
+sparql.regex(value rdfnode, pattern rdfnode, flags rdfnode DEFAULT '') → boolean
+```
+
+Checks if the lexical form matches the given regular expression. Implements the SPARQL 1.1 [REGEX()](https://www.w3.org/TR/sparql11-query/#func-regex) function.
+
+* Supported flags: `i` (case-insensitive)
+
+Example:
+
+```sql
+SELECT sparql.regex('"Hello World"', '^hello', 'i');
+ regex 
+-------
+ t
+(1 row)
+```
+
+#### [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
+
+```sql
+sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode, flags rdfnode DEFAULT '') → rdfnode
+
+```
+
+Replaces parts of the **lexical form** using a regular expression. Implements the SPARQL 1.1 [REPLACE()](https://www.w3.org/TR/sparql11-query/#func-replace) function.
+
+* Supports `i`, `m`, and `g` flags.
+
+```sql
+SELECT sparql.replace('"foo bar foo"', 'foo', 'baz', 'g');
+    replace    
+---------------
+ "baz bar baz"
+(1 row)
+```
+### [Functions on Numerics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-numerics)
+
+#### [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)
+
+```sql
+sparql.abs(value rdfnode) → numeric
+```
+
+Returns the absolute value of a numeric literal. Implements the SPARQL 1.1 [ABS()](https://www.w3.org/TR/sparql11-query/#func-abs) function.
+
+Examples:
+
+```sql
+SELECT sparql.abs('"-42"^^xsd:int');
+                     abs                      
+----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT sparql.abs('"3.14"^^xsd:decimal');
+                        abs                         
+----------------------------------------------------
+ "3.14"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+```
+
+#### [ROUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#round)
+
+```sql
+sparql.round(value rdfnode) → numeric
+```
+
+Rounds the numeric literal to the nearest integer. Implements the SPARQL 1.1 [ROUND()](https://www.w3.org/TR/sparql11-query/#func-round) function.
+
+Examples:
+
+```sql
+SELECT sparql.round('"2.5"^^xsd:decimal');
+                      round                      
+-------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.round('"-2.5"^^xsd:float');
+                     round                      
+------------------------------------------------
+ "-2"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+#### [CEIL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ceil)
+
+```sql
+sparql.ceil(value rdfnode) → numeric
+```
+Returns the smallest integer greater than or equal to the numeric value. Implements the SPARQL 1.1 [CEIL()](https://www.w3.org/TR/sparql11-query/#func-ceil) function.
+
+Examples:
+
+```sql
+SELECT sparql.ceil('"3.14"^^xsd:decimal');
+                      ceil                       
+-------------------------------------------------
+ "4"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.ceil('"-2.1"^^xsd:float');
+                      ceil                      
+------------------------------------------------
+ "-2"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+#### [FLOOR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#floor)
+
+```sql
+sparql.floor(value rdfnode) → numeric
+```
+
+Returns the greatest integer less than or equal to the numeric value. Implements the SPARQL 1.1 [FLOOR()](https://www.w3.org/TR/sparql11-query/#func-floor) function.
+
+Examples:
+
+```sql
+SELECT sparql.floor('"3.9"^^xsd:decimal');
+                      floor                      
+-------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.floor('"-2.1"^^xsd:float');
+                     floor                      
+------------------------------------------------
+ "-3"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+```
+
+#### [RAND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rand)
+
+```sql
+sparql.rand() → rdfnode
+```
+
+Returns a random floating-point number between 0.0 and 1.0. Implements the SPARQL 1.1 [RAND()](https://www.w3.org/TR/sparql11-query/#idp2130040) function.
+
+Examples:
+
+```sql
+SELECT sparql.rand();
+                               rand                               
+------------------------------------------------------------------
+ "0.14079881274421657"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+```
+
+### [Functions on Dates and Times](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-dates-and-times)
+
+#### [YEAR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#year)
+
+```sql
+sparql.year(value rdfnode) → int
+```
+
+Returns the year component of an xsd:dateTime or xsd:date literal. Implements the SPARQL 1.1 [YEAR()](https://www.w3.org/TR/sparql11-query/#func-year) function.
+
+Example:
+
+```sql
+SELECT sparql.year('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ year 
+------
+ 2025
+```
+
+#### [MONTH](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#month)
+
+```sql
+sparql.month(value rdfnode) → int
+```
+Returns the month component (1–12) from a datetime or date. Implements the SPARQL 1.1 [MONTH()](https://www.w3.org/TR/sparql11-query/#func-month) function.
+
+Example:
+
+```sql
+SELECT sparql.month('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ month 
+-------
+     5
+(1 row)
+```
+
+#### [DAY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#day)
+
+```sql
+sparql.day(value rdfnode) → int
+```
+
+Returns the day of the month from a date or datetime literal. Implements the SPARQL 1.1 [DAY()](https://www.w3.org/TR/sparql11-query/#func-day) function.
+
+Example:
+
+```sql
+SELECT sparql.day('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ day 
+-----
+  17
+(1 row)
+```
+
+#### [HOURS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hours)
+
+```sql
+sparql.hours(value rdfnode) → int
+```
+
+Extracts the hour (0–23) from a datetime literal. Implements the SPARQL 1.1 [HOURS()](https://www.w3.org/TR/sparql11-query/#func-hours) function.
+
+Example:
+
+```sql
+SELECT sparql.hours('"2025-05-17T14:00:00Z"^^xsd:dateTime');
+ hours 
+-------
+    14
+(1 row)
+```
+
+#### [MINUTES](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#minutes)
+
+```sql
+sparql.minutes(value rdfnode) → int
+```
+
+Returns the minute component (0–59) of a datetime literal. Implements the SPARQL 1.1 [MINUTES()](https://www.w3.org/TR/sparql11-query/#func-minutes) function.
+
+Example: 
+
+```sql
+SELECT sparql.minutes('"2025-05-17T14:42:37Z"^^xsd:dateTime');
+ minutes 
+---------
+      42
+(1 row)
+```
+
+#### [SECONDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#seconds)
+
+```sql
+sparql.seconds(value rdfnode) → int
+```
+
+Returns the seconds (including fractions) from a datetime literal. Implements the SPARQL 1.1 [SECONDS()](https://www.w3.org/TR/sparql11-query/#func-seconds) function.
+
+Example:
+
+```sql
+SELECT sparql.seconds('"2025-05-17T14:42:37Z"^^xsd:dateTime');
+ seconds 
+---------
+      37
+(1 row)
+```
+
+#### [TIMEZONE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#timezone)
+
+```sql
+sparql.timezone(datetime rdfnode) → rdfnode
+```
+
+Returns the timezone offset as a duration literal (e.g., "PT2H"), or NULL if none. Implements the SPARQL 1.1 [TIMEZONE()](https://www.w3.org/TR/sparql11-query/#func-timezone) function.
+
+Example:
+
+```sql
+SELECT sparql.timezone('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
+                          timezone                          
+------------------------------------------------------------
+ "PT2H"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>
+(1 row)
+```
+
+#### [TZ](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#tz)
+
+```sql
+sparql.tz(datetime rdfnode) → rdfnode
+```
+
+Returns the timezone offset as a string (e.g., `+02:00` or `Z`). Implements the SPARQL 1.1 [TZ()](https://www.w3.org/TR/sparql11-query/#func-tz) function.
+
+Examples:
+
+```sql
+SELECT sparql.tz('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
+    tz    
+----------
+ "+02:00"
+(1 row)
+
+SELECT sparql.tz('"2025-05-17T08:00:00Z"^^xsd:dateTime');
+ tz  
+-----
+ "Z"
+(1 row)
+```
+
+### [Hash Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#hash-functions)
+
+#### [MD5](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#md5)
+
+```sql
+sparql.md5(value rdfnode) → rdfnode
+```
+
+Returns the MD5 hash of the lexical form of the input RDF literal, encoded as a lowercase hexadecimal string. Implements the SPARQL 1.1 [MD5()](https://www.w3.org/TR/sparql11-query/#func-md5) function. The result is returned as a plain literal (xsd:string).
+
+Examples:
+
+```sql
+SELECT sparql.md5('"foo"');
+                md5                 
+------------------------------------
+ "acbd18db4cc2f85cedef654fccc4a4d8"
+(1 row)
+
+SELECT sparql.md5('42'::rdfnode);
+                md5                 
+------------------------------------
+ "a1d0c6e83f027327d8461063f4ac58a6"
 (1 row)
 ```
 
