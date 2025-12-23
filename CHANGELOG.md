@@ -34,6 +34,8 @@ Release date: **YYYY-MM-DD**
 
 * Fixed unexpected behavior in `sparql.bnode()` where passing an already-formatted blank node (e.g., `_:bnode1`) would return SQL NULL instead of handling it gracefully. The function now implements idempotent behavior: if the input is already a blank node, it returns it as-is.
 
+* CONCAT function updated to handle literals with conflicting language tags or incompatible datatypes by returning a simple literal (no language tag or datatype). For example, `sparql.concat('"foo"@en', '"bar"@de')` now returns `"foobar"` instead of throwing an error. This change aligns with the behavior of major triple stores like Blazegraph and Virtuoso.
+
 # Release Notes
 ## 2.2.0
 Release date: **2025-12-07**

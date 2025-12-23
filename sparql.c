@@ -609,75 +609,83 @@ char *bnode(char *input)
  *
  * Mixing a simple literal with a language-tagged or xsd:string-typed value
  * results in a plain literal without type or language. Conflicting language
- * tags or unsupported datatypes raise an error.
+ * tags also return simple literals.
  *
  * NULL inputs yield NULL. Empty strings are allowed and result in valid RDF
  * literals.
  */
 char *concat(char *left, char *right)
 {
-    char *lex1 = lex(left);
-    char *lex2 = lex(right);
-    char *dt1 = datatype(left);
-    char *dt2 = datatype(right);
-    char *lang1 = lang(left);
-    char *lang2 = lang(right);
+    char *left_lexical, *right_lexical;
+    char *left_language, *right_language;
+    char *left_datatype, *right_datatype;
     char *result;
     StringInfoData buf;
 
     elog(DEBUG1, "%s called: left='%s', right='%s'", __func__, left, right);
 
+    if (!left || !right)
+        ereport(ERROR,
+                (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
+                 errmsg("CONCAT arguments cannot be NULL")));
+
+    if (isIRI(left) || isIRI(right) || isBlank(left) || isBlank(right))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("CONCAT not allowed on IRI or blank node")));
+
+    left_lexical = lex(left);
+    right_lexical = lex(right);
+    left_language = lang(left);
+    right_language = lang(right);
+    left_datatype = datatype(left);
+    right_datatype = datatype(right);
+
+    elog(DEBUG1, "%s: left_lexical='%s', right_lexical='%s', left_language='%s', right_language='%s'",
+         __func__, left_lexical, right_lexical, left_language, right_language);
+
     initStringInfo(&buf);
-    appendStringInfoString(&buf, lex1);
-    appendStringInfoString(&buf, lex2);
+    appendStringInfo(&buf, "%s%s", left_lexical, right_lexical);
 
-    /* Check for conflicting language tags */
-    if (strlen(lang1) > 0 && strlen(lang2) > 0 && strcmp(lang1, lang2) != 0)
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("CONCAT arguments have conflicting language tags: '%s' and '%s'", lang1, lang2)));
-
-    if ((strlen(dt1) > 0 && strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) != 0) ||
-        (strlen(dt2) > 0 && strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) != 0))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("CONCAT arguments must be simple literals or '%s'", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED)));
-
-    /* only one argument has a datatype */
-    if ((strlen(dt1) != 0 && strlen(dt2) == 0) || (strlen(dt1) == 0 && strlen(dt2) != 0))
+    /* Per SPARQL 1.1 spec:
+     * - If both have identical language tags, preserve the tag
+     * - If both have no language tag, return simple literal
+     * - Otherwise (including conflicting tags), return simple literal
+     */
+    if (strlen(left_language) > 0 && strlen(right_language) > 0)
     {
+        if (strcmp(left_language, right_language) == 0)
+        {
+            /* Identical language tags - preserve them */
+            result = strlang(buf.data, left_language);
+        }
+        else
+        {
+            /* Conflicting language tags - return simple literal (no tag) */
+            elog(DEBUG1, "%s: conflicting language tags '%s' and '%s', returning simple literal",
+                 __func__, left_language, right_language);
+            result = cstring_to_rdfliteral(buf.data);
+        }
+    }
+    else if (strlen(left_language) > 0 || strlen(right_language) > 0)
+    {
+        /* One has language tag, other doesn't - return simple literal */
+        elog(DEBUG1, "%s: mixed language tags, returning simple literal", __func__);
         result = cstring_to_rdfliteral(buf.data);
-        elog(DEBUG1, "%s exit: returning '%s' (only one argument has a datatype)", __func__, result);
-        return result;
     }
-
-    /* only one argument has a language tag */
-    if ((strlen(lang1) != 0 && strlen(lang2) == 0) || (strlen(lang1) == 0 && strlen(lang2) != 0))
+    else if (strlen(left_datatype) > 0 && strlen(right_datatype) > 0 &&
+             strcmp(left_datatype, right_datatype) == 0)
     {
+        /* Both have same datatype - preserve it */
+        result = strdt(buf.data, left_datatype);
+    }
+    else
+    {
+        /* No language tags or mixed datatypes - return simple literal */
         result = cstring_to_rdfliteral(buf.data);
-        elog(DEBUG1, "%s exit: returning '%s' (only one argument has a language tag)", __func__, result);
-        return result;
     }
 
-    /* re-wrap result appropriately */
-    if (strlen(lang1) != 0 || strlen(lang2) != 0)
-    {
-        result = strlang(buf.data, strlen(lang1) > 0 ? lang1 : lang2);
-        elog(DEBUG1, "%s exit: returning '%s' (re-wrapping result appropriately)", __func__, result);
-        return result;
-    }
-
-    if ((strlen(dt1) > 0 && strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0) ||
-        (strlen(dt2) > 0 && strcmp(dt2, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
-    {
-        result = strdt(buf.data, RDF_SIMPLE_LITERAL_DATATYPE);
-        elog(DEBUG1, "%s exit: returning '%s' (either left or right argument has a simple literal data type - %s)",
-             __func__, result, RDF_SIMPLE_LITERAL_DATATYPE);
-
-        return result;
-    }
-
-    result = cstring_to_rdfliteral(buf.data);
+    pfree(buf.data);
 
     elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
     return result;

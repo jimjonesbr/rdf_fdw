@@ -444,6 +444,7 @@ SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
 SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string');
 SELECT sparql.concat('"foo"','"&"', '"bar"');
 SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
+SELECT sparql.concat('"foo"@en','"bar"@de');
 
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
