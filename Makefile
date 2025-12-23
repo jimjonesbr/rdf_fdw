@@ -46,13 +46,14 @@ REGRESS += create_extension \
 			prefix-management
 
 ifndef SKIP_UPDATE_TESTS
-  REGRESS += delete-fuseki \
-  			 update-fuseki \
-			 insert-fuseki
+  REGRESS += fuseki-delete \
+  			 fuseki-update \
+			 fuseki-insert \
+			 fuseki-select
 endif
 
 ifndef SKIP_STRESS_TESTS
-  REGRESS += stress-fuseki
+  REGRESS += fuseki-stress
 endif
 
 ifndef SKIP_EXTERNAL_TESTS
