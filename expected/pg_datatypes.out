@@ -1776,13 +1776,13 @@ ERROR:  invalid lexical form for xsd:date: "2020-13-01" at character 8
 SELECT '0001-01-01'::date::rdfnode = '0001-01-01'::date;
  ?column? 
 ----------
- f
+ t
 (1 row)
 
 SELECT '9999-12-31'::date::rdfnode = '9999-12-31'::date;
  ?column? 
 ----------
- f
+ t
 (1 row)
 
 /* time (without time zone) <-> rdfnode */

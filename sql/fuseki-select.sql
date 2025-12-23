@@ -25,6 +25,7 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univerrrsity of Münsterrr"@en-US'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univêrsity of Münsta"@en-GB'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#time>', '"18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
@@ -206,7 +207,7 @@ WHERE object BETWEEN 50.0::real AND 52.0::real;
 
 /* SPARQL - 17.3 Operator Mapping (double precision) */
 SELECT * FROM ft
-WHERE object = 51.963612::double precision;
+WHERE object = 51.96361::double precision;
 
 SELECT * FROM ft
 WHERE object > 50.0::double precision;
@@ -219,7 +220,7 @@ WHERE object BETWEEN 50.0::double precision AND 52.0::double precision;
 
 /* SPARQL - 17.3 Operator Mapping (numeric) */
 SELECT * FROM ft
-WHERE object = 51.963612::numeric::rdfnode;
+WHERE object = 51.96361::numeric::rdfnode;
 
 SELECT * FROM ft
 WHERE object > 50.0::numeric::rdfnode;
@@ -268,6 +269,19 @@ WHERE object < '1780-12-31'::date;
 
 SELECT * FROM ft
 WHERE object BETWEEN '1780-01-01'::date AND '1780-12-31'::date;
+
+/* SPARQL - 17.3 Operator Mapping (time) */
+SELECT * FROM ft
+WHERE object = '18:18:42'::time;
+
+SELECT * FROM ft
+WHERE object > '12:00:00'::time;
+
+SELECT * FROM ft
+WHERE object < '23:59:59'::time;
+
+SELECT * FROM ft
+WHERE object BETWEEN '12:00:00'::time AND '23:59:59'::time;
 
 /* SPARQL - 17.3 Operator Mapping (timetz) */
 
@@ -469,7 +483,7 @@ WHERE sparql.replace(sparql.str(object), 'Westfälische Wilhelms-Universität', 
 
 /* SPARQL 17.4.4.1 - abs */
 SELECT * FROM ft
-WHERE sparql.abs(object) = 51.963612::numeric::rdfnode;
+WHERE sparql.abs(object) = 51.96361::numeric::rdfnode;
 
 /* SPARQL 17.4.4.2 - round */
 SELECT * FROM ft

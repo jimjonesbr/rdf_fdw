@@ -21,6 +21,7 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univerrrsity of Münsterrr"@en-US'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univêrsity of Münsta"@en-GB'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#time>', '"18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
@@ -49,6 +50,7 @@ INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
@@ -80,7 +82,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
@@ -98,6 +100,7 @@ INFO:  SPARQL returned 27 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
@@ -113,7 +116,7 @@ INFO:  SPARQL returned 27 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(27 rows)
+(28 rows)
 
 /* SPARQL 17.4.1.7 - RDFterm-equal */
 SELECT * FROM ft
@@ -165,10 +168,11 @@ SELECT ?s ?p ?o
  FILTER(?p NOT IN (<http://www.w3.org/2000/01/rdf-schema#comment>, <http://dbpedia.org/property/name>))
 }
 
-INFO:  SPARQL returned 15 records.
+INFO:  SPARQL returned 16 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
@@ -184,7 +188,7 @@ INFO:  SPARQL returned 15 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(15 rows)
+(16 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT */
 SELECT DISTINCT predicate
@@ -196,7 +200,7 @@ SELECT DISTINCT ?s ?p ?o
 {?s ?p ?o}
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
                      predicate                     
 ---------------------------------------------------
@@ -215,9 +219,10 @@ INFO:  SPARQL returned 27 records.
  <http://dbpedia.org/property/students>
  <http://dbpedia.org/property/tuition>
  <http://www.w3.org/2000/01/rdf-schema#comment>
+ <http://www.w3.org/2000/01/rdf-schema#time>
  <http://www.w3.org/2003/01/geo/wgs84_pos#lat>
  <http://www.w3.org/2003/01/geo/wgs84_pos#long>
-(17 rows)
+(18 rows)
 
 SELECT DISTINCT object
 FROM ft
@@ -390,7 +395,7 @@ INFO:  SPARQL returned 3 records.
 -------------------------------+------------------------------------------------+--------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>      | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>      | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>    | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
 (3 rows)
 
 SELECT * FROM ft
@@ -436,7 +441,7 @@ INFO:  SPARQL returned 3 records.
 -------------------------------+------------------------------------------------+--------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>      | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>      | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>    | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
 (3 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT */
@@ -452,7 +457,7 @@ SELECT DISTINCT ?s ?p ?o
 }
 ORDER BY  ASC (?s)
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
             subject            
 -------------------------------
@@ -471,7 +476,7 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
                      predicate                     |                               object                                
 ---------------------------------------------------+---------------------------------------------------------------------
@@ -490,9 +495,10 @@ INFO:  SPARQL returned 27 records.
  <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
  <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
-(17 rows)
+(18 rows)
 
 /* SPARQL - 17.3 Operator Mapping (text) */
 SELECT * FROM ft
@@ -887,20 +893,21 @@ INFO:  SPARQL returned 1 record.
 
 /* SPARQL - 17.3 Operator Mapping (double precision) */
 SELECT * FROM ft
-WHERE object = 51.963612::double precision;
+WHERE object = 51.96361::double precision;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o = 51.963612)
+ FILTER(?o = 51.96361)
 }
 
 INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                   predicate                   |                        object                        
+-------------------------------+-----------------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
 
 SELECT * FROM ft
 WHERE object > 50.0::double precision;
@@ -962,20 +969,21 @@ INFO:  SPARQL returned 1 record.
 
 /* SPARQL - 17.3 Operator Mapping (numeric) */
 SELECT * FROM ft
-WHERE object = 51.963612::numeric::rdfnode;
+WHERE object = 51.96361::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o = "51.963612"^^<http://www.w3.org/2001/XMLSchema#decimal>)
+ FILTER(?o = "51.96361"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
 INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                   predicate                   |                        object                        
+-------------------------------+-----------------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
 
 SELECT * FROM ft
 WHERE object > 50.0::numeric::rdfnode;
@@ -1193,9 +1201,10 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                 predicate                 |                        object                         
+-------------------------------+-------------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established> | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
 
 SELECT * FROM ft
 WHERE object > '1780-01-01'::date;
@@ -1211,8 +1220,9 @@ INFO:  SPARQL returned 2 records.
 
             subject            |                 predicate                 |                        object                         
 -------------------------------+-------------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established> | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate> | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
-(1 row)
+(2 rows)
 
 SELECT * FROM ft
 WHERE object < '1780-12-31'::date;
@@ -1244,9 +1254,80 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                 predicate                 |                        object                         
+-------------------------------+-------------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established> | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+/* SPARQL - 17.3 Operator Mapping (time) */
+SELECT * FROM ft
+WHERE object = '18:18:42'::time;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                  |                       object                        
+-------------------------------+---------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time> | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT * FROM ft
+WHERE object > '12:00:00'::time;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                  |                       object                        
+-------------------------------+---------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time> | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT * FROM ft
+WHERE object < '23:59:59'::time;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o < "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                  |                       object                        
+-------------------------------+---------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time> | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT * FROM ft
+WHERE object BETWEEN '12:00:00'::time AND '23:59:59'::time;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o >= "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
+ FILTER(?o <= "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                  |                       object                        
+-------------------------------+---------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time> | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
 
 /* SPARQL - 17.3 Operator Mapping (timetz) */
 /* SPARQL - 17.3 Operator Mapping (boolean) */
@@ -1339,7 +1420,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
  subject | predicate | object 
 ---------+-----------+--------
@@ -1428,7 +1509,7 @@ SELECT ?s ?p ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 25 records.
+INFO:  SPARQL returned 26 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
@@ -1446,6 +1527,7 @@ INFO:  SPARQL returned 25 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
@@ -1459,7 +1541,7 @@ INFO:  SPARQL returned 25 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(25 rows)
+(26 rows)
 
 /* SPARQL 17.4.2.4 - isNumeric */
 SELECT * FROM ft
@@ -2206,20 +2288,21 @@ INFO:  SPARQL returned 1 record.
 
 /* SPARQL 17.4.4.1 - abs */
 SELECT * FROM ft
-WHERE sparql.abs(object) = 51.963612::numeric::rdfnode;
+WHERE sparql.abs(object) = 51.96361::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ABS(?o) = "51.963612"^^<http://www.w3.org/2001/XMLSchema#decimal>)
+ FILTER(ABS(?o) = "51.96361"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
 INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                   predicate                   |                        object                        
+-------------------------------+-----------------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
 
 /* SPARQL 17.4.4.2 - round */
 SELECT * FROM ft
@@ -2355,13 +2438,10 @@ SELECT ?s ?p ?o
  FILTER(HOURS(?o) = "18"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 2 records.
 
-            subject            |               predicate                |                               object                               
--------------------------------+----------------------------------------+--------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified> | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-
+ERROR:  invalid input syntax for type timestamp: "18:18:42"
+CONTEXT:  PL/pgSQL function sparql.hours(rdfnode) line 3 at RETURN
 /* SPARQL 17.4.5.6 - minutes */
 SELECT * FROM ft
 WHERE sparql.minutes(object) = 30::numeric::rdfnode;
@@ -2391,14 +2471,10 @@ SELECT ?s ?p ?o
  FILTER(SECONDS(?o) = "42"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 3 records.
 
-            subject            |                    predicate                    |                               object                                
--------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(2 rows)
-
+ERROR:  invalid input syntax for type timestamp: "18:18:42"
+CONTEXT:  PL/pgSQL function sparql.seconds(rdfnode) line 3 at RETURN
 /* SPARQL 17.4.5.8 - timezone */
 SELECT * FROM ft
 WHERE sparql.timezone(object) = '+00:00'::rdfnode;
@@ -2539,13 +2615,13 @@ SELECT ?s ?p ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 25 records.
+INFO:  SPARQL returned 26 records.
 
-                                                                                                                                                                           obj_list                                                                                                                                                                           
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- " | Hello 👋 PostgreSQL 🐘 | unknown literal type | explicit string literal | . <= pontos => . |                                                                                                                                                                                                                                                            +
-  <= salto de línea =>                                                                                                                                                                                                                                                                                                                                       +
-  | \" <= double-quotes => \" |   <= Tabulatorzeichen =>          | Westfälische Wilhelms-Universität Münster | University of Münster | Univerrrsity of Münsterrr | Univêrsity of Münsta | 1780-04-16 | 2025-12-24T18:30:42 | 2025-12-24T13:00:42Z | 51.96361 | 7.613611 | Johannes Wessels | 1924 | 49098 | 4956 | 803600000 | 1500.0e0 | 2024-02-29 | true"
+                                                                                                                                                                                obj_list                                                                                                                                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ " | Hello 👋 PostgreSQL 🐘 | unknown literal type | explicit string literal | . <= pontos => . |                                                                                                                                                                                                                                                                       +
+  <= salto de línea =>                                                                                                                                                                                                                                                                                                                                                  +
+  | \" <= double-quotes => \" |   <= Tabulatorzeichen =>          | Westfälische Wilhelms-Universität Münster | University of Münster | Univerrrsity of Münsterrr | Univêrsity of Münsta | 18:18:42 | 1780-04-16 | 2025-12-24T18:30:42 | 2025-12-24T13:00:42Z | 51.96361 | 7.613611 | Johannes Wessels | 1924 | 49098 | 4956 | 803600000 | 1500.0e0 | 2024-02-29 | true"
 (1 row)
 
 SELECT sparql.group_concat(object, '') AS obj_list
@@ -2559,13 +2635,13 @@ SELECT ?s ?p ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 25 records.
+INFO:  SPARQL returned 26 records.
 
-                                                                                                                                                 obj_list                                                                                                                                                  
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- "Hello 👋 PostgreSQL 🐘unknown literal typeexplicit string literal. <= pontos => .                                                                                                                                                                                                                       +
-  <= salto de línea =>                                                                                                                                                                                                                                                                                    +
- \" <= double-quotes => \"        <= Tabulatorzeichen =>         Westfälische Wilhelms-Universität MünsterUniversity of MünsterUniverrrsity of MünsterrrUnivêrsity of Münsta1780-04-162025-12-24T18:30:422025-12-24T13:00:42Z51.963617.613611Johannes Wessels19244909849568036000001500.0e02024-02-29true"
+                                                                                                                                                     obj_list                                                                                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ "Hello 👋 PostgreSQL 🐘unknown literal typeexplicit string literal. <= pontos => .                                                                                                                                                                                                                               +
+  <= salto de línea =>                                                                                                                                                                                                                                                                                            +
+ \" <= double-quotes => \"        <= Tabulatorzeichen =>         Westfälische Wilhelms-Universität MünsterUniversity of MünsterUniverrrsity of MünsterrrUnivêrsity of Münsta18:18:421780-04-162025-12-24T18:30:422025-12-24T13:00:42Z51.963617.613611Johannes Wessels19244909849568036000001500.0e02024-02-29true"
 (1 row)
 
 /* SPARQL Aggregate SAMPLE */
@@ -2580,7 +2656,7 @@ SELECT ?s ?p ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 25 records.
+INFO:  SPARQL returned 26 records.
 
  obj_sample 
 ------------
@@ -2594,7 +2670,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
             subject            |                     predicate                     |                         lex                          
 -------------------------------+---------------------------------------------------+------------------------------------------------------
@@ -2612,6 +2688,7 @@ INFO:  SPARQL returned 27 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | University of Münster
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Univerrrsity of Münsterrr
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Univêrsity of Münsta
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | 18:18:42
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | 1780-04-16
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | 2025-12-24T18:30:42
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | 2025-12-24T13:00:42Z
@@ -2627,7 +2704,7 @@ INFO:  SPARQL returned 27 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | 1500.0e0
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | 2024-02-29
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | true
-(27 rows)
+(28 rows)
 
 -- Empty literals in various contexts
 SELECT * FROM ft WHERE object = '""'::rdfnode;
@@ -2764,7 +2841,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -2777,13 +2854,14 @@ INFO:  SPARQL returned 27 records.
                                |                                                 | "@es
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "        <= Tabulatorzeichen =>         "@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>            | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>   | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(13 rows)
+(14 rows)
 
 /* cleanup */
 DELETE FROM ft;
@@ -2792,7 +2870,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 27 records.
+INFO:  SPARQL returned 28 records.
 
 INFO:  SPARQL query sent to 'fuseki':
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
@@ -2807,6 +2885,7 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };

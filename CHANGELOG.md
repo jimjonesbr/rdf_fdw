@@ -14,6 +14,12 @@ Release date: **YYYY-MM-DD**
 
 ### Bug Fixes
 
+* Fixed critical bug in all date comparison operators (>, >=, <, <=, =, !=) between `rdfnode` and PostgreSQL `date` types. Previously, the code used the wrong macro (`PG_GETARG_INT16`) to retrieve date arguments, causing all local date comparisons to fail or behave unpredictably. Now uses the correct `PG_GETARG_DATEADT` macro and adds robust error handling for non-date values. This ensures correct filtering and pushdown of date conditions, especially for queries like `WHERE col > '1900-01-30'::date`.
+
+* Fixed all inverse date comparison operators (where the PostgreSQL `date` is on the left side and `rdfnode` on the right) to use the correct macro and error handling, ensuring bidirectional compatibility and correct query results.
+
+* Updated CONCAT function to comply with SPARQL 1.1: now returns a simple literal (no language tag or datatype) when concatenating literals with conflicting language tags or incompatible datatypes, instead of throwing an error. This matches the behavior of major triple stores and improves standards compliance.
+
 * Empty RDF literals incorrectly returned as NULL: Fixed a bug where empty RDF literals (e.g., `""`, `""@en`, or `""^^xsd:string`) were being incorrectly returned as SQL NULL values instead of empty strings. The issue occurred in `CreateTuple()` where `xmlNodeGetContent()` returns NULL for empty XML elements. The fix now properly distinguishes between empty RDF terms (valid empty strings) and unbound SPARQL variables (SQL NULL) by checking the XML element type (`<literal>`, `<uri>`, or `<bnode>`).
 
 * Empty literals not being deleted: Fixed a bug where empty literals (e.g., `""@pt`) were not triggering DELETE operations. The issue occurred because `xmlNodeGetContent()` returns NULL for empty content, which caused tuples to be incorrectly marked as NULL, preventing the DELETE callback from executing.

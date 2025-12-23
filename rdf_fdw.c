@@ -8825,10 +8825,24 @@ Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 Datum rdfnode_lt_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_INT16(1);
+	DateADT val = PG_GETARG_DATEADT(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_lt, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_lt, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
@@ -8836,10 +8850,24 @@ Datum rdfnode_lt_date(PG_FUNCTION_ARGS)
 Datum rdfnode_le_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_INT16(1);
+	DateADT val = PG_GETARG_DATEADT(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_le, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_le, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
@@ -8847,10 +8875,24 @@ Datum rdfnode_le_date(PG_FUNCTION_ARGS)
 Datum rdfnode_gt_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_INT16(1);
+	DateADT val = PG_GETARG_DATEADT(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_gt, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_gt, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
@@ -8858,10 +8900,24 @@ Datum rdfnode_gt_date(PG_FUNCTION_ARGS)
 Datum rdfnode_ge_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_INT16(1);
+	DateADT val = PG_GETARG_DATEADT(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_ge, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_ge, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
@@ -8869,10 +8925,24 @@ Datum rdfnode_ge_date(PG_FUNCTION_ARGS)
 Datum rdfnode_eq_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_INT16(1);
+	DateADT val = PG_GETARG_DATEADT(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
@@ -8880,10 +8950,24 @@ Datum rdfnode_eq_date(PG_FUNCTION_ARGS)
 Datum rdfnode_neq_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_INT16(1);
+	DateADT val = PG_GETARG_DATEADT(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return true (not equal) */
+		FlushErrorState();
+		PG_RETURN_BOOL(true);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
@@ -8906,66 +8990,150 @@ Datum date_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum date_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_INT16(0);
+	DateADT val = PG_GETARG_DATEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_lt, DateADTGetDatum(val), rdf_date));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_lt, DateADTGetDatum(val), rdf_date));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum date_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_INT16(0);
+	DateADT val = PG_GETARG_DATEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_le, DateADTGetDatum(val), rdf_date));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_le, DateADTGetDatum(val), rdf_date));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum date_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_INT16(0);
+	DateADT val = PG_GETARG_DATEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_gt, DateADTGetDatum(val), rdf_date));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_gt, DateADTGetDatum(val), rdf_date));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum date_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_INT16(0);
+	DateADT val = PG_GETARG_DATEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_ge, DateADTGetDatum(val), rdf_date));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_ge, DateADTGetDatum(val), rdf_date));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum date_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_INT16(0);
+	DateADT val = PG_GETARG_DATEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return false */
+		FlushErrorState();
+		PG_RETURN_BOOL(false);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
 
 Datum date_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_INT16(0);
+	DateADT val = PG_GETARG_DATEADT(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
+	Datum rdf_date;
+	bool result;
+
+	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
+	PG_TRY();
+	{
+		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
+		result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
+	}
+	PG_CATCH();
+	{
+		/* If parsing fails, the value is not a valid date - return true (not equal) */
+		FlushErrorState();
+		PG_RETURN_BOOL(true);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_BOOL(result);
 }
