@@ -2280,7 +2280,11 @@ SELECT sparql.concat('foo', ''), sparql.concat('', 'bar'), sparql.concat('', '')
 (1 row)
 
 SELECT sparql.concat('"foo"^^foo:bar', 'bar'), sparql.concat('"foo"', '"bar"^^foo:bar');
-ERROR:  CONCAT arguments must be simple literals or 'xsd:string'
+  concat  |  concat  
+----------+----------
+ "foobar" | "foobar"
+(1 row)
+
 SELECT sparql.concat('"foo"@en','"&"@en', '"bar"@en');
     concat    
 --------------
@@ -2303,6 +2307,12 @@ SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
  concat 
 --------
  NULL
+(1 row)
+
+SELECT sparql.concat('"foo"@en','"bar"@de');
+  concat  
+----------
+ "foobar"
 (1 row)
 
   /* REPLACE */
