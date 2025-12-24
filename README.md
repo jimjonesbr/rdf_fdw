@@ -2335,7 +2335,7 @@ The `DELETE` statement allows you to remove RDF triples from a triplestore. Each
 DELETE FROM ft 
 WHERE object = '"Westfälische Wilhelms-Universität Münster"@de'::rdfnode;
 ```
-### Example:
+### [Update Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-examples)
 
 ```sql
 CREATE SERVER fuseki
