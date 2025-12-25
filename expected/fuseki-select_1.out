@@ -2440,8 +2440,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 2 records.
 
-ERROR:  invalid input syntax for type timestamp: "18:18:42"
-CONTEXT:  PL/pgSQL function sparql.hours(rdfnode) line 3 at RETURN
+            subject            |                  predicate                  |                               object                               
+-------------------------------+---------------------------------------------+--------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time> | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>      | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(2 rows)
+
 /* SPARQL 17.4.5.6 - minutes */
 SELECT * FROM ft
 WHERE sparql.minutes(object) = 30::numeric::rdfnode;
@@ -2473,8 +2477,13 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 3 records.
 
-ERROR:  invalid input syntax for type timestamp: "18:18:42"
-CONTEXT:  PL/pgSQL function sparql.seconds(rdfnode) line 3 at RETURN
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(3 rows)
+
 /* SPARQL 17.4.5.8 - timezone */
 SELECT * FROM ft
 WHERE sparql.timezone(object) = '+00:00'::rdfnode;

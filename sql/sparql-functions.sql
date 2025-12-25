@@ -598,6 +598,7 @@ SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::timestamp);
+SELECT sparql.hours('14:45:13'::time);
 
 /* MINUTES */
 SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -605,6 +606,7 @@ SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::timestamp);
+SELECT sparql.minutes('14:45:13'::time);
 
 /* SECONDS */
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
@@ -612,6 +614,7 @@ SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"'),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::timestamp),3);
+SELECT pg_catalog.round(sparql.seconds('14:45:13.815'::time),3);
 
 /* TIMEZONE */
 SELECT sparql.timezone('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');

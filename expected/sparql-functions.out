@@ -3049,6 +3049,12 @@ SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::timestamp);
     14
 (1 row)
 
+SELECT sparql.hours('14:45:13'::time);
+ hours 
+-------
+    14
+(1 row)
+
 /* MINUTES */
 SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
  minutes 
@@ -3080,6 +3086,12 @@ SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::timestamp);
       45
 (1 row)
 
+SELECT sparql.minutes('14:45:13'::time);
+ minutes 
+---------
+      45
+(1 row)
+
 /* SECONDS */
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
  round  
@@ -3106,6 +3118,12 @@ SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3)
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::timestamp),3);
+ round  
+--------
+ 13.815
+(1 row)
+
+SELECT pg_catalog.round(sparql.seconds('14:45:13.815'::time),3);
  round  
 --------
  13.815

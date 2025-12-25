@@ -3093,8 +3093,14 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.hours(rdfnode)
 RETURNS int AS $$
+DECLARE
+    dt text := sparql.datatype($1)::text;
 BEGIN
-  RETURN EXTRACT(hour FROM sparql.lex($1)::timestamp);
+    IF dt = '<http://www.w3.org/2001/XMLSchema#time>' THEN
+        RETURN EXTRACT(hour FROM sparql.lex($1)::time);
+    ELSE
+        RETURN EXTRACT(hour FROM sparql.lex($1)::timestamp);
+    END IF;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3112,10 +3118,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
+CREATE FUNCTION sparql.hours(time)
+RETURNS int AS $$
+BEGIN
+  RETURN EXTRACT(hour FROM $1);
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+
 CREATE FUNCTION sparql.minutes(rdfnode)
 RETURNS int AS $$
 BEGIN
-  RETURN EXTRACT(minute FROM sparql.lex($1)::timestamp);
+    DECLARE
+        dt text := sparql.datatype($1)::text;
+    BEGIN
+        IF dt = '<http://www.w3.org/2001/XMLSchema#time>' THEN
+            RETURN EXTRACT(minute FROM sparql.lex($1)::time);
+        ELSE
+            RETURN EXTRACT(minute FROM sparql.lex($1)::timestamp);
+        END IF;
+    END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3133,10 +3154,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
+CREATE FUNCTION sparql.minutes(time)
+RETURNS int AS $$
+BEGIN
+  RETURN EXTRACT(minute FROM $1);
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+
 CREATE FUNCTION sparql.seconds(rdfnode)
 RETURNS numeric AS $$
 BEGIN
-  RETURN EXTRACT(second FROM sparql.lex($1)::timestamp);
+    DECLARE
+        dt text := sparql.datatype($1)::text;
+    BEGIN
+        IF dt = '<http://www.w3.org/2001/XMLSchema#time>' THEN
+            RETURN EXTRACT(second FROM sparql.lex($1)::time);
+        ELSE
+            RETURN EXTRACT(second FROM sparql.lex($1)::timestamp);
+        END IF;
+    END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3148,6 +3184,13 @@ END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE FUNCTION sparql.seconds(timestamp)
+RETURNS numeric AS $$
+BEGIN
+  RETURN EXTRACT(second FROM $1);
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+
+CREATE FUNCTION sparql.seconds(time)
 RETURNS numeric AS $$
 BEGIN
   RETURN EXTRACT(second FROM $1);
