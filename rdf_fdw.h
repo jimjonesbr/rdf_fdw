@@ -198,6 +198,7 @@ typedef struct RDFfdwState
 	bool log_sparql;				   /* Enables or disables logging SPARQL queries as NOTICE */
 	bool has_unparsable_conds;		   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
 	bool keep_raw_literal;			   /* Flag to determine if a literal should be serialized with its data type/language or not*/
+	List *remote_conds;				   /* List of RestrictInfo nodes that were successfully pushed down to the remote SPARQL endpoint */
 	long request_max_redirect;		   /* Limit of how many times the URL redirection (jump) may occur. */
 	long connect_timeout;			   /* Timeout for SPARQL queries */
 	long max_retries;				   /* Number of re-try attemtps for failed SPARQL queries */

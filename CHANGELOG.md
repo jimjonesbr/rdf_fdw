@@ -48,6 +48,8 @@ Release date: **YYYY-MM-DD**
 
 * CONCAT function updated to handle literals with conflicting language tags or incompatible datatypes by returning a simple literal (no language tag or datatype). For example, `sparql.concat('"foo"@en', '"bar"@de')` now returns `"foobar"` instead of throwing an error. This change aligns with the behavior of major triple stores like Blazegraph and Virtuoso.
 
+* Fixed a bug where local filters (WHERE clauses) that were pushed down were also being evaluated locally, which was just redundant. Now, only conditions that cannot be pushed down are evaluated locally by PostgreSQL, ensuring correct results for non-pushable foreign tables.
+
 # Release Notes
 ## 2.2.0
 Release date: **2025-12-07**

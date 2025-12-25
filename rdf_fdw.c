@@ -2689,20 +2689,10 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	ListCell *cell;
 
 	elog(DEBUG1, "%s called", __func__);
-
 	foreach (cell, scan_clauses)
 	{
 		Node *node = (Node *)lfirst(cell);
 		elog(DEBUG2, "%s: original scan_clauses nodeTag=%u", __func__, nodeTag(node));
-	}
-
-	scan_clauses = extract_actual_clauses(scan_clauses, false);
-
-	/* Debug extracted scan_clauses */
-	foreach (cell, scan_clauses)
-	{
-		Expr *clause = (Expr *)lfirst(cell);
-		elog(DEBUG2, "%s: extracted expr_clauses clause nodeTag=%u", __func__, nodeTag(clause));
 	}
 
 	InitSession(state, baserel, root);
@@ -2715,23 +2705,54 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	else if (!state->is_sparql_parsable)
 	{
 		state->sparql = state->raw_sparql;
-		elog(DEBUG2, "  %s: SPARQL cannot be fully parsed. The raw SPARQL will be used and all filters will be applied locally.", __func__);
+		elog(DEBUG2, "  %s: SPARQL cannot be fully parsed (is_sparql_parsable=%s). The raw SPARQL will be used and all filters will be applied locally.", __func__, state->is_sparql_parsable ? "true" : "false");
 	}
 	else
 	{
+		elog(DEBUG2, "  %s: SPARQL is parsable, calling CreateSPARQL()", __func__);
 		CreateSPARQL(state, root);
 	}
 
-	fdw_private = SerializePlanData(state);
+	/*
+	 * Now that CreateSPARQL() has run and populated state->remote_conds,
+	 * separate scan clauses into local (not pushed) conditions.
+	 */
+	{
+		List *local_exprs = NIL;
 
-	return make_foreignscan(tlist,
-							scan_clauses,
-							baserel->relid,
-							NIL,		 /* no expressions we will evaluate */
-							fdw_private, /* pass along our start and end */
-							NIL,		 /* no custom tlist; our scan tuple looks like tlist */
-							NIL,		 /* no quals we will recheck */
-							outer_plan);
+		foreach (cell, scan_clauses)
+		{
+			RestrictInfo *ri = lfirst_node(RestrictInfo, cell);
+
+			elog(DEBUG2, "%s: examining condition, remote_conds=%s", __func__,
+				 state->remote_conds ? "NOT_NULL" : "NULL");
+
+			/* If this clause was pushed down, skip it; otherwise evaluate locally */
+			if (state->remote_conds == NULL || !list_member_ptr(state->remote_conds, ri))
+			{
+				local_exprs = lappend(local_exprs, ri->clause);
+				elog(DEBUG2, "%s: added condition to local_exprs", __func__);
+			}
+			else
+			{
+				elog(DEBUG2, "%s: skipped condition (was pushed down)", __func__);
+			}
+		}
+
+		elog(DEBUG2, "%s: %d conditions to evaluate locally (out of %d total)", __func__,
+			 list_length(local_exprs), list_length(scan_clauses));
+
+		fdw_private = SerializePlanData(state);
+
+		return make_foreignscan(tlist,
+								local_exprs, /* quals PostgreSQL evaluates locally */
+								baserel->relid,
+								NIL,		 /* no param expressions */
+								fdw_private, /* pass along our state */
+								NIL,		 /* no custom tlist */
+								NIL,		 /* no recheck quals */
+								outer_plan);
+	}
 }
 
 static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
@@ -2774,10 +2795,11 @@ static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es)
 			if (state->sparql_select && strlen(state->sparql_select) > 0)
 				ExplainPropertyText("Remote Select", state->sparql_select, es);
 
-			if (state->has_unparsable_conds)
-				ExplainPropertyText("Remote Filter", "not pushable", es);
-			else if (state->sparql_filter_expr && strlen(state->sparql_filter_expr) > 0)
+			/* Show pushed-down filter if present, otherwise "not pushable" */
+			if (state->sparql_filter_expr && strlen(state->sparql_filter_expr) > 0)
 				ExplainPropertyText("Remote Filter", state->sparql_filter_expr, es);
+			else if (state->has_unparsable_conds)
+				ExplainPropertyText("Remote Filter", "not pushable", es);
 
 			if (state->sparql_orderby && strlen(state->sparql_orderby) > 0)
 				ExplainPropertyText("Remote Sort Key", state->sparql_orderby, es);
@@ -4475,15 +4497,17 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 * For tables with sparql_update_pattern (used for INSERT/DELETE operations),
 	 * we need to fetch ALL columns because DELETE operations need complete tuples
 	 * to build proper DELETE DATA/WHERE statements.
+	 * However, for SELECT queries, we should only fetch the requested columns.
 	 */
-	if (state->sparql_update_pattern && strlen(state->sparql_update_pattern) > 0)
+	if (state->sparql_update_pattern && strlen(state->sparql_update_pattern) > 0 &&
+		state->sparql_query_type != SPARQL_SELECT)
 	{
-		elog(DEBUG2, "%s: sparql_update_pattern detected - marking all columns as used", __func__);
+		elog(DEBUG2, "%s: sparql_update_pattern detected for non-SELECT operation - marking all columns as used", __func__);
 		for (int i = 0; i < state->numcols; i++)
 		{
 			if (!state->rdfTable->cols[i]->used)
 			{
-				elog(DEBUG2, "%s: marking column '%s' as used for potential DELETE operation",
+				elog(DEBUG2, "%s: marking column '%s' as used for UPDATE/DELETE operation",
 					 __func__, state->rdfTable->cols[i]->name);
 				state->rdfTable->cols[i]->used = true;
 			}
@@ -4521,8 +4545,15 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 	/*
 	 * Try to deparse SQL WHERE conditions, if any, to create SPARQL FILTER expressions
+	 * Only do this for parsable queries - non-parsable queries should evaluate all conditions locally
 	 */
-	state->sparql_filter = DeparseSQLWhereConditions(state, baserel);
+	if (state->is_sparql_parsable)
+		state->sparql_filter = DeparseSQLWhereConditions(state, baserel);
+	else
+	{
+		state->sparql_filter = "";
+		elog(DEBUG2, "%s: skipping WHERE condition parsing for non-parsable query", __func__);
+	}
 
 	/*
 	 * deparse SQL ORDER BY, if any, and convert it to SPARQL
@@ -6486,8 +6517,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				appendStringInfo(&result, "CONCAT(%s)", NameStr(args));
 			else if (strcmp(opername, "replace") == 0)
 				appendStringInfo(&result, "REPLACE(%s)", NameStr(args));
-			else if (strcmp(opername, "regex") == 0)
-				appendStringInfo(&result, "REGEX(%s)", NameStr(args));
 			else if (strcmp(opername, "year") == 0)
 				appendStringInfo(&result, "YEAR(%s)", NameStr(args));
 			else if (strcmp(opername, "month") == 0)
@@ -6688,15 +6717,25 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	initStringInfo(&where_clause);
 	initStringInfo(&filter_expr);
 
+	/* 
+	 * DO NOT initialize remote_conds here! 
+	 * It should remain NULL for non-parsable queries.
+	 * Only initialize when we actually have pushable conditions.
+	 */
+
 	foreach (cell, conditions)
 	{
+		RestrictInfo *ri = (RestrictInfo *)lfirst(cell);
+		
 		/* deparse expression for pushdown */
-		char *where = DeparseExpr(
-			state, baserel,
-			((RestrictInfo *)lfirst(cell))->clause);
+		char *where = DeparseExpr(state, baserel, ri->clause);
 
 		if (where != NULL)
 		{
+			/* Initialize remote_conds list on first pushable condition */
+			if (state->remote_conds == NULL)
+				state->remote_conds = NIL;
+
 			/* append new FILTER clause to query string */
 			appendStringInfo(&where_clause, " FILTER(%s)\n", pstrdup(where));
 
@@ -6704,6 +6743,9 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 				appendStringInfo(&filter_expr, " && (%s)", pstrdup(where));
 			else
 				appendStringInfo(&filter_expr, "((%s)", pstrdup(where));
+
+			/* Track this RestrictInfo as successfully pushed down */
+			state->remote_conds = lappend(state->remote_conds, ri);
 
 			pfree(where);
 		}

@@ -537,23 +537,22 @@ ORDER BY o DESC
 FETCH FIRST 3 ROWS ONLY;
                                  QUERY PLAN                                  
 -----------------------------------------------------------------------------
- Limit (actual time=0.383..0.387 rows=3.00 loops=1)
-   ->  Sort (actual time=0.381..0.382 rows=3.00 loops=1)
+ Limit (actual time=0.072..0.073 rows=3.00 loops=1)
+   ->  Sort (actual time=0.071..0.072 rows=3.00 loops=1)
          Sort Key: o DESC
          Sort Method: quicksort  Memory: 25kB
-         ->  Foreign Scan on ft (actual time=0.201..0.357 rows=3.00 loops=1)
-               Filter: (sparql.isnumeric(o) AND (o > 42))
+         ->  Foreign Scan on ft (actual time=0.039..0.063 rows=3.00 loops=1)
                Foreign Server: wikidata
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 42))
-               Remote Sort Key: DESC (?o)
+               Remote Sort Key:   DESC (?o)
                Remote Limit: LIMIT 3
  Planning:
    Buffers: shared hit=4
- Planning Time: 0.138 ms
- Execution Time: 378.805 ms
-(16 rows)
+ Planning Time: 0.115 ms
+ Execution Time: 182.551 ms
+(15 rows)
 ```
 
 ## [RDF Node Handling](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf-node-handling)
