@@ -1867,26 +1867,6 @@ SELECT sparql.langmatches('en', '*');
 (1 row)
 ```
 
-#### [REGEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#regex)
-
-```sql
-sparql.regex(value rdfnode, pattern rdfnode, flags rdfnode DEFAULT '') → boolean
-```
-
-Checks if the lexical form matches the given regular expression. Implements the SPARQL 1.1 [REGEX()](https://www.w3.org/TR/sparql11-query/#func-regex) function.
-
-* Supported flags: `i` (case-insensitive)
-
-Example:
-
-```sql
-SELECT sparql.regex('"Hello World"', '^hello', 'i');
- regex 
--------
- t
-(1 row)
-```
-
 #### [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
 
 ```sql

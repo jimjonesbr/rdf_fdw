@@ -2804,34 +2804,6 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_langmatches'
 LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.langmatches(rdfnode, rdfnode) IS 'Checks if the language tag matches the given pattern.';
 
-CREATE FUNCTION sparql.regex(rdfnode, rdfnode)
-RETURNS boolean AS $$
-BEGIN
-  IF sparql.lex($2) = '' THEN
-    RETURN FALSE; -- SPARQL: empty pattern matches nothing
-  END IF;
-  RETURN sparql.lex($1) ~ sparql.lex($2);
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT;
-
-
-CREATE FUNCTION sparql.regex(rdfnode, rdfnode, rdfnode)
-RETURNS boolean AS $$
-BEGIN
-  IF sparql.lex($2) = '' THEN
-    RETURN FALSE;
-  END IF;
-  -- Restrict flags to 'i'
-  IF sparql.lex($3) != 'i' THEN
-    RAISE EXCEPTION 'Unsupported REGEX() flag: "%" (only "i" is supported)', sparql.lex($3);
-  END IF;
-  RETURN sparql.lex($1) ~* sparql.lex($2);
-EXCEPTION
-  WHEN invalid_regular_expression THEN
-    RAISE EXCEPTION 'Invalid REGEX() pattern: %', sparql.lex($2);
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT;
-
 CREATE FUNCTION sparql.replace(text, text, text)
 RETURNS rdfnode AS $$
 BEGIN

@@ -62,3 +62,7 @@ BEGIN
   RETURN EXTRACT(second FROM $1);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
+
+/* Drop deprecated functions */
+DROP FUNCTION IF EXISTS sparql.regex(rdfnode, rdfnode);
+DROP FUNCTION IF EXISTS sparql.regex(rdfnode, rdfnode, rdfnode);

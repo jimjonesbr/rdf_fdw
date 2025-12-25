@@ -12,6 +12,10 @@ Release date: **YYYY-MM-DD**
 
 * Batch processing for data modifications: added `batch_size` server option to significantly improve the performance of bulk INSERT, UPDATE, and DELETE operations. Instead of sending one HTTP request per row, multiple operations are now accumulated and sent as a single SPARQL UPDATE request containing multiple semicolon-separated statements. The default `batch_size` is 50, and can be configured per server. For example, inserting 1 million rows with a `batch_size` of 1000 sends only 1000 HTTP requests instead of 1 million, dramatically reducing network overhead and execution time.
 
+### Breaking Changes
+
+* The `sparql.regex` function is no longer available for local evaluation in PostgreSQL, as it turned out that its semantics cannot be reliably reproduced locally. Queries relying on local evaluation of `sparql.regex` will now fail with an error.
+
 ### Bug Fixes
 
 * Fixed critical bug in all date comparison operators (>, >=, <, <=, =, !=) between `rdfnode` and PostgreSQL `date` types. Previously, the code used the wrong macro (`PG_GETARG_INT16`) to retrieve date arguments, causing all local date comparisons to fail or behave unpredictably. Now uses the correct `PG_GETARG_DATEADT` macro and adds robust error handling for non-date values. This ensures correct filtering and pushdown of date conditions, especially for queries like `WHERE col > '1900-01-30'::date`.
