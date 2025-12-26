@@ -183,7 +183,7 @@ Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and
 | Option        | Type        | Description                                                                                                        |
 |---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | `sparql`      | **required**    | The raw SPARQL query to be executed    |
-| `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown. Default `true`  |
+| `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown. Default `false`  |
 | `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. Overrides the `SERVER` option `enable_pushdown` |
 | `update_url`      | optional    | Some triple stores have a different URL for SELECT and update related queries (e.g. Apache Fuseki). If this is the case with your triple store, place the URL in this option. If omitted, the URL one set at `sparql` will be used.    |
 

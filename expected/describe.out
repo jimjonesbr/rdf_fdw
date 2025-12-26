@@ -8,9 +8,6 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql',
 SELECT subject, predicate, object
 FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q123182646>')
 ORDER BY object::text COLLATE "C";
-INFO:  SPARQL query sent to 'wikidata':
-DESCRIBE <http://www.wikidata.org/entity/Q123182646>
-
                                       subject                                      |                   predicate                    |                                             object                                             
 -----------------------------------------------------------------------------------+------------------------------------------------+------------------------------------------------------------------------------------------------
  <http://www.wikidata.org/entity/Q123182646>                                       | <http://wikiba.se/ontology#identifiers>        | "0"^^<http://www.w3.org/2001/XMLSchema#integer>
@@ -54,18 +51,6 @@ WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   object = '"Harold Spencer Jones"@en'
 ORDER BY object::text COLLATE "C";
-INFO:  SPARQL query sent to 'wikidata':
-
-  PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-  PREFIX wd:  <http://www.wikidata.org/entity/>
-  DESCRIBE ?s
-  WHERE { 
-    ?s wdt:P734 wd:Q59853; 
-	   wdt:P19 wd:Q84 ;
-	   schema:description ?d
-    FILTER(STR(?d) = "British astronomer")   
-  }
-
                  subject                  |                  predicate                   |          object           
 ------------------------------------------+----------------------------------------------+---------------------------
  <http://www.wikidata.org/entity/Q520309> | <http://www.w3.org/2000/01/rdf-schema#label> | "Harold Spencer Jones"@en
@@ -75,9 +60,6 @@ SELECT subject, predicate, object
 FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', false)
 WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
 ORDER BY object::text COLLATE "C";
-INFO:  SPARQL query sent to 'wikidata':
-DESCRIBE <http://www.wikidata.org/entity/Q61308849>
-
                   subject                   |                  predicate                   |         object         
 --------------------------------------------+----------------------------------------------+------------------------
  <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/dateModified>             | "2024-05-01T21:36:41Z"
@@ -89,9 +71,6 @@ SELECT subject, predicate, object
 FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true)
 WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
 ORDER BY object::text COLLATE "C";
-INFO:  SPARQL query sent to 'wikidata':
-DESCRIBE <http://www.wikidata.org/entity/Q61308849>
-
                   subject                   |                  predicate                   |                               object                                
 --------------------------------------------+----------------------------------------------+---------------------------------------------------------------------
  <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/dateModified>             | "2024-05-01T21:36:41Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
@@ -107,9 +86,6 @@ FROM sparql.describe(
     raw_literal => false)
 WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
 ORDER BY object::text COLLATE "C";
-INFO:  SPARQL query sent to 'wikidata':
-describe wd:Q471896
-
                  subject                  |                  predicate                   |             object             
 ------------------------------------------+----------------------------------------------+--------------------------------
  <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "A sápadt holdfényben"
@@ -166,9 +142,6 @@ invalid
 SELECT * FROM sparql.describe('wikidata', '   ');
 ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE http://www.wikidata.org/entity/Q61308849'); -- missing < >
-INFO:  SPARQL query sent to 'wikidata':
-DESCRIBE http://www.wikidata.org/entity/Q61308849
-
 ERROR:  Unable to establish connection to 'wikidata' (HTTP status 400)
 -- DESCRIBE pattern with a blank node
 SELECT * FROM sparql.describe('wikidata', '_:bnode1');
@@ -177,15 +150,9 @@ ERROR:  invalid DESCRIBE query:
 _:bnode1
 
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE _:bnode1');
-INFO:  SPARQL query sent to 'wikidata':
-DESCRIBE _:bnode1
-
 ERROR:  Unable to establish connection to 'wikidata' (HTTP status 400)
 -- malformed entity IRI
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE <htt://i.am.malformed>');
-INFO:  SPARQL query sent to 'wikidata':
-DESCRIBE <htt://i.am.malformed>
-
  subject | predicate | object 
 ---------+-----------+--------
 (0 rows)
@@ -205,9 +172,6 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 SELECT subject, predicate, object 
 FROM sparql.describe('dbpedia','dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>') 
 ORDER BY subject::text, object::text COLLATE "C";
-INFO:  SPARQL query sent to 'dbpedia':
-dEsCrIBe <http://dbpedia.org/resource/Alien_Blood>
-
                      subject                      |                     predicate                      |                                 object                                 
 --------------------------------------------------+----------------------------------------------------+------------------------------------------------------------------------
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/runtime>              | "4"^^<http://www.w3.org/2001/XMLSchema#integer>

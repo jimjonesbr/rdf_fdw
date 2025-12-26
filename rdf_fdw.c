@@ -1655,7 +1655,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		 * setting session's default values.
 		 */
 		state->enable_pushdown = true;
-		state->log_sparql = true;
+		state->log_sparql = false;
 		state->has_unparsable_conds = false;
 		state->query_param = RDF_DEFAULT_QUERY_PARAM;
 		state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
@@ -3028,7 +3028,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	state->foreigntableid = RelationGetRelid(rel);
 	state->enable_pushdown = true;
 	state->enable_xml_huge = false;
-	state->log_sparql = true;
+	state->log_sparql = false;
 	state->has_unparsable_conds = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
@@ -4456,7 +4456,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 */
 	state->enable_pushdown = true;
 	state->enable_xml_huge = false;
-	state->log_sparql = true;
+	state->log_sparql = false;
 	state->has_unparsable_conds = false;
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
