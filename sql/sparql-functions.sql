@@ -373,6 +373,8 @@ SELECT sparql.lcase('BAR');
 SELECT sparql.lcase('"BAR"');
 SELECT sparql.lcase('"BAR"@en'), sparql.lcase(sparql.strlang('BAR','en'));
 SELECT sparql.lcase('"BAR"^^xsd:string'), sparql.lcase(sparql.strdt('BAR','xsd:string'));
+SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"');
+SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"^^<http://www.w3.org/2001/XMLSchema#string>');
 SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"@de');
 SELECT sparql.lcase('<http://example.org>');
 SELECT sparql.lcase('_:xyz');
@@ -393,7 +395,9 @@ SELECT sparql.ucase('bar');
 SELECT sparql.ucase('"bar"');
 SELECT sparql.ucase('"bar"@en'), sparql.ucase(sparql.strlang('bar','en'));
 SELECT sparql.ucase('"bar"^^xsd:string'), sparql.ucase(sparql.strdt('bar','xsd:string'));
+SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"');
 SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de');
+SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>');
 SELECT sparql.ucase('<http://example.org>');
 SELECT sparql.ucase('_:xyz');
 SELECT sparql.ucase(sparql.bnode('foo'));
@@ -415,6 +419,8 @@ SELECT sparql.strlen('"chat"^^xsd:string'), sparql.strlen(sparql.strdt('chat','x
 SELECT sparql.strlen('""'), sparql.strlen('');
 SELECT sparql.strlen('" "'), sparql.strlen(' ');
 SELECT sparql.strlen('"łø"'), sparql.strlen('łø');
+SELECT sparql.strlen('"łø"@de'), sparql.strlen(sparql.strlang('łø','de'));
+SELECT sparql.strlen('"łø"@de'), sparql.strlen(sparql.strdt('łø','<http://www.w3.org/2001/XMLSchema#string>'));
 SELECT sparql.strlen(NULL);
 
 /* SUBSTR */
@@ -429,6 +435,8 @@ SELECT sparql.substr('', 42);
 SELECT sparql.substr(NULL, 42);
 SELECT sparql.substr('"foo"', NULL);
 SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de'::rdfnode, 1, 24);
+SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"'::rdfnode, 1, 24);
+SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode, 1, 24);
 
 /* CONCAT */
 SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');
@@ -445,6 +453,8 @@ SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', '"bar"^^xsd:string')
 SELECT sparql.concat('"foo"','"&"', '"bar"');
 SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
 SELECT sparql.concat('"foo"@en','"bar"@de');
+SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"^^<http://www.w3.org/2001/XMLSchema#string>');
+SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"');
 
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
@@ -502,22 +512,6 @@ SELECT sparql.replace('"b"', '""', '"Z"');            -- Empty pattern in replac
 SELECT sparql.replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
 SELECT sparql.replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
 SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
-
-/* REGEX */
-SELECT sparql.regex('"abcd"', '"bc"');
-SELECT sparql.regex('"abcd"', '"xy"');
-SELECT sparql.regex('"abcd"', '"BC"', '"i"');
-SELECT sparql.regex('"abcd"', '"^bc"');
-SELECT sparql.regex('"abcd"', '"^ab"');
-SELECT sparql.regex('"abc\ndef"', '"^def$"', '"m"');
-SELECT sparql.regex('"abc\ndef"', '"c.d"', '"s"');
-SELECT sparql.regex('"abcd"@en', '"bc"');
-SELECT sparql.regex('"123"^^xsd:int', '"23"');
-SELECT sparql.regex('""', '"a"');
-SELECT sparql.regex('""', '"(.*)"');
-SELECT sparql.regex('"abcd"', '""');
-SELECT sparql.regex(NULL, '"a"'), sparql.regex('"abcd"', NULL), sparql.regex('"abcd"', '"a"', NULL);
-SELECT sparql.regex('"abcd"', '"[a"');
 
 /* ABS */
 SELECT sparql.abs('"-1"^^xsd:int');

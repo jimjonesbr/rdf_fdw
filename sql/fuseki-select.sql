@@ -467,16 +467,6 @@ WHERE sparql.langmatches(sparql.lang(object), 'en');
 SELECT * FROM ft
 WHERE sparql.langmatches(sparql.lang(object), 'en-*');
 
-/* SPARQL 17.4.3.14 - REGEX */
-SELECT * FROM ft
-WHERE sparql.regex(sparql.str(object), '^Westfälische', 'i');
-
-SELECT * FROM ft
-WHERE sparql.regex(object, 'münster', 'i');  -- case-insensitive
-
-SELECT * FROM ft
-WHERE sparql.regex(object, '^[A-Z]');  -- starts with uppercase
-
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT * FROM ft
 WHERE sparql.replace(sparql.str(object), 'Westfälische Wilhelms-Universität', 'WWU') = 'WWU Münster';

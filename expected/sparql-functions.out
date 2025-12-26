@@ -1967,6 +1967,18 @@ SELECT sparql.lcase('"BAR"^^xsd:string'), sparql.lcase(sparql.strdt('BAR','xsd:s
  "bar"^^<http://www.w3.org/2001/XMLSchema#string> | "bar"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
+SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"');
+           lcase            
+----------------------------
+ "łóòáàâæäéèêíìîóòøôöúùûüþ"
+(1 row)
+
+SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"^^<http://www.w3.org/2001/XMLSchema#string>');
+                                 lcase                                 
+-----------------------------------------------------------------------
+ "łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
 SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"@de');
              lcase             
 -------------------------------
@@ -2056,10 +2068,22 @@ SELECT sparql.ucase('"bar"^^xsd:string'), sparql.ucase(sparql.strdt('bar','xsd:s
  "BAR"^^<http://www.w3.org/2001/XMLSchema#string> | "BAR"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
+SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"');
+           ucase            
+----------------------------
+ "ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"
+(1 row)
+
 SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de');
              ucase             
 -------------------------------
  "ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"@de
+(1 row)
+
+SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>');
+                                 ucase                                 
+-----------------------------------------------------------------------
+ "ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 SELECT sparql.ucase('<http://example.org>');
@@ -2157,6 +2181,18 @@ SELECT sparql.strlen('"łø"'), sparql.strlen('łø');
       2 |      2
 (1 row)
 
+SELECT sparql.strlen('"łø"@de'), sparql.strlen(sparql.strlang('łø','de'));
+ strlen | strlen 
+--------+--------
+      2 |      2
+(1 row)
+
+SELECT sparql.strlen('"łø"@de'), sparql.strlen(sparql.strdt('łø','<http://www.w3.org/2001/XMLSchema#string>'));
+ strlen | strlen 
+--------+--------
+      2 |      2
+(1 row)
+
 SELECT sparql.strlen(NULL);
  strlen 
 --------
@@ -2228,6 +2264,18 @@ SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de'::rd
             substr             
 -------------------------------
  "łóòáàâæäéèêíìîóòøôöúùûüþ"@de
+(1 row)
+
+SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"'::rdfnode, 1, 24);
+           substr           
+----------------------------
+ "łóòáàâæäéèêíìîóòøôöúùûüþ"
+(1 row)
+
+SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode, 1, 24);
+                                substr                                 
+-----------------------------------------------------------------------
+ "łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 /* CONCAT */
@@ -2310,6 +2358,18 @@ SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
 (1 row)
 
 SELECT sparql.concat('"foo"@en','"bar"@de');
+  concat  
+----------
+ "foobar"
+(1 row)
+
+SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"^^<http://www.w3.org/2001/XMLSchema#string>');
+  concat  
+----------
+ "foobar"
+(1 row)
+
+SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"');
   concat  
 ----------
  "foobar"
@@ -2618,79 +2678,6 @@ SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
  "Zcd"
 (1 row)
 
-/* REGEX */
-SELECT sparql.regex('"abcd"', '"bc"');
- regex 
--------
- t
-(1 row)
-
-SELECT sparql.regex('"abcd"', '"xy"');
- regex 
--------
- f
-(1 row)
-
-SELECT sparql.regex('"abcd"', '"BC"', '"i"');
- regex 
--------
- t
-(1 row)
-
-SELECT sparql.regex('"abcd"', '"^bc"');
- regex 
--------
- f
-(1 row)
-
-SELECT sparql.regex('"abcd"', '"^ab"');
- regex 
--------
- t
-(1 row)
-
-SELECT sparql.regex('"abc\ndef"', '"^def$"', '"m"');
-ERROR:  Unsupported REGEX() flag: "m" (only "i" is supported)
-SELECT sparql.regex('"abc\ndef"', '"c.d"', '"s"');
-ERROR:  Unsupported REGEX() flag: "s" (only "i" is supported)
-SELECT sparql.regex('"abcd"@en', '"bc"');
- regex 
--------
- t
-(1 row)
-
-SELECT sparql.regex('"123"^^xsd:int', '"23"');
- regex 
--------
- t
-(1 row)
-
-SELECT sparql.regex('""', '"a"');
- regex 
--------
- f
-(1 row)
-
-SELECT sparql.regex('""', '"(.*)"');
- regex 
--------
- t
-(1 row)
-
-SELECT sparql.regex('"abcd"', '""');
- regex 
--------
- f
-(1 row)
-
-SELECT sparql.regex(NULL, '"a"'), sparql.regex('"abcd"', NULL), sparql.regex('"abcd"', '"a"', NULL);
- regex | regex | regex 
--------+-------+-------
- NULL  | NULL  | NULL
-(1 row)
-
-SELECT sparql.regex('"abcd"', '"[a"');
-ERROR:  invalid regular expression: brackets [] not balanced
 /* ABS */
 SELECT sparql.abs('"-1"^^xsd:int');
                      abs                     

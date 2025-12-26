@@ -510,13 +510,7 @@ WHERE sparql.langmatches(sparql.lang(o),'fr')
 ORDER BY p, o;
 
 /* SPARQL 17.4.3.14 - REGEX */
-SELECT p, o
-FROM rdbms
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'it') AND
-  sparql.regex(o, sparql.ucase('postgres'), 'i') AND 
-  sparql.regex(o, '^pOs','i') ;
+-- Not supported
 
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT p, o, sparql.replace(o,'Postgre','My'), sparql.replace(o,'"Postgre"@fr',''), sparql.replace(o,'Postgre','My') = sparql.replace(sparql.strlang('PostgreSQL','fr'),'Postgre','My')

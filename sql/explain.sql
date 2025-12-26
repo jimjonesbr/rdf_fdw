@@ -37,6 +37,22 @@ WHERE sparql.isnumeric(o) AND o > 100 OR p IS NOT NULL -- non-pushable condition
 ORDER BY o DESC
 LIMIT 3;
 
+EXPLAIN
+SELECT * FROM ft
+WHERE
+  sparql.isnumeric(o) AND -- pushable condition
+  o::text LIKE '%foo%'    -- non-pushable condition
+ORDER BY o DESC
+LIMIT 3;
+
+EXPLAIN
+SELECT * FROM ft
+WHERE
+  p::text ILIKE '%foo%' AND -- non-pushable condition
+  o::text LIKE '%bar%'      -- non-pushable condition
+ORDER BY o DESC
+LIMIT 3;
+
 /* EXPLAIN (VERBOSE) */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM ft;
@@ -67,6 +83,22 @@ EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o, sparql.sum(o) FROM ft
 WHERE sparql.isnumeric(o) AND o > 100 OR p IS NOT NULL -- non-pushable condition
 GROUP BY p, o
+ORDER BY o DESC
+LIMIT 3;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT * FROM ft
+WHERE
+  sparql.isnumeric(o) AND -- pushable condition
+  o::text LIKE '%foo%'    -- non-pushable condition
+ORDER BY o DESC
+LIMIT 3;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT * FROM ft
+WHERE
+  p::text ILIKE '%foo%' AND -- non-pushable condition
+  o::text LIKE '%bar%'      -- non-pushable condition
 ORDER BY o DESC
 LIMIT 3;
 

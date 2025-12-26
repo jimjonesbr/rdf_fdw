@@ -1444,29 +1444,7 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 /* SPARQL 17.4.3.14 - REGEX */
-SELECT p, o
-FROM hbf
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.regex(o, sparql.ucase('leipzig'), 'i') AND 
-  sparql.regex(o, '^lEi','i') ;
-INFO:  SPARQL query sent to 'linkedgeodata':
-
-SELECT ?p ?o 
-{<http://linkedgeodata.org/triplify/node376142577> ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(REGEX(?o, "LEIPZIG", "i"))
- FILTER(REGEX(?o, "^lEi", "i"))
-}
-
-INFO:  SPARQL returned 1 record.
-
-                      p                       |       o       
-----------------------------------------------+---------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "Leipzig Hbf"
-(1 row)
-
+-- Not supported
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT p, o, sparql.replace(o,'Leipzig','Münster'), sparql.replace(o,'"Gare"@fr','')
 FROM hbf

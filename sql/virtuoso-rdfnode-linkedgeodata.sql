@@ -487,12 +487,7 @@ FROM hbf
 WHERE sparql.langmatches(sparql.lang(o),'fr');
 
 /* SPARQL 17.4.3.14 - REGEX */
-SELECT p, o
-FROM hbf
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.regex(o, sparql.ucase('leipzig'), 'i') AND 
-  sparql.regex(o, '^lEi','i') ;
+-- Not supported
 
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT p, o, sparql.replace(o,'Leipzig','Münster'), sparql.replace(o,'"Gare"@fr','')

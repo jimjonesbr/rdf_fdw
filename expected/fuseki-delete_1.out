@@ -406,7 +406,7 @@ LINE 2: RETURNING OLD.subject, OLD.predicate, OLD.object;
 SELECT count(*) FROM ft;
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT  * 
 {?s ?p ?o}
 
 INFO:  SPARQL returned 5 records.
@@ -435,7 +435,7 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 SELECT count(*) FROM ft;
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT  * 
 {?s ?p ?o}
 
 INFO:  SPARQL returned 0 records.

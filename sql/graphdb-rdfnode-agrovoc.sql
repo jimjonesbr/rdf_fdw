@@ -505,13 +505,7 @@ FROM country
 WHERE sparql.langmatches(sparql.lang(o),'fr');
 
 /* SPARQL 17.4.3.14 - REGEX */
-SELECT p, o
-FROM country
-WHERE 
-  p = '<http://www.w3.org/2004/02/skos/core#prefLabel>' AND
-  sparql.langmatches(sparql.lang(o),'en') AND
-  sparql.regex(o, sparql.ucase('isle'), 'i') AND 
-  sparql.regex(o, '^iSl','i');
+-- Not supported
 
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT p, o, sparql.replace(o,'Isla','La Isla'), sparql.replace(o,'"Isla"@fr','La Isla')

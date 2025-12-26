@@ -196,11 +196,11 @@ FROM ft
 ORDER BY predicate;
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT DISTINCT ?s ?p ?o 
+SELECT DISTINCT ?p 
 {?s ?p ?o}
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 18 records.
 
                      predicate                     
 ---------------------------------------------------
@@ -229,7 +229,7 @@ FROM ft
 WHERE sparql.lang(object) = 'de';
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT DISTINCT ?s ?p ?o 
+SELECT DISTINCT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) = "de")
@@ -450,14 +450,14 @@ FROM ft
 WHERE subject = sparql.iri('https://www.uni-muenster.de');
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT DISTINCT ?s ?p ?o 
+SELECT DISTINCT ?s 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 ORDER BY  ASC (?s)
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 1 record.
 
             subject            
 -------------------------------
@@ -2090,7 +2090,7 @@ WHERE
   sparql.concat(object, ', ', 'after concat'::rdfnode) = '"unknown literal type, after concat"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>';
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#comment>)
@@ -2130,7 +2130,7 @@ WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>';
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#comment>)
@@ -2209,65 +2209,6 @@ INFO:  SPARQL returned 2 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-US
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univêrsity of Münsta"@en-GB
 (2 rows)
-
-/* SPARQL 17.4.3.14 - REGEX */
-SELECT * FROM ft
-WHERE sparql.regex(sparql.str(object), '^Westfälische', 'i');
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(REGEX(STR(?o), "^Westfälische", "i"))
-}
-
-INFO:  SPARQL returned 1 record.
-
-            subject            |             predicate              |                     object                     
--------------------------------+------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
-(1 row)
-
-SELECT * FROM ft
-WHERE sparql.regex(object, 'münster', 'i');  -- case-insensitive
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(REGEX(?o, "münster", "i"))
-}
-
-INFO:  SPARQL returned 3 records.
-
-            subject            |             predicate              |                     object                     
--------------------------------+------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-US
-(3 rows)
-
-SELECT * FROM ft
-WHERE sparql.regex(object, '^[A-Z]');  -- starts with uppercase
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(REGEX(?o, "^[A-Z]"))
-}
-
-INFO:  SPARQL returned 6 records.
-
-            subject            |                   predicate                    |                     object                     
--------------------------------+------------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>             | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>             | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>             | "Univerrrsity of Münsterrr"@en-US
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>             | "Univêrsity of Münsta"@en-GB
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>           | "Johannes Wessels"
-(6 rows)
 
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT * FROM ft
@@ -2543,7 +2484,7 @@ FROM ft
 WHERE sparql.isnumeric(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISNUMERIC(?o))
@@ -2562,7 +2503,7 @@ FROM ft
 WHERE sparql.isnumeric(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISNUMERIC(?o))
@@ -2581,7 +2522,7 @@ FROM ft
 WHERE sparql.isnumeric(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISNUMERIC(?o))
@@ -2600,7 +2541,7 @@ FROM ft
 WHERE sparql.isnumeric(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISNUMERIC(?o))
@@ -2619,7 +2560,7 @@ FROM ft
 WHERE sparql.isliteral(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISLITERAL(?o))
@@ -2639,7 +2580,7 @@ FROM ft
 WHERE sparql.isliteral(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISLITERAL(?o))
@@ -2660,7 +2601,7 @@ FROM ft
 WHERE sparql.isliteral(object);
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p ?o 
+SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISLITERAL(?o))

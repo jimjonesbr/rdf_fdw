@@ -1536,31 +1536,7 @@ INFO:  SPARQL returned 3 records.
 (3 rows)
 
 /* SPARQL 17.4.3.14 - REGEX */
-SELECT p, o
-FROM rdbms
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o),'it') AND
-  sparql.regex(o, sparql.ucase('postgres'), 'i') AND 
-  sparql.regex(o, '^pOs','i') ;
-INFO:  SPARQL query sent to 'wikidata':
-
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LANGMATCHES(LANG(?o), "it"))
- FILTER(REGEX(?o, "POSTGRES", "i"))
- FILTER(REGEX(?o, "^pOs", "i"))
-}
-
-INFO:  SPARQL returned 1 record.
-
-                      p                       |        o        
-----------------------------------------------+-----------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it
-(1 row)
-
+-- Not supported
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT p, o, sparql.replace(o,'Postgre','My'), sparql.replace(o,'"Postgre"@fr',''), sparql.replace(o,'Postgre','My') = sparql.replace(sparql.strlang('PostgreSQL','fr'),'Postgre','My')
 FROM rdbms
