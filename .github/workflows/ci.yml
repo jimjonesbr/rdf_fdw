@@ -5,11 +5,13 @@ on:
       - '*.md'
       - '*.json'
       - 'examples/*'
+      - 'scripts/*'
   pull_request:
     paths-ignore:
       - '*.md'
       - '*.json'
       - 'examples/*'
+      - 'scripts/*'
 jobs:
   test:
     strategy:
