@@ -847,23 +847,130 @@ bool is_valid_xsd_int(const char *lexical)
 
 bool is_valid_xsd_dateTime(const char *lexical)
 {
-	regex_t regex;
-	int reti;
-	bool is_valid = false;
-	const char *pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?$";
+	const char *p = lexical;
+	int i;
 
-	reti = regcomp(&regex, pattern, REG_EXTENDED);
+	if (!lexical)
+		return false;
 
-	if (reti)
-		ereport(ERROR, (errmsg("could not compile regex for xsd:dateTime")));
+	/* Parse year (4 digits) */
+	for (i = 0; i < 4; i++)
+	{
+		if (!isdigit((unsigned char)*p))
+			return false;
+		p++;
+	}
 
-	reti = regexec(&regex, lexical, 0, NULL, 0);
+	/* Expect '-' */
+	if (*p != '-')
+		return false;
+	p++;
 
-	if (reti == 0)
-		is_valid = true;
+	/* Parse month (2 digits) */
+	for (i = 0; i < 2; i++)
+	{
+		if (!isdigit((unsigned char)*p))
+			return false;
+		p++;
+	}
 
-	regfree(&regex);
-	return is_valid;
+	/* Expect '-' */
+	if (*p != '-')
+		return false;
+	p++;
+
+	/* Parse day (2 digits) */
+	for (i = 0; i < 2; i++)
+	{
+		if (!isdigit((unsigned char)*p))
+			return false;
+		p++;
+	}
+
+	/* Expect 'T' */
+	if (*p != 'T')
+		return false;
+	p++;
+
+	/* Parse hour (2 digits) */
+	for (i = 0; i < 2; i++)
+	{
+		if (!isdigit((unsigned char)*p))
+			return false;
+		p++;
+	}
+
+	/* Expect ':' */
+	if (*p != ':')
+		return false;
+	p++;
+
+	/* Parse minute (2 digits) */
+	for (i = 0; i < 2; i++)
+	{
+		if (!isdigit((unsigned char)*p))
+			return false;
+		p++;
+	}
+
+	/* Expect ':' */
+	if (*p != ':')
+		return false;
+	p++;
+
+	/* Parse second (2 digits) */
+	for (i = 0; i < 2; i++)
+	{
+		if (!isdigit((unsigned char)*p))
+			return false;
+		p++;
+	}
+
+	/* Optional: fractional seconds */
+	if (*p == '.')
+	{
+		p++;
+		/* Must have at least one digit after decimal point */
+		if (!isdigit((unsigned char)*p))
+			return false;
+		/* Continue reading all fractional digits */
+		while (isdigit((unsigned char)*p))
+			p++;
+	}
+
+	/* Optional: timezone */
+	if (*p == 'Z')
+	{
+		p++;
+	}
+	else if (*p == '+' || *p == '-')
+	{
+		p++;
+		/* Timezone hour (2 digits) */
+		for (i = 0; i < 2; i++)
+		{
+			if (!isdigit((unsigned char)*p))
+				return false;
+			p++;
+		}
+		/* Expect ':' */
+		if (*p != ':')
+			return false;
+		p++;
+		/* Timezone minute (2 digits) */
+		for (i = 0; i < 2; i++)
+		{
+			if (!isdigit((unsigned char)*p))
+				return false;
+			p++;
+		}
+	}
+
+	/* Must be at end of string */
+	if (*p != '\0')
+		return false;
+
+	return true;
 }
 
 bool is_valid_xsd_time(const char *lexical)

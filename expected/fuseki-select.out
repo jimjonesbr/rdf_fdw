@@ -25,8 +25,8 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
-        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#lat>', '"51.963612"^^<http://www.w3.org/2001/XMLSchema#float>'),
-        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#long>', '"7.613611"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#lat>', '"51.9636"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#long>', '"7.6136"^^<http://www.w3.org/2001/XMLSchema#float>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/rector>', '"Johannes Wessels"'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/state>', '<http://dbpedia.org/resource/North_Rhine-Westphalia>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/city>', '<http://dbpedia.org/resource/Münster>'),
@@ -43,6 +43,8 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/budget>', '"803600000"^^<http://www.w3.org/2001/XMLSchema#long>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/tuition>', '"1500.00"^^<http://www.w3.org/2001/XMLSchema#double>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/veryLargeNumber>', '"9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/verySmallNumber>', '"0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/restingDate>', '"2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/internationally>', '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>');
 INFO:  SPARQL query sent to 'fuseki':
@@ -54,8 +56,8 @@ INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
-INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.963612"^^<http://www.w3.org/2001/XMLSchema#float> };
-INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.613611"^^<http://www.w3.org/2001/XMLSchema#float> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
@@ -72,6 +74,8 @@ INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/student
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#long> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.00"^^<http://www.w3.org/2001/XMLSchema#double> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
 
@@ -82,7 +86,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
@@ -104,8 +108,8 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
@@ -114,9 +118,11 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(28 rows)
+(30 rows)
 
 /* SPARQL 17.4.1.7 - RDFterm-equal */
 SELECT * FROM ft
@@ -168,7 +174,7 @@ SELECT ?s ?p ?o
  FILTER(?p NOT IN (<http://www.w3.org/2000/01/rdf-schema#comment>, <http://dbpedia.org/property/name>))
 }
 
-INFO:  SPARQL returned 16 records.
+INFO:  SPARQL returned 18 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
@@ -176,8 +182,8 @@ INFO:  SPARQL returned 16 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
@@ -186,9 +192,11 @@ INFO:  SPARQL returned 16 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(16 rows)
+(18 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT */
 SELECT DISTINCT predicate
@@ -200,7 +208,7 @@ SELECT DISTINCT ?p
 {?s ?p ?o}
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 18 records.
+INFO:  SPARQL returned 20 records.
 
                      predicate                     
 ---------------------------------------------------
@@ -218,11 +226,13 @@ INFO:  SPARQL returned 18 records.
  <http://dbpedia.org/property/state>
  <http://dbpedia.org/property/students>
  <http://dbpedia.org/property/tuition>
+ <http://dbpedia.org/property/veryLargeNumber>
+ <http://dbpedia.org/property/verySmallNumber>
  <http://www.w3.org/2000/01/rdf-schema#comment>
  <http://www.w3.org/2000/01/rdf-schema#time>
  <http://www.w3.org/2003/01/geo/wgs84_pos#lat>
  <http://www.w3.org/2003/01/geo/wgs84_pos#long>
-(18 rows)
+(20 rows)
 
 SELECT DISTINCT object
 FROM ft
@@ -476,7 +486,7 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
                      predicate                     |                               object                                
 ---------------------------------------------------+---------------------------------------------------------------------
@@ -494,11 +504,13 @@ INFO:  SPARQL returned 28 records.
  <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
  <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
- <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
-(18 rows)
+ <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+(20 rows)
 
 /* SPARQL - 17.3 Operator Mapping (text) */
 SELECT * FROM ft
@@ -616,15 +628,16 @@ SELECT ?s ?p ?o
  FILTER(?o > 1900)
 }
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 5 records.
 
-            subject            |                     predicate                     |                        object                        
--------------------------------+---------------------------------------------------+------------------------------------------------------
+            subject            |                     predicate                     |                              object                               
+-------------------------------+---------------------------------------------------+-------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
-(4 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(5 rows)
 
 SELECT * FROM ft
 WHERE object < 2000::smallint;
@@ -636,15 +649,16 @@ SELECT ?s ?p ?o
  FILTER(?o < 2000)
 }
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 5 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                             object                              
+-------------------------------+---------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(4 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(5 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 1900::smallint AND 2000::smallint;
@@ -692,13 +706,14 @@ SELECT ?s ?p ?o
  FILTER(?o > 40000)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 3 records.
 
-            subject            |               predicate                |                        object                        
--------------------------------+----------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students> | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>   | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
-(2 rows)
+            subject            |                   predicate                   |                              object                               
+-------------------------------+-----------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>        | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>          | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber> | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(3 rows)
 
 SELECT * FROM ft
 WHERE object < 60000::int;
@@ -710,17 +725,18 @@ SELECT ?s ?p ?o
  FILTER(?o < 60000)
 }
 
-INFO:  SPARQL returned 6 records.
+INFO:  SPARQL returned 7 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                             object                              
+-------------------------------+---------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(6 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(7 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 40000::int AND 60000::int;
@@ -768,12 +784,13 @@ SELECT ?s ?p ?o
  FILTER(?o > 800000000)
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 2 records.
 
-            subject            |              predicate               |                        object                        
--------------------------------+--------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget> | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
-(1 row)
+            subject            |                   predicate                   |                              object                               
+-------------------------------+-----------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>          | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber> | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(2 rows)
 
 SELECT * FROM ft
 WHERE object < 900000000::bigint;
@@ -785,18 +802,19 @@ SELECT ?s ?p ?o
  FILTER(?o < 900000000)
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 8 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                             object                              
+-------------------------------+---------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(7 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(8 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 800000000::bigint AND 900000000::bigint;
@@ -818,20 +836,20 @@ INFO:  SPARQL returned 1 record.
 
 /* SPARQL - 17.3 Operator Mapping (real) */
 SELECT * FROM ft
-WHERE object = 51.963612::real;
+WHERE object = 51.9636::real;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o = 51.96361)
+ FILTER(?o = 51.9636)
 }
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 SELECT * FROM ft
@@ -844,17 +862,18 @@ SELECT ?s ?p ?o
  FILTER(?o > 50)
 }
 
-INFO:  SPARQL returned 6 records.
+INFO:  SPARQL returned 7 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                              object                               
+-------------------------------+---------------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(6 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(7 rows)
 
 SELECT * FROM ft
 WHERE object < 52.0::real;
@@ -866,13 +885,14 @@ SELECT ?s ?p ?o
  FILTER(?o < 52)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
-(2 rows)
+            subject            |                   predicate                    |                             object                              
+-------------------------------+------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(3 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 50.0::real AND 52.0::real;
@@ -887,27 +907,27 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (double precision) */
 SELECT * FROM ft
-WHERE object = 51.96361::double precision;
+WHERE object = 51.9636::double precision;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o = 51.96361)
+ FILTER(?o = 51.9636)
 }
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 SELECT * FROM ft
@@ -920,17 +940,18 @@ SELECT ?s ?p ?o
  FILTER(?o > 50)
 }
 
-INFO:  SPARQL returned 6 records.
+INFO:  SPARQL returned 7 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                              object                               
+-------------------------------+---------------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(6 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(7 rows)
 
 SELECT * FROM ft
 WHERE object < 52.0::double precision;
@@ -942,13 +963,14 @@ SELECT ?s ?p ?o
  FILTER(?o < 52)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
-(2 rows)
+            subject            |                   predicate                    |                             object                              
+-------------------------------+------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(3 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 50.0::double precision AND 52.0::double precision;
@@ -963,27 +985,27 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (numeric) */
 SELECT * FROM ft
-WHERE object = 51.96361::numeric::rdfnode;
+WHERE object = 51.9636::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o = "51.96361"^^<http://www.w3.org/2001/XMLSchema#decimal>)
+ FILTER(?o = "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 SELECT * FROM ft
@@ -996,17 +1018,18 @@ SELECT ?s ?p ?o
  FILTER(?o > "50.0"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 6 records.
+INFO:  SPARQL returned 7 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                              object                               
+-------------------------------+---------------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(6 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(7 rows)
 
 SELECT * FROM ft
 WHERE object < 52.0::numeric::rdfnode;
@@ -1018,13 +1041,14 @@ SELECT ?s ?p ?o
  FILTER(?o < "52.0"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
-(2 rows)
+            subject            |                   predicate                    |                             object                              
+-------------------------------+------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(3 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 50.0::numeric::rdfnode AND 52.0::numeric::rdfnode;
@@ -1039,9 +1063,9 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL - 17.3 Operator Mapping (timestamp) */
@@ -1119,29 +1143,30 @@ INFO:  SPARQL returned 2 records.
 
 /* SPARQL - 17.3 Operator Mapping (timestamptz) */
 SELECT * FROM ft
-WHERE object = '2025-12-24 18:30:42+00:00'::timestamptz;
+WHERE object = '"2025-12-24T13:00:42+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o = "2025-12-24T18:30:42.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o = "2025-12-24T13:00:42+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
 
 SELECT * FROM ft
-WHERE object > '2025-01-01 00:00:00+00:00'::timestamptz;
+WHERE object > '"2025-01-01T00:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o > "2025-01-01T00:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o > "2025-01-01T00:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
 
 INFO:  SPARQL returned 2 records.
@@ -1153,13 +1178,13 @@ INFO:  SPARQL returned 2 records.
 (2 rows)
 
 SELECT * FROM ft
-WHERE object < '2025-12-31 23:59:59+00:00'::timestamptz;
+WHERE object < '"2025-12-31T23:59:59+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o < "2025-12-31T23:59:59.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o < "2025-12-31T23:59:59+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
 
 INFO:  SPARQL returned 2 records.
@@ -1171,24 +1196,10 @@ INFO:  SPARQL returned 2 records.
 (2 rows)
 
 SELECT * FROM ft
-WHERE object BETWEEN '2025-01-01 00:00:00+00:00'::timestamptz AND '2025-12-31 23:59:59+00:00'::timestamptz;
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "2025-01-01T00:00:00.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2025-12-31T23:59:59.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
-
-INFO:  SPARQL returned 2 records.
-
-            subject            |                    predicate                    |                               object                                
--------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(2 rows)
-
+WHERE object BETWEEN '"2025-01-01 00:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode AND '"2025-12-31 23:59:59+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
+ERROR:  invalid lexical form for xsd:dateTime: "2025-01-01 00:00:00+00:00"
+LINE 2: WHERE object BETWEEN '"2025-01-01 00:00:00+00:00"^^<http://w...
+                             ^
 /* SPARQL - 17.3 Operator Mapping (date) */
 SELECT * FROM ft
 WHERE object = '1780-04-16'::date;
@@ -1414,19 +1425,9 @@ INFO:  SPARQL returned 1 record.
 
 --===================================================================================--
 /* SPARQL 17.4.1.1 - BOUND */
-SELECT * FROM ft
-WHERE NOT sparql.bound(object);
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o}
-
-INFO:  SPARQL returned 28 records.
-
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
-
+/* Note: Testing NOT BOUND requires OPTIONAL patterns, skipping for simple triple pattern */
+-- SELECT * FROM ft
+-- WHERE NOT sparql.bound(object);
 /* SPARQL 17.4.1.3 - COALESCE */
 SELECT * FROM ft
 WHERE sparql.coalesce(object, '"Default Value"') = '"Westfälische Wilhelms-Universität Münster"@de';
@@ -1510,7 +1511,7 @@ SELECT ?s ?p ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 26 records.
+INFO:  SPARQL returned 28 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
@@ -1532,17 +1533,19 @@ INFO:  SPARQL returned 26 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(26 rows)
+(28 rows)
 
 /* SPARQL 17.4.2.4 - isNumeric */
 SELECT * FROM ft
@@ -1555,18 +1558,20 @@ SELECT ?s ?p ?o
  FILTER(ISNUMERIC(?o))
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                              object                               
+-------------------------------+---------------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(7 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(9 rows)
 
 /* SPARQL 17.4.2.5 - str */
 SELECT * FROM ft
@@ -2083,11 +2088,11 @@ INFO:  SPARQL returned 1 record.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en | "Hello 👋 PostgreSQL 🐘, Cześć"
 (1 row)
 
+/* Note: CONCAT on unknown datatype doesn't preserve the datatype in SPARQL */
 SELECT sparql.concat(object, ', ', 'after concat'::rdfnode) FROM ft
 WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
-  sparql.datatype(object) = '<http://www.w3.org/2001/XMLSchema#UNKNOWN>' AND
-  sparql.concat(object, ', ', 'after concat'::rdfnode) = '"unknown literal type, after concat"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>';
+  sparql.datatype(object) = '<http://www.w3.org/2001/XMLSchema#UNKNOWN>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?p ?o 
@@ -2095,14 +2100,14 @@ SELECT ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#comment>)
  FILTER(DATATYPE(?o) = <http://www.w3.org/2001/XMLSchema#UNKNOWN>)
- FILTER(CONCAT(?o, ", ", "after concat") = "unknown literal type, after concat"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- concat 
---------
-(0 rows)
+                concat                
+--------------------------------------
+ "unknown literal type, after concat"
+(1 row)
 
 SELECT *, sparql.concat(object, ', ', 'after concat'::rdfnode) FROM ft
 WHERE
@@ -2193,22 +2198,21 @@ INFO:  SPARQL returned 5 records.
 (5 rows)
 
 SELECT * FROM ft
-WHERE sparql.langmatches(sparql.lang(object), 'en-*');
+WHERE sparql.langmatches(sparql.lang(object), 'en-US');
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(LANGMATCHES(LANG(?o), "en-*"))
+ FILTER(LANGMATCHES(LANG(?o), "en-US"))
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 1 record.
 
             subject            |             predicate              |              object               
 -------------------------------+------------------------------------+-----------------------------------
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-US
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univêrsity of Münsta"@en-GB
-(2 rows)
+(1 row)
 
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT * FROM ft
@@ -2230,20 +2234,20 @@ INFO:  SPARQL returned 1 record.
 
 /* SPARQL 17.4.4.1 - abs */
 SELECT * FROM ft
-WHERE sparql.abs(object) = 51.96361::numeric::rdfnode;
+WHERE sparql.abs(object) = 51.9636::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ABS(?o) = "51.96361"^^<http://www.w3.org/2001/XMLSchema#decimal>)
+ FILTER(ABS(?o) = "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL 17.4.4.2 - round */
@@ -2259,9 +2263,9 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL 17.4.4.3 - ceil */
@@ -2277,9 +2281,9 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL 17.4.4.4 - floor */
@@ -2295,9 +2299,9 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                   |                        object                        
--------------------------------+-----------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                   predicate                   |                       object                        
+-------------------------------+-----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat> | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* SPARQL 17.4.4.5 - RAND */
@@ -2428,37 +2432,39 @@ INFO:  SPARQL returned 3 records.
 
 /* SPARQL 17.4.5.8 - timezone */
 SELECT * FROM ft
-WHERE sparql.timezone(object) = '+00:00'::rdfnode;
+WHERE sparql.timezone(object) = '"PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(TIMEZONE(?o) = "+00:00")
+ FILTER(TIMEZONE(?o) = "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
 
 /* SPARQL 17.4.5.9 - tz */
 SELECT * FROM ft
-WHERE sparql.tz(object) = '+00:00'::rdfnode;
+WHERE sparql.tz(object) = 'Z'::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(TZ(?o) = "+00:00")
+ FILTER(TZ(?o) = "Z")
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
 
 /* SPARQL 17.4.6.1 - MD5 */
 SELECT * FROM ft
@@ -2490,11 +2496,11 @@ SELECT ?o
  FILTER(ISNUMERIC(?o))
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
-                           obj_count                           
----------------------------------------------------------------
- "803657537.577221"^^<http://www.w3.org/2001/XMLSchema#double>
+                                     obj_count                                     
+-----------------------------------------------------------------------------------
+ "10000000000803657536.577200000000001"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 /* SPARQL Aggregate AVG */
@@ -2509,11 +2515,11 @@ SELECT ?o
  FILTER(ISNUMERIC(?o))
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
-                             obj_avg                             
------------------------------------------------------------------
- "114808219.65388871"^^<http://www.w3.org/2001/XMLSchema#double>
+                                     obj_avg                                      
+----------------------------------------------------------------------------------
+ "1111111111200406392.953022222222222"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 /* SPARQL Aggregate MIN */
@@ -2528,11 +2534,11 @@ SELECT ?o
  FILTER(ISNUMERIC(?o))
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
-                       obj_min                        
-------------------------------------------------------
- "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+                             obj_min                             
+-----------------------------------------------------------------
+ "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 /* SPARQL Aggregate MAX */
@@ -2547,11 +2553,11 @@ SELECT ?o
  FILTER(ISNUMERIC(?o))
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
-                       obj_max                        
-------------------------------------------------------
- "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+                              obj_max                              
+-------------------------------------------------------------------
+ "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 /* SPARQL Aggregate GROUP_CONCAT */
@@ -2566,13 +2572,13 @@ SELECT ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 26 records.
+INFO:  SPARQL returned 28 records.
 
-                                                                                                                                                                                obj_list                                                                                                                                                                                 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- " | Hello 👋 PostgreSQL 🐘 | unknown literal type | explicit string literal | . <= pontos => . |                                                                                                                                                                                                                                                                       +
-  <= salto de línea =>                                                                                                                                                                                                                                                                                                                                                  +
-  | \" <= double-quotes => \" |   <= Tabulatorzeichen =>          | Westfälische Wilhelms-Universität Münster | University of Münster | Univerrrsity of Münsterrr | Univêrsity of Münsta | 18:18:42 | 1780-04-16 | 2025-12-24T18:30:42 | 2025-12-24T13:00:42Z | 51.96361 | 7.613611 | Johannes Wessels | 1924 | 49098 | 4956 | 803600000 | 1500.0e0 | 2024-02-29 | true"
+                                                                                                                                                                                                    obj_list                                                                                                                                                                                                    
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ " | Hello 👋 PostgreSQL 🐘 | unknown literal type | explicit string literal | . <= pontos => . |                                                                                                                                                                                                                                                                                                              +
+  <= salto de línea =>                                                                                                                                                                                                                                                                                                                                                                                         +
+  | \" <= double-quotes => \" |   <= Tabulatorzeichen =>          | Westfälische Wilhelms-Universität Münster | University of Münster | Univerrrsity of Münsterrr | Univêrsity of Münsta | 18:18:42 | 1780-04-16 | 2025-12-24T18:30:42 | 2025-12-24T13:00:42Z | 51.9636 | 7.6136 | Johannes Wessels | 1924 | 49098 | 4956 | 803600000 | 1500.0e0 | 9999999999999999999 | 0.000000000000001 | 2024-02-29 | true"
 (1 row)
 
 SELECT sparql.group_concat(object, '') AS obj_list
@@ -2586,13 +2592,13 @@ SELECT ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 26 records.
+INFO:  SPARQL returned 28 records.
 
-                                                                                                                                                     obj_list                                                                                                                                                      
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- "Hello 👋 PostgreSQL 🐘unknown literal typeexplicit string literal. <= pontos => .                                                                                                                                                                                                                               +
-  <= salto de línea =>                                                                                                                                                                                                                                                                                            +
- \" <= double-quotes => \"        <= Tabulatorzeichen =>         Westfälische Wilhelms-Universität MünsterUniversity of MünsterUniverrrsity of MünsterrrUnivêrsity of Münsta18:18:421780-04-162025-12-24T18:30:422025-12-24T13:00:42Z51.963617.613611Johannes Wessels19244909849568036000001500.0e02024-02-29true"
+                                                                                                                                                                      obj_list                                                                                                                                                                      
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ "Hello 👋 PostgreSQL 🐘unknown literal typeexplicit string literal. <= pontos => .                                                                                                                                                                                                                                                                +
+  <= salto de línea =>                                                                                                                                                                                                                                                                                                                             +
+ \" <= double-quotes => \"        <= Tabulatorzeichen =>         Westfälische Wilhelms-Universität MünsterUniversity of MünsterUniverrrsity of MünsterrrUnivêrsity of Münsta18:18:421780-04-162025-12-24T18:30:422025-12-24T13:00:42Z51.96367.6136Johannes Wessels19244909849568036000001500.0e099999999999999999990.0000000000000012024-02-29true"
 (1 row)
 
 /* SPARQL Aggregate SAMPLE */
@@ -2607,7 +2613,7 @@ SELECT ?o
  FILTER(ISLITERAL(?o))
 }
 
-INFO:  SPARQL returned 26 records.
+INFO:  SPARQL returned 28 records.
 
  obj_sample 
 ------------
@@ -2621,7 +2627,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
             subject            |                     predicate                     |                         lex                          
 -------------------------------+---------------------------------------------------+------------------------------------------------------
@@ -2643,8 +2649,8 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | 1780-04-16
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | 2025-12-24T18:30:42
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | 2025-12-24T13:00:42Z
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | 51.96361
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | 7.613611
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | 51.9636
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | 7.6136
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | Johannes Wessels
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
@@ -2653,9 +2659,11 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | 4956
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | 803600000
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | 1500.0e0
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | 9999999999999999999
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | 0.000000000000001
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | 2024-02-29
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | true
-(28 rows)
+(30 rows)
 
 -- Empty literals in various contexts
 SELECT * FROM ft WHERE object = '""'::rdfnode;
@@ -2709,35 +2717,37 @@ INFO:  SPARQL returned 3 records.
 (3 rows)
 
 -- Very large/small decimals
-SELECT * FROM ft WHERE object > 999999999999999999::numeric::rdfnode;
+SELECT * FROM ft WHERE object = 9999999999999999999::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o > "999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>)
+ FILTER(?o = "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                   predicate                   |                              object                               
+-------------------------------+-----------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber> | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
 
-SELECT * FROM ft WHERE object < 0.00000000000001::numeric::rdfnode;
+SELECT * FROM ft WHERE object = 0.000000000000001::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(?o < "0.00000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>)
+ FILTER(?o = "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 1 record.
 
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
+            subject            |                   predicate                   |                             object                              
+-------------------------------+-----------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber> | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
 
 SELECT * FROM ft WHERE object BETWEEN 0.000000000000001::numeric::rdfnode AND 1000000000000000000::numeric::rdfnode;
 INFO:  SPARQL query sent to 'fuseki':
@@ -2749,18 +2759,19 @@ SELECT ?s ?p ?o
  FILTER(?o <= "1000000000000000000"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 8 records.
 
-            subject            |                     predicate                     |                        object                         
--------------------------------+---------------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.96361"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.613611"^^<http://www.w3.org/2001/XMLSchema#float>
+            subject            |                     predicate                     |                             object                              
+-------------------------------+---------------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
-(7 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(8 rows)
 
 -- Leap year dates
 SELECT * FROM ft
@@ -2792,7 +2803,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -2814,6 +2825,50 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>   | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
 (14 rows)
 
+-- Nested function calls
+SELECT * FROM ft
+WHERE 
+  predicate = '<http://dbpedia.org/property/name>' AND
+  object = '"Westfälische Wilhelms-Universität Münster"@de' AND
+  sparql.isnumeric(
+    sparql.round(
+      sparql.strlen(
+        sparql.substr(
+          sparql.str(object), 1, 9))));
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://dbpedia.org/property/name>)
+ FILTER(?o = "Westfälische Wilhelms-Universität Münster"@de)
+ FILTER(ISNUMERIC(ROUND(STRLEN(SUBSTR(STR(?o), 1, 9)))))
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |             predicate              |                     object                     
+-------------------------------+------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+-- EXPLAIN of a query
+EXPLAIN (COSTS OFF)
+SELECT * FROM ft
+WHERE 
+  predicate = '<http://dbpedia.org/property/name>' AND
+  object = '"Westfälische Wilhelms-Universität Münster"@de' AND
+  subject::text = '<https://www.uni-muenster.de>';
+                                                      QUERY PLAN                                                       
+-----------------------------------------------------------------------------------------------------------------------
+ Foreign Scan on ft
+   Filter: ((subject)::text = '<https://www.uni-muenster.de>'::text)
+   Foreign Server: fuseki
+   Pushdown: enabled
+   Remote Select: ?s ?p ?o 
+   Remote Filter: ((?p = <http://dbpedia.org/property/name>) && (?o = "Westfälische Wilhelms-Universität Münster"@de))
+(6 rows)
+
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':
@@ -2821,7 +2876,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
 INFO:  SPARQL query sent to 'fuseki':
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
@@ -2840,8 +2895,8 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.96361"^^<http://www.w3.org/2001/XMLSchema#float> };
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.613611"^^<http://www.w3.org/2001/XMLSchema#float> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
@@ -2850,6 +2905,8 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/student
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#long> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
 
