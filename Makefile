@@ -49,11 +49,16 @@ ifndef SKIP_UPDATE_TESTS
   REGRESS += fuseki-delete \
   			 fuseki-update \
 			 fuseki-insert \
-			 fuseki-select
+			 fuseki-select \
+			 graphdb-delete \
+			 graphdb-insert \
+			 graphdb-update \
+			 graphdb-select
 endif
 
 ifndef SKIP_STRESS_TESTS
-  REGRESS += fuseki-stress
+  REGRESS += fuseki-stress \
+  		     graphdb-stress	
 endif
 
 ifndef SKIP_EXTERNAL_TESTS

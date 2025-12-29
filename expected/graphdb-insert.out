@@ -10,21 +10,21 @@ SELECT sparql.add_prefix('testctx', 'rdf', 'http://www.w3.org/2000/01/rdf-schema
  
 (1 row)
 
-CREATE SERVER fuseki
+CREATE SERVER graphdb
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint 'http://fuseki:3030/dt/update', -- this tests if the regular endpoint is used for updates
+  endpoint   'http://graphdb:7200/repositories/test/statements', -- this tests if the regular endpoint is used for updates
   prefix_context 'testctx',
   batch_size '5'); 
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
   foo       rdfnode OPTIONS (variable '?foo'), -- will be ignored
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'false',
   sparql 'SELECT * {?s ?p ?o}',
   sparql_update_pattern 
@@ -44,8 +44,8 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische .. Wilhelms-Universität . Münster"@de'),
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso>', '🐘'::rdfnode);
 /* Set the endpoint to the right URL and add update_url */
-ALTER SERVER fuseki OPTIONS (ADD update_url 'http://fuseki:3030/dt/update',
-                             SET endpoint 'http://fuseki:3030/dt/sparql');
+ALTER SERVER graphdb OPTIONS (ADD update_url 'http://graphdb:7200/repositories/test/statements',
+                              SET endpoint 'http://graphdb:7200/repositories/test');
 SELECT subject, predicate, object FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY predicate, object::text COLLATE "C";
@@ -98,7 +98,7 @@ FROM generate_series(1,100) AS j (i);
 SELECT count(*) FROM ft;
  count 
 -------
-   111
+   190
 (1 row)
 
 /* insert with RETURNING */
@@ -111,9 +111,9 @@ RETURNING *;
 (1 row)
 
 /* 
- * Here we transfer data from Wikidata to Fuseki. 
+ * Here we transfer data from Wikidata to graphdb. 
  * The NAMED GRAPH is manually specified in the sparql
- * and sparql_update_pattern options. Fuseki will then
+ * and sparql_update_pattern options. graphdb will then
  * create the graph in query time, if it does not exist.
  */
 CREATE SERVER wikidata
@@ -133,12 +133,12 @@ SERVER wikidata OPTIONS (
     FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)}
   $$
   );
-CREATE FOREIGN TABLE rdbms_fuseki (
+CREATE FOREIGN TABLE rdbms_graphdb (
   s rdfnode OPTIONS (variable '?s'),
   p rdfnode OPTIONS (variable '?p'),
   o rdfnode OPTIONS (variable '?o')
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'true',
   sparql $$
     SELECT * {
@@ -154,9 +154,9 @@ SERVER fuseki OPTIONS (
       ?s ?p ?o .
     }
   $$);
-INSERT INTO rdbms_fuseki (s, p, o)
+INSERT INTO rdbms_graphdb (s, p, o)
 SELECT s, p, o FROM rdbms_wikidata;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -181,7 +181,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -206,7 +206,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -231,7 +231,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -256,7 +256,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -281,7 +281,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -306,7 +306,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -331,9 +331,9 @@ INSERT DATA {
     } };
 
 
-SELECT * FROM rdbms_fuseki 
+SELECT * FROM rdbms_graphdb 
 ORDER BY o::text COLLATE "C";
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?s ?p ?o 
@@ -388,10 +388,10 @@ INFO:  SPARQL returned 35 records.
 
 COPY (
   SELECT s, p , o
-  FROM rdbms_fuseki 
+  FROM rdbms_graphdb 
   ORDER BY o::text COLLATE "C"
 ) TO STDOUT DELIMITER E' ';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?s ?p ?o 
@@ -443,7 +443,7 @@ INFO:  SPARQL returned 35 records.
 /*** Exception tests ***/
 /* COPY .. FROM must fail - not supported */
 COPY ft (subject, predicate, object) FROM STDIN WITH (DELIMITER ' ');
-ERROR:  cannot copy to foreign table "ft"
+ERROR:  COPY FROM is not supported by rdf_fdw
 /* INSERT must fail - all columns must be of type rdfnode */
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 INSERT INTO ft (subject, predicate, object) VALUES
@@ -475,13 +475,13 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 /* invalid update_url - no URL */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p o .');
-ALTER SERVER fuseki OPTIONS (SET update_url 'foo');
+ALTER SERVER graphdb OPTIONS (SET update_url 'foo');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ERROR:  invalid update_url: 'foo'
 /* invalid triple pattern - no sparql_update_pattern OPTION */
-ALTER SERVER fuseki OPTIONS (SET update_url 'http://fuseki:3030/dt/update',
-                             SET endpoint 'http://fuseki:3030/dt/sparql');
+ALTER SERVER graphdb OPTIONS (SET update_url 'http://graphdb:7200/repositories/test/statements',
+                             SET endpoint 'http://graphdb:7200/repositories/test');
 ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
@@ -504,7 +504,7 @@ SELECT sparql.drop_context('testctx', true);
  
 (1 row)
 
-DROP SERVER fuseki CASCADE;
+DROP SERVER graphdb CASCADE;
 NOTICE:  drop cascades to 3 other objects
 DROP SERVER wikidata CASCADE;
 NOTICE:  drop cascades to foreign table rdbms_wikidata

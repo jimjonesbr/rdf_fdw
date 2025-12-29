@@ -1,0 +1,178 @@
+\pset null '(null)'
+CREATE SERVER graphdb
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements',
+  batch_size '1000');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  log_sparql 'false',
+  sparql 
+    $$
+     SELECT * 
+     WHERE {?s ?p ?o .}
+    $$,
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
+/* inserting a large literal (one million characters) */
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', repeat('x', 1000000)::rdfnode);
+SELECT subject, predicate, sparql.strlen(object) 
+FROM ft
+WHERE
+  subject = '<https://www.uni-muenster.de>' AND
+  predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+            subject            |                  predicate                   | strlen  
+-------------------------------+----------------------------------------------+---------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | 1000000
+(1 row)
+
+/* updating the large literal (one million characters) */
+UPDATE ft SET
+  object = repeat('y', 1000000)::rdfnode
+WHERE
+  subject = '<https://www.uni-muenster.de>' AND
+  predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+SELECT subject, predicate, sparql.strlen(object) 
+FROM ft 
+WHERE 
+  subject = '<https://www.uni-muenster.de>' AND
+  predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+            subject            |                  predicate                   | strlen  
+-------------------------------+----------------------------------------------+---------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | 1000000
+(1 row)
+
+/* deleting triple with large literal */
+DELETE FROM ft;
+/* inserting a one million triples */
+INSERT INTO ft (subject, predicate, object)
+SELECT '<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', i::rdfnode 
+FROM generate_series(1,1000000) AS g(i);
+SELECT * FROM ft
+LIMIT 5;
+                       subject                        |                     predicate                     |                        object                         
+------------------------------------------------------+---------------------------------------------------+-------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>    | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>
+ <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>
+ <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/2002/07/owl#TransitiveProperty>
+ <http://www.w3.org/2000/01/rdf-schema#subClassOf>    | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>
+ <http://www.w3.org/2000/01/rdf-schema#subClassOf>    | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/2002/07/owl#TransitiveProperty>
+(5 rows)
+
+/* selecting one million triples from the foreign table */
+CREATE UNLOGGED TABLE temp_ft AS SELECT * FROM ft;
+SELECT count(*) FROM temp_ft;
+  count  
+---------
+ 1000095
+(1 row)
+
+SELECT * FROM temp_ft
+WHERE 
+  subject = '<https://www.uni-muenster.de>'::rdfnode AND
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+            subject            |                  predicate                   |                      object                      
+-------------------------------+----------------------------------------------+--------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500000"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500001"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500002"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500003"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500004"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500005"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500006"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500007"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500008"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500009"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500010"^^<http://www.w3.org/2001/XMLSchema#int>
+(11 rows)
+
+DROP TABLE temp_ft;
+/* cloning one million triples from the foreign table */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.ft_clone',
+        fetch_size => 100000,
+        create_table => true,
+        verbose => true
+    );
+INFO:  Target TABLE "public.ft_clone" created based on FOREIGN TABLE "public.ft":
+
+  CREATE TABLE public.ft_clone AS SELECT * FROM public.ft WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft'
+target_table: 'public.ft_clone'
+create_table: 'true'
+fetch_size: 100000
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 100000]: 100000 records inserted
+INFO:  [100000 - 200000]: 100000 records inserted
+INFO:  [200000 - 300000]: 100000 records inserted
+INFO:  [300000 - 400000]: 100000 records inserted
+INFO:  [400000 - 500000]: 100000 records inserted
+INFO:  [500000 - 600000]: 100000 records inserted
+INFO:  [600000 - 700000]: 100000 records inserted
+INFO:  [700000 - 800000]: 100000 records inserted
+INFO:  [800000 - 900000]: 100000 records inserted
+INFO:  [900000 - 1000000]: 100000 records inserted
+INFO:  [1000000 - 1100000]: 95 records inserted
+DROP TABLE ft_clone;
+/* describing subject with one million triples */
+CREATE UNLOGGED TABLE temp_describe AS
+SELECT subject, predicate, object
+FROM sparql.describe('graphdb', 'DESCRIBE <https://www.uni-muenster.de>');
+SELECT count(*) FROM temp_describe;
+  count  
+---------
+ 1000000
+(1 row)
+
+SELECT * FROM temp_describe
+WHERE 
+  subject = '<https://www.uni-muenster.de>'::rdfnode AND
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+            subject            |                  predicate                   |                      object                      
+-------------------------------+----------------------------------------------+--------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500010"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500009"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500008"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500007"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500006"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500005"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500004"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500003"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500002"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500001"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "500000"^^<http://www.w3.org/2001/XMLSchema#int>
+(11 rows)
+
+DROP TABLE temp_describe;
+/* deleting a million triples */
+DELETE FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+DROP SERVER graphdb CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server graphdb

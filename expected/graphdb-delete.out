@@ -1,21 +1,21 @@
 \pset null '(null)'
-CREATE SERVER fuseki
+CREATE SERVER graphdb
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements');
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'true',
   sparql 'SELECT * WHERE {?s ?p ?o}',
   sparql_update_pattern '?s ?p ?o .'
 );
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
 /* bulk INSERT triples */
 INSERT INTO ft (subject, predicate, object)
 SELECT
@@ -23,7 +23,7 @@ SELECT
   sparql.iri('http://www.w3.org/1999/02/22-rdf-syntax-ns#value'),
   i::rdfnode
 FROM generate_series(1,10) AS j (i);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "2"^^<http://www.w3.org/2001/XMLSchema#int> };
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "3"^^<http://www.w3.org/2001/XMLSchema#int> };
@@ -38,7 +38,7 @@ INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 
 /* DELETE single triple */
 DELETE FROM ft WHERE object = 8::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -48,12 +48,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "8"^^<http://www.w3.org/2001/XMLSchema#int> };
 
 
 SELECT * FROM ft WHERE object = 8::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -69,7 +69,7 @@ INFO:  SPARQL returned 0 records.
 
 /* DELETE range of triples */
 DELETE FROM ft WHERE object BETWEEN 2::rdfnode AND 5::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -80,7 +80,7 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 4 records.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "2"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "3"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "4"^^<http://www.w3.org/2001/XMLSchema#int> };
@@ -88,7 +88,7 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 
 
 SELECT * FROM ft WHERE object BETWEEN 2::rdfnode AND 5::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -108,12 +108,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
   ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   '"🐘"@de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
 
 
 DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -123,12 +123,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
 
 
 SELECT * FROM ft WHERE object = '"🐘"@de'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -147,12 +147,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
   ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   '""@pt');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> ""@pt };
 
 
 DELETE FROM ft WHERE object = sparql.strlang('""', 'pt')::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -162,12 +162,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> ""@pt };
 
 
 SELECT * FROM ft WHERE object = sparql.strlang('""', 'pt')::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -185,7 +185,7 @@ INFO:  SPARQL returned 0 records.
 DELETE FROM ft WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'
   AND predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'
   AND object = 10::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -197,7 +197,7 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "10"^^<http://www.w3.org/2001/XMLSchema#int> };
 
 
@@ -205,7 +205,7 @@ SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'
   AND predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'
   AND object = 10::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -226,12 +226,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
   ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   '"rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string> };
 
 
 DELETE FROM ft WHERE object = sparql.strdt('rdf_fdw','<http://www.w3.org/2001/XMLSchema#string>');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -241,12 +241,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw" };
 
 
 SELECT * FROM ft WHERE object = sparql.strdt('rdf_fdw','<http://www.w3.org/2001/XMLSchema#string>');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -265,12 +265,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
   (('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode,
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   '"rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string> };
 
 
 DELETE FROM ft WHERE subject = ('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -280,12 +280,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw" };
 
 
 SELECT * FROM ft WHERE subject = ('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -301,7 +301,7 @@ INFO:  SPARQL returned 0 records.
 
 /* DELETE non-existent triple (should succeed silently with DELETE 0) */
 DELETE FROM ft WHERE object = 'foo'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -316,12 +316,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
   ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   '"\"WWU\""@en');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "\"WWU\""@en };
 
 
 DELETE FROM ft WHERE object = '"\"WWU\""@en'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -331,12 +331,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "\"WWU\""@en };
 
 
 SELECT * FROM ft WHERE object = '"\"WWU\""@en'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -355,12 +355,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
   ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   E'"Line1\nLine2"@en');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "Line1\nLine2"@en };
 
 
 DELETE FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -370,12 +370,12 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "Line1\nLine2"@en };
 
 
 SELECT * FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -394,13 +394,13 @@ INSERT INTO ft (subject, predicate, object) VALUES
   ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
   '<http://www.w3.org/2000/01/rdf-schema#comment>',
   '"🐘"@de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
 
 
 DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode
 RETURNING OLD.subject, OLD.predicate, OLD.object;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -410,7 +410,7 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
 
 
@@ -421,27 +421,102 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 
 /* bulk DELETE all inserted triples */
 SELECT count(*) FROM ft;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT  * 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 76 records.
 
  count 
 -------
-     4
+    76
 (1 row)
 
 DELETE FROM ft;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 76 records.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#domain> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#range> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#seeAlso> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
+
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#differentFrom> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
@@ -449,19 +524,19 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 
 
 SELECT count(*) FROM ft;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT  * 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 0 records.
+INFO:  SPARQL returned 71 records.
 
  count 
 -------
-     0
+    71
 (1 row)
 
-DROP SERVER fuseki CASCADE;
+DROP SERVER graphdb CASCADE;
 NOTICE:  drop cascades to 2 other objects
 DETAIL:  drop cascades to foreign table ft
-drop cascades to user mapping for postgres on server fuseki
+drop cascades to user mapping for postgres on server graphdb

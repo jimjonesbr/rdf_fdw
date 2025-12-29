@@ -47,6 +47,7 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ALTER SERVER fuseki OPTIONS (ADD update_url 'http://fuseki:3030/dt/update',
                              SET endpoint 'http://fuseki:3030/dt/sparql');
 SELECT subject, predicate, object FROM ft
+WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY predicate, object::text COLLATE "C";
             subject            |                      predicate                       |                       object                        
 -------------------------------+------------------------------------------------------+-----------------------------------------------------
@@ -497,6 +498,12 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ERROR:  NULL value in column "object" violates RDF constraint
 /* cleanup */
 DELETE FROM ft;
+SELECT sparql.drop_context('testctx', true);
+ drop_context 
+--------------
+ 
+(1 row)
+
 DROP SERVER fuseki CASCADE;
 NOTICE:  drop cascades to 3 other objects
 DROP SERVER wikidata CASCADE;

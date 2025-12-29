@@ -1,15 +1,15 @@
 SELECT sparql.add_context('testctx', 'test context');
 SELECT sparql.add_prefix('testctx', 'rdf', 'http://www.w3.org/2000/01/rdf-schema#');
 
-CREATE SERVER fuseki
+CREATE SERVER graphdb
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint 'http://fuseki:3030/dt/update', -- this tests if the regular endpoint is used for updates
+  endpoint   'http://graphdb:7200/repositories/test/statements', -- this tests if the regular endpoint is used for updates
   prefix_context 'testctx',
   batch_size '5'); 
 
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
 
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
@@ -17,7 +17,7 @@ CREATE FOREIGN TABLE ft (
   foo       rdfnode OPTIONS (variable '?foo'), -- will be ignored
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'false',
   sparql 'SELECT * {?s ?p ?o}',
   sparql_update_pattern 
@@ -40,8 +40,8 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso>', '🐘'::rdfnode);
 
 /* Set the endpoint to the right URL and add update_url */
-ALTER SERVER fuseki OPTIONS (ADD update_url 'http://fuseki:3030/dt/update',
-                             SET endpoint 'http://fuseki:3030/dt/sparql');
+ALTER SERVER graphdb OPTIONS (ADD update_url 'http://graphdb:7200/repositories/test/statements',
+                              SET endpoint 'http://graphdb:7200/repositories/test');
 
 SELECT subject, predicate, object FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
@@ -79,9 +79,9 @@ INSERT INTO ft (subject, predicate, object) VALUES
 RETURNING *;
 
 /* 
- * Here we transfer data from Wikidata to Fuseki. 
+ * Here we transfer data from Wikidata to graphdb. 
  * The NAMED GRAPH is manually specified in the sparql
- * and sparql_update_pattern options. Fuseki will then
+ * and sparql_update_pattern options. graphdb will then
  * create the graph in query time, if it does not exist.
  */
 CREATE SERVER wikidata
@@ -103,12 +103,12 @@ SERVER wikidata OPTIONS (
   $$
   );
 
-CREATE FOREIGN TABLE rdbms_fuseki (
+CREATE FOREIGN TABLE rdbms_graphdb (
   s rdfnode OPTIONS (variable '?s'),
   p rdfnode OPTIONS (variable '?p'),
   o rdfnode OPTIONS (variable '?o')
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'true',
   sparql $$
     SELECT * {
@@ -125,15 +125,15 @@ SERVER fuseki OPTIONS (
     }
   $$);
 
-INSERT INTO rdbms_fuseki (s, p, o)
+INSERT INTO rdbms_graphdb (s, p, o)
 SELECT s, p, o FROM rdbms_wikidata;
 
-SELECT * FROM rdbms_fuseki 
+SELECT * FROM rdbms_graphdb 
 ORDER BY o::text COLLATE "C";
 
 COPY (
   SELECT s, p , o
-  FROM rdbms_fuseki 
+  FROM rdbms_graphdb 
   ORDER BY o::text COLLATE "C"
 ) TO STDOUT DELIMITER E' ';
 
@@ -175,13 +175,13 @@ INSERT INTO ft (subject, predicate, object) VALUES
 
 /* invalid update_url - no URL */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p o .');
-ALTER SERVER fuseki OPTIONS (SET update_url 'foo');
+ALTER SERVER graphdb OPTIONS (SET update_url 'foo');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 
 /* invalid triple pattern - no sparql_update_pattern OPTION */
-ALTER SERVER fuseki OPTIONS (SET update_url 'http://fuseki:3030/dt/update',
-                             SET endpoint 'http://fuseki:3030/dt/sparql');
+ALTER SERVER graphdb OPTIONS (SET update_url 'http://graphdb:7200/repositories/test/statements',
+                             SET endpoint 'http://graphdb:7200/repositories/test');
 ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
@@ -199,5 +199,5 @@ INSERT INTO ft (subject, predicate, object) VALUES
 /* cleanup */
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);
-DROP SERVER fuseki CASCADE;
+DROP SERVER graphdb CASCADE;
 DROP SERVER wikidata CASCADE;

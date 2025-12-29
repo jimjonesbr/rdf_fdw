@@ -1,24 +1,24 @@
 \pset null '(null)'
 
-CREATE SERVER fuseki
+CREATE SERVER graphdb
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements');
 
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'true',
   sparql 'SELECT * WHERE {?s ?p ?o}',
   sparql_update_pattern '?s ?p ?o .'
 );
 
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
 
 /* bulk INSERT triples */
 INSERT INTO ft (subject, predicate, object)
@@ -109,4 +109,4 @@ SELECT count(*) FROM ft;
 DELETE FROM ft;
 SELECT count(*) FROM ft;
 
-DROP SERVER fuseki CASCADE;
+DROP SERVER graphdb CASCADE;

@@ -1,24 +1,24 @@
 \pset null '(null)'
 
-CREATE SERVER fuseki
+CREATE SERVER graphdb
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements');
 
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'true',
   sparql 'SELECT * WHERE {?s ?p ?o}',
   sparql_update_pattern '?s ?p ?o .'
 );
 
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
 
 INSERT INTO ft (subject, predicate, object)
 VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
@@ -586,8 +586,7 @@ WHERE sparql.isliteral(object);
 /* Custom Function LEX */
 SELECT subject, predicate, sparql.lex(object)
 FROM ft
-WHERE sparql.isliteral(object)
-ORDER BY predicate;
+WHERE sparql.isliteral(object);
 
 -- Empty literals in various contexts
 SELECT * FROM ft WHERE object = '""'::rdfnode;
@@ -639,4 +638,4 @@ WHERE
 
 /* cleanup */
 DELETE FROM ft;
-DROP SERVER fuseki CASCADE;
+DROP SERVER graphdb CASCADE;

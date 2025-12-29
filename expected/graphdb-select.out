@@ -1,21 +1,21 @@
 \pset null '(null)'
-CREATE SERVER fuseki
+CREATE SERVER graphdb
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements');
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER graphdb OPTIONS (
   log_sparql 'true',
   sparql 'SELECT * WHERE {?s ?p ?o}',
   sparql_update_pattern '?s ?p ?o .'
 );
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
 INSERT INTO ft (subject, predicate, object)
 VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
@@ -47,7 +47,7 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/verySmallNumber>', '"0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/restingDate>', '"2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/internationally>', '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
@@ -83,7 +83,7 @@ INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/interna
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -105,26 +105,26 @@ INFO:  SPARQL returned 30 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
                                |                                                   |  <= salto de línea =>                                              +
                                |                                                   | "@es
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
@@ -133,7 +133,7 @@ INFO:  SPARQL returned 30 records.
 /* SPARQL 17.4.1.7 - RDFterm-equal */
 SELECT * FROM ft
 WHERE sparql.sameterm(object, sparql.iri('http://dbpedia.org/resource/North_Rhine-Westphalia'));
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -152,7 +152,7 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM ft
 WHERE object IN (sparql.iri('http://dbpedia.org/resource/North_Rhine-Westphalia'),
                  sparql.iri('http://dbpedia.org/resource/Münster'));
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -174,7 +174,7 @@ WHERE
   subject = '<https://www.uni-muenster.de>' AND
   predicate NOT IN ('<http://www.w3.org/2000/01/rdf-schema#comment>',
                         '<http://dbpedia.org/property/name>');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -187,12 +187,12 @@ INFO:  SPARQL returned 18 records.
 
             subject            |                     predicate                     |                               object                                
 -------------------------------+---------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
@@ -200,7 +200,7 @@ INFO:  SPARQL returned 18 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
@@ -211,16 +211,16 @@ INFO:  SPARQL returned 18 records.
 SELECT DISTINCT predicate
 FROM ft
 ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT DISTINCT ?p 
 {?s ?p ?o}
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 20 records.
+INFO:  SPARQL returned 27 records.
 
-                     predicate                     
----------------------------------------------------
+                        predicate                         
+----------------------------------------------------------
  <http://dbpedia.org/ontology/internationally>
  <http://dbpedia.org/ontology/restingDate>
  <http://dbpedia.org/ontology/wikiPageExtracted>
@@ -237,16 +237,23 @@ INFO:  SPARQL returned 20 records.
  <http://dbpedia.org/property/tuition>
  <http://dbpedia.org/property/veryLargeNumber>
  <http://dbpedia.org/property/verySmallNumber>
+ <http://proton.semanticweb.org/protonsys#transitiveOver>
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
  <http://www.w3.org/2000/01/rdf-schema#comment>
+ <http://www.w3.org/2000/01/rdf-schema#domain>
+ <http://www.w3.org/2000/01/rdf-schema#range>
+ <http://www.w3.org/2000/01/rdf-schema#subClassOf>
+ <http://www.w3.org/2000/01/rdf-schema#subPropertyOf>
  <http://www.w3.org/2000/01/rdf-schema#time>
+ <http://www.w3.org/2002/07/owl#inverseOf>
  <http://www.w3.org/2003/01/geo/wgs84_pos#lat>
  <http://www.w3.org/2003/01/geo/wgs84_pos#long>
-(20 rows)
+(27 rows)
 
 SELECT DISTINCT object
 FROM ft
 WHERE sparql.lang(object) = 'de';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT DISTINCT ?o 
 {?s ?p ?o
@@ -267,7 +274,7 @@ INFO:  SPARQL returned 2 records.
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 FETCH FIRST ROW ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -286,7 +293,7 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -307,7 +314,7 @@ INFO:  SPARQL returned 3 records.
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 LIMIT 3;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -330,7 +337,7 @@ SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 OFFSET 2
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -352,7 +359,7 @@ SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 OFFSET 2
 LIMIT 3;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -375,7 +382,7 @@ SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY object ASC
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -387,18 +394,18 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>             | <http://dbpedia.org/resource/Münster>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>            | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+            subject            |                   predicate                   |                             object                              
+-------------------------------+-----------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber> | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>            | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>           | <http://dbpedia.org/resource/North_Rhine-Westphalia>
 (3 rows)
 
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY object DESC
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -410,18 +417,18 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                               object                               
--------------------------------+------------------------------------------------+--------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>      | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>    | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+            subject            |                   predicate                    |          object           
+-------------------------------+------------------------------------------------+---------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>           | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
 (3 rows)
 
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY object, predicate
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -433,18 +440,18 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>             | <http://dbpedia.org/resource/Münster>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>            | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+            subject            |                   predicate                   |                             object                              
+-------------------------------+-----------------------------------------------+-----------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber> | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>            | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>           | <http://dbpedia.org/resource/North_Rhine-Westphalia>
 (3 rows)
 
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY object DESC, predicate ASC
 FETCH FIRST 3 ROWS ONLY;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -456,18 +463,18 @@ LIMIT 3
 
 INFO:  SPARQL returned 3 records.
 
-            subject            |                   predicate                    |                               object                               
--------------------------------+------------------------------------------------+--------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>      | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>    | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+            subject            |                   predicate                    |          object           
+-------------------------------+------------------------------------------------+---------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>           | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
 (3 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT */
 SELECT DISTINCT subject
 FROM ft
 WHERE subject = sparql.iri('https://www.uni-muenster.de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT DISTINCT ?s 
 {?s ?p ?o
@@ -486,7 +493,7 @@ INFO:  SPARQL returned 1 record.
 SELECT DISTINCT ON (predicate) predicate, object -- DISTINCT ON not supported in SPARQL
 FROM ft
 WHERE subject = sparql.iri('https://www.uni-muenster.de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -508,11 +515,11 @@ INFO:  SPARQL returned 30 records.
  <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
  <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <http://dbpedia.org/property/name>                | "University of Münster"@en
  <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
  <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
@@ -528,7 +535,7 @@ WHERE
   sparql.str(object) >= 'Westfälische' AND
   sparql.str(object) <= 'Westfälische ZZZ' AND
   sparql.str(object) BETWEEN 'Westfälische' AND 'Westfälische ZZZ';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -554,7 +561,7 @@ WHERE
   sparql.str(object) >= 'Westfälische'::rdfnode AND
   sparql.str(object) <= 'Westfälische ZZZ'::rdfnode AND
   sparql.str(object) BETWEEN 'Westfälische'::rdfnode AND 'Westfälische ZZZ'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -576,7 +583,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (rdfnode, plain literal) */
 SELECT * FROM ft
 WHERE object = 'Johannes Wessels'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -594,7 +601,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (rdfnode, typed literal) */
 SELECT * FROM ft
 WHERE object = sparql.strdt('Johannes Wessels', 'http://www.w3.org/2001/XMLSchema#string');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -612,7 +619,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (smallint) */
 SELECT * FROM ft
 WHERE object = 1924::smallint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -629,7 +636,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > 1900::smallint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -642,15 +649,15 @@ INFO:  SPARQL returned 5 records.
             subject            |                     predicate                     |                              object                               
 -------------------------------+---------------------------------------------------+-------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (5 rows)
 
 SELECT * FROM ft
 WHERE object < 2000::smallint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -662,16 +669,16 @@ INFO:  SPARQL returned 5 records.
 
             subject            |                     predicate                     |                             object                              
 -------------------------------+---------------------------------------------------+-----------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
 (5 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 1900::smallint AND 2000::smallint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -690,7 +697,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (int) */
 SELECT * FROM ft
 WHERE object = 49098::int;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -707,7 +714,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > 40000::int;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -726,7 +733,7 @@ INFO:  SPARQL returned 3 records.
 
 SELECT * FROM ft
 WHERE object < 60000::int;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -743,13 +750,13 @@ INFO:  SPARQL returned 7 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (7 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 40000::int AND 60000::int;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -768,7 +775,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (bigint) */
 SELECT * FROM ft
 WHERE object = 803600000::bigint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -785,7 +792,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > 800000000::bigint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -803,7 +810,7 @@ INFO:  SPARQL returned 2 records.
 
 SELECT * FROM ft
 WHERE object < 900000000::bigint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -821,13 +828,13 @@ INFO:  SPARQL returned 8 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (8 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 800000000::bigint AND 900000000::bigint;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -846,7 +853,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (real) */
 SELECT * FROM ft
 WHERE object = 51.9636::real;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -863,7 +870,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > 50.0::real;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -876,17 +883,17 @@ INFO:  SPARQL returned 7 records.
             subject            |                     predicate                     |                              object                               
 -------------------------------+---------------------------------------------------+-------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (7 rows)
 
 SELECT * FROM ft
 WHERE object < 52.0::real;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -898,14 +905,14 @@ INFO:  SPARQL returned 3 records.
 
             subject            |                   predicate                    |                             object                              
 -------------------------------+------------------------------------------------+-----------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (3 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 50.0::real AND 52.0::real;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -924,7 +931,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (double precision) */
 SELECT * FROM ft
 WHERE object = 51.9636::double precision;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -941,7 +948,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > 50.0::double precision;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -954,17 +961,17 @@ INFO:  SPARQL returned 7 records.
             subject            |                     predicate                     |                              object                               
 -------------------------------+---------------------------------------------------+-------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (7 rows)
 
 SELECT * FROM ft
 WHERE object < 52.0::double precision;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -976,14 +983,14 @@ INFO:  SPARQL returned 3 records.
 
             subject            |                   predicate                    |                             object                              
 -------------------------------+------------------------------------------------+-----------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (3 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 50.0::double precision AND 52.0::double precision;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1002,7 +1009,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (numeric) */
 SELECT * FROM ft
 WHERE object = 51.9636::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1019,7 +1026,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > 50.0::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1032,17 +1039,17 @@ INFO:  SPARQL returned 7 records.
             subject            |                     predicate                     |                              object                               
 -------------------------------+---------------------------------------------------+-------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (7 rows)
 
 SELECT * FROM ft
 WHERE object < 52.0::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1054,14 +1061,14 @@ INFO:  SPARQL returned 3 records.
 
             subject            |                   predicate                    |                             object                              
 -------------------------------+------------------------------------------------+-----------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>  | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
 (3 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN 50.0::numeric::rdfnode AND 52.0::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1080,7 +1087,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (timestamp) */
 SELECT * FROM ft
 WHERE object = '2025-12-24 18:30:42'::timestamp;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1097,7 +1104,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > '2025-01-01 00:00:00'::timestamp;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1109,13 +1116,13 @@ INFO:  SPARQL returned 2 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (2 rows)
 
 SELECT * FROM ft
 WHERE object < '2025-12-31 23:59:59'::timestamp;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1123,17 +1130,20 @@ SELECT ?s ?p ?o
  FILTER(?o < "2025-12-31T23:59:59"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 5 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(2 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(5 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN '2025-01-01 00:00:00'::timestamp AND '2025-12-31 23:59:59'::timestamp;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1146,14 +1156,14 @@ INFO:  SPARQL returned 2 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (2 rows)
 
 /* SPARQL - 17.3 Operator Mapping (timestamptz) */
 SELECT * FROM ft
 WHERE object = '"2025-12-24T13:00:42+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1170,7 +1180,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > '"2025-01-01T00:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1182,13 +1192,13 @@ INFO:  SPARQL returned 2 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (2 rows)
 
 SELECT * FROM ft
 WHERE object < '"2025-12-31T23:59:59+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1196,17 +1206,20 @@ SELECT ?s ?p ?o
  FILTER(?o < "2025-12-31T23:59:59+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 5 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(2 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(5 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN '"2025-01-01T00:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode AND '"2025-12-31T23:59:59+00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1219,14 +1232,14 @@ INFO:  SPARQL returned 2 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (2 rows)
 
 /* SPARQL - 17.3 Operator Mapping (date) */
 SELECT * FROM ft
 WHERE object = '1780-04-16'::date;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1243,7 +1256,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > '1780-01-01'::date;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1251,17 +1264,19 @@ SELECT ?s ?p ?o
  FILTER(?o > "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 4 records.
 
-            subject            |                 predicate                 |                        object                         
--------------------------------+-------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established> | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate> | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
-(2 rows)
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(4 rows)
 
 SELECT * FROM ft
 WHERE object < '1780-12-31'::date;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1278,7 +1293,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object BETWEEN '1780-01-01'::date AND '1780-12-31'::date;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1297,7 +1312,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL - 17.3 Operator Mapping (time) */
 SELECT * FROM ft
 WHERE object = '18:18:42'::time;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1314,7 +1329,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object > '12:00:00'::time;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1331,7 +1346,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object < '23:59:59'::time;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1348,7 +1363,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE object BETWEEN '12:00:00'::time AND '23:59:59'::time;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1370,7 +1385,7 @@ SELECT * FROM ft
 WHERE
   predicate = '<http://dbpedia.org/ontology/internationally>' AND
   object = '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1390,7 +1405,7 @@ SELECT * FROM ft
 WHERE
   predicate = '<http://dbpedia.org/ontology/internationally>' AND
   object <> '"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1410,7 +1425,7 @@ SELECT * FROM ft
 WHERE
   predicate = '<http://dbpedia.org/ontology/internationally>' AND
   object = true;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1430,7 +1445,7 @@ SELECT * FROM ft
 WHERE
   predicate = '<http://dbpedia.org/ontology/internationally>' AND
   object <> false;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1454,7 +1469,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.1.3 - COALESCE */
 SELECT * FROM ft
 WHERE sparql.coalesce(object, '"Default Value"') = '"Westfälische Wilhelms-Universität Münster"@de';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1472,7 +1487,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.1.8 - sameTerm */
 SELECT * FROM ft
 WHERE sparql.sameterm(object, '1780-04-16'::date::rdfnode);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1492,7 +1507,7 @@ SELECT * FROM ft
 WHERE 
   sparql.isiri(object) AND
   predicate = '<http://dbpedia.org/property/state>';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1511,7 +1526,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.2.2 - isBlank */
 SELECT * FROM ft
 WHERE sparql.isblank(subject);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1529,7 +1544,7 @@ INFO:  SPARQL returned 0 records.
 SELECT * FROM ft
 WHERE sparql.isliteral(object)
 ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1550,25 +1565,25 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
                                |                                                   |  <= salto de línea =>                                              +
                                |                                                   | "@es
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
@@ -1577,7 +1592,7 @@ INFO:  SPARQL returned 28 records.
 /* SPARQL 17.4.2.4 - isNumeric */
 SELECT * FROM ft
 WHERE sparql.isnumeric(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1595,7 +1610,7 @@ INFO:  SPARQL returned 9 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (9 rows)
@@ -1603,7 +1618,7 @@ INFO:  SPARQL returned 9 records.
 /* SPARQL 17.4.2.5 - str */
 SELECT * FROM ft
 WHERE sparql.str(object) = 'Westfälische Wilhelms-Universität Münster';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1621,7 +1636,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.2.6 - lang */
 SELECT * FROM ft
 WHERE sparql.lang(object) = 'de';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1640,7 +1655,7 @@ INFO:  SPARQL returned 2 records.
 /* SPARQL 17.4.2.7 - datatype */
 SELECT * FROM ft
 WHERE sparql.datatype(object) = '<http://www.w3.org/2001/XMLSchema#date>';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1659,7 +1674,7 @@ INFO:  SPARQL returned 2 records.
 /* SPARQL 17.4.2.8 - IRI */
 SELECT * FROM ft
 WHERE sparql.iri('http://dbpedia.org/resource/Münster') = object;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1678,7 +1693,7 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM ft
 WHERE sparql.bnode('_:bnode1') != subject
 LIMIT 1; 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1689,15 +1704,15 @@ LIMIT 1
 
 INFO:  SPARQL returned 1 record.
 
-            subject            |                   predicate                    | object 
--------------------------------+------------------------------------------------+--------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
+                      subject                      |                     predicate                     |                        object                         
+---------------------------------------------------+---------------------------------------------------+-------------------------------------------------------
+ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>
 (1 row)
 
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT * FROM ft
 WHERE sparql.strdt('1780-04-16', 'http://www.w3.org/2001/XMLSchema#date') = object;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1715,7 +1730,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.2.11 - STRLANG */
 SELECT * FROM ft
 WHERE sparql.strlang('Westfälische Wilhelms-Universität Münster', 'de') = object;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1735,7 +1750,7 @@ SELECT * FROM ft
 WHERE 
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.strlen(sparql.str(object)) >= 25;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1755,7 +1770,7 @@ SELECT * FROM ft
 WHERE 
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.strlen(object) = 20;  -- emoji counts as 1 char each
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1764,17 +1779,16 @@ SELECT ?s ?p ?o
  FILTER(STRLEN(?o) = 20)
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-            subject            |                   predicate                    |           object            
--------------------------------+------------------------------------------------+-----------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en
-(1 row)
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
 /* SPARQL 17.4.3.3 - SUBSTR */
 SELECT * FROM ft
 WHERE sparql.substr(sparql.str(object), 1, 9) = 'Westfälis';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1791,7 +1805,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.substr(object, 7, 2) = sparql.strlang('👋 ','en');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1799,17 +1813,16 @@ SELECT ?s ?p ?o
  FILTER(SUBSTR(?o, 7, 2) = "👋 "@en)
 }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-            subject            |                   predicate                    |           object            
--------------------------------+------------------------------------------------+-----------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en
-(1 row)
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
 /* SPARQL 17.4.3.4 - UCASE */
 SELECT * FROM ft
 WHERE sparql.ucase(object) = sparql.strlang('WESTFÄLISCHE WILHELMS-UNIVERSITÄT MÜNSTER', 'de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1827,7 +1840,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.3.5 - LCASE */
 SELECT * FROM ft
 WHERE sparql.lcase(object) = sparql.strlang('westfälische wilhelms-universität münster', 'de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1845,7 +1858,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.3.6 - STRSTARTS */
 SELECT * FROM ft
 WHERE sparql.strstarts(sparql.str(object), 'Westfäl');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1863,7 +1876,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.3.7 - STRENDS */
 SELECT * FROM ft
 WHERE sparql.strends(sparql.str(object), 'Münster');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1875,15 +1888,15 @@ INFO:  SPARQL returned 3 records.
 
             subject            |             predicate              |                     object                     
 -------------------------------+------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city> | <http://dbpedia.org/resource/Münster>
 (3 rows)
 
 /* SPARQL 17.4.3.8 - CONTAINS */
 SELECT * FROM ft
 WHERE sparql.contains(object, '"Wilhelms"@de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1900,7 +1913,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.contains(object, E'"\t <= Tabulator"@de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1917,7 +1930,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.contains(object, '". <= pontos"@pt');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1934,7 +1947,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.contains(object, E'"\n <= salto"@es');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1953,7 +1966,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.contains(object, '"\" <= double"@en');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1971,7 +1984,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.3.9 - STRBEFORE */
 SELECT * FROM ft
 WHERE sparql.strbefore(sparql.str(object), ' Wilhelms') = 'Westfälische';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -1990,7 +2003,7 @@ SELECT * FROM ft
 WHERE 
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.strbefore(object, 'NOTFOUND') = '""'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2017,7 +2030,7 @@ INFO:  SPARQL returned 7 records.
 /* SPARQL 17.4.3.10 - STRAFTER */
 SELECT * FROM ft
 WHERE sparql.strafter(sparql.str(object), 'Westfälische ') = 'Wilhelms-Universität Münster';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2036,7 +2049,7 @@ SELECT * FROM ft
 WHERE 
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.strafter(object, 'NOTFOUND') = '""'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2063,7 +2076,7 @@ INFO:  SPARQL returned 7 records.
 /* SPARQL 17.4.3.11 - ENCODE_FOR_URI */
 SELECT * FROM ft
 WHERE sparql.encode_for_uri(sparql.str(object)) = 'Westf%C3%A4lische%20Wilhelms-Universit%C3%A4t%20M%C3%BCnster';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2081,7 +2094,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.3.12 - CONCAT */
 SELECT * FROM ft
 WHERE sparql.concat(sparql.str(object), ', Deutschland') = 'Westfälische Wilhelms-Universität Münster, Deutschland';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2100,7 +2113,7 @@ SELECT *, sparql.concat(object, ', ', '"Cześć"@pl') FROM ft
 WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.concat(object, ', ', '"Cześć"@pl'::rdfnode) = '"Hello 👋 PostgreSQL 🐘, Cześć"';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2121,7 +2134,7 @@ SELECT sparql.concat(object, ', ', 'after concat'::rdfnode) FROM ft
 WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.datatype(object) = '<http://www.w3.org/2001/XMLSchema#UNKNOWN>';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?p ?o 
 {?s ?p ?o
@@ -2141,7 +2154,7 @@ SELECT *, sparql.concat(object, ', ', 'after concat'::rdfnode) FROM ft
 WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>' AND
   sparql.datatype(object) = '<http://www.w3.org/2001/XMLSchema#string>';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2161,7 +2174,7 @@ INFO:  SPARQL returned 2 records.
 SELECT object, sparql.datatype(object) FROM ft
 WHERE
   predicate = '<http://www.w3.org/2000/01/rdf-schema#comment>';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?p ?o 
 {?s ?p ?o
@@ -2188,7 +2201,7 @@ INFO:  SPARQL returned 8 records.
 /* SPARQL 17.4.3.13 - langMatches */
 SELECT * FROM ft
 WHERE sparql.langmatches(sparql.lang(object), 'de');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2206,7 +2219,7 @@ INFO:  SPARQL returned 2 records.
 
 SELECT * FROM ft
 WHERE sparql.langmatches(sparql.lang(object), 'en');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2227,7 +2240,7 @@ INFO:  SPARQL returned 5 records.
 
 SELECT * FROM ft
 WHERE sparql.langmatches(sparql.lang(object), 'en-US');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2244,7 +2257,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.langmatches(sparql.lang(object), 'en-*');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2252,18 +2265,16 @@ SELECT ?s ?p ?o
  FILTER(LANGMATCHES(LANG(?o), "en-*"))
 }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 0 records.
 
-            subject            |             predicate              |              object               
--------------------------------+------------------------------------+-----------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-US
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univêrsity of Münsta"@en-GB
-(2 rows)
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
 /* SPARQL 17.4.3.15 - REPLACE */
 SELECT * FROM ft
 WHERE sparql.replace(sparql.str(object), 'Westfälische Wilhelms-Universität', 'WWU') = 'WWU Münster';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2281,7 +2292,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.4.1 - abs */
 SELECT * FROM ft
 WHERE sparql.abs(object) = 51.9636::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2299,7 +2310,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.4.2 - round */
 SELECT * FROM ft
 WHERE sparql.round(object) = 52::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2317,7 +2328,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.4.3 - ceil */
 SELECT * FROM ft
 WHERE sparql.ceil(object) = 52::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2335,7 +2346,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.4.4 - floor */
 SELECT * FROM ft
 WHERE sparql.floor(object) = 51::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2368,7 +2379,7 @@ SELECT
 /* SPARQL 17.4.5.2 - year*/
 SELECT * FROM ft
 WHERE sparql.year(object) = 1780::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2385,7 +2396,7 @@ INFO:  SPARQL returned 1 record.
 
 SELECT * FROM ft
 WHERE sparql.year(object) + 1 = 2026;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2404,7 +2415,7 @@ INFO:  SPARQL returned 2 records.
 /* SPARQL 17.4.5.3 - month */
 SELECT * FROM ft
 WHERE sparql.month(object) = 4::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2422,7 +2433,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.5.4 - day */
 SELECT * FROM ft
 WHERE sparql.day(object) = 16::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2440,7 +2451,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 7.4.5.5 - hours */
 SELECT * FROM ft
 WHERE sparql.hours(object) = 18::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2459,7 +2470,7 @@ INFO:  SPARQL returned 2 records.
 /* SPARQL 17.4.5.6 - minutes */
 SELECT * FROM ft
 WHERE sparql.minutes(object) = 30::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2477,7 +2488,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.5.7 - seconds */
 SELECT * FROM ft
 WHERE sparql.seconds(object) = 42::numeric::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2497,7 +2508,7 @@ INFO:  SPARQL returned 3 records.
 /* SPARQL 17.4.5.8 - timezone */
 SELECT * FROM ft
 WHERE sparql.timezone(object) = '"PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2515,7 +2526,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.5.9 - tz */
 SELECT * FROM ft
 WHERE sparql.tz(object) = 'Z'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2533,7 +2544,7 @@ INFO:  SPARQL returned 1 record.
 /* SPARQL 17.4.6.1 - MD5 */
 SELECT * FROM ft
 WHERE sparql.md5(sparql.str(object)) = '6c0bdbd38fc0772abda6fa1c98b74990'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2552,7 +2563,7 @@ INFO:  SPARQL returned 1 record.
 SELECT sparql.sum(object) AS obj_count
 FROM ft
 WHERE sparql.isnumeric(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2571,7 +2582,7 @@ INFO:  SPARQL returned 9 records.
 SELECT sparql.avg(object) AS obj_avg
 FROM ft
 WHERE sparql.isnumeric(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2590,7 +2601,7 @@ INFO:  SPARQL returned 9 records.
 SELECT sparql.min(object) AS obj_min
 FROM ft
 WHERE sparql.isnumeric(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2609,7 +2620,7 @@ INFO:  SPARQL returned 9 records.
 SELECT sparql.max(object) AS obj_max
 FROM ft
 WHERE sparql.isnumeric(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2628,7 +2639,7 @@ INFO:  SPARQL returned 9 records.
 SELECT sparql.group_concat(object, ' | ') AS obj_list
 FROM ft
 WHERE sparql.isliteral(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2638,17 +2649,17 @@ SELECT ?o
 
 INFO:  SPARQL returned 28 records.
 
-                                                                                                                                                                                                    obj_list                                                                                                                                                                                                    
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- " | Hello 👋 PostgreSQL 🐘 | unknown literal type | explicit string literal | . <= pontos => . |                                                                                                                                                                                                                                                                                                              +
-  <= salto de línea =>                                                                                                                                                                                                                                                                                                                                                                                         +
-  | \" <= double-quotes => \" |   <= Tabulatorzeichen =>          | Westfälische Wilhelms-Universität Münster | University of Münster | Univerrrsity of Münsterrr | Univêrsity of Münsta | 18:18:42 | 1780-04-16 | 2025-12-24T18:30:42 | 2025-12-24T13:00:42Z | 51.9636 | 7.6136 | Johannes Wessels | 1924 | 49098 | 4956 | 803600000 | 1500.0e0 | 9999999999999999999 | 0.000000000000001 | 2024-02-29 | true"
+                                                                                                                                                                                                   obj_list                                                                                                                                                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ " | Hello 👋 PostgreSQL 🐘 | unknown literal type | explicit string literal | . <= pontos => . |                                                                                                                                                                                                                                                                                                             +
+  <= salto de línea =>                                                                                                                                                                                                                                                                                                                                                                                        +
+  | \" <= double-quotes => \" |   <= Tabulatorzeichen =>          | 51.9636 | 7.6136 | University of Münster | Westfälische Wilhelms-Universität Münster | Univerrrsity of Münsterrr | Univêrsity of Münsta | 18:18:42 | 1780-04-16 | 2025-12-24T18:30:42 | 2025-12-24T13:00:42Z | Johannes Wessels | 1924 | 49098 | 4956 | 803600000 | 1500.00 | 9999999999999999999 | 0.000000000000001 | 2024-02-29 | true"
 (1 row)
 
 SELECT sparql.group_concat(object, '') AS obj_list
 FROM ft
 WHERE sparql.isliteral(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2658,18 +2669,18 @@ SELECT ?o
 
 INFO:  SPARQL returned 28 records.
 
-                                                                                                                                                                      obj_list                                                                                                                                                                      
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- "Hello 👋 PostgreSQL 🐘unknown literal typeexplicit string literal. <= pontos => .                                                                                                                                                                                                                                                                +
-  <= salto de línea =>                                                                                                                                                                                                                                                                                                                             +
- \" <= double-quotes => \"        <= Tabulatorzeichen =>         Westfälische Wilhelms-Universität MünsterUniversity of MünsterUniverrrsity of MünsterrrUnivêrsity of Münsta18:18:421780-04-162025-12-24T18:30:422025-12-24T13:00:42Z51.96367.6136Johannes Wessels19244909849568036000001500.0e099999999999999999990.0000000000000012024-02-29true"
+                                                                                                                                                                     obj_list                                                                                                                                                                      
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ "Hello 👋 PostgreSQL 🐘unknown literal typeexplicit string literal. <= pontos => .                                                                                                                                                                                                                                                               +
+  <= salto de línea =>                                                                                                                                                                                                                                                                                                                            +
+ \" <= double-quotes => \"        <= Tabulatorzeichen =>         51.96367.6136University of MünsterWestfälische Wilhelms-Universität MünsterUniverrrsity of MünsterrrUnivêrsity of Münsta18:18:421780-04-162025-12-24T18:30:422025-12-24T13:00:42ZJohannes Wessels19244909849568036000001500.0099999999999999999990.0000000000000012024-02-29true"
 (1 row)
 
 /* SPARQL Aggregate SAMPLE */
 SELECT sparql.sample(object) AS obj_sample
 FROM ft
 WHERE sparql.isliteral(object);
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?o 
 {?s ?p ?o
@@ -2687,56 +2698,54 @@ INFO:  SPARQL returned 28 records.
 /* Custom Function LEX */
 SELECT subject, predicate, sparql.lex(object)
 FROM ft
-WHERE sparql.isliteral(object)
-ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+WHERE sparql.isliteral(object);
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(ISLITERAL(?o))
 }
-ORDER BY  ASC (?p)
 
 INFO:  SPARQL returned 28 records.
 
             subject            |                     predicate                     |                    lex                    
 -------------------------------+---------------------------------------------------+-------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | true
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | 2024-02-29
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | 2025-12-24T13:00:42Z
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | 4956
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | 1924
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | 803600000
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | 1780-04-16
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | 2025-12-24T18:30:42
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Westfälische Wilhelms-Universität Münster
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | University of Münster
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Univêrsity of Münsta
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Univerrrsity of Münsterrr
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | Johannes Wessels
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | 49098
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | 1500.0e0
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | 9999999999999999999
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | 0.000000000000001
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | 
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | explicit string literal
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    |          <= Tabulatorzeichen =>         
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | \" <= double-quotes => \"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | Hello 👋 PostgreSQL 🐘
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | unknown literal type
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | explicit string literal
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | . <= pontos => .
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    |                                          +
                                |                                                   |  <= salto de línea =>                    +
                                |                                                   | 
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | . <= pontos => .
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | unknown literal type
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | 18:18:42
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | \" <= double-quotes => \"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    |          <= Tabulatorzeichen =>         
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | 51.9636
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | 7.6136
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | University of Münster
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Westfälische Wilhelms-Universität Münster
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Univerrrsity of Münsterrr
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | Univêrsity of Münsta
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | 18:18:42
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | 1780-04-16
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | 2025-12-24T18:30:42
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | 2025-12-24T13:00:42Z
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | Johannes Wessels
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | 1924
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | 49098
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | 4956
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | 803600000
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | 1500.00
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | 9999999999999999999
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | 0.000000000000001
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | 2024-02-29
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | true
 (28 rows)
 
 -- Empty literals in various contexts
 SELECT * FROM ft WHERE object = '""'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2752,7 +2761,7 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 SELECT * FROM ft WHERE sparql.strlen(object) = 0;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2768,7 +2777,7 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 
 SELECT * FROM ft WHERE sparql.substr(object, 1, 0) = '""'::rdfnode;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2789,7 +2798,7 @@ INFO:  SPARQL returned 3 records.
 SELECT * FROM ft
 WHERE object = 9999999999999999999::numeric::rdfnode
 ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2808,7 +2817,7 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM ft
 WHERE object = 0.000000000000001::numeric::rdfnode
 ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2827,7 +2836,7 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM ft
 WHERE object BETWEEN 0.000000000000001::numeric::rdfnode AND 1000000000000000000::numeric::rdfnode
 ORDER BY predicate;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2845,7 +2854,7 @@ INFO:  SPARQL returned 8 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
@@ -2854,7 +2863,7 @@ INFO:  SPARQL returned 8 records.
 -- Leap year dates
 SELECT * FROM ft
 WHERE sparql.month(object) = 2 AND sparql.day(object) = 29;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2876,12 +2885,12 @@ WHERE NOT sparql.isiri(object) AND
       NOT sparql.isblank(object) AND
       NOT sparql.isnumeric(object) AND
       NOT sparql.langmatches(sparql.lang(object), 'en');
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 144 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -2913,7 +2922,7 @@ WHERE
       sparql.strlen(
         sparql.substr(
           sparql.str(object), 1, 9))));
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o
@@ -2941,7 +2950,7 @@ WHERE
 -----------------------------------------------------------------------------------------------------------------------
  Foreign Scan on ft
    Filter: ((subject)::text = '<https://www.uni-muenster.de>'::text)
-   Foreign Server: fuseki
+   Foreign Server: graphdb
    Pushdown: enabled
    Remote Select: ?s ?p ?o 
    Remote Filter: ((?p = <http://dbpedia.org/property/name>) && (?o = "Westfälische Wilhelms-Universität Münster"@de))
@@ -2949,14 +2958,134 @@ WHERE
 
 /* cleanup */
 DELETE FROM ft;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 144 records.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#lat> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#long> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/name> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#time> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/established> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/modified> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/ontology/wikiPageExtracted> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/rector> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/state> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/city> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/administrativeStaff> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/students> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/academicStaff> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/budget> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/tuition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://dbpedia.org/property/veryLargeNumber> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/verySmallNumber> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/ontology/restingDate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/ontology/internationally> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#domain> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#range> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#comment> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#seeAlso> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#lat> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#long> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2003/01/geo/wgs84_pos#long> };
+DELETE DATA { <http://dbpedia.org/property/name> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/name> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#time> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#time> };
+DELETE DATA { <http://dbpedia.org/property/established> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/established> };
+DELETE DATA { <http://dbpedia.org/property/modified> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/modified> };
+DELETE DATA { <http://dbpedia.org/ontology/wikiPageExtracted> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/ontology/wikiPageExtracted> };
+DELETE DATA { <http://dbpedia.org/property/rector> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/rector> };
+DELETE DATA { <http://dbpedia.org/property/state> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/state> };
+DELETE DATA { <http://dbpedia.org/property/city> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/city> };
+DELETE DATA { <http://dbpedia.org/property/administrativeStaff> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/administrativeStaff> };
+DELETE DATA { <http://dbpedia.org/property/students> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/students> };
+DELETE DATA { <http://dbpedia.org/property/academicStaff> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/academicStaff> };
+DELETE DATA { <http://dbpedia.org/property/budget> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/budget> };
+DELETE DATA { <http://dbpedia.org/property/tuition> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/tuition> };
+DELETE DATA { <http://dbpedia.org/property/veryLargeNumber> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/veryLargeNumber> };
+DELETE DATA { <http://dbpedia.org/property/verySmallNumber> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/verySmallNumber> };
+DELETE DATA { <http://dbpedia.org/ontology/restingDate> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/ontology/restingDate> };
+DELETE DATA { <http://dbpedia.org/ontology/internationally> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/ontology/internationally> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#differentFrom> };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "Hello 👋 PostgreSQL 🐘"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> };
@@ -2965,16 +3094,16 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\n <= salto de línea => \n"@es };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\" <= double-quotes => \""@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\t <= Tabulatorzeichen => \t"@de };
-DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
@@ -2982,14 +3111,14 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/adminis
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/students> "49098"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#long> };
-DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.0e0"^^<http://www.w3.org/2001/XMLSchema#double> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.00"^^<http://www.w3.org/2001/XMLSchema#double> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
 
 
-DROP SERVER fuseki CASCADE;
+DROP SERVER graphdb CASCADE;
 NOTICE:  drop cascades to 2 other objects
 DETAIL:  drop cascades to foreign table ft
-drop cascades to user mapping for postgres on server fuseki
+drop cascades to user mapping for postgres on server graphdb

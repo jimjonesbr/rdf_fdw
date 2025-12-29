@@ -22,11 +22,15 @@ INFO:  SPARQL query sent to 'fuseki':
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -55,11 +59,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "University of Münster"@en };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -88,11 +96,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "" };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -121,11 +133,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "🐘" };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -155,11 +171,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#label> };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -189,11 +209,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "\"text with quotes\"" };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -223,11 +247,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text \n newline" };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -237,7 +265,7 @@ INFO:  SPARQL returned 1 record.
                                |                                              |  newline"
 (1 row)
 
-/* update to xsd:string literal (Fuseki might omit xsd:string datatype) */
+/* update to xsd:string literal (graphdb might omit xsd:string datatype) */
 UPDATE ft 
 SET object = '"text xsd string"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode
 WHERE subject = '<https://www.uni-muenster.de>'
@@ -258,11 +286,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text xsd string"^^<http://www.w3.org/2001/XMLSchema#string> };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -292,11 +324,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42"^^<http://www.w3.org/2001/XMLSchema#int> };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -326,11 +362,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal> };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -360,11 +400,15 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long> };
 
 
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
@@ -392,11 +436,15 @@ INFO:  SPARQL returned 1 record.
 ERROR:  NULL value in column "object" violates RDF constraint
 DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns
 HINT:  RDF triples require all components to be non-NULL. Filter NULL values in your query or provide default values.
-SELECT * FROM ft;
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
 
 INFO:  SPARQL returned 1 record.
 
