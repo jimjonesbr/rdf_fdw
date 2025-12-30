@@ -9,17 +9,23 @@
 ## Index
 
 - [Requirements](#requirements)
-- [Build and Install](#build-and-install)
-- [Update](#update)
+- [Quick Start](#quick-start)
+- [Update Extension](#update-extension)
+- [Deploy with Docker](#deploy-with-docker)
 - [Usage](#usage)
   - [CREATE USER MAPPING](#create-user-mapping)
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
+  - [Pushdown](#pushdown)
   - [Prefix Management](#prefix-management)
+  - [Data Modification](#data-modification)
+    - [INSERT](#insert)
+    - [UPDATE](#update)
+    - [DELETE](#delete)
   - [rdf_fdw_version](#rdf_fdw_version)
-  - [rdf_fdw_settings](#rdf_fdw_settings)
-  - [rdf_fdw_clone_table](#rdf_fdw_clone_table)
+  - [rdf_fdw_settings](#rdf_fdw_settings)    
+  - [rdf_fdw_clone_table](#rdf_fdw_clone_table)    
   - [EXPLAIN and Diagnostics](#explain-and-diagnostics)
 - [RDF Node Handling](#rdf-node-handling)
 - [SPARQL Functions](#sparql-functions)
@@ -32,13 +38,7 @@
   - [Hash Functions](#hash-functions)
   - [Custom Functions](#custom-functions)
 - [SPARQL Describe](#sparql-describe)
-- [Data Modification](#data-modification)
-  - [INSERT](#insert)
-  - [UPDATE](#update)
-  - [DELETE](#delete)
-- [Pushdown](#pushdown)
 - [Examples](#examples)
-- [Deploy with Docker](#deploy-with-docker)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
 
@@ -58,7 +58,7 @@ apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls
 > [!NOTE]  
 > `postgresql-server-dev-18` only installs the libraries for PostgreSQL 18. Change it if you're using another PostgreSQL version.
 
-## [Build and Install](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#build_and_install)
+## [Quick Start](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#quick-start)
 
 Ensure [pg_config](https://www.postgresql.org/docs/current/app-pgconfig.html) is properly set before running `make`. This executable is typically found in your PostgreSQL installation's `bin` directory.
 
@@ -82,24 +82,22 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '2.1';
+CREATE EXTENSION rdf_fdw WITH VERSION '2.2';
 ```
 
 To run the predefined regression tests: 
 
 ```bash
 $ make PGUSER=postgres installcheck
-
 ```
 
 > [!NOTE]  
-> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory, or retrieve data in chunks using `rdf_fdw_clone_table` or a custom script.
+> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory.
 
 
-## [Update Extension](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update)
+## [Update Extension](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-extension)
 
 To update the extension's version you must first build and install the binaries and then run `ALTER EXTENSION`:
-
 
 ```sql
 ALTER EXTENSION rdf_fdw UPDATE;
@@ -108,18 +106,58 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '2.1';
+ALTER EXTENSION rdf_fdw UPDATE TO '2.2';
 ```
 
-## [Usage](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#usage)
+## [Deploy with Docker](#deploy-with-docker)
 
-To use `rdf_fdw`, you must first create a `SERVER` that connects to a SPARQL endpoint. Then, define a `FOREIGN TABLE` that specifies the SPARQL instructions used to retrieve data from the endpoint. This section walks through all the steps required to set up and query RDF data using the foreign data wrapper.
+A convenient way to build and test `rdf_fdw` is to create a Docker image that bundles the extension with a matching PostgreSQL base image. The two common approaches are:
 
-### [CREATE SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_server)
+- Build an image that compiles and installs the extension (reproducible, good for CI).
+- Mount the source into a container and run `make install` for iterative development (faster local iterations).
 
-The SQL command [CREATE SERVER](https://www.postgresql.org/docs/current/sql-createserver.html) defines a new foreign server. The user who defines the server becomes its owner. A `SERVER` requires an `endpoint` to specify where `rdf_fdw` should send SPARQL queries.
+Make sure the PostgreSQL development package you install matches the PostgreSQL version in the base image (so `pg_config` and the server headers align).
 
-The following example creates a `SERVER` that connects to the DBpedia SPARQL endpoint:
+Minimal example Dockerfile for PostgreSQL 18:
+
+```dockerfile
+FROM postgres:18
+
+RUN apt-get update && \
+    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+
+RUN git clone --branch 2.2.0 https://github.com/jimjonesbr/rdf_fdw.git && \
+    cd rdf_fdw && \
+    make -j && \
+    make install
+```
+
+Build and run the image:
+
+```bash
+docker build -t rdf_fdw_image .
+docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_image
+```
+
+Create the extension inside the running container:
+
+```bash
+docker exec -u postgres rdf_fdw_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
+```
+
+> [!NOTE] 
+> Do not use `POSTGRES_HOST_AUTH_METHOD=trust` in production; that setting is only for local testing.
+
+
+## [Usage](#usage)
+
+Set up a `SERVER` that points to a SPARQL endpoint, then declare `FOREIGN TABLE`s that contain the SPARQL query and map result variables to table columns. Keep foreign-table queries simple to maximise pushdown; see the [Pushdown](#pushdown) section for details and limitations.
+
+### [CREATE SERVER](#create_server)
+
+Use `CREATE SERVER` to register a remote SPARQL endpoint with PostgreSQL. The creator becomes the server owner. The `endpoint` option (the SPARQL endpoint URL) is required; you may also specify optional connection settings such as timeouts or proxy parameters, if applicable.
+
+Example: register the DBpedia SPARQL endpoint
 
 ```sql
 CREATE SERVER dbpedia
@@ -130,30 +168,32 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 **Server Options**
 
-| Server Option | Type          | Description                                                                                                        |
-|---------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
-| `endpoint`     | **required**            | URL address of the SPARQL Endpoint.
-| `batch_size` | optional            | Number of rows to batch together when performing `INSERT`, `UPDATE`, or `DELETE` operations. Instead of sending one HTTP request per row, multiple operations are accumulated and sent as a single SPARQL UPDATE request. This significantly improves performance for bulk modifications by reducing network overhead. For example, inserting 5,000 rows with a `batch_size` of 100 will send only 50 requests instead of 5,000. You may want to adjust this option based on the capacity and limits of your triplestore, as very large batches may exceed endpoint or transaction limits, while very small batches may not provide optimal performance. (default `50`)
-| `enable_pushdown` | optional            | Globally enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL (default `true`)
-| `format` | optional            | The `rdf_fdw` expects the result sets to be encoded in the [SPARQL Query Results XML Format](https://www.w3.org/TR/rdf-sparql-XMLres/), which is typically enforced by setting the MIME type `application/sparql-results+xml` in the `Accept` HTTP request header. However, some products deviate from this standard and expect a different value, e.g. `xml`, `rdf-xml`. If the expected parameter differs from the official MIME type, it should be specified explicitly (default `application/sparql-results+xml`).
-| `http_proxy` | optional            | Proxy for HTTP requests.
-| `proxy_user` | optional            | User for proxy server authentication.
-| `proxy_user_password` | optional            | Password for proxy server authentication.
-| `connect_timeout`         | optional            | Connection timeout for HTTP requests in seconds (default `300` seconds).
-| `connect_retry`         | optional            | Number of attempts to retry a request in case of failure (default `3` times).
-| `request_redirect`         | optional            | Enables URL redirect issued by the server (default `false`).
-| `request_max_redirect`         | optional            | Specifies the maximum number of URL redirects allowed. If this limit is reached, any further redirection will result in an error. Leaving this parameter unset or setting it to `0` allows an unlimited number of redirects.
-| `custom`         | optional            | One or more parameters expected by the configured RDF triplestore. Multiple parameters separated by `&`, e.g. `signal_void=on&signal_unconnected=on`. Custom parameters are appended to the request URL.
-| `query_param`         | optional            | The request parameter in which the SPARQL endpoint expects the query in an HTTP request. Most endpoints expect the SPARQL query to be in the parameter `query` - and this is the `rdf_fdw` default value. So, chances are you'll never need to touch this server option.
-| `prefix_context`     | optional            | Name of the context where predefined `PREFIX` entries are stored. When set, all prefixes registered in the context are automatically prepended to every generated SPARQL query. If the query also contains its own `PREFIX` declarations, those are appended **after** the context-defined ones. See [Prefix Management](#prefix-management) for more details.
-| `enable_xml_huge`         | optional            | When set to `true`, the `rdf_fdw` will enable [`XML_PARSE_HUGE`](https://gnome.pages.gitlab.gnome.org/libxml2/html/parser_8h.html#a7d2daaf67df051ca5ef0b319b640442c) while parsing SPARQL XML results. This allows processing of documents with very large text nodes or deeply nested structures, bypassing libxml2's default safety limits. Use of this option is **strongly discouraged unless the SPARQL endpoint is fully trusted**. Enabling `XML_PARSE_HUGE` disables important parser limits designed to protect against resource exhaustion and denial-of-service attacks. For this reason, the option defaults to `false`. This option should only be used in controlled environments where the data provenance is secure and the size and complexity of result sets are known in advance. (default `false`).
+| Server Option | Type | Description |
+|---------------|------|-------------|
+| `endpoint` | **required** | SPARQL endpoint URL (required). |
+| `batch_size` | optional | Number of rows to accumulate per SPARQL UPDATE request for DML operations (default `50`). Larger batches reduce network overhead but may exceed endpoint limits. |
+| `enable_pushdown` | optional | Enable translation of SQL clauses into SPARQL (default `true`). |
+| `format` | optional | Expected SPARQL result MIME type (default `application/sparql-results+xml`). Set if your endpoint requires a different value. |
+| `http_proxy` | optional | HTTP proxy URL. |
+| `proxy_user` | optional | Proxy username. |
+| `proxy_user_password` | optional | Proxy password. |
+| `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
+| `connect_retry` | optional | Number of retry attempts on failure (default `3`). |
+| `request_redirect` | optional | Follow HTTP redirects (default `false`). |
+| `request_max_redirect` | optional | Max redirects allowed; `0` = unlimited. |
+| `custom` | optional | Triplestore-specific query parameters appended to the request URL (e.g. `signal_void=on`). |
+| `query_param` | optional | HTTP parameter name that carries the SPARQL query (default `query`). |
+| `prefix_context` | optional | Name of a prefix context whose `PREFIX` entries are prepended to generated SPARQL queries. |
+| `enable_xml_huge` | optional | Enable libxml2's `XML_PARSE_HUGE` to process very large or deeply nested responses (dangerous; default `false`). Use only for trusted endpoints. |
 
-> [!NOTE]  
-> To visualise the foreign server's options use the `psql` meta-command `\des[+]`
+> [!NOTE]
+> To view server options in `psql` use the meta-command `\des[+]`.
 
-### [CREATE USER MAPPING](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create-user-mapping)
+### [CREATE USER MAPPING](#create-user-mapping)
 
-[CREATE USER MAPPING](https://www.postgresql.org/docs/current/sql-createusermapping.html) defines a mapping of a PostgreSQL user to an user in the target triplestore. For instance, to map the PostgreSQL user `postgres` to the user `admin` in the `SERVER` named `graphdb`:
+`CREATE USER MAPPING` associates a PostgreSQL user with credentials for a specific `SERVER`. Provide a mapping when the SPARQL endpoint requires authentication; omit it for anonymous access.
+
+Example (map local `postgres` to remote `admin`):
 
 ```sql
 CREATE SERVER graphdb
@@ -164,41 +204,46 @@ CREATE USER MAPPING FOR postgres
 SERVER graphdb OPTIONS (user 'admin', password 'secret');
 ```
 
+Options:
+
 | Option | Type | Description |
-|---|---|---|
-| `user` | **required** | name of the user for authentication |
-| `password` | optional |   password of the user set in the option `user` |
+|---|---:|---|
+| `user` | **required** | Remote username for authentication. |
+| `password` | optional | Remote user's password (if required by the endpoint). |
 
-The `rdf_fdw` will try to authenticate the given user using HTTP Basic Authentication - no other authentication method is currently supported. This feature can be ignored if the triplestore does not require user authentication.
+Authentication: when a `user` is supplied, `rdf_fdw` uses HTTP Basic Authentication. Other schemes (OAuth, client certificates, etc.) are not supported by this mapping.
 
-> [!NOTE]  
-> To visualise created user mappings use the `psql` meta-command `\deu[+]` or run `SELECT * FROM pg_user_mappings` in a client of your choice.
+> [!NOTE]
+> To list mappings in `psql` use `\deu[+]` or query `pg_user_mappings`.
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
 
-Foreign Tables from the `rdf_fdw` work as a proxy between PostgreSQL clients and RDF Triplestores. Each column in a `FOREIGN TABLE` must be mapped to a SPARQL variable. This allows PostgreSQL to extract and assign results from the SPARQL query into the right column.
+Foreign tables act as a proxy to a SPARQL endpoint: the table's `sparql` option supplies the query and columns map SPARQL variables to PostgreSQL columns. Keep foreign-table definitions focused and avoid embedding complex logic in SQL; simpler queries increase pushdown success and performance.
 
-**Table Options**
+Table options:
 
-| Option        | Type        | Description                                                                                                        |
-|---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `sparql`      | **required**    | The raw SPARQL query to be executed    |
-| `log_sparql`  | optional    | Logs the exact SPARQL query executed. Useful for verifying modifications to the query due to pushdown. Default `false`  |
-| `enable_pushdown` | optional            | Enables or disables [pushdown](#pushdown) of SQL clauses into SPARQL for a specific foreign table. Overrides the `SERVER` option `enable_pushdown` |
-| `update_url`      | optional    | Some triple stores have a different URL for SELECT and update related queries (e.g. Apache Fuseki). If this is the case with your triple store, place the URL in this option. If omitted, the URL one set at `sparql` will be used.    |
+| Option | Type | Description |
+|--------|------|-------------|
+| `sparql` | **required** | Raw SPARQL query executed for `SELECT` operations. |
+| `log_sparql` | optional | Log the exact SPARQL sent to the endpoint (default `false`). |
+| `enable_pushdown` | optional | Override server-level pushdown for this table (default: server value). |
+| `update_url` | optional | URL used for SPARQL UPDATE requests when different from the SELECT endpoint (e.g. Fuseki). |
 
-Columns can use either **RDF Node** (recommended) or **PostgreSQL native** data types:
+Column types
 
-#### RDF Node
-The custom `rdfnode` type is designed to handle full RDF nodes, including both IRIs and literals with optional language tags or datatypes. It preserves the structure and semantics of RDF terms and is ideal when you need to manipulate or inspect RDF-specific details. Columns of this type only support the `variable` column option.
+Columns may be declared as `rdfnode` (**recommended**) or as standard PostgreSQL types. Use `rdfnode` when you need to preserve RDF semantics (IRIs, language tags, datatypes). Native types enable automatic casting of RDF literals into SQL types.
 
-**Column Options**
+Column options (common)
 
-| Option        | Type        | Description                                                                                                        |
-|---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `variable`    | **required**    | Maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` (*`?` or `$` are **not** part of the variable name!)*. The name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
+| Option | Type | Description |
+|--------|------|-------------|
+| `variable` | **required** | SPARQL variable mapped to this column (e.g. `?name`). In `OPTIONS` write the variable with a leading `?` or `$`, but those characters are not part of the stored name. |
+| `expression` | optional | SPARQL expression to evaluate for this column (used with native types). |
+| `language` | optional | Language tag to apply when comparing or formatting literals (e.g. `en`). Use `*` to ignore language. |
+| `literal_type` | optional | Expected XSD datatype for the literal (e.g. `xsd:date`). Use `*` to ignore type. |
+| `nodetype` | optional | Hint whether the value is `literal` or `iri` (default `literal`). |
 
-Example:
+Example (minimal `rdfnode` table):
 
 ```sql
 CREATE FOREIGN TABLE hbf (
@@ -206,27 +251,12 @@ CREATE FOREIGN TABLE hbf (
   o rdfnode OPTIONS (variable '?o')
 )
 SERVER linkedgeodata OPTIONS (
-  log_sparql 'true',
   sparql 
     'SELECT ?p ?o 
      WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}');
 ```
 
-#### PostgreSQL native types
-Alternatively, columns can be declared using PostgreSQL native types such as `text`, `date`, `int`, `boolean`, `numeric`, `timestamp`, etc. These are suitable for typed RDF literals or when you want automatic casting into PostgreSQL types. Native types support a wider range of column options:
-
-**Column Options**
-
-| Option        | Type        | Description                                                                                                        |
-|---------------|-------------|--------------------------------------------------------------------------------------------------------------------|
-| `variable`    | **required**    | Maps the table column to a SPARQL variable used in the table option `sparql`. A variable must start with either `?` or `$` (*`?` or `$` are **not** part of the variable name!)*. The name must be a string with the following characters:  `[a-z]`, `[A-Z]`,`[0-9]`   |
-| `expression`  | optional    | Similar to `variable`, but instead of a SPARQL variable, it can handle expressions, such as [function calls](https://www.w3.org/TR/sparql11-query/#SparqlOps). Any expression supported by the data source can be used. |
-| `language`    | optional        | RDF language tag, e.g. `en`,`de`,`pt`,`es`,`pl`, etc. This option ensures that the pushdown feature correctly sets the literal language tag in `FILTER` expressions. Set it to `*` to make `FILTER` expressions ignore language tags when comparing literals.   |  
-| `literal_type`        | optional    | Data type for typed literals, e.g. `xsd:string`, `xsd:date`, `xsd:boolean`. This option ensures that the pushdown feature correctly sets the literal type of expressions from SQL `WHERE` conditions. Set it to `*` to make `FILTER` expressions ignore data types when comparing literals. |
-| `nodetype`  | optional    | Type of the RDF node. Expected values are `literal` or `iri`. This option helps the query planner to optimize SPARQL `FILTER` expressions when the `WHERE` conditions are pushed down (default `literal`)  |
-
-
-The following example creates a `FOREIGN TABLE` connected to the server `dbpedia`. `SELECT` queries executed against this table will execute the SPARQL query set in the OPTION `sparql`, and its result sets are mapped to each column of the table via the column OPTION `variable`.
+Example (typed native columns):
 
 ```sql
 CREATE FOREIGN TABLE film (
@@ -257,38 +287,388 @@ SERVER dbpedia OPTIONS (
 '); 
 ```
 
+> [!NOTE]
+> Use `\d[+]` or `\det[+]` in `psql` to view foreign table columns and options.
+
+## [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
+
+Use `ALTER FOREIGN TABLE` and `ALTER SERVER` to add, change, or remove options on a foreign table or server. Changes take effect for subsequent queries.
+
+Add options
+
+```sql
+ALTER FOREIGN TABLE film
+  OPTIONS (ADD enable_pushdown 'false', ADD log_sparql 'true');
+
+ALTER SERVER dbpedia
+  OPTIONS (ADD enable_pushdown 'false');
+```
+
+Change existing options
+
+```sql
+ALTER FOREIGN TABLE film
+  OPTIONS (SET enable_pushdown 'false');
+
+ALTER SERVER dbpedia
+  OPTIONS (SET enable_pushdown 'true');
+```
+
+Remove options
+
+```sql
+ALTER FOREIGN TABLE film
+  OPTIONS (DROP enable_pushdown, DROP log_sparql);
+
+ALTER SERVER dbpedia
+  OPTIONS (DROP enable_pushdown);
+```
+
+Privileges: You must own the object or be a superuser to alter a `SERVER` or `FOREIGN TABLE`.
+
+## [Pushdown](#pushdown)
+
+Pushdown means translating SQL so that operations like filtering, sorting and limiting are executed by the remote triplestore (SPARQL endpoint) rather than in PostgreSQL. Running these operations remotely reduces the amount of data transferred and can greatly improve performance.
+
+If a clause such as `LIMIT` is not pushed down, the triplestore may produce the full result set and send it to PostgreSQL, which then applies the limit — causing unnecessary work and network traffic. `rdf_fdw` tries to convert SQL into SPARQL where possible, but SQL and SPARQL differ in expressive power and semantics, so not every construct can be pushed down.
+
+To maximize pushdown and performance, keep queries against foreign tables simple. `rdf_fdw` supports pushdown for most [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs) and for several PostgreSQL constructs (for example, `DISTINCT`, `LIMIT` and `IN`/`NOT IN`).
+
 > [!NOTE]  
-> To visualise the foreign table's columns and options use the `psql` meta-commands `\d[+]` or `\det[+]`
+> Aggregate pushdown is currently **not** supported. While aggregate functions (such as `sparql.sum`, `sparql.avg`, `sparql.min`, `sparql.max`, `sparql.group_concat`, `sparql.sample`, etc.) are implemented and usable in SQL queries, they are always evaluated locally by PostgreSQL. The SPARQL endpoint does not perform aggregation for these queries! If you need remote aggregation, you must embed the aggregate in the foreign table's SPARQL option or run the query directly against the endpoint.
 
-### [ALTER FOREIGN TABLE and ALTER SERVER](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#alter-foreign-table-and-alter-server)
+### [LIMIT](#limit)
 
-All options and parameters set to a `FOREIGN TABLE` or `SERVER` can be changed, dropped, and new ones can be added using the [`ALTER FOREIGN TABLE`](https://www.postgresql.org/docs/current/sql-alterforeigntable.html) and [`ALTER SERVER`](https://www.postgresql.org/docs/current/sql-alterserver.html) commands.
+`LIMIT` clauses are pushed down only if the SQL query does not contain aggregates and when all conditions in the `WHERE` clause can be translated to SPARQL.
+ 
+| SQL | SPARQL|
+| -- | --- |
+| `LIMIT x`| `LIMIT x` 
+| `FETCH FIRST x ROWS` | `LIMIT x` |
+| `FETCH FIRST ROW ONLY` | `LIMIT 1` |
 
+> [!NOTE]
+> `OFFSET` pushdown is **not** supported, meaning that `OFFSET` filters will be applied **locally** in PostgreSQL.
 
-Adding options
+Example:
 
 ```sql
-ALTER FOREIGN TABLE film OPTIONS (ADD enable_pushdown 'false',
-                                  ADD log_sparql 'true');
+SELECT p, o FROM rdbms
+WHERE 
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.lang(o) = 'pt'
+FETCH FIRST 5 ROWS ONLY;
 
-ALTER SERVER dbpedia OPTIONS (ADD enable_pushdown 'false');
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANG(?o) = "pt")
+}
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+                      p                       |             o             
+----------------------------------------------+---------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Ingres"@pt
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Vectorwise"@pt
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@pt
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Microsoft SQL Server"@pt
+ <http://www.w3.org/2000/01/rdf-schema#label> | "Firebird"@pt
+(5 rows)
 ```
 
-Changing previously configured options
+* `WHERE` expressions and `FETCH FIRST 5 ROWS ONLY` was pushed (as `LIMIT 5` in the SPARQL query).
+
+### [ORDER BY](#order-by)
+
+`ORDER BY` is pushed down when the involved expressions can be represented in SPARQL. `rdf_fdw` translates common SQL orderings to SPARQL `ORDER BY` using `ASC()` and `DESC()`.
+
+| SQL | SPARQL |
+|-----|--------|
+| `ORDER BY x` or `ORDER BY x ASC` | `ORDER BY ASC(x)` |
+| `ORDER BY x DESC` | `ORDER BY DESC(x)` |
+
+Ordering across multiple columns is preserved when each expression is pushdown-capable. If an expression cannot be translated, ordering is applied locally in PostgreSQL.
+
+Example (pushdown):
 
 ```sql
-ALTER FOREIGN TABLE film OPTIONS (SET enable_pushdown 'false');
+SELECT o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  sparql.langmatches(sparql.lang(o), 'es')
+ORDER BY p ASC, o DESC
+FETCH FIRST 5 ROWS ONLY;
 
-ALTER SERVER dbpedia OPTIONS (SET enable_pushdown 'true');
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "es"))
+}
+ORDER BY  ASC (?p)  DESC (?o)
+LIMIT 5
+
+INFO:  SPARQL returned 5 records.
+
+        o        
+-----------------
+ "Xeround"@es
+ "WxSQLite3"@es
+ "Vectorwise"@es
+ "TimesTen"@es
+ "Tibero"@es
+(5 rows)
 ```
 
-Dropping options
+* All `WHERE`, `ORDER BY`, and `LIMIT` expressions were pushed down.
+
+
+### [DISTINCT](#distinct)
+
+`DISTINCT` is pushed down to the SPARQL `SELECT` when possible. If the foreign table's `sparql` option already contains `DISTINCT` or `REDUCED`, rdf_fdw will not push SQL `DISTINCT` again. There is no SPARQL equivalent of `DISTINCT ON`, so that PostgreSQL feature is always evaluated locally.
+
+Example:
 
 ```sql
-ALTER FOREIGN TABLE film OPTIONS (DROP enable_pushdown,
-                                  DROP log_sparql);
+SELECT DISTINCT p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  sparql.langmatches(sparql.lang(o), 'de');
+INFO:  SPARQL query sent to 'wikidata':
 
-ALTER SERVER dbpedia OPTIONS (DROP enable_pushdown);
+SELECT DISTINCT ?p ?o 
+{wd:Q192490 ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+}
+ORDER BY  ASC (?p)  ASC (?o)
+
+INFO:  SPARQL returned 1 record.
+
+                      p                       |        o        
+----------------------------------------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@de
+(1 row)
+```
+
+### [WHERE](d#where)
+
+The `rdf_fdw` extension supports pushdown of many SQL expressions in the `WHERE` clause. When applicable, these expressions are translated into SPARQL `FILTER` clauses, allowing filtering to occur directly at the RDF data source. 
+
+The following expressions in the `WHERE` clause are eligible for pushdown:
+
+* Comparisons involving PostgreSQL data types (e.g., `integer`, `text`, `boolean`) or the custom type `rdfnode`, when used with the supported operators:
+
+  ✅ **Supported Data Types and Operators**
+
+  | Data type                                                  | Operators                             |
+  |------------------------------------------------------------|---------------------------------------|
+  | `rdfnode`                                                  | `=`, `!=`,`<>`, `>`, `>=`, `<`, `<=`  |
+  | `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`, `~~`, `!~~`, `~~*`,`!~~*`                       |
+  | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
+  | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
+  | `boolean`                                                  | `IS`, `IS NOT`                        |
+
+* ✅ `IN`/`NOT IN` and `ANY` constructs with constant lists.
+  
+  SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation), as long as the list has the supported data types.
+
+* ✅ Nearly all supported [SPARQL functions](#sparql-functions) are pushdown-capable, including:
+  * `LANG()`, `DATATYPE()`, `STR()`, `isBLANK()`, `isIRI()`, etc.
+  * Numeric, string, and datetime functions such as `ROUND()`, `STRLEN()`, `YEAR()`, and others.
+  
+> [!NOTE]  
+> Due to their volatile nature, the SPARQL functions `sparql.rand()` and `sparql.now()` cannot be pushed down. Because their results cannot be reproduced consistently by PostgreSQL, any rows returned from the endpoint would be filtered out locally during re-evaluation.
+
+❌ **Conditions That Prevent Pushdown**
+
+A `WHERE` condition will not be pushed down if:
+
+* The option `enable_pushdown` is set to `false`.
+* The underlying SPARQL query includes:
+  * a `GROUP BY` clause
+  * solution modifiers like `OFFSET`, `ORDER BY`, `LIMIT`, `DISTINCT`, or `REDUCED`
+  * subqueries or federated queries
+* The condition includes an unsupported data type or operator.
+* The condition contains `OR` logical operators (not yet supported).
+
+#### Pushdown Examples
+
+For the examples in this section consider this `SERVER` and `FOREIGN TABLE` setting (Wikidata):
+
+```sql
+CREATE SERVER wikidata
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (endpoint 'https://query.wikidata.org/sparql');
+
+CREATE FOREIGN TABLE rdbms (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 
+    'SELECT * {
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 }'
+);
+```
+
+1. Pusdown of `WHERE` conditions involving `rdfnode` values and `=` and `!=` operators. All conditions are pushed as `FILTER` expressions.
+
+```sql
+SELECT s, o FROM rdbms
+WHERE 
+  o = '"PostgreSQL"@es' AND
+  o <> '"Oracle"@es';
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?s ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "PostgreSQL"@es)
+ FILTER(?o != "Oracle"@es)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                    s                     |        o        
+------------------------------------------+-----------------
+ <http://www.wikidata.org/entity/Q192490> | "PostgreSQL"@es
+(1 row)
+```
+
+2. Pusdown of `WHERE` conditions involving `rdfnode` values and `=`, `>`, and `<` operators. All conditions are pushed down as `FILTER` expressions. Note that the `timestamp` values are automatically cast to the correspondent XSD data type.
+
+```sql
+SELECT s, o FROM rdbms
+WHERE 
+  p = '<http://www.wikidata.org/prop/direct/P577>' AND
+  o > '1996-01-01'::timestamp AND o < '1996-12-31'::timestamp;
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.wikidata.org/prop/direct/P577>)
+ FILTER(?o > "1996-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(?o < "1996-12-31T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+                    s                     |                                  o                                  
+------------------------------------------+---------------------------------------------------------------------
+ <http://www.wikidata.org/entity/Q192490> | "1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+```
+
+3. Pusdown of `WHERE` conditions with `IN` and `ANY` constructs. All conditions are pushed down as `FILTER` expressions.
+
+```sql
+SELECT p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  o IN ('"PostgreSQL"@en', '"IBM Db2"@fr', '"MySQL"@es');
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
+}
+
+INFO:  SPARQL returned 2 records.
+
+                      p                       |        o        
+----------------------------------------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "IBM Db2"@fr
+(2 rows)
+```
+
+```sql
+SELECT p, o FROM rdbms
+WHERE 
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  o = ANY(ARRAY['"PostgreSQL"@en'::rdfnode,'"IBM Db2"@fr'::rdfnode,'"MySQL"@es'::rdfnode]);
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
+}
+
+INFO:  SPARQL returned 2 records.
+
+                      p                       |        o        
+----------------------------------------------+-----------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "IBM Db2"@fr
+(2 rows)
+```
+
+4. Pusdown of `WHERE` conditions involving SPARQL functions. The function calls for `LANGMATCHES()`, `LANG()`, and `STRENDS()` are pushed down in `FILTER` expressions.
+
+```sql
+SELECT s, o FROM rdbms
+WHERE 
+  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
+  sparql.langmatches(sparql.lang(o), 'de') AND
+  sparql.strends(o, sparql.strlang('SQL','de'));
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANGMATCHES(LANG(?o), "de"))
+ FILTER(STRENDS(?o, "SQL"@de))
+}
+
+INFO:  SPARQL returned 3 records.
+
+                     s                     |        o        
+-------------------------------------------+-----------------
+ <http://www.wikidata.org/entity/Q192490>  | "PostgreSQL"@de
+ <http://www.wikidata.org/entity/Q5014224> | "CSQL"@de
+ <http://www.wikidata.org/entity/Q6862049> | "Mimer SQL"@de
+(3 rows)
 ```
 ### [Prefix Management](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#prefix-mangement)
 
@@ -306,7 +686,7 @@ The prefix context is a named container for a set of SPARQL prefixes. It is repr
 | `description` | `text`        | Optional description of the context. |
 | `modified_at` | `timestamptz` | Timestamp of the last update.        |
 
-##### Functions
+##### Prefix Context Functions
 
 **Adding a new context**
 ```sql
@@ -333,7 +713,7 @@ A prefix maps a shorthand identifier to a full URI within a context. These are s
 | `context`     | `text`        | Foreign key to `prefix_contexts`. |
 | `modified_at` | `timestamptz` | Timestamp of the last update.     |
 
-##### Functions
+##### Prefix Functions
 
 **Adding a new PREFIX**
 ```sql
@@ -362,7 +742,129 @@ SELECT sparql.add_prefix('default', 'xsd',  'http://www.w3.org/2001/XMLSchema#')
 ```
 Once registered, these prefixes can be automatically included in generated SPARQL queries for any `rdf_fdw` foreign server that references the associated context.
 
-### [rdf_fdw_version](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_version)
+## [Data Modification](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#data-modification)
+
+The `rdf_fdw` extension supports data modification operations (`INSERT`, `UPDATE`, `DELETE`) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
+
+> [!NOTE]  
+> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL UPDATE statements.
+
+### General Requirements
+
+To use data modification operations, your `FOREIGN TABLE` must:
+
+1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be modified.
+2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g., `OPTIONS (variable '?s')`).
+3. **Use `rdfnode` columns** - Data modification operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
+
+> [!IMPORTANT]  
+> **SPARQL endpoints do not support PostgreSQL transactions.** Each operation is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
+
+### NULL Value Handling
+
+* **NULL values are not allowed** - Any attempt to insert or update a triple with a NULL component will raise an error. This prevents incomplete or invalid triples from being written to the triplestore.
+
+### [INSERT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#insert)
+
+The `INSERT` statement allows you to add new RDF triples to a triplestore. Each row inserted into a `FOREIGN TABLE` is converted into a SPARQL `INSERT DATA` statement and sent to the remote SPARQL endpoint.
+
+### Usage:
+
+```sql
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de>',
+  '<http://www.w3.org/2000/01/rdf-schema#label>',
+  '"Westfälische Wilhelms-Universität Münster"@de');
+```
+
+### [UPDATE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-sql)
+
+The `UPDATE` statement allows you to modify existing RDF triples in a triplestore. Since SPARQL does not have a direct UPDATE syntax, each row update is implemented as a combination of `DELETE DATA` (removing old triples) followed by `INSERT DATA` (adding new triples).
+
+### Usage:
+
+```sql
+UPDATE ft SET
+  object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+```
+
+### [DELETE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#delete)
+
+The `DELETE` statement allows you to remove RDF triples from a triplestore. Each row deleted from a `FOREIGN TABLE` is converted into a SPARQL `DELETE DATA` statement and sent to the remote SPARQL endpoint.
+
+#### Usage:
+
+```sql
+DELETE FROM ft 
+WHERE object = '"Westfälische Wilhelms-Universität Münster"@de'::rdfnode;
+```
+### [Update Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-examples)
+
+```sql
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'false',
+  sparql 
+    $$
+     SELECT * 
+     WHERE {
+       ?s ?p ?o .
+       ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://dbpedia.org/resource/University>      
+     }
+    $$,
+  sparql_update_pattern 
+    $$
+      ?s ?p ?o .
+      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://dbpedia.org/resource/University>
+    $$
+);
+
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"University of Münster"@en');
+
+SELECT * FROM ft;
+            subject            |                     predicate                     |                  object                   
+-------------------------------+---------------------------------------------------+-------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <https://dbpedia.org/resource/University>
+(2 rows)
+
+UPDATE ft SET
+  object = '"Westfälische Wilhelms-Universität Münster"@de'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+
+SELECT * FROM ft;
+            subject            |                     predicate                     |                     object                     
+-------------------------------+---------------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <https://dbpedia.org/resource/University>
+(2 rows)
+
+DELETE FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+
+SELECT * FROM ft;
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+```
+### [rdf_fdw_version](#rdf_fdw_version)
 
 ```sql
 text rdf_fdw_version();
@@ -370,7 +872,7 @@ text rdf_fdw_version();
 
 **Description**
 
-Returns comprehensive version information for `rdf_fdw`, PostgreSQL, compiler, and all dependencies (libxml, librdf, libcurl) in a single formatted string.
+Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all dependencies (libxml, librdf, libcurl) in a single formatted string.
 
 -------
 
@@ -384,7 +886,7 @@ SELECT rdf_fdw_version();
 (1 row)
 ```
 
-### [rdf_fdw_settings](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_settings)
+### [rdf_fdw_settings](#rdf_fdw_settings)
 
 ```sql
 VIEW rdf_fdw_settings(component text, version text);
@@ -451,7 +953,7 @@ This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `T
 
 `max_records`: maximum number of records that should be retrieved from the `FOREIGN TABLE`. Default `0`, which means no limit. 
 
-`orderby_column`: ordering column used for the pagination - just like in SQL `ORDER BY`. Default `''`, which means that the function will chose a column to use in the `ORDER BY` clause on its own. That is, the procedure will try to set the first column with the option `nodetype` set to `iri`. If the table has no `iri` typed `nodetype`, the first column will be chosen as ordering column. If you do not wish to have an `ORDER BY` clause at al, set this parameter to `NULL`.
+`orderby_column`: ordering column used for the pagination - just like in SQL `ORDER BY`. Default `''`, which means that the function will chose a column to use in the `ORDER BY` clause on its own. That is, the procedure will try to set the first column with the option `nodetype` set to `iri`. If the table has no `iri` typed `nodetype`, the first column will be chosen as ordering column. If you do not wish to have an `ORDER BY` clause at all, set this parameter to `NULL`.
 
 `sort_order`: `ASC` or `DESC` to sort the data returned in ascending or descending order, respectivelly. Default `ASC`.
 
@@ -515,7 +1017,7 @@ SELECT * FROM t1_local;
  http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
 (13 rows)
 ```
-### [EXPLAIN and Diagnostics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#explain-and-diagnostics)
+### [EXPLAIN and Diagnostics](#explain-and-diagnostics)
 
 The `rdf_fdw` extension provides detailed diagnostics in PostgreSQL [EXPLAIN](https://www.postgresql.org/docs/current/sql-explain.html) output to help users understand which SQL clauses are pushed down to the remote SPARQL endpoint.
 
@@ -1550,7 +2052,15 @@ SELECT sparql.strlen('"42"^^xsd:int');
 --------
       2
 (1 row)
+
+SELECT sparql.strlen('"🐘"@en');
+ strlen 
+--------
+      1
+(1 row)
 ```
+> [!WARNING]  
+> Some RDF triplestores implement `STRLEN` to count the number of bytes in a literal instead of the number of characters, which can lead to confusion when working with Unicode characters. For instance, in GraphDB, `STRLEN("🐘"@en)` returns 2 because it counts the bytes of the emoji, whereas in Fuseki or Virtuoso, the same function call returns 1, as they count the actual characters. Keep this behavior in mind when using `sparql.strlen`, especially with literals containing Unicode characters.
 
 #### [SUBSTR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#substr)
 
@@ -2007,7 +2517,7 @@ SELECT sparql.rand();
 sparql.year(value rdfnode) → int
 ```
 
-Returns the year component of an xsd:dateTime or xsd:date literal. Implements the SPARQL 1.1 [YEAR()](https://www.w3.org/TR/sparql11-query/#func-year) function.
+Returns the year component of an `xsd:dateTime` or `xsd:date` literal. Implements the SPARQL 1.1 [YEAR()](https://www.w3.org/TR/sparql11-query/#func-year) function.
 
 Example:
 
@@ -2183,7 +2693,7 @@ SELECT sparql.md5('42'::rdfnode);
 sparql.lex(value rdfnode) → rdfnode
 ```
 
-Extracts the lexical value of a given `rdfnode`. This isa convenience function that is not part of the SPARQL 1.1 standard.
+Extracts the lexical value of a given `rdfnode`. This is a convenience function that is not part of the SPARQL 1.1 standard.
 
 Examples:
 
@@ -2256,567 +2766,7 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 (37 rows)
 ```
 
-## [Data Modification](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#data-modification)
-
-The `rdf_fdw` extension supports data modification operations (`INSERT`, `UPDATE`, `DELETE`) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
-
-> [!NOTE]  
-> Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL UPDATE statements.
-
-### General Requirements
-
-To use data modification operations, your `FOREIGN TABLE` must:
-
-1. **Define the `sparql_update_pattern` option** - A template specifying the RDF triple pattern(s) to be modified.
-2. **Map all required columns** - Each variable used in `sparql_update_pattern` must be mapped to an existing table column via the column's OPTIONS (e.g., `OPTIONS (variable '?s')`).
-3. **Use `rdfnode` columns** - Data modification operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
-
-> [!IMPORTANT]  
-> **SPARQL endpoints do not support PostgreSQL transactions.** Each operation is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
-
-### NULL Value Handling
-
-* **NULL values are not allowed** - Any attempt to insert or update a triple with a NULL component will raise an error. This prevents incomplete or invalid triples from being written to the triplestore.
-
-### [INSERT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#insert)
-
-The `INSERT` statement allows you to add new RDF triples to a triplestore. Each row inserted into a `FOREIGN TABLE` is converted into a SPARQL `INSERT DATA` statement and sent to the remote SPARQL endpoint.
-
-### Usage:
-
-```sql
-INSERT INTO ft (subject, predicate, object) VALUES
-  ('<https://www.uni-muenster.de>',
-  '<http://www.w3.org/2000/01/rdf-schema#label>',
-  '"Westfälische Wilhelms-Universität Münster"@de');
-```
-
-### [UPDATE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-sql)
-
-The `UPDATE` statement allows you to modify existing RDF triples in a triplestore. Since SPARQL does not have a direct UPDATE syntax, each row update is implemented as a combination of `DELETE DATA` (removing old triples) followed by `INSERT DATA` (adding new triples).
-
-### Usage:
-
-```sql
-UPDATE ft SET
-  object = '"University of Münster"@en'
-WHERE subject = '<https://www.uni-muenster.de>'
-  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
-```
-
-### [DELETE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#delete)
-
-The `DELETE` statement allows you to remove RDF triples from a triplestore. Each row deleted from a `FOREIGN TABLE` is converted into a SPARQL `DELETE DATA` statement and sent to the remote SPARQL endpoint.
-
-#### Usage:
-
-```sql
-DELETE FROM ft 
-WHERE object = '"Westfälische Wilhelms-Universität Münster"@de'::rdfnode;
-```
-### [Update Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-examples)
-
-```sql
-CREATE SERVER fuseki
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint   'http://fuseki:3030/dt/sparql',
-  update_url 'http://fuseki:3030/dt/update');
-
-CREATE FOREIGN TABLE ft (
-  subject   rdfnode OPTIONS (variable '?s'),
-  predicate rdfnode OPTIONS (variable '?p'),
-  object    rdfnode OPTIONS (variable '?o') 
-)
-SERVER fuseki OPTIONS (
-  log_sparql 'false',
-  sparql 
-    $$
-     SELECT * 
-     WHERE {
-       ?s ?p ?o .
-       ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://dbpedia.org/resource/University>      
-     }
-    $$,
-  sparql_update_pattern 
-    $$
-      ?s ?p ?o .
-      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://dbpedia.org/resource/University>
-    $$
-);
-
-CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
-
-INSERT INTO ft (subject, predicate, object)
-VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"University of Münster"@en');
-
-SELECT * FROM ft;
-            subject            |                     predicate                     |                  object                   
--------------------------------+---------------------------------------------------+-------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <https://dbpedia.org/resource/University>
-(2 rows)
-
-UPDATE ft SET
-  object = '"Westfälische Wilhelms-Universität Münster"@de'
-WHERE subject = '<https://www.uni-muenster.de>'
-  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
-
-SELECT * FROM ft;
-            subject            |                     predicate                     |                     object                     
--------------------------------+---------------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | <https://dbpedia.org/resource/University>
-(2 rows)
-
-DELETE FROM ft
-WHERE subject = '<https://www.uni-muenster.de>';
-
-SELECT * FROM ft;
- subject | predicate | object 
----------+-----------+--------
-(0 rows)
-```
-## [Pushdown](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#pushdown)
-
-A *pushdown* is the ability to translate SQL queries so that operations—such as sorting, formatting, and filtering—are performed directly in the data source rather than in PostgreSQL. This feature can significantly reduce the number of records retrieved from the data source.  
-
-For example, if a SQL `LIMIT` clause is not pushed down, the target system will perform a full scan of the data source, prepare the entire result set for transfer, send it to PostgreSQL over the network, and only then will PostgreSQL discard the unnecessary data. Depending on the total number of records, this process can be extremely inefficient.  
-
-In a nutshell, the `rdf_fdw` extension attempts to translate SQL into SPARQL queries. However, due to fundamental differences between the two languages, this is not always straightforward. As a rule of thumb, it is often best to keep SQL queries involving foreign tables as simple as possible. The `rdf_fdw` supports pushdown of most [SPARQL 1.1 built-in functions](https://www.w3.org/TR/sparql11-query/#funcs) and several PostgreSQL instructions, such as `LIMIT` and `IN`/`NOT IN`.
-
-> [!NOTE]  
-> Aggregate pushdown is currently **not** supported. While aggregate functions (such as `sparql.sum`, `sparql.avg`, `sparql.min`, `sparql.max`, `sparql.group_concat`, `sparql.sample`, etc.) are implemented and usable in SQL queries, they are always evaluated locally by PostgreSQL. The SPARQL endpoint does not perform aggregation for these queries! If you need remote aggregation, you must embed the aggregate in the foreign table's SPARQL option or run the query directly against the endpoint.
-
-### [LIMIT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#limit)
-
-`LIMIT` clauses are pushed down only if the SQL query does not contain aggregates and when all conditions in the `WHERE` clause can be translated to SPARQL.
- 
-| SQL | SPARQL|
-| -- | --- |
-| `LIMIT x`| `LIMIT x` 
-| `FETCH FIRST x ROWS` | `LIMIT x` |
-| `FETCH FIRST ROW ONLY` | `LIMIT 1` |
-
-**OFFSET** pushdown is **not** supported, meaning that OFFSET filters will be applied locally in PostgreSQL.
-
-Example:
-
-```sql
-SELECT s, p, o FROM rdbms
-WHERE 
-  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
-  sparql.langmatches(sparql.lang(o), 'es')
-FETCH FIRST 5 ROWS ONLY;
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LANGMATCHES(LANG(?o), "es"))
-}
-LIMIT 5
-
-INFO:  SPARQL returned 5 records.
-
-                    s                     |        o        
-------------------------------------------+-----------------
- <http://www.wikidata.org/entity/Q192490> | "PostgreSQL"@es
-(1 row)
-```
-
-* `FETCH FIRST 5 ROWS ONLY` was pushed down as `LIMIT 5` in the SPARQL query.
-
-### [ORDER BY](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#order-by)
-
-`ORDER BY` can be pushed down if the data types can be translated into SPARQL.
-
-| SQL | SPARQL|
-| -- | --- |
-| `ORDER BY x ASC`, `ORDER BY x` | `ORDER BY ASC(x)`|
-| `ORDER BY x DESC` |`ORDER BY DESC(x)` |
-
-Example:
-
-```sql
-SELECT s, o FROM rdbms
-WHERE 
-  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
-  sparql.langmatches(sparql.lang(o), 'es')
-ORDER BY s ASC, o DESC
-FETCH FIRST 5 ROWS ONLY;
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LANGMATCHES(LANG(?o), "es"))
-}
-ORDER BY  ASC (?s)  DESC (?o)
-LIMIT 5
-
-INFO:  SPARQL returned 5 records.
-
-                     s                     |        o        
--------------------------------------------+-----------------
- <http://www.wikidata.org/entity/Q1012765>  | "SQL Express Edition"@es
- <http://www.wikidata.org/entity/Q1050734>  | "Informix"@es
- <http://www.wikidata.org/entity/Q12621393> | "Tibero"@es
- <http://www.wikidata.org/entity/Q1493683>  | "MySQL Clúster"@es
- <http://www.wikidata.org/entity/Q15275385> | "SingleStore"@es
-(5 rows)
-```
-
-* `ORDER BY s ASC, o DESC` was pushed down as SPARQL `ORDER BY  ASC (?s)  DESC (?o)`
-### [DISTINCT](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#distinct)
-
-`DISTINCT` is pushed down to the SPARQL `SELECT` statement just as in SQL. However, if the configured SPARQL query already includes a `DISTINCT` or `REDUCED` modifier, the SQL `DISTINCT` won't be pushed down. Since there is no SPARQL equivalent for `DISTINCT ON`, this feature cannot be pushed down.  
-
-Example:
-
-```sql
-SELECT DISTINCT p, o FROM rdbms
-WHERE 
-  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
-  sparql.langmatches(sparql.lang(o), 'de');
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT DISTINCT ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LANGMATCHES(LANG(?o), "de"))
-}
-ORDER BY ASC (?p)  ASC (?o)
-
-INFO:  SPARQL returned 43 records.
-
-        name        | birthdate  |                  party                  
---------------------+------------+-----------------------------------------
- Louis Boyard       | 2000-08-26 | La France insoumise
- Klara Schedlich    | 2000-01-04 | Bündnis 90/Die Grünen
- Pierrick Berteloot | 1999-01-11 | Rassemblement National
- Niklas Wagener     | 1998-04-16 | Bündnis 90/Die Grünen
- Jakob Blankenburg  | 1997-08-05 | Sozialdemokratische Partei Deutschlands
-(5 rows)
-```
-
-* `DISTINCT` was pushed down to SPARQL.
-
-### [WHERE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#where)
-
-The `rdf_fdw` extension supports pushdown of many SQL expressions in the `WHERE` clause. When applicable, these expressions are translated into SPARQL `FILTER` clauses, allowing filtering to occur directly at the RDF data source. 
-
-The following expressions in the `WHERE` clause are eligible for pushdown:
-
-* Comparisons involving PostgreSQL data types (e.g., `integer`, `text`, `boolean`) or `rdfnode`, when used with the supported operators:
-
-  ✅ **Supported Data Types and Operators**
-
-  | Data type                                                  | Operators                             |
-  |------------------------------------------------------------|---------------------------------------|
-  | `rdfnode`                                                  | `=`, `!=`,`<>`, `>`, `>=`, `<`, `<=`  |
-  | `text`, `char`, `varchar`, `name`                          | `=`, `<>`, `!=`, `~~`, `!~~`, `~~*`,`!~~*`                       |
-  | `date`, `timestamp`, `timestamp with time zone`            | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
-  | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
-  | `boolean`                                                  | `IS`, `IS NOT`                        |
-
-* ✅ `IN`/`NOT IN` and `ANY` constructs with constant lists.
-  
-  SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation), as long as the list has the supported data types.
-
-* ✅ Nearly all supported [SPARQL functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-functions) are pushdown-capable, including:
-  * `LANG()`, `DATATYPE()`, `STR()`, `isBLANK()`, `isIRI()`, etc.
-  * Numeric, string, and datetime functions such as `ROUND()`, `STRLEN()`, `YEAR()`, and others.
-  
-  ⚠️ **Exceptions**: Due to their volatile nature, the SPARQL functions RAND() and NOW() cannot be pushed down. Because their results cannot be reproduced consistently by PostgreSQL, any rows returned from the endpoint would be filtered out locally during re-evaluation.
-
-❌ **Conditions That Prevent Pushdown**
-
-A `WHERE` condition will not be pushed down if:
-
-* The option `enable_pushdown` is set to `false`.
-* The underlying SPARQL query includes:
-  * a `GROUP BY` clause
-  * solution modifiers like `OFFSET`, `ORDER BY`, `LIMIT`, `DISTINCT`, or `REDUCED`
-  * subqueries or federated queries
-* The condition includes an unsupported data type or operator.
-* The condition contains `OR` logical operators (not yet supported).
-
-
-#### Pushdown Examples
-
-For the examples in this section consider this `SERVER` and `FOREIGN TABLE` setting (Wikidata):
-
-```SQL
-CREATE SERVER wikidata
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://query.wikidata.org/sparql');
-
-CREATE FOREIGN TABLE rdbms (
-  s rdfnode OPTIONS (variable '?s'),
-  p rdfnode OPTIONS (variable '?p'),
-  o rdfnode OPTIONS (variable '?o')
-)
-SERVER wikidata OPTIONS (
-  sparql 
-    'SELECT * {
-      ?s wdt:P31 wd:Q3932296 .
-	  ?s ?p ?o
-	 }'
-);
-```
-
-1. Pusdown of `WHERE` conditions involving `rdfnode` values and `=` and `!=` operators. All conditions are pushed as `FILTER` expressions.
-
-```sql
-
-SELECT s, o FROM rdbms
-WHERE 
-  o = '"PostgreSQL"@es' AND
-  o <> '"Oracle"@es';
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "PostgreSQL"@es)
- FILTER(?o != "Oracle"@es)
-}
-
-INFO:  SPARQL returned 1 record.
-
-                    s                     |        o        
-------------------------------------------+-----------------
- <http://www.wikidata.org/entity/Q192490> | "PostgreSQL"@es
-(1 row)
-```
-
-2. Pusdown of `WHERE` conditions involving `rdfnode` values and `=`, `>`, and `<` operators. All conditions are pushed as `FILTER` expressions. Note that the `timpestamp` values are automatically cast to the correspondent XSD data type.
-
-```sql
-SELECT s, o FROM rdbms
-WHERE 
-  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
-  o > '1996-01-01'::timestamp AND o < '1996-12-31'::timestamp;
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(?o > "1996-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o < "1996-12-31T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
-
-INFO:  SPARQL returned 1 record.
-
-                    s                     |                                  o                                  
-------------------------------------------+---------------------------------------------------------------------
- <http://www.wikidata.org/entity/Q192490> | "1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-```
-3. Pusdown of `WHERE` conditions with `IN` and `ANY` constructs. All conditions are pushed down as `FILTER` expressions.
-
-```sql
-SELECT p, o FROM rdbms
-WHERE 
-  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
-  o IN ('"PostgreSQL"@en', '"IBM Db2"@fr', '"MySQL"@es');
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
-}
-
-INFO:  SPARQL returned 3 records.
-
-                      p                       |        o        
-----------------------------------------------+-----------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL"@es
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
- <http://www.w3.org/2000/01/rdf-schema#label> | "IBM Db2"@fr
-(3 rows)
-```
-
-```sql
-SELECT p, o FROM rdbms
-WHERE 
-  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
-  o = ANY(ARRAY['"PostgreSQL"@en'::rdfnode,'"IBM Db2"@fr'::rdfnode,'"MySQL"@es'::rdfnode]);
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(?o IN ("PostgreSQL"@en, "IBM Db2"@fr, "MySQL"@es))
-}
-
-INFO:  SPARQL returned 3 records.
-
-                      p                       |        o        
-----------------------------------------------+-----------------
- <http://www.w3.org/2000/01/rdf-schema#label> | "MySQL"@es
- <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
- <http://www.w3.org/2000/01/rdf-schema#label> | "IBM Db2"@fr
-(3 rows)
-```
-
-4. Pusdown of `WHERE` conditions involving SPARQL functions. The function calls for `LANGMATCHES()`, `LANG()`, and `STRENDS()` are pushed down in `FILTER` expressions.
-
-```sql
-SELECT s, o FROM rdbms
-WHERE 
-  p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
-  sparql.langmatches(sparql.lang(o), 'de') AND
-  sparql.strends(o, sparql.strlang('SQL','de'));
-
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-SELECT ?s ?p ?o 
-{
-      ?s wdt:P31 wd:Q3932296 .
-          ?s ?p ?o
-         
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
- FILTER(LANGMATCHES(LANG(?o), "de"))
- FILTER(STRENDS(?o, "SQL"@de))
-}
-
-INFO:  SPARQL returned 4 records.
-
-                     s                     |        o        
--------------------------------------------+-----------------
- <http://www.wikidata.org/entity/Q850>     | "MySQL"@de
- <http://www.wikidata.org/entity/Q192490>  | "PostgreSQL"@de
- <http://www.wikidata.org/entity/Q5014224> | "CSQL"@de
- <http://www.wikidata.org/entity/Q6862049> | "Mimer SQL"@de
-(4 rows)
-```
-
 ## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
-
-### [LinkedGeoData](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#linkedgeodata)
-
-Retrieve all amenities 100 from Leipzig Central Station that are wheelchair accessible and had its entry modified after January 1st, 2015.
-
-```sql
-CREATE SERVER linkedgeodata 
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'http://linkedgeodata.org/sparql');
-
-CREATE FOREIGN TABLE leipzig_hbf (
-  hbf_iri    rdfnode OPTIONS (variable '?s'),
-  modified   rdfnode OPTIONS (variable '?mod'),
-  loc_iri    rdfnode OPTIONS (variable '?x'),
-  loc_label  rdfnode OPTIONS (variable '?l'), 
-  wheelchair rdfnode OPTIONS (variable '?wc')
-
-) SERVER linkedgeodata OPTIONS (
-  log_sparql 'true',
-  sparql '
-PREFIX lgdo: <http://linkedgeodata.org/ontology/>
-PREFIX geom: <http://geovocab.org/geometry#>
-PREFIX ogc: <http://www.opengis.net/ont/geosparql#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-
-SELECT * {
-  ?s owl:sameAs <http://dbpedia.org/resource/Leipzig_Hauptbahnhof> ;
-    geom:geometry [ogc:asWKT ?sg] .
-
-  ?x a lgdo:Amenity ;
-    rdfs:label ?l ;
-	<http://purl.org/dc/terms/modified> ?mod ;
-	<http://linkedgeodata.org/ontology/wheelchair> ?wc ;
-    geom:geometry [ogc:asWKT ?xg] .
-    FILTER(bif:st_intersects (?sg, ?xg, 0.1)) .
-}'); 
-
-SELECT loc_iri, sparql.lex(loc_label), CAST(modified AS timestamp)
-FROM leipzig_hbf
-WHERE 
-  sparql.contains(loc_label, 'bahnhof') AND  
-  modified > '2015-01-01'::date AND 
-  wheelchair = true
-FETCH FIRST 10 ROWS ONLY;
-
-INFO:  SPARQL query sent to 'http://linkedgeodata.org/sparql':
-
-PREFIX lgdo: <http://linkedgeodata.org/ontology/>
-PREFIX geom: <http://geovocab.org/geometry#>
-PREFIX ogc: <http://www.opengis.net/ont/geosparql#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-
-SELECT ?mod ?x ?l ?wc 
-{
-      ?s owl:sameAs <http://dbpedia.org/resource/Leipzig_Hauptbahnhof> ;
-    geom:geometry [ogc:asWKT ?sg] .
-
-  ?x a lgdo:Amenity ;
-    rdfs:label ?l ;
-        <http://purl.org/dc/terms/modified> ?mod ;
-        <http://linkedgeodata.org/ontology/wheelchair> ?wc ;
-    geom:geometry [ogc:asWKT ?xg] .
-    FILTER(bif:st_intersects (?sg, ?xg, 0.1)) .
-
- ## rdf_fdw pushdown conditions ##
- FILTER(CONTAINS(?l, "bahnhof"))
- FILTER(?mod > "2015-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
- FILTER(?wc = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
-}
-LIMIT 10
-
-INFO:  SPARQL returned 2 records.
-
-                     loc_iri                      |            lex            |      modified       
---------------------------------------------------+---------------------------+---------------------
- <http://linkedgeodata.org/triplify/way165354553> | Parkplatz am Hauptbahnhof | 2015-03-10 16:46:08
- <http://linkedgeodata.org/triplify/way90961368>  | Hauptbahnhof, Ostseite    | 2015-04-29 14:13:14
-(2 rows)
-```
-
-In this query we can observe that:
- 
-* all `WHERE` conditions were pushed down as `FILTER` expressions
-* the `FETCH FIRST 10 ROWS ONLY` was pushed down as `LIMIT 10`
-* the lexical value of the literal in `loc_label` was extracted using the function [LEX()](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex).
-* the `xsd:dateTime` literal in `modified` was successfully converted to `timestamp` using SQL `CAST`.
 
 ### [DBpedia](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#dbpedia)
 
@@ -2992,48 +2942,11 @@ FROM museums_brittany
 
 ![geoserver](examples/img/geoserver-layer.png?raw=true)
 
-Afer that set the geometery column and identifier, and hit **Save**. Finally, fill in the remaining layer attributes, such as Style, Bounding Boxes and Spatial Reference System, and click **Save** - see this [instructions](https://docs.geoserver.org/latest/en/user/data/webadmin/layers.html) for more details. After that you'll be able to reach your layer from a standard OGC WFS client, e.g. using [QGIS](https://docs.qgis.org/3.34/en/docs/server_manual/services/wfs.html).
+After that set the geometry column and identifier, and hit **Save**. Finally, fill in the remaining layer attributes, such as Style, Bounding Boxes and Spatial Reference System, and click **Save** - see this [instructions](https://docs.geoserver.org/latest/en/user/data/webadmin/layers.html) for more details. After that you'll be able to reach your layer from a standard OGC WFS client, e.g. using [QGIS](https://docs.qgis.org/3.34/en/docs/server_manual/services/wfs.html).
 
 ![geoserver-wfs](examples/img/geoserver-wfs-client.png?raw=true)
 
 ![geoserver-wfs-map](examples/img/geoserver-wfs-map.png?raw=true)
-## [Deploy with Docker](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#deploy-with-docker)
-
-To deploy the `rdf_fdw` with docker just pick one of the supported PostgreSQL versions, install the [requirements](#requirements) and [compile](#build-and-install) the [source code](https://github.com/jimjonesbr/rdf_fdw/releases). For example, a `rdf_fdw` `Dockerfile` for PostgreSQL 18 should look like this (minimal example):
-
-```dockerfile
-FROM postgres:18
-
-RUN apt-get update && \
-    apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
-
-RUN mkdir /extensions
-COPY ./rdf_fdw-2.2.0.tar.gz /extensions/
-WORKDIR /extensions
-
-RUN tar xvzf rdf_fdw-2.2.0.tar.gz && \
-    cd rdf_fdw-2.2.0 && \
-    make -j && \
-    make install
-```
-
-To build the image save it in a `Dockerfile` and  run the following command in the root directory - this will create an image called `rdf_fdw_image`.:
- 
-```bash
- $ docker build -t rdf_fdw_image .
-```
-
-After successfully building the image you're ready to `run` or `create` the container ..
- 
-```bash
-$ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_image
-```
-
-.. and then finally you're able to create and use the extension!
-
-```bash
-$ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
-```
 
 ### [For testers and developers](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#for-testers-and-developers)
 
