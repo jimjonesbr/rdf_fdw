@@ -16,6 +16,7 @@
   - [CREATE USER MAPPING](#create-user-mapping)
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
+    - [RDF Node Handling](#rdf-node-handling)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
   - [Pushdown](#pushdown)
   - [Prefix Management](#prefix-management)
@@ -27,7 +28,6 @@
   - [rdf_fdw_settings](#rdf_fdw_settings)    
   - [rdf_fdw_clone_table](#rdf_fdw_clone_table)    
   - [EXPLAIN and Diagnostics](#explain-and-diagnostics)
-- [RDF Node Handling](#rdf-node-handling)
 - [SPARQL Functions](#sparql-functions)
   - [Aggregates](#aggregates)
   - [Functional Forms](#functional-forms)
@@ -38,7 +38,8 @@
   - [Hash Functions](#hash-functions)
   - [Custom Functions](#custom-functions)
 - [SPARQL Describe](#sparql-describe)
-- [Examples](#examples)
+- [Import data into QGIS](#import-data-into-qgis)
+- [For testers and developers](#for-testers-and-developers)
  
 ## [Requirements](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#requirements)
 
@@ -116,8 +117,6 @@ A convenient way to build and test `rdf_fdw` is to create a Docker image that bu
 - Build an image that compiles and installs the extension (reproducible, good for CI).
 - Mount the source into a container and run `make install` for iterative development (faster local iterations).
 
-Make sure the PostgreSQL development package you install matches the PostgreSQL version in the base image (so `pg_config` and the server headers align).
-
 Minimal example Dockerfile for PostgreSQL 18:
 
 ```dockerfile
@@ -146,7 +145,7 @@ docker exec -u postgres rdf_fdw_container psql -d mydatabase -c "CREATE EXTENSIO
 ```
 
 > [!NOTE] 
-> Do not use `POSTGRES_HOST_AUTH_METHOD=trust` in production; that setting is only for local testing.
+> Do not use `POSTGRES_HOST_AUTH_METHOD=trust` in production. Check for other `POSTGRES_HOST_AUTH_METHOD` in the PostgreSQL docker documentation.
 
 
 ## [Usage](#usage)
@@ -155,7 +154,7 @@ Set up a `SERVER` that points to a SPARQL endpoint, then declare `FOREIGN TABLE`
 
 ### [CREATE SERVER](#create_server)
 
-Use `CREATE SERVER` to register a remote SPARQL endpoint with PostgreSQL. The creator becomes the server owner. The `endpoint` option (the SPARQL endpoint URL) is required; you may also specify optional connection settings such as timeouts or proxy parameters, if applicable.
+Use `CREATE SERVER` to register a remote SPARQL endpoint with PostgreSQL - the creator becomes the server owner. The `endpoint` option (the SPARQL endpoint URL) is required; you may also specify optional connection settings such as timeouts or proxy parameters, if applicable.
 
 Example: register the DBpedia SPARQL endpoint
 
@@ -220,6 +219,8 @@ Authentication: when a `user` is supplied, `rdf_fdw` uses HTTP Basic Authenticat
 
 Foreign tables act as a proxy to a SPARQL endpoint: the table's `sparql` option supplies the query and columns map SPARQL variables to PostgreSQL columns. Keep foreign-table definitions focused and avoid embedding complex logic in SQL; simpler queries increase pushdown success and performance.
 
+#### Table options
+
 Table options:
 
 | Option | Type | Description |
@@ -229,11 +230,11 @@ Table options:
 | `enable_pushdown` | optional | Override server-level pushdown for this table (default: server value). |
 | `update_url` | optional | URL used for SPARQL UPDATE requests when different from the SELECT endpoint (e.g. Fuseki). |
 
-Column types
+#### Column types
 
 Columns may be declared as `rdfnode` (**recommended**) or as standard PostgreSQL types. Use `rdfnode` when you need to preserve RDF semantics (IRIs, language tags, datatypes). Native types enable automatic casting of RDF literals into SQL types.
 
-Column options (common)
+#### Column options
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -242,6 +243,8 @@ Column options (common)
 | `language` | optional | Language tag to apply when comparing or formatting literals (e.g. `en`). Use `*` to ignore language. |
 | `literal_type` | optional | Expected XSD datatype for the literal (e.g. `xsd:date`). Use `*` to ignore type. |
 | `nodetype` | optional | Hint whether the value is `literal` or `iri` (default `literal`). |
+
+#### Examples
 
 Example (minimal `rdfnode` table):
 
@@ -289,6 +292,163 @@ SERVER dbpedia OPTIONS (
 
 > [!NOTE]
 > Use `\d[+]` or `\det[+]` in `psql` to view foreign table columns and options.
+
+#### [RDF Node Handling](#rdf-node-handling)
+The `rdf_fdw` extension introduces a custom data type called `rdfnode` that represents full RDF nodes exactly as they appear in a triplestore. It supports:
+
+- **IRIs** (e.g., `<http://example.org/resource>`)
+- **Plain literals** (e.g., `"42"`)
+- **Literals with language tags** (e.g., `"foo"@es`)
+- **Typed literals** (e.g., `"42"^^xsd:integer`)
+
+This type is useful when you want to inspect or preserve the full structure of RDF terms—including their language tags or datatypes—rather than just working with their values.
+
+**Casting Between `rdfnode` and Native PostgreSQL Types**
+
+Although `rdfnode` preserves the full RDF term, you can cast it to standard PostgreSQL types like `text`, `int`, or `date` when you only care about the literal value. Likewise, native PostgreSQL values can be cast into `rdfnode`, with appropriate RDF serialization.
+
+From `rdfnode` to PostgreSQL:
+
+```sql
+SELECT CAST('"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode AS int);
+ int4 
+------
+   42
+(1 row)
+
+SELECT CAST('"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode AS numeric);
+ numeric 
+---------
+   42.73
+(1 row)
+
+SELECT CAST('"2025-05-16"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode AS date);
+    date    
+------------
+ 2025-05-16
+(1 row)
+
+SELECT CAST('"2025-05-16T06:41:50"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode AS timestamp);
+      timestamp      
+---------------------
+ 2025-05-16 06:41:50
+(1 row)
+```
+From PostgreSQL to `rdfnode`:
+
+```sql
+SELECT CAST('"foo"^^xsd:string' AS rdfnode);
+                     rdfnode                      
+--------------------------------------------------
+ "foo"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT CAST(42.73 AS rdfnode);
+                       rdfnode                       
+-----------------------------------------------------
+ "42.73"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT CAST(422892987223 AS rdfnode);
+                         rdfnode                         
+---------------------------------------------------------
+ "422892987223"^^<http://www.w3.org/2001/XMLSchema#long>
+(1 row)
+
+SELECT CAST(CURRENT_DATE AS rdfnode);
+                     current_date                      
+-------------------------------------------------------
+ "2025-05-16"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT CAST(CURRENT_TIMESTAMP AS rdfnode);
+                             current_timestamp                              
+----------------------------------------------------------------------------
+ "2025-05-16T06:41:50.221129Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+```
+
+**Choosing Between rdfnode and Native PostgreSQL Types**
+
+You can define foreign table columns using either:
+
+* `rdfnode` **(recommended)** — Use this when you want to preserve the full RDF term, including language tags, datatypes, and IRIs. This is also required if you want to use SPARQL functions, which do not support native PostgreSQL types.
+
+* PostgreSQL native types (e.g., `text`, `int`, `date`) — Use these when you prefer automatic type coercion and simpler SQL filtering, treating RDF values more like regular PostgreSQL data.
+
+**Comparison of `rdfnode` with Native PostgreSQL Types**
+
+`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules.
+
+Examples: `rdfnode` vs `rdfnode`
+
+```sql
+SELECT '"foo"@en'::rdfnode = '"foo"@fr'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode > '"foobar"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode < '"foobar"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+ SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:short'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+ SELECT '"73.42"^^xsd:float'::rdfnode < '"100"^^xsd:short'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+```
+
+The `rdfnode` data type also allow comparisons with PostgreSQL native data types, such as `int`, `date`, `numeric`, etc.
+
+Examples: `rdfnode` vs PostgreSQL types
+
+```sql
+SELECT '"42"^^xsd:int'::rdfnode = 42;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2010-01-08"^^xsd:date'::rdfnode < '2020-12-30'::date;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:decimal'::rdfnode > 42;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42.73"^^xsd:decimal'::rdfnode < 42.99;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::timestamp;
+ ?column? 
+----------
+ t
+(1 row)
+```
 
 ## [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
 
@@ -744,7 +904,7 @@ Once registered, these prefixes can be automatically included in generated SPARQ
 
 ## [Data Modification](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#data-modification)
 
-The `rdf_fdw` extension supports data modification operations (`INSERT`, `UPDATE`, `DELETE`) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through PostgreSQL SQL statements.
+The `rdf_fdw` extension supports data modification operations (`INSERT`, `UPDATE`, `DELETE`) on foreign tables connected to RDF triplestores. These operations allow you to add, modify, or remove RDF triples directly through SQL statements.
 
 > [!NOTE]  
 > Data modification operations require the `sparql_update_pattern` option to be set on the `FOREIGN TABLE`. This option specifies a SPARQL triple pattern template that defines how rows from PostgreSQL are converted into SPARQL UPDATE statements.
@@ -1055,168 +1215,6 @@ FETCH FIRST 3 ROWS ONLY;
  Planning Time: 0.115 ms
  Execution Time: 182.551 ms
 (15 rows)
-```
-
-## [RDF Node Handling](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf-node-handling)
-The `rdf_fdw` extension introduces a custom data type called `rdfnode` that represents full RDF nodes exactly as they appear in a triplestore. It supports:
-
-- **IRIs** (e.g., `<http://example.org/resource>`)
-- **Plain literals** (e.g., `"42"`)
-- **Literals with language tags** (e.g., `"foo"@es`)
-- **Typed literals** (e.g., `"42"^^xsd:integer`)
-
-This type is useful when you want to inspect or preserve the full structure of RDF terms—including their language tags or datatypes—rather than just working with their values.
-
-### Casting Between `rdfnode` and Native PostgreSQL Types
-
-Although `rdfnode` preserves the full RDF term, you can cast it to standard PostgreSQL types like `text`, `int`, or `date` when you only care about the literal value. Likewise, native PostgreSQL values can be cast into `rdfnode`, with appropriate RDF serialization.
-
-From `rdfnode` to PostgreSQL:
-
-```sql
-SELECT CAST('"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode AS int);
- int4 
-------
-   42
-(1 row)
-
-SELECT CAST('"42.73"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode AS numeric);
- numeric 
----------
-   42.73
-(1 row)
-
-SELECT CAST('"2025-05-16"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode AS date);
-    date    
-------------
- 2025-05-16
-(1 row)
-
-SELECT CAST('"2025-05-16T06:41:50"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode AS timestamp);
-      timestamp      
----------------------
- 2025-05-16 06:41:50
-(1 row)
-```
-From PostgreSQL to `rdfnode`:
-
-```sql
-SELECT CAST('"foo"^^xsd:string' AS rdfnode);
-                     rdfnode                      
---------------------------------------------------
- "foo"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
-SELECT CAST(42.73 AS rdfnode);
-                       rdfnode                       
------------------------------------------------------
- "42.73"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(1 row)
-
-SELECT CAST(422892987223 AS rdfnode);
-                         rdfnode                         
----------------------------------------------------------
- "422892987223"^^<http://www.w3.org/2001/XMLSchema#long>
-(1 row)
-
-SELECT CAST(CURRENT_DATE AS rdfnode);
-                     current_date                      
--------------------------------------------------------
- "2025-05-16"^^<http://www.w3.org/2001/XMLSchema#date>
-(1 row)
-
-SELECT CAST(CURRENT_TIMESTAMP AS rdfnode);
-                             current_timestamp                              
-----------------------------------------------------------------------------
- "2025-05-16T06:41:50.221129Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(1 row)
-```
-
-### Choosing Between rdfnode and Native PostgreSQL Types
-
-You can define foreign table columns using either:
-
-* `rdfnode` **(recommended)** — Use this when you want to preserve the full RDF term, including language tags, datatypes, and IRIs. This is also required if you want to use SPARQL functions, which do not support native PostgreSQL types.
-
-* PostgreSQL native types (e.g., `text`, `int`, `date`) — Use these when you prefer automatic type coercion and simpler SQL filtering, treating RDF values more like regular PostgreSQL data.
-
-In short:
-
-* Use rdfnode when you need full RDF semantics or access to SPARQL-specific features.
-* Use native types when you prefer SQL-like convenience and don't require RDF semantics or SPARQL functions.
-
-### Comparison of `rdfnode` with Native PostgreSQL Types
-
-`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules.
-
-Examples: `rdfnode` vs `rdfnode`
-
-```sql
-SELECT '"foo"@en'::rdfnode = '"foo"@fr'::rdfnode;
- ?column? 
-----------
- f
-(1 row)
-
-SELECT '"foo"^^xsd:string'::rdfnode > '"foobar"^^xsd:string'::rdfnode;
- ?column? 
-----------
- f
-(1 row)
-
-SELECT '"foo"^^xsd:string'::rdfnode < '"foobar"^^xsd:string'::rdfnode;
- ?column? 
-----------
- t
-(1 row)
-
- SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:short'::rdfnode;
- ?column? 
-----------
- t
-(1 row)
-
- SELECT '"73.42"^^xsd:float'::rdfnode < '"100"^^xsd:short'::rdfnode;
- ?column? 
-----------
- t
-(1 row)
-```
-
-The `rdfnode` data type also allow comparisons with PostgreSQL native data types, such as `int`, `date`, `numeric`, etc.
-
-Examples: `rdfnode` vs PostgreSQL types
-
-```sql
-SELECT '"42"^^xsd:int'::rdfnode = 42;
- ?column? 
-----------
- t
-(1 row)
-
-SELECT '"2010-01-08"^^xsd:date'::rdfnode < '2020-12-30'::date;
- ?column? 
-----------
- t
-(1 row)
-
-SELECT '"42.73"^^xsd:decimal'::rdfnode > 42;
- ?column? 
-----------
- t
-(1 row)
-
-SELECT '"42.73"^^xsd:decimal'::rdfnode < 42.99;
- ?column? 
-----------
- t
-(1 row)
-
-SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::timestamp;
- ?column? 
-----------
- t
-(1 row)
 ```
 
 ## [SPARQL Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-functions)
@@ -2766,99 +2764,7 @@ DESCRIBE <http://www.wikidata.org/entity/Q61308849>
 (37 rows)
 ```
 
-## [Examples](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#examples)
-
-### [DBpedia](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#dbpedia)
-
-```sql
-CREATE SERVER dbpedia
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
-
-CREATE FOREIGN TABLE politicians (
-  uri text        OPTIONS (variable '?person',     nodetype 'iri'),
-  name text       OPTIONS (variable '?personname', nodetype 'literal', literal_type 'xsd:string'),
-  birthdate date  OPTIONS (variable '?birthdate',  nodetype 'literal', literal_type 'xsd:date'),
-  party text      OPTIONS (variable '?partyname',  nodetype 'literal', literal_type 'xsd:string'),
-  country text    OPTIONS (variable '?country',    nodetype 'literal', language 'en')
-)
-SERVER dbpedia OPTIONS (
-  sparql '
-    PREFIX dbp: <http://dbpedia.org/property/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-
-    SELECT *
-    WHERE {
-      ?person 
-          a dbo:Politician;
-          dbo:birthDate ?birthdate;
-          dbp:name ?personname;
-          dbo:party ?party .       
-        ?party 
-          dbp:country ?country;
-          rdfs:label ?partyname .
-        FILTER NOT EXISTS {?person dbo:deathDate ?died}
-        FILTER(LANG(?partyname) = "de")
-      } 
-');
-
-SELECT name, birthdate, party
-FROM politicians
-WHERE 
-  country IN ('Germany','France') AND 
-  birthdate > '1995-12-31' AND
-  party <> ''
-ORDER BY birthdate DESC, party ASC
-FETCH FIRST 5 ROWS ONLY;
-
-INFO:  SPARQL query sent to 'https://dbpedia.org/sparql':
-
-PREFIX dbp: <http://dbpedia.org/property/>
-PREFIX dbo: <http://dbpedia.org/ontology/> 
-
-SELECT ?personname ?birthdate ?partyname ?country 
-{
-      ?person 
-          a dbo:Politician;
-          dbo:birthDate ?birthdate;
-          dbp:name ?personname;
-          dbo:party ?party .       
-        ?party 
-          dbp:country ?country;
-          rdfs:label ?partyname .
-        FILTER NOT EXISTS {?person dbo:deathDate ?died}
-        FILTER(LANG(?partyname) = "de")
-      
- ## rdf_fdw pushdown conditions ##
- FILTER(?country IN ("Germany"@en, "France"@en))
- FILTER(?birthdate > "1995-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
- FILTER(?partyname != ""^^<http://www.w3.org/2001/XMLSchema#string>)
-}
-ORDER BY  DESC (?birthdate)  ASC (?partyname)
-LIMIT 5
-
-INFO:  SPARQL returned 5 records.
-
-        name        | birthdate  |                  party                  
---------------------+------------+-----------------------------------------
- Louis Boyard       | 2000-08-26 | La France insoumise
- Klara Schedlich    | 2000-01-04 | Bündnis 90/Die Grünen
- Pierrick Berteloot | 1999-01-11 | Rassemblement National
- Niklas Wagener     | 1998-04-16 | Bündnis 90/Die Grünen
- Jakob Blankenburg  | 1997-08-05 | Sozialdemokratische Partei Deutschlands
-(5 rows)
-```
-
-In this example we can observe that: 
-
-* the executed SPARQL query was logged.
-* the SPARQL `SELECT` was modified to retrieve only the columns used in the SQL `SELECT` and `WHERE` clauses.
-* the conditions in the SQL `WHERE` clause were pushed down as SPARQL `FILTER` conditions.
-* the SQL `ORDER BY` clause was pushed down as SPARQL `ORDER BY`.
-* the `FETCH FIRST ... ROWS ONLY` was pushed down as SPARQL `LIMIT`
-* the column `country` has a `language` option, and its value is used as a language tag in the SPARQL expression: `FILTER(?country IN ("Germany"@en, "France"@en))`
-
-### [Import data into QGIS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#import-data-into-qgis)
+## [Import data into QGIS](#import-data-into-qgis)
 
 The `rdf_fdw` can also be used as a bridge between GIS (Geographic Information Systems) and RDF Triplestores. This example demonstrates how to retrieve geographic coordinates of all German public universities from DBpedia, create WKT (Well Known Text) literals, and import the data into [QGIS](https://qgis.org/) to visualize it on a map.
 
@@ -2948,7 +2854,7 @@ After that set the geometry column and identifier, and hit **Save**. Finally, fi
 
 ![geoserver-wfs-map](examples/img/geoserver-wfs-map.png?raw=true)
 
-### [For testers and developers](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#for-testers-and-developers)
+## [For testers and developers](#for-testers-and-developers)
 
 Think you're cool enough? Try compiling the latest commits from source!
 
