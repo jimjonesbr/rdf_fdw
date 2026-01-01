@@ -196,6 +196,10 @@ ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', NULL);
 
+/* invalid value - blank node */
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', sparql.bnode());
+
 /* cleanup */
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);

@@ -3212,6 +3212,13 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
 
+		/* SPARQL 1.1 Update spec prohibits blank nodes in INSERT */
+		if (isBlank(value_str))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("blank nodes are not allowed in INSERT operations"),
+					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
+
 		/* Check if escaping is needed for control characters */
 		for (const char *p = value_str; *p; p++)
 		{
@@ -3356,6 +3363,13 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
+
+		/* SPARQL 1.1 Update spec prohibits blank nodes in DELETE DATA */
+		if (isBlank(value_str))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("blank nodes cannot be used in DELETE operations"),
+					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
 
 		/* Check if escaping is needed for control characters */
 		{
@@ -3549,6 +3563,13 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
 
+		/* SPARQL 1.1 Update spec prohibits blank nodes in INSERT/DELETE */
+		if (isBlank(value_str))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("blank nodes are not allowed in UPDATE operations"),
+					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
+
 		/* Check if escaping is needed for control characters */
 		for (const char *p = value_str; *p; p++)
 		{
@@ -3627,6 +3648,13 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
+
+		/* SPARQL 1.1 Update spec prohibits blank nodes in INSERT/DELETE/UPDATE */
+		if (isBlank(value_str))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("blank nodes are not allowed in UPDATE operations"),
+					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
 
 		/* Check if escaping is needed for control characters */
 		for (const char *p = value_str; *p; p++)
@@ -5482,6 +5510,11 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						if (xmlStrcmp(node_type, (xmlChar *)"uri") == 0)
 						{
 							appendStringInfo(&literal_value, "%s", iri(node_value));
+						}
+						else if (xmlStrcmp(node_type, (xmlChar *)"bnode") == 0)
+						{
+							/* For blank nodes, preserve the label with _: prefix */
+							appendStringInfo(&literal_value, "_:%s", node_value);
 						}
 						else
 						{

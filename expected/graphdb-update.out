@@ -453,6 +453,24 @@ INFO:  SPARQL returned 1 record.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long>
 (1 row)
 
+/* update rdfnode with a blank node */
+UPDATE ft 
+SET object = sparql.bnode()
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  blank nodes are not allowed in UPDATE operations
+HINT:  Blank nodes are document-local and have no global meaning. Use IRIs instead.
 /* update with RETURNING */
 UPDATE ft SET
   object = '"Westfälische Wilhelms-Universität Münster"@de'

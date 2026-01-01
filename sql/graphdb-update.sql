@@ -112,6 +112,12 @@ WHERE subject = '<https://www.uni-muenster.de>'
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>';
 
+/* update rdfnode with a blank node */
+UPDATE ft 
+SET object = sparql.bnode()
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+
 /* update with RETURNING */
 UPDATE ft SET
   object = '"Westfälische Wilhelms-Universität Münster"@de'
