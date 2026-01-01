@@ -4,7 +4,7 @@
  * rdf_utils.c
  *   Functions for rdfnode comparison.
  *
- * Copyright (C) 2022-2025 University of Münster, Germany
+ * Copyright (C) 2022-2026 University of Münster, Germany
  * 
  *---------------------------------------------------------------------
  */

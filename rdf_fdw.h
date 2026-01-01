@@ -6,7 +6,7 @@
  * Centralized definitions for RDF/SPARQL URIs, datatypes, formats, and
  * configuration defaults.
  * 
- * Copyright (C) 2022-2025 University of Münster, Germany
+ * Copyright (C) 2022-2026 University of Münster, Germany
  * 
  *---------------------------------------------------------------------
  */

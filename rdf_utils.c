@@ -4,7 +4,7 @@
  * rdf_utils.c
  *   Utility functions for RDF data manipulation and validation.
  *
- * Copyright (C) 2022-2025 University of Münster, Germany
+ * Copyright (C) 2022-2026 University of Münster, Germany
  * 
  *---------------------------------------------------------------------
  */
