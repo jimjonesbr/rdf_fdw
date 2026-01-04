@@ -4674,8 +4674,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		elog(INFO, "SPARQL query sent to '%s':\n%s\n", state->server->servername, state->sparql);
 
 	/* For SPARQL UPDATE operations (INSERT, DELETE, UPDATE), use different approach */
-	if (state->sparql_query_type == SPARQL_INSERT || 
-		state->sparql_query_type == SPARQL_DELETE || 
+	if (state->sparql_query_type == SPARQL_INSERT ||
+		state->sparql_query_type == SPARQL_DELETE ||
 		state->sparql_query_type == SPARQL_UPDATE)
 	{
 		/* SPARQL UPDATE: send the update query directly in POST body with application/sparql-update */
@@ -4760,8 +4760,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
 
 		/* Set POST data based on query type */
-		if (state->sparql_query_type == SPARQL_INSERT || 
-			state->sparql_query_type == SPARQL_DELETE || 
+		if (state->sparql_query_type == SPARQL_INSERT ||
+			state->sparql_query_type == SPARQL_DELETE ||
 			state->sparql_query_type == SPARQL_UPDATE)
 		{
 			/* For SPARQL UPDATE: send raw SPARQL update in POST body */
@@ -4779,7 +4779,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
 		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 		curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
-		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, true);
+		/* Don't use CURLOPT_FAILONERROR so we can capture error response bodies */
+		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, false);
 
 		/* Enable verbose mode for debugging */
 		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
@@ -4798,8 +4799,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_USERAGENT, user_agent.data);
 
 		/* Set headers based on query type */
-		if (state->sparql_query_type == SPARQL_INSERT || 
-			state->sparql_query_type == SPARQL_DELETE || 
+		if (state->sparql_query_type == SPARQL_INSERT ||
+			state->sparql_query_type == SPARQL_DELETE ||
 			state->sparql_query_type == SPARQL_UPDATE)
 		{
 			/* For SPARQL UPDATE: use application/sparql-update content type */
@@ -4830,55 +4831,122 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		res = curl_easy_perform(state->curl);
 
-		if (res != CURLE_OK)
+		/* Always get response code - even if cURL failed */
+		curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+		elog(DEBUG2, "  %s: cURL result=%d, HTTP status=%ld, response size=%zu",
+			 __func__, res, response_code, chunk.size);
+
+		/* Only retry on network errors, not HTTP errors (400-599) */
+		if (res != CURLE_OK && (response_code == 0 || response_code < 400))
 		{
 			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(state->curl)) != CURLE_OK; i++)
 			{
 				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i);
+				/* Reset chunk memory for retry */
+				chunk.size = 0;
+				chunk_header.size = 0;
 			}
+			/* Update response code after retries */
+			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 		}
 
-		if (res != CURLE_OK)
+		/* Check for HTTP errors first (with FAILONERROR=false, we get the response body) */
+		if (response_code >= 400)
 		{
-			size_t len = strlen(errbuf);
-			fprintf(stderr, "\nlibcurl: (%d) ", res);
+			/* HTTP error - response body should contain error details */
+			elog(DEBUG1, "%s: HTTP error %ld, response size=%zu, header size=%zu",
+				 __func__, response_code, chunk.size, chunk_header.size);
 
-			xmlFreeDoc(state->xmldoc); /* xmlFreeDoc is NULL-safe */
+			if (chunk_header.size > 0 && chunk_header.memory)
+				elog(DEBUG2, "%s: response headers:\n%s", __func__, chunk_header.memory);
+
+			if (state->xmldoc)
+				xmlFreeDoc(state->xmldoc);
+
+			if (chunk.size > 0 && chunk.memory)
+			{
+				/* HTTP error with response body */
+				elog(DEBUG1, "%s: error response body: %s", __func__, chunk.memory);
+
+				if (response_code == 400)
+					ereport(ERROR,
+							(errcode(ERRCODE_SYNTAX_ERROR),
+							 errmsg("SPARQL query error"),
+							 errdetail("%s", chunk.memory),
+							 errhint("The SPARQL endpoint returned: Bad Request (HTTP 400)")));
+				else if (response_code == 401)
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("SERVER authentication failed (HTTP status %ld)", response_code),
+							 errdetail("Response: %s", chunk.memory),
+							 errhint("Check the user and password set in the USER MAPPING for the current PostgreSQL user: \"%s\" and try again.", GetUserNameFromId(GetUserId(), false))));
+				else if (response_code == 404)
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("SERVER not found (HTTP status %ld)", response_code),
+							 errdetail("Response: %s", chunk.memory),
+							 errhint("Check the SERVER endpoint URL: '%s'", state->endpoint)));
+				else if (response_code == 500)
+					ereport(ERROR,
+							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
+							 errmsg("internal server error (HTTP status %ld)", response_code),
+							 errdetail("Response from '%s': %s", state->server->servername, chunk.memory)));
+				else
+					ereport(ERROR,
+							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
+							 errmsg("HTTP error %ld from '%s'", response_code, state->server->servername),
+							 errdetail("Response: %s", chunk.memory)));
+			}
+			else
+			{
+				/* HTTP error without response body */
+				elog(DEBUG1, "%s: no response body available for HTTP error %ld", __func__, response_code);
+
+				if (response_code == 400)
+					ereport(ERROR,
+							(errcode(ERRCODE_SYNTAX_ERROR),
+							 errmsg("bad request (HTTP status %ld)", response_code)));
+				else if (response_code == 401)
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("SERVER authentication failed (HTTP status %ld)", response_code),
+							 errhint("Check the user and password set in the USER MAPPING for the PostgreSQL user \"%s\" and try again.", GetUserNameFromId(GetUserId(), false))));
+				else if (response_code == 404)
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							 errmsg("SERVER not found (HTTP status %ld)", response_code),
+							 errhint("Check the SERVER endpoint URL: '%s'", state->endpoint)));
+				else if (response_code == 500)
+					ereport(ERROR,
+							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
+							 errmsg("internal server error (HTTP status %ld)", response_code)));
+				else
+					ereport(ERROR,
+							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
+							 errmsg("HTTP error %ld from '%s'", response_code, state->server->servername)));
+			}
+
 			pfree(chunk.memory);
 			pfree(chunk_header.memory);
 			curl_slist_free_all(headers);
 			curl_easy_cleanup(state->curl);
 			curl_global_cleanup();
+		}
+		else if (res != CURLE_OK)
+		{
+			/* cURL/network error */
+			size_t len = strlen(errbuf);
+			fprintf(stderr, "\nlibcurl: (%d) ", res);
+
+			xmlFreeDoc(state->xmldoc);
 
 			if (len)
 			{
-				curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
-
-				if (response_code == 401)
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("Unauthorized (HTTP status %ld)", response_code),
-							 errhint("Check the user and password set in the USER MAPPING and try again.")));
-				else if (response_code == 404)
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("Not Found (HTTP status %ld)", response_code),
-							 errhint("This indicates that the server cannot find the requested resource. Check the SERVER url and try again: '%s'", state->endpoint)));
-				else if (response_code == 405)
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("Method Not Allowed (HTTP status %ld)", response_code),
-							 errhint("This indicates that the SERVER understands the request but does not allow it to be processed. Check the SERVER url and try again: '%s'", state->endpoint)));
-				else if (response_code == 500)
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("Internal Server Error (HTTP status %ld)", response_code),
-							 errhint("This indicates that the SERVER is currently unable to process any request due to internal problems. Check the SERVER url and try again: '%s'", state->endpoint)));
-				else
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("Unable to establish connection to '%s' (HTTP status %ld)", state->server->servername, response_code),
-							 errdetail("%s (curl error code %u)", curl_easy_strerror(res), res)));
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
+						 errmsg("unable to connect to '%s'", state->server->servername),
+						 errdetail("%s (curl error code %u)", curl_easy_strerror(res), res)));
 			}
 			else
 			{
@@ -4886,10 +4954,28 @@ static int ExecuteSPARQL(RDFfdwState *state)
 						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
 						 errmsg("%s => (%u) '%s'\n", __func__, res, curl_easy_strerror(res))));
 			}
+
+			pfree(chunk.memory);
+			pfree(chunk_header.memory);
+			curl_slist_free_all(headers);
+			curl_easy_cleanup(state->curl);
+			curl_global_cleanup();
+		}
+		else if (response_code >= 400)
+		{
+			/* HTTP error but cURL succeeded - capture error response */
+			elog(DEBUG1, "%s: HTTP error %ld, response body: %s", __func__, response_code, chunk.memory);
+
+			xmlFreeDoc(state->xmldoc);
+			pfree(chunk.memory);
+			pfree(chunk_header.memory);
+			curl_slist_free_all(headers);
+			curl_easy_cleanup(state->curl);
+			curl_global_cleanup();
 		}
 		else
 		{
-			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
+			/* Success - HTTP 2xx */
 			state->sparql_resultset = pstrdup(chunk.memory);
 
 			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);

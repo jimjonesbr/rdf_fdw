@@ -419,6 +419,28 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
  <https://www.uni-muenster.de/rdf_fdw/delete-test> | <http://www.w3.org/2000/01/rdf-schema#comment> | "🐘"@de
 (1 row)
 
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
+
+
+ERROR:  SERVER authentication failed (HTTP status 401)
+HINT:  Check the user and password set in the USER MAPPING for the PostgreSQL user "postgres" and try again.
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
 /* bulk DELETE all inserted triples */
 SELECT count(*) FROM ft;
 INFO:  SPARQL query sent to 'fuseki':

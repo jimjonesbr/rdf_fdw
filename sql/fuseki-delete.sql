@@ -104,6 +104,15 @@ INSERT INTO ft (subject, predicate, object) VALUES
 DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode
 RETURNING OLD.subject, OLD.predicate, OLD.object;
 
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
+
+DELETE FROM ft;
+
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
+
 /* bulk DELETE all inserted triples */
 SELECT count(*) FROM ft;
 DELETE FROM ft;

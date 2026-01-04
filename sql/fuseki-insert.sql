@@ -200,6 +200,16 @@ INSERT INTO ft (subject, predicate, object) VALUES
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', sparql.bnode());
 
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
+
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"foo"@de');
+
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
+
 /* cleanup */
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);

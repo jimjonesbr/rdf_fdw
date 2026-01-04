@@ -2956,6 +2956,39 @@ WHERE
    Remote Filter: ((?p = <http://dbpedia.org/property/name>) && (?o = "Westfälische Wilhelms-Universität Münster"@de))
 (6 rows)
 
+/* Invalid SPARQL query test */
+CREATE FOREIGN TABLE ft_invalid_sparql (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p }' -- missing object in triple pattern
+);
+SELECT * FROM ft_invalid_sparql;
+ERROR:  bad request (HTTP status 400)
+/* invalid SERVER url */
+CREATE SERVER server_invalid_url
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://10.10.70.80:9999/repositories/test',
+  update_url 'http://10.10.70.80:9999/repositories/test/statements',
+  connect_timeout '1'
+);
+CREATE FOREIGN TABLE ft_server_invalid_url (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o') 
+)
+SERVER server_invalid_url OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}'
+);
+SELECT * FROM ft_server_invalid_url;
+WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (1)
+WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (2)
+WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (3)
+ERROR:  unable to connect to 'server_invalid_url'
+DETAIL:  Timeout was reached (curl error code 28)
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'graphdb':
@@ -3118,7 +3151,10 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/resting
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
 
 
+DROP SERVER server_invalid_url CASCADE;
+NOTICE:  drop cascades to foreign table ft_server_invalid_url
 DROP SERVER graphdb CASCADE;
-NOTICE:  drop cascades to 2 other objects
+NOTICE:  drop cascades to 3 other objects
 DETAIL:  drop cascades to foreign table ft
 drop cascades to user mapping for postgres on server graphdb
+drop cascades to foreign table ft_invalid_sparql

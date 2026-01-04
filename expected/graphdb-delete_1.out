@@ -410,11 +410,11 @@ INFO:  SPARQL query sent to 'graphdb':
 SELECT  * 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 101 records.
+INFO:  SPARQL returned 78 records.
 
  count 
 -------
-   101
+    78
 (1 row)
 
 DELETE FROM ft;
@@ -423,7 +423,7 @@ INFO:  SPARQL query sent to 'graphdb':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 101 records.
+INFO:  SPARQL returned 78 records.
 
 INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
@@ -448,7 +448,6 @@ DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.o
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
 DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
@@ -458,31 +457,6 @@ DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> };
-DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#lat> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#long> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/name> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#time> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/established> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/modified> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/ontology/wikiPageExtracted> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/rector> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/state> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/city> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/administrativeStaff> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/students> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/academicStaff> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/budget> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/tuition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-
-
-INFO:  SPARQL query sent to 'graphdb':
-DELETE DATA { <http://dbpedia.org/property/veryLargeNumber> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/property/verySmallNumber> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/ontology/restingDate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
-DELETE DATA { <http://dbpedia.org/ontology/internationally> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
@@ -502,6 +476,9 @@ DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty>
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Literal> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
+
+
+INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
@@ -529,9 +506,6 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
-
-
-INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
 
 
@@ -541,11 +515,11 @@ INFO:  SPARQL query sent to 'graphdb':
 SELECT  * 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 94 records.
+INFO:  SPARQL returned 71 records.
 
  count 
 -------
-    94
+    71
 (1 row)
 
 DROP SERVER graphdb CASCADE;

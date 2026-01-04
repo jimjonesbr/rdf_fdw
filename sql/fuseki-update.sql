@@ -126,6 +126,18 @@ WHERE subject = '<https://www.uni-muenster.de>'
 RETURNING OLD.subject, OLD.predicate, OLD.object,
           NEW.subject AS new_subject, NEW.predicate AS new_predicate, NEW.object AS new_object;
 
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
+
+UPDATE ft SET
+  object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER fuseki CASCADE;

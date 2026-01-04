@@ -5,6 +5,8 @@ Release date: **YYYY-MM-DD**
 
 git* Added per-row SPARQL `INSERT DATA`, `DELETE DATA`, and `UPDATE` support via the `sparql_update_pattern` option on foreign tables. All data modifications (INSERT, DELETE, UPDATE) are now batched using the new `batch_size` server option, greatly improving performance for bulk operations. Multi-row and multi-pattern statements are supported, and complex WHERE conditions are handled.
 
+* Enhanced error handling in `ExecuteSPARQL`: Improved the handling of HTTP errors by capturing and displaying detailed error messages from the SPARQL endpoint. This includes disabling `CURLOPT_FAILONERROR` to capture response bodies for HTTP errors, adding specific error messages for common HTTP status codes (e.g., 400, 401, 404, 500).
+
 ## Breaking Changes
 
 * The `sparql.regex` function is no longer available for local evaluation in PostgreSQL, as it turned out that its semantics cannot be reliably reproduced locally. Queries relying on local evaluation of `sparql.regex` will now fail with an error.

@@ -142,7 +142,7 @@ invalid
 SELECT * FROM sparql.describe('wikidata', '   ');
 ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE http://www.wikidata.org/entity/Q61308849'); -- missing < >
-ERROR:  Unable to establish connection to 'wikidata' (HTTP status 400)
+ERROR:  bad request (HTTP status 400)
 -- DESCRIBE pattern with a blank node
 SELECT * FROM sparql.describe('wikidata', '_:bnode1');
 ERROR:  invalid DESCRIBE query:
@@ -150,7 +150,7 @@ ERROR:  invalid DESCRIBE query:
 _:bnode1
 
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE _:bnode1');
-ERROR:  Unable to establish connection to 'wikidata' (HTTP status 400)
+ERROR:  bad request (HTTP status 400)
 -- malformed entity IRI
 SELECT * FROM sparql.describe('wikidata', 'DESCRIBE <htt://i.am.malformed>');
  subject | predicate | object 

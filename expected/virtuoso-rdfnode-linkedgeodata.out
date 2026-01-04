@@ -1084,10 +1084,7 @@ SELECT ?p ?o
  FILTER(ISBLANK(BNODE(?o)))
 }
 
-WARNING:  ExecuteSPARQL: request to 'linkedgeodata' failed (1)
-WARNING:  ExecuteSPARQL: request to 'linkedgeodata' failed (2)
-WARNING:  ExecuteSPARQL: request to 'linkedgeodata' failed (3)
-ERROR:  Unable to establish connection to 'linkedgeodata' (HTTP status 400)
+ERROR:  bad request (HTTP status 400)
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf

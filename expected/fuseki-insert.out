@@ -500,6 +500,14 @@ ERROR:  NULL value in column "object" violates RDF constraint
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', sparql.bnode());
 ERROR:  blank nodes are not allowed in INSERT operations
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"foo"@de');
+ERROR:  SERVER authentication failed (HTTP status 401)
+ALTER USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
 /* cleanup */
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);

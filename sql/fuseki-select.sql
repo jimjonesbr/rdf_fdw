@@ -637,6 +637,39 @@ WHERE
   object = '"Westfälische Wilhelms-Universität Münster"@de' AND
   subject::text = '<https://www.uni-muenster.de>';
 
+/* Invalid SPARQL query test */
+CREATE FOREIGN TABLE ft_invalid_sparql (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p }' -- missing object in triple pattern
+);
+
+SELECT * FROM ft_invalid_sparql;
+
+/* invalid SERVER url */
+CREATE SERVER server_invalid_url
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://10.10.70.80:9999/repositories/test',
+  update_url 'http://10.10.70.80:9999/repositories/test/statements',
+  connect_timeout '1'
+);
+
+CREATE FOREIGN TABLE ft_server_invalid_url (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o') 
+)
+SERVER server_invalid_url OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}'
+);
+
+SELECT * FROM ft_server_invalid_url;
+
 /* cleanup */
 DELETE FROM ft;
+DROP SERVER server_invalid_url CASCADE;
 DROP SERVER fuseki CASCADE;

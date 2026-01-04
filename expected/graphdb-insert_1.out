@@ -98,7 +98,7 @@ FROM generate_series(1,100) AS j (i);
 SELECT count(*) FROM ft;
  count 
 -------
-   210
+   190
 (1 row)
 
 /* insert with RETURNING */
@@ -496,6 +496,10 @@ ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', NULL);
 ERROR:  NULL value in column "object" violates RDF constraint
+/* invalid value - blank node */
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', sparql.bnode());
+ERROR:  blank nodes are not allowed in INSERT operations
 /* cleanup */
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);
