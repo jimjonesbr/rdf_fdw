@@ -43,7 +43,7 @@ char *lex(char *input)
     int len = strlen(input);
 
     initStringInfo(&output);
-    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
     if (len == 0)
         return "";
@@ -188,7 +188,7 @@ char *lang(char *input)
     const char *ptr;
     char *lexical_form;
 
-    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
     if (!input || strlen(input) == 0)
         return "";
@@ -220,11 +220,11 @@ char *lang(char *input)
 
         initStringInfo(&buf);
         appendBinaryStringInfo(&buf, tag_start, tag_end - tag_start);
-        elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+        elog(DEBUG3, "%s exit: returning => '%s'", __func__, buf.data);
         return buf.data;
     }
 
-    elog(DEBUG1, "%s exit: returning empty string", __func__);
+    elog(DEBUG3, "%s exit: returning empty string", __func__);
     return "";
 }
 
@@ -249,7 +249,7 @@ char *strlang(char *literal, char *language)
     char *lex_language = lex(language);
     char *lex_literal = lex(literal);
 
-    elog(DEBUG1, "%s called: literal='%s', language='%s'", __func__, literal, language);
+    elog(DEBUG3, "%s called: literal='%s', language='%s'", __func__, literal, language);
 
     if (strlen(lex_language) == 0)
         ereport(ERROR,
@@ -263,7 +263,7 @@ char *strlang(char *literal, char *language)
     else
         appendStringInfo(&buf, "%s@%s", str(literal), lex_language);
 
-    elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+    elog(DEBUG3, "%s exit: returning => '%s'", __func__, buf.data);
 
     return buf.data;
 }
@@ -294,29 +294,29 @@ bool strstarts(char *str, char *substr)
     size_t substr_len = strlen(substr_lexical);
     int result;
 
-    elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
+    elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
     if (!LiteralsCompatible(str, substr))
     {
-        elog(DEBUG1, "%s exit: returning 'false' (incompatible literals)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (incompatible literals)", __func__);
         return false;
     }
 
     if (substr_len == 0)
     {
-        elog(DEBUG1, "%s exit: returning 'true' (empty substring is a prefix of any string)", __func__);
+        elog(DEBUG3, "%s exit: returning 'true' (empty substring is a prefix of any string)", __func__);
         return true;
     }
 
     if (substr_len > str_len)
     {
-        elog(DEBUG1, "%s exit: returning 'false' (substring longer than string cannot be a prefix)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (substring longer than string cannot be a prefix)", __func__);
         return false;
     }
 
     result = strncmp(str_lexical, substr_lexical, substr_len);
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__,
+    elog(DEBUG3, "%s exit: returning '%s'", __func__,
          result == 0 ? "true" : "false");
 
     return result == 0;
@@ -348,29 +348,29 @@ bool strends(char *str, char *substr)
     size_t substr_len = strlen(substr_lexical);
     int result;
 
-    elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
+    elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
     if (!LiteralsCompatible(str, substr))
     {
-        elog(DEBUG1, "%s exit: returning 'false' (incompatible literals)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (incompatible literals)", __func__);
         return false;
     }
 
     if (substr_len == 0)
     {
-        elog(DEBUG1, "%s exit: returning 'true' (an empty substring is a suffix of any string)", __func__);
+        elog(DEBUG3, "%s exit: returning 'true' (an empty substring is a suffix of any string)", __func__);
         return true;
     }
 
     if (substr_len > str_len)
     {
-        elog(DEBUG1, "%s exit: returning 'false' (substring longer than string cannot be a suffix)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (substring longer than string cannot be a suffix)", __func__);
         return false;
     }
 
     result = strncmp(str_lexical + (str_len - substr_len), substr_lexical, substr_len);
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
 
     return result == 0;
 }
@@ -398,7 +398,7 @@ char *strdt(char *literal, char *datatype)
     StringInfoData buf;
     char *lex_datatype = lex(datatype);
 
-    elog(DEBUG1, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
+    elog(DEBUG3, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
 
     if (strlen(lex_datatype) == 0)
         ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -422,7 +422,7 @@ char *strdt(char *literal, char *datatype)
         appendStringInfo(&buf, "%s^^%s", str(literal), iri(expanded_datatype));
     }
 
-    elog(DEBUG1, "%s exit: returning => '%s'", __func__, buf.data);
+    elog(DEBUG3, "%s exit: returning => '%s'", __func__, buf.data);
 
     return buf.data;
 }
@@ -446,11 +446,11 @@ char *str(char *input)
     StringInfoData buf;
     char *result;
 
-    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
     if (!input || input[0] == '\0')
     {
-        elog(DEBUG1, "%s exit: returning empty literal", __func__);
+        elog(DEBUG3, "%s exit: returning empty literal", __func__);
         return "\"\"";
     }
 
@@ -460,12 +460,12 @@ char *str(char *input)
         initStringInfo(&buf);
         appendStringInfo(&buf, "\"%.*s\"", (int)(len - 2), input + 1); /* skip '<' and trim '>' */
 
-        elog(DEBUG1, "%s exit: returning IRI '%s'", __func__, buf.data);
+        elog(DEBUG3, "%s exit: returning IRI '%s'", __func__, buf.data);
         return buf.data;
     }
 
     result = cstring_to_rdfliteral(lex(input));
-    elog(DEBUG1, "%s exit: returning literal '%s'", __func__, result);
+    elog(DEBUG3, "%s exit: returning literal '%s'", __func__, result);
     return result;
 }
 
@@ -482,7 +482,7 @@ char *iri(char *input)
     StringInfoData buf;
     char *lexical;
 
-    elog(DEBUG1, "%s called: input='%s'", __func__, input ? input : "(null)");
+    elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
     if (!input || *input == '\0')
         return "<>";
@@ -495,7 +495,7 @@ char *iri(char *input)
     lexical = lex(input);
     appendStringInfo(&buf, "<%s>", lexical);
 
-    elog(DEBUG1, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
+    elog(DEBUG3, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
     return pstrdup(buf.data);
 }
 
@@ -520,7 +520,7 @@ char *bnode(char *input)
     StringInfoData buf;
     static uint64 counter = 0; /* Ensure uniqueness for BNODE() */
 
-    elog(DEBUG1, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
     initStringInfo(&buf);
 
@@ -540,14 +540,14 @@ char *bnode(char *input)
         /* Reject IRIs explicitly */
         if (isIRI(input))
         {
-            elog(DEBUG1, "%s exit: returning NULL (input is an IRI)", __func__);
+            elog(DEBUG3, "%s exit: returning NULL (input is an IRI)", __func__);
             return NULL;
         }
 
         /* If input is already a blank node, return it as-is (idempotent behavior) */
         if (isBlank(input))
         {
-            elog(DEBUG1, "%s exit: returning input as-is (already a blank node)", __func__);
+            elog(DEBUG3, "%s exit: returning input as-is (already a blank node)", __func__);
             appendStringInfoString(&buf, input);
             return buf.data;
         }
@@ -570,7 +570,7 @@ char *bnode(char *input)
         /* Validate input is a literal */
         if (!isLiteral(normalized_input))
         {
-            elog(DEBUG1, "%s exit: returning NULL (input is not a literal)", __func__);
+            elog(DEBUG3, "%s exit: returning NULL (input is not a literal)", __func__);
             return NULL;
         }
 
@@ -578,7 +578,7 @@ char *bnode(char *input)
         lexical = lex(normalized_input);
         if (!lexical || strlen(lexical) == 0)
         {
-            elog(DEBUG1, "%s exit: returning NULL (lexical value either NULL or an empty string)", __func__);
+            elog(DEBUG3, "%s exit: returning NULL (lexical value either NULL or an empty string)", __func__);
             return NULL;
         }
 
@@ -593,7 +593,7 @@ char *bnode(char *input)
         }
     }
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__, buf.data);
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, buf.data);
     return buf.data;
 }
 
@@ -622,7 +622,7 @@ char *concat(char *left, char *right)
     char *result;
     StringInfoData buf;
 
-    elog(DEBUG1, "%s called: left='%s', right='%s'", __func__, left, right);
+    elog(DEBUG3, "%s called: left='%s', right='%s'", __func__, left, right);
 
     if (!left || !right)
         ereport(ERROR,
@@ -641,7 +641,7 @@ char *concat(char *left, char *right)
     left_datatype = datatype(left);
     right_datatype = datatype(right);
 
-    elog(DEBUG1, "%s: left_lexical='%s', right_lexical='%s', left_language='%s', right_language='%s'",
+    elog(DEBUG3, "%s: left_lexical='%s', right_lexical='%s', left_language='%s', right_language='%s'",
          __func__, left_lexical, right_lexical, left_language, right_language);
 
     initStringInfo(&buf);
@@ -662,7 +662,7 @@ char *concat(char *left, char *right)
         else
         {
             /* Conflicting language tags - return simple literal (no tag) */
-            elog(DEBUG1, "%s: conflicting language tags '%s' and '%s', returning simple literal",
+            elog(DEBUG3, "%s: conflicting language tags '%s' and '%s', returning simple literal",
                  __func__, left_language, right_language);
             result = cstring_to_rdfliteral(buf.data);
         }
@@ -670,7 +670,7 @@ char *concat(char *left, char *right)
     else if (strlen(left_language) > 0 || strlen(right_language) > 0)
     {
         /* One has language tag, other doesn't - return simple literal */
-        elog(DEBUG1, "%s: mixed language tags, returning simple literal", __func__);
+        elog(DEBUG3, "%s: mixed language tags, returning simple literal", __func__);
         result = cstring_to_rdfliteral(buf.data);
     }
     else if (strlen(left_datatype) > 0 && strlen(right_datatype) > 0 &&
@@ -687,7 +687,7 @@ char *concat(char *left, char *right)
 
     pfree(buf.data);
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
     return result;
 }
 
@@ -738,19 +738,19 @@ bool isIRI(char *input)
 bool isBlank(char *term)
 {
     bool result;
-    elog(DEBUG1, "%s called: term='%s'", __func__, term);
+    elog(DEBUG3, "%s called: term='%s'", __func__, term);
 
     /* Handle NULL or empty input */
     if (!term || strlen(term) == 0)
     {
-        elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
         return false;
     }
 
     /* Check if term starts with "_:" and has at least 3 characters */
     result = (strncmp(term, "_:", 2) == 0) && strlen(term) > 2;
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__, result ? "true" : "false");
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, result ? "true" : "false");
     return result;
 }
 
@@ -773,18 +773,18 @@ bool isLiteral(char *term)
     const char *ptr;
     int len;
 
-    elog(DEBUG1, "%s called: term='%s'", __func__, term);
+    elog(DEBUG3, "%s called: term='%s'", __func__, term);
 
     if (!term || *term == '\0')
     {
-        elog(DEBUG1, "%s exit: returning 'false' (term either NULL or has no '\\0')", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (term either NULL or has no '\\0')", __func__);
         return false;
     }
 
     /* Exclude IRIs and blank nodes first */
     if (isIRI(term) || isBlank(term))
     {
-        elog(DEBUG1, "%s exit: returning 'false' (either an IRI or a blank node)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (either an IRI or a blank node)", __func__);
         return false;
     }
 
@@ -807,7 +807,7 @@ bool isLiteral(char *term)
                 const char *dt_start = tag + 2;
                 if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
                 {
-                    elog(DEBUG1, "%s exit: returning 'true' (valid datatype)", __func__);
+                    elog(DEBUG3, "%s exit: returning 'true' (valid datatype)", __func__);
                     return true;
                 } /* Valid datatype */
             }
@@ -815,26 +815,26 @@ bool isLiteral(char *term)
             else if (lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"' &&
                      *(lang_tag + 1) != '\0')
             {
-                elog(DEBUG1, "%s exit: returning 'true' (literal has a language tag)", __func__);
+                elog(DEBUG3, "%s exit: returning 'true' (literal has a language tag)", __func__);
                 return true;
             }
             /* Simple literal: quoted string, no ^^ or @ */
             else if (ptr[len - 1] == '"')
             {
-                elog(DEBUG1, "%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
+                elog(DEBUG3, "%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
                 return true;
             }
         }
         else if (len == 1)
         {
             /* Empty quoted literal "" */
-            elog(DEBUG1, "%s exit: returning 'true' (empty quoted literal)", __func__);
+            elog(DEBUG3, "%s exit: returning 'true' (empty quoted literal)", __func__);
             return true;
         }
     }
 
     /* Invalid or non-literal */
-    elog(DEBUG1, "%s exit: returning 'false' (invalid or non-literal)", __func__);
+    elog(DEBUG3, "%s exit: returning 'false' (invalid or non-literal)", __func__);
     return false;
 }
 
@@ -857,12 +857,12 @@ bool langmatches(char *lang_tag, char *pattern)
     char *pat;
     bool result;
 
-    elog(DEBUG1, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag, pattern);
+    elog(DEBUG3, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag, pattern);
 
     /* Handle NULL inputs */
     if (!lang_tag || !pattern)
     {
-        elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
         return false;
     }
 
@@ -878,7 +878,7 @@ bool langmatches(char *lang_tag, char *pattern)
     if (strlen(tag) == 0)
     {
         result = (strcasecmp(pat, "*") == 0);
-        elog(DEBUG1, "%s exit: returning '%s' (empty tag, pattern='%s')",
+        elog(DEBUG3, "%s exit: returning '%s' (empty tag, pattern='%s')",
              __func__, result ? "true" : "false", pat);
         return result;
     }
@@ -929,7 +929,7 @@ bool langmatches(char *lang_tag, char *pattern)
         result = false;
     }
 
-    elog(DEBUG1, "%s exit: returning '%s' (tag='%s', pat='%s')",
+    elog(DEBUG3, "%s exit: returning '%s' (tag='%s', pat='%s')",
          __func__, result ? "true" : "false", tag, pat);
 
     return result;
@@ -954,11 +954,11 @@ char *datatype(char *input)
     const char *ptr;
     int len;
 
-    elog(DEBUG1, "%s called: input='%s'", __func__, input ? input : "(null)");
+    elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
     if (input == NULL || *input == '\0')
     {
-        elog(DEBUG1, "%s exit: returning empty string for NULL or empty input", __func__);
+        elog(DEBUG3, "%s exit: returning empty string for NULL or empty input", __func__);
         return "";
     }
 
@@ -986,7 +986,7 @@ char *datatype(char *input)
                     dt_end++;
                 if (*dt_end != '>') /* ensure proper closing */
                 {
-                    elog(DEBUG1, "%s exit: returning empty string (malformed datatype IRI, missing '>')", __func__);
+                    elog(DEBUG3, "%s exit: returning empty string (malformed datatype IRI, missing '>')", __func__);
                     return "";
                 }
                 dt_end++; /* include > */
@@ -1024,13 +1024,13 @@ char *datatype(char *input)
                 /* ensure no trailing junk */
                 if (*dt_end != '\0')
                 {
-                    elog(DEBUG1, "%s exit: returning empty string (trailing chars after datatype)", __func__);
+                    elog(DEBUG3, "%s exit: returning empty string (trailing chars after datatype)", __func__);
                     return res;
                 }
 
                 res = iri(buf.data);
 
-                elog(DEBUG1, "%s exit: returning '%s'", __func__, res);
+                elog(DEBUG3, "%s exit: returning '%s'", __func__, res);
                 return res;
             }
         }
@@ -1038,13 +1038,13 @@ char *datatype(char *input)
         if ((lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"') ||
             (len >= 1 && (ptr[len - 1] == '"' || len == 1)))
         {
-            elog(DEBUG1, "%s exit: returning empty string (simple/language-tagged literal)", __func__);
+            elog(DEBUG3, "%s exit: returning empty string (simple/language-tagged literal)", __func__);
             return "";
         }
     }
 
     /* Not a valid literal */
-    elog(DEBUG1, "%s exit: returning empty string (not a valid literal)", __func__);
+    elog(DEBUG3, "%s exit: returning empty string (not a valid literal)", __func__);
     return "";
 }
 
@@ -1070,7 +1070,7 @@ char *encode_for_uri(char *str_in)
     StringInfoData buf;
     initStringInfo(&buf);
 
-    elog(DEBUG1, "%s called: str='%s'", __func__, str_in);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str_in);
 
     str_in = lex(str_in);
     in_len = strlen(str_in);
@@ -1088,7 +1088,7 @@ char *encode_for_uri(char *str_in)
 
     res = cstring_to_rdfliteral(buf.data);
 
-    elog(DEBUG1, "%s exit: returning => '%s'", __func__, res);
+    elog(DEBUG3, "%s exit: returning => '%s'", __func__, res);
     return res;
 }
 
@@ -1110,7 +1110,7 @@ char *generate_uuid_v4(void)
     char *result;
     int i;
 
-    elog(DEBUG1, "%s called", __func__);
+    elog(DEBUG3, "%s called", __func__);
 
     initStringInfo(&buf);
 
@@ -1139,7 +1139,7 @@ char *generate_uuid_v4(void)
     result = pstrdup(buf.data);
     pfree(buf.data);
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
     return result;
 }
 
@@ -1165,7 +1165,7 @@ char *substr_sparql(char *str, int start, int length)
 	text *substr_text;
 	int str_len;
 
-	elog(DEBUG1, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
+	elog(DEBUG3, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
 
 	if (!str)
 		ereport(ERROR,
@@ -1186,7 +1186,7 @@ char *substr_sparql(char *str, int start, int length)
 	str_datatype = datatype(str);
 	str_language = lang(str);
 
-	elog(DEBUG1, "%s: lexical='%s', datatype='%s', language='%s'", __func__,
+	elog(DEBUG3, "%s: lexical='%s', datatype='%s', language='%s'", __func__,
 		 lexical, str_datatype, str_language);
 
 	/* Check if start is beyond string length - return empty string */
@@ -1235,7 +1235,7 @@ char *substr_sparql(char *str, int start, int length)
 	pfree(input_text);
 	pfree(substr_text);
 
-	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+	elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -1259,7 +1259,7 @@ char *lcase(char *str)
 	char *str_language;
 	char *result;
 
-	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
 	if (!str)
 		ereport(ERROR,
@@ -1268,7 +1268,7 @@ char *lcase(char *str)
 
 	if (strlen(str) == 0)
 	{
-		elog(DEBUG1, "%s exit: returning empty literal (str is an empty string)", __func__);
+		elog(DEBUG3, "%s exit: returning empty literal (str is an empty string)", __func__);
 		return cstring_to_rdfliteral("");
 	}
 
@@ -1300,7 +1300,7 @@ char *lcase(char *str)
 
 	str_language = lang(str);
 
-	elog(DEBUG1, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+	elog(DEBUG3, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
     /* Convert to lowercase using PostgreSQL's multibyte-aware function */
     {
@@ -1326,7 +1326,7 @@ char *lcase(char *str)
         pfree(input_text);
     }
 
-    elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
 	return result;
 }
 
@@ -1350,7 +1350,7 @@ char *ucase(char *str)
 	char *str_language;
 	char *result;
 
-	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
 	if (!str)
 		ereport(ERROR,
@@ -1359,7 +1359,7 @@ char *ucase(char *str)
 
 	if (strlen(str) == 0)
 	{
-		elog(DEBUG1, "%s exit: returning empty literal (str is an empty string)", __func__);
+		elog(DEBUG3, "%s exit: returning empty literal (str is an empty string)", __func__);
 		return cstring_to_rdfliteral("");
 	}
 
@@ -1417,7 +1417,7 @@ char *ucase(char *str)
         pfree(input_text);
     }
 
-    elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+    elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 	return result;
 }
 
@@ -1440,11 +1440,11 @@ bool isNumeric(char *term)
 	bool is_bare_number = false;
 	char *endptr;
 
-	elog(DEBUG1, "%s called: term='%s'", __func__, term);
+	elog(DEBUG3, "%s called: term='%s'", __func__, term);
 
 	if (!term || strlen(term) == 0)
 	{
-		elog(DEBUG1, "%s exit: returning 'false' (term either NULL or an empty string)", __func__);
+		elog(DEBUG3, "%s exit: returning 'false' (term either NULL or an empty string)", __func__);
 		return false;
 	}
 
@@ -1463,21 +1463,21 @@ bool isNumeric(char *term)
 	/* Validate lexical form as numeric (integers, decimals, or scientific notation) */
 	if (!lexical || strlen(lexical) == 0)
 	{
-		elog(DEBUG1, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
+		elog(DEBUG3, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
 		return false;
 	}
 
 	strtod(lexical, &endptr);
 	if (*endptr != '\0') /* not a valid number, e.g., "abc" */
 	{
-		elog(DEBUG1, "%s exit: returning 'false' (not a valid number)", __func__);
+		elog(DEBUG3, "%s exit: returning 'false' (not a valid number)", __func__);
 		return false;
 	}
 
 	/* Bare numbers are numeric */
 	if (is_bare_number)
 	{
-		elog(DEBUG1, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
+		elog(DEBUG3, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
 		return true;
 	}
 
@@ -1485,7 +1485,7 @@ bool isNumeric(char *term)
 	datatype_uri = datatype(term);
 	if (strlen(datatype_uri) == 0)
 	{
-		elog(DEBUG1, "%s exit: returning 'false' (no datatype or invalid literal)", __func__);
+		elog(DEBUG3, "%s exit: returning 'false' (no datatype or invalid literal)", __func__);
 		return false;
 	} /* No datatype or invalid literal (e.g., "12") */
 
@@ -1515,22 +1515,22 @@ bool isNumeric(char *term)
 			/* Ensure the entire string is a valid integer and within xsd:byte range */
 			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
 			{
-				elog(DEBUG1, "%s exit: returning 'false' (not a pure integer)", __func__);
+				elog(DEBUG3, "%s exit: returning 'false' (not a pure integer)", __func__);
 				return false;
 			}
 
-			elog(DEBUG1, "%s exit: returning 'true' (valid xsd:byte)", __func__);
+			elog(DEBUG3, "%s exit: returning 'true' (valid xsd:byte)", __func__);
 			return true; /* Valid xsd:byte, e.g., "100" */
 		}
 		/* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
 		 * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
 		 * Accept them as numeric. */
 
-		elog(DEBUG1, "%s exit: returning 'true'", __func__);
+		elog(DEBUG3, "%s exit: returning 'true'", __func__);
 		return true;
 	}
 
-	elog(DEBUG1, "%s exit: returning 'false'", __func__);
+	elog(DEBUG3, "%s exit: returning 'false'", __func__);
 	return false;
 }
 
@@ -1555,12 +1555,12 @@ bool contains(char *str_in, char *substr_in)
 	char *lang_str;
 	bool result;
 
-	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
+	elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
 
 	/* handle NULL or empty inputs */
 	if (!str_in || !substr_in || strlen(str_in) == 0 || strlen(substr_in) == 0)
 	{
-		elog(DEBUG1, "%s exit: returning 'false' (invalid input)", __func__);
+		elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
 		return false;
 	}
 
@@ -1572,7 +1572,7 @@ bool contains(char *str_in, char *substr_in)
 
 		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
 		{
-			elog(DEBUG1, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
+			elog(DEBUG3, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
 			return NULL;
 		}
 	}
@@ -1584,7 +1584,7 @@ bool contains(char *str_in, char *substr_in)
 	/* check if substr is in str using strstr */
 	result = (strstr(str_lex, substr_lex) != NULL);
 
-	elog(DEBUG1, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
+	elog(DEBUG3, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
 		 __func__, result ? "true" : "false", str_lex, substr_lex);
 
 	return result;
@@ -1613,7 +1613,7 @@ char *strbefore(char *str, char *delimiter)
 	char *pos;
 	char *result;
 
-	elog(DEBUG1, "%s called: str='%s', delimiter='%s", __func__, str, delimiter);
+	elog(DEBUG3, "%s called: str='%s', delimiter='%s", __func__, str, delimiter);
 
 	str_lexical = lex(str);
 	delimiter_lexical = lex(delimiter);
@@ -1625,7 +1625,7 @@ char *strbefore(char *str, char *delimiter)
 
 	if (!LiteralsCompatible(str, delimiter))
 	{
-		elog(DEBUG1, "%s exit: returning NULL (literals no compatible)", __func__);
+		elog(DEBUG3, "%s exit: returning NULL (literals no compatible)", __func__);
 		return NULL;
 	}
 
@@ -1640,7 +1640,7 @@ char *strbefore(char *str, char *delimiter)
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
 			result = strlang(buf.data, lang1);
 
-			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 			return result;
 		}
 		else if (strlen(dt1) > 0 && /* only for explicit ^^ */
@@ -1653,7 +1653,7 @@ char *strbefore(char *str, char *delimiter)
 				result = strdt(buf.data, dt1);
 			}
 
-			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 			return result;
 		}
 		else
@@ -1662,7 +1662,7 @@ char *strbefore(char *str, char *delimiter)
 			appendBinaryStringInfo(&buf, str_lexical, before_len);
 			result = cstring_to_rdfliteral(buf.data);
 
-			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 			return result;
 		}
 	}
@@ -1680,12 +1680,12 @@ char *strbefore(char *str, char *delimiter)
 			result = typed_buf.data;
 		}
 
-		elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+		elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 		return result;
 	}
 
 	result = cstring_to_rdfliteral("");
-	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+	elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 
 	return result;
 }
@@ -1716,7 +1716,7 @@ char *strafter(char *str, char *delimiter)
 	bool has_explicit_datatype = false;
 	char *result;
 
-	elog(DEBUG1, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
+	elog(DEBUG3, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
 
 	lexstr = lex(str);
 	lexdelimiter = lex(delimiter);
@@ -1745,7 +1745,7 @@ char *strafter(char *str, char *delimiter)
 			result = strlang(buf.data, lang1);
 			pfree(buf.data);
 
-			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 			return result;
 		}
 		else if (has_explicit_datatype && strlen(dt1) > 0 &&
@@ -1759,7 +1759,7 @@ char *strafter(char *str, char *delimiter)
 			}
 			pfree(buf.data);
 
-			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 			return result;
 		}
 		else
@@ -1769,7 +1769,7 @@ char *strafter(char *str, char *delimiter)
 			result = cstring_to_rdfliteral(buf.data);
 			pfree(buf.data);
 
-			elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 			return result;
 		}
 	}
@@ -1787,12 +1787,12 @@ char *strafter(char *str, char *delimiter)
 			result = typed_buf.data;
 		}
 
-		elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+		elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 		return result;
 	}
 
 	result = cstring_to_rdfliteral("");
-	elog(DEBUG1, "%s exit: returning => '%s'", __func__, result);
+	elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 	return result;
 }
 
@@ -1807,7 +1807,7 @@ static int count_utf8_chars(const char *str)
 {
 	int char_count = 0;
 
-	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
 	while (*str)
 	{
@@ -1817,7 +1817,7 @@ static int count_utf8_chars(const char *str)
 		str++;
 	}
 
-	elog(DEBUG1, "%s exit: returning '%d'", __func__, char_count);
+	elog(DEBUG3, "%s exit: returning '%d'", __func__, char_count);
 	return char_count;
 }
 
@@ -1827,7 +1827,7 @@ int strlen_rdf(char *str)
 	char *dt;
 	int result;
 
-	elog(DEBUG1, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
 	if (!str)
 		ereport(ERROR,
@@ -1859,7 +1859,7 @@ int strlen_rdf(char *str)
 	lexical = lex(str);
 	result = count_utf8_chars(lexical);
 
-	elog(DEBUG1, "%s exit: returning '%d'", __func__, result);
+	elog(DEBUG3, "%s exit: returning '%d'", __func__, result);
 	return result;
 }
 

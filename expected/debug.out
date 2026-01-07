@@ -1,0 +1,3339 @@
+/* DEBUG1 */
+SET client_min_messages to DEBUG1;
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+INSERT INTO ft (subject, predicate, object)
+VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+       ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/founded>', '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>');
+DEBUG:  rdfPlanForeignModify called, operation: 3
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfExecForeignInsert called
+DEBUG:  rdfExecForeignInsert: added row to batch (1/50)
+DEBUG:  rdfExecForeignInsert exit
+DEBUG:  rdfExecForeignInsert called
+DEBUG:  rdfExecForeignInsert: added row to batch (2/50)
+DEBUG:  rdfExecForeignInsert exit
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
+DEBUG:  ExecuteSPARQL called for INSERT operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+SELECT DISTINCT subject, predicate, object FROM ft
+WHERE
+  subject = sparql.iri('https://www.uni-muenster.de') AND
+  object BETWEEN '1780-01-01'::date AND sparql.strdt('1780-12-31', '<http://www.w3.org/2001/XMLSchema#date>')
+ORDER BY object ASC, predicate DESC
+FETCH FIRST 2 ROWS ONLY;
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseSQLOrderBy exit: returning '  ASC (?o)  DESC (?p)  ASC (?s)'
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:  CreateSPARQL exit
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+            subject            |               predicate               |                        object                         
+-------------------------------+---------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/founded> | "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+UPDATE ft
+SET object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://dbpedia.org/property/name>';
+DEBUG:  rdfAddForeignUpdateTargets called
+DEBUG:  rdfAddForeignUpdateTargets exit
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://dbpedia.org/property/name>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:  CreateSPARQL exit
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfPlanForeignModify called, operation: 2
+DEBUG:  rdfPlanForeignModify: adding attribute 1 (subject) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 2 (predicate) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 3 (object) to target list
+DEBUG:  rdfPlanForeignModify: UPDATE operation - returning 3 target attributes
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfExecForeignUpdate called
+DEBUG:  rdfExecForeignUpdate: added row to batch (1/50)
+DEBUG:  rdfExecForeignUpdate exit
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 1 statement(s)
+DEBUG:  ExecuteSPARQL called for UPDATE operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DELETE FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+DEBUG:  rdfAddForeignUpdateTargets called
+DEBUG:  rdfAddForeignUpdateTargets exit
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:  CreateSPARQL exit
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfPlanForeignModify called, operation: 4
+DEBUG:  rdfPlanForeignModify: adding attribute 1 (subject) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 2 (predicate) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 3 (object) to target list
+DEBUG:  rdfPlanForeignModify: DELETE operation - returning 3 target attributes
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
+DEBUG:  ExecuteSPARQL called for DELETE operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DROP SERVER fuseki CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki
+/* DEBUG2 */
+SET client_min_messages to DEBUG2;
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+DEBUG:  rdf_fdw_validator called
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  rdf_fdw_validator exit
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+DEBUG:  rdf_fdw_validator called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+INSERT INTO ft (subject, predicate, object)
+VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+       ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/founded>', '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>');
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Input='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  unescape_unicode: Output='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  rdfPlanForeignModify called, operation: 3
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfExecForeignInsert called
+DEBUG:  rdfExecForeignInsert: added row to batch (1/50)
+DEBUG:  rdfExecForeignInsert exit
+DEBUG:  rdfExecForeignInsert called
+DEBUG:  rdfExecForeignInsert: added row to batch (2/50)
+DEBUG:  rdfExecForeignInsert exit
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
+DEBUG:  ExecuteSPARQL called for INSERT operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
+DEBUG:  ExecuteSPARQL: http response code = 204
+DEBUG:  ExecuteSPARQL: http response size = 0
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+SELECT DISTINCT subject, predicate, object FROM ft
+WHERE
+  subject = sparql.iri('https://www.uni-muenster.de') AND
+  object BETWEEN '1780-01-01'::date AND sparql.strdt('1780-12-31', '<http://www.w3.org/2001/XMLSchema#date>')
+ORDER BY object ASC, predicate DESC
+FETCH FIRST 2 ROWS ONLY;
+DEBUG:  unescape_unicode: Input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  unescape_unicode: Output='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  unescape_unicode: Input='1780-12-31'
+DEBUG:  unescape_unicode: Output='1780-12-31'
+DEBUG:  unescape_unicode: Input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  unescape_unicode: Output='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => subject
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muenster.de>] right type 7
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
+DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
+
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
+DEBUG:  DeparseExpr exit: returning 'object'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => object
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>] right type 7
+DEBUG:  GetRDFColumn called: column='object'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
+DEBUG:  GetRDFColumn called: column='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>')
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '>='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
+DEBUG:  DeparseExpr exit: returning 'object'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => object
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>] right type 7
+DEBUG:  GetRDFColumn called: column='object'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
+DEBUG:  GetRDFColumn called: column='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>')
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '<='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
+DEBUG:  DeparseExpr exit: returning 'object'
+
+DEBUG:  GetRDFColumn called: column='object'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='1', result='predicate'
+DEBUG:  DeparseExpr exit: returning 'predicate'
+
+DEBUG:  GetRDFColumn called: column='predicate'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'predicate'
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseSQLOrderBy exit: returning '  ASC (?o)  DESC (?p)  ASC (?s)'
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
+DEBUG:  CreateSPARQL called
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:    CreateSPARQL: pushing down ORDER BY clause > 'ORDER BY   ASC (?o)  DESC (?p)  ASC (?s)'
+DEBUG:  CreateSPARQL exit
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 3 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3E%3D%20%221780-01-01%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 549
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:  LoadRDFData exit
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+DEBUG:  unescape_unicode: Input='1780-10-02'
+DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+            subject            |               predicate               |                        object                         
+-------------------------------+---------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/founded> | "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+UPDATE ft
+SET object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://dbpedia.org/property/name>';
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
+                        ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
+                        ^
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
+                          ^
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
+                          ^
+DEBUG:  unescape_unicode: Input='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  unescape_unicode: Output='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  rdfAddForeignUpdateTargets called
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'subject' (attnum=1)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'predicate' (attnum=2)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (attnum=3)
+DEBUG:  rdfAddForeignUpdateTargets exit
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => subject
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muenster.de>] right type 7
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
+DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
+
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='1', result='predicate'
+DEBUG:  DeparseExpr exit: returning 'predicate'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => predicate
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<http://dbpedia.org/property/name>'
+DEBUG:  DeparseExpr exit: returning '<http://dbpedia.org/property/name>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [predicate] left type 6, [<http://dbpedia.org/property/name>] right type 7
+DEBUG:  GetRDFColumn called: column='predicate'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'predicate'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<http://dbpedia.org/property/name>' ... 
+DEBUG:  GetRDFColumn called: column='<http://dbpedia.org/property/name>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<http://dbpedia.org/property/name>')
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'predicate' => '?p'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<http://dbpedia.org/property/name>' => '<http://dbpedia.org/property/name>'
+DEBUG:  DeparseExpr exit: returning '?p = <http://dbpedia.org/property/name>'
+
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://dbpedia.org/property/name>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
+DEBUG:  CreateSPARQL called
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  CreateSPARQL exit
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 2 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfPlanForeignModify called, operation: 2
+DEBUG:  rdfPlanForeignModify: adding attribute 1 (subject) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 2 (predicate) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 3 (object) to target list
+DEBUG:  rdfPlanForeignModify: UPDATE operation - returning 3 target attributes
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 545
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
+DEBUG:  rdfExecForeignUpdate called
+DEBUG:  rdfExecForeignUpdate [0] DELETE: column loaded: subject, sparql_var: ?s
+DEBUG:  rdfExecForeignUpdate: DELETE: column 'subject' OLD value: <https://www.uni-muenster.de>
+DEBUG:  rdfExecForeignUpdate [1] DELETE: column loaded: predicate, sparql_var: ?p
+DEBUG:  rdfExecForeignUpdate: DELETE: column 'predicate' OLD value: <http://dbpedia.org/property/name>
+DEBUG:  rdfExecForeignUpdate [2] DELETE: column loaded: object, sparql_var: ?o
+DEBUG:  rdfExecForeignUpdate: DELETE: column 'object' OLD value: "Westfälische Wilhelms-Universität Münster"@de
+DEBUG:  rdfExecForeignUpdate: INSERT: column 'subject' NEW value: <https://www.uni-muenster.de>
+DEBUG:  rdfExecForeignUpdate: INSERT: column 'predicate' NEW value: <http://dbpedia.org/property/name>
+DEBUG:  rdfExecForeignUpdate: INSERT: column 'object' NEW value: "University of Münster"@en
+DEBUG:  rdfExecForeignUpdate: added row to batch (1/50)
+DEBUG:  rdfExecForeignUpdate exit
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 1 statement(s)
+DEBUG:  ExecuteSPARQL called for UPDATE operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
+DEBUG:  ExecuteSPARQL: http response code = 204
+DEBUG:  ExecuteSPARQL: http response size = 0
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DELETE FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
+                        ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
+                        ^
+DEBUG:  rdfAddForeignUpdateTargets called
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'subject' (attnum=1)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'predicate' (attnum=2)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (attnum=3)
+DEBUG:  rdfAddForeignUpdateTargets exit
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => subject
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muenster.de>] right type 7
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
+DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
+
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
+DEBUG:  CreateSPARQL called
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  CreateSPARQL exit
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 1 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfPlanForeignModify called, operation: 4
+DEBUG:  rdfPlanForeignModify: adding attribute 1 (subject) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 2 (predicate) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 3 (object) to target list
+DEBUG:  rdfPlanForeignModify: DELETE operation - returning 3 target attributes
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 865
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:    LoadRDFData: appending record 2
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+DEBUG:  unescape_unicode: Input='University of Münster'
+DEBUG:  unescape_unicode: Output='University of Münster'
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+DEBUG:  unescape_unicode: Input='1780-10-02'
+DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
+DEBUG:  ExecuteSPARQL called for DELETE operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
+DEBUG:  ExecuteSPARQL: http response code = 204
+DEBUG:  ExecuteSPARQL: http response size = 0
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DROP SERVER fuseki CASCADE;
+DEBUG:  drop auto-cascades to type ft
+DEBUG:  drop auto-cascades to type ft[]
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki
+/* DEBUG3 */
+SET client_min_messages to DEBUG3;
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  CheckURL called: 'http://fuseki:3030/dt/sparql'
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
+DEBUG:  rdf_fdw_validator exit
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+DEBUG:  rdf_fdw_validator called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  IsSPARQLVariableValid called: str='?s'
+DEBUG:  IsSPARQLVariableValid exit: returning 'true'
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  IsSPARQLVariableValid called: str='?p'
+DEBUG:  IsSPARQLVariableValid exit: returning 'true'
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  IsSPARQLVariableValid called: str='?o'
+DEBUG:  IsSPARQLVariableValid exit: returning 'true'
+DEBUG:  rdf_fdw_validator exit
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+INSERT INTO ft (subject, predicate, object)
+VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+       ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/founded>', '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>');
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  isLiteral called: term='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  isBlank exit: returning 'false'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  isLiteral exit: returning 'true' (literal has a language tag)
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lang called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lang exit: returning => 'de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  datatype called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lex called: input='de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lex called: input='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  strlang called: literal='Westfälische Wilhelms-Universität Münster', language='de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  str called: input='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  lex called: input='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  str exit: returning literal '"Westfälische Wilhelms-Universität Münster"'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  strlang exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                ^
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
+                                                 ^
+DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  isBlank exit: returning 'false'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  isLiteral exit: returning 'true' (valid datatype)
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lang exit: returning empty string
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  unescape_unicode: Input='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  unescape_unicode: Output='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  str called: input='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  lex called: input='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  str exit: returning literal '"1780-10-02"'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  rdfPlanForeignModify called, operation: 3
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'true'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  CheckURL called: 'http://fuseki:3030/dt/update'
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfExecForeignInsert called
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
+DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignInsert: added row to batch (1/50)
+DEBUG:  rdfExecForeignInsert exit
+DEBUG:  rdfExecForeignInsert called
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/founded>'
+DEBUG:  isBlank called: term='<http://dbpedia.org/property/founded>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignInsert: added row to batch (2/50)
+DEBUG:  rdfExecForeignInsert exit
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
+DEBUG:  ExecuteSPARQL called for INSERT operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
+DEBUG:  ExecuteSPARQL: http response code = 204
+DEBUG:  ExecuteSPARQL: http response size = 0
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+SELECT DISTINCT subject, predicate, object FROM ft
+WHERE
+  subject = sparql.iri('https://www.uni-muenster.de') AND
+  object BETWEEN '1780-01-01'::date AND sparql.strdt('1780-12-31', '<http://www.w3.org/2001/XMLSchema#date>')
+ORDER BY object ASC, predicate DESC
+FETCH FIRST 2 ROWS ONLY;
+DEBUG:  isLiteral called: term='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  isBlank called: term='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  isBlank exit: returning 'false'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral called: input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  isLiteral exit: returning 'true' (simple literal - no ^^ or @)
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral called: input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  lex called: input='"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  lang called: input='"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  lex called: input='"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  lang exit: returning empty string
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  datatype called: input='"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral called: input='"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"\"https://www.uni-muenster.de\""'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  unescape_unicode: Input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  unescape_unicode: Output='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  str called: input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  lex called: input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral called: input='https://www.uni-muenster.de'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  str exit: returning literal '"https://www.uni-muenster.de"'
+LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
+                               ^
+DEBUG:  iri called: input='"https://www.uni-muenster.de"'
+DEBUG:  lex called: input='"https://www.uni-muenster.de"'
+DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
+DEBUG:  rdf_fdw_iri called
+DEBUG:  isLiteral called: term='1780-12-31'
+DEBUG:  isBlank called: term='1780-12-31'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
+DEBUG:  isLiteral exit: returning 'true' (simple literal - no ^^ or @)
+DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
+DEBUG:  lex called: input='"1780-12-31"'
+DEBUG:  lang called: input='"1780-12-31"'
+DEBUG:  lex called: input='"1780-12-31"'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='"1780-12-31"'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"\"1780-12-31\""'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
+DEBUG:  unescape_unicode: Input='1780-12-31'
+DEBUG:  unescape_unicode: Output='1780-12-31'
+DEBUG:  str called: input='1780-12-31'
+DEBUG:  lex called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
+DEBUG:  str exit: returning literal '"1780-12-31"'
+DEBUG:  isLiteral called: term='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  unescape_unicode: Output='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  rdf_fdw_strdt called
+DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  strdt called: literal='"1780-12-31"', datatype='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  str called: input='"1780-12-31"'
+DEBUG:  lex called: input='"1780-12-31"'
+DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
+DEBUG:  str exit: returning literal '"1780-12-31"'
+DEBUG:  strdt exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'true'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => subject
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  lang called: input='<https://www.uni-muenster.de>'
+DEBUG:  lex called: input='<https://www.uni-muenster.de>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
+DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
+DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  lex called: input='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muenster.de>] right type 7
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
+DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
+
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
+DEBUG:  DeparseExpr exit: returning 'object'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => object
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DatumToString called: type='1082' 
+DEBUG:  DatumToString exit: returning '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  strdt called: literal='1780-01-01', datatype='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  str called: input='1780-01-01'
+DEBUG:  lex called: input='1780-01-01'
+DEBUG:  cstring_to_rdfliteral called: input='1780-01-01'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"'
+DEBUG:  str exit: returning literal '"1780-01-01"'
+DEBUG:  strdt exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>] right type 7
+DEBUG:  GetRDFColumn called: column='object'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
+DEBUG:  GetRDFColumn called: column='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>')
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  IsStringDataType called: type='1082'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  isBlank called: term='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '>='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
+DEBUG:  DeparseExpr exit: returning 'object'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => object
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  strdt called: literal='1780-12-31', datatype='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  str called: input='1780-12-31'
+DEBUG:  lex called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
+DEBUG:  str exit: returning literal '"1780-12-31"'
+DEBUG:  strdt exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>] right type 7
+DEBUG:  GetRDFColumn called: column='object'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
+DEBUG:  GetRDFColumn called: column='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>')
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  isBlank called: term='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '<='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  DeparseExpr exit: returning '?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
+DEBUG:  DeparseExpr exit: returning 'object'
+
+DEBUG:  GetRDFColumn called: column='object'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='1', result='predicate'
+DEBUG:  DeparseExpr exit: returning 'predicate'
+
+DEBUG:  GetRDFColumn called: column='predicate'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'predicate'
+DEBUG:    DeparseSQLOrderBy: can push down > 1
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseSQLOrderBy exit: returning '  ASC (?o)  DESC (?p)  ASC (?s)'
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
+DEBUG:  CreateSPARQL called
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:    CreateSPARQL: pushing down ORDER BY clause > 'ORDER BY   ASC (?o)  DESC (?p)  ASC (?s)'
+DEBUG:  CreateSPARQL exit
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 3 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3E%3D%20%221780-01-01%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  WriteMemoryCallback called
+DEBUG:  WriteMemoryCallback exit: returning '549' (realsize)
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 549
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 1
+DEBUG:    FetchNextBinding: called > rowcount = 0/1
+DEBUG:    FetchNextBinding exit: returning 0
+DEBUG:  CreateTuple called 
+DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  lex called: input='https://www.uni-muenster.de'
+DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
+DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='http://dbpedia.org/property/founded'
+DEBUG:  lex called: input='http://dbpedia.org/property/founded'
+DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
+DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
+DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.org/2001/XMLSchema#date', node_type='literal'
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
+DEBUG:  CreateTuple: value > '1780-10-02'
+DEBUG:  isLiteral called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isLiteral exit: returning 'true' (valid datatype)
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lang called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  unescape_unicode: Input='1780-10-02'
+DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  str called: input='1780-10-02'
+DEBUG:  lex called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  str exit: returning literal '"1780-10-02"'
+DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  CreateTuple exit
+DEBUG:  rdfIterateForeignScan: virtual tuple stored (0/1)
+DEBUG:  rdfIterateForeignScan: valid slots = 3
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 1 | pagesize = 1
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+            subject            |               predicate               |                        object                         
+-------------------------------+---------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/founded> | "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+UPDATE ft
+SET object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://dbpedia.org/property/name>';
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
+                        ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
+                        ^
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
+                        ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
+                        ^
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
+LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
+                          ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
+                          ^
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
+                          ^
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
+                          ^
+DEBUG:  isLiteral called: term='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  isBlank called: term='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  isBlank exit: returning 'false'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  isLiteral exit: returning 'true' (literal has a language tag)
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lex called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lang called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lex called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lang exit: returning => 'en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  datatype called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  unescape_unicode: Input='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  unescape_unicode: Output='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lex called: input='en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lex called: input='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  strlang called: literal='University of Münster', language='en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  str called: input='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  lex called: input='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral called: input='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  str exit: returning literal '"University of Münster"'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  strlang exit: returning => '"University of Münster"@en'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  rdfAddForeignUpdateTargets called
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'subject' (attnum=1)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'predicate' (attnum=2)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (attnum=3)
+DEBUG:  rdfAddForeignUpdateTargets exit
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'true'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => subject
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  lang called: input='<https://www.uni-muenster.de>'
+DEBUG:  lex called: input='<https://www.uni-muenster.de>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
+DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
+DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  lex called: input='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muenster.de>] right type 7
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
+DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
+
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='1', result='predicate'
+DEBUG:  DeparseExpr exit: returning 'predicate'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => predicate
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
+DEBUG:  lang called: input='<http://dbpedia.org/property/name>'
+DEBUG:  lex called: input='<http://dbpedia.org/property/name>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='<http://dbpedia.org/property/name>'
+DEBUG:  cstring_to_rdfliteral called: input='<http://dbpedia.org/property/name>'
+DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  lex called: input='<http://dbpedia.org/property/name>'
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<http://dbpedia.org/property/name>'
+DEBUG:  DeparseExpr exit: returning '<http://dbpedia.org/property/name>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [predicate] left type 6, [<http://dbpedia.org/property/name>] right type 7
+DEBUG:  GetRDFColumn called: column='predicate'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'predicate'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<http://dbpedia.org/property/name>' ... 
+DEBUG:  GetRDFColumn called: column='<http://dbpedia.org/property/name>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<http://dbpedia.org/property/name>')
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'predicate' => '?p'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<http://dbpedia.org/property/name>' => '<http://dbpedia.org/property/name>'
+DEBUG:  DeparseExpr exit: returning '?p = <http://dbpedia.org/property/name>'
+
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://dbpedia.org/property/name>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
+DEBUG:  CreateSPARQL called
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  CreateSPARQL exit
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 2 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfPlanForeignModify called, operation: 2
+DEBUG:  rdfPlanForeignModify: adding attribute 1 (subject) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 2 (predicate) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 3 (object) to target list
+DEBUG:  rdfPlanForeignModify: UPDATE operation - returning 3 target attributes
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  WriteMemoryCallback called
+DEBUG:  WriteMemoryCallback exit: returning '545' (realsize)
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 545
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'true'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  CheckURL called: 'http://fuseki:3030/dt/update'
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 1
+DEBUG:    FetchNextBinding: called > rowcount = 0/1
+DEBUG:    FetchNextBinding exit: returning 0
+DEBUG:  CreateTuple called 
+DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  lex called: input='https://www.uni-muenster.de'
+DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
+DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='http://dbpedia.org/property/name'
+DEBUG:  lex called: input='http://dbpedia.org/property/name'
+DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
+DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
+DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+DEBUG:  CreateTuple: value='Westfälische Wilhelms-Universität Münster', lang='de', datatye='(null)', node_type='literal'
+DEBUG:  cstring_to_rdfliteral called: input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
+DEBUG:  CreateTuple: value > 'Westfälische Wilhelms-Universität Münster'
+DEBUG:  isLiteral called: term='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isLiteral exit: returning 'true' (literal has a language tag)
+DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  lang called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  lang exit: returning => 'de'
+DEBUG:  datatype called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
+DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
+DEBUG:  lex called: input='de'
+DEBUG:  lex called: input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  strlang called: literal='Westfälische Wilhelms-Universität Münster', language='de'
+DEBUG:  str called: input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  lex called: input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  cstring_to_rdfliteral called: input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  str exit: returning literal '"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  strlang exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  CreateTuple exit
+DEBUG:  rdfIterateForeignScan: virtual tuple stored (0/1)
+DEBUG:  rdfIterateForeignScan: valid slots = 3
+DEBUG:  rdfExecForeignUpdate called
+DEBUG:  rdfExecForeignUpdate [0] DELETE: column loaded: subject, sparql_var: ?s
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignUpdate: DELETE: column 'subject' OLD value: <https://www.uni-muenster.de>
+DEBUG:  rdfExecForeignUpdate [1] DELETE: column loaded: predicate, sparql_var: ?p
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
+DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignUpdate: DELETE: column 'predicate' OLD value: <http://dbpedia.org/property/name>
+DEBUG:  rdfExecForeignUpdate [2] DELETE: column loaded: object, sparql_var: ?o
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignUpdate: DELETE: column 'object' OLD value: "Westfälische Wilhelms-Universität Münster"@de
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignUpdate: INSERT: column 'subject' NEW value: <https://www.uni-muenster.de>
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
+DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignUpdate: INSERT: column 'predicate' NEW value: <http://dbpedia.org/property/name>
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"University of Münster"@en'
+DEBUG:  isBlank called: term='"University of Münster"@en'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignUpdate: INSERT: column 'object' NEW value: "University of Münster"@en
+DEBUG:  rdfExecForeignUpdate: added row to batch (1/50)
+DEBUG:  rdfExecForeignUpdate exit
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 1 | pagesize = 1
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 1 statement(s)
+DEBUG:  ExecuteSPARQL called for UPDATE operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
+DEBUG:  ExecuteSPARQL: http response code = 204
+DEBUG:  ExecuteSPARQL: http response size = 0
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DELETE FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
+                        ^
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
+                        ^
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
+                        ^
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
+                        ^
+DEBUG:  rdfAddForeignUpdateTargets called
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'subject' (attnum=1)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'predicate' (attnum=2)
+DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (attnum=3)
+DEBUG:  rdfAddForeignUpdateTargets exit
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'true'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  SetUsedColumns called: expression='318'
+DEBUG:  SetUsedColumns called: expression='17'
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  DeparseSQLWhereConditions called
+DEBUG:  DeparseExpr called:  expr->type='17'
+DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
+DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
+DEBUG:  DeparseExpr called:  expr->type='6'
+DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
+DEBUG:    DeparseExpr [T_Var]: index='0', result='subject'
+DEBUG:  DeparseExpr exit: returning 'subject'
+
+DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => subject
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
+DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
+DEBUG:  DeparseExpr called:  expr->type='7'
+DEBUG:  DeparseExpr [T_Const] called: expr->type=7
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  lang called: input='<https://www.uni-muenster.de>'
+DEBUG:  lex called: input='<https://www.uni-muenster.de>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
+DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
+DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  lex called: input='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
+
+DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muenster.de>] right type 7
+DEBUG:  GetRDFColumn called: column='subject'
+DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
+DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
+DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
+DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
+DEBUG:  IsStringDataType exit: returning 'true'
+DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
+DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
+DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
+DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
+
+DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
+'
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
+DEBUG:  CreateSPARQL called
+DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  CreateSPARQL exit
+DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
+DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 1 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfPlanForeignModify called, operation: 4
+DEBUG:  rdfPlanForeignModify: adding attribute 1 (subject) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 2 (predicate) to target list
+DEBUG:  rdfPlanForeignModify: adding attribute 3 (object) to target list
+DEBUG:  rdfPlanForeignModify: DELETE operation - returning 3 target attributes
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  WriteMemoryCallback called
+DEBUG:  WriteMemoryCallback exit: returning '865' (realsize)
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 865
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:    LoadRDFData: appending record 2
+DEBUG:  LoadRDFData exit
+DEBUG:  rdfBeginForeignModify called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'true'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  CheckURL called: 'http://fuseki:3030/dt/update'
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
+DEBUG:  rdfBeginForeignModify exit
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 2
+DEBUG:    FetchNextBinding: called > rowcount = 0/2
+DEBUG:    FetchNextBinding exit: returning 0
+DEBUG:  CreateTuple called 
+DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  lex called: input='https://www.uni-muenster.de'
+DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
+DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='http://dbpedia.org/property/name'
+DEBUG:  lex called: input='http://dbpedia.org/property/name'
+DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
+DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
+DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
+DEBUG:  CreateTuple: value='University of Münster', lang='en', datatye='(null)', node_type='literal'
+DEBUG:  cstring_to_rdfliteral called: input='University of Münster'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"'
+DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
+DEBUG:  CreateTuple: value > 'University of Münster'
+DEBUG:  isLiteral called: term='"University of Münster"@en'
+DEBUG:  isBlank called: term='"University of Münster"@en'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
+DEBUG:  isLiteral exit: returning 'true' (literal has a language tag)
+DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
+DEBUG:  lex called: input='"University of Münster"@en'
+DEBUG:  lang called: input='"University of Münster"@en'
+DEBUG:  lex called: input='"University of Münster"@en'
+DEBUG:  lang exit: returning => 'en'
+DEBUG:  datatype called: input='"University of Münster"@en'
+DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
+DEBUG:  unescape_unicode: Input='University of Münster'
+DEBUG:  unescape_unicode: Output='University of Münster'
+DEBUG:  lex called: input='en'
+DEBUG:  lex called: input='University of Münster'
+DEBUG:  strlang called: literal='University of Münster', language='en'
+DEBUG:  str called: input='University of Münster'
+DEBUG:  lex called: input='University of Münster'
+DEBUG:  cstring_to_rdfliteral called: input='University of Münster'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"'
+DEBUG:  str exit: returning literal '"University of Münster"'
+DEBUG:  strlang exit: returning => '"University of Münster"@en'
+DEBUG:  CreateTuple exit
+DEBUG:  rdfIterateForeignScan: virtual tuple stored (0/2)
+DEBUG:  rdfIterateForeignScan: valid slots = 3
+DEBUG:  rdfExecForeignDelete called
+DEBUG:  rdfExecForeignDelete [0] column loaded: subject, sparql_var: ?s, attnum: 1
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignDelete: column 'subject' value: <https://www.uni-muenster.de>
+DEBUG:  rdfExecForeignDelete [1] column loaded: predicate, sparql_var: ?p, attnum: 2
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
+DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignDelete: column 'predicate' value: <http://dbpedia.org/property/name>
+DEBUG:  rdfExecForeignDelete [2] column loaded: object, sparql_var: ?o, attnum: 3
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"University of Münster"@en'
+DEBUG:  isBlank called: term='"University of Münster"@en'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignDelete: column 'object' value: "University of Münster"@en
+DEBUG:  rdfExecForeignDelete: added row to batch (1/50)
+DEBUG:  rdfExecForeignDelete exit
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 1 | pagesize = 2
+DEBUG:    FetchNextBinding: called > rowcount = 1/2
+DEBUG:    FetchNextBinding exit: returning 1
+DEBUG:  CreateTuple called 
+DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  lex called: input='https://www.uni-muenster.de'
+DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
+DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
+DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
+DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
+DEBUG:  iri called: input='http://dbpedia.org/property/founded'
+DEBUG:  lex called: input='http://dbpedia.org/property/founded'
+DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
+DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
+DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
+DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
+DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
+DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
+DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.org/2001/XMLSchema#date', node_type='literal'
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
+DEBUG:  CreateTuple: value > '1780-10-02'
+DEBUG:  isLiteral called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isLiteral exit: returning 'true' (valid datatype)
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lang called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lang exit: returning empty string
+DEBUG:  datatype called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  unescape_unicode: Input='1780-10-02'
+DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  str called: input='1780-10-02'
+DEBUG:  lex called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  str exit: returning literal '"1780-10-02"'
+DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  CreateTuple exit
+DEBUG:  rdfIterateForeignScan: virtual tuple stored (1/2)
+DEBUG:  rdfIterateForeignScan: valid slots = 3
+DEBUG:  rdfExecForeignDelete called
+DEBUG:  rdfExecForeignDelete [0] column loaded: subject, sparql_var: ?s, attnum: 1
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
+DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignDelete: column 'subject' value: <https://www.uni-muenster.de>
+DEBUG:  rdfExecForeignDelete [1] column loaded: predicate, sparql_var: ?p, attnum: 2
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/founded>'
+DEBUG:  isBlank called: term='<http://dbpedia.org/property/founded>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignDelete: column 'predicate' value: <http://dbpedia.org/property/founded>
+DEBUG:  rdfExecForeignDelete [2] column loaded: object, sparql_var: ?o, attnum: 3
+DEBUG:  DatumToString called: type='(RDFNODEOID)' 
+DEBUG:  DatumToString exit: returning '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  rdfExecForeignDelete: column 'object' value: "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>
+DEBUG:  rdfExecForeignDelete: added row to batch (2/50)
+DEBUG:  rdfExecForeignDelete exit
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 2 | pagesize = 2
+DEBUG:  rdfEndForeignModify called
+DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
+DEBUG:  ExecuteSPARQL called for DELETE operation
+DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
+DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
+
+DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
+DEBUG:  ExecuteSPARQL: http response code = 204
+DEBUG:  ExecuteSPARQL: http response size = 0
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  FlushSPARQLStatements: batch flushed successfully
+DEBUG:  rdfEndForeignModify exit
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DROP SERVER fuseki CASCADE;
+DEBUG:  drop auto-cascades to type ft
+DEBUG:  drop auto-cascades to type ft[]
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki

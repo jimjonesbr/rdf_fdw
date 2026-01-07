@@ -32,10 +32,10 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	rdfnode_info a = parse_rdfnode(n1);
 	rdfnode_info b = parse_rdfnode(n2);
 
-	elog(DEBUG1, "%s called", __func__);
-	elog(DEBUG2, "%s: a.lex='%s', a.dtype='%s', a.lang='%s', a.isNumeric='%d'", __func__,
+	elog(DEBUG3, "%s called", __func__);
+	elog(DEBUG4, "%s: a.lex='%s', a.dtype='%s', a.lang='%s', a.isNumeric='%d'", __func__,
 		 a.lex, a.dtype ? a.dtype : "(null)", a.lang ? a.lang : "(null)", a.isNumeric);
-	elog(DEBUG2, "%s: b.lex='%s', b.dtype='%s', b.lang='%s', b.isNumeric='%d'", __func__,
+	elog(DEBUG4, "%s: b.lex='%s', b.dtype='%s', b.lang='%s', b.isNumeric='%d'", __func__,
 		 b.lex, b.dtype ? b.dtype : "(null)", b.lang ? b.lang : "(null)", b.isNumeric);
 
 	if (a.isIRI && b.isIRI)
@@ -150,7 +150,7 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 		return DatumGetBool(DirectFunctionCall2(interval_eq, a_val, b_val));
 	}
 
-	elog(DEBUG2, "%s: fallback lexical comparison", __func__);
+	elog(DEBUG4, "%s: fallback lexical comparison", __func__);
 	return strcmp(a.lex, b.lex) == 0;
 }
 
@@ -682,8 +682,8 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 	Datum arg1, arg2;
 	int typeOrder1, typeOrder2;
 
-	elog(DEBUG1, "%s called", __func__);
-	elog(DEBUG2, "%s: n1='%s', n2='%s'", __func__, rdfnode1.raw, rdfnode2.raw);
+	elog(DEBUG3, "%s called", __func__);
+	elog(DEBUG4, "%s: n1='%s', n2='%s'", __func__, rdfnode1.raw, rdfnode2.raw);
 
 	/* Get SPARQL term order for both nodes */
 	typeOrder1 = getSparqlTermOrder(&rdfnode1);
@@ -865,7 +865,7 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 	rdfnode_info result = {NULL, NULL, NULL, false};
 	char *raw = rdfnode_to_cstring(node);
 	char *lexical = lex(raw);
-	elog(DEBUG1, "%s called: input='%s'", __func__, raw);
+	elog(DEBUG3, "%s called: input='%s'", __func__, raw);
 
 	result.raw = raw;
 	result.lex = unescape_unicode(lexical);
@@ -890,31 +890,31 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 	else if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
 	{
 		result.isString = true;
-		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_STRING);
+		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_STRING);
 	}
 	else if ((result.isNumeric = isNumeric(raw)))
 	{
-		elog(DEBUG2, "literal '%s' is numeric ", result.raw);
+		elog(DEBUG4, "literal '%s' is numeric ", result.raw);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DATE) == 0)
 	{
 		result.isDate = true;
-		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_DATE);
+		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_DATE);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DATETIME) == 0)
 	{
 		result.isDateTime = true;
-		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_DATETIME);
+		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_DATETIME);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_DURATION) == 0)
 	{
 		result.isDuration = true;
-		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_DURATION);
+		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_DURATION);
 	}
 	else if (strcmp(result.dtype, RDF_XSD_TIME) == 0)
 	{
 		result.isTime = true;
-		elog(DEBUG2, "literal '%s' is %s ", result.raw, RDF_XSD_TIME);
+		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_TIME);
 	}
 	/*
 	 * allow lexicographic comparison for xsd:anyURI literals, aligning with
@@ -925,6 +925,6 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 		result.isPlainLiteral = true;
 	}
 
-	elog(DEBUG1, "%s exit", __func__);
+	elog(DEBUG3, "%s exit", __func__);
 	return result;
 }

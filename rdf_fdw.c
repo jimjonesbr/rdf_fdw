@@ -859,7 +859,7 @@ Datum rdf_fdw_strdt(PG_FUNCTION_ARGS)
 	text *data_type = PG_GETARG_TEXT_PP(1);
 	char *literal;
 
-	elog(DEBUG1, "%s called", __func__);
+	elog(DEBUG3, "%s called", __func__);
 
 	literal = strdt(
 		text_to_cstring(input_text),
@@ -874,6 +874,8 @@ Datum rdf_fdw_str(PG_FUNCTION_ARGS)
 	char *input_cstr = text_to_cstring(input_text);
 	char *result = str(input_cstr);
 
+	elog(DEBUG3, "%s called", __func__);
+
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
@@ -883,6 +885,8 @@ Datum rdf_fdw_iri(PG_FUNCTION_ARGS)
 	char *input_cstr = text_to_cstring(input_text);
 	char *result = iri(input_cstr);
 
+	elog(DEBUG3, "%s called", __func__);
+
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
@@ -891,6 +895,8 @@ Datum rdf_fdw_isIRI(PG_FUNCTION_ARGS)
 	text *input_text;
 	char *input_cstr;
 	bool result;
+
+	elog(DEBUG3, "%s called", __func__);
 
 	if (PG_ARGISNULL(0))
 		PG_RETURN_BOOL(false);
@@ -908,6 +914,8 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 	char *langtag;
 	char *result;
 	char *arg;
+
+	elog(DEBUG3, "%s called", __func__);
 
 	RDFNODEOID = GetRDFNodeOID();
 
@@ -993,6 +1001,8 @@ Datum rdf_fdw_encode_for_uri(PG_FUNCTION_ARGS)
 	char *str_in = text_to_cstring(input);
 	char *result = encode_for_uri(str(str_in));
 
+	elog(DEBUG3, "%s called", __func__);
+
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
@@ -1010,7 +1020,7 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 
 		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
 		{
-			elog(DEBUG1, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
+			elog(DEBUG3, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
 			PG_RETURN_NULL();
 		}
 	}
@@ -1022,6 +1032,9 @@ Datum rdf_fdw_arguments_compatible(PG_FUNCTION_ARGS)
 {
 	text *arg1 = PG_GETARG_TEXT_PP(0);
 	text *arg2 = PG_GETARG_TEXT_PP(1);
+
+	elog(DEBUG3, "%s called", __func__);
+
 	PG_RETURN_BOOL(LiteralsCompatible(text_to_cstring(arg1), text_to_cstring(arg2)));
 }
 
@@ -1064,11 +1077,11 @@ Datum rdf_fdw_strstarts(PG_FUNCTION_ARGS)
 	char *str = text_to_cstring(str_arg);
 	char *substr = text_to_cstring(substr_arg);
 
-	elog(DEBUG1, "%s called: str='%s', substr='%s'", __func__, str, substr);
+	elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
 	if (!LiteralsCompatible(str, substr))
 	{
-		elog(DEBUG1, "%s exit: returning NULL (incompatible literals)", __func__);
+		elog(DEBUG3, "%s exit: returning NULL (incompatible literals)", __func__);
 		PG_RETURN_NULL();
 	}
 
@@ -1128,6 +1141,8 @@ Datum rdf_fdw_isLiteral(PG_FUNCTION_ARGS)
 	char *term;
 	bool result;
 
+	elog(DEBUG3, "%s called", __func__);
+
 	if (PG_ARGISNULL(0))
 		PG_RETURN_BOOL(false);
 
@@ -1146,6 +1161,8 @@ Datum rdf_fdw_bnode(PG_FUNCTION_ARGS)
 {
 	char *result;
 	text *input_text;
+
+	elog(DEBUG3, "%s called", __func__);
 
 	/* Check number of arguments to distinguish BNODE() vs BNODE(str) */
 	if (fcinfo->nargs == 0)
@@ -1177,6 +1194,8 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
 	char *funcname;
 	int *is_uuid_ptr;
 	int is_uuid;
+
+	elog(DEBUG3, "%s called", __func__);
 
 	/* Initialize or retrieve function type from fn_extra */
 	if (fcinfo->flinfo->fn_extra == NULL)
@@ -1229,6 +1248,8 @@ Datum rdf_fdw_strlen(PG_FUNCTION_ARGS)
 	char *str;
 	int result;
 
+	elog(DEBUG3, "%s called", __func__);
+
 	/* STRICT handles NULL input */
 	input = PG_GETARG_TEXT_PP(0);
 	str = text_to_cstring(input);
@@ -1244,6 +1265,8 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
 	int32 start;
 	char *str;
 	char *result;
+
+	elog(DEBUG3, "%s called", __func__);
 
 	if (PG_ARGISNULL(0) || PG_ARGISNULL(1))
 		PG_RETURN_NULL();
@@ -1279,7 +1302,7 @@ Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
 	/* Deconstruct the array into individual elements */
 	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);
 
-	elog(DEBUG1, "%s called: nelems='%d'", __func__, nelems);
+	elog(DEBUG3, "%s called: nelems='%d'", __func__, nelems);
 
 	for (int i = 0; i < nelems; i++)
 	{
@@ -1330,14 +1353,14 @@ Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
 #if PG_VERSION_NUM >= 150000
 	const char *errstr = NULL;
 
-	elog(DEBUG1, "%s called: str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
+	elog(DEBUG3, "%s called: str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
 
 	if (pg_md5_hash(cstr, len, hexsum, &errstr) == false)
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("could not compute md5 hash: %s", errstr)));
 #else
-	elog(DEBUG1, "%s: called str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
+	elog(DEBUG3, "%s: called str='%s', lex='%s'", __func__, text_to_cstring(in_text), cstr);
 	if (pg_md5_hash(cstr, len, hexsum) == false)
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
@@ -1349,6 +1372,8 @@ Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
 
 Datum rdf_fdw_bound(PG_FUNCTION_ARGS)
 {
+	elog(DEBUG3, "%s called", __func__);
+
 	if (PG_ARGISNULL(0))
 		PG_RETURN_BOOL(false);
 	else
@@ -1363,11 +1388,11 @@ Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS)
 	char *term2 = text_to_cstring(b);
 	bool result;
 
-	elog(DEBUG1, "%s called: term1='%s' term2='%s'", __func__, term1, term2);
+	elog(DEBUG3, "%s called: term1='%s' term2='%s'", __func__, term1, term2);
 
 	result = strcmp(term1, term2) == 0;
 
-	elog(DEBUG1, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
+	elog(DEBUG3, "%s exit: returning '%s'", __func__, result == 0 ? "true" : "false");
 
 	PG_RETURN_BOOL(result);
 }
@@ -1901,6 +1926,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->verbose = verbose;
 	state->commit_page = commit_page;
+
 	/*
 	 * Load configured SERVER parameters
 	 */
@@ -3108,7 +3134,7 @@ static void FlushSPARQLStatements(RDFfdwState *state)
 	if (state->batch_count == 0)
 		return;
 
-	elog(DEBUG1, "%s: flushing batch of %d statements", __func__, state->batch_count);
+	elog(DEBUG1, "%s: flushing batch of %d statement(s)", __func__, state->batch_count);
 
 	initStringInfo(&final_query);
 
@@ -3286,7 +3312,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	Datum datum;
 	bool isnull;
 
-	elog(DEBUG1, "%s called", __func__);
+	elog(DEBUG3, "%s called", __func__);
 
 	/* State must be initialized by rdfBeginForeignModify */
 	state = (RDFfdwState *)rinfo->ri_FdwState;
@@ -3324,14 +3350,14 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 		char *replaced;
 		AttrNumber attnum = col->pgattnum;
 
-		elog(DEBUG2, "%s [%d] column loaded: %s, sparql_var: %s, attnum: %d",
+		elog(DEBUG3, "%s [%d] column loaded: %s, sparql_var: %s, attnum: %d",
 			 __func__, i, col->name,
 			 sparql_var ? sparql_var : "(null)", attnum);
 
 		/* Skip columns without SPARQL variable mapping */
 		if (!sparql_var || strlen(sparql_var) == 0)
 		{
-			elog(DEBUG2, "%s [%d] skipping column '%s' - no SPARQL variable",
+			elog(DEBUG3, "%s [%d] skipping column '%s' - no SPARQL variable",
 				 __func__, i, col->name);
 			continue;
 		}
@@ -3339,7 +3365,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 		/* Check if this SPARQL variable exists in the template */
 		if (strstr(sparql_delete.data, sparql_var) == NULL)
 		{
-			elog(DEBUG2, "%s: SPARQL variable '%s' not found in SPARQL template '%s', skipping",
+			elog(DEBUG3, "%s: SPARQL variable '%s' not found in SPARQL template '%s', skipping",
 				 __func__, sparql_var, sparql_delete.data);
 			continue;
 		}
@@ -3350,7 +3376,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 		/* Skip NULL values - this should not happen in normal operation */
 		if (isnull)
 		{
-			elog(DEBUG1, "%s: column '%s' (variable '%s') is NULL, skipping",
+			elog(DEBUG3, "%s: column '%s' (variable '%s') is NULL, skipping",
 				 __func__, col->name, sparql_var);
 			continue;
 		}
@@ -3388,7 +3414,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 				value_str = EscapeSPARQLLiteral(value_str);
 		}
 
-		elog(DEBUG2, "%s: column '%s' value: %s", __func__, col->name, value_str);
+		elog(DEBUG3, "%s: column '%s' value: %s", __func__, col->name, value_str);
 
 		/* Replace the variable placeholder with the actual value */
 		replaced = str_replace(sparql_delete.data, sparql_var, value_str);
@@ -3414,7 +3440,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	state->batch_count++;
 	state->sparql_query_type = SPARQL_DELETE;
 
-	elog(DEBUG1, "%s: added row to batch (%d/%d)", __func__, state->batch_count, state->batch_size);
+	elog(DEBUG3, "%s: added row to batch (%d/%d)", __func__, state->batch_count, state->batch_size);
 
 	/* Flush batch if it's full */
 	if (state->batch_count >= state->batch_size)
@@ -3427,7 +3453,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	/* Clean up temp context for next row */
 	MemoryContextSwitchTo(oldcontext);
 
-	elog(DEBUG1, "%s exit", __func__);
+	elog(DEBUG3, "%s exit", __func__);
 
 	/* Return planSlot (contains OLD values for RETURNING clause) */
 	return planSlot;
@@ -3798,14 +3824,21 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->used = false;
 
 #if PG_VERSION_NUM < 110000
-		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
+		if (attr->atttypid == RDFNODEOID)
+			elog(DEBUG2, "  %s: (%d) adding data type RDFNODEOID", __func__, i);
+		else
+			elog(DEBUG2, "  %s: (%d) adding data type %u", __func__, i, attr->atttypid);
+
 		state->rdfTable->cols[i]->pgtype = attr->atttypid;
 		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
 		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
 		state->rdfTable->cols[i]->pgattnum = attr->attnum;
-
 #else
-		elog(DEBUG1, "  %s: (%d) adding data type > %u", __func__, i, attr->atttypid);
+		if (attr->atttypid == RDFNODEOID)
+			elog(DEBUG2, "  %s: (%d) adding data type RDFNODEOID", __func__, i);
+		else
+			elog(DEBUG2, "  %s: (%d) adding data type %u", __func__, i, attr->atttypid);
+
 		state->rdfTable->cols[i]->pgtype = attr->atttypid;
 		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
 		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
@@ -4018,7 +4051,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 
 	if (usermatch)
 	{
-		elog(DEBUG2, "%s: setting UserMapping*", __func__);
+		elog(DEBUG2, "%s: setting UserMapping", __func__);
 		um = (UserMapping *)palloc(sizeof(UserMapping));
 #if PG_VERSION_NUM >= 120000
     um->umid = ((Form_pg_user_mapping) GETSTRUCT(tp))->oid;
@@ -4137,7 +4170,10 @@ static List *SerializePlanData(RDFfdwState *state)
 		elog(DEBUG2, "%s: language '%s'", __func__, state->rdfTable->cols[i]->language);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->language));
 
-		elog(DEBUG2, "%s: pgtype '%u'", __func__, state->rdfTable->cols[i]->pgtype);
+		if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
+			elog(DEBUG2, "%s: pgtype 'RDFNODEOID'", __func__);
+		else
+			elog(DEBUG2, "%s: pgtype '%u'", __func__, state->rdfTable->cols[i]->pgtype);
 		result = lappend(result, OidToConst(state->rdfTable->cols[i]->pgtype));
 
 		elog(DEBUG2, "%s: pgtypmod '%d'", __func__, state->rdfTable->cols[i]->pgtypmod);
@@ -4332,7 +4368,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 	char *ptr = repalloc(mem->memory, mem->size + realsize + 1);
 
-	elog(DEBUG1, "%s called", __func__);
+	elog(DEBUG3, "%s called", __func__);
 
 	if (!ptr)
 		ereport(ERROR,
@@ -4344,7 +4380,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
-	elog(DEBUG1, "%s exit: returning '%lu' (realsize)", __func__, realsize);
+	elog(DEBUG3, "%s exit: returning '%lu' (realsize)", __func__, realsize);
 	return realsize;
 }
 
@@ -4359,7 +4395,7 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	char *rdfxml = "content-type: application/rdf+xml";
 	char *rdfxmlutf8 = "content-type: application/rdf+xml;charset=utf-8";
 
-	elog(DEBUG1, "%s called", __func__);
+	elog(DEBUG3, "%s called", __func__);
 
 	Assert(contents);
 
@@ -4374,8 +4410,8 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 		{
 			/* remove crlf */
 			contents[strlen(contents) - 2] = '\0';
-			elog(DEBUG1, "%s: unsupported header entry: \"%s\"", __func__, contents);
-			elog(DEBUG1, "%s: %s", __func__, mem->memory);
+			elog(DEBUG3, "%s: unsupported header entry: \"%s\"", __func__, contents);
+			elog(DEBUG3, "%s: %s", __func__, mem->memory);
 			return 0;
 		}
 	}
@@ -4394,7 +4430,8 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
-	elog(DEBUG1, "%s exit: returning '%lu' (realsize)", __func__, realsize);
+	elog(DEBUG4, "%s: realsize='%lu'", __func__, realsize);
+	elog(DEBUG3, "%s exit", __func__);
 	return realsize;
 }
 
@@ -4429,11 +4466,11 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname)
 {
 
-	elog(DEBUG1, "%s called: column='%s'", __func__, columnname);
+	elog(DEBUG2, "%s called: column='%s'", __func__, columnname);
 
 	if (!columnname)
 	{
-		elog(DEBUG1, "%s exit: returning NULL (columnname is NULL)", __func__);
+		elog(DEBUG2, "%s exit: returning NULL (columnname is NULL)", __func__);
 		return NULL;
 	}
 
@@ -4441,12 +4478,12 @@ static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *column
 	{
 		if (strcmp(state->rdfTable->cols[i]->name, columnname) == 0)
 		{
-			elog(DEBUG1, "%s exit: rerurning match for columname '%s'", __func__, columnname);
+			elog(DEBUG2, "%s exit: rerurning match for columname '%s'", __func__, columnname);
 			return state->rdfTable->cols[i];
 		}
 	}
 
-	elog(DEBUG1, "%s exit: rerurning NULL (no match found for '%s')", __func__, columnname);
+	elog(DEBUG2, "%s exit: rerurning NULL (no match found for '%s')", __func__, columnname);
 	return NULL;
 }
 
@@ -4978,10 +5015,10 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			/* Success - HTTP 2xx */
 			state->sparql_resultset = pstrdup(chunk.memory);
 
+			elog(DEBUG4, "%s: http response header = \n%s", __func__, chunk_header.memory);
 			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);
 			elog(DEBUG2, "%s: http response code = %ld", __func__, response_code);
-			elog(DEBUG2, "%s: http response size = %ld", __func__, chunk.size);
-			elog(DEBUG2, "%s: http response header = \n%s", __func__, chunk_header.memory);
+			elog(DEBUG2, "%s: http response size = %ld", __func__, chunk.size);			
 		}
 	}
 
@@ -5115,7 +5152,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 	Var *variable;
 	ListCell *cell;
 
-	elog(DEBUG1, "%s called: expression='%d'", __func__, expr->type);
+	elog(DEBUG2, "%s called: expression='%d'", __func__, expr->type);
 
 	switch (expr->type)
 	{
@@ -5357,7 +5394,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 		break;
 	}
 
-	elog(DEBUG1, "%s exit", __func__);
+	elog(DEBUG2, "%s exit", __func__);
 }
 
 /*
@@ -5377,7 +5414,7 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 	initStringInfo(&sparql);
 	initStringInfo(&where_graph);
 
-	elog(DEBUG1, "%s called", __func__);
+	elog(DEBUG2, "%s called", __func__);
 
 	if (state->sparql_filter && strlen(state->sparql_filter) > 0)
 		appendStringInfo(&where_graph, "{%s\n ## rdf_fdw pushdown conditions ##\n%s}", pstrdup(state->sparql_where), pstrdup(state->sparql_filter));
@@ -5621,7 +5658,11 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					datum = CStringGetDatum(literal_value.data);
 					slot->tts_isnull[i] = false;
 
-					elog(DEBUG3, "%s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
+					if (pgtype == RDFNODEOID)
+						elog(DEBUG3, "%s: setting pg column > '%s' (type > '(RDFNODEOID)'), sparqlvar > '%s'", __func__, colname, sparqlvar);
+					else
+						elog(DEBUG3, "%s: setting pg column > '%s' (type > '%d'), sparqlvar > '%s'", __func__, colname, pgtype, sparqlvar);
+
 					elog(DEBUG3, "%s: value > '%s'", __func__, node_value);
 
 					/* find the appropriate conversion function */
@@ -5717,7 +5758,10 @@ static char *DatumToString(Datum datum, Oid type)
 	char *str;
 	text *t;
 
-	elog(DEBUG1, "%s called: type='%u' ", __func__, type);
+	if (type == RDFNODEOID)
+		elog(DEBUG3, "%s called: type='(RDFNODEOID)' ", __func__);
+	else
+		elog(DEBUG3, "%s called: type='%u' ", __func__, type);
 
 	/* get the type's output function */
 	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(type));
@@ -5782,7 +5826,7 @@ static char *DatumToString(Datum datum, Oid type)
 			return NULL;
 		}
 
-	elog(DEBUG1, "%s exit: returning '%s'", __func__, result.data);
+	elog(DEBUG3, "%s exit: returning '%s'", __func__, result.data);
 	return result.data;
 }
 
@@ -5820,11 +5864,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	FuncExpr *func;
 	struct RDFfdwColumn *col = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
-	elog(DEBUG1, "%s called:  expr->type='%u'", __func__, expr->type);
+	elog(DEBUG2, "%s called:  expr->type='%u'", __func__, expr->type);
 
 	if (expr == NULL)
 	{
-		elog(DEBUG1, "%s: returning NULL (expr is NULL)", __func__);
+		elog(DEBUG2, "%s: returning NULL (expr is NULL)", __func__);
 		return NULL;
 	}
 
@@ -5835,7 +5879,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		constant = (Const *)expr;
 		if (constant->constisnull)
 		{
-			elog(DEBUG1, "%s [T_Const]: returning NULL (constant is NULL)", __func__);
+			elog(DEBUG2, "%s [T_Const]: returning NULL (constant is NULL)", __func__);
 			return NULL;
 		}
 		else
@@ -5844,7 +5888,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			char *c = DatumToString(constant->constvalue, constant->consttype);
 			if (c == NULL)
 			{
-				elog(DEBUG1, "%s [T_Const]: returning NULL (DatumToString returned NULL)", __func__);
+				elog(DEBUG2, "%s [T_Const]: returning NULL (DatumToString returned NULL)", __func__);
 				return NULL;
 			}
 			else
@@ -5887,7 +5931,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (variable->vartype == BOOLOID)
 		{
-			elog(DEBUG1, "%s [T_Var]: returning NULL (variable type is a BOOLOID)", __func__);
+			elog(DEBUG2, "%s [T_Var]: returning NULL (variable type is a BOOLOID)", __func__);
 			return NULL;
 		}
 
@@ -5929,7 +5973,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		/* don't push condition down if the right argument can't be translated into a SPARQL value*/
 		if (!canHandleType(rightargtype))
 		{
-			elog(DEBUG1, "%s [T_OpExpr]: returning NULL: cannot handle data type", __func__);
+			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: cannot handle data type", __func__);
 			return NULL;
 		}
 
@@ -5958,7 +6002,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (left == NULL)
 			{
-				elog(DEBUG1, "%s [T_OpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
+				elog(DEBUG2, "%s [T_OpExpr]: returning NULL (left argument couldn't be deparsed)", __func__);
 				return NULL;
 			}
 
@@ -5980,7 +6024,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (right == NULL)
 				{
-					elog(DEBUG1, "%s [T_OpExpr]: returning NULL (right argument couldn't be deparsed)", __func__);
+					elog(DEBUG2, "%s [T_OpExpr]: returning NULL (right argument couldn't be deparsed)", __func__);
 					return NULL;
 				}
 
@@ -5991,7 +6035,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (leftexpr->type == T_Var && (!left_column || !left_column->pushable))
 				{
-					elog(DEBUG1, "%s [T_OpExpr]: returning NULL (column of left argument is invalid or not pushable)", __func__);
+					elog(DEBUG2, "%s [T_OpExpr]: returning NULL (column of left argument is invalid or not pushable)", __func__);
 					return NULL;
 				}
 
@@ -6000,7 +6044,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (rightexpr->type == T_Var && (!right_column || !right_column->pushable))
 				{
-					elog(DEBUG1, "%s [T_OpExpr]: returning NULL (column of right argument is invalid or not pushable)", __func__);
+					elog(DEBUG2, "%s [T_OpExpr]: returning NULL (column of right argument is invalid or not pushable)", __func__);
 					return NULL;
 				}
 
@@ -6067,7 +6111,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* if the column contains an expression we use it in all FILTER expressions*/
 				if (right_column && right_column->expression)
 				{
-					elog(DEBUG1, "%s [T_OpExpr]: adding expression '%s' for left expression", __func__, right_column->expression);
+					elog(DEBUG2, "%s [T_OpExpr]: adding expression '%s' for left expression", __func__, right_column->expression);
 					appendStringInfo(&right_filter_arg, "%s", right_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
@@ -6143,7 +6187,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 */
 					if (leftexpr->type != T_Var && rightexpr->type != T_Const)
 					{
-						elog(DEBUG1, "%s [T_OpExpr]: returning NULL (type of left expression is not a T_Var and the right expression is not a T_Const)", __func__);
+						elog(DEBUG2, "%s [T_OpExpr]: returning NULL (type of left expression is not a T_Var and the right expression is not a T_Const)", __func__);
 						return NULL;
 					}
 
@@ -6163,12 +6207,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			}
 			else
 			{
-				elog(DEBUG1, "  %s [T_OpExpr]: unary operator not supported", __func__);
+				elog(DEBUG2, "  %s [T_OpExpr]: unary operator not supported", __func__);
 			}
 		}
 		else
 		{
-			elog(DEBUG1, "  %s exit [T_OpExpr]: returning NULL (operator cannot be translated '%s')", __func__, opername);
+			elog(DEBUG2, "  %s exit [T_OpExpr]: returning NULL (operator cannot be translated '%s')", __func__, opername);
 			return NULL;
 		}
 
@@ -6179,7 +6223,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (btest->arg->type != T_Var)
 		{
-			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (argument type is not a T_Var)", __func__);
+			elog(DEBUG2, "  %s exit [T_BooleanTest]: returning NULL (argument type is not a T_Var)", __func__);
 			return NULL;
 		}
 
@@ -6201,13 +6245,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (!col)
 		{
-			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (column not found)", __func__);
+			elog(DEBUG2, "  %s exit [T_BooleanTest]: returning NULL (column not found)", __func__);
 			return NULL;
 		}
 
 		if (!col->pushable)
 		{
-			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (column name is not pushable)", __func__);
+			elog(DEBUG2, "  %s exit [T_BooleanTest]: returning NULL (column name is not pushable)", __func__);
 			return NULL;
 		}
 
@@ -6236,7 +6280,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 							 !col->literaltype ? "\"false\"" : strdt("false", col->literaltype));
 			break;
 		default:
-			elog(DEBUG1, "  %s exit [T_BooleanTest]: returning NULL (unknown booltesttype)", __func__);
+			elog(DEBUG2, "  %s exit [T_BooleanTest]: returning NULL (unknown booltesttype)", __func__);
 			return NULL;
 		}
 
@@ -6258,13 +6302,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		/* don't try to push down anything but IN and NOT IN expressions */
 		if ((strcmp(opername, "=") != 0 || !arrayoper->useOr) && (strcmp(opername, "<>") != 0 || arrayoper->useOr))
 		{
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (expression in not IN or NOT IN)", __func__);
+			elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (expression in not IN or NOT IN)", __func__);
 			return NULL;
 		}
 
 		if (!canHandleType(leftargtype))
 		{
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot handle left argument's datatype)", __func__);
+			elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot handle left argument's datatype)", __func__);
 			return NULL;
 		}
 
@@ -6287,13 +6331,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (!col)
 			{
-				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column of left argument is not valid)", __func__);
+				elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column of left argument is not valid)", __func__);
 				return NULL;
 			}
 
 			if (!col->pushable)
 			{
-				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column is not pushable)", __func__);
+				elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (column is not pushable)", __func__);
 				return NULL;
 			}
 
@@ -6312,7 +6356,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 		else
 		{
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL left argument type '%u' not supported", __func__, leftexpr->type);
+			elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL left argument type '%u' not supported", __func__, leftexpr->type);
 			return NULL;
 		}
 
@@ -6331,7 +6375,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			 */
 			if (constant->constisnull)
 			{
-				elog(DEBUG1, "%s [T_ScalarArrayOpExpr]: returning NULL (constant->constisnull)", __func__);
+				elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: returning NULL (constant->constisnull)", __func__);
 				return NULL;
 			}
 			else
@@ -6386,7 +6430,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* don't push down empty arrays, since the semantics for NOT x = ANY(<empty array>) differ */
 				if (first_arg)
 				{
-					elog(DEBUG1, "%s [T_ScalarArrayOpExpr]: returning NULL (cannot push empty arrays)", __func__);
+					elog(DEBUG2, "%s [T_ScalarArrayOpExpr]: returning NULL (cannot push empty arrays)", __func__);
 					return NULL;
 				}
 			}
@@ -6403,13 +6447,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 #else
 			if (arraycoerce->elemexpr && arraycoerce->elemexpr->type != T_RelabelType)
 			{
-				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (arraycoerce->elemexpr && arraycoerce->elemexpr->type != T_RelabelType)", __func__);
+				elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (arraycoerce->elemexpr && arraycoerce->elemexpr->type != T_RelabelType)", __func__);
 				return NULL;
 			}
 #endif
 			if (arraycoerce->arg->type != T_ArrayExpr)
 			{
-				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (arraycoerce->arg->type != T_ArrayExpr)", __func__);
+				elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (arraycoerce->arg->type != T_ArrayExpr)", __func__);
 				return NULL;
 			}
 
@@ -6432,7 +6476,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				/* if any element cannot be converted, give up */
 				if (element == NULL)
 				{
-					elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (unable to deparse element of T_ArrayExpr)", __func__);
+					elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (unable to deparse element of T_ArrayExpr)", __func__);
 					return NULL;
 				}
 
@@ -6444,13 +6488,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			/* don't push down empty arrays, since the semantics for NOT x = ANY(<empty array>) differ */
 			if (first_arg)
 			{
-				elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot push down empty arrays)", __func__);
+				elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (cannot push down empty arrays)", __func__);
 				return NULL;
 			}
 
 			break;
 		default:
-			elog(DEBUG1, "%s exit [T_ScalarArrayOpExpr]: returning NULL (rightexpr->type not supported)", __func__);
+			elog(DEBUG2, "%s exit [T_ScalarArrayOpExpr]: returning NULL (rightexpr->type not supported)", __func__);
 			return NULL;
 		}
 
@@ -6471,7 +6515,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (func->funcformat == COERCE_IMPLICIT_CAST)
 		{
 			char *impcast = DeparseExpr(state, foreignrel, linitial(func->args));
-			elog(DEBUG1, "%s exit [T_FuncExpr]: returning '%s' (implicit cast) ", __func__, impcast);
+			elog(DEBUG2, "%s exit [T_FuncExpr]: returning '%s' (implicit cast) ", __func__, impcast);
 			return impcast;
 		}
 
@@ -6489,7 +6533,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (!IsFunctionPushable(opername))
 		{
-			elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
+			elog(DEBUG2, "%s exit [T_FuncExpr]: returning NULL (function not in pg_catalog and not pushable) ", __func__);
 			return NULL;
 		}
 
@@ -6509,7 +6553,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (!arg)
 				{
-					elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (arg is NULL and opername = %s)", __func__, opername);
+					elog(DEBUG2, "%s exit [T_FuncExpr]: returning NULL (arg is NULL and opername = %s)", __func__, opername);
 					pfree(opername);
 					return NULL;
 				}
@@ -6677,7 +6721,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			else
 			{
-				elog(DEBUG1, "%s [T_FuncExpr]: returning NULL (unknown opername '%s')", __func__, opername);
+				elog(DEBUG2, "%s [T_FuncExpr]: returning NULL (unknown opername '%s')", __func__, opername);
 				return NULL;
 			}
 
@@ -6694,7 +6738,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (!date_part_type)
 			{
-				elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (date_part_type is NULL and opername = '%s')", __func__, opername);
+				elog(DEBUG2, "%s exit [T_FuncExpr]: returning NULL (date_part_type is NULL and opername = '%s')", __func__, opername);
 				pfree(opername);
 				return NULL;
 			}
@@ -6721,7 +6765,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			}
 			else
 			{
-				elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (date_part_type is NULL)", __func__);
+				elog(DEBUG2, "%s exit [T_FuncExpr]: returning NULL (date_part_type is NULL)", __func__);
 				pfree(opername);
 				return NULL;
 			}
@@ -6735,7 +6779,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			if (!value)
 			{
-				elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (unable to deparse timestamp value)", __func__);
+				elog(DEBUG2, "%s exit [T_FuncExpr]: returning NULL (unable to deparse timestamp value)", __func__);
 				return NULL;
 			}
 
@@ -6744,7 +6788,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 		else
 		{
-			elog(DEBUG1, "%s exit [T_FuncExpr]: returning NULL (unable to push function '%s')", __func__, opername);
+			elog(DEBUG2, "%s exit [T_FuncExpr]: returning NULL (unable to push function '%s')", __func__, opername);
 			return NULL;
 		}
 
@@ -6768,7 +6812,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			/* if any element cannot be converted, give up */
 			if (element == NULL)
 			{
-				elog(DEBUG1, "%s exit [T_ArrayExpr]: returning NULL (unable to deparse element of T_ArrayExpr)", __func__);
+				elog(DEBUG2, "%s exit [T_ArrayExpr]: returning NULL (unable to deparse element of T_ArrayExpr)", __func__);
 				return NULL;
 			}
 
@@ -6799,17 +6843,17 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		if (first_arg)
 		{
-			elog(DEBUG1, "%s exit [T_ArrayExpr]: returning NULL (cannot push empty arrays)", __func__);
+			elog(DEBUG2, "%s exit [T_ArrayExpr]: returning NULL (cannot push empty arrays)", __func__);
 			return NULL;
 		}
 
 		break;
 	default:
-		elog(DEBUG1, "%s exit: returning NULL (expression not supported '%u')", __func__, expr->type);
+		elog(DEBUG2, "%s exit: returning NULL (expression not supported '%u')", __func__, expr->type);
 		return NULL;
 	}
 
-	elog(DEBUG1, "%s exit: returning '%s'\n", __func__, result.data);
+	elog(DEBUG2, "%s exit: returning '%s'\n", __func__, result.data);
 	return result.data;
 }
 

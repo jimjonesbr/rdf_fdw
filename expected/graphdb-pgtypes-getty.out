@@ -101,9 +101,9 @@ INFO:  SPARQL returned 3 records.
 
                 uri                 | lon |    lat    
 ------------------------------------+-----+-----------
- http://vocab.getty.edu/tgn/7240365 |   3 | 51.133333
- http://vocab.getty.edu/tgn/7237990 |   3 | 51.116667
  http://vocab.getty.edu/tgn/7248650 |   3 | 51.116667
+ http://vocab.getty.edu/tgn/7237990 |   3 | 51.116667
+ http://vocab.getty.edu/tgn/7240365 |   3 | 51.133333
 (3 rows)
 
 SELECT * FROM (
@@ -141,7 +141,7 @@ INFO:  SPARQL returned 5 records.
 
                       name                       | lon |    lat    
 -------------------------------------------------+-----+-----------
- West Flanders, Flanders, Belgium, Europe, World |   3 | 51.133333
+ West Flanders, Flanders, Belgium, Europe, World |   3 | 51.116667
 (1 row)
 
 /*

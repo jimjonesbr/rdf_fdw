@@ -342,12 +342,12 @@ LIMIT 5
 INFO:  SPARQL returned 5 records.
 
 SELECT * FROM tmp_eu_countries;
-                 uri                 |     nativename     
--------------------------------------+--------------------
+                 uri                 |   nativename    
+-------------------------------------+-----------------
  http://www.wikidata.org/entity/Q35  | Danmark
  http://www.wikidata.org/entity/Q35  | Danmarks Rige
- http://www.wikidata.org/entity/Q35  | Kongeriget Danmark
  http://www.wikidata.org/entity/Q213 | Česko
+ http://www.wikidata.org/entity/Q213 | Česká republika
  http://www.wikidata.org/entity/Q219 | България
 (5 rows)
 
