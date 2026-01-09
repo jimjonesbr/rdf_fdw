@@ -2259,23 +2259,21 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 					for (value = result->children; value != NULL; value = value->next)
 					{
-						int bytes;
-						xmlBufferPtr buffer = xmlBufferCreate();
-						bytes = xmlNodeDump(buffer, state->xmldoc, value->children, 0, 0);
+						xmlChar *content = xmlNodeGetContent(value);
 
-						if (bytes == -1)
+						if (content == NULL)
 						{
 							pfree(name.data);
-							xmlBufferFree(buffer);
 							ereport(ERROR,
 									(errcode(ERRCODE_INTERNAL_ERROR),
-									 errmsg("unable to dump XML node '%s' for column '%s'", sparqlvar, colname)));
+									 errmsg("unable to get content of XML node '%s' for column '%s'", sparqlvar, colname)));
 						}
 
 						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-						datum = CStringGetDatum(pstrdup((char *)xmlBufferContent(buffer)));
+						datum = CStringGetDatum(pstrdup((char *)content));
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
+						xmlFree(content);
 
 						if (!HeapTupleIsValid(tuple))
 						{
@@ -2300,7 +2298,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 							cvals[colindex] = OidFunctionCall1(typinput, datum);
 						}
 
-						xmlBufferFree(buffer);
+						//xmlBufferFree(buffer);
 					}
 
 					colindex++;
@@ -4513,7 +4511,6 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 
 	elog(DEBUG1, "%s called", __func__);
 
-	// TODO: create function to retrieve the OID of custom data types for 9.6+
 	RDFNODEOID = GetRDFNodeOID();
 
 	/*
@@ -7243,7 +7240,7 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 
 			if (p >= end_prefixes || sparql[p] != '>')
 				ereport(ERROR, (errmsg("Malformed PREFIX: unterminated URI")));
-			p++; // Skip '>'
+			p++; /* Skip '>' */
 
 			/* Store the prefix */
 			entry->prefix = pstrdup(prefix_str.data);
