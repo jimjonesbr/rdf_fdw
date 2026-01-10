@@ -10,10 +10,10 @@ OPTIONS (endpoint 'https://sparql.europeana.eu/');
  */
 
 CREATE FOREIGN TABLE audio (
-  uri text     OPTIONS (variable '?mediaURL'),
-  title text   OPTIONS (variable '?title'),
-  creator text OPTIONS (variable '?creator'),
-  source text  OPTIONS (variable '?source')
+  uri     rdfnode OPTIONS (variable '?mediaURL'),
+  title   rdfnode OPTIONS (variable '?title'),
+  creator rdfnode OPTIONS (variable '?creator'),
+  source  rdfnode OPTIONS (variable '?source')
 )
 SERVER europeana OPTIONS (
   log_sparql 'true',
@@ -33,4 +33,4 @@ SERVER europeana OPTIONS (
 '); 
 
 SELECT * FROM audio
-WHERE source = 'Austrian National Library';
+WHERE sparql.str(source) = 'Austrian National Library';

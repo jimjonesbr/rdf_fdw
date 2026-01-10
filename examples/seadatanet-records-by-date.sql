@@ -1,4 +1,4 @@
-DROP SERVER seadatanet CASCADE;
+SET timezone TO 'Etc/UTC';
 
 CREATE SERVER seadatanet
 FOREIGN DATA WRAPPER rdf_fdw
@@ -9,9 +9,9 @@ OPTIONS (
 );
 
 CREATE FOREIGN TABLE seadatanet (
-  identifier text    OPTIONS (variable '?org',  nodetype 'iri'),
-  name  varchar      OPTIONS (variable '?name', nodetype 'literal'),
-  modified timestamp OPTIONS (variable '?modifiedDate', nodetype 'literal', literaltype 'xsd:dateTime')
+  identifier rdfnode OPTIONS (variable '?org'),
+  name       rdfnode OPTIONS (variable '?name'),
+  modified   rdfnode OPTIONS (variable '?modifiedDate')
 ) SERVER seadatanet OPTIONS 
   (log_sparql 'true',
    sparql '
@@ -24,17 +24,18 @@ CREATE FOREIGN TABLE seadatanet (
    }
   ');
 
-SELECT name, modified
+SELECT name, modified::timestamptz
 FROM seadatanet
 WHERE 
-  modified > '2020-01-01' AND
-  modified < '2021-04-30'
+  modified > '2020-01-01'::timestamptz AND
+  modified < '2021-04-30'::timestamptz
 ORDER BY modified
 FETCH FIRST 10 ROWS ONLY; 
 
-SELECT name, modified
+SELECT name, modified::timestamptz
 FROM seadatanet
-WHERE 
-  modified BETWEEN '2021-04-01'::timestamp AND '2021-04-30'::timestamp
+WHERE modified BETWEEN 
+  '2021-04-01'::timestamptz AND 
+  '2021-04-30'::timestamp
 ORDER BY modified
 FETCH FIRST 15 ROWS ONLY; 

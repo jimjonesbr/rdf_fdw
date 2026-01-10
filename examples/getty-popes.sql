@@ -12,11 +12,11 @@ OPTIONS (
  */
 
 CREATE FOREIGN TABLE popes (
-  uri text       OPTIONS (variable '?x'),
-  name text      OPTIONS (variable '?name'),
-  bio text       OPTIONS (variable '?bio'),
-  startyear int  OPTIONS (variable '?start'),
-  endyear int    OPTIONS (variable '?end')
+  uri       rdfnode OPTIONS (variable '?x'),
+  name      rdfnode OPTIONS (variable '?name'),
+  bio       rdfnode OPTIONS (variable '?bio'),
+  startyear rdfnode OPTIONS (variable '?start'),
+  endyear   rdfnode OPTIONS (variable '?end')
 )
 SERVER getty OPTIONS (
   log_sparql 'true',
@@ -34,6 +34,9 @@ SERVER getty OPTIONS (
     } 
   '); 
 
-SELECT * 
-FROM popes
-ORDER BY startyear, endyear;
+SELECT * FROM popes
+WHERE startyear BETWEEN 
+  sparql.strdt('1000','<http://www.w3.org/2001/XMLSchema#gYear>') AND 
+  sparql.strdt('1500','<http://www.w3.org/2001/XMLSchema#gYear>') AND
+  sparql.lang(name) = 'en'
+ORDER BY startyear, name;

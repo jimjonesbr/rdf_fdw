@@ -1,12 +1,13 @@
 CREATE SERVER dbpedia
 FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (endpoint 'https://dbpedia.org/sparql');
+OPTIONS (endpoint 'https://dbpedia.org/sparql',
+         enable_xml_huge 'true');
 
 CREATE FOREIGN TABLE public.cities (
-  uri text       OPTIONS (variable '?city', nodetype 'iri'),
-  geom text      OPTIONS (variable '?wkt', nodetype 'literal', literaltype 'xsd:string'),
-  city_name text OPTIONS (variable '?name', nodetype 'literal', literaltype 'xsd:string'),
-  area numeric   OPTIONS (variable '?area', nodetype 'literal', literaltype 'xsd:double')
+  uri       rdfnode OPTIONS (variable '?city'),
+  geom      rdfnode OPTIONS (variable '?wkt'),
+  city_name rdfnode OPTIONS (variable '?name'),
+  area      rdfnode OPTIONS (variable '?area')
 )
 SERVER dbpedia OPTIONS (
   sparql '

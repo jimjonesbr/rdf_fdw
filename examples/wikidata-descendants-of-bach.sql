@@ -9,12 +9,12 @@ OPTIONS (endpoint 'https://query.wikidata.org/sparql');
  * Source: Wikidata [https://m.wikidata.org/wiki/Wikidata:SPARQL_query_service/queries/examples/human]
  */
 CREATE FOREIGN TABLE bach_descendants (
-  uri text           OPTIONS (variable '?human'),
-  name text          OPTIONS (variable '?humanLabel'),
-  father text        OPTIONS (variable '?fatherLabel'),
-  mother text        OPTIONS (variable '?motherLabel'),
-  birth date         OPTIONS (variable '?dob'),
-  place_birth text   OPTIONS (variable '?pobLabel')
+  uri         rdfnode OPTIONS (variable '?human'),
+  name        rdfnode OPTIONS (variable '?humanLabel'),
+  father      rdfnode OPTIONS (variable '?fatherLabel'),
+  mother      rdfnode OPTIONS (variable '?motherLabel'),
+  birth       rdfnode OPTIONS (variable '?dob'),
+  place_birth rdfnode OPTIONS (variable '?pobLabel')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
@@ -34,6 +34,8 @@ SERVER wikidata OPTIONS (
     }
 ');
 
-SELECT *
+SELECT uri, sparql.lex(name) AS name, sparql.lex(father) AS father, 
+       sparql.lex(mother) AS mother, sparql.lex(birth) AS birth, 
+       sparql.lex(place_birth) AS place_birth
 FROM bach_descendants
 ORDER BY birth;

@@ -11,24 +11,17 @@ OPTIONS (endpoint 'https://data.europa.eu/sparql');
  */
 
 CREATE FOREIGN TABLE catalogues (
-  parent text   OPTIONS (variable '?parentCatalog'),
-  catalog text  OPTIONS (variable '?catalog'),
-  title text    OPTIONS (variable '?title'),
-  spatial text  OPTIONS (variable '?spatial'),
-  pubtype text  OPTIONS (variable '?typePublisher'),
-  homepage text OPTIONS (variable '?homepage'),
-  email text    OPTIONS (variable '?email')
+  parent   rdfnode OPTIONS (variable '?parentCatalog'),
+  catalog  rdfnode OPTIONS (variable '?catalog'),
+  title    rdfnode OPTIONS (variable '?title'),
+  spatial  rdfnode OPTIONS (variable '?spatial'),
+  pubtype  rdfnode OPTIONS (variable '?typePublisher'),
+  homepage rdfnode OPTIONS (variable '?homepage'),
+  email    rdfnode OPTIONS (variable '?email')
 )
 SERVER eudata OPTIONS (
   log_sparql 'true',
   sparql '
-    PREFIX dcat: <http://www.w3.org/ns/dcat#>
-    PREFIX dct: <http://purl.org/dc/terms/>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
     SELECT *
     WHERE {
       ?catalog ?p ?o.

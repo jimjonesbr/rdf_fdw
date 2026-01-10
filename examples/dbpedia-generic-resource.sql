@@ -8,10 +8,10 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
  * Only numeric literals or literals written in English are accepted.
  */
 CREATE FOREIGN TABLE dbpedia_resource (
-  uri text           OPTIONS (variable '?uri', nodetype 'iri'),
-  property_uri text  OPTIONS (variable '?propuri', nodetype 'literal'),
-  property text      OPTIONS (variable '?label', nodetype 'literal', language '*'),
-  value text         OPTIONS (variable '?val', nodetype 'literal')
+  uri          rdfnode OPTIONS (variable '?uri'),
+  property_uri rdfnode OPTIONS (variable '?propuri'),
+  property     rdfnode OPTIONS (variable '?label'),
+  value        rdfnode OPTIONS (variable '?val')
 )
 SERVER dbpedia OPTIONS (
   log_sparql 'true',
@@ -21,8 +21,6 @@ SERVER dbpedia OPTIONS (
   WHERE {
     ?uri ?propuri ?val .
     ?propuri rdfs:label ?label .
-    FILTER(!isIRI(?val))
-    FILTER(LANG(?val) = "en" || LANG(?val) = "")
   } 
 ');
 
@@ -31,13 +29,15 @@ SERVER dbpedia OPTIONS (
  * Wikipedia Page   : https://en.wikipedia.org/wiki/Edward_Elgar
  * DBpedia resource : http://dbpedia.org/resource/Edward_Elgar 
  *
- * List only the subject's abstract
+ * List only the subject's description
  */ 
-SELECT property, value 
+SELECT DISTINCT sparql.lex(property) AS property, sparql.lex(value) AS value
 FROM dbpedia_resource
 WHERE 
-  uri = 'http://dbpedia.org/resource/Edward_Elgar' AND 
-  property = 'has abstract'
+  NOT sparql.isiri(value) AND
+  uri = sparql.iri('http://dbpedia.org/resource/Edward_Elgar') AND 
+  property = sparql.strlang('Beschreibung', 'de') AND
+  sparql.lang(value) = 'de'
 ORDER BY property;
 
 
@@ -50,5 +50,5 @@ ORDER BY property;
  */ 
 SELECT property, value
 FROM dbpedia_resource
-WHERE uri = 'http://dbpedia.org/resource/Isle_of_Man'
+WHERE uri = sparql.iri('http://dbpedia.org/resource/Isle_of_Man')
 ORDER BY property;

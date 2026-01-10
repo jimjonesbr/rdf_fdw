@@ -93,7 +93,7 @@ EOF
     # SKIP_STRESS_TESTS=1   - skip long running stress tests
     # SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
     #
-    # ex. export SKIP_STRESS_TESTS=1 &&
+    # ex. "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean"
 
     docker run \
         --network $NETWORK_NAME \

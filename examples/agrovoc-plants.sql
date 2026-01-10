@@ -8,14 +8,13 @@ OPTIONS (
 /*
  * Food and Agriculture Organization of the United Nations
  *
- * Select all concepts that point to c_5993 (plants) as broader and show their English (en) prefLabels
+ * Select all concepts that point to c_5993 (plants) as broader and show their German (de) prefLabels
  * Source: https://agrovoc.fao.org/sparql
  */
 
 CREATE FOREIGN TABLE plants (
-  uri text    OPTIONS (variable '?subject',  nodetype 'iri'),
-  label text  OPTIONS (variable '?label', nodetype 'literal', language 'en'),
-  lang text   OPTIONS (variable '?lang', expression 'LANG(?label)')
+  uri   rdfnode  OPTIONS (variable '?subject'),
+  label rdfnode  OPTIONS (variable '?label')
 )
 SERVER agrovoc OPTIONS (
   log_sparql 'true',
@@ -33,17 +32,5 @@ SERVER agrovoc OPTIONS (
   } 
 '); 
 
-/* 
- * The WHERE condition will be pushed down in a FILTER expression, and the 
- * literal will get the language configured in the CREATE TABLE statement
- */
 SELECT * FROM plants
-WHERE label = 'chrysanthemums';
-
-/* 
- * The WHERE condition will be pushed down in a FILTER expression, and the 
- * string will be wrapped in a IRI() call, since the column is declared with
- * the nodetype 'iri'
- */
-SELECT * FROM plants
-WHERE uri = 'http://aims.fao.org/aos/agrovoc/c_25549';
+WHERE sparql.lang(label) = 'de';

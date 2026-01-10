@@ -12,31 +12,30 @@ OPTIONS (
  */
 
 CREATE FOREIGN TABLE places_below_sea_level (
-  wikidata_id text  OPTIONS (variable '?place'),
-  label text        OPTIONS (variable '?label'),
-  wkt text    OPTIONS (variable '?location'),
-  elevation numeric  OPTIONS (variable '?elev')
+  wikidata_id rdfnode OPTIONS (variable '?place'),
+  label       rdfnode OPTIONS (variable '?label'),
+  wkt         rdfnode OPTIONS (variable '?location'),
+  elevation   rdfnode OPTIONS (variable '?elev')
 )
 SERVER wikidata OPTIONS (
   log_sparql 'true',
   sparql '
-  SELECT *
-  WHERE
-  {
-    ?place rdfs:label ?label .
-    ?place p:P2044/psv:P2044 ?placeElev.
-    ?placeElev wikibase:quantityAmount ?elev.
-    ?placeElev wikibase:quantityUnit ?unit.
-    bind(0.01 as ?km).
-    FILTER( (?elev < ?km*1000 && ?unit = wd:Q11573)
-        || (?elev < ?km*3281 && ?unit = wd:Q3710)
-        || (?elev < ?km      && ?unit = wd:Q828224) ).
-    ?place wdt:P625 ?location.    
-    FILTER(LANG(?label)="en")
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
-  }
+  SELECT * WHERE
+    {
+      ?place rdfs:label ?label .
+      ?place p:P2044/psv:P2044 ?placeElev.
+      ?placeElev wikibase:quantityAmount ?elev.
+      ?placeElev wikibase:quantityUnit ?unit.
+      BIND(0.01 as ?km).
+      ?place wdt:P625 ?location.    
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
+      FILTER( (?elev < ?km*1000 && ?unit = wd:Q11573)
+          || (?elev < ?km*3281 && ?unit = wd:Q3710)
+          || (?elev < ?km      && ?unit = wd:Q828224) ).
+    }
 ');  
 
 SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
+WHERE sparql.lang(label) = 'en'
 FETCH FIRST 10 ROWS ONLY;
