@@ -2259,7 +2259,12 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 					for (value = result->children; value != NULL; value = value->next)
 					{
+						StringInfoData literal_value;
+						xmlChar *datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+						xmlChar *lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
 						xmlChar *content = xmlNodeGetContent(value);
+
+						initStringInfo(&literal_value);
 
 						if (content == NULL)
 						{
@@ -2269,38 +2274,57 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 									 errmsg("unable to get content of XML node '%s' for column '%s'", sparqlvar, colname)));
 						}
 
-						tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-						datum = CStringGetDatum(pstrdup((char *)content));
+						if (pgtype == RDFNODEOID)
+						{
+							if (strcmp((char *)value->name, RDF_SPARQL_RESULT_URI) == 0)
+								appendStringInfo(&literal_value, "%s", iri((char *)content));
+							else if (strcmp((char *)value->name, RDF_SPARQL_RESULT_BNODE) == 0)
+								appendStringInfo(&literal_value, "_:%s", (char *)content);
+							else
+							{
+								/* Build literal with proper quote escaping */
+								char *escaped = cstring_to_rdfliteral((char *)content);
+
+								if (datatype)
+									appendStringInfo(&literal_value, "%s^^%s", escaped, (char *)datatype);
+								else if (lang)
+									appendStringInfo(&literal_value, "%s@%s", escaped, (char *)lang);
+								else
+									appendStringInfo(&literal_value, "%s", escaped);
+							}
+						}
+						else
+							appendStringInfoString(&literal_value, (char *)content);
+
+						datum = CStringGetDatum(literal_value.data);
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
 						xmlFree(content);
 
-						if (!HeapTupleIsValid(tuple))
-						{
-							ereport(ERROR,
-									(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-									 errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
-						}
-
-						typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
-						ReleaseSysCache(tuple);
-
-						if (pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
-						{
-							cvals[colindex] = OidFunctionCall3(
-								typinput,
-								datum,
-								ObjectIdGetDatum(InvalidOid),
-								Int32GetDatum(pgtypmod));
-						}
+						if (pgtype == RDFNODEOID)
+							cvals[colindex] = DirectFunctionCall1(rdfnode_in, datum);
 						else
 						{
-							cvals[colindex] = OidFunctionCall1(typinput, datum);
+							tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
+
+							if (!HeapTupleIsValid(tuple))
+								ereport(ERROR,
+										(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
+										 errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
+
+							typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
+							ReleaseSysCache(tuple);
+
+							if (pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
+								cvals[colindex] = OidFunctionCall3(
+									typinput,
+									datum,
+									ObjectIdGetDatum(InvalidOid),
+									Int32GetDatum(pgtypmod));
+							else
+								cvals[colindex] = OidFunctionCall1(typinput, datum);
 						}
-
-						//xmlBufferFree(buffer);
 					}
-
 					colindex++;
 
 					appendStringInfo(&insert_cols, "%s %s",
@@ -5583,9 +5607,9 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					if (!node_value)
 					{
 						/* Check if this is a bound RDF term (literal, uri, or bnode) */
-						if (xmlStrcmp(node_type, (xmlChar *)"literal") == 0 ||
-							xmlStrcmp(node_type, (xmlChar *)"uri") == 0 ||
-							xmlStrcmp(node_type, (xmlChar *)"bnode") == 0)
+						if (xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_LITERAL) == 0 ||
+							xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_URI) == 0 ||
+							xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_BNODE) == 0)
 						{
 							/* Empty RDF term - use empty string */
 							node_value = "";
@@ -5627,11 +5651,11 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					 */
 					if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
 					{
-						if (xmlStrcmp(node_type, (xmlChar *)"uri") == 0)
+						if (xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_URI) == 0)
 						{
 							appendStringInfo(&literal_value, "%s", iri(node_value));
 						}
-						else if (xmlStrcmp(node_type, (xmlChar *)"bnode") == 0)
+						else if (xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_BNODE) == 0)
 						{
 							/* For blank nodes, preserve the label with _: prefix */
 							appendStringInfo(&literal_value, "_:%s", node_value);

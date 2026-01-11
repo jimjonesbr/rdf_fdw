@@ -50,10 +50,12 @@ ifndef SKIP_UPDATE_TESTS
   			 fuseki-update \
 			 fuseki-insert \
 			 fuseki-select \
+			 fuseki-table-clone \
 			 graphdb-delete \
 			 graphdb-insert \
 			 graphdb-update \
-			 graphdb-select
+			 graphdb-select \
+			 graphdb-table-clone
 endif
 
 ifndef SKIP_STRESS_TESTS

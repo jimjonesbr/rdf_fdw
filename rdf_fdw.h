@@ -77,6 +77,8 @@
 #define RDF_SPARQL_RESULT_LITERAL "literal"
 #define RDF_SPARQL_RESULT_LITERAL_DATATYPE "datatype"
 #define RDF_SPARQL_RESULT_LITERAL_LANG "lang"
+#define RDF_SPARQL_RESULT_BNODE "bnode"
+#define RDF_SPARQL_RESULT_URI "uri"
 
 /* Connection and query defaults */
 #define RDF_DEFAULT_CONNECTTIMEOUT 300

@@ -3,7 +3,7 @@ Release date: **YYYY-MM-DD**
 
 ## Enhancements
 
-git* Added per-row SPARQL `INSERT DATA`, `DELETE DATA`, and `UPDATE` support via the `sparql_update_pattern` option on foreign tables. All data modifications (INSERT, DELETE, UPDATE) are now batched using the new `batch_size` server option, greatly improving performance for bulk operations. Multi-row and multi-pattern statements are supported, and complex WHERE conditions are handled.
+* Added per-row SPARQL `INSERT DATA`, `DELETE DATA`, and `UPDATE` support via the `sparql_update_pattern` option on foreign tables. All data modifications (INSERT, DELETE, UPDATE) are now batched using the new `batch_size` server option, greatly improving performance for bulk operations. Multi-row and multi-pattern statements are supported, and complex WHERE conditions are handled.
 
 * Enhanced error handling in `ExecuteSPARQL`: Improved the handling of HTTP errors by capturing and displaying detailed error messages from the SPARQL endpoint. This includes disabling `CURLOPT_FAILONERROR` to capture response bodies for HTTP errors, adding specific error messages for common HTTP status codes (e.g., 400, 401, 404, 500).
 
@@ -16,6 +16,8 @@ git* Added per-row SPARQL `INSERT DATA`, `DELETE DATA`, and `UPDATE` support via
 * The `log_sparql` option for foreign tables now defaults to `false`. Since `INSERT`, `UPDATE`, and `DELETE` operations can generate large SPARQL queries, enabling this option by default could result in unnecessarily large log entries.
 
 ## Bug Fixes
+
+* Fixed URIs and blank nodes being incorrectly handled as plain literals in `InsertRetrievedData()` (used by `rdf_fdw_clone_table()`). When cloning foreign tables with `rdfnode` columns, URIs were being treated as plain text instead of being wrapped in angle brackets (e.g., `<http://example.com>`), and blank nodes were missing the `_:` prefix. The fix now checks the target column type: for `rdfnode` columns, it properly formats URIs with `<>` and blank nodes with `_:`, while for standard PostgreSQL types it extracts only the raw content. This ensures correct round-trip behavior when materializing RDF data into ordinary tables.
 
 * Fixed failure when extracting content from empty RDF literals in `InsertRetrievedData()`. The code was incorrectly using `xmlNodeDump()` to serialize RDF term nodes, which included XML tags in the output (e.g., `<literal datatype="...">value</literal>`). This caused `rdf_fdw_clone_table()` calls on columns containing empty literals (e.g., `""`, `""@en`, or `""^^xsd:string`) to fail. Now uses `xmlNodeGetContent()` to extract only the text content without XML tags, properly handling empty and non-empty RDF term nodes alike.
 
