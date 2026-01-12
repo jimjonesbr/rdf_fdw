@@ -1,0 +1,211 @@
+\pset null '(null)'
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univerrrsity of Münsterrr"@en-US'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univêrsity of Münsta"@en-GB'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#time>', '"18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#lat>', '"51.9636"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#long>', '"7.6136"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/rector>', '"Johannes Wessels"'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/state>', '<http://dbpedia.org/resource/North_Rhine-Westphalia>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/city>', '<http://dbpedia.org/resource/Münster>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"Hello 👋 PostgreSQL 🐘"@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '""'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '". <= pontos => ."@pt'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\n <= salto de línea => \n"@es'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\" <= double-quotes => \""@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),        
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/administrativeStaff>', '"1924"^^<http://www.w3.org/2001/XMLSchema#short>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/students>', '"49098"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/budget>', '"803600000"^^<http://www.w3.org/2001/XMLSchema#long>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/tuition>', '"1500.00"^^<http://www.w3.org/2001/XMLSchema#double>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/veryLargeNumber>', '"9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/verySmallNumber>', '"0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/restingDate>', '"2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/internationally>', '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>');
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.t1',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+ERROR:  syntax error at or near "CALL"
+LINE 1: CALL
+        ^
+SELECT * FROM public.t1 ORDER BY object::text COLLATE "C";
+ERROR:  relation "public.t1" does not exist
+LINE 1: SELECT * FROM public.t1 ORDER BY object::text COLLATE "C";
+                      ^
+/* text data type */
+CREATE FOREIGN TABLE ft2 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    text OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft2',
+        target_table  => 'public.t2',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+ERROR:  syntax error at or near "CALL"
+LINE 1: CALL
+        ^
+SELECT * FROM public.t2 ORDER BY object::text COLLATE "C";
+ERROR:  relation "public.t2" does not exist
+LINE 1: SELECT * FROM public.t2 ORDER BY object::text COLLATE "C";
+                      ^
+/* timestamp data type */
+CREATE FOREIGN TABLE ft3 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    timestamp OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/modified> || ?p = <http://dbpedia.org/ontology/wikiPageExtracted>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft3',
+        target_table  => 'public.t3',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+ERROR:  syntax error at or near "CALL"
+LINE 1: CALL
+        ^
+SELECT * FROM public.t3 ORDER BY object::text COLLATE "C";
+ERROR:  relation "public.t3" does not exist
+LINE 1: SELECT * FROM public.t3 ORDER BY object::text COLLATE "C";
+                      ^
+/* date data type */
+CREATE FOREIGN TABLE ft4 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    date OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/established> || ?p = <http://dbpedia.org/ontology/restingDate>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft4',
+        target_table  => 'public.t4',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+ERROR:  syntax error at or near "CALL"
+LINE 1: CALL
+        ^
+SELECT * FROM public.t4 ORDER BY object::text COLLATE "C";
+ERROR:  relation "public.t4" does not exist
+LINE 1: SELECT * FROM public.t4 ORDER BY object::text COLLATE "C";
+                      ^
+/* numeric data type */
+CREATE FOREIGN TABLE ft5 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    numeric OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/veryLargeNumber> || ?p = <http://dbpedia.org/property/verySmallNumber>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft5',
+        target_table  => 'public.t5',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+ERROR:  syntax error at or near "CALL"
+LINE 1: CALL
+        ^
+SELECT * FROM public.t5 ORDER BY object::text COLLATE "C";
+ERROR:  relation "public.t5" does not exist
+LINE 1: SELECT * FROM public.t5 ORDER BY object::text COLLATE "C";
+                      ^
+/* int data type */
+CREATE FOREIGN TABLE ft6 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    int OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/budget> || ?p = <http://dbpedia.org/property/administrativeStaff>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft6',
+        target_table  => 'public.t6',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+ERROR:  syntax error at or near "CALL"
+LINE 1: CALL
+        ^
+SELECT * FROM public.t6 ORDER BY object::text COLLATE "C";
+ERROR:  relation "public.t6" does not exist
+LINE 1: SELECT * FROM public.t6 ORDER BY object::text COLLATE "C";
+                      ^
+DELETE FROM ft;
+DROP TABLE public.t1;
+ERROR:  table "t1" does not exist
+DROP TABLE public.t2;
+ERROR:  table "t2" does not exist
+DROP TABLE public.t3;
+ERROR:  table "t3" does not exist
+DROP TABLE public.t4;
+ERROR:  table "t4" does not exist
+DROP TABLE public.t5;
+ERROR:  table "t5" does not exist
+DROP TABLE public.t6;
+ERROR:  table "t6" does not exist
+DROP SERVER fuseki CASCADE;
+NOTICE:  drop cascades to 7 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki
+drop cascades to foreign table ft2
+drop cascades to foreign table ft3
+drop cascades to foreign table ft4
+drop cascades to foreign table ft5
+drop cascades to foreign table ft6

@@ -1,0 +1,461 @@
+\pset null '(null)'
+CREATE SERVER graphdb
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univerrrsity of Münsterrr"@en-US'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univêrsity of Münsta"@en-GB'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#time>', '"18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#lat>', '"51.9636"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#long>', '"7.6136"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/rector>', '"Johannes Wessels"'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/state>', '<http://dbpedia.org/resource/North_Rhine-Westphalia>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/city>', '<http://dbpedia.org/resource/Münster>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"Hello 👋 PostgreSQL 🐘"@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '""'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '". <= pontos => ."@pt'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\n <= salto de línea => \n"@es'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\" <= double-quotes => \""@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),        
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/administrativeStaff>', '"1924"^^<http://www.w3.org/2001/XMLSchema#short>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/students>', '"49098"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/budget>', '"803600000"^^<http://www.w3.org/2001/XMLSchema#long>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/tuition>', '"1500.00"^^<http://www.w3.org/2001/XMLSchema#double>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/veryLargeNumber>', '"9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/verySmallNumber>', '"0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/restingDate>', '"2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/internationally>', '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>');
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.t1',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t1" created based on FOREIGN TABLE "public.ft":
+
+  CREATE TABLE public.t1 AS SELECT * FROM public.ft WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft'
+target_table: 'public.t1'
+create_table: 'true'
+fetch_size: 4
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 4]: 4 records inserted
+INFO:  [4 - 8]: 4 records inserted
+INFO:  [8 - 12]: 4 records inserted
+INFO:  [12 - 16]: 4 records inserted
+INFO:  [16 - 20]: 4 records inserted
+INFO:  [20 - 24]: 4 records inserted
+INFO:  [24 - 28]: 4 records inserted
+INFO:  [28 - 32]: 4 records inserted
+INFO:  [32 - 36]: 4 records inserted
+INFO:  [36 - 40]: 4 records inserted
+INFO:  [40 - 44]: 4 records inserted
+INFO:  [44 - 48]: 4 records inserted
+INFO:  [48 - 52]: 4 records inserted
+INFO:  [52 - 56]: 4 records inserted
+INFO:  [56 - 60]: 4 records inserted
+INFO:  [60 - 64]: 4 records inserted
+INFO:  [64 - 68]: 4 records inserted
+INFO:  [68 - 72]: 4 records inserted
+INFO:  [72 - 76]: 4 records inserted
+INFO:  [76 - 80]: 4 records inserted
+INFO:  [80 - 84]: 4 records inserted
+INFO:  [84 - 88]: 4 records inserted
+INFO:  [88 - 92]: 4 records inserted
+INFO:  [92 - 96]: 4 records inserted
+INFO:  [96 - 100]: 4 records inserted
+INFO:  [100 - 104]: 4 records inserted
+INFO:  [104 - 108]: 4 records inserted
+INFO:  [108 - 112]: 4 records inserted
+INFO:  [112 - 116]: 4 records inserted
+INFO:  [116 - 120]: 4 records inserted
+INFO:  [120 - 124]: 4 records inserted
+INFO:  [124 - 128]: 4 records inserted
+INFO:  [128 - 132]: 4 records inserted
+INFO:  [132 - 136]: 4 records inserted
+INFO:  [136 - 140]: 4 records inserted
+INFO:  [140 - 144]: 4 records inserted
+SELECT * FROM public.t1 
+WHERE subject = '<https://www.uni-muenster.de>'
+ORDER BY object::text COLLATE "C";
+            subject            |                     predicate                     |                               object                                
+-------------------------------+---------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
+                               |                                                   |  <= salto de línea =>                                              +
+                               |                                                   | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+(30 rows)
+
+/* text data type */
+CREATE FOREIGN TABLE ft2 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    text OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft2',
+        target_table  => 'public.t2',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t2" created based on FOREIGN TABLE "public.ft2":
+
+  CREATE TABLE public.t2 AS SELECT * FROM public.ft2 WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft2'
+target_table: 'public.t2'
+create_table: 'true'
+fetch_size: 4
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 4]: 4 records inserted
+INFO:  [4 - 8]: 4 records inserted
+INFO:  [8 - 12]: 4 records inserted
+INFO:  [12 - 16]: 4 records inserted
+INFO:  [16 - 20]: 4 records inserted
+INFO:  [20 - 24]: 4 records inserted
+INFO:  [24 - 28]: 4 records inserted
+INFO:  [28 - 32]: 4 records inserted
+INFO:  [32 - 36]: 4 records inserted
+INFO:  [36 - 40]: 4 records inserted
+INFO:  [40 - 44]: 4 records inserted
+INFO:  [44 - 48]: 4 records inserted
+INFO:  [48 - 52]: 4 records inserted
+INFO:  [52 - 56]: 4 records inserted
+INFO:  [56 - 60]: 4 records inserted
+INFO:  [60 - 64]: 4 records inserted
+INFO:  [64 - 68]: 4 records inserted
+INFO:  [68 - 72]: 4 records inserted
+INFO:  [72 - 76]: 4 records inserted
+INFO:  [76 - 80]: 4 records inserted
+INFO:  [80 - 84]: 4 records inserted
+INFO:  [84 - 88]: 4 records inserted
+INFO:  [88 - 92]: 4 records inserted
+INFO:  [92 - 96]: 4 records inserted
+INFO:  [96 - 100]: 4 records inserted
+INFO:  [100 - 104]: 4 records inserted
+INFO:  [104 - 108]: 4 records inserted
+INFO:  [108 - 112]: 4 records inserted
+INFO:  [112 - 116]: 4 records inserted
+INFO:  [116 - 120]: 4 records inserted
+INFO:  [120 - 124]: 4 records inserted
+INFO:  [124 - 128]: 4 records inserted
+INFO:  [128 - 132]: 4 records inserted
+INFO:  [132 - 136]: 4 records inserted
+INFO:  [136 - 140]: 4 records inserted
+INFO:  [140 - 144]: 4 records inserted
+SELECT * FROM public.t2 
+WHERE subject = 'https://www.uni-muenster.de'
+ORDER BY object::text COLLATE "C";
+           subject           |                    predicate                    |                       object                       
+-----------------------------+-------------------------------------------------+----------------------------------------------------
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    | 
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    |          <= Tabulatorzeichen =>         
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    |                                                   +
+                             |                                                 |  <= salto de línea =>                             +
+                             |                                                 | 
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    | " <= double-quotes => "
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    | . <= pontos => .
+ https://www.uni-muenster.de | http://dbpedia.org/property/verySmallNumber     | 0.000000000000001
+ https://www.uni-muenster.de | http://dbpedia.org/property/tuition             | 1500.00
+ https://www.uni-muenster.de | http://dbpedia.org/property/established         | 1780-04-16
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#time       | 18:18:42
+ https://www.uni-muenster.de | http://dbpedia.org/property/administrativeStaff | 1924
+ https://www.uni-muenster.de | http://dbpedia.org/ontology/restingDate         | 2024-02-29
+ https://www.uni-muenster.de | http://dbpedia.org/ontology/wikiPageExtracted   | 2025-12-24T13:00:42Z
+ https://www.uni-muenster.de | http://dbpedia.org/property/modified            | 2025-12-24T18:30:42
+ https://www.uni-muenster.de | http://dbpedia.org/property/students            | 49098
+ https://www.uni-muenster.de | http://dbpedia.org/property/academicStaff       | 4956
+ https://www.uni-muenster.de | http://www.w3.org/2003/01/geo/wgs84_pos#lat     | 51.9636
+ https://www.uni-muenster.de | http://www.w3.org/2003/01/geo/wgs84_pos#long    | 7.6136
+ https://www.uni-muenster.de | http://dbpedia.org/property/budget              | 803600000
+ https://www.uni-muenster.de | http://dbpedia.org/property/veryLargeNumber     | 9999999999999999999
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    | Hello 👋 PostgreSQL 🐘
+ https://www.uni-muenster.de | http://dbpedia.org/property/rector              | Johannes Wessels
+ https://www.uni-muenster.de | http://dbpedia.org/property/name                | Univerrrsity of Münsterrr
+ https://www.uni-muenster.de | http://dbpedia.org/property/name                | University of Münster
+ https://www.uni-muenster.de | http://dbpedia.org/property/name                | Univêrsity of Münsta
+ https://www.uni-muenster.de | http://dbpedia.org/property/name                | Westfälische Wilhelms-Universität Münster
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    | explicit string literal
+ https://www.uni-muenster.de | http://dbpedia.org/property/city                | http://dbpedia.org/resource/Münster
+ https://www.uni-muenster.de | http://dbpedia.org/property/state               | http://dbpedia.org/resource/North_Rhine-Westphalia
+ https://www.uni-muenster.de | http://dbpedia.org/ontology/internationally     | true
+ https://www.uni-muenster.de | http://www.w3.org/2000/01/rdf-schema#comment    | unknown literal type
+(30 rows)
+
+/* timestamp data type */
+CREATE FOREIGN TABLE ft3 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    timestamp OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/modified> || ?p = <http://dbpedia.org/ontology/wikiPageExtracted>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft3',
+        target_table  => 'public.t3',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "public.ft3":
+
+  CREATE TABLE public.t3 AS SELECT * FROM public.ft3 WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft3'
+target_table: 'public.t3'
+create_table: 'true'
+fetch_size: 4
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 4]: 2 records inserted
+SELECT * FROM public.t3 
+WHERE subject = 'https://www.uni-muenster.de'
+ORDER BY object::text COLLATE "C";
+           subject           |                   predicate                   |          object          
+-----------------------------+-----------------------------------------------+--------------------------
+ https://www.uni-muenster.de | http://dbpedia.org/ontology/wikiPageExtracted | Wed Dec 24 13:00:42 2025
+ https://www.uni-muenster.de | http://dbpedia.org/property/modified          | Wed Dec 24 18:30:42 2025
+(2 rows)
+
+/* date data type */
+CREATE FOREIGN TABLE ft4 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    date OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/established> || ?p = <http://dbpedia.org/ontology/restingDate>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft4',
+        target_table  => 'public.t4',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t4" created based on FOREIGN TABLE "public.ft4":
+
+  CREATE TABLE public.t4 AS SELECT * FROM public.ft4 WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft4'
+target_table: 'public.t4'
+create_table: 'true'
+fetch_size: 4
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 4]: 2 records inserted
+SELECT * FROM public.t4 
+WHERE subject = 'https://www.uni-muenster.de'
+ORDER BY object::text COLLATE "C";
+           subject           |                predicate                |   object   
+-----------------------------+-----------------------------------------+------------
+ https://www.uni-muenster.de | http://dbpedia.org/ontology/restingDate | 02-29-2024
+ https://www.uni-muenster.de | http://dbpedia.org/property/established | 04-16-1780
+(2 rows)
+
+/* numeric data type */
+CREATE FOREIGN TABLE ft5 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    numeric OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/veryLargeNumber> || ?p = <http://dbpedia.org/property/verySmallNumber>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft5',
+        target_table  => 'public.t5',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t5" created based on FOREIGN TABLE "public.ft5":
+
+  CREATE TABLE public.t5 AS SELECT * FROM public.ft5 WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft5'
+target_table: 'public.t5'
+create_table: 'true'
+fetch_size: 4
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 4]: 2 records inserted
+SELECT * FROM public.t5 
+WHERE subject = 'https://www.uni-muenster.de'
+ORDER BY object::text COLLATE "C";
+           subject           |                  predicate                  |       object        
+-----------------------------+---------------------------------------------+---------------------
+ https://www.uni-muenster.de | http://dbpedia.org/property/verySmallNumber |   0.000000000000001
+ https://www.uni-muenster.de | http://dbpedia.org/property/veryLargeNumber | 9999999999999999999
+(2 rows)
+
+/* int data type */
+CREATE FOREIGN TABLE ft6 (
+  subject   text OPTIONS (variable '?s'),
+  predicate text OPTIONS (variable '?p'),
+  object    int OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o FILTER (?p = <http://dbpedia.org/property/budget> || ?p = <http://dbpedia.org/property/administrativeStaff>)}'
+);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft6',
+        target_table  => 'public.t6',
+        fetch_size => 4,
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t6" created based on FOREIGN TABLE "public.ft6":
+
+  CREATE TABLE public.t6 AS SELECT * FROM public.ft6 WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft6'
+target_table: 'public.t6'
+create_table: 'true'
+fetch_size: 4
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 4]: 2 records inserted
+SELECT * FROM public.t6 
+WHERE subject = 'https://www.uni-muenster.de'
+ORDER BY object::text COLLATE "C";
+           subject           |                    predicate                    |  object   
+-----------------------------+-------------------------------------------------+-----------
+ https://www.uni-muenster.de | http://dbpedia.org/property/administrativeStaff |      1924
+ https://www.uni-muenster.de | http://dbpedia.org/property/budget              | 803600000
+(2 rows)
+
+DELETE FROM ft;
+DROP TABLE public.t1;
+DROP TABLE public.t2;
+DROP TABLE public.t3;
+DROP TABLE public.t4;
+DROP TABLE public.t5;
+DROP TABLE public.t6;
+DROP SERVER graphdb CASCADE;
+NOTICE:  drop cascades to 7 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server graphdb
+drop cascades to foreign table ft2
+drop cascades to foreign table ft3
+drop cascades to foreign table ft4
+drop cascades to foreign table ft5
+drop cascades to foreign table ft6
