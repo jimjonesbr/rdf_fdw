@@ -65,6 +65,19 @@ SELECT * FROM ft
 WHERE object IN (sparql.iri('http://dbpedia.org/resource/North_Rhine-Westphalia'),
                  sparql.iri('http://dbpedia.org/resource/Münster'));
 
+CREATE TEMPORARY TABLE tmp (c rdfnode, o rdfnode);
+INSERT INTO tmp (c, o)
+VALUES (8036::rdfnode,'<http://dbpedia.org/resource/North_Rhine-Westphalia>');
+
+SELECT * FROM ft
+WHERE object IN (SELECT o FROM tmp);
+
+SELECT ft.* FROM ft, tmp
+WHERE object IN (tmp.o, 
+                 'Some Other Literal'::rdfnode,
+                 sparql.strdt(sparql.concat(tmp.c, '00000'::rdfnode), 'http://www.w3.org/2001/XMLSchema#long')) AND
+      subject = '<https://www.uni-muenster.de>';
+
 /* SPARQL 17.4.1.10 - NOT IN */
 SELECT * FROM ft
 WHERE 
@@ -510,7 +523,7 @@ SELECT
   sparql.lex(sparql.rand())::numeric BETWEEN 0.0 AND 1.0, 
   sparql.datatype(sparql.rand()) = '<http://www.w3.org/2001/XMLSchema#double>';
 
-/* SPARQL 17.4.5.2 - year*/
+/* SPARQL 17.4.5.2 - year */
 SELECT * FROM ft
 WHERE sparql.year(object) = 1780::numeric::rdfnode;
 
@@ -616,6 +629,21 @@ WHERE NOT sparql.isiri(object) AND
       NOT sparql.isblank(object) AND
       NOT sparql.isnumeric(object) AND
       NOT sparql.langmatches(sparql.lang(object), 'en');
+
+-- SELECT ... INTO TEMPORARY TABLE
+SELECT subject, predicate, object
+INTO TEMPORARY TABLE tmp2
+FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+SELECT count(*) FROM tmp2;
+
+-- SELECT ... INTO TABLE
+SELECT subject, predicate, object
+INTO TABLE t2
+FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+SELECT count(*) FROM t2;
+DROP TABLE t2;
 
 -- Nested function calls
 SELECT * FROM ft

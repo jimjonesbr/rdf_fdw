@@ -168,6 +168,44 @@ INFO:  SPARQL returned 2 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>  | <http://dbpedia.org/resource/Münster>
 (2 rows)
 
+CREATE TEMPORARY TABLE tmp (c rdfnode, o rdfnode);
+INSERT INTO tmp (c, o)
+VALUES (8036::rdfnode,'<http://dbpedia.org/resource/North_Rhine-Westphalia>');
+SELECT * FROM ft
+WHERE object IN (SELECT o FROM tmp);
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 144 records.
+
+            subject            |              predicate              |                        object                        
+-------------------------------+-------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state> | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+(1 row)
+
+SELECT ft.* FROM ft, tmp
+WHERE object IN (tmp.o, 
+                 'Some Other Literal'::rdfnode,
+                 sparql.strdt(sparql.concat(tmp.c, '00000'::rdfnode), 'http://www.w3.org/2001/XMLSchema#long')) AND
+      subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 30 records.
+
+            subject            |              predicate               |                        object                        
+-------------------------------+--------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>  | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget> | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+(2 rows)
+
 /* SPARQL 17.4.1.10 - NOT IN */
 SELECT * FROM ft
 WHERE 
@@ -2376,7 +2414,7 @@ SELECT
  t        | t
 (1 row)
 
-/* SPARQL 17.4.5.2 - year*/
+/* SPARQL 17.4.5.2 - year */
 SELECT * FROM ft
 WHERE sparql.year(object) = 1780::numeric::rdfnode;
 INFO:  SPARQL query sent to 'graphdb':
@@ -2912,6 +2950,49 @@ INFO:  SPARQL returned 144 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>   | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
 (14 rows)
 
+-- SELECT ... INTO TEMPORARY TABLE
+SELECT subject, predicate, object
+INTO TEMPORARY TABLE tmp2
+FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 30 records.
+
+SELECT count(*) FROM tmp2;
+ count 
+-------
+    30
+(1 row)
+
+-- SELECT ... INTO TABLE
+SELECT subject, predicate, object
+INTO TABLE t2
+FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 30 records.
+
+SELECT count(*) FROM t2;
+ count 
+-------
+    30
+(1 row)
+
+DROP TABLE t2;
 -- Nested function calls
 SELECT * FROM ft
 WHERE 
