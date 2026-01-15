@@ -6,7 +6,7 @@
  * Implements SPARQL 1.1 string functions, accessor functions, and
  * type checking.
  *
- * Copyright (C) 2022-2026 University of Münster, Germany
+ * Copyright (C) 2022-2026 Jim Jones <jim.jones@uni-muenster.de>
  * 
  *---------------------------------------------------------------------
  */
