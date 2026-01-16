@@ -1,0 +1,521 @@
+\pset null '(null)'
+CREATE SERVER graphdb
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://graphdb:7200/repositories/test',
+  update_url 'http://graphdb:7200/repositories/test/statements',
+  batch_size '1000');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER graphdb OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER graphdb OPTIONS (user 'admin', password 'secret');
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univerrrsity of Münsterrr"@en-US'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univêrsity of Münsta"@en-GB'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#time>', '"18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#lat>', '"51.9636"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#long>', '"7.6136"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/rector>', '"Johannes Wessels"'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/state>', '<http://dbpedia.org/resource/North_Rhine-Westphalia>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/city>', '<http://dbpedia.org/resource/Münster>'),
+        ('<http://dbpedia.org/resource/Münster>', '<http://dbpedia.org/property/name>', '"Münster"@de'),
+        ('<http://dbpedia.org/resource/North_Rhine-Westphalia>', '<http://dbpedia.org/property/name>', '"Nordrhein-Westfalen"@de'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"Hello 👋 PostgreSQL 🐘"@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '""'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '". <= pontos => ."@pt'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\n <= salto de línea => \n"@es'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\" <= double-quotes => \""@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),        
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/administrativeStaff>', '"1924"^^<http://www.w3.org/2001/XMLSchema#short>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/students>', '"49098"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/budget>', '"803600000"^^<http://www.w3.org/2001/XMLSchema#long>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/tuition>', '"1500.00"^^<http://www.w3.org/2001/XMLSchema#double>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/veryLargeNumber>', '"9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/verySmallNumber>', '"0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/restingDate>', '"2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/internationally>', '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>');
+INFO:  SPARQL query sent to 'graphdb':
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
+INSERT DATA { <http://dbpedia.org/resource/Münster> <http://dbpedia.org/property/name> "Münster"@de };
+INSERT DATA { <http://dbpedia.org/resource/North_Rhine-Westphalia> <http://dbpedia.org/property/name> "Nordrhein-Westfalen"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "Hello 👋 PostgreSQL 🐘"@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> ". <= pontos => ."@pt };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\n <= salto de línea => \n"@es };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\" <= double-quotes => \""@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\t <= Tabulatorzeichen => \t"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/administrativeStaff> "1924"^^<http://www.w3.org/2001/XMLSchema#short> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/students> "49098"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#long> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.00"^^<http://www.w3.org/2001/XMLSchema#double> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
+
+
+/* IRI description */
+SELECT subject, predicate, object
+FROM sparql.describe('graphdb', 'DESCRIBE <https://www.uni-muenster.de>')
+ORDER BY object::text COLLATE "C";
+            subject            |                     predicate                     |                               object                                
+-------------------------------+---------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
+                               |                                                   |  <= salto de línea =>                                              +
+                               |                                                   | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+(30 rows)
+
+/* graph pattern description */
+SELECT subject, predicate, object
+FROM sparql.describe('graphdb','
+  PREFIX dbp: <http://dbpedia.org/property/>
+  DESCRIBE ?s
+  WHERE { 
+    ?s dbp:name ?o .
+  }')
+WHERE subject = '<https://www.uni-muenster.de>'
+ORDER BY object::text COLLATE "C";
+            subject            |                     predicate                     |                               object                                
+-------------------------------+---------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
+                               |                                                   |  <= salto de línea =>                                              +
+                               |                                                   | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
+                               |                                                   |  <= salto de línea =>                                              +
+                               |                                                   | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
+                               |                                                   |  <= salto de línea =>                                              +
+                               |                                                   | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
+                               |                                                   |  <= salto de línea =>                                              +
+                               |                                                   | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>                | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>               | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+(122 rows)
+
+/* IN clause to filter results */
+SELECT subject, predicate, object
+FROM sparql.describe('graphdb', 'DESCRIBE <https://www.uni-muenster.de>')
+WHERE predicate IN ('<http://dbpedia.org/property/name>','<http://schema.org/dateModified>')
+ORDER BY object::text COLLATE "C";
+            subject            |             predicate              |                     object                     
+-------------------------------+------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
+(4 rows)
+
+/* using named prefixes and base URI */
+SELECT subject, predicate, object
+FROM sparql.describe(
+    query =>'describe <http://dbpedia.org/resource/Münster>',
+    server => 'graphdb', 
+    base_uri => 'http://test.base.uri/')
+WHERE predicate = '<http://dbpedia.org/property/name>'
+ORDER BY object::text COLLATE "C";
+                subject                |             predicate              |    object    
+---------------------------------------+------------------------------------+--------------
+ <http://dbpedia.org/resource/Münster> | <http://dbpedia.org/property/name> | "Münster"@de
+(1 row)
+
+/* empty server */
+SELECT * FROM sparql.describe('', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  SERVER cannot be empty
+/* empty DESCRIBE pattern */
+SELECT * FROM sparql.describe('graphdb', '');
+ERROR:  DESCRIBE pattern cannot be empty
+/* empty SERVER and DESCRIBE pattern */
+SELECT * FROM sparql.describe('', '');
+ERROR:  SERVER cannot be empty
+/* NULL DESCRIBE pattern */
+SELECT * FROM sparql.describe('graphdb', NULL);
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* NULL SERVER */
+SELECT * FROM sparql.describe(NULL, 'DESCRIBE <https://www.uni-muenster.de>');
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* NULL SERVER and DESCRIBE pattern */
+SELECT * FROM sparql.describe(NULL, NULL);
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* invalid SERVER */
+SELECT * FROM sparql.describe('invalid', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  invalid SERVER: invalid
+SELECT * FROM sparql.describe('    ', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  a SERVER cannot contain only whitespace characters
+/* invalid DESCRIBE pattern */
+SELECT * FROM sparql.describe('graphdb', 'invalid');
+ERROR:  invalid DESCRIBE query:
+
+invalid
+
+SELECT * FROM sparql.describe('graphdb', '   ');
+ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
+SELECT * FROM sparql.describe('graphdb', 'DESCRIBE https://www.uni-muenster.de'); -- missing < >
+ERROR:  bad request (HTTP status 400)
+/* DESCRIBE pattern with a blank node */
+SELECT * FROM sparql.describe('graphdb', '_:bnode1');
+ERROR:  invalid DESCRIBE query:
+
+_:bnode1
+
+SELECT * FROM sparql.describe('graphdb', 'DESCRIBE _:bnode1');
+ERROR:  bad request (HTTP status 400)
+/* malformed entity IRI */
+SELECT * FROM sparql.describe('graphdb', 'DESCRIBE <htt://i.am.malformed>');
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* SELECT query */
+SELECT * FROM sparql.describe('graphdb', 'SELECT ?s ?p ?o WHERE {?s ?p ?o}');
+ERROR:  invalid DESCRIBE query:
+
+SELECT ?s ?p ?o WHERE {?s ?p ?o}
+
+/* cleanup */
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 146 records.
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#lat> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#long> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/name> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#time> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/established> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/modified> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/ontology/wikiPageExtracted> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/rector> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/state> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/city> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/administrativeStaff> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/students> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/academicStaff> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/budget> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/tuition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/veryLargeNumber> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/property/verySmallNumber> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/ontology/restingDate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://dbpedia.org/ontology/internationally> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#domain> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#range> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#comment> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#seeAlso> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#lat> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> };
+DELETE DATA { <http://www.w3.org/2003/01/geo/wgs84_pos#long> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2003/01/geo/wgs84_pos#long> };
+DELETE DATA { <http://dbpedia.org/property/name> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/name> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#time> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#time> };
+DELETE DATA { <http://dbpedia.org/property/established> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/established> };
+DELETE DATA { <http://dbpedia.org/property/modified> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/modified> };
+DELETE DATA { <http://dbpedia.org/ontology/wikiPageExtracted> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/ontology/wikiPageExtracted> };
+DELETE DATA { <http://dbpedia.org/property/rector> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/rector> };
+DELETE DATA { <http://dbpedia.org/property/state> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/state> };
+DELETE DATA { <http://dbpedia.org/property/city> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/city> };
+DELETE DATA { <http://dbpedia.org/property/administrativeStaff> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/administrativeStaff> };
+DELETE DATA { <http://dbpedia.org/property/students> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/students> };
+DELETE DATA { <http://dbpedia.org/property/academicStaff> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/academicStaff> };
+DELETE DATA { <http://dbpedia.org/property/budget> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/budget> };
+DELETE DATA { <http://dbpedia.org/property/tuition> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/tuition> };
+DELETE DATA { <http://dbpedia.org/property/veryLargeNumber> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/veryLargeNumber> };
+DELETE DATA { <http://dbpedia.org/property/verySmallNumber> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/property/verySmallNumber> };
+DELETE DATA { <http://dbpedia.org/ontology/restingDate> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/ontology/restingDate> };
+DELETE DATA { <http://dbpedia.org/ontology/internationally> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://dbpedia.org/ontology/internationally> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#differentFrom> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "Hello 👋 PostgreSQL 🐘"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "explicit string literal" };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> ". <= pontos => ."@pt };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\n <= salto de línea => \n"@es };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\" <= double-quotes => \""@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\t <= Tabulatorzeichen => \t"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+DELETE DATA { <http://dbpedia.org/resource/North_Rhine-Westphalia> <http://dbpedia.org/property/name> "Nordrhein-Westfalen"@de };
+DELETE DATA { <http://dbpedia.org/resource/Münster> <http://dbpedia.org/property/name> "Münster"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/administrativeStaff> "1924"^^<http://www.w3.org/2001/XMLSchema#short> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/students> "49098"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#long> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.00"^^<http://www.w3.org/2001/XMLSchema#double> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
+
+
+DROP SERVER graphdb CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server graphdb

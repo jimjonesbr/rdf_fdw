@@ -65,7 +65,8 @@ SELECT count(*) FROM temp_ft;
 SELECT * FROM temp_ft
 WHERE 
   subject = '<https://www.uni-muenster.de>'::rdfnode AND
-  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode
+ORDER BY object::bigint;
 DROP TABLE temp_ft;
 
 /* cloning one million triples from the foreign table */
@@ -82,7 +83,8 @@ DROP TABLE ft_clone;
 /* describing subject with one million triples */
 CREATE UNLOGGED TABLE temp_describe AS
 SELECT subject, predicate, object
-FROM sparql.describe('graphdb', 'DESCRIBE <https://www.uni-muenster.de>');
+FROM sparql.describe('graphdb', 'DESCRIBE <https://www.uni-muenster.de>')
+ORDER BY object::bigint;
 SELECT count(*) FROM temp_describe;
 SELECT * FROM temp_describe
 WHERE 

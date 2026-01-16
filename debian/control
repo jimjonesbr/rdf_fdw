@@ -7,7 +7,6 @@ Build-Depends: debhelper-compat (= 13),
                postgresql-server-dev-all (>= 217~),
                libxml2-dev,
                libcurl4-gnutls-dev,
-               librdf0-dev,
                pkg-config
 Standards-Version: 4.6.2
 Homepage: https://github.com/jimjonesbr/rdf_fdw
@@ -21,8 +20,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -42,8 +40,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -63,8 +60,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -84,8 +80,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -105,8 +100,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -126,8 +120,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -147,8 +140,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -168,8 +160,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL
@@ -189,8 +180,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          ${postgresql:Depends},
          libxml2,
-         libcurl4,
-         librdf0
+         libcurl4
 Description: RDF Triplestore Foreign Data Wrapper for PostgreSQL
  rdf_fdw is a PostgreSQL Foreign Data Wrapper that enables seamless access
  to RDF triplestores via SPARQL endpoints. It supports pushdown of many SQL

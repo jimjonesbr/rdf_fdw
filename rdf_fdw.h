@@ -46,10 +46,6 @@
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_RAW "raw"
 #define RDF_COLUMN_OPTION_VALUE_LITERAL_CONTENT "content"
 
-/* SPARQL query type keywords */
-#define RDF_SPARQL_TYPE_SELECT "SELECT"
-#define RDF_SPARQL_TYPE_DESCRIBE "DESCRIBE"
-
 /* SPARQL keywords */
 #define RDF_SPARQL_KEYWORD_FROM "FROM"
 #define RDF_SPARQL_KEYWORD_NAMED "NAMED"
@@ -77,7 +73,12 @@
 #define RDF_SPARQL_RESULT_LITERAL "literal"
 #define RDF_SPARQL_RESULT_LITERAL_DATATYPE "datatype"
 #define RDF_SPARQL_RESULT_LITERAL_LANG "lang"
+#define RDF_SPARQL_RESULT_RESOURCE "resource"
+#define RDF_SPARQL_RESULT_NODEID "nodeID"
 #define RDF_SPARQL_RESULT_BNODE "bnode"
+#define RDF_SPARQL_RESULT_DESCRIPTION "Description"
+#define RDF_SPARQL_RESULT_ABOUT "about"
+#define RDF_SPARQL_RESULT_RDFROOT "RDF"
 #define RDF_SPARQL_RESULT_URI "uri"
 
 /* Connection and query defaults */
@@ -93,6 +94,7 @@
 /* RDF base URIs */
 #define RDF_DEFAULT_BASE_URI "http://rdf_fdw.postgresql.org/"
 #define RDF_XSD_BASE_URI "http://www.w3.org/2001/XMLSchema#"
+#define RDF_RDF_BASE_URI "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 /* RDF datatype URIs */
 #define RDF_LANGUAGE_LITERAL_DATATYPE "<http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>"

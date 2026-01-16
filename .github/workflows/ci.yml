@@ -22,7 +22,7 @@ jobs:
     container: pgxn/pgxn-tools
     steps:
       - name: Prepare environment 
-        run: sudo apt-get update && sudo apt-get install -y make gcc libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y make gcc libxml2-dev libcurl4-gnutls-dev pkg-config
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - uses: actions/checkout@v2

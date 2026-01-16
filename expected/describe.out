@@ -57,18 +57,7 @@ ORDER BY object::text COLLATE "C";
 (1 row)
 
 SELECT subject, predicate, object
-FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', false)
-WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
-ORDER BY object::text COLLATE "C";
-                  subject                   |                  predicate                   |         object         
---------------------------------------------+----------------------------------------------+------------------------
- <http://www.wikidata.org/entity/Q61308849> | <http://schema.org/dateModified>             | "2024-05-01T21:36:41Z"
- <http://www.wikidata.org/entity/Q61308849> | <http://www.w3.org/2000/01/rdf-schema#label> | "Tuktoyaktuk A"
- <http://www.wikidata.org/entity/Q61308849> | <http://www.w3.org/2000/01/rdf-schema#label> | "Tuktoyaktuk A"
-(3 rows)
-
-SELECT subject, predicate, object
-FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true)
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
 WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
 ORDER BY object::text COLLATE "C";
                   subject                   |                  predicate                   |                               object                                
@@ -82,23 +71,22 @@ SELECT subject, predicate, object
 FROM sparql.describe(
     query =>'describe wd:Q471896',
     server => 'wikidata', 
-    base_uri => 'http://test.base.uri/',
-    raw_literal => false)
+    base_uri => 'http://test.base.uri/')
 WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
 ORDER BY object::text COLLATE "C";
-                 subject                  |                  predicate                   |             object             
-------------------------------------------+----------------------------------------------+--------------------------------
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "A sápadt holdfényben"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In fahlem Mondlicht"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "Kuun kalpeassa valossa"
- <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "La coscienza di un ufficiale"
+                 subject                  |                  predicate                   |              object               
+------------------------------------------+----------------------------------------------+-----------------------------------
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "A sápadt holdfényben"@hu
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In fahlem Mondlicht"@de
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@ca
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@en
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@he
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@nl
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@pt
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@sh
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "In the Pale Moonlight"@sv
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "Kuun kalpeassa valossa"@fi
+ <http://www.wikidata.org/entity/Q471896> | <http://www.w3.org/2000/01/rdf-schema#label> | "La coscienza di un ufficiale"@it
 (11 rows)
 
 -- empty server
@@ -175,9 +163,9 @@ ORDER BY subject::text, object::text COLLATE "C";
                      subject                      |                     predicate                      |                                 object                                 
 --------------------------------------------------+----------------------------------------------------+------------------------------------------------------------------------
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/runtime>              | "4"^^<http://www.w3.org/2001/XMLSchema#integer>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/name>                 | "Alien Blood"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2000/01/rdf-schema#label>       | "Alien Blood"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://xmlns.com/foaf/0.1/name>                   | "Alien Blood"@en
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/name>                 | "Alien Blood"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/director>             | "Burton George"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/writer>               | "Captain Leslie T. Peacocke"@en
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/producer>             | "E. D. Horkheimer"@en
@@ -189,33 +177,33 @@ ORDER BY subject::text, object::text COLLATE "C";
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://cy.dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://da.dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  | <http://dbpedia.org/ontology/Work>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/producer>             | <http://dbpedia.org/resource/Balboa_Amusement_Producing_Company>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/producer>             | <http://dbpedia.org/resource/Balboa_Amusement_Producing_Company>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/producer>             | <http://dbpedia.org/resource/Balboa_Amusement_Producing_Company>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:1910s_American_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1910s_American_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1910s_English-language_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1917_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:1917_drama_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1917_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:1917_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:1917_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:American_black-and-white_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:American_black-and-white_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:American_silent_feature_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:American_silent_feature_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:American_silent_feature_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:English-language_drama_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Films_based_on_short_fiction>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Films_based_on_short_fiction>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Films_directed_by_Burton_George>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Films_based_on_short_fiction>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Films_directed_by_Burton_George>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Silent_American_drama_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Films_directed_by_Burton_George>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Silent_American_drama_films>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Silent_American_drama_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://purl.org/dc/terms/subject>                 | <http://dbpedia.org/resource/Category:Surviving_American_silent_films>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Category:Surviving_American_silent_films>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Clifford_Grey>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/starring>             | <http://dbpedia.org/resource/Clifford_Grey>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Clifford_Grey>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/starring>             | <http://dbpedia.org/resource/Clifford_Grey>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Leslie_T._Peacocke>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/writer>               | <http://dbpedia.org/resource/Leslie_T._Peacocke>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Leslie_T._Peacocke>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Library_of_Congress>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:1910s-drama-film-stub>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Based_on>
@@ -224,8 +212,8 @@ ORDER BY subject::text, object::text COLLATE "C";
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Infobox_film>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Reflist>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/wikiPageUsesTemplate> | <http://dbpedia.org/resource/Template:Use_mdy_dates>
- <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Winifred_Greenwood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/starring>             | <http://dbpedia.org/resource/Winifred_Greenwood>
+ <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Winifred_Greenwood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://dbpedia.org/property/starring>             | <http://dbpedia.org/resource/Winifred_Greenwood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://xmlns.com/foaf/0.1/isPrimaryTopicOf>       | <http://en.wikipedia.org/wiki/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/ns/prov#wasDerivedFrom>         | <http://en.wikipedia.org/wiki/Alien_Blood?oldid=1281560162&ns=0>
@@ -241,8 +229,8 @@ ORDER BY subject::text, object::text COLLATE "C";
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  | <http://www.wikidata.org/entity/Q386724>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <http://yago-knowledge.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood>        | <http://www.w3.org/2002/07/owl#sameAs>             | <https://global.dbpedia.org/id/YEQR>
- <http://dbpedia.org/resource/Alien_Blood_(film)> | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Alien_Blood>
  <http://dbpedia.org/resource/Alien_Blood_(film)> | <http://dbpedia.org/ontology/wikiPageRedirects>    | <http://dbpedia.org/resource/Alien_Blood>
+ <http://dbpedia.org/resource/Alien_Blood_(film)> | <http://dbpedia.org/ontology/wikiPageWikiLink>     | <http://dbpedia.org/resource/Alien_Blood>
  <http://en.wikipedia.org/wiki/Alien_Blood>       | <http://xmlns.com/foaf/0.1/primaryTopic>           | <http://dbpedia.org/resource/Alien_Blood>
 (70 rows)
 

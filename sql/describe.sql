@@ -28,12 +28,7 @@ WHERE
 ORDER BY object::text COLLATE "C";
 
 SELECT subject, predicate, object
-FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', false)
-WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
-ORDER BY object::text COLLATE "C";
-
-SELECT subject, predicate, object
-FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true)
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
 WHERE predicate IN ('<http://www.w3.org/2000/01/rdf-schema#label>','<http://schema.org/dateModified>')
 ORDER BY object::text COLLATE "C";
 
@@ -41,8 +36,7 @@ SELECT subject, predicate, object
 FROM sparql.describe(
     query =>'describe wd:Q471896',
     server => 'wikidata', 
-    base_uri => 'http://test.base.uri/',
-    raw_literal => false)
+    base_uri => 'http://test.base.uri/')
 WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
 ORDER BY object::text COLLATE "C";
 

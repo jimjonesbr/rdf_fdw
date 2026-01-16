@@ -1,7 +1,8 @@
 #!/bin/bash
 
 CODEPATH="/home/jim/git/rdf_fdw"
-PGVERSIONS="9.5,9.6,10,11,12,13,14,15,16,17,18,19"
+#PGVERSIONS="9.5,9.6,10,11,12,13,14,15,16,17,18,19"
+PGVERSIONS="19"
 IMAGENAME="pgxn-image"
 NETWORK_NAME="pgnet"
 FUSEKI_DATASET="dt"

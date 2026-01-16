@@ -8,13 +8,9 @@ RDF_CONFIG = pkg-config
 CURL_CONFIG = curl-config
 PG_CONFIG = pg_config
 
-SHLIB_LINK := $(shell $(CURL_CONFIG) --libs) \
-	$(shell $(RDF_CONFIG) --libs raptor2) \
-	$(shell $(RDF_CONFIG) --libs redland)
+SHLIB_LINK := $(shell $(CURL_CONFIG) --libs)
 
 PG_CPPFLAGS = $(shell xml2-config --cflags) \
-	$(shell $(RDF_CONFIG) --cflags raptor2) \
-	$(shell $(RDF_CONFIG) --cflags redland) \
 	-DRDF_FDW_CC="\"$(CC)\"" \
 	-DRDF_FDW_BUILD_DATE="\"$(shell date -u +'%Y-%m-%d %H:%M:%S UTC')\""
 
@@ -51,11 +47,13 @@ ifndef SKIP_UPDATE_TESTS
 			 fuseki-insert \
 			 fuseki-select \
 			 fuseki-table-clone \
+			 fuseki-describe \
 			 graphdb-delete \
 			 graphdb-insert \
 			 graphdb-update \
 			 graphdb-select \
-			 graphdb-table-clone
+			 graphdb-table-clone \
+			 graphdb-describe
 endif
 
 ifndef SKIP_STRESS_TESTS

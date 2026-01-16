@@ -46,14 +46,13 @@
 * [PostgreSQL](https://www.postgresql.org): version 9.5 or higher.
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
 * [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
-* [librdf](https://librdf.org/): version 1.0.17 or higher.
 * [pkg-config](https://linux.die.net/man/1/pkg-config): pkg-config 0.29.2 or higher.
 * [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to compile the code.
 
 In an Ubuntu environment you can install all dependencies with the following command:
 
 ```shell
-apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 ```
 
 > [!NOTE]  
@@ -123,7 +122,7 @@ Minimal example Dockerfile for PostgreSQL 18:
 FROM postgres:18
 
 RUN apt-get update && \
-    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
 RUN git clone --branch 2.2.0 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
@@ -1032,7 +1031,7 @@ text rdf_fdw_version();
 
 **Description**
 
-Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all dependencies (libxml, librdf, libcurl) in a single formatted string.
+Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all dependencies (libxml, libcurl) in a single formatted string.
 
 -------
 
@@ -1040,9 +1039,9 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 
 ```sql
 SELECT rdf_fdw_version();
-                                                      rdf_fdw_version                                                      
----------------------------------------------------------------------------------------------------------------------------
- rdf_fdw 2.3-dev (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, librdf 1.0.17, libcurl 8.14.1)
+                                              rdf_fdw_version                                               
+------------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.3-dev (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -1054,7 +1053,7 @@ VIEW rdf_fdw_settings(component text, version text);
 
 **Description**
 
-A system view that provides detailed version information for `rdf_fdw` and all its dependencies, including core libraries (PostgreSQL, libxml, librdf, libcurl) and optional components (SSL, zlib, libSSH, nghttp2), along with compiler and build information. Returns individual component names and their corresponding versions for convenient programmatic access.
+A system view that provides detailed version information for `rdf_fdw` and all its dependencies, including core libraries (PostgreSQL, libxml, libcurl) and optional components (SSL, zlib, libSSH, nghttp2), along with compiler and build information. Returns individual component names and their corresponding versions for convenient programmatic access.
 
 -------
 
@@ -1067,15 +1066,14 @@ SELECT * FROM rdf_fdw_settings;
  rdf_fdw    | 2.3-dev
  PostgreSQL | 18.1 (Debian 18.1-1.pgdg13+2)
  libxml     | 2.9.14
- librdf     | 1.0.17
  libcurl    | 8.14.1
  ssl        | GnuTLS/3.8.9
  zlib       | 1.3.1
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2025-12-08 05:52:53 UTC
-(11 rows)
+ built      | 2026-01-15 11:42:30 UTC
+(10 rows)
 ```
 
 ### [rdf_fdw_clone_table](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#rdf_fdw_clone_table)
@@ -2716,7 +2714,6 @@ sparql.describe(server text, query text, raw_literal boolean, base_uri text) →
 **Description**
 
 The `sparql.describe` function executes a SPARQL `DESCRIBE` query against a specified RDF triplestore `SERVER`. It retrieves RDF triples describing a resource (or resources) identified by the query and returns them as a table with three columns: subject, predicate, and object. This function is useful for exploring RDF data by fetching detailed descriptions of resources from a triplestore.
-The function leverages the Redland RDF library (librdf) to parse the `RDF/XML` response from the triplestore into triples, which are then returned as rows in the result set.
 
 **Parameters**
 
@@ -2865,7 +2862,7 @@ Dockerfile
 FROM postgres:18
 
 RUN apt-get update && \
-    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev librdf0-dev pkg-config
+    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
 WORKDIR /
 

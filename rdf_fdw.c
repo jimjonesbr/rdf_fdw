@@ -15,7 +15,6 @@
 #include <curl/curl.h>
 #include <libxml/tree.h>
 #include <ctype.h>
-#include "librdf.h"
 
 #include "sparql.h"
 #include "rdf_utils.h"
@@ -106,6 +105,9 @@
 #endif
 #include "mb/pg_wchar.h"
 #include <regex.h>
+#if PG_VERSION_NUM >= 190000
+#include <math.h>
+#endif
 #include "parser/parse_type.h"
 
 #define REL_ALIAS_PREFIX "r"
@@ -790,9 +792,8 @@ Datum rdf_fdw_version(PG_FUNCTION_ARGS)
 	appendStringInfo(&buffer, ", compiled by %s", RDF_FDW_CC);
 #endif
 
-	appendStringInfo(&buffer, ", libxml %s, librdf %s, libcurl %s)",
+	appendStringInfo(&buffer, ", libxml %s, libcurl %s)",
 					 LIBXML_DOTTED_VERSION,
-					 librdf_version_string,
 					 ver->version);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buffer.data));
@@ -808,7 +809,6 @@ Datum rdf_fdw_settings(PG_FUNCTION_ARGS)
 	appendStringInfo(&buffer, "rdf_fdw %s,", FDW_VERSION);
 	appendStringInfo(&buffer, "PostgreSQL %s,", PG_VERSION);
 	appendStringInfo(&buffer, "libxml %s,", LIBXML_DOTTED_VERSION);
-	appendStringInfo(&buffer, "librdf %s,", librdf_version_string);
 	appendStringInfo(&buffer, "libcurl %s,", ver->version);
 
 	if (ver->ssl_version)
@@ -1495,117 +1495,151 @@ static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value)
  * DescribeIRI
  * -----------------
  *
- * Executes a DESCRIBE SPARQL query and return the result set as as truples
- * in a List*. It returns a list of RDFfdwTriple* with all triples returned
+ * Parses the RDF/XML DESCRIBE query result stored in state->xmldoc
+ * and returns a list of RDFfdwTriple* with all triples returned
  * from the DESCRIBE SPARQL query.
  *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  */
 static List *DescribeIRI(RDFfdwState *state)
 {
-	List *result = NIL;
-	librdf_world *world = librdf_new_world();
-	librdf_parser *parser = librdf_new_parser(world, "rdfxml", NULL, NULL);
-	librdf_uri *uri = librdf_new_uri(world, (const unsigned char *)state->base_uri);
-	librdf_stream *stream = NULL;
+	List *triples = NIL;
+	xmlNodePtr root; 
+	xmlNodePtr description_node;
+	xmlNodePtr property_node;
+	const xmlChar *rdf_ns = (const xmlChar *)RDF_RDF_BASE_URI;
 
 	elog(DEBUG1, "%s called", __func__);
 
-	librdf_world_open(world);
-
-	PG_TRY();
+	if (state->xmldoc == NULL)
 	{
-		LoadRDFData(state);
+		elog(WARNING, "%s: no XML document to process", __func__);
+		return NIL;
+	}
 
-		if (strcmp(state->base_uri, RDF_DEFAULT_BASE_URI) != 0)
-			elog(DEBUG2, "%s: parsing RDF/XML result set (base '%s')", __func__, state->base_uri);
+	root = xmlDocGetRootElement(state->xmldoc);
+	if (root == NULL)
+	{
+		elog(WARNING, "%s: XML document is empty", __func__);
+		return NIL;
+	}
 
-		stream = librdf_parser_parse_string_as_stream(parser, (const unsigned char *)state->sparql_resultset, uri);
-
-		if (!stream)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("unable to parse RDF/XML"),
-					 errhint("base URI: %s", state->base_uri)));
-
-		while (!librdf_stream_end(stream))
+	/* Find the rdf:RDF element */
+	if (xmlStrcmp(root->name, (const xmlChar *)RDF_SPARQL_RESULT_RDFROOT) != 0 ||
+		root->ns == NULL || xmlStrcmp(root->ns->href, rdf_ns) != 0)
+	{
+		/* Search children and reposition root to point at <rdf:RDF> if found */
+		for (root = root->children; root != NULL; root = root->next)
 		{
-			RDFfdwTriple *triple = (RDFfdwTriple *)palloc0(sizeof(RDFfdwTriple));
-			librdf_statement *statement = librdf_stream_get_object(stream);
-
-			if (librdf_node_is_resource(statement->subject))
-				triple->subject = pstrdup(iri((char *)librdf_uri_as_string(librdf_node_get_uri(statement->subject))));
-			else if (librdf_node_is_blank(statement->subject))
-				triple->subject = pstrdup((char *)librdf_node_get_blank_identifier(statement->subject));
-			else
-				ereport(ERROR,
-						(errcode(ERRCODE_FDW_ERROR),
-						 errmsg("unsupported subject node type")));
-
-			if (librdf_node_is_blank(statement->predicate))
-				triple->predicate = strdup((char *)librdf_node_get_blank_identifier(statement->predicate));
-			else
-				triple->predicate = pstrdup(iri((char *)librdf_uri_as_string(librdf_node_get_uri(statement->predicate))));
-
-			if (librdf_node_is_resource(statement->object))
-				triple->object = pstrdup(iri((char *)librdf_uri_as_string(librdf_node_get_uri(statement->object))));
-			else if (librdf_node_is_literal(statement->object))
+			if (root->type == XML_ELEMENT_NODE &&
+				xmlStrcmp(root->name, (const xmlChar *)RDF_SPARQL_RESULT_RDFROOT) == 0 &&
+				root->ns != NULL && xmlStrcmp(root->ns->href, rdf_ns) == 0)
 			{
-				char *value = (char *)librdf_node_get_literal_value(statement->object);
-				StringInfoData literal;
-				initStringInfo(&literal);
-
-				if (state->keep_raw_literal)
-				{
-					char *language = librdf_node_get_literal_value_language(statement->object);
-					librdf_uri *datatype = librdf_node_get_literal_value_datatype_uri(statement->object);
-
-					if (datatype)
-						appendStringInfo(&literal, "%s", strdt(value, (char *)librdf_uri_as_string(datatype)));
-					else if (language)
-						appendStringInfo(&literal, "%s", strlang(value, language));
-					else
-						appendStringInfo(&literal, "%s", cstring_to_rdfliteral(value));
-				}
-				else
-					appendStringInfo(&literal, "%s", cstring_to_rdfliteral(value));
-
-				triple->object = pstrdup(literal.data);
-				pfree(literal.data);
+				break;
 			}
-			else if (librdf_node_is_blank(statement->object))
-				triple->object = pstrdup((char *)librdf_node_get_blank_identifier(statement->object));
-			else
-				ereport(ERROR,
-						(errcode(ERRCODE_FDW_ERROR),
-						 errmsg("unsupported object node type")));
-
-			result = lappend(result, triple);
-
-			librdf_stream_next(stream);
 		}
 	}
-	PG_CATCH();
+
+	if (root == NULL)
 	{
-		if (stream)
-			librdf_free_stream(stream);
-		if (parser)
-			librdf_free_parser(parser);
-		if (uri)
-			librdf_free_uri(uri);
-		if (world)
-			librdf_free_world(world);
-		PG_RE_THROW();
+		elog(WARNING, "%s: cannot find rdf:RDF element in DESCRIBE response", __func__);
+		return NIL;
 	}
-	PG_END_TRY();
 
-	librdf_free_stream(stream);
-	librdf_free_parser(parser);
-	librdf_free_uri(uri);
-	librdf_free_world(world);
+	/* Iterate over rdf:Description nodes */
+	for (description_node = root->children; description_node; description_node = description_node->next)
+	{
+		if (description_node->type == XML_ELEMENT_NODE &&
+			xmlStrcmp(description_node->name, (const xmlChar *)RDF_SPARQL_RESULT_DESCRIPTION) == 0 &&
+			description_node->ns != NULL && xmlStrcmp(description_node->ns->href, rdf_ns) == 0)
+		{
+			xmlChar *subject_str = xmlGetProp(description_node, (const xmlChar *)RDF_SPARQL_RESULT_ABOUT);
+			if (!subject_str)
+				subject_str = xmlGetProp(description_node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
 
-	elog(DEBUG1, "%s exit", __func__);
-	return result;
+			if (!subject_str)
+				continue;
+
+			/* Iterate over property nodes */
+			for (property_node = description_node->children; property_node; property_node = property_node->next)
+			{
+				if (property_node->type == XML_ELEMENT_NODE)
+				{
+					RDFfdwTriple *triple = palloc0(sizeof(RDFfdwTriple));
+					char *predicate_str = NULL;
+					xmlChar *resource = NULL;
+					xmlChar *nodeID = NULL;
+					xmlChar *literal_content = NULL;
+					xmlChar *lang = NULL;
+					xmlChar *datatype = NULL;
+
+					/* Build predicate from namespace + local name */
+					if (property_node->ns && property_node->ns->href)
+					{
+						StringInfoData predicate_buf;
+						initStringInfo(&predicate_buf);
+						appendStringInfoString(&predicate_buf, (char *)property_node->ns->href);
+						appendStringInfoString(&predicate_buf, (char *)property_node->name);
+						predicate_str = predicate_buf.data;
+					}
+					else
+						predicate_str = pstrdup((char *)property_node->name);
+
+					triple->subject = iri((char *)subject_str);
+					triple->predicate = iri(predicate_str);
+
+					/* Determine object type and value */
+					resource = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_RESOURCE);
+					nodeID = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
+					literal_content = xmlNodeGetContent(property_node);
+
+					if (resource)
+					{
+						/* Object is an IRI */
+						triple->object = iri((char *)resource);
+						xmlFree(resource);
+					}
+					else if (nodeID)
+					{
+						/* Object is a blank node */
+						StringInfoData bnode;
+						initStringInfo(&bnode);
+						appendStringInfo(&bnode, "_:%s", (char *)nodeID);
+						triple->object = bnode.data;
+						xmlFree(nodeID);
+					}
+					else if (literal_content)
+					{
+						/* Object is a literal */
+						lang = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
+						datatype = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+
+						/* Format value with language, datatype, or just a plain-literal */
+						if (lang)
+							triple->object = strlang((char *)literal_content, (char *)lang);
+						else if (datatype)
+							triple->object = strdt((char *)literal_content, (char *)datatype);
+						else
+							triple->object = cstring_to_rdfliteral((char *)literal_content);
+
+						if (lang)
+							xmlFree(lang);
+						if (datatype)
+							xmlFree(datatype);
+					}
+
+					if (literal_content)
+						xmlFree(literal_content);
+
+					triples = lappend(triples, triple);
+				}
+			}
+			xmlFree(subject_str);
+		}
+	}
+
+	elog(DEBUG1, "%s exit: parsed %d triples", __func__, list_length(triples));
+	return triples;
 }
 
 /*
@@ -1624,18 +1658,18 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
 	text *srvname_arg = PG_GETARG_TEXT_P(0);
 	text *iri_arg = PG_GETARG_TEXT_P(1);
-	bool keep_raw_literal = PG_GETARG_BOOL(2);
-	text *base_uri_arg = PG_GETARG_TEXT_P(3);
+	text *base_uri_arg = PG_GETARG_TEXT_P(2);
 	char *srvname;
 	char *describe_query;
 	char *base_uri;
-
 	MemoryContext oldcontext;
 	FuncCallContext *funcctx;
 	AttInMetadata *attinmeta;
 	TupleDesc tupdesc;
 	int call_cntr;
 	int max_calls;
+
+	elog(DEBUG1, "%s called", __func__);
 
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -1657,7 +1691,6 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 
 		srvname = text_to_cstring(srvname_arg);
 		describe_query = text_to_cstring(iri_arg);
-		state->keep_raw_literal = keep_raw_literal;
 		base_uri = text_to_cstring(base_uri_arg);
 
 		if (*describe_query && strspn(describe_query, " \t\n\r") == strlen(describe_query))
@@ -1717,11 +1750,13 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		 */
 		LoadRDFUserMapping(state);
 
+		/* Use new implementation */
+		LoadRDFData(state);
 		triples = DescribeIRI(state);
 		funcctx->user_fctx = triples;
 
 		if (triples)
-			funcctx->max_calls = triples->length;
+			funcctx->max_calls = list_length(triples);
 		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
 			ereport(ERROR, (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 							errmsg("function returning record called in context that cannot accept type record")));
@@ -5063,53 +5098,96 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 /*
  * LoadRDFData
- * -----------
+ * ---------------
+ *
  * Parses the result set loaded into 'state->xmldoc' into records.
+ * For SELECT queries, it delegates to the original LoadRDFData.
+ * For DESCRIBE queries, it parses the RDF/XML response using libxml2 and stores
+ * the parsed XML document in state->xmldoc for later processing by DescribeIRI().
  *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  */
 static void LoadRDFData(RDFfdwState *state)
 {
-	xmlNodePtr results;
-	xmlNodePtr root;
 	int options = XML_PARSE_NOBLANKS | XML_PARSE_NONET;
 
-	/* 
-	 * If the user set the 'enable_xml_huge' option, we enable the 
-	 * XML_PARSE_HUGE option, so that we can parse huge XML documents.
-	 * This is useful for SPARQL endpoints that return huge result sets.
-	 */
+	elog(DEBUG1, "%s called", __func__);
+
+	/* Enable XML_PARSE_HUGE if needed */
 	if (state->enable_xml_huge)
 	{
 		options |= XML_PARSE_HUGE;
 		elog(DEBUG1, "%s: enabling XML_PARSE_HUGE", __func__);
 	}
 
-	state->rowcount = 0;
-	state->records = NIL;
-
-	elog(DEBUG1, "%s called", __func__);
-
-	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
-		elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
-
-	elog(DEBUG2, "  %s: loading 'xmlroot'", __func__);
-
-	/* Free existing xmldoc before allocating new one */
-	if (state->xmldoc)
-    {
-        elog(DEBUG2, "	%s: freeing existing xmldoc", __func__);
-        xmlFreeDoc(state->xmldoc);
-        state->xmldoc = NULL;
-    }
-
-	if (state->sparql_query_type == SPARQL_SELECT)
+	if (state->sparql_query_type == SPARQL_DESCRIBE)
 	{
+		/* Execute the SPARQL DESCRIBE query */
+		if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+			elog(ERROR, "%s -> SPARQL DESCRIBE query failed: '%s'", __func__, state->endpoint);
+
+		/* Free existing xmldoc before allocating new one */
+		if (state->xmldoc)
+		{
+			elog(DEBUG2, "%s: freeing existing xmldoc", __func__);
+			xmlFreeDoc(state->xmldoc);
+			state->xmldoc = NULL;
+		}
+
+		/* Parse the RDF/XML response */
 		state->xmldoc = xmlReadMemory(
-							state->sparql_resultset,
-							strlen(state->sparql_resultset),
-							NULL, NULL,
-							options);
+			state->sparql_resultset,
+			strlen(state->sparql_resultset),
+			NULL, NULL,
+			options);
+
+		/* Free sparql_resultset as we no longer need it */
+		if (state->sparql_resultset)
+		{
+			pfree(state->sparql_resultset);
+			state->sparql_resultset = NULL;
+		}
+
+		if (state->xmldoc == NULL)
+		{
+			const xmlError *err = xmlGetLastError();
+			if (err)
+				elog(ERROR, "%s: failed to parse RDF/XML: %s", __func__, err->message);
+			else
+				elog(ERROR, "%s: failed to parse RDF/XML (unknown error)", __func__);
+		}
+
+		elog(DEBUG1, "%s exit: RDF/XML parsed successfully", __func__);
+	}
+	else
+	{
+		/* Handle SELECT queries */
+		xmlNodePtr results;
+		xmlNodePtr root;
+
+		state->rowcount = 0;
+		state->records = NIL;
+
+		/* Execute the SPARQL query */
+		if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+			elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
+
+		elog(DEBUG2, "  %s: loading 'xmlroot'", __func__);
+
+		/* Free existing xmldoc before allocating new one */
+		if (state->xmldoc)
+		{
+			elog(DEBUG2, "	%s: freeing existing xmldoc", __func__);
+			xmlFreeDoc(state->xmldoc);
+			state->xmldoc = NULL;
+		}
+
+		/* Parse the SPARQL result XML */
+		state->xmldoc = xmlReadMemory(
+			state->sparql_resultset,
+			strlen(state->sparql_resultset),
+			NULL, NULL,
+			options);
 
 		/* We no longer need sparql_resultset, so let's free it */
 		if (state->sparql_resultset)
@@ -5153,9 +5231,9 @@ static void LoadRDFData(RDFfdwState *state)
 
 		if (state->log_sparql)
 			elog(INFO, "SPARQL returned %d %s.\n", state->pagesize, state->pagesize == 1 ? "record" : "records");
-	}
 
-	elog(DEBUG1, "%s exit", __func__);
+		elog(DEBUG1, "%s exit: SELECT query processed", __func__);
+	}
 }
 
 /*

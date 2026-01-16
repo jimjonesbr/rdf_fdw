@@ -3281,11 +3281,11 @@ CREATE TYPE triple AS (
   object rdfnode
 );
 
-CREATE FUNCTION sparql.describe(server text, query text, raw_literal boolean DEFAULT true, base_uri text DEFAULT '')
+CREATE FUNCTION sparql.describe(server text, query text, base_uri text DEFAULT '')
 RETURNS SETOF triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
 LANGUAGE C IMMUTABLE STRICT;
 
-COMMENT ON FUNCTION sparql.describe(text,text,boolean,text) IS 'Gateway for DESCRIBE SPARQL queries';
+COMMENT ON FUNCTION sparql.describe(text,text,text) IS 'Gateway for DESCRIBE SPARQL queries';
 
 -- SUM aggregate for rdfnode
 CREATE FUNCTION sparql.sum_rdfnode_sfunc(internal, rdfnode)

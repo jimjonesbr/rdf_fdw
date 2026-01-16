@@ -63,6 +63,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
+DROP FUNCTION sparql.describe(text, text, boolean, text);
+CREATE FUNCTION sparql.describe(server text, query text, base_uri text DEFAULT '')
+RETURNS SETOF triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
+LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.describe(text,text,text) IS 'Gateway for DESCRIBE SPARQL queries';
+
 /* Drop deprecated functions */
 DROP FUNCTION IF EXISTS sparql.regex(rdfnode, rdfnode);
 DROP FUNCTION IF EXISTS sparql.regex(rdfnode, rdfnode, rdfnode);
