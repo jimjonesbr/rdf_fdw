@@ -53,7 +53,9 @@ ifndef SKIP_UPDATE_TESTS
 			 graphdb-update \
 			 graphdb-select \
 			 graphdb-table-clone \
-			 graphdb-describe
+			 graphdb-describe \
+			 proxy \
+			 proxy-auth
 endif
 
 ifndef SKIP_STRESS_TESTS

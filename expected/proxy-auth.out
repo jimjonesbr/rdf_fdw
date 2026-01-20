@@ -1,0 +1,183 @@
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update',
+  http_proxy 'http://172.19.42.101:3128',
+  proxy_user 'proxyuser',
+  proxy_user_password 'proxypass',
+  connect_timeout '1');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+/* Correct proxy settings */
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |             predicate              |                     object                     
+-------------------------------+------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+SELECT *
+FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+            subject            |             predicate              |                     object                     
+-------------------------------+------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+CALL rdf_fdw_clone_table(
+        create_table => true,
+        foreign_table => 'public.ft',
+        target_table  => 'public.t1'
+     );
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+ORDER BY ASC(?s) 
+OFFSET 0 LIMIT 100
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+ORDER BY ASC(?s) 
+OFFSET 100 LIMIT 100
+
+INFO:  SPARQL returned 0 records.
+
+SELECT * FROM public.t1;
+            subject            |             predicate              |                     object                     
+-------------------------------+------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+UPDATE ft SET object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |             predicate              |           object           
+-------------------------------+------------------------------------+----------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "University of Münster"@en
+(1 row)
+
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* Wrong user - must fail */
+ALTER SERVER fuseki OPTIONS (SET proxy_user 'wronguser');
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+ERROR:  HTTP error 407 from 'fuseki'
+SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  HTTP error 407 from 'fuseki'
+CALL rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.t1'
+     );
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+ORDER BY ASC(?s) 
+OFFSET 0 LIMIT 100
+
+ERROR:  HTTP error 407 from 'fuseki'
+/* Wrong password - must fail */
+ALTER SERVER fuseki OPTIONS (SET proxy_user 'proxyuser', SET proxy_user_password 'wrongpass');
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+ERROR:  HTTP error 407 from 'fuseki'
+SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  HTTP error 407 from 'fuseki'
+CALL rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.t1'
+     );
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+ORDER BY ASC(?s) 
+OFFSET 0 LIMIT 100
+
+ERROR:  HTTP error 407 from 'fuseki'
+/* Cleanup */
+DROP TABLE public.t1;
+DROP SERVER fuseki CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki

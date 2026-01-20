@@ -1467,11 +1467,9 @@ static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value)
 	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
 
 	if (!HeapTupleIsValid(tuple))
-	{
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
 				 errmsg("cache lookup failed for type %u (osm_id)", pgtype)));
-	}
 
 	typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
 	ReleaseSysCache(tuple);
@@ -1646,12 +1644,10 @@ static List *DescribeIRI(RDFfdwState *state)
  * rdf_fdw_describe
  * -----------------
  *
- * Analog to DESCRIBE SPARQL queries. This function expects at least two
- * arguments, namely 'server' and 'query', which are passed in positions
- * 1 and 2, respectivelly. Optionally, the arguments 'raw_literal' and
- * 'base_uri' can determine if the literals from result set should be
- * returned with their language/data type, and the base URI for possible
- * relative references, respectivelly.
+ * Analog to DESCRIBE SPARQL queries. This function expects three arguments:
+ * 'server', 'query', and 'base_uri', which are passed in positions 1, 2, and 3,
+ * respectively. The 'base_uri' argument is optional and can be used to set the
+ * base URI for possible relative references in the DESCRIBE query.
  */
 Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 {
@@ -1815,7 +1811,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
  * rdf_fdw_clone_table
  * -----------------
  *
- * Materializes the content of a foreign table into a normal table.
+ * Materializes the content of a foreign table into a heap table.
  */
 #if PG_VERSION_NUM >= 110000
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
@@ -2038,14 +2034,12 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * If both foreign and target table share no column we better stop it right here.
 	 */
 	if (!match)
-	{
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("target table mismatch"),
 				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
 						 state->target_table_name,
 						 get_rel_name(state->foreigntableid))));
-	}
 
 	elog(DEBUG2, "%s: validating 'fetch_size' tables match", __func__);
 	if (fetch_size == 0)
@@ -2079,9 +2073,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 					orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
 			}
 			else if (strcmp(state->rdfTable->cols[i]->name, state->ordering_pgcolumn) == 0)
-			{
 				orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
-			}
 		}
 
 		if (!state->rdfTable->cols[i]->expression)
@@ -2117,8 +2109,6 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		elog(DEBUG2, "orderby_variable = '%s'", orderby_variable);
 	}
 
-	//state->sparql_prefixes = ExtractSPARQLPrefixes(state->raw_sparql);
-	//elog(DEBUG2, "sparql_prefixes = \n\n'%s'", state->sparql_prefixes);
 	LoadPrefixes(state);
 
 	state->sparql_from = DeparseSPARQLFrom(state->raw_sparql);
@@ -2231,7 +2221,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 /*
  * InsertRetrievedData
- * -----------------
+ * -------------------
  *
  * Inserts data retrieved from the triplestore and stoted at the RDFfdwState.
  *
@@ -3963,10 +3953,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			state->is_sparql_parsable = IsSPARQLParsable(state);
 		}
 		else if (strcmp(RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, def->defname) == 0)
-		{
 			state->sparql_update_pattern = defGetString(def);
-			//state->is_sparql_parsable = IsSPARQLParsable(state);
-		}
 		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0)
 			state->log_sparql = defGetBoolean(def);
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
@@ -4475,11 +4462,9 @@ static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, 
 	ptr = repalloc(mem->memory, mem->size + realsize + 1);
 
 	if (!ptr)
-	{
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
 				 errmsg("[%s] out of memory (repalloc returned NULL)", __func__)));
-	}
 
 	mem->memory = ptr;
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
@@ -4832,7 +4817,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			if (state->proxy_user_password)
 			{
 				elog(DEBUG2, "  %s: entering proxy user's password.", __func__);
-				curl_easy_setopt(state->curl, CURLOPT_PROXYUSERPWD, state->proxy_user_password);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYPASSWORD, state->proxy_user_password);
 			}
 		}
 

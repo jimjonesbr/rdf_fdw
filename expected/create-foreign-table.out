@@ -1,7 +1,8 @@
 CREATE SERVER testserver
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (    
-  endpoint 'https://dbpedia.org/sparql'
+  endpoint 'https://dbpedia.org/sparql',
+  connect_timeout '10'
 );
 /* invalid column option - OPTION 'foo' does not exist */
 CREATE FOREIGN TABLE table_error1 (
