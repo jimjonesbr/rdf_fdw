@@ -70,14 +70,9 @@ ifndef SKIP_EXTERNAL_TESTS
 			 blazegraph-pgtypes-wikidata \
 			 blazegraph-rdfnode-wikidata \
 			 graphdb-pgtypes-getty \
-			 graphdb-rdfnode-agrovoc \
 			 describe
 endif
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
-
-#ifeq ($(shell [ "$(MAJORVERSION)" != "906" ] && [ "$(MAJORVERSION)" != "10" ] && echo yes),yes)
-#  REGRESS += exceptions
-#endif
 
 $(info Tests to run: $(REGRESS))
 
