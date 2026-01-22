@@ -331,6 +331,15 @@ INSERT DATA {
     } };
 
 
+INFO:  SPARQL query sent to 'fuseki':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn .
+    } };
+
+
 SELECT * FROM rdbms_fuseki 
 ORDER BY o::text COLLATE "C";
 INFO:  SPARQL query sent to 'fuseki':
@@ -345,10 +354,11 @@ SELECT ?s ?p ?o
       }
     }
 
-INFO:  SPARQL returned 35 records.
+INFO:  SPARQL returned 36 records.
 
                     s                     |                       p                        |                 o                 
 ------------------------------------------+------------------------------------------------+-----------------------------------
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PG"@zh-CN
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "POSTGRE SQL"@vi
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PgSQL"@pl
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre SQL"@sr
@@ -384,7 +394,7 @@ INFO:  SPARQL returned 35 records.
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "โพสต์เกรส"@th
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "ポスグレ"@ja
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "ポストグレスキューエル"@ja
-(35 rows)
+(36 rows)
 
 COPY (
   SELECT s, p , o
@@ -403,8 +413,9 @@ SELECT ?s ?p ?o
       }
     }
 
-INFO:  SPARQL returned 35 records.
+INFO:  SPARQL returned 36 records.
 
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-CN
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE\ SQL"@vi
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PgSQL"@pl
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre\ SQL"@sr
