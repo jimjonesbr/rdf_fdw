@@ -82,7 +82,7 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '2.2';
+CREATE EXTENSION rdf_fdw WITH VERSION '2.3';
 ```
 
 To run the predefined regression tests: 
@@ -106,7 +106,7 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '2.2';
+ALTER EXTENSION rdf_fdw UPDATE TO '2.3';
 ```
 
 ## [Deploy with Docker](#deploy-with-docker)
@@ -124,7 +124,7 @@ FROM postgres:18
 RUN apt-get update && \
     apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
-RUN git clone --branch 2.2.0 https://github.com/jimjonesbr/rdf_fdw.git && \
+RUN git clone --branch v2.3 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
     make -j && \
     make install
@@ -1039,9 +1039,9 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 
 ```sql
 SELECT rdf_fdw_version();
-                                              rdf_fdw_version                                               
-------------------------------------------------------------------------------------------------------------
- rdf_fdw 2.3-dev (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
+                                            rdf_fdw_version                                             
+--------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.3 (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -1063,7 +1063,7 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
- rdf_fdw    | 2.3-dev
+ rdf_fdw    | 2.3
  PostgreSQL | 18.1 (Debian 18.1-1.pgdg13+2)
  libxml     | 2.9.14
  libcurl    | 8.14.1
@@ -1072,7 +1072,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2026-01-15 11:42:30 UTC
+ built      | 2026-01-28 08:13:57 UTC
 (10 rows)
 ```
 
@@ -1113,13 +1113,13 @@ This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `T
 
 `orderby_column`: ordering column used for the pagination - just like in SQL `ORDER BY`. Default `''`, which means that the function will chose a column to use in the `ORDER BY` clause on its own. That is, the procedure will try to set the first column with the option `nodetype` set to `iri`. If the table has no `iri` typed `nodetype`, the first column will be chosen as ordering column. If you do not wish to have an `ORDER BY` clause at all, set this parameter to `NULL`.
 
-`sort_order`: `ASC` or `DESC` to sort the data returned in ascending or descending order, respectivelly. Default `ASC`.
+`sort_order`: `ASC` or `DESC` to sort the data returned in ascending or descending order, respectively. Default `ASC`.
 
 `create_table`: creates the table set in `target_table` before harvesting the `FOREIGN TABLE`. Default `false`.
 
 `verbose`: prints debugging messages in the standard output. Default `false`.
 
-`commit_page`: commits the inserted records immediatelly or only after the transaction is finished. Useful for those who want records to be discarded in case of an error - following the principle of *everything or nothing*. Default `true`, which means that all inserts will me committed immediatelly.
+`commit_page`: commits the inserted records immediately or only after the transaction is finished. Useful for those who want records to be discarded in case of an error - following the principle of *everything or nothing*. Default `true`, which means that all inserts will be committed immediately.
 
 -------
 

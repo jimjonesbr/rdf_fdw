@@ -1572,8 +1572,8 @@ bool contains(char *str_in, char *substr_in)
 
 		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
 		{
-			elog(DEBUG3, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
-			return NULL;
+			elog(DEBUG3, "%s exit: returning 'false' (string and substring have different language tags)", __func__);
+			return false;
 		}
 	}
 

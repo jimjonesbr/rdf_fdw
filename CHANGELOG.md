@@ -1,5 +1,5 @@
 # 2.3.0
-Release date: **YYYY-MM-DD**
+Release date: **2026-01-28**
 
 ## Enhancements
 
