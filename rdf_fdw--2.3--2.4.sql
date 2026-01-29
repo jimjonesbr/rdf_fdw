@@ -1,0 +1,1 @@
+\echo "no changes to apply for rdf_fdw 2.4"

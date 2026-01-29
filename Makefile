@@ -2,7 +2,10 @@ MODULE_big = rdf_fdw
 OBJS = rdf_fdw.o rdf_utils.o sparql.o rdfnode.o
 EXTENSION = rdf_fdw
 DOCS = README.md
-DATA = rdf_fdw--2.3.sql rdf_fdw--2.2.sql rdf_fdw--2.1.sql rdf_fdw--2.1--2.2.sql rdf_fdw--2.2--2.3.sql
+DATA = rdf_fdw--2.4.sql rdf_fdw--2.3--2.4.sql \
+       rdf_fdw--2.3.sql rdf_fdw--2.2--2.3.sql \
+	   rdf_fdw--2.2.sql rdf_fdw--2.1--2.2.sql \
+	   rdf_fdw--2.1.sql
 
 RDF_CONFIG = pkg-config
 CURL_CONFIG = curl-config

@@ -1,4 +1,7 @@
-# 2.3.0
+# 2.4
+Release date: **yyyy-mm-dd**
+
+# 2.3
 Release date: **2026-01-28**
 
 ## Enhancements

@@ -26,5 +26,12 @@ SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
  2.3
 (1 row)
 
+ALTER EXTENSION rdf_fdw UPDATE TO '2.4';
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+ extversion 
+------------
+ 2.4
+(1 row)
+
 DROP SERVER fs CASCADE;
 NOTICE:  drop cascades to foreign table ft

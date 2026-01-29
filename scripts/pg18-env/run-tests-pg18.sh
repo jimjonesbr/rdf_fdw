@@ -88,5 +88,5 @@ docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
 # SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
 # SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 installcheck 
+docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres SKIP_STRESS_TESTS=1 installcheck 
 echo -e "\n== Tests completed ==\n"
