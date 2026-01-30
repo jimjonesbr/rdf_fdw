@@ -172,9 +172,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `batch_size` | optional | Number of rows to accumulate per SPARQL UPDATE request for DML operations (default `50`). Larger batches reduce network overhead but may exceed endpoint limits. |
 | `enable_pushdown` | optional | Enable translation of SQL clauses into SPARQL (default `true`). |
 | `format` | optional | Expected SPARQL result MIME type (default `application/sparql-results+xml`). Set if your endpoint requires a different value. |
-| `http_proxy` | optional | HTTP proxy URL. |
-| `proxy_user` | optional | Proxy username. |
-| `proxy_user_password` | optional | Proxy password. |
+| `http_proxy` | optional | HTTP proxy URL (for authentication, specify `proxy_user` and `proxy_password` in `USER MAPPING`). |
 | `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
 | `connect_retry` | optional | Number of retry attempts on failure (default `3`). |
 | `request_redirect` | optional | Follow HTTP redirects (default `false`). |
@@ -202,12 +200,38 @@ CREATE USER MAPPING FOR postgres
 SERVER graphdb OPTIONS (user 'admin', password 'secret');
 ```
 
+**Proxy Authentication**
+
+If the SPARQL endpoint must be accessed through an HTTP proxy, configure the proxy URL in the `SERVER` using the `http_proxy` option. When the proxy requires authentication, provide the proxy credentials (`proxy_user` and `proxy_password`) in the `USER MAPPING`.
+
+Example with proxy authentication:
+
+```sql
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://fuseki:3030/sparql',
+  http_proxy 'http://my.proxy.im:3128'
+);
+
+CREATE USER MAPPING FOR postgres
+SERVER fuseki
+OPTIONS (
+  user 'admin',
+  password 'secret',
+  proxy_user 'proxyuser',
+  proxy_password 'proxypass'
+);
+```
+
 Options:
 
 | Option | Type | Description |
 |---|---:|---|
 | `user` | **required** | Remote username for authentication. |
 | `password` | optional | Remote user's password (if required by the endpoint). |
+| `proxy_user` | optional | Proxy username (when `http_proxy` is set on the server). |
+| `proxy_password` | optional | Proxy password (when `http_proxy` is set on the server). |
 
 Authentication: when a `user` is supplied, `rdf_fdw` uses HTTP Basic Authentication. Other schemes (OAuth, client certificates, etc.) are not supported by this mapping.
 

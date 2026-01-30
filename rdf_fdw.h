@@ -133,6 +133,8 @@
 /* User mapping options */
 #define RDF_USERMAPPING_OPTION_USER "user"
 #define RDF_USERMAPPING_OPTION_PASSWORD "password"
+#define RDF_USERMAPPING_OPTION_PROXYUSER "proxy_user"
+#define RDF_USERMAPPING_OPTION_PROXYPASSWORD "proxy_password"
 
 /* Server options */
 #define RDF_SERVER_OPTION_SELECT_URL "endpoint"
@@ -145,8 +147,6 @@
 #define RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT "request_max_redirect"
 #define RDF_SERVER_OPTION_HTTP_PROXY "http_proxy"
 #define RDF_SERVER_OPTION_HTTPS_PROXY "https_proxy"
-#define RDF_SERVER_OPTION_PROXY_USER "proxy_user"
-#define RDF_SERVER_OPTION_PROXY_USER_PASSWORD "proxy_user_password"
 #define RDF_SERVER_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
 #define RDF_SERVER_OPTION_QUERY_PARAM "query_param"
 #define RDF_SERVER_OPTION_FETCH_SIZE "fetch_size"

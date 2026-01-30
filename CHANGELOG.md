@@ -1,6 +1,43 @@
 # 2.4
 Release date: **yyyy-mm-dd**
 
+## Breaking Changes
+
+* **Proxy authentication credentials moved to USER MAPPING**: For improved security, proxy authentication credentials (`proxy_user` and `proxy_password`) must now be specified in `USER MAPPING` instead of `SERVER` options. This change prevents proxy passwords from being visible to all users with `USAGE` privilege on the foreign server, as PostgreSQL automatically hides `USER MAPPING` passwords from non-owners.
+
+  **Before (v2.3):**
+  ```sql
+  CREATE SERVER myserver
+  FOREIGN DATA WRAPPER rdf_fdw 
+  OPTIONS (
+    endpoint 'http://fuseki:3030/sparql',
+    http_proxy 'http://proxy:3128',
+    proxy_user 'proxyuser',
+    proxy_user_password 'proxypass'
+  );
+  ```
+
+  **After (v2.4):**
+  ```sql
+  CREATE SERVER myserver
+  FOREIGN DATA WRAPPER rdf_fdw 
+  OPTIONS (
+    endpoint 'http://fuseki:3030/sparql',
+    http_proxy 'http://proxy:3128'  -- Proxy URL stays in SERVER
+  );
+
+  CREATE USER MAPPING FOR myuser
+  SERVER myserver 
+  OPTIONS (
+    user 'admin',
+    password 'secret',
+    proxy_user 'proxyuser',    -- Moved from SERVER
+    proxy_password 'proxypass' -- Moved from SERVER (previously 'proxy_user_password' )
+  );
+  ```
+
+  **Migration**: Existing servers using `proxy_user` or `proxy_user_password` in SERVER options will need to be updated. Remove these options from the server and add them to user mappings instead. The validator will reject the old options with a clear error message.
+
 # 2.3
 Release date: **2026-01-28**
 

@@ -167,8 +167,6 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_HTTP_PROXY, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_HTTPS_PROXY, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_CUSTOMPARAM, ForeignServerRelationId, false, false},
-		{RDF_SERVER_OPTION_PROXY_USER, ForeignServerRelationId, false, false},
-		{RDF_SERVER_OPTION_PROXY_USER_PASSWORD, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_CONNECTTIMEOUT, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_CONNECTRETRY, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_REQUEST_REDIRECT, ForeignServerRelationId, false, false},
@@ -196,6 +194,9 @@ static struct RDFfdwOption valid_options[] =
 		/* User Mapping */
 		{RDF_USERMAPPING_OPTION_USER, UserMappingRelationId, false, false},
 		{RDF_USERMAPPING_OPTION_PASSWORD, UserMappingRelationId, false, false},
+		{RDF_USERMAPPING_OPTION_PROXYUSER, UserMappingRelationId, false, false},
+		{RDF_USERMAPPING_OPTION_PROXYPASSWORD, UserMappingRelationId, false, false},
+
 		/* EOList option */
 		{NULL, InvalidOid, false, false}};
 
@@ -1966,6 +1967,11 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * Load configured FOREIGN TABLE parameters
 	 */
 	LoadRDFTableInfo(state);
+
+	/*
+	 * Load configured USER MAPPING parameters
+	 */
+	LoadRDFUserMapping(state);
 
 	/*
 	 * Here we try to create the target table with the name give in 'target_table'.
@@ -4001,11 +4007,17 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 				state->proxy = defGetString(def);
 				state->proxy_type = RDF_SERVER_OPTION_HTTPS_PROXY;
 			}
-			else if (strcmp(RDF_SERVER_OPTION_PROXY_USER, def->defname) == 0)
-				state->proxy_user = defGetString(def);
 
-			else if (strcmp(RDF_SERVER_OPTION_PROXY_USER_PASSWORD, def->defname) == 0)
-				state->proxy_user_password = defGetString(def);
+			/* these options are now tied to USER MAPPING */
+			if (strcmp(RDF_USERMAPPING_OPTION_PROXYUSER, def->defname) == 0 ||
+				strcmp(RDF_USERMAPPING_OPTION_PROXYPASSWORD, def->defname) == 0)
+			{
+				ereport(WARNING,
+						(errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
+						 errmsg("option \"%s\" is no longer valid for SERVER", def->defname),
+						 errhint("Specify proxy credentials in USER MAPPING instead: "
+								 "CREATE USER MAPPING FOR ... SERVER ... OPTIONS (proxy_user '...', proxy_password '...');")));
+			}
 
 			else if (strcmp(RDF_SERVER_OPTION_FETCH_SIZE, def->defname) == 0)
 			{
@@ -4127,12 +4139,22 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 					state->user = pstrdup(defGetString(def));
 					elog(DEBUG2, "%s: %s '%s'", __func__, def->defname, state->user);
 				}
-
-				if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PASSWORD) == 0)
+				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PASSWORD) == 0)
 				{
 					state->password = pstrdup(defGetString(def));
 					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
 				}
+				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYUSER) == 0)
+				{
+					state->proxy_user= pstrdup(defGetString(def));
+					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
+				}
+				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYPASSWORD) == 0)
+				{
+					state->proxy_user_password= pstrdup(defGetString(def));
+					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
+				}
+
 			}
 		}
 

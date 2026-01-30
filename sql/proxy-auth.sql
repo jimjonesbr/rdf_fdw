@@ -4,8 +4,6 @@ OPTIONS (
   endpoint   'http://fuseki:3030/dt/sparql',
   update_url 'http://fuseki:3030/dt/update',
   http_proxy 'http://172.19.42.101:3128',
-  proxy_user 'proxyuser',
-  proxy_user_password 'proxypass',
   connect_timeout '1');
 
 CREATE FOREIGN TABLE ft (
@@ -20,7 +18,9 @@ SERVER fuseki OPTIONS (
 );
 
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER fuseki OPTIONS (
+  user 'admin', password 'secret',
+  proxy_user 'proxyuser', proxy_password 'proxypass');
 
 /* Correct proxy settings */
 
@@ -47,7 +47,7 @@ SELECT * FROM ft;
 
 /* Wrong user - must fail */
 
-ALTER SERVER fuseki OPTIONS (SET proxy_user 'wronguser');
+ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_user 'wronguser');
 SELECT * FROM ft;
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
 CALL rdf_fdw_clone_table(
@@ -57,7 +57,16 @@ CALL rdf_fdw_clone_table(
 
 /* Wrong password - must fail */
 
-ALTER SERVER fuseki OPTIONS (SET proxy_user 'proxyuser', SET proxy_user_password 'wrongpass');
+ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_user 'proxyuser', SET proxy_password 'wrongpass');
+SELECT * FROM ft;
+SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+CALL rdf_fdw_clone_table(
+        foreign_table => 'public.ft',
+        target_table  => 'public.t1'
+     );
+
+/* No password - must fail */
+ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (DROP proxy_password);
 SELECT * FROM ft;
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
 CALL rdf_fdw_clone_table(
