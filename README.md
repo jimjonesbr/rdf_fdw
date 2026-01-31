@@ -656,7 +656,7 @@ The following expressions in the `WHERE` clause are eligible for pushdown:
 
 * Comparisons involving PostgreSQL data types (e.g., `integer`, `text`, `boolean`) or the custom type `rdfnode`, when used with the supported operators:
 
-  ✅ **Supported Data Types and Operators**
+  **Supported Data Types and Operators**
 
   | Data type                                                  | Operators                             |
   |------------------------------------------------------------|---------------------------------------|
@@ -666,18 +666,18 @@ The following expressions in the `WHERE` clause are eligible for pushdown:
   | `smallint`, `int`, `bigint`, `numeric`, `double precision` | `=`, `<>`, `!=`, `>`, `>=`, `<`, `<=` |
   | `boolean`                                                  | `IS`, `IS NOT`                        |
 
-* ✅ `IN`/`NOT IN` and `ANY` constructs with constant lists.
+* `IN`/`NOT IN` and `ANY` constructs with constant lists.
   
   SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation), as long as the list has the supported data types.
 
-* ✅ Nearly all supported [SPARQL functions](#sparql-functions) are pushdown-capable, including:
+* Nearly all supported [SPARQL functions](#sparql-functions) are pushdown-capable, including:
   * `LANG()`, `DATATYPE()`, `STR()`, `isBLANK()`, `isIRI()`, etc.
   * Numeric, string, and datetime functions such as `ROUND()`, `STRLEN()`, `YEAR()`, and others.
   
 > [!NOTE]  
 > Due to their volatile nature, the SPARQL functions `sparql.rand()` and `sparql.now()` cannot be pushed down. Because their results cannot be reproduced consistently by PostgreSQL, any rows returned from the endpoint would be filtered out locally during re-evaluation.
 
-❌ **Conditions That Prevent Pushdown**
+**Conditions That Prevent Pushdown**
 
 A `WHERE` condition will not be pushed down if:
 
