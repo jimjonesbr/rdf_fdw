@@ -1044,7 +1044,7 @@ Datum rdf_fdw_strbefore(PG_FUNCTION_ARGS)
 	text *delimiter_arg = PG_GETARG_TEXT_PP(1);
 	char *str = text_to_cstring(str_arg);
 	char *delimiter = text_to_cstring(delimiter_arg);
-	
+
 	if (!LiteralsCompatible(str, delimiter))
 	{
 		elog(DEBUG1, "%s exit: returning NULL (literals no compatible)", __func__);
@@ -1060,7 +1060,7 @@ Datum rdf_fdw_strafter(PG_FUNCTION_ARGS)
 	text *delimiter_arg = PG_GETARG_TEXT_PP(1);
 	char *str = text_to_cstring(str_arg);
 	char *delimiter = text_to_cstring(delimiter_arg);
-	
+
 	if (!LiteralsCompatible(str, delimiter))
 	{
 		elog(DEBUG1, "%s exit: returning NULL (literals no compatible)", __func__);
@@ -1503,7 +1503,7 @@ static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value)
 static List *DescribeIRI(RDFfdwState *state)
 {
 	List *triples = NIL;
-	xmlNodePtr root; 
+	xmlNodePtr root;
 	xmlNodePtr description_node;
 	xmlNodePtr property_node;
 	const xmlChar *rdf_ns = (const xmlChar *)RDF_RDF_BASE_URI;
@@ -2723,41 +2723,41 @@ static void rdfGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid forei
 	struct RDFfdwState *state = (struct RDFfdwState *)baserel->fdw_private;
 
 #if PG_VERSION_NUM >= 170000
-    Path *path = (Path *)create_foreignscan_path(root, baserel,
-                                                 NULL,                  /* pathtarget */
-                                                 baserel->rows,
+	Path *path = (Path *)create_foreignscan_path(root, baserel,
+												 NULL, /* pathtarget */
+												 baserel->rows,
 #if PG_VERSION_NUM >= 180000
-                                                 0,                     /* no parallel pathflags */
+												 0, /* no parallel pathflags */
 #endif
-                                                 state->startup_cost,
-                                                 state->total_cost,
-                                                 NIL,                   /* pathkeys */
-                                                 baserel->lateral_relids,
-                                                 NULL,                  /* fdw_outerpath */
-                                                 NIL,                   /* fdw_restrictinfo */
-                                                 NULL);                 /* fdw_private */
+												 state->startup_cost,
+												 state->total_cost,
+												 NIL, /* pathkeys */
+												 baserel->lateral_relids,
+												 NULL,	/* fdw_outerpath */
+												 NIL,	/* fdw_restrictinfo */
+												 NULL); /* fdw_private */
 #elif PG_VERSION_NUM >= 90600
-    Path *path = (Path *)create_foreignscan_path(root, baserel,
-                                                 NULL,                  /* pathtarget */
-                                                 baserel->rows,
-                                                 state->startup_cost,
-                                                 state->total_cost,
-                                                 NIL,
-                                                 baserel->lateral_relids,
-                                                 NULL,
-                                                 NULL);
+	Path *path = (Path *)create_foreignscan_path(root, baserel,
+												 NULL, /* pathtarget */
+												 baserel->rows,
+												 state->startup_cost,
+												 state->total_cost,
+												 NIL,
+												 baserel->lateral_relids,
+												 NULL,
+												 NULL);
 #else /* PG_VERSION_NUM < 90600 (PostgreSQL 9.5) */
-    Path *path = (Path *)create_foreignscan_path(root, baserel,
-                                                 baserel->rows,
-                                                 state->startup_cost,
-                                                 state->total_cost,
-                                                 NIL,
-                                                 baserel->lateral_relids,
-                                                 NULL,
-                                                 NIL);
+	Path *path = (Path *)create_foreignscan_path(root, baserel,
+												 baserel->rows,
+												 state->startup_cost,
+												 state->total_cost,
+												 NIL,
+												 baserel->lateral_relids,
+												 NULL,
+												 NIL);
 #endif
 
-    add_path(baserel, path);
+	add_path(baserel, path);
 }
 
 static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid, ForeignPath *best_path, List *tlist, List *scan_clauses, Plan *outer_plan)
@@ -2843,11 +2843,11 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 	state = DeserializePlanData(fs->fdw_private);
 
 	if (eflags & EXEC_FLAG_EXPLAIN_ONLY)
-    {
-        /* Only set up enough state for EXPLAIN diagnostics */
-        node->fdw_state = (void *)state;
-        return;
-    }
+	{
+		/* Only set up enough state for EXPLAIN diagnostics */
+		node->fdw_state = (void *)state;
+		return;
+	}
 
 	elog(DEBUG2, "%s: initializing XML parser", __func__);
 	xmlInitParser();
@@ -3034,8 +3034,8 @@ static List *rdfPlanForeignModify(PlannerInfo *root, ModifyTable *plan,
 	elog(DEBUG1, "%s called, operation: %d", __func__, operation);
 
 	/*
-	 * For DELETE and UPDATE operations, we need to retrieve all columns from 
-	 * the foreign table so we can properly construct the DELETE pattern with 
+	 * For DELETE and UPDATE operations, we need to retrieve all columns from
+	 * the foreign table so we can properly construct the DELETE pattern with
 	 * variable substitution. For UPDATE, we need the OLD values to construct
 	 * the DELETE part of the DELETE/INSERT operation.
 	 */
@@ -3151,7 +3151,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
-				 errmsg("%s operation requires a valid triple pattern in '%s'", 
+				 errmsg("%s operation requires a valid triple pattern in '%s'",
 						op_name, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN),
 				 errhint("Check the '%s' option in the FOREIGN TABLE.", RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
 	}
@@ -3262,7 +3262,6 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 					(errcode(ERRCODE_FDW_ERROR),
 					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
-
 		/* Skip columns without SPARQL variable mapping */
 		if (!sparql_var || strlen(sparql_var) == 0)
 			continue;
@@ -3285,7 +3284,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
 					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
-							"Filter NULL values in your query or provide default values.")));
+							 "Filter NULL values in your query or provide default values.")));
 
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
@@ -3310,7 +3309,6 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 		/* Only escape if control characters were found */
 		if (needs_escaping)
 			value_str = EscapeSPARQLLiteral(value_str);
-		
 
 		/* Replace the variable placeholder with the actual value */
 		replaced = str_replace(sparql_insert.data, sparql_var, value_str);
@@ -3662,7 +3660,6 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		if (needs_escaping)
 			value_str = EscapeSPARQLLiteral(value_str);
 
-
 		elog(DEBUG2, "%s: DELETE: column '%s' OLD value: %s", __func__, col->name, value_str);
 
 		/* Replace the variable placeholder with the actual OLD value */
@@ -3982,7 +3979,7 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			DefElem *def = lfirst_node(DefElem, cell);
 
 			if (strcmp(RDF_SERVER_OPTION_UPDATE_URL, def->defname) == 0 &&
-				(state->sparql_query_type == SPARQL_INSERT || 
+				(state->sparql_query_type == SPARQL_INSERT ||
 				 state->sparql_query_type == SPARQL_DELETE ||
 				 state->sparql_query_type == SPARQL_UPDATE))
 				state->endpoint = defGetString(def);
@@ -4053,7 +4050,7 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
-			
+
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_XML_HUGE, def->defname) == 0)
 				state->enable_xml_huge = defGetBoolean(def);
 
@@ -4109,9 +4106,9 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 		elog(DEBUG2, "%s: setting UserMapping", __func__);
 		um = (UserMapping *)palloc(sizeof(UserMapping));
 #if PG_VERSION_NUM >= 120000
-    um->umid = ((Form_pg_user_mapping) GETSTRUCT(tp))->oid;
+		um->umid = ((Form_pg_user_mapping)GETSTRUCT(tp))->oid;
 #elif PG_VERSION_NUM >= 90600
-    um->umid = HeapTupleGetOid(tp);
+		um->umid = HeapTupleGetOid(tp);
 #endif
 		um->userid = GetUserId();
 		um->serverid = state->server->serverid;
@@ -4146,15 +4143,14 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 				}
 				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYUSER) == 0)
 				{
-					state->proxy_user= pstrdup(defGetString(def));
+					state->proxy_user = pstrdup(defGetString(def));
 					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
 				}
 				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYPASSWORD) == 0)
 				{
-					state->proxy_user_password= pstrdup(defGetString(def));
+					state->proxy_user_password = pstrdup(defGetString(def));
 					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
 				}
-
 			}
 		}
 
@@ -4210,7 +4206,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->connect_timeout));
 	result = lappend(result, IntToConst((int)state->max_retries));
 	result = lappend(result, OidToConst(state->foreigntableid));
-	
+
 	elog(DEBUG2, "%s: serializing table with %d columns", __func__, state->numcols);
 	for (int i = 0; i < state->numcols; ++i)
 	{
@@ -4566,9 +4562,9 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 {
 
 #if PG_VERSION_NUM >= 90600
-    List *columnlist = baserel->reltarget->exprs;
+	List *columnlist = baserel->reltarget->exprs;
 #else
-    List *columnlist = baserel->reltargetlist;
+	List *columnlist = baserel->reltargetlist;
 #endif
 	List *conditions = baserel->baserestrictinfo;
 	ListCell *cell;
@@ -4759,9 +4755,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	chunk_header.size = 0; /* no data at this point */
 
 	elog(DEBUG1, "%s called for %s operation", __func__,
-		(state->sparql_query_type == SPARQL_INSERT) ? "INSERT" :
-		(state->sparql_query_type == SPARQL_DELETE) ? "DELETE" :
-		(state->sparql_query_type == SPARQL_UPDATE) ? "UPDATE" : "SELECT/DESCRIBE");
+		 (state->sparql_query_type == SPARQL_INSERT) ? "INSERT" : (state->sparql_query_type == SPARQL_DELETE) ? "DELETE"
+															  : (state->sparql_query_type == SPARQL_UPDATE)	  ? "UPDATE"
+																											  : "SELECT/DESCRIBE");
 
 	curl_global_init(CURL_GLOBAL_ALL);
 	state->curl = curl_easy_init();
@@ -5080,7 +5076,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			elog(DEBUG4, "%s: http response header = \n%s", __func__, chunk_header.memory);
 			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);
 			elog(DEBUG2, "%s: http response code = %ld", __func__, response_code);
-			elog(DEBUG2, "%s: http response size = %ld", __func__, chunk.size);			
+			elog(DEBUG2, "%s: http response size = %ld", __func__, chunk.size);
 		}
 	}
 
@@ -5697,8 +5693,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						{
 							/* Empty RDF term - use empty string */
 							node_value = "";
-							elog(DEBUG2, "%s: empty %s for column '%s' (%s)", 
-								 __func__, (char*)node_type, colname, sparqlvar);
+							elog(DEBUG2, "%s: empty %s for column '%s' (%s)",
+								 __func__, (char *)node_type, colname, sparqlvar);
 						}
 						else
 						{
@@ -6985,8 +6981,8 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	initStringInfo(&where_clause);
 	initStringInfo(&filter_expr);
 
-	/* 
-	 * DO NOT initialize remote_conds here! 
+	/*
+	 * DO NOT initialize remote_conds here!
 	 * It should remain NULL for non-parsable queries.
 	 * Only initialize when we actually have pushable conditions.
 	 */
@@ -6994,7 +6990,7 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	foreach (cell, conditions)
 	{
 		RestrictInfo *ri = (RestrictInfo *)lfirst(cell);
-		
+
 		/* deparse expression for pushdown */
 		char *where = DeparseExpr(state, baserel, ri->clause);
 
@@ -7280,7 +7276,7 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
  * Parses the SPARQL PREFIX entries.
  *
  * state  : SPARQL, SERVER and FOREIGN TABLE info
- * 
+ *
  * returns void
  */
 static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
@@ -8204,9 +8200,9 @@ Datum rdfnode_to_int8(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 #if PG_VERSION_NUM >= 100000
-    int64 result = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(p.lex)));
+	int64 result = DatumGetInt64(DirectFunctionCall1(int8in, CStringGetDatum(p.lex)));
 #else
-    int64 result = DatumGetInt64(OidFunctionCall1(F_INT8IN, CStringGetDatum(p.lex)));
+	int64 result = DatumGetInt64(OidFunctionCall1(F_INT8IN, CStringGetDatum(p.lex)));
 #endif
 
 	PG_RETURN_INT64(result);
@@ -10297,7 +10293,7 @@ Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("sum_rdfnode_sfunc called in non-aggregate context")));
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * sum_rdfnode_sfunc()
 	 */
@@ -10320,10 +10316,10 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 {
 	RdfnodeAggState *aggstate;
 
-	/* 
+	/*
 	 * If called with NULL state (empty set or all-NULL inputs),
 	 * return SQL NULL to match SPARQL 1.1 semantics for unbound
-	 * results. 
+	 * results.
 	 */
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
@@ -10335,7 +10331,7 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 	if (aggstate == NULL)
 		PG_RETURN_NULL();
 
-	/* 
+	/*
 	 * If we saw input values but none were numeric, return NULL
 	 * (type errors)
 	 */
@@ -10387,7 +10383,7 @@ Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
 {
 	RdfnodeAggState *aggstate;
 
-	/* 
+	/*
 	 * If called with NULL aggstate (empty set or all-NULL
 	 * inputs), return SQL NULL to match SPARQL 1.1 semantics
 	 * for unbound results. */
@@ -10431,7 +10427,7 @@ Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("min_rdfnode_sfunc called in non-aggregate context")));
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * min_rdfnode_sfunc()
 	 */
@@ -10456,7 +10452,7 @@ Datum rdf_fdw_min_finalfunc(PG_FUNCTION_ARGS)
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * min_rdfnode_finalfunc()
 	 */
@@ -10482,7 +10478,7 @@ Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("max_rdfnode_sfunc called in non-aggregate context")));
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * max_rdfnode_sfunc()
 	 */
@@ -10507,7 +10503,7 @@ Datum rdf_fdw_max_finalfunc(PG_FUNCTION_ARGS)
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * max_rdfnode_finalfunc()
 	 */
@@ -10533,7 +10529,7 @@ Datum rdf_fdw_sample_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("sample_rdfnode_sfunc called in non-aggregate context")));
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * sample_rdfnode_sfunc()
 	 */
@@ -10558,7 +10554,7 @@ Datum rdf_fdw_sample_finalfunc(PG_FUNCTION_ARGS)
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * sample_rdfnode_finalfunc()
 	 */
@@ -10584,7 +10580,7 @@ Datum rdf_fdw_group_concat_sfunc(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("group_concat_rdfnode_sfunc called in non-aggregate context")));
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * group_concat_sfunc()
 	 */
@@ -10605,14 +10601,14 @@ Datum rdf_fdw_group_concat_finalfunc(PG_FUNCTION_ARGS)
 {
 	elog(DEBUG1, "%s called", __func__);
 
-	/* 
+	/*
 	 * NULL state means empty result set - return empty
 	 * string per SPARQL spec
 	 */
 	if (PG_ARGISNULL(0))
 		PG_RETURN_TEXT_P(cstring_to_text(""));
 
-	/* 
+	/*
 	 * Delegate to the actual implementation in
 	 * group_concat_finalfunc()
 	 */
