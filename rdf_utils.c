@@ -5,7 +5,7 @@
  *   Utility functions for RDF data manipulation and validation.
  *
  * Copyright (C) 2022-2026 Jim Jones <jim.jones@uni-muenster.de>
- * 
+ *
  *---------------------------------------------------------------------
  */
 
@@ -44,8 +44,7 @@ static const TypeXSDMap type_map[] = {
 	{TEXTOID, "string"},
 	{NAMEOID, "string"},
 	{TIMESTAMPTZOID, "dateTime"},
-	{InvalidOid, NULL}
-};
+	{InvalidOid, NULL}};
 
 /*
  * ContainsWhitespaces
@@ -304,10 +303,10 @@ char *ExpandDatatypePrefix(char *str)
 	{
 		const char *suffix = stripped_str + strlen(xsd_prefix); /* get part after "xsd:" */
 		initStringInfo(&buf);
-		appendStringInfoChar(&buf, '<');	   /* open bracket */
+		appendStringInfoChar(&buf, '<');				/* open bracket */
 		appendStringInfoString(&buf, RDF_XSD_BASE_URI); /* add XSD URI */
-		appendStringInfoString(&buf, suffix);  /* add suffix */
-		appendStringInfoChar(&buf, '>');	   /* close bracket */
+		appendStringInfoString(&buf, suffix);			/* add suffix */
+		appendStringInfoChar(&buf, '>');				/* close bracket */
 
 		if (stripped_str != str)
 			pfree(stripped_str);
@@ -600,7 +599,6 @@ bool IsFunctionPushable(char *funcname)
 	return result;
 }
 
-
 /*
  * IsRDFStringLiteral
  * ------------------
@@ -634,7 +632,6 @@ bool IsRDFStringLiteral(char *str)
 	elog(DEBUG3, "%s exit: returning 'false' (unsupported datatype '%s')", __func__, str);
 	return false;
 }
-
 
 /*
  * CreateRegexString
@@ -753,7 +750,6 @@ Const *CStringToConst(const char *str)
 	else
 		return makeConst(TEXTOID, -1, InvalidOid, -1, PointerGetDatum(cstring_to_text(str)), false, false);
 }
-
 
 char *rdfnode_to_cstring(rdfnode *node)
 {
@@ -1530,79 +1526,79 @@ char *str_replace(const char *source, const char *search, const char *replace)
  */
 char *EscapeSPARQLLiteral(const char *input)
 {
-StringInfoData result;
-const char *ptr;
-const char *closing_quote = NULL;
-const char *lang_or_type = NULL;
+	StringInfoData result;
+	const char *ptr;
+	const char *closing_quote = NULL;
+	const char *lang_or_type = NULL;
 
-if (!input || strlen(input) == 0)
-return (char *)input;
+	if (!input || strlen(input) == 0)
+		return (char *)input;
 
-/* Check if this is an IRI - no escaping needed */
-if (input[0] == '<')
-return (char *)input;
+	/* Check if this is an IRI - no escaping needed */
+	if (input[0] == '<')
+		return (char *)input;
 
-/* Check if this is a quoted literal */
-if (input[0] != '"')
-return (char *)input;
+	/* Check if this is a quoted literal */
+	if (input[0] != '"')
+		return (char *)input;
 
-initStringInfo(&result);
+	initStringInfo(&result);
 
-/* Find the closing quote (not preceded by backslash) */
-ptr = input + 1; /* skip opening quote */
-while (*ptr != '\0')
-{
-if (*ptr == '"' && (ptr == input + 1 || *(ptr - 1) != '\\'))
-{
-closing_quote = ptr;
-/* Check what follows the closing quote */
-if (ptr[1] == '@' || (ptr[1] == '^' && ptr[2] == '^') || ptr[1] == '\0')
-{
-lang_or_type = ptr + 1; /* Point to @lang or ^^type or end of string */
-break;
-}
-}
-ptr++;
-}
+	/* Find the closing quote (not preceded by backslash) */
+	ptr = input + 1; /* skip opening quote */
+	while (*ptr != '\0')
+	{
+		if (*ptr == '"' && (ptr == input + 1 || *(ptr - 1) != '\\'))
+		{
+			closing_quote = ptr;
+			/* Check what follows the closing quote */
+			if (ptr[1] == '@' || (ptr[1] == '^' && ptr[2] == '^') || ptr[1] == '\0')
+			{
+				lang_or_type = ptr + 1; /* Point to @lang or ^^type or end of string */
+				break;
+			}
+		}
+		ptr++;
+	}
 
-if (!closing_quote)
-{
-/* Malformed literal - return as-is */
-return (char *)input;
-}
+	if (!closing_quote)
+	{
+		/* Malformed literal - return as-is */
+		return (char *)input;
+	}
 
-/* Escape the content between quotes */
-appendStringInfoChar(&result, '"'); /* opening quote */
-ptr = input + 1; /* reset to start of content */
+	/* Escape the content between quotes */
+	appendStringInfoChar(&result, '"'); /* opening quote */
+	ptr = input + 1;					/* reset to start of content */
 
-while (ptr < closing_quote)
-{
-switch (*ptr)
-{
-case '\n':
-appendStringInfoString(&result, "\\n");
-break;
-case '\r':
-appendStringInfoString(&result, "\\r");
-break;
-case '\t':
-appendStringInfoString(&result, "\\t");
-break;
-default:
-appendStringInfoChar(&result, *ptr);
-break;
-}
-ptr++;
-}
+	while (ptr < closing_quote)
+	{
+		switch (*ptr)
+		{
+		case '\n':
+			appendStringInfoString(&result, "\\n");
+			break;
+		case '\r':
+			appendStringInfoString(&result, "\\r");
+			break;
+		case '\t':
+			appendStringInfoString(&result, "\\t");
+			break;
+		default:
+			appendStringInfoChar(&result, *ptr);
+			break;
+		}
+		ptr++;
+	}
 
-/* Add closing quote */
-appendStringInfoChar(&result, '"');
+	/* Add closing quote */
+	appendStringInfoChar(&result, '"');
 
-/* Add language tag or datatype if present */
-if (lang_or_type && *lang_or_type != '\0')
-{
-appendStringInfoString(&result, lang_or_type);
-}
+	/* Add language tag or datatype if present */
+	if (lang_or_type && *lang_or_type != '\0')
+	{
+		appendStringInfoString(&result, lang_or_type);
+	}
 
-return result.data;
+	return result.data;
 }

@@ -7,10 +7,10 @@
  * type checking.
  *
  * Copyright (C) 2022-2026 Jim Jones <jim.jones@uni-muenster.de>
- * 
+ *
  *---------------------------------------------------------------------
  */
- 
+
 #include "postgres.h"
 
 #include "rdf_fdw.h"
@@ -1157,86 +1157,86 @@ char *generate_uuid_v4(void)
  */
 char *substr_sparql(char *str, int start, int length)
 {
-	char *lexical;
-	char *str_datatype;
-	char *str_language;
-	char *result;
-	text *input_text;
-	text *substr_text;
-	int str_len;
+    char *lexical;
+    char *str_datatype;
+    char *str_language;
+    char *result;
+    text *input_text;
+    text *substr_text;
+    int str_len;
 
-	elog(DEBUG3, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
+    elog(DEBUG3, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
 
-	if (!str)
-		ereport(ERROR,
-				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
-				 errmsg("SUBSTR cannot be NULL")));
+    if (!str)
+        ereport(ERROR,
+                (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
+                 errmsg("SUBSTR cannot be NULL")));
 
-	if (start < 1)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("SUBSTR start position must be >= 1")));
+    if (start < 1)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("SUBSTR start position must be >= 1")));
 
-	if (isIRI(str) || isBlank(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("SUBSTR not allowed on IRI or blank node: %s", str)));
+    if (isIRI(str) || isBlank(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("SUBSTR not allowed on IRI or blank node: %s", str)));
 
-	lexical = lex(str);
-	str_datatype = datatype(str);
-	str_language = lang(str);
+    lexical = lex(str);
+    str_datatype = datatype(str);
+    str_language = lang(str);
 
-	elog(DEBUG3, "%s: lexical='%s', datatype='%s', language='%s'", __func__,
-		 lexical, str_datatype, str_language);
+    elog(DEBUG3, "%s: lexical='%s', datatype='%s', language='%s'", __func__,
+         lexical, str_datatype, str_language);
 
-	/* Check if start is beyond string length - return empty string */
-	str_len = pg_mbstrlen(lexical);
-	if (start > str_len)
-	{
-		if (strlen(str_language) > 0)
-			return strlang("", str_language);
-		else if (strlen(str_datatype) > 0)
-			return strdt("", str_datatype);
-		else
-			return cstring_to_rdfliteral("");
-	}
+    /* Check if start is beyond string length - return empty string */
+    str_len = pg_mbstrlen(lexical);
+    if (start > str_len)
+    {
+        if (strlen(str_language) > 0)
+            return strlang("", str_language);
+        else if (strlen(str_datatype) > 0)
+            return strdt("", str_datatype);
+        else
+            return cstring_to_rdfliteral("");
+    }
 
-	/* Use PostgreSQL's text_substr which handles UTF-8 correctly */
-	input_text = cstring_to_text(lexical);
-	
-	if (length >= 0)
-	{
-		/* text_substr is 1-based and handles UTF-8 character boundaries */
-		substr_text = DatumGetTextP(DirectFunctionCall3(
-			text_substr,
-			PointerGetDatum(input_text),
-			Int32GetDatum(start),
-			Int32GetDatum(length)));
-	}
-	else
-	{
-		/* No length specified - take from start to end */
-		substr_text = DatumGetTextP(DirectFunctionCall3(
-			text_substr,
-			PointerGetDatum(input_text),
-			Int32GetDatum(start),
-			Int32GetDatum(str_len - start + 1)));
-	}
+    /* Use PostgreSQL's text_substr which handles UTF-8 correctly */
+    input_text = cstring_to_text(lexical);
 
-	lexical = text_to_cstring(substr_text);
+    if (length >= 0)
+    {
+        /* text_substr is 1-based and handles UTF-8 character boundaries */
+        substr_text = DatumGetTextP(DirectFunctionCall3(
+            text_substr,
+            PointerGetDatum(input_text),
+            Int32GetDatum(start),
+            Int32GetDatum(length)));
+    }
+    else
+    {
+        /* No length specified - take from start to end */
+        substr_text = DatumGetTextP(DirectFunctionCall3(
+            text_substr,
+            PointerGetDatum(input_text),
+            Int32GetDatum(start),
+            Int32GetDatum(str_len - start + 1)));
+    }
 
-	if (strlen(str_language) > 0)
-		result = strlang(lexical, str_language);
-	else if (strlen(str_datatype) > 0)
-		result = strdt(lexical, str_datatype);
-	else
-		result = cstring_to_rdfliteral(lexical);
+    lexical = text_to_cstring(substr_text);
 
-	pfree(input_text);
-	pfree(substr_text);
+    if (strlen(str_language) > 0)
+        result = strlang(lexical, str_language);
+    else if (strlen(str_datatype) > 0)
+        result = strdt(lexical, str_datatype);
+    else
+        result = cstring_to_rdfliteral(lexical);
 
-	elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
-	return result;
+    pfree(input_text);
+    pfree(substr_text);
+
+    elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
+    return result;
 }
 
 /*
@@ -1254,53 +1254,53 @@ char *substr_sparql(char *str, int start, int length)
  */
 char *lcase(char *str)
 {
-	char *lexical;
-	char *str_datatype;
-	char *str_language;
-	char *result;
+    char *lexical;
+    char *str_datatype;
+    char *str_language;
+    char *result;
 
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
-	if (!str)
-		ereport(ERROR,
-				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("LCASE cannot be NULL")));
+    if (!str)
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("LCASE cannot be NULL")));
 
-	if (strlen(str) == 0)
-	{
-		elog(DEBUG3, "%s exit: returning empty literal (str is an empty string)", __func__);
-		return cstring_to_rdfliteral("");
-	}
+    if (strlen(str) == 0)
+    {
+        elog(DEBUG3, "%s exit: returning empty literal (str is an empty string)", __func__);
+        return cstring_to_rdfliteral("");
+    }
 
-	/* Check for IRIs or blank nodes */
-	if (isIRI(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("LCASE does not allow IRIs: %s", str)));
+    /* Check for IRIs or blank nodes */
+    if (isIRI(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("LCASE does not allow IRIs: %s", str)));
 
-	if (isBlank(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("LCASE does not allow blank nodes: %s", str)));
+    if (isBlank(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("LCASE does not allow blank nodes: %s", str)));
 
-	lexical = lex(str);
+    lexical = lex(str);
 
-	if (lexical == NULL)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("LCASE failed to extract lexical value: %s", str)));
+    if (lexical == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("LCASE failed to extract lexical value: %s", str)));
 
-	str_datatype = datatype(str);
+    str_datatype = datatype(str);
 
-	if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("LCASE does not allow non-string literals: %s",
-						str_datatype)));
+    if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("LCASE does not allow non-string literals: %s",
+                        str_datatype)));
 
-	str_language = lang(str);
+    str_language = lang(str);
 
-	elog(DEBUG3, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+    elog(DEBUG3, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
     /* Convert to lowercase using PostgreSQL's multibyte-aware function */
     {
@@ -1327,7 +1327,7 @@ char *lcase(char *str)
     }
 
     elog(DEBUG3, "%s exit: returning '%s'", __func__, result);
-	return result;
+    return result;
 }
 
 /*
@@ -1345,53 +1345,53 @@ char *lcase(char *str)
  */
 char *ucase(char *str)
 {
-	char *lexical;
-	char *str_datatype;
-	char *str_language;
-	char *result;
+    char *lexical;
+    char *str_datatype;
+    char *str_language;
+    char *result;
 
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
-	if (!str)
-		ereport(ERROR,
-				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("LCASE cannot be NULL")));
+    if (!str)
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("LCASE cannot be NULL")));
 
-	if (strlen(str) == 0)
-	{
-		elog(DEBUG3, "%s exit: returning empty literal (str is an empty string)", __func__);
-		return cstring_to_rdfliteral("");
-	}
+    if (strlen(str) == 0)
+    {
+        elog(DEBUG3, "%s exit: returning empty literal (str is an empty string)", __func__);
+        return cstring_to_rdfliteral("");
+    }
 
-	/* Check for IRIs or blank nodes */
-	if (isIRI(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("UCASE does not allow IRIs: %s", str)));
+    /* Check for IRIs or blank nodes */
+    if (isIRI(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("UCASE does not allow IRIs: %s", str)));
 
-	if (isBlank(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("UCASE does not allow blank nodes: %s", str)));
+    if (isBlank(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("UCASE does not allow blank nodes: %s", str)));
 
-	lexical = lex(str);
+    lexical = lex(str);
 
-	if (lexical == NULL)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("UCASE failed to extract lexical value: %s", str)));
+    if (lexical == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("UCASE failed to extract lexical value: %s", str)));
 
-	str_datatype = datatype(str);
+    str_datatype = datatype(str);
 
-	if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("UCASE does not allow non-string literals: %s",
-						str_datatype)));
+    if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("UCASE does not allow non-string literals: %s",
+                        str_datatype)));
 
-	str_language = lang(str);
+    str_language = lang(str);
 
-	elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+    elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
     /* Convert to uppercase using PostgreSQL's multibyte-aware function */
     {
@@ -1418,7 +1418,7 @@ char *ucase(char *str)
     }
 
     elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-	return result;
+    return result;
 }
 
 /*
@@ -1435,103 +1435,103 @@ char *ucase(char *str)
  */
 bool isNumeric(char *term)
 {
-	char *lexical;
-	char *datatype_uri;
-	bool is_bare_number = false;
-	char *endptr;
+    char *lexical;
+    char *datatype_uri;
+    bool is_bare_number = false;
+    char *endptr;
 
-	elog(DEBUG3, "%s called: term='%s'", __func__, term);
+    elog(DEBUG3, "%s called: term='%s'", __func__, term);
 
-	if (!term || strlen(term) == 0)
-	{
-		elog(DEBUG3, "%s exit: returning 'false' (term either NULL or an empty string)", __func__);
-		return false;
-	}
+    if (!term || strlen(term) == 0)
+    {
+        elog(DEBUG3, "%s exit: returning 'false' (term either NULL or an empty string)", __func__);
+        return false;
+    }
 
-	/* Check if term is a bare number (e.g., "12") */
-	if (term[0] != '"' && !strstr(term, "^^") && !strstr(term, "@"))
-	{
-		lexical = term;
-		is_bare_number = true;
-	}
-	else
-	{
-		/* Extract lexical value using datatype’s helper */
-		lexical = lex(term); /* From datatype/strdt codebase */
-	}
+    /* Check if term is a bare number (e.g., "12") */
+    if (term[0] != '"' && !strstr(term, "^^") && !strstr(term, "@"))
+    {
+        lexical = term;
+        is_bare_number = true;
+    }
+    else
+    {
+        /* Extract lexical value using datatype’s helper */
+        lexical = lex(term); /* From datatype/strdt codebase */
+    }
 
-	/* Validate lexical form as numeric (integers, decimals, or scientific notation) */
-	if (!lexical || strlen(lexical) == 0)
-	{
-		elog(DEBUG3, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
-		return false;
-	}
+    /* Validate lexical form as numeric (integers, decimals, or scientific notation) */
+    if (!lexical || strlen(lexical) == 0)
+    {
+        elog(DEBUG3, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
+        return false;
+    }
 
-	strtod(lexical, &endptr);
-	if (*endptr != '\0') /* not a valid number, e.g., "abc" */
-	{
-		elog(DEBUG3, "%s exit: returning 'false' (not a valid number)", __func__);
-		return false;
-	}
+    strtod(lexical, &endptr);
+    if (*endptr != '\0') /* not a valid number, e.g., "abc" */
+    {
+        elog(DEBUG3, "%s exit: returning 'false' (not a valid number)", __func__);
+        return false;
+    }
 
-	/* Bare numbers are numeric */
-	if (is_bare_number)
-	{
-		elog(DEBUG3, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
-		return true;
-	}
+    /* Bare numbers are numeric */
+    if (is_bare_number)
+    {
+        elog(DEBUG3, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
+        return true;
+    }
 
-	/* Get datatype using datatype function */
-	datatype_uri = datatype(term);
-	if (strlen(datatype_uri) == 0)
-	{
-		elog(DEBUG3, "%s exit: returning 'false' (no datatype or invalid literal)", __func__);
-		return false;
-	} /* No datatype or invalid literal (e.g., "12") */
+    /* Get datatype using datatype function */
+    datatype_uri = datatype(term);
+    if (strlen(datatype_uri) == 0)
+    {
+        elog(DEBUG3, "%s exit: returning 'false' (no datatype or invalid literal)", __func__);
+        return false;
+    } /* No datatype or invalid literal (e.g., "12") */
 
-	/* Check for numeric datatypes */
-	if (strcmp(datatype_uri, RDF_XSD_INTEGER) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_POSITIVEINTEGER) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_NEGATIVEINTEGER) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_NONPOSITIVEINTEGER) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_LONG) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_INT) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_BYTE) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_SHORT) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_UNSIGNEDLONG) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_UNSIGNEDINT) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_UNSIGNEDSHORT) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_UNSIGNEDBYTE) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_DOUBLE) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_FLOAT) == 0 ||
-		strcmp(datatype_uri, RDF_XSD_DECIMAL) == 0)
-	{
-		/* Special case for xsd:byte: SPARQL requires values to be integers between -128 and 127.
-		 * For example, isNumeric("1200"^^xsd:byte) returns false because 1200 exceeds 127.
-		 * We parse the lexical value to ensure it’s a valid integer and check its range. */
-		if (strcmp(datatype_uri, RDF_XSD_BYTE) == 0)
-		{
-			/* Ensure the entire string is a valid integer and within xsd:byte range */
-			if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
-			{
-				elog(DEBUG3, "%s exit: returning 'false' (not a pure integer)", __func__);
-				return false;
-			}
+    /* Check for numeric datatypes */
+    if (strcmp(datatype_uri, RDF_XSD_INTEGER) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_POSITIVEINTEGER) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_NEGATIVEINTEGER) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_NONPOSITIVEINTEGER) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_LONG) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_INT) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_BYTE) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_SHORT) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_UNSIGNEDLONG) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_UNSIGNEDINT) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_UNSIGNEDSHORT) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_UNSIGNEDBYTE) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_DOUBLE) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_FLOAT) == 0 ||
+        strcmp(datatype_uri, RDF_XSD_DECIMAL) == 0)
+    {
+        /* Special case for xsd:byte: SPARQL requires values to be integers between -128 and 127.
+         * For example, isNumeric("1200"^^xsd:byte) returns false because 1200 exceeds 127.
+         * We parse the lexical value to ensure it’s a valid integer and check its range. */
+        if (strcmp(datatype_uri, RDF_XSD_BYTE) == 0)
+        {
+            /* Ensure the entire string is a valid integer and within xsd:byte range */
+            if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
+            {
+                elog(DEBUG3, "%s exit: returning 'false' (not a pure integer)", __func__);
+                return false;
+            }
 
-			elog(DEBUG3, "%s exit: returning 'true' (valid xsd:byte)", __func__);
-			return true; /* Valid xsd:byte, e.g., "100" */
-		}
-		/* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
-		 * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
-		 * Accept them as numeric. */
+            elog(DEBUG3, "%s exit: returning 'true' (valid xsd:byte)", __func__);
+            return true; /* Valid xsd:byte, e.g., "100" */
+        }
+        /* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
+         * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
+         * Accept them as numeric. */
 
-		elog(DEBUG3, "%s exit: returning 'true'", __func__);
-		return true;
-	}
+        elog(DEBUG3, "%s exit: returning 'true'", __func__);
+        return true;
+    }
 
-	elog(DEBUG3, "%s exit: returning 'false'", __func__);
-	return false;
+    elog(DEBUG3, "%s exit: returning 'false'", __func__);
+    return false;
 }
 
 /*
@@ -1550,44 +1550,44 @@ bool isNumeric(char *term)
  */
 bool contains(char *str_in, char *substr_in)
 {
-	char *str_lex;
-	char *substr_lex;
-	char *lang_str;
-	bool result;
+    char *str_lex;
+    char *substr_lex;
+    char *lang_str;
+    bool result;
 
-	elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
+    elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
 
-	/* handle NULL or empty inputs */
-	if (!str_in || !substr_in || strlen(str_in) == 0 || strlen(substr_in) == 0)
-	{
-		elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
-		return false;
-	}
+    /* handle NULL or empty inputs */
+    if (!str_in || !substr_in || strlen(str_in) == 0 || strlen(substr_in) == 0)
+    {
+        elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
+        return false;
+    }
 
-	lang_str = lang(str_in);
+    lang_str = lang(str_in);
 
-	if (strlen(lang_str) != 0)
-	{
-		char *lang_substr = lang(substr_in);
+    if (strlen(lang_str) != 0)
+    {
+        char *lang_substr = lang(substr_in);
 
-		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
-		{
-			elog(DEBUG3, "%s exit: returning 'false' (string and substring have different language tags)", __func__);
-			return false;
-		}
-	}
+        if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
+        {
+            elog(DEBUG3, "%s exit: returning 'false' (string and substring have different language tags)", __func__);
+            return false;
+        }
+    }
 
-	/* extract lexical values (strips quotes, tags, etc.) */
-	str_lex = lex(str_in);
-	substr_lex = lex(substr_in);
+    /* extract lexical values (strips quotes, tags, etc.) */
+    str_lex = lex(str_in);
+    substr_lex = lex(substr_in);
 
-	/* check if substr is in str using strstr */
-	result = (strstr(str_lex, substr_lex) != NULL);
+    /* check if substr is in str using strstr */
+    result = (strstr(str_lex, substr_lex) != NULL);
 
-	elog(DEBUG3, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
-		 __func__, result ? "true" : "false", str_lex, substr_lex);
+    elog(DEBUG3, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
+         __func__, result ? "true" : "false", str_lex, substr_lex);
 
-	return result;
+    return result;
 }
 
 /*
@@ -1606,90 +1606,89 @@ bool contains(char *str_in, char *substr_in)
  */
 char *strbefore(char *str, char *delimiter)
 {
-	char *str_lexical;
-	char *delimiter_lexical;
-	char *lang1;
-	char *dt1 = "";
-	char *pos;
-	char *result;
+    char *str_lexical;
+    char *delimiter_lexical;
+    char *lang1;
+    char *dt1 = "";
+    char *pos;
+    char *result;
 
-	elog(DEBUG3, "%s called: str='%s', delimiter='%s", __func__, str, delimiter);
+    elog(DEBUG3, "%s called: str='%s', delimiter='%s", __func__, str, delimiter);
 
-	str_lexical = lex(str);
-	delimiter_lexical = lex(delimiter);
-	lang1 = lang(str);
+    str_lexical = lex(str);
+    delimiter_lexical = lex(delimiter);
+    lang1 = lang(str);
 
-	/* extract datatypes if no language tags */
-	if (strlen(lang1) == 0)
-		dt1 = datatype(str);
+    /* extract datatypes if no language tags */
+    if (strlen(lang1) == 0)
+        dt1 = datatype(str);
 
-	if (!LiteralsCompatible(str, delimiter))
-	{
-		elog(DEBUG3, "%s exit: returning NULL (literals no compatible)", __func__);
-		return NULL;
-	}
+    if (!LiteralsCompatible(str, delimiter))
+    {
+        elog(DEBUG3, "%s exit: returning NULL (literals no compatible)", __func__);
+        return NULL;
+    }
 
-	if ((pos = strstr(str_lexical, delimiter_lexical)) != NULL)
-	{
-		size_t before_len = pos - str_lexical;
-		StringInfoData buf;
-		initStringInfo(&buf);
+    if ((pos = strstr(str_lexical, delimiter_lexical)) != NULL)
+    {
+        size_t before_len = pos - str_lexical;
+        StringInfoData buf;
+        initStringInfo(&buf);
 
-		if (strlen(lang1) > 0)
-		{
-			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = strlang(buf.data, lang1);
+        if (strlen(lang1) > 0)
+        {
+            appendBinaryStringInfo(&buf, str_lexical, before_len);
+            result = strlang(buf.data, lang1);
 
-			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-			return result;
-		}
-		else if (strlen(dt1) > 0 && /* only for explicit ^^ */
-				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
-		{
-			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = cstring_to_rdfliteral(buf.data);
-			if (strstr(result, "^^") == NULL)
-			{
-				result = strdt(buf.data, dt1);
-			}
+            elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+            return result;
+        }
+        else if (strlen(dt1) > 0 && /* only for explicit ^^ */
+                 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+        {
+            appendBinaryStringInfo(&buf, str_lexical, before_len);
+            result = cstring_to_rdfliteral(buf.data);
+            if (strstr(result, "^^") == NULL)
+            {
+                result = strdt(buf.data, dt1);
+            }
 
-			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-			return result;
-		}
-		else
-		{
-			/* simple literal or implicit xsd:string */
-			appendBinaryStringInfo(&buf, str_lexical, before_len);
-			result = cstring_to_rdfliteral(buf.data);
+            elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+            return result;
+        }
+        else
+        {
+            /* simple literal or implicit xsd:string */
+            appendBinaryStringInfo(&buf, str_lexical, before_len);
+            result = cstring_to_rdfliteral(buf.data);
 
-			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-			return result;
-		}
-	}
+            elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+            return result;
+        }
+    }
 
-	/* delimiter not found */
-	if (strlen(dt1) > 0 &&
-		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
-	{
-		result = cstring_to_rdfliteral("");
-		if (strstr(result, "^^") == NULL)
-		{
-			StringInfoData typed_buf;
-			initStringInfo(&typed_buf);
-			appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
-			result = typed_buf.data;
-		}
+    /* delimiter not found */
+    if (strlen(dt1) > 0 &&
+        (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+    {
+        result = cstring_to_rdfliteral("");
+        if (strstr(result, "^^") == NULL)
+        {
+            StringInfoData typed_buf;
+            initStringInfo(&typed_buf);
+            appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
+            result = typed_buf.data;
+        }
 
-		elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-		return result;
-	}
+        elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+        return result;
+    }
 
-	result = cstring_to_rdfliteral("");
-	elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+    result = cstring_to_rdfliteral("");
+    elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
 
-	return result;
+    return result;
 }
-
 
 /*
  * strafter
@@ -1710,90 +1709,90 @@ char *strafter(char *str, char *delimiter)
 {
     char *lexstr;
     char *lexdelimiter;
-	char *lang1;
-	char *dt1 = "";
-	char *pos;
-	bool has_explicit_datatype = false;
-	char *result;
+    char *lang1;
+    char *dt1 = "";
+    char *pos;
+    bool has_explicit_datatype = false;
+    char *result;
 
-	elog(DEBUG3, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
+    elog(DEBUG3, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
 
-	lexstr = lex(str);
-	lexdelimiter = lex(delimiter);
-	lang1 = lang(str);
+    lexstr = lex(str);
+    lexdelimiter = lex(delimiter);
+    lang1 = lang(str);
 
-	/* extract datatype if no language tag */
-	if (strlen(lang1) == 0)
-		dt1 = datatype(str);
+    /* extract datatype if no language tag */
+    if (strlen(lang1) == 0)
+        dt1 = datatype(str);
 
-	/* check if arg1 has an explicit datatype in the input syntax */
-	if (strlen(lang1) == 0 && strstr(str, "^^") != NULL)
-		has_explicit_datatype = true;
+    /* check if arg1 has an explicit datatype in the input syntax */
+    if (strlen(lang1) == 0 && strstr(str, "^^") != NULL)
+        has_explicit_datatype = true;
 
-	if ((pos = strstr(lexstr, lexdelimiter)) != NULL)
-	{
-		size_t delimiter_len = strlen(lexdelimiter);
-		char *after_start = pos + delimiter_len;
-		size_t after_len = strlen(lexstr) - (after_start - lexstr);
+    if ((pos = strstr(lexstr, lexdelimiter)) != NULL)
+    {
+        size_t delimiter_len = strlen(lexdelimiter);
+        char *after_start = pos + delimiter_len;
+        size_t after_len = strlen(lexstr) - (after_start - lexstr);
 
-		StringInfoData buf;
-		initStringInfo(&buf);
+        StringInfoData buf;
+        initStringInfo(&buf);
 
-		if (strlen(lang1) > 0)
-		{
-			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = strlang(buf.data, lang1);
-			pfree(buf.data);
+        if (strlen(lang1) > 0)
+        {
+            appendBinaryStringInfo(&buf, after_start, after_len);
+            result = strlang(buf.data, lang1);
+            pfree(buf.data);
 
-			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-			return result;
-		}
-		else if (has_explicit_datatype && strlen(dt1) > 0 &&
-				 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
-		{
-			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = cstring_to_rdfliteral(buf.data);
-			if (strstr(result, "^^") == NULL)
-			{
-				result = strdt(buf.data, dt1);
-			}
-			pfree(buf.data);
+            elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+            return result;
+        }
+        else if (has_explicit_datatype && strlen(dt1) > 0 &&
+                 (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+        {
+            appendBinaryStringInfo(&buf, after_start, after_len);
+            result = cstring_to_rdfliteral(buf.data);
+            if (strstr(result, "^^") == NULL)
+            {
+                result = strdt(buf.data, dt1);
+            }
+            pfree(buf.data);
 
-			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-			return result;
-		}
-		else
-		{
-			/* simple literal or implicit xsd:string */
-			appendBinaryStringInfo(&buf, after_start, after_len);
-			result = cstring_to_rdfliteral(buf.data);
-			pfree(buf.data);
+            elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+            return result;
+        }
+        else
+        {
+            /* simple literal or implicit xsd:string */
+            appendBinaryStringInfo(&buf, after_start, after_len);
+            result = cstring_to_rdfliteral(buf.data);
+            pfree(buf.data);
 
-			elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-			return result;
-		}
-	}
+            elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+            return result;
+        }
+    }
 
-	/* delimiter not found */
-	if (has_explicit_datatype && strlen(dt1) > 0 &&
-		(strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
-	{
-		result = cstring_to_rdfliteral("");
-		if (strstr(result, "^^") == NULL)
-		{
-			StringInfoData typed_buf;
-			initStringInfo(&typed_buf);
-			appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
-			result = typed_buf.data;
-		}
+    /* delimiter not found */
+    if (has_explicit_datatype && strlen(dt1) > 0 &&
+        (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
+    {
+        result = cstring_to_rdfliteral("");
+        if (strstr(result, "^^") == NULL)
+        {
+            StringInfoData typed_buf;
+            initStringInfo(&typed_buf);
+            appendStringInfo(&typed_buf, "%s", strdt("", RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED));
+            result = typed_buf.data;
+        }
 
-		elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-		return result;
-	}
+        elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+        return result;
+    }
 
-	result = cstring_to_rdfliteral("");
-	elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
-	return result;
+    result = cstring_to_rdfliteral("");
+    elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+    return result;
 }
 
 /*
@@ -1805,100 +1804,100 @@ char *strafter(char *str, char *delimiter)
  */
 static int count_utf8_chars(const char *str)
 {
-	int char_count = 0;
+    int char_count = 0;
 
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
-	while (*str)
-	{
-		/* Skip continuation bytes (0x80-0xBF) */
-		if ((*str & 0xC0) != 0x80)
-			char_count++;
-		str++;
-	}
+    while (*str)
+    {
+        /* Skip continuation bytes (0x80-0xBF) */
+        if ((*str & 0xC0) != 0x80)
+            char_count++;
+        str++;
+    }
 
-	elog(DEBUG3, "%s exit: returning '%d'", __func__, char_count);
-	return char_count;
+    elog(DEBUG3, "%s exit: returning '%d'", __func__, char_count);
+    return char_count;
 }
 
 int strlen_rdf(char *str)
 {
-	char *lexical;
-	char *dt;
-	int result;
+    char *lexical;
+    char *dt;
+    int result;
 
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
-	if (!str)
-		ereport(ERROR,
-				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("STRLEN cannot be NULL")));
+    if (!str)
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("STRLEN cannot be NULL")));
 
-	if (strlen(str) == 0)
-		return 0;
+    if (strlen(str) == 0)
+        return 0;
 
-	/* Check for IRIs or blank nodes */
-	if (isIRI(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("STRLEN does not allow IRIs: %s", str)));
+    /* Check for IRIs or blank nodes */
+    if (isIRI(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("STRLEN does not allow IRIs: %s", str)));
 
-	if (isBlank(str))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("STRLEN does not allow blank nodes: %s", str)));
+    if (isBlank(str))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("STRLEN does not allow blank nodes: %s", str)));
 
-	dt = datatype(str);
+    dt = datatype(str);
 
-	/* Validate string literal */
-	if (!IsRDFStringLiteral(dt))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("STRLEN does not allow non-string literals: %s", dt)));
+    /* Validate string literal */
+    if (!IsRDFStringLiteral(dt))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("STRLEN does not allow non-string literals: %s", dt)));
 
-	lexical = lex(str);
-	result = count_utf8_chars(lexical);
+    lexical = lex(str);
+    result = count_utf8_chars(lexical);
 
-	elog(DEBUG3, "%s exit: returning '%d'", __func__, result);
-	return result;
+    elog(DEBUG3, "%s exit: returning '%d'", __func__, result);
+    return result;
 }
 
 /*
  * get_xsd_numeric_type
  * --------------------
  * Determines the XSD numeric type from an rdfnode's datatype URI.
- * 
+ *
  * Returns the type in the promotion hierarchy: integer < decimal < float < double
  */
 XsdNumericType get_xsd_numeric_type(const char *dtype)
 {
-	/* Handle all integer subtypes */
-	if (strcmp(dtype, RDF_XSD_INTEGER) == 0 ||
-		strcmp(dtype, RDF_XSD_INT) == 0 ||
-		strcmp(dtype, RDF_XSD_LONG) == 0 ||
-		strcmp(dtype, RDF_XSD_SHORT) == 0 ||
-		strcmp(dtype, RDF_XSD_BYTE) == 0 ||
-		strcmp(dtype, RDF_XSD_POSITIVEINTEGER) == 0 ||
-		strcmp(dtype, RDF_XSD_NEGATIVEINTEGER) == 0 ||
-		strcmp(dtype, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
-		strcmp(dtype, RDF_XSD_NONPOSITIVEINTEGER) == 0 ||
-		strcmp(dtype, RDF_XSD_UNSIGNEDLONG) == 0 ||
-		strcmp(dtype, RDF_XSD_UNSIGNEDINT) == 0 ||
-		strcmp(dtype, RDF_XSD_UNSIGNEDSHORT) == 0 ||
-		strcmp(dtype, RDF_XSD_UNSIGNEDBYTE) == 0)
-		return XSD_TYPE_INTEGER;
-	
-	if (strcmp(dtype, RDF_XSD_DECIMAL) == 0)
-		return XSD_TYPE_DECIMAL;
-	
-	if (strcmp(dtype, RDF_XSD_FLOAT) == 0)
-		return XSD_TYPE_FLOAT;
-	
-	if (strcmp(dtype, RDF_XSD_DOUBLE) == 0)
-		return XSD_TYPE_DOUBLE;
-	
-	/* Default to decimal for unknown numeric types */
-	return XSD_TYPE_DECIMAL;
+    /* Handle all integer subtypes */
+    if (strcmp(dtype, RDF_XSD_INTEGER) == 0 ||
+        strcmp(dtype, RDF_XSD_INT) == 0 ||
+        strcmp(dtype, RDF_XSD_LONG) == 0 ||
+        strcmp(dtype, RDF_XSD_SHORT) == 0 ||
+        strcmp(dtype, RDF_XSD_BYTE) == 0 ||
+        strcmp(dtype, RDF_XSD_POSITIVEINTEGER) == 0 ||
+        strcmp(dtype, RDF_XSD_NEGATIVEINTEGER) == 0 ||
+        strcmp(dtype, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
+        strcmp(dtype, RDF_XSD_NONPOSITIVEINTEGER) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDLONG) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDINT) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDSHORT) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDBYTE) == 0)
+        return XSD_TYPE_INTEGER;
+
+    if (strcmp(dtype, RDF_XSD_DECIMAL) == 0)
+        return XSD_TYPE_DECIMAL;
+
+    if (strcmp(dtype, RDF_XSD_FLOAT) == 0)
+        return XSD_TYPE_FLOAT;
+
+    if (strcmp(dtype, RDF_XSD_DOUBLE) == 0)
+        return XSD_TYPE_DOUBLE;
+
+    /* Default to decimal for unknown numeric types */
+    return XSD_TYPE_DECIMAL;
 }
 
 /*
@@ -1908,19 +1907,19 @@ XsdNumericType get_xsd_numeric_type(const char *dtype)
  */
 const char *get_xsd_datatype_uri(XsdNumericType type)
 {
-	switch (type)
-	{
-		case XSD_TYPE_INTEGER:
-			return RDF_XSD_INTEGER;
-		case XSD_TYPE_DECIMAL:
-			return RDF_XSD_DECIMAL;
-		case XSD_TYPE_FLOAT:
-			return RDF_XSD_FLOAT;
-		case XSD_TYPE_DOUBLE:
-			return RDF_XSD_DOUBLE;
-		default:
-			return RDF_XSD_DECIMAL;
-	}
+    switch (type)
+    {
+    case XSD_TYPE_INTEGER:
+        return RDF_XSD_INTEGER;
+    case XSD_TYPE_DECIMAL:
+        return RDF_XSD_DECIMAL;
+    case XSD_TYPE_FLOAT:
+        return RDF_XSD_FLOAT;
+    case XSD_TYPE_DOUBLE:
+        return RDF_XSD_DOUBLE;
+    default:
+        return RDF_XSD_DECIMAL;
+    }
 }
 
 /*
@@ -2029,8 +2028,8 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
         oldcontext = MemoryContextSwitchTo(aggcontext);
         aggstate->numeric_value = DatumGetNumeric(
             DirectFunctionCall2(numeric_add,
-                               NumericGetDatum(aggstate->numeric_value),
-                               rdf_numeric));
+                                NumericGetDatum(aggstate->numeric_value),
+                                rdf_numeric));
         /*
          * Track the highest type seen (type promotion:
          * integer < decimal < float < double)
@@ -2177,8 +2176,8 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
         /* Add to accumulator */
         oldcontext = MemoryContextSwitchTo(aggcontext);
         aggstate->numeric_value = DatumGetNumeric(DirectFunctionCall2(numeric_add,
-                                                                   NumericGetDatum(aggstate->numeric_value),
-                                                                   rdf_numeric));
+                                                                      NumericGetDatum(aggstate->numeric_value),
+                                                                      rdf_numeric));
         aggstate->count++;
         /* Track the highest type seen (type promotion: integer < decimal < float < double) */
         if (inputType > aggstate->maxType)
@@ -2296,7 +2295,7 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 /*
  * get_rdfnode_category_rank
  * -------------------------
- * Returns a category rank for an rdfnode to support 
+ * Returns a category rank for an rdfnode to support
  * mixed-type aggregate ordering. Lower rank = lower
  * priority for MAX, higher priority for MIN.
  *
@@ -2574,7 +2573,7 @@ Datum max_rdfnode_finalfunc(PG_FUNCTION_ARGS)
  *
  * This implementation follows the common industry practice of returning
  * the first non-NULL value encountered. While deterministic, this is
- * acceptable as the spec allows implementation-defined behavior for 
+ * acceptable as the spec allows implementation-defined behavior for
  * "arbitrary".
  */
 Datum sample_rdfnode_sfunc(PG_FUNCTION_ARGS)
