@@ -55,18 +55,11 @@ SELECT DISTINCT ?name ?lon ?lat
   }
 ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 0 records.
 
-                          name                          | lon |    lat    
---------------------------------------------------------+-----+-----------
- Hainaut, Province de, Wallonia, Belgium, Europe, World |   3 | 50.766667
- West Flanders, Flanders, Belgium, Europe, World        |   3 | 50.983333
- Flanders, Belgium, Europe, World                       |   3 |        51
- West Flanders, Flanders, Belgium, Europe, World        |   3 |      51.1
- West Flanders, Flanders, Belgium, Europe, World        |   3 | 51.116667
- West Flanders, Flanders, Belgium, Europe, World        |   3 | 51.133333
- West Flanders, Flanders, Belgium, Europe, World        |   3 |     51.25
-(7 rows)
+ name | lon | lat 
+------+-----+-----
+(0 rows)
 
 SELECT uri, lon, lat
 FROM getty_places
@@ -97,14 +90,11 @@ SELECT ?place ?name ?lon ?lat
 ORDER BY  ASC (?lon)
 LIMIT 3
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 0 records.
 
-                uri                 | lon |    lat    
-------------------------------------+-----+-----------
- http://vocab.getty.edu/tgn/7248650 |   3 | 51.116667
- http://vocab.getty.edu/tgn/7237990 |   3 | 51.116667
- http://vocab.getty.edu/tgn/7240365 |   3 | 51.133333
-(3 rows)
+ uri | lon | lat 
+-----+-----+-----
+(0 rows)
 
 SELECT * FROM (
   SELECT DISTINCT ON (name) name, lon, lat
@@ -137,12 +127,11 @@ SELECT ?name ?lon ?lat
 }
 ORDER BY  ASC (?name)
 
-INFO:  SPARQL returned 5 records.
+INFO:  SPARQL returned 0 records.
 
-                      name                       | lon |    lat    
--------------------------------------------------+-----+-----------
- West Flanders, Flanders, Belgium, Europe, World |   3 | 51.116667
-(1 row)
+ name | lon | lat 
+------+-----+-----
+(0 rows)
 
 /*
  * == Non-Italians Who Worked in Italy ==
