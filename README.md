@@ -82,7 +82,7 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '2.3';
+CREATE EXTENSION rdf_fdw WITH VERSION '2.4';
 ```
 
 To run the predefined regression tests: 
@@ -106,7 +106,7 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '2.3';
+ALTER EXTENSION rdf_fdw UPDATE TO '2.4';
 ```
 
 ## [Deploy with Docker](#deploy-with-docker)
@@ -124,7 +124,7 @@ FROM postgres:18
 RUN apt-get update && \
     apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
-RUN git clone --branch v2.3 https://github.com/jimjonesbr/rdf_fdw.git && \
+RUN git clone --branch v2.4 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
     make -j && \
     make install
@@ -240,7 +240,7 @@ Authentication: when a `user` is supplied, `rdf_fdw` uses HTTP Basic Authenticat
 
 ### [CREATE FOREIGN TABLE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#create_foreign_table)
 
-Foreign tables act as a proxy to a SPARQL endpoint: the table's `sparql` option supplies the query and columns map SPARQL variables to PostgreSQL columns. Keep foreign-table definitions focused and avoid embedding complex logic in SQL; simpler queries increase pushdown success and performance.
+Foreign tables act as a gateway to a SPARQL endpoint: the table's `sparql` option supplies the query and the SPARQL variables map to PostgreSQL columns. Keep foreign-table definitions focused and avoid embedding complex logic in SQL; simpler queries increase pushdown success and performance.
 
 #### Table options
 
@@ -1063,9 +1063,9 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 
 ```sql
 SELECT rdf_fdw_version();
-                                              rdf_fdw_version                                               
-------------------------------------------------------------------------------------------------------------
- rdf_fdw 2.4-dev (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
+                                            rdf_fdw_version                                             
+--------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.4 (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -1087,7 +1087,7 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
- rdf_fdw    | 2.4-dev
+ rdf_fdw    | 2.4
  PostgreSQL | 18.1 (Debian 18.1-1.pgdg13+2)
  libxml     | 2.9.14
  libcurl    | 8.14.1
@@ -1096,7 +1096,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2026-01-29 07:33:34 UTC
+ built      | 2026-02-14 17:02:23 UTC
 (10 rows)
 ```
 

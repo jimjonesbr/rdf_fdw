@@ -1,5 +1,5 @@
 # 2.4
-Release date: **yyyy-mm-dd**
+Release date: **2026-02-14**
 
 ## Breaking Changes
 
