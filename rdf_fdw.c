@@ -4144,12 +4144,12 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYUSER) == 0)
 				{
 					state->proxy_user = pstrdup(defGetString(def));
-					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
+					elog(DEBUG2, "%s: proxy user '%s'", __func__, def->defname);
 				}
 				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYPASSWORD) == 0)
 				{
 					state->proxy_user_password = pstrdup(defGetString(def));
-					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
+					elog(DEBUG2, "%s: proxy password '*******'", __func__);
 				}
 			}
 		}
