@@ -52,9 +52,9 @@ SELECT ?p ?o
 ORDER BY ASC(?p) 
 OFFSET 0 LIMIT 100
 
-INFO:  SPARQL returned 59 records.
+INFO:  SPARQL returned 8 records.
 
-INFO:  [0 - 100]: 59 records inserted
+INFO:  [0 - 100]: 8 records inserted
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -68,57 +68,6 @@ SELECT * FROM public.t1 ORDER BY o::text COLLATE "C";
                       p                       |           o            
 ----------------------------------------------+------------------------
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
  "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل"
@@ -126,7 +75,7 @@ SELECT * FROM public.t1 ORDER BY o::text COLLATE "C";
  "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"
  "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"
  "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"
-(59 rows)
+(8 rows)
 
 /*
  * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
@@ -205,22 +154,20 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 8 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-INFO:  [8 - 10]: 1 records inserted
 SELECT * FROM public.t2 ORDER BY o::text COLLATE "C";
-                      p                       |          o          
-----------------------------------------------+---------------------
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
+                      p                       |           o            
+----------------------------------------------+------------------------
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "পোস্টগ্রেএসকিউএল"
-(9 rows)
+ "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"
+(8 rows)
 
 /* 
  * 't3' does not exist. it will be created by the function due to
@@ -261,9 +208,9 @@ SELECT ?p ?o
 ORDER BY DESC(?o) 
 OFFSET 0 LIMIT 100
 
-INFO:  SPARQL returned 59 records.
+INFO:  SPARQL returned 8 records.
 
-INFO:  [0 - 100]: 59 records inserted
+INFO:  [0 - 100]: 8 records inserted
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -277,57 +224,6 @@ SELECT * FROM public.t3 ORDER BY o::text COLLATE "C";
                       p                       |           o            
 ----------------------------------------------+------------------------
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
  "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل"
@@ -335,7 +231,7 @@ SELECT * FROM public.t3 ORDER BY o::text COLLATE "C";
  "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"
  "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"
  "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"
-(59 rows)
+(8 rows)
 
 /*
  * 'public.t4' only partially matches the columns of 'public.ft'.
@@ -375,36 +271,20 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 8 LIMIT 4
 
-INFO:  SPARQL returned 4 records.
-
-INFO:  SPARQL query sent to 'wikidata':
-
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
-ORDER BY ASC(?o) 
-OFFSET 12 LIMIT 3
-
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 0 records.
 
 SELECT * FROM public.t4 ORDER BY o::text COLLATE "C";
-                      p                       |          o          | foo 
-----------------------------------------------+---------------------+-----
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"        | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل" | 
- "http://www.w3.org/2000/01/rdf-schema#label" | "পোস্টগ্রেএসকিউএল"    | 
-(15 rows)
+                      p                       |           o            | foo 
+----------------------------------------------+------------------------+-----
+ "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"           | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"    | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"          | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل" | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "পোস্টগ্রেএসকিউএল"       | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"        | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"       | 
+ "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"        | 
+(8 rows)
 
 /*
  * 'public.t5' does not exist.
@@ -444,36 +324,20 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 8 LIMIT 4
 
-INFO:  SPARQL returned 4 records.
-
-INFO:  SPARQL query sent to 'wikidata':
-
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
-ORDER BY ASC(?o) 
-OFFSET 12 LIMIT 3
-
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 0 records.
 
 SELECT * FROM public.t5 ORDER BY o::text COLLATE "C";
-                      p                       |          o          
-----------------------------------------------+---------------------
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
+                      p                       |           o            
+----------------------------------------------+------------------------
  "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
  "http://www.w3.org/2000/01/rdf-schema#label" | "بوستجري إس كيو إل"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "پوسٹ گری ایس کیو ایل"
  "http://www.w3.org/2000/01/rdf-schema#label" | "পোস্টগ্রেএসকিউএল"
-(15 rows)
+ "http://www.w3.org/2000/01/rdf-schema#label" | "போஸ்கிரெஸ்குயெல்"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"
+ "http://www.w3.org/2000/01/rdf-schema#label" | "โพสต์เกรสคิวเอล"
+(8 rows)
 
 /* 
  * the matching columns of 'public.t4' and 'public.t5' 
@@ -525,50 +389,12 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 10 LIMIT 2
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 0 records.
 
-INFO:  [10 - 12]: 2 records inserted
-INFO:  SPARQL query sent to 'wikidata':
-
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
-ORDER BY ASC(?o) 
-OFFSET 12 LIMIT 2
-
-INFO:  SPARQL returned 2 records.
-
-INFO:  [12 - 14]: 2 records inserted
-INFO:  SPARQL query sent to 'wikidata':
-
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
-ORDER BY ASC(?o) 
-OFFSET 14 LIMIT 2
-
-INFO:  SPARQL returned 2 records.
-
-INFO:  [14 - 16]: 2 records inserted
-INFO:  SPARQL query sent to 'wikidata':
-
-SELECT ?p ?o 
-{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
-ORDER BY ASC(?o) 
-OFFSET 16 LIMIT 1
-
-INFO:  SPARQL returned 1 record.
-
-INFO:  [16 - 18]: 1 records inserted
 SELECT * FROM public.t6 ORDER BY o::text COLLATE "C";
-                      p                       |       o       
-----------------------------------------------+---------------
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "PostgreSQL"
- "http://www.w3.org/2000/01/rdf-schema#label" | "پستگرسکیوال"
-(7 rows)
+ p | o 
+---+---
+(0 rows)
 
 /*
  * clean up the mess

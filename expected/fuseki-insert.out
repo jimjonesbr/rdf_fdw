@@ -161,32 +161,11 @@ PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL"@ar .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "পোস্টজিআরই"@bn .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@ca .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@de .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
-    } };
-
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@en .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -198,42 +177,17 @@ INSERT DATA {
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@fr .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@hu .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポスグレ"@ja .
     } };
 
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@it .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@ja .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポスグレ"@ja .
-    } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポストグレスキューエル"@ja .
     } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@lv .
-    } };
-
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul .
@@ -250,19 +204,11 @@ INSERT DATA {
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl .
     } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@pl .
-    } };
 
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@pt .
-    } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br .
@@ -277,38 +223,21 @@ INSERT DATA {
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@sr .
-    } };
-
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
     } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@sv .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "போசுகிரசு"@ta .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL"@th .
-    } };
 
 
 INFO:  SPARQL query sent to 'fuseki':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "போசுகிரசு"@ta .
+    } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "โพสต์เกรส"@th .
@@ -317,23 +246,6 @@ INSERT DATA {
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
     } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh-hant .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh-tw .
-    } };
-
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn .
@@ -354,7 +266,7 @@ SELECT ?s ?p ?o
       }
     }
 
-INFO:  SPARQL returned 36 records.
+INFO:  SPARQL returned 19 records.
 
                     s                     |                       p                        |                 o                 
 ------------------------------------------+------------------------------------------------+-----------------------------------
@@ -365,25 +277,8 @@ INFO:  SPARQL returned 36 records.
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre"@pl
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre"@sr
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL project"@de
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL"@ar
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL"@th
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL, слободни софтвер"@sr
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@ca
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@de
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@en
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@fr
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@hu
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@it
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@ja
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@lv
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@mul
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@pl
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@pt
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@sr
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@sv
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@zh
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@zh-Hant
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@zh-TW
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgresql"@sr
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "pgsql"@pt-BR
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "postgres"@nl
@@ -394,7 +289,7 @@ INFO:  SPARQL returned 36 records.
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "โพสต์เกรส"@th
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "ポスグレ"@ja
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "ポストグレスキューエル"@ja
-(36 rows)
+(19 rows)
 
 COPY (
   SELECT s, p , o
@@ -413,7 +308,7 @@ SELECT ?s ?p ?o
       }
     }
 
-INFO:  SPARQL returned 36 records.
+INFO:  SPARQL returned 19 records.
 
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-CN
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE\ SQL"@vi
@@ -422,25 +317,8 @@ INFO:  SPARQL returned 36 records.
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL\ project"@de
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL"@ar
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL"@th
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL,\ слободни\ софтвер"@sr
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@ca
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@de
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@en
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@fr
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@hu
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@it
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@ja
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@lv
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@pl
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@pt
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@sr
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@sv
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh-Hant
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@zh-TW
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl

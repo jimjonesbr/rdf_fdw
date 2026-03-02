@@ -26,7 +26,7 @@ SELECT * {
   ?s skos:altLabel ?l .
   ?s wdt:P6216 ?cr
   FILTER (?s = wd:Q192490)
-  FILTER (LANG(?l) ="en")
+  FILTER (LANG(?l) ="de")
 }');
 
 -- Prefixes configured in the default context added
