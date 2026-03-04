@@ -39,20 +39,24 @@ LIMIT 5;
 /* SPARQL 15.5 - LIMIT */
 SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
+ORDER BY o::text COLLATE "C"
 LIMIT 5;
 
 SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
+ORDER BY o::text COLLATE "C"
 FETCH FIRST 5 ROWS ONLY;
 
 /* SPARQL 15.4 - OFFSET */
 SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
+ORDER BY o::text COLLATE "C"  
 OFFSET 5 ROWS
 FETCH FIRST 10 ROWS ONLY;
 
 SELECT p, o FROM rdbms
 WHERE p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label')
+ORDER BY o::text COLLATE "C"
 OFFSET 5 ROWS
 LIMIT 10;
 
