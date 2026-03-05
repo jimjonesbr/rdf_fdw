@@ -146,6 +146,7 @@ WARNING:  ExecuteSPARQL: request to 'fuseki' failed (2)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (3)
 ERROR:  unable to connect to 'fuseki'
 DETAIL:  Could not connect to server (curl error code 7)
+\set VERBOSITY terse
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -161,10 +162,7 @@ WARNING:  ExecuteSPARQL: request to 'fuseki' failed (1)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (2)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (3)
 ERROR:  unable to connect to 'fuseki'
-DETAIL:  Could not connect to server (curl error code 7)
 /* Cleanup */
 DROP TABLE public.t1;
 DROP SERVER fuseki CASCADE;
 NOTICE:  drop cascades to 2 other objects
-DETAIL:  drop cascades to foreign table ft
-drop cascades to user mapping for postgres on server fuseki

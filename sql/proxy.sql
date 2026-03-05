@@ -48,6 +48,7 @@ SELECT * FROM ft;
 ALTER SERVER fuseki OPTIONS (SET http_proxy 'http://172.19.42.100:250');
 SELECT * FROM ft;
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
+\set VERBOSITY terse
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
