@@ -6560,10 +6560,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			/* the actual array is here */
 			rightexpr = arraycoerce->arg;
-
-			/* fall through ! */
-
-		case T_ArrayExpr:
+#if defined(__GNUC__) && __GNUC__ >= 7
+			__attribute__((fallthrough));
+#else
+			/* fall through */
+#endif
+			case T_ArrayExpr:
 			/* the second (=last) argument is an ArrayExpr */
 			array = (ArrayExpr *)rightexpr;
 
