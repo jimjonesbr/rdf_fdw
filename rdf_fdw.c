@@ -168,6 +168,7 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_HTTPS_PROXY, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_CUSTOMPARAM, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_CONNECTTIMEOUT, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_REQUEST_TIMEOUT, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_CONNECTRETRY, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_REQUEST_REDIRECT, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, ForeignServerRelationId, false, false},
@@ -1713,6 +1714,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		state->has_unparsable_conds = false;
 		state->query_param = RDF_DEFAULT_QUERY_PARAM;
 		state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+		state->request_timeout = RDF_DEFAULT_REQUEST_TIMEOUT;
 		state->max_retries = RDF_DEFAULT_MAXRETRY;
 		state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
 		state->sparql_query_type = SPARQL_DESCRIBE;
@@ -1954,6 +1956,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+	state->request_timeout = RDF_DEFAULT_REQUEST_TIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->verbose = verbose;
 	state->commit_page = commit_page;
@@ -2514,6 +2517,21 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
 								 errhint("expected values are positive integers (timeout in seconds)")));
+					}
+				}
+
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_TIMEOUT) == 0)
+				{
+					char *endptr;
+					char *timeout_str = defGetString(def);
+					long timeout_val = strtol(timeout_str, &endptr, 0);
+
+					if (timeout_str[0] == '\0' || *endptr != '\0' || timeout_val < 0)
+					{
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
+								 errhint("expected values are non-negative integers (timeout in seconds, 0 = disabled)")));
 					}
 				}
 
@@ -3111,6 +3129,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+	state->request_timeout = RDF_DEFAULT_REQUEST_TIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
 	state->batch_size = RDF_DEFAULT_BATCH_SIZE;
@@ -4048,6 +4067,12 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 				char *timeout_str = defGetString(def);
 				state->connect_timeout = strtol(timeout_str, &tailpt, 0);
 			}
+			else if (strcmp(RDF_SERVER_OPTION_REQUEST_TIMEOUT, def->defname) == 0)
+			{
+				char *tailpt;
+				char *timeout_str = defGetString(def);
+				state->request_timeout = strtol(timeout_str, &tailpt, 0);
+			}
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
 
@@ -4204,6 +4229,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->has_unparsable_conds));
 	result = lappend(result, IntToConst((int)state->request_max_redirect));
 	result = lappend(result, IntToConst((int)state->connect_timeout));
+	result = lappend(result, IntToConst((int)state->request_timeout));
 	result = lappend(result, IntToConst((int)state->max_retries));
 	result = lappend(result, OidToConst(state->foreigntableid));
 
@@ -4358,6 +4384,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	cell = list_next(list, cell);
 
 	state->connect_timeout = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	cell = list_next(list, cell);
+
+	state->request_timeout = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
 	state->max_retries = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
@@ -4584,6 +4613,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	state->query_param = RDF_DEFAULT_QUERY_PARAM;
 	state->format = RDF_DEFAULT_FORMAT;
 	state->connect_timeout = RDF_DEFAULT_CONNECTTIMEOUT;
+	state->request_timeout = RDF_DEFAULT_REQUEST_TIMEOUT;
 	state->max_retries = RDF_DEFAULT_MAXRETRY;
 	state->fetch_size = RDF_DEFAULT_FETCH_SIZE;
 	state->foreign_table = GetForeignTable(state->foreigntableid);
@@ -4806,7 +4836,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_ERRORBUFFER, errbuf);
 
 		curl_easy_setopt(state->curl, CURLOPT_CONNECTTIMEOUT, state->connect_timeout);
-		elog(DEBUG2, "  %s: timeout > %ld", __func__, state->connect_timeout);
+		curl_easy_setopt(state->curl, CURLOPT_TIMEOUT, state->request_timeout);
+		elog(DEBUG2, "  %s: connect_timeout > %ld", __func__, state->connect_timeout);
+		elog(DEBUG2, "  %s: request_timeout > %ld", __func__, state->request_timeout);
 		elog(DEBUG2, "  %s: max retry > %ld", __func__, state->max_retries);
 
 		if (state->proxy)

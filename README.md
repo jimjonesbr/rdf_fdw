@@ -174,6 +174,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `format` | optional | Expected SPARQL result MIME type (default `application/sparql-results+xml`). Set if your endpoint requires a different value. |
 | `http_proxy` | optional | HTTP proxy URL (for authentication, specify `proxy_user` and `proxy_password` in `USER MAPPING`). |
 | `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
+| `request_timeout` | optional | Maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer. |
 | `connect_retry` | optional | Number of retry attempts on failure (default `3`). |
 | `request_redirect` | optional | Follow HTTP redirects (default `false`). |
 | `request_max_redirect` | optional | Max redirects allowed; `0` = unlimited. |

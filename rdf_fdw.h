@@ -83,6 +83,7 @@
 
 /* Connection and query defaults */
 #define RDF_DEFAULT_CONNECTTIMEOUT 300
+#define RDF_DEFAULT_REQUEST_TIMEOUT 0
 #define RDF_DEFAULT_MAXRETRY 3
 #define RDF_KEYWORD_NOT_FOUND -1
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
@@ -142,6 +143,7 @@
 #define RDF_SERVER_OPTION_FORMAT "format"
 #define RDF_SERVER_OPTION_CUSTOMPARAM "custom"
 #define RDF_SERVER_OPTION_CONNECTTIMEOUT "connect_timeout"
+#define RDF_SERVER_OPTION_REQUEST_TIMEOUT "request_timeout"
 #define RDF_SERVER_OPTION_CONNECTRETRY "connect_retry"
 #define RDF_SERVER_OPTION_REQUEST_REDIRECT "request_redirect"
 #define RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT "request_max_redirect"
@@ -204,7 +206,8 @@ typedef struct RDFfdwState
 	bool keep_raw_literal;			   /* Flag to determine if a literal should be serialized with its data type/language or not*/
 	List *remote_conds;				   /* List of RestrictInfo nodes that were successfully pushed down to the remote SPARQL endpoint */
 	long request_max_redirect;		   /* Limit of how many times the URL redirection (jump) may occur. */
-	long connect_timeout;			   /* Timeout for SPARQL queries */
+	long connect_timeout;				   /* Timeout for establishing a connection to the SPARQL endpoint */
+	long request_timeout;				   /* Timeout for the entire HTTP request (connect + transfer) */
 	long max_retries;				   /* Number of re-try attemtps for failed SPARQL queries */
 	xmlDocPtr xmldoc;				   /* XML document where the result of SPARQL queries will be stored */
 	Oid foreigntableid;				   /* FOREIGN TABLE oid */

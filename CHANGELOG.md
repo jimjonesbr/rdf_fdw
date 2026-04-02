@@ -1,6 +1,9 @@
 # 2.5
 Release date: **yyyy-mm-dd**
 
+## Enhancements
+
+* **Add 'request_timeout' to FOREIGN TABLES**: This option sets the maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer.
 
 # 2.4
 Release date: **2026-02-14**

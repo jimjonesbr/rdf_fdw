@@ -83,3 +83,19 @@ OPTIONS (
   endpoint 'https://dbpedia.org/sparql',
   batch_size ' '
 );
+
+/* invalid request_timeout - negative value */
+CREATE SERVER rdfserver_error12
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_timeout '-1'
+);
+
+/* invalid request_timeout - empty string */
+CREATE SERVER rdfserver_error13
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_timeout ' '
+);

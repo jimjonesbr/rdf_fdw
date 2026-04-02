@@ -89,3 +89,21 @@ OPTIONS (
 );
 ERROR:  invalid batch_size: ' '
 HINT:  expected values are positive integers (number of records)
+/* invalid request_timeout - negative value */
+CREATE SERVER rdfserver_error12
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_timeout '-1'
+);
+ERROR:  invalid request_timeout: '-1'
+HINT:  expected values are non-negative integers (timeout in seconds, 0 = disabled)
+/* invalid request_timeout - empty string */
+CREATE SERVER rdfserver_error13
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_timeout ' '
+);
+ERROR:  invalid request_timeout: ' '
+HINT:  expected values are non-negative integers (timeout in seconds, 0 = disabled)
