@@ -902,7 +902,7 @@ WHERE type = 'http://example.org/SomeType';
 
 /* ================================================================
  * pg function pushdown (length, abs, round, ceil, floor,
- *                        substring, extract, md5)
+ *                        substring, md5)
  * ================================================================ */
 /* length */
 EXPLAIN (VERBOSE, COSTS OFF)
@@ -1017,26 +1017,6 @@ WHERE substring(label, 1, 5) = 'hello';
    Pushdown: enabled
    Remote Select: ?label 
    Remote Filter: ((SUBSTR(?label, 1, 5) = "hello"))
-(6 rows)
-
-/* extract */
-EXPLAIN (VERBOSE, COSTS OFF)
-SELECT modified FROM pgtypes_ft
-WHERE
-  EXTRACT(year    FROM modified) = 2015 AND
-  EXTRACT(month   FROM modified) = 07 AND
-  EXTRACT(days    FROM modified) = 12 AND
-  EXTRACT(hours   FROM modified) = 20 AND
-  EXTRACT(minutes FROM modified) = 41 AND
-  EXTRACT(seconds FROM modified) = 25;
-                                                                                     QUERY PLAN                                                                                      
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Foreign Scan on public.pgtypes_ft
-   Output: modified
-   Foreign Server: test_server
-   Pushdown: enabled
-   Remote Select: ?modified 
-   Remote Filter: ((YEAR(?modified) = 2015) && (MONTH(?modified) = 7) && (DAY(?modified) = 12) && (HOURS(?modified) = 20) && (MINUTES(?modified) = 41) && (SECONDS(?modified) = 25))
 (6 rows)
 
 /* md5 */

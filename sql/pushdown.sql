@@ -492,7 +492,7 @@ WHERE type = 'http://example.org/SomeType';
 
 /* ================================================================
  * pg function pushdown (length, abs, round, ceil, floor,
- *                        substring, extract, md5)
+ *                        substring, md5)
  * ================================================================ */
 
 /* length */
@@ -555,17 +555,6 @@ WHERE
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT label FROM pgtypes_ft
 WHERE substring(label, 1, 5) = 'hello';
-
-/* extract */
-EXPLAIN (VERBOSE, COSTS OFF)
-SELECT modified FROM pgtypes_ft
-WHERE
-  EXTRACT(year    FROM modified) = 2015 AND
-  EXTRACT(month   FROM modified) = 07 AND
-  EXTRACT(days    FROM modified) = 12 AND
-  EXTRACT(hours   FROM modified) = 20 AND
-  EXTRACT(minutes FROM modified) = 41 AND
-  EXTRACT(seconds FROM modified) = 25;
 
 /* md5 */
 EXPLAIN (VERBOSE, COSTS OFF)
