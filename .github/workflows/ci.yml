@@ -30,4 +30,5 @@ jobs:
         run: |
           export SKIP_UPDATE_TESTS=1
           export SKIP_STRESS_TESTS=1
+          export SKIP_EXTERNAL_TESTS=1
           pg-build-test
