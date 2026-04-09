@@ -42,7 +42,7 @@ SELECT * {
 }');
 -- Prefixes configured in the default context added
 -- and existing prefixes formatted
-SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C" LIMIT 0;
 INFO:  SPARQL query sent to 'wikidata':
 PREFIX foo: <http://example.org/foo#>
 PREFIX bar: <http://example.org/bar#>
@@ -57,17 +57,17 @@ SELECT ?l ?cr
   FILTER (?s = wd:Q192490)
   FILTER (LANG(?l) ="de")
 }
+LIMIT 0
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-            p            |                     o                      
--------------------------+--------------------------------------------
- "PostgreSQL project"@de | <http://www.wikidata.org/entity/Q50423863>
-(1 row)
+ p | o 
+---+---
+(0 rows)
 
 ALTER SERVER wikidata OPTIONS (SET prefix_context 'foo');
 -- Prefix context does not exist. Issuing a WARNING.
-SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C" LIMIT 0;
 WARNING:  no prefixes found for context 'foo'
 INFO:  SPARQL query sent to 'wikidata':
 PREFIX wd: <http://www.wikidata.org/entity/>
@@ -81,18 +81,18 @@ SELECT ?l ?cr
   FILTER (?s = wd:Q192490)
   FILTER (LANG(?l) ="de")
 }
+LIMIT 0
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-            p            |                     o                      
--------------------------+--------------------------------------------
- "PostgreSQL project"@de | <http://www.wikidata.org/entity/Q50423863>
-(1 row)
+ p | o 
+---+---
+(0 rows)
 
 -- No prefix context set. Using only prefixes from the
 -- SPARQL query.
 ALTER SERVER wikidata OPTIONS (DROP prefix_context);
-SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C" LIMIT 0;
 INFO:  SPARQL query sent to 'wikidata':
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -105,13 +105,13 @@ SELECT ?l ?cr
   FILTER (?s = wd:Q192490)
   FILTER (LANG(?l) ="de")
 }
+LIMIT 0
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-            p            |                     o                      
--------------------------+--------------------------------------------
- "PostgreSQL project"@de | <http://www.wikidata.org/entity/Q50423863>
-(1 row)
+ p | o 
+---+---
+(0 rows)
 
 \set VERBOSITY terse
 -- Add existing context and prefix (must fail)

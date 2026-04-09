@@ -43,8 +43,7 @@ REGRESS += create_extension \
 			explain \
 			pushdown \
 			pg_datatypes \
-			sparql-functions \
-			prefix-management
+			sparql-functions
 
 ifndef SKIP_UPDATE_TESTS
   REGRESS += fuseki-delete \
@@ -75,7 +74,8 @@ ifndef SKIP_EXTERNAL_TESTS
 			 blazegraph-pgtypes-wikidata \
 			 blazegraph-rdfnode-wikidata \
 			 graphdb-pgtypes-getty \
-			 describe
+			 describe \
+			 prefix-management
 endif
 $(info Running regression tests for MAJORVERSION=$(MAJORVERSION))
 

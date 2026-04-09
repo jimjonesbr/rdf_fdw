@@ -31,16 +31,16 @@ SELECT * {
 
 -- Prefixes configured in the default context added
 -- and existing prefixes formatted
-SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C" LIMIT 0;
 
 ALTER SERVER wikidata OPTIONS (SET prefix_context 'foo');
 -- Prefix context does not exist. Issuing a WARNING.
-SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C" LIMIT 0;
 
 -- No prefix context set. Using only prefixes from the
 -- SPARQL query.
 ALTER SERVER wikidata OPTIONS (DROP prefix_context);
-SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C";
+SELECT p, o FROM rdbms ORDER BY p::text COLLATE "C" LIMIT 0;
 
 \set VERBOSITY terse
 -- Add existing context and prefix (must fail)
