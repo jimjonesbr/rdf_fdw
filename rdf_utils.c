@@ -1411,7 +1411,7 @@ void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 				 errmsg("'%s' contains no valid triple patterns",
 						RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN),
-				 errhint("A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'")));
+				 errhint("A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.")));
 	}
 
 	/* Check that all variables in template have corresponding columns */

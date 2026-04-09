@@ -139,13 +139,13 @@ WARNING:  ExecuteSPARQL: request to 'fuseki' failed (1)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (2)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (3)
 ERROR:  unable to connect to 'fuseki'
-DETAIL:  Could not connect to server (curl error code 7)
+DETAIL:  Could not connect to server (curl error code 7).
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (1)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (2)
 WARNING:  ExecuteSPARQL: request to 'fuseki' failed (3)
 ERROR:  unable to connect to 'fuseki'
-DETAIL:  Could not connect to server (curl error code 7)
+DETAIL:  Could not connect to server (curl error code 7).
 \set VERBOSITY terse
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',

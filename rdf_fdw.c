@@ -1857,7 +1857,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("'begin_offset' cannot be NULL"),
-				 errhint("either set it to 0 or ignore the paramter to start the pagination from the beginning")));
+				 errhint("Either set it to 0 or ignore the paramter to start the pagination from the beginning.")));
 	else
 		begin_offset = PG_GETARG_INT32(2);
 
@@ -1927,13 +1927,13 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("invalid 'fetch_size': %d", fetch_size),
-				 errhint("the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number")));
+				 errhint("The page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number.")));
 
 	if (max_records < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("invalid 'max_records': %d", max_records),
-				 errhint("'max_records' corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number")));
+				 errhint("'max_records' corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number.")));
 
 	if (begin_offset < 0)
 		ereport(ERROR,
@@ -1945,7 +1945,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("invalid 'sort_order': %s", text_to_cstring(sort_order)),
-				 errhint("the 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending)")));
+				 errhint("The 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending).")));
 
 	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name), RDF_FOREIGN_TABLE_CODE);
 	state->foreign_table = GetForeignTable(state->foreigntableid);
@@ -2046,7 +2046,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("target table mismatch"),
-				 errhint("at least one column of '%s' must match with the FOREIGN TABLE '%s'",
+				 errhint("At least one column of '%s' must match with the FOREIGN TABLE '%s'.",
 						 state->target_table_name,
 						 get_rel_name(state->foreigntableid))));
 
@@ -2111,7 +2111,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_ERROR),
 					 errmsg("invalid 'ordering_column': %s", state->ordering_pgcolumn),
-					 errhint("the column '%s' does not exist in the foreign table '%s'",
+					 errhint("The column '%s' does not exist in the foreign table '%s'.",
 							 state->ordering_pgcolumn,
 							 get_rel_name(state->foreigntableid))));
 
@@ -2516,7 +2516,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
-								 errhint("expected values are positive integers (timeout in seconds)")));
+								 errhint("Expected values are positive integers (timeout in seconds).")));
 					}
 				}
 
@@ -2531,7 +2531,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
-								 errhint("expected values are non-negative integers (timeout in seconds, 0 = disabled)")));
+								 errhint("Expected values are non-negative integers (timeout in seconds, 0 = disabled).")));
 					}
 				}
 
@@ -2546,7 +2546,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, fetch_size_str),
-								 errhint("expected values are positive integers")));
+								 errhint("Expected values are positive integers.")));
 					}
 				}
 
@@ -2561,7 +2561,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, retry_str),
-								 errhint("expected values are positive integers (retry attempts in case of failure)")));
+								 errhint("Expected values are positive integers (retry attempts in case of failure).")));
 					}
 				}
 
@@ -2576,7 +2576,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, batch_size_str),
-								 errhint("expected values are positive integers (number of records)")));
+								 errhint("Expected values are positive integers (number of records).")));
 					}
 				}
 
@@ -2587,7 +2587,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, enable_pushdown),
-								 errhint("this parameter expects boolean values ('true' or 'false')")));
+								 errhint("This parameter expects boolean values ('true' or 'false').")));
 				}
 
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_XML_HUGE) == 0)
@@ -2597,7 +2597,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, enable_pushdown),
-								 errhint("this parameter expects boolean values ('true' or 'false')")));
+								 errhint("This parameter expects boolean values ('true' or 'false').")));
 				}
 
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_SPARQL) == 0)
@@ -2620,7 +2620,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("unable to parse SPARQL WHERE clause:\n%s", sparql),
-								 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'")));
+								 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'.")));
 
 					/* report ERROR if the SPARQL query does not contain a SELECT */
 					if (LocateKeyword(sparql, " {\n\t>", "SELECT", " *?\n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
@@ -2636,7 +2636,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, log_sparql),
-								 errhint("this parameter expects boolean values ('true' or 'false')")));
+								 errhint("This parameter expects boolean values ('true' or 'false').")));
 				}
 
 				if (strcmp(opt->optname, RDF_COLUMN_OPTION_VARIABLE) == 0)
@@ -2645,7 +2645,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								 errhint("a query variable must start with either \"?\" or \"$\"; the \"?\" or \"$\" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.")));
+								 errhint("A query variable must start with either \"?\" or \"$\"; the \"?\" or \"$\" is not part of the variable name. Allowable characters for the name are [a-z], [A-Z], [0-9], _ and diacrictics.")));
 				}
 
 				if (strcmp(opt->optname, RDF_COLUMN_OPTION_NODETYPE) == 0)
@@ -2655,7 +2655,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								 errhint("this parameter expects node types ('iri' or 'literal')")));
+								 errhint("This parameter expects node types ('iri' or 'literal').")));
 				}
 
 				if (strcmp(opt->optname, RDF_COLUMN_OPTION_LITERALTYPE) == 0 || strcmp(opt->optname, RDF_COLUMN_OPTION_LITERAL_TYPE) == 0)
@@ -2664,7 +2664,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								 errhint("the parameters '%s' and '%s' cannot be combined",
+								 errhint("The parameters '%s' and '%s' cannot be combined.",
 										 RDF_COLUMN_OPTION_LITERAL_TYPE,
 										 RDF_COLUMN_OPTION_LANGUAGE)));
 
@@ -2674,7 +2674,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								 errhint("whitespaces are not allwoed in '%s' option", RDF_COLUMN_OPTION_LITERAL_TYPE)));
+								 errhint("Whitespaces are not allowed in '%s' option.", RDF_COLUMN_OPTION_LITERAL_TYPE)));
 				}
 
 				if (strcmp(opt->optname, RDF_COLUMN_OPTION_LANGUAGE) == 0)
@@ -2683,7 +2683,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								 errhint("the parameters '%s' and '%s' cannot be combined",
+								 errhint("The parameters '%s' and '%s' cannot be combined.",
 										 RDF_COLUMN_OPTION_LITERAL_TYPE,
 										 RDF_COLUMN_OPTION_LANGUAGE)));
 
@@ -2693,7 +2693,7 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("invalid %s: '%s'", def->defname, defGetString(def)),
-								 errhint("whitespaces are not allwoed in '%s' option",
+								 errhint("Whitespaces are not allowed in '%s' option.",
 										 RDF_COLUMN_OPTION_LANGUAGE)));
 				}
 				break;
@@ -3301,7 +3301,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 			ereport(ERROR,
 					(errcode(ERRCODE_NOT_NULL_VIOLATION),
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
-					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
+					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns.", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
 							 "Filter NULL values in your query or provide default values.")));
 
@@ -3651,7 +3651,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 			ereport(ERROR,
 					(errcode(ERRCODE_NOT_NULL_VIOLATION),
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
-					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
+					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns.", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
 							 "Filter NULL values in your query or provide default values.")));
 
@@ -3736,7 +3736,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 			ereport(ERROR,
 					(errcode(ERRCODE_NOT_NULL_VIOLATION),
 					 errmsg("NULL value in column \"%s\" violates RDF constraint", col->name),
-					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns", sparql_var),
+					 errdetail("SPARQL variable '%s' cannot be NULL in RDF triple patterns.", sparql_var),
 					 errhint("RDF triples require all components to be non-NULL. "
 							 "Filter NULL values in your query or provide default values.")));
 
@@ -3923,7 +3923,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 						(errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
 						 errmsg("invalid option \"%s\" for column \"%s\"",
 								def->defname, state->rdfTable->cols[i]->name),
-						 errhint("rdfnode columns accept only the \"%s\" option", RDF_COLUMN_OPTION_VARIABLE)));
+						 errhint("rdfnode columns accept only the \"%s\" option.", RDF_COLUMN_OPTION_VARIABLE)));
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_VARIABLE) == 0)
 			{
@@ -5001,7 +5001,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 							(errcode(ERRCODE_SYNTAX_ERROR),
 							 errmsg("SPARQL query error"),
 							 errdetail("%s", chunk.memory),
-							 errhint("The SPARQL endpoint returned: Bad Request (HTTP 400)")));
+							 errhint("The SPARQL endpoint returned: Bad Request (HTTP 400).")));
 				else if (response_code == 401)
 					ereport(ERROR,
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
@@ -5013,17 +5013,17 @@ static int ExecuteSPARQL(RDFfdwState *state)
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
 							 errmsg("SERVER not found (HTTP status %ld)", response_code),
 							 errdetail("Response: %s", chunk.memory),
-							 errhint("Check the SERVER endpoint URL: '%s'", state->endpoint)));
+							 errhint("Check the SERVER endpoint URL: '%s'.", state->endpoint)));
 				else if (response_code == 500)
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
 							 errmsg("internal server error (HTTP status %ld)", response_code),
-							 errdetail("Response from '%s': %s", state->server->servername, chunk.memory)));
+							 errdetail("Response from '%s': %s.", state->server->servername, chunk.memory)));
 				else
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
 							 errmsg("HTTP error %ld from '%s'", response_code, state->server->servername),
-							 errdetail("Response: %s", chunk.memory)));
+							 errdetail("Response: %s.", chunk.memory)));
 			}
 			else
 			{
@@ -5043,7 +5043,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 					ereport(ERROR,
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
 							 errmsg("SERVER not found (HTTP status %ld)", response_code),
-							 errhint("Check the SERVER endpoint URL: '%s'", state->endpoint)));
+							 errhint("Check the SERVER endpoint URL: '%s'.", state->endpoint)));
 				else if (response_code == 500)
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
@@ -5073,7 +5073,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
 						 errmsg("unable to connect to '%s'", state->server->servername),
-						 errdetail("%s (curl error code %u)", curl_easy_strerror(res), res)));
+						 errdetail("%s (curl error code %u).", curl_easy_strerror(res), res)));
 			}
 			else
 			{
@@ -9841,7 +9841,7 @@ Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 	else
 		ereport(ERROR,
 				(errmsg("cannot cast RDF literal: %s to boolean", p.raw),
-				 errdetail("expected values for xsd:boolean are \"true\" or \"false\"")));
+				 errdetail("Expected values for xsd:boolean are \"true\" or \"false\".")));
 
 	PG_RETURN_BOOL(result);
 }
@@ -9942,7 +9942,7 @@ Datum rdfnode_to_interval(PG_FUNCTION_ARGS)
 	if (strcmp(p.dtype, RDF_XSD_DURATION) != 0)
 		ereport(ERROR,
 				(errmsg("cannot cast RDF literal: %s to interval", p.raw),
-				 errdetail("expected xsd:duration")));
+				 errdetail("Expected xsd:duration.")));
 
 	result = DirectFunctionCall3(interval_in,
 								 CStringGetDatum(p.lex),

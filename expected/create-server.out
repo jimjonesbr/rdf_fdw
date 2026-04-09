@@ -20,7 +20,7 @@ OPTIONS (
   enable_pushdown 'foo'
 );
 ERROR:  invalid enable_pushdown: 'foo'
-HINT:  this parameter expects boolean values ('true' or 'false')
+HINT:  This parameter expects boolean values ('true' or 'false').
 /* invalid fetch_size - negative fetch_size */
 CREATE SERVER rdfserver_error4
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -29,7 +29,7 @@ OPTIONS (
   fetch_size '-1'
 );
 ERROR:  invalid fetch_size: '-1'
-HINT:  expected values are positive integers
+HINT:  Expected values are positive integers.
 /* invalid fetch_size - empty string */
 CREATE SERVER rdfserver_error5
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -46,7 +46,7 @@ OPTIONS (
   enable_xml_huge 'foo'
 );
 ERROR:  invalid enable_xml_huge: 'foo'
-HINT:  this parameter expects boolean values ('true' or 'false')
+HINT:  This parameter expects boolean values ('true' or 'false').
 /* invalid batch_size - non-numeric value */
 CREATE SERVER rdfserver_error7
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -55,7 +55,7 @@ OPTIONS (
   batch_size 'foo'
 );
 ERROR:  invalid batch_size: 'foo'
-HINT:  expected values are positive integers (number of records)
+HINT:  Expected values are positive integers (number of records).
 /* invalid batch_size - zero value */
 CREATE SERVER rdfserver_error8
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -71,7 +71,7 @@ OPTIONS (
   batch_size '-10'
 );
 ERROR:  invalid batch_size: '-10'
-HINT:  expected values are positive integers (number of records)
+HINT:  Expected values are positive integers (number of records).
 /* invalid batch_size - empty string */
 CREATE SERVER rdfserver_error10
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -88,7 +88,7 @@ OPTIONS (
   batch_size ' '
 );
 ERROR:  invalid batch_size: ' '
-HINT:  expected values are positive integers (number of records)
+HINT:  Expected values are positive integers (number of records).
 /* invalid request_timeout - negative value */
 CREATE SERVER rdfserver_error12
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -97,7 +97,7 @@ OPTIONS (
   request_timeout '-1'
 );
 ERROR:  invalid request_timeout: '-1'
-HINT:  expected values are non-negative integers (timeout in seconds, 0 = disabled)
+HINT:  Expected values are non-negative integers (timeout in seconds, 0 = disabled).
 /* invalid request_timeout - empty string */
 CREATE SERVER rdfserver_error13
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -106,4 +106,4 @@ OPTIONS (
   request_timeout ' '
 );
 ERROR:  invalid request_timeout: ' '
-HINT:  expected values are non-negative integers (timeout in seconds, 0 = disabled)
+HINT:  Expected values are non-negative integers (timeout in seconds, 0 = disabled).

@@ -3069,7 +3069,7 @@ WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (1)
 WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (2)
 WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (3)
 ERROR:  unable to connect to 'server_invalid_url'
-DETAIL:  Timeout was reached (curl error code 28)
+DETAIL:  Timeout was reached (curl error code 28).
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'graphdb':

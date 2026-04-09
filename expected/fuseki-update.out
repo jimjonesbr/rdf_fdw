@@ -434,7 +434,7 @@ SELECT ?s ?p ?o
 INFO:  SPARQL returned 1 record.
 
 ERROR:  NULL value in column "object" violates RDF constraint
-DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns
+DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns.
 HINT:  RDF triples require all components to be non-NULL. Filter NULL values in your query or provide default values.
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>';

@@ -478,7 +478,7 @@ CALL
         fetch_size => -1
     );
 ERROR:  invalid 'fetch_size': -1
-HINT:  the page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number
+HINT:  The page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number.
 /*
  negative begin_offset
 */
@@ -524,7 +524,7 @@ CALL
         sort_order => 'foo'
     );
 ERROR:  invalid 'sort_order': foo
-HINT:  the 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending)
+HINT:  The 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending).
 /*
   NULL foreign_table
 */
@@ -547,7 +547,7 @@ CALL rdf_fdw_clone_table(
       target_table  => 't1_local',
       begin_offset => NULL);
 ERROR:  'begin_offset' cannot be NULL
-HINT:  either set it to 0 or ignore the paramter to start the pagination from the beginning
+HINT:  Either set it to 0 or ignore the paramter to start the pagination from the beginning.
 /*
   NULL fetch_size
 */
