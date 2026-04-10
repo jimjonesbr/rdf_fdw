@@ -434,7 +434,7 @@ SELECT ?s ?p ?o
 INFO:  SPARQL returned 1 record.
 
 ERROR:  NULL value in column "object" violates RDF constraint
-DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns
+DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns.
 HINT:  RDF triples require all components to be non-NULL. Filter NULL values in your query or provide default values.
 SELECT * FROM ft
 WHERE subject = '<https://www.uni-muenster.de>';
@@ -481,8 +481,13 @@ RETURNING OLD.subject, OLD.predicate, OLD.object,
 ERROR:  missing FROM-clause entry for table "old"
 LINE 6: RETURNING OLD.subject, OLD.predicate, OLD.object,
                   ^
-/* cleanup */
-DELETE FROM ft;
+/* read-only server: blocks UPDATE regardless of triple pattern */
+ALTER SERVER graphdb OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+UPDATE ft SET object = '"foo"@en'; -- succeeds: table override allows writes
 INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
@@ -492,85 +497,376 @@ INFO:  SPARQL returned 77 records.
 
 INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+INSERT DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+INSERT DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#domain> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#range> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> };
+INSERT DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#label> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#seeAlso> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 
 
 INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
+INSERT DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
+INSERT DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+INSERT DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+INSERT DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentClass> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentClass> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
 DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#differentFrom> };
+INSERT DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+
+
+SELECT * FROM ft WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |  object  
+-------------------------------+----------------------------------------------+----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "foo"@en
+(1 row)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER graphdb OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER graphdb OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 143 records.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 143 records.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+/* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 143 records.
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#SymmetricProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> };
+
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Datatype> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2004/02/skos/core#altLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#domain> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#range> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> };
+DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#label> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#seeAlso> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#ContainerMembershipProperty> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> "foo"@en };
+
+
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#domain> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Class> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/1999/02/22-rdf-syntax-ns#List> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#comment> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2000/01/rdf-schema#Literal> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#range> "foo"@en };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
+DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://proton.semanticweb.org/protonsys#transitiveOver> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentProperty> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentClass> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#differentFrom> };
+DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> "foo"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
 
 
 DROP SERVER graphdb CASCADE;

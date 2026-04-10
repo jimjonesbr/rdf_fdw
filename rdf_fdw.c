@@ -719,10 +719,10 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate, ResultRelInfo *rinfo
 static TupleTableSlot *rdfExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 static TupleTableSlot *rdfExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
 static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo);
+static int rdfIsForeignRelUpdatable(Relation rel);
 #if PG_VERSION_NUM >= 110000
 static void rdfBeginForeignInsert(ModifyTableState *mtstate, ResultRelInfo *rinfo);
 static void rdfEndForeignInsert(EState *estate, ResultRelInfo *rinfo);
-static int rdfIsForeignRelUpdatable(Relation rel);
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */

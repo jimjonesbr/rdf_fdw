@@ -98,7 +98,7 @@ EOF
     docker run \
         --network $NETWORK_NAME \
         -itw /ext --rm \
-        --volume "$CODEPATH:/ext" $IMAGENAME sh -c "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 SKIP_UPDATE_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
+        --volume "$CODEPATH:/ext" $IMAGENAME sh -c "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
 
     
     echo -e "\n\n== Tests finished for PostgreSQL $pgv ==\n\n"    
