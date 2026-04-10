@@ -113,8 +113,35 @@ DELETE FROM ft;
 ALTER USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
 
-/* bulk DELETE all inserted triples */
-SELECT count(*) FROM ft;
+/* read-only server: blocks DELETE regardless of triple pattern */
+ALTER SERVER fuseki OPTIONS (ADD readonly 'true');
+DELETE FROM ft;
+
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+DELETE FROM ft WHERE object = '<http://dbpedia.org/resource/University>'; -- succeeds: table override allows writes
+SELECT * FROM ft WHERE object = '<http://dbpedia.org/resource/University>';
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER fuseki OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+DELETE FROM ft;
+
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER fuseki OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+DELETE FROM ft;
+
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+DELETE FROM ft;
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+DELETE FROM ft;
+
+/* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 DELETE FROM ft;
 SELECT count(*) FROM ft;
 

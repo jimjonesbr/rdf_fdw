@@ -783,13 +783,13 @@ INFO:  SPARQL returned 7 records.
 
             subject            |                     predicate                     |                             object                              
 -------------------------------+---------------------------------------------------+-----------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
 (7 rows)
 
 SELECT * FROM ft
@@ -860,14 +860,14 @@ INFO:  SPARQL returned 8 records.
 
             subject            |                     predicate                     |                             object                              
 -------------------------------+---------------------------------------------------+-----------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.00"^^<http://www.w3.org/2001/XMLSchema#double>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#long>
 (8 rows)
 
 SELECT * FROM ft

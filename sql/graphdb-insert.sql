@@ -200,7 +200,41 @@ INSERT INTO ft (subject, predicate, object) VALUES
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', sparql.bnode());
 
+/* read-only server: blocks INSERT regardless of triple pattern */
+ALTER SERVER graphdb OPTIONS (ADD readonly 'true');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', '"foo"@en'); -- succeeds: table override allows writes
+SELECT * FROM ft WHERE object = '"foo"@en';
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER graphdb OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER graphdb OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+
 /* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);
 DROP SERVER graphdb CASCADE;

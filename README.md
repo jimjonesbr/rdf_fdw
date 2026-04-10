@@ -182,6 +182,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `query_param` | optional | HTTP parameter name that carries the SPARQL query (default `query`). |
 | `prefix_context` | optional | Name of a prefix context whose `PREFIX` entries are prepended to generated SPARQL queries. |
 | `enable_xml_huge` | optional | Enable libxml2's `XML_PARSE_HUGE` to process very large or deeply nested responses (dangerous; default `false`). Use only for trusted endpoints. |
+| `readonly` | optional | Mark the server as read-only (default `false`). When `true`, all `INSERT`, `UPDATE`, and `DELETE` operations on any foreign table backed by this server are rejected before reaching the endpoint. Table-level `readonly` takes precedence over this setting. |
 
 > [!NOTE]
 > To view server options in `psql` use the meta-command `\des[+]`.
@@ -253,6 +254,8 @@ Table options:
 | `log_sparql` | optional | Log the exact SPARQL sent to the endpoint (default `false`). |
 | `enable_pushdown` | optional | Override server-level pushdown for this table (default: server value). |
 | `update_url` | optional | URL used for SPARQL UPDATE requests when different from the SELECT endpoint (e.g. Fuseki). |
+| `sparql_update_pattern` | optional | SPARQL triple pattern template used to build `INSERT DATA`, `DELETE DATA`, and `UPDATE` statements (required for DML). Each SPARQL variable in the pattern must be mapped to a table column. |
+| `readonly` | optional | Mark this foreign table as read-only (default `false`). When `true`, `INSERT`, `UPDATE`, and `DELETE` are rejected for this table regardless of the server-level `readonly` setting. When `false`, explicitly overrides a server-level `readonly 'true'`, allowing writes on this table even when the server is read-only. |
 
 #### Column types
 

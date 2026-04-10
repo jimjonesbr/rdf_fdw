@@ -107,3 +107,11 @@ OPTIONS (
 );
 ERROR:  invalid request_timeout: ' '
 HINT:  Expected values are non-negative integers (timeout in seconds, 0 = disabled).
+/* invalid readonly - empty string */
+CREATE SERVER rdfserver_error14
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  readonly ''
+);
+ERROR:  empty value in option 'readonly'

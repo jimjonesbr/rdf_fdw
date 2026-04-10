@@ -126,6 +126,34 @@ WHERE subject = '<https://www.uni-muenster.de>'
 RETURNING OLD.subject, OLD.predicate, OLD.object,
           NEW.subject AS new_subject, NEW.predicate AS new_predicate, NEW.object AS new_object;
 
+/* read-only server: blocks UPDATE regardless of triple pattern */
+ALTER SERVER graphdb OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+UPDATE ft SET object = '"foo"@en'; -- succeeds: table override allows writes
+SELECT * FROM ft WHERE subject = '<https://www.uni-muenster.de>';
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER graphdb OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER graphdb OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+UPDATE ft SET object = '"foo"@en';
+
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+UPDATE ft SET object = '"foo"@en';
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+UPDATE ft SET object = '"foo"@en';
+
 /* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 DELETE FROM ft;
 DROP SERVER graphdb CASCADE;

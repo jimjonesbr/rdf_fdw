@@ -419,27 +419,90 @@ DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.o
  <https://www.uni-muenster.de/rdf_fdw/delete-test> | <http://www.w3.org/2000/01/rdf-schema#comment> | "🐘"@de
 (1 row)
 
-/* bulk DELETE all inserted triples */
-SELECT count(*) FROM ft;
+/* read-only server: blocks DELETE regardless of triple pattern */
+ALTER SERVER graphdb OPTIONS (ADD readonly 'true');
+DELETE FROM ft;
+ERROR:  foreign table "ft" does not allow deletes
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+DELETE FROM ft WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'; -- succeeds: table override allows writes
 INFO:  SPARQL query sent to 'graphdb':
 
-SELECT  * 
-{?s ?p ?o}
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de/rdf_fdw/delete-test>)
+}
 
-INFO:  SPARQL returned 76 records.
+INFO:  SPARQL returned 4 records.
 
- count 
--------
-    76
-(1 row)
+INFO:  SPARQL query sent to 'graphdb':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
 
+
+SELECT * FROM ft WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>';
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de/rdf_fdw/delete-test>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER graphdb OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+DELETE FROM ft;
+ERROR:  foreign table "ft" does not allow deletes
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER graphdb OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+DELETE FROM ft;
+ERROR:  foreign table "ft" does not allow deletes
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 76 records.
+INFO:  SPARQL returned 71 records.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 71 records.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+/* bulk DELETE all inserted triples */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 71 records.
 
 INFO:  SPARQL query sent to 'graphdb':
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> };
@@ -482,7 +545,6 @@ DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#subClassOf> };
 DELETE DATA { <http://proton.semanticweb.org/protonsys#transitiveOver> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://proton.semanticweb.org/protonsys#transitiveOver> };
 DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2002/07/owl#inverseOf> };
-DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> <http://www.w3.org/2000/01/rdf-schema#seeAlso> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Container> };
@@ -492,10 +554,10 @@ DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://ww
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#Datatype> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#Class> };
 DELETE DATA { <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> };
+DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
 
 
 INFO:  SPARQL query sent to 'graphdb':
-DELETE DATA { <http://www.w3.org/2001/XMLSchema#string> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2001/XMLSchema#string> };
 DELETE DATA { <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/2000/01/rdf-schema#Class> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
 DELETE DATA { <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> };
@@ -517,10 +579,6 @@ DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentProperty> <http://www.w3.
 DELETE DATA { <http://www.w3.org/2002/07/owl#equivalentClass> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#equivalentClass> };
 DELETE DATA { <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#inverseOf> };
 DELETE DATA { <http://www.w3.org/2002/07/owl#differentFrom> <http://www.w3.org/2002/07/owl#inverseOf> <http://www.w3.org/2002/07/owl#differentFrom> };
-DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
-DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
-DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
-DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
 
 
 SELECT count(*) FROM ft;

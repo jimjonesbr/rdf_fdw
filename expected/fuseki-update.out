@@ -526,8 +526,13 @@ ERROR:  SERVER authentication failed (HTTP status 401)
 HINT:  Check the user and password set in the USER MAPPING for the PostgreSQL user "postgres" and try again.
 ALTER USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
-/* cleanup */
-DELETE FROM ft;
+/* read-only server: blocks UPDATE regardless of triple pattern */
+ALTER SERVER fuseki OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+UPDATE ft SET object = '"foo"@en'; -- succeeds: table override allows writes
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
@@ -537,6 +542,73 @@ INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'fuseki':
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+
+
+SELECT * FROM ft WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |  object  
+-------------------------------+----------------------------------------------+----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "foo"@en
+(1 row)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER fuseki OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER fuseki OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+/* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
 
 
 DROP SERVER fuseki CASCADE;

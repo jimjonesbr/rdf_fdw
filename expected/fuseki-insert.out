@@ -374,7 +374,7 @@ ALTER SERVER fuseki OPTIONS (SET update_url 'http://fuseki:3030/dt/update',
 ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
-ERROR:  INSERT operation requires a valid triple pattern in 'sparql_update_pattern'
+ERROR:  foreign table "ft" does not allow inserts
 /* invalid triple pattern - empty sparql_update_pattern OPTION */
 ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern ' ');
 INSERT INTO ft (subject, predicate, object) VALUES
@@ -397,7 +397,47 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ERROR:  SERVER authentication failed (HTTP status 401)
 ALTER USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
+/* read-only server: blocks INSERT regardless of triple pattern */
+ALTER SERVER fuseki OPTIONS (ADD readonly 'true');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', '"foo"@en'); -- succeeds: table override allows writes
+SELECT * FROM ft WHERE object = '"foo"@en';
+            subject            |                     predicate                     | foo |  object  
+-------------------------------+---------------------------------------------------+-----+----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> |     | "foo"@en
+(1 row)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER fuseki OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER fuseki OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
 /* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 DELETE FROM ft;
 SELECT sparql.drop_context('testctx', true);
  drop_context 

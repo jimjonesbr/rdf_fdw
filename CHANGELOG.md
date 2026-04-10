@@ -5,6 +5,16 @@ Release date: **yyyy-mm-dd**
 
 * **Add 'request_timeout' to FOREIGN SERVERS**: This option sets the maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer.
 
+* **Add 'readonly' option to FOREIGN SERVERS and FOREIGN TABLES**: A new boolean `readonly` option can be set on both `SERVER` and `FOREIGN TABLE` to prevent `INSERT`, `UPDATE`, and `DELETE` operations before they reach the SPARQL endpoint. When set at the server level it applies to all foreign tables backed by that server; when set at the table level it overrides the server setting, allowing a read-only server to have individual writable tables (or a read-write server to have individual protected tables). PostgreSQL will report the correct updatability via `IsForeignRelUpdatable`, so client tools that inspect `pg_catalog` can also discover whether a table allows DML.
+
+  ```sql
+  -- Mark the entire server as read-only
+  ALTER SERVER fuseki OPTIONS (ADD readonly 'true');
+
+  -- Override at the table level: this table is still writable despite the server setting
+  ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+  ```
+
 # 2.4
 Release date: **2026-02-14**
 

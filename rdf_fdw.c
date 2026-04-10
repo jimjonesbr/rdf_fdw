@@ -179,12 +179,14 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_PREFIX_CONTEXT, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_ENABLE_XML_HUGE, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_BATCH_SIZE, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_READONLY, ForeignServerRelationId, false, false},
 		/* Foreign Tables */
 		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 		{RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, ForeignTableRelationId, false, false},
 		{RDF_TABLE_OPTION_LOG_SPARQL, ForeignTableRelationId, false, false},
 		{RDF_TABLE_OPTION_ENABLE_PUSHDOWN, ForeignTableRelationId, false, false},
 		{RDF_TABLE_OPTION_FETCH_SIZE, ForeignTableRelationId, false, false},
+		{RDF_TABLE_OPTION_READONLY, ForeignTableRelationId, false, false},
 		/* Options for Foreign Table's Columns */
 		{RDF_COLUMN_OPTION_VARIABLE, AttributeRelationId, true, false},
 		{RDF_COLUMN_OPTION_EXPRESSION, AttributeRelationId, false, false},
@@ -720,6 +722,7 @@ static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo);
 #if PG_VERSION_NUM >= 110000
 static void rdfBeginForeignInsert(ModifyTableState *mtstate, ResultRelInfo *rinfo);
 static void rdfEndForeignInsert(EState *estate, ResultRelInfo *rinfo);
+static int rdfIsForeignRelUpdatable(Relation rel);
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */
@@ -771,6 +774,7 @@ Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 	fdwroutine->ExecForeignUpdate = rdfExecForeignUpdate;
 	fdwroutine->ExecForeignDelete = rdfExecForeignDelete;
 	fdwroutine->EndForeignModify = rdfEndForeignModify;
+	fdwroutine->IsForeignRelUpdatable = rdfIsForeignRelUpdatable;
 #if PG_VERSION_NUM >= 110000
 	fdwroutine->BeginForeignInsert = rdfBeginForeignInsert;
 	fdwroutine->EndForeignInsert = rdfEndForeignInsert;
@@ -3976,6 +3980,8 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		}
 		else if (strcmp(RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, def->defname) == 0)
 			state->sparql_update_pattern = defGetString(def);
+		else if (strcmp(RDF_TABLE_OPTION_READONLY, def->defname) == 0)
+			state->readonly = defGetBoolean(def);
 		else if (strcmp(RDF_TABLE_OPTION_LOG_SPARQL, def->defname) == 0)
 			state->log_sparql = defGetBoolean(def);
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
@@ -3983,6 +3989,48 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 	}
 
 	elog(DEBUG1, "%s exit", __func__);
+}
+
+static int rdfIsForeignRelUpdatable(Relation rel)
+{
+	bool readonly = false;
+	ListCell *lc;
+	ForeignTable *table = GetForeignTable(RelationGetRelid(rel));
+	ForeignServer *server = GetForeignServer(table->serverid);
+
+	foreach(lc, server->options)
+	{
+		DefElem *def = (DefElem *) lfirst(lc);
+		if (strcmp(def->defname, RDF_SERVER_OPTION_READONLY) == 0)
+			readonly = defGetBoolean(def);
+	}
+
+	foreach(lc, table->options)
+	{
+		DefElem *def = (DefElem *) lfirst(lc);
+		if (strcmp(def->defname, RDF_TABLE_OPTION_READONLY) == 0)
+			readonly = defGetBoolean(def);
+	}
+
+	/* if readonly, no need to look for update triple pattern */
+	if (readonly)
+    	return 0;
+
+	foreach (lc, table->options)
+	{
+		DefElem *def = (DefElem *)lfirst(lc);
+
+		if (strcmp(def->defname, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN) == 0)
+		{
+			char *pattern = defGetString(def);
+
+			if (pattern && strlen(pattern) > 0)
+				return (1 << CMD_INSERT) | (1 << CMD_UPDATE) | (1 << CMD_DELETE);
+		}
+	}
+
+	/* read-only: no triple pattern found */
+	return 0;
 }
 
 static void LoadRDFServerInfo(RDFfdwState *state)
@@ -4053,6 +4101,8 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 				char *maxretry_str = defGetString(def);
 				state->max_retries = strtol(maxretry_str, &tailpt, 0);
 			}
+			else if (strcmp(RDF_SERVER_OPTION_READONLY, def->defname) == 0)
+				state->readonly = defGetBoolean(def);
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
 				state->request_redirect = defGetBoolean(def);
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)

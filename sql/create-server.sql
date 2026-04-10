@@ -99,3 +99,11 @@ OPTIONS (
   endpoint 'https://dbpedia.org/sparql',
   request_timeout ' '
 );
+
+/* invalid readonly - empty string */
+CREATE SERVER rdfserver_error14
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  readonly ''
+);

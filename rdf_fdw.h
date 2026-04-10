@@ -33,6 +33,7 @@
 #define RDF_TABLE_OPTION_LOG_SPARQL "log_sparql"
 #define RDF_TABLE_OPTION_ENABLE_PUSHDOWN "enable_pushdown"
 #define RDF_TABLE_OPTION_FETCH_SIZE "fetch_size"
+#define RDF_TABLE_OPTION_READONLY "readonly"
 
 /* Column options */
 #define RDF_COLUMN_OPTION_VARIABLE "variable"
@@ -156,6 +157,7 @@
 #define RDF_SERVER_OPTION_PREFIX_CONTEXT "prefix_context"
 #define RDF_SERVER_OPTION_ENABLE_XML_HUGE "enable_xml_huge"
 #define RDF_SERVER_OPTION_BATCH_SIZE "batch_size" 
+#define RDF_SERVER_OPTION_READONLY "readonly"
 
 extern Oid RDFNODEOID;
 
@@ -203,7 +205,7 @@ typedef struct RDFfdwState
 	bool is_sparql_parsable;		   /* Marks the query is or not for pushdown*/
 	bool log_sparql;				   /* Enables or disables logging SPARQL queries as NOTICE */
 	bool has_unparsable_conds;		   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
-	bool keep_raw_literal;			   /* Flag to determine if a literal should be serialized with its data type/language or not*/
+	bool readonly;				   	   /* Enables or disables INSERT, UPDATE, and DELETE operations */
 	List *remote_conds;				   /* List of RestrictInfo nodes that were successfully pushed down to the remote SPARQL endpoint */
 	long request_max_redirect;		   /* Limit of how many times the URL redirection (jump) may occur. */
 	long connect_timeout;				   /* Timeout for establishing a connection to the SPARQL endpoint */
