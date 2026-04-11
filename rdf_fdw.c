@@ -2942,6 +2942,12 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 
 static void rdfReScanForeignScan(ForeignScanState *node)
 {
+    struct RDFfdwState *state = (struct RDFfdwState *)node->fdw_state;
+
+    elog(DEBUG1, "%s called", __func__);
+
+    if (state)
+        state->rowcount = 0;
 }
 
 static void rdfEndForeignScan(ForeignScanState *node)

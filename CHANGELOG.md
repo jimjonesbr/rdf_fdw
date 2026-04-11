@@ -14,6 +14,9 @@ Release date: **yyyy-mm-dd**
   -- Override at the table level: this table is still writable despite the server setting
   ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
   ```
+## Minor Changes
+
+Fixed `rdfReScanForeignScan` to reset the row index, making it correct for any future plan shape where PostgreSQL omits the Materialize node above a foreign scan.
 
 # 2.4
 Release date: **2026-02-14**
