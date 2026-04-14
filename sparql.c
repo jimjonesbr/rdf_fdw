@@ -472,10 +472,17 @@ char *str(char *input)
 /*
  * iri
  * ---
+ *
  * Converts a string to an IRI by wrapping it in angle brackets (< >),
  * mimicking SPARQL's IRI() function. Strips quotes and any language tags or
  * datatypes if present *only* for quoted literals. Raw strings and
  * pre-wrapped IRIs are preserved.
+ *
+ * input: Null-terminated C string representing an RDF literal, bare string,
+ * or pre-formed IRI (e.g., "http://example.org", "\"http://example.org\"")
+ *
+ * returns: Null-terminated C string wrapped in angle brackets
+ * (e.g., "<http://example.org>"), or "<>" for empty/NULL input
  */
 char *iri(char *input)
 {
@@ -598,21 +605,24 @@ char *bnode(char *input)
 }
 
 /*
- * concat(text, text) returns text
+ * concat
+ * ------
  *
- * Implements the SPARQL CONCAT function.
+ * Implements the SPARQL CONCAT function. Concatenates two RDF literals while
+ * preserving compatible language tags or datatype annotations (specifically
+ * xsd:string). If both inputs share the same language tag, the result carries
+ * that tag. If both inputs are typed as xsd:string, the result is typed as
+ * xsd:string. Mixing a simple literal with a language-tagged or
+ * xsd:string-typed value, or conflicting language tags, yields a plain
+ * literal without type or language tag.
  *
- * Concatenates two RDF literals while preserving compatible language tags
- * or datatype annotations (specifically xsd:string). If both inputs share
- * the same language tag, the result will carry that tag. If both inputs are
- * typed as xsd:string, the result is typed as xsd:string.
+ * left: Null-terminated C string representing the first RDF literal or bare
+ * string (e.g., "foo", "\"foo\"@en")
+ * right: Null-terminated C string representing the second RDF literal or
+ * bare string (e.g., "bar", "\"bar\"@en")
  *
- * Mixing a simple literal with a language-tagged or xsd:string-typed value
- * results in a plain literal without type or language. Conflicting language
- * tags also return simple literals.
- *
- * NULL inputs yield NULL. Empty strings are allowed and result in valid RDF
- * literals.
+ * returns: Null-terminated C string representing the concatenated RDF
+ * literal (e.g., "\"foobar\"@en")
  */
 char *concat(char *left, char *right)
 {
@@ -694,11 +704,16 @@ char *concat(char *left, char *right)
 /*
  * isIRI
  * -----
- * Checks if a string is an RDF IRI. A valid IRI must:
- * - Start with '<' and end with '>'
- * - Not contain spaces or quote characters
- * - May be absolute (with a colon) or relative (e.g., <foo>) according to
- *   SPARQL 1.1.
+ *
+ * Checks if a string is an RDF IRI. A valid IRI must start with '<' and end
+ * with '>', and must not contain spaces or quote characters. Both absolute
+ * (e.g., <http://example.org/foo>) and relative (e.g., <foo>) IRIs are
+ * accepted per SPARQL 1.1.
+ *
+ * input: Null-terminated C string representing an RDF term
+ * (e.g., "<http://example.org>", "\"hello\"", "_:b1")
+ *
+ * returns: bool (true if input is a valid IRI, false otherwise)
  */
 bool isIRI(char *input)
 {
@@ -766,7 +781,7 @@ bool isBlank(char *term)
  *
  * term: Null-terminated C string representing an RDF term
  *
- * returns: Boolean (1 for literal, 0 otherwise)
+ * returns: bool (true if term is a literal, false otherwise)
  */
 bool isLiteral(char *term)
 {
@@ -1300,7 +1315,7 @@ char *lcase(char *str)
 
     str_language = lang(str);
 
-    elog(DEBUG3, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+    elog(DEBUG3, "%s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
     /* Convert to lowercase using PostgreSQL's multibyte-aware function */
     {
@@ -1355,7 +1370,7 @@ char *ucase(char *str)
     if (!str)
         ereport(ERROR,
                 (errcode(ERRCODE_INTERNAL_ERROR),
-                 errmsg("LCASE cannot be NULL")));
+                 errmsg("UCASE cannot be NULL")));
 
     if (strlen(str) == 0)
     {
@@ -1391,7 +1406,7 @@ char *ucase(char *str)
 
     str_language = lang(str);
 
-    elog(DEBUG2, " %s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
+    elog(DEBUG3, "%s: lexical='%s', datatype='%s', language='%s'", __func__, lexical, str_datatype, str_language);
 
     /* Convert to uppercase using PostgreSQL's multibyte-aware function */
     {
@@ -1584,7 +1599,7 @@ bool contains(char *str_in, char *substr_in)
     /* check if substr is in str using strstr */
     result = (strstr(str_lex, substr_lex) != NULL);
 
-    elog(DEBUG3, "%s exit: returning > %s (str_lexical='%s', substr_lexical='%s')",
+    elog(DEBUG3, "%s exit: returning => '%s' (str_lexical='%s', substr_lexical='%s')",
          __func__, result ? "true" : "false", str_lex, substr_lex);
 
     return result;
@@ -1592,7 +1607,7 @@ bool contains(char *str_in, char *substr_in)
 
 /*
  * strbefore
- * -----------------
+ * ---------
  *
  * Implements the SPARQL STRBEFORE function, returning the substring of the first
  * argument before the first occurrence of the second argument (delimiter). The
@@ -1613,7 +1628,7 @@ char *strbefore(char *str, char *delimiter)
     char *pos;
     char *result;
 
-    elog(DEBUG3, "%s called: str='%s', delimiter='%s", __func__, str, delimiter);
+    elog(DEBUG3, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
 
     str_lexical = lex(str);
     delimiter_lexical = lex(delimiter);
@@ -1625,7 +1640,7 @@ char *strbefore(char *str, char *delimiter)
 
     if (!LiteralsCompatible(str, delimiter))
     {
-        elog(DEBUG3, "%s exit: returning NULL (literals no compatible)", __func__);
+        elog(DEBUG3, "%s exit: returning NULL (literals not compatible)", __func__);
         return NULL;
     }
 
@@ -1692,7 +1707,7 @@ char *strbefore(char *str, char *delimiter)
 
 /*
  * strafter
- * ----------------
+ * --------
  *
  * Implements the SPARQL STRAFTER function, returning the substring of the first
  * argument after the first occurrence of the second argument (delimiter). The
@@ -1799,8 +1814,13 @@ char *strafter(char *str, char *delimiter)
  * count_utf8_chars
  * ----------------
  *
- * Counts Unicode characters (code points) in a UTF-8 string.
- * Returns the number of characters, not bytes.
+ * Counts Unicode characters (code points) in a UTF-8 encoded string by
+ * skipping continuation bytes (0x80–0xBF), returning the number of
+ * characters rather than bytes.
+ *
+ * str: Null-terminated UTF-8 encoded C string
+ *
+ * returns: Number of Unicode code points in str
  */
 static int count_utf8_chars(const char *str)
 {
@@ -1820,6 +1840,19 @@ static int count_utf8_chars(const char *str)
     return char_count;
 }
 
+/*
+ * strlen_rdf
+ * ----------
+ *
+ * Implements SPARQL's STRLEN function. Returns the number of Unicode
+ * characters (code points) in the lexical form of a string literal. Errors
+ * on IRIs, blank nodes, and non-string-typed literals.
+ *
+ * str: Null-terminated C string representing an RDF literal or bare string
+ * (e.g., "\"hello\"", "\"café\"@fr", "hello")
+ *
+ * returns: Number of Unicode characters in the lexical form
+ */
 int strlen_rdf(char *str)
 {
     char *lexical;
@@ -1865,9 +1898,16 @@ int strlen_rdf(char *str)
 /*
  * get_xsd_numeric_type
  * --------------------
- * Determines the XSD numeric type from an rdfnode's datatype URI.
  *
- * Returns the type in the promotion hierarchy: integer < decimal < float < double
+ * Determines the XSD numeric type from an rdfnode's datatype URI, used for
+ * type promotion in numeric aggregates (SUM, AVG). All xsd:integer subtypes
+ * map to XSD_TYPE_INTEGER.
+ *
+ * dtype: Null-terminated C string containing the full XSD datatype URI
+ * (e.g., RDF_XSD_INTEGER, RDF_XSD_DOUBLE)
+ *
+ * returns: XsdNumericType value in the promotion hierarchy:
+ * XSD_TYPE_INTEGER < XSD_TYPE_DECIMAL < XSD_TYPE_FLOAT < XSD_TYPE_DOUBLE
  */
 XsdNumericType get_xsd_numeric_type(const char *dtype)
 {
@@ -1903,7 +1943,16 @@ XsdNumericType get_xsd_numeric_type(const char *dtype)
 /*
  * get_xsd_datatype_uri
  * --------------------
- * Returns the XSD datatype URI for a given numeric type level.
+ *
+ * Returns the XSD datatype URI constant for a given numeric type level,
+ * used when formatting aggregate results (SUM, AVG) as typed rdfnode
+ * literals. Falls back to RDF_XSD_DECIMAL for unrecognised inputs.
+ *
+ * type: XsdNumericType promotion level
+ * (e.g., XSD_TYPE_INTEGER, XSD_TYPE_DOUBLE)
+ *
+ * returns: Null-terminated C string containing the full XSD datatype URI
+ * (e.g., RDF_XSD_INTEGER, RDF_XSD_DECIMAL, etc.)
  */
 const char *get_xsd_datatype_uri(XsdNumericType type)
 {

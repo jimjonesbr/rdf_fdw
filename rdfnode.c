@@ -1,8 +1,8 @@
 
 /*---------------------------------------------------------------------
  *
- * rdf_utils.c
- *   Functions for rdfnode comparison.
+ * rdfnode.c
+ *   rdfnode comparison operators, type ordering, and literal parsing.
  *
  * Copyright (C) 2022-2026 Jim Jones <jim.jones@uni-muenster.de>
  *
@@ -27,6 +27,18 @@
 #include "nodes/makefuncs.h"
 #include <string.h>
 
+/*
+ * rdfnode_eq
+ * ----------
+ * Returns true if two rdfnode values are SPARQL-equal. IRIs are compared
+ * by raw string; plain literals and xsd:string use locale-aware comparison;
+ * numeric, date, time, and duration types delegate to their PostgreSQL
+ * equivalents. Falls back to lexical comparison for unrecognised types.
+ *
+ * n1, n2: the rdfnode operands
+ *
+ * returns true if n1 = n2 under SPARQL 1.1 semantics
+ */
 bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 {
 	rdfnode_info a = parse_rdfnode(n1);
@@ -154,6 +166,17 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	return strcmp(a.lex, b.lex) == 0;
 }
 
+/*
+ * rdfnode_ge
+ * ----------
+ * Returns true if n1 >= n2 under SPARQL 1.1 comparison semantics.
+ * Per IEEE 754 / SPARQL 1.1 §17.3, any comparison involving NaN returns false.
+ * dateTime literals that lack a timezone offset are treated as incomparable.
+ *
+ * n1, n2: the rdfnode operands
+ *
+ * returns true if n1 >= n2
+ */
 bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
@@ -263,6 +286,17 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	return false;
 }
 
+/*
+ * rdfnode_le
+ * ----------
+ * Returns true if n1 <= n2 under SPARQL 1.1 comparison semantics.
+ * Per IEEE 754 / SPARQL 1.1 §17.3, any comparison involving NaN returns false.
+ * dateTime literals that lack a timezone offset are treated as incomparable.
+ *
+ * n1, n2: the rdfnode operands
+ *
+ * returns true if n1 <= n2
+ */
 bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
@@ -372,6 +406,17 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	return false;
 }
 
+/*
+ * rdfnode_gt
+ * ----------
+ * Returns true if n1 > n2 under SPARQL 1.1 comparison semantics.
+ * Per IEEE 754 / SPARQL 1.1 §17.3, any comparison involving NaN returns false.
+ * dateTime literals that lack a timezone offset are treated as incomparable.
+ *
+ * n1, n2: the rdfnode operands
+ *
+ * returns true if n1 > n2
+ */
 bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
@@ -481,6 +526,17 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	return false;
 }
 
+/*
+ * rdfnode_lt
+ * ----------
+ * Returns true if n1 < n2 under SPARQL 1.1 comparison semantics.
+ * Per IEEE 754 / SPARQL 1.1 §17.3, any comparison involving NaN returns false.
+ * dateTime literals that lack a timezone offset are treated as incomparable.
+ *
+ * n1, n2: the rdfnode operands
+ *
+ * returns true if n1 < n2
+ */
 bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 {
 	Datum arg1, arg2;
@@ -829,6 +885,21 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 	return strcmp(rdfnode1.lex, rdfnode2.lex);
 }
 
+/*
+ * LiteralsComparable
+ * ------------------
+ * Checks whether two rdfnode values can be ordered with relational operators
+ * (<, <=, >=, >) under SPARQL 1.1 rules. Language-tagged literals are never
+ * comparable. All other pairs must share the same type category (both numeric,
+ * both temporal, etc.).
+ *
+ * Raises an ERROR rather than returning false when operands are incompatible,
+ * matching SPARQL semantics (a type error, not a NULL result).
+ *
+ * n1, n2: the rdfnode operands to check
+ *
+ * returns true if the values can be ordered; raises ERROR otherwise
+ */
 bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 {
 	rdfnode_info rdfnode1 = parse_rdfnode(n1);
@@ -860,6 +931,18 @@ bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 			 errmsg("cannot compare literals of different datatypes")));
 }
 
+/*
+ * parse_rdfnode
+ * -------------
+ * Decodes a raw rdfnode varlena value into an rdfnode_info struct, extracting
+ * the lexical value (with Unicode escapes resolved), datatype URI, language tag,
+ * and setting the type-classification flags used by all comparison and aggregate
+ * functions.
+ *
+ * node: the rdfnode value to parse
+ *
+ * returns a populated rdfnode_info; all flag fields reflect the node's datatype
+ */
 rdfnode_info parse_rdfnode(rdfnode *node)
 {
 	rdfnode_info result = {NULL, NULL, NULL, false};

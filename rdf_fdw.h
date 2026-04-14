@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------
  *
  * rdf_fdw.h
- * 
- * RDF-related constants for the rdf_fdw extension.
- * Centralized definitions for RDF/SPARQL URIs, datatypes, formats, and
- * configuration defaults.
+ *
+ * Shared type definitions, struct declarations, and constants for the
+ * rdf_fdw extension. Covers RDF/SPARQL URIs, XSD datatypes, request
+ * configuration defaults, and the primary FDW state structures.
  * 
  * Copyright (C) 2022-2026 Jim Jones <jim.jones@uni-muenster.de>
  * 
@@ -175,7 +175,7 @@ typedef struct RDFfdwState
 	int numcols;					   /* Total number of columns in the foreign table. */
 	int rowcount;					   /* Number of rows currently returned to the client */
 	int pagesize;					   /* Total number of records retrieved from the SPARQL endpoint*/
-	char *sparql;					   /* Final SPARQL query sent to the endpoint (after pusdhown) */
+	char *sparql;					   /* Final SPARQL query sent to the endpoint (after pushdown) */
 	char *user;						   /* User name for HTTP basic authentication */
 	char *password;					   /* Password for HTTP basic authentication */
 	char *sparql_prefixes;			   /* SPARQL PREFIX entries */
@@ -202,7 +202,7 @@ typedef struct RDFfdwState
 	bool request_redirect;			   /* Enables or disables URL redirecting. */
 	bool enable_pushdown;			   /* Enables or disables pushdown of SQL commands */
 	bool enable_xml_huge;			   /* Enables or disables XML parser to handle huge XML documents */
-	bool is_sparql_parsable;		   /* Marks the query is or not for pushdown*/
+	bool is_sparql_parsable;		   /* Marks whether the SPARQL query is parsable for pushdown */
 	bool log_sparql;				   /* Enables or disables logging SPARQL queries as NOTICE */
 	bool has_unparsable_conds;		   /* Marks a query that contains expressions that cannot be parsed for pushdown. */
 	bool readonly;				   	   /* Enables or disables INSERT, UPDATE, and DELETE operations */
@@ -210,7 +210,7 @@ typedef struct RDFfdwState
 	long request_max_redirect;		   /* Limit of how many times the URL redirection (jump) may occur. */
 	long connect_timeout;				   /* Timeout for establishing a connection to the SPARQL endpoint */
 	long request_timeout;				   /* Timeout for the entire HTTP request (connect + transfer) */
-	long max_retries;				   /* Number of re-try attemtps for failed SPARQL queries */
+	long max_retries;				   /* Number of retry attempts for failed SPARQL queries */
 	xmlDocPtr xmldoc;				   /* XML document where the result of SPARQL queries will be stored */
 	Oid foreigntableid;				   /* FOREIGN TABLE oid */
 	List *records;					   /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/
@@ -252,7 +252,7 @@ typedef struct RDFfdwColumn
 	char *sparqlvar;	 /* Column OPTION 'variable' - SPARQL variable */
 	char *expression;	 /* Column OPTION 'expression' - SPARQL expression*/
 	char *literaltype;	 /* Column OPTION 'type' - literal data type */
-	char *literal_fomat; /*  */
+	char *literal_fomat; /* Column OPTION 'literal_format' - literal value format ('raw' or 'content') */
 	char *nodetype;		 /* Column OPTION 'nodetype' - node data type */
 	char *language;		 /* Column OPTION 'language' - RDF language tag for literals */
 	Oid pgtype;			 /* PostgreSQL data type */

@@ -53,7 +53,7 @@
 #include "nodes/nodeFuncs.h"
 #include "nodes/pg_list.h"
 #if PG_VERSION_NUM < 180000
-#include "nodes/bitmapset.h" // Needed for bms_is_empty in versions where it's inline
+#include "nodes/bitmapset.h" /* Needed for bms_is_empty in versions where it's inline */
 #endif
 #include "optimizer/cost.h"
 #include "optimizer/pathnode.h"
@@ -128,6 +128,7 @@
 
 #define IntToConst(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
 #define OidToConst(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
+/* +1 for the null terminator required by C string functions (libxml, printf, etc.) */
 #define IRI_SIZE(len) (VARHDRSZ + (len) + 1)
 /*
  * This macro is used by DeparseExpr to identify PostgreSQL
@@ -200,7 +201,6 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_USERMAPPING_OPTION_PROXYUSER, UserMappingRelationId, false, false},
 		{RDF_USERMAPPING_OPTION_PROXYPASSWORD, UserMappingRelationId, false, false},
 
-		/* EOList option */
 		{NULL, InvalidOid, false, false}};
 
 Oid RDFNODEOID = InvalidOid;
@@ -657,7 +657,7 @@ PG_FUNCTION_INFO_V1(time_gt_rdfnode);
 PG_FUNCTION_INFO_V1(time_le_rdfnode);
 PG_FUNCTION_INFO_V1(time_ge_rdfnode);
 
-/* timetz (time witho time zone) */
+/* timetz (time with time zone) */
 PG_FUNCTION_INFO_V1(rdfnode_to_timetz);
 PG_FUNCTION_INFO_V1(rdfnode_eq_timetz);
 PG_FUNCTION_INFO_V1(rdfnode_neq_timetz);
@@ -1100,8 +1100,13 @@ Datum rdf_fdw_strends(PG_FUNCTION_ARGS)
 	char *str = text_to_cstring(str_arg);
 	char *substr = text_to_cstring(substr_arg);
 
+	elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str, substr);
+
 	if (!LiteralsCompatible(str, substr))
+	{
+		elog(DEBUG3, "%s exit: returning NULL (incompatible literals)", __func__);
 		PG_RETURN_NULL();
+	}
 
 	PG_RETURN_BOOL(strends(str, substr));
 }
@@ -1202,7 +1207,11 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
 
 	elog(DEBUG3, "%s called", __func__);
 
-	/* Initialize or retrieve function type from fn_extra */
+	/*
+	 * uuid() and bnode() both call this same C function. Distinguish them at
+	 * runtime by looking up the PostgreSQL function name via fn_oid, then cache
+	 * the result in fn_extra so the lookup only pays for itself once per query.
+	 */
 	if (fcinfo->flinfo->fn_extra == NULL)
 	{
 		funcname = get_func_name(fcinfo->flinfo->fn_oid);
@@ -1347,7 +1356,7 @@ Datum rdf_fdw_lex(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
-/* MD5 produces a 16 byte (128 bit) hash */
+/* MD5 produces a 16-byte (128-bit) hash; hex-encoded that is 32 characters (2 per byte) */
 #define MD5_HASH_LEN 32
 Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
 {
@@ -2946,6 +2955,12 @@ static void rdfReScanForeignScan(ForeignScanState *node)
 
     elog(DEBUG1, "%s called", __func__);
 
+    /*
+     * Reset the row cursor so IterateForeignScan replays from the start of
+     * the already-fetched result page.  The fetched records list is NOT
+     * cleared because rdf_fdw batches the entire SPARQL result set into
+     * memory during BeginForeignScan; there is nothing to re-fetch.
+     */
     if (state)
         state->rowcount = 0;
 }
@@ -4343,7 +4358,10 @@ static List *SerializePlanData(RDFfdwState *state)
  * DeserializePlanData
  * -------------------
  * Converts Const variables created using SerializePlanData back
- * into pointers
+ * into pointers.
+ *
+ * IMPORTANT: fields must be extracted in the EXACT same order they were
+ * appended in SerializePlanData(); any mismatch silently produces wrong values.
  *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  *
@@ -4883,6 +4901,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		curl_easy_setopt(state->curl, CURLOPT_URL, state->endpoint);
 
+		/* CURLOPT_PROTOCOLS was deprecated in libcurl 7.85 and its enum flags removed
+		 * in 8.0; use the string-based CURLOPT_PROTOCOLS_STR on newer versions. */
 #if ((LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 85) || LIBCURL_VERSION_MAJOR < 7)
 		curl_easy_setopt(state->curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 #else
@@ -7119,6 +7139,17 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	return where_clause.data;
 }
 
+/*
+ * DeparseSPARQLWhereGraphPattern
+ * -------------------------------
+ * Extracts the graph pattern from the raw SPARQL WHERE clause supplied in the
+ * foreign table definition, stripping the surrounding curly braces so that
+ * rdf_fdw can inject additional FILTER expressions alongside it.
+ *
+ * state: SPARQL, SERVER and FOREIGN TABLE info
+ *
+ * returns char* containing the bare WHERE graph pattern
+ */
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 {
 	int where_position = -1;
@@ -7182,8 +7213,8 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 		/* ec_has_volatile saves some cycles */
 		if (pathkey_ec->ec_has_volatile)
 		{
-			elog(DEBUG1, "%s exit: returning 'false' (pathkey_ec->ec_has_volatile)", __func__);
-			return false;
+			elog(DEBUG1, "%s exit: returning NULL (pathkey_ec->ec_has_volatile)", __func__);
+			return NULL;
 		}
 
 		/*
@@ -7216,8 +7247,8 @@ static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, Rel
 
 		if (em == NULL)
 		{
-			elog(DEBUG1, "%s exit: returning 'false' (EquivalenceMember is NULL)", __func__);
-			return false;
+			elog(DEBUG1, "%s exit: returning NULL (EquivalenceMember is NULL)", __func__);
+			return NULL;
 		}
 
 		em_expr = em->em_expr;
@@ -7622,8 +7653,8 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 	len = strlen(r.data);
 
 	/*
-	 * allocate memory for the rdfnode (use palloc0 to clear memory).
-	 * r.data is already null-terminated, so no +1 :)
+	 * Allocate memory for the rdfnode (use palloc0 to clear memory).
+	 * r.data is already null-terminated by StringInfo, so no extra +1 is needed.
 	 */
 	result = (rdfnode *)palloc0(VARHDRSZ + len);
 	SET_VARSIZE(result, VARHDRSZ + len);
@@ -9932,7 +9963,7 @@ Datum rdfnode_neq_boolean(PG_FUNCTION_ARGS)
 
 	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && !val)
 		PG_RETURN_BOOL(true);
-	else if ((pg_strcasecmp(p.lex, "false") || strcmp(p.lex, "0") == 0) == 0 && val)
+	else if ((pg_strcasecmp(p.lex, "false") == 0 || strcmp(p.lex, "0") == 0) && val)
 		PG_RETURN_BOOL(true);
 	else
 		PG_RETURN_BOOL(false);

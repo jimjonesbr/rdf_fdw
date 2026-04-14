@@ -392,6 +392,18 @@ void pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 }
 #endif
 
+/*
+ * unescape_unicode
+ * ----------------
+ * Converts \uXXXX and \UXXXXXXXX Unicode escape sequences in a string to
+ * their UTF-8 byte representations. Surrogate pairs are combined into a
+ * single codepoint. Lone surrogates and malformed sequences are substituted
+ * with U+FFFD. All other characters pass through unchanged.
+ *
+ * input: null-terminated string that may contain Unicode escape sequences
+ *
+ * returns a palloc'd string with all Unicode escapes resolved
+ */
 char *unescape_unicode(const char *input)
 {
 	StringInfoData buf;
@@ -603,13 +615,13 @@ bool IsFunctionPushable(char *funcname)
  * IsRDFStringLiteral
  * ------------------
  *
- * Checks if an RDF term is a string literal (simple, xsd:string, or language-tagged).
+ * Checks if an RDF literal is a string literal (simple, xsd:string, or language-tagged).
  * Follows SPARQL 1.1 requirements for string literal inputs (e.g., LCASE, UCASE).
- * Returns 1 for valid string literals, 0 otherwise. Logs unexpected datatypes for
- * debugging, as derived string types (e.g., xsd:token) may appear in some datasets.
+ * Returns false for any other datatype, including derived string types (e.g., xsd:token).
  *
- * str_datatype: Null-terminated C string from datatype() (e.g., "", "http://www.w3.org/2001/XMLSchema#string")
- * str_language: Null-terminated C string from lang() (e.g., "", "en")
+ * str: the full RDF literal string to check
+ *
+ * returns true if the literal is simple, xsd:string, or language-tagged; false otherwise
  */
 bool IsRDFStringLiteral(char *str)
 {
@@ -635,12 +647,14 @@ bool IsRDFStringLiteral(char *str)
 
 /*
  * CreateRegexString
- * ---------------
- * Escapes regex wildcards into normal characters by adding \\ to them
+ * -----------------
+ * Converts a SQL LIKE pattern into a POSIX extended regex. SQL wildcards
+ * % and _ are mapped to .* and . respectively; regex metacharacters
+ * elsewhere in the pattern are escaped with \\.
  *
- * str: string to be converted
+ * str: SQL LIKE pattern to convert
  *
- * returns str with the regex wildcards escaped.
+ * returns a palloc'd POSIX regex string
  */
 char *CreateRegexString(char *str)
 {
@@ -685,7 +699,7 @@ char *CreateRegexString(char *str)
  * FormatSQLExtractField
  * ---------------
  * The fields "years", "months" and "days" (plural) and "hour", "minute",
- * "second" (singular) are note supported in SPARQL, but PostgreSQL can
+ * "second" (singular) are not supported in SPARQL, but PostgreSQL can
  * handle both. So here we convert the parameters to a form that correspond
  * to a SPARQL function.
  *
@@ -726,6 +740,8 @@ char *FormatSQLExtractField(char *field)
  * -----------------
  * Extracts a string from a Const
  *
+ * constant: the Const node to extract from
+ *
  * returns a palloc'ed copy.
  */
 char *ConstToCString(Const *constant)
@@ -739,9 +755,11 @@ char *ConstToCString(Const *constant)
 /*
  * CStringToConst
  * -----------------
- * Extracts a Const from a char*
+ * Wraps a C string in a Const node
  *
- * returns Const from given string.
+ * str: the C string to wrap (NULL produces a null Const)
+ *
+ * returns a Const node wrapping the given string
  */
 Const *CStringToConst(const char *str)
 {
@@ -751,6 +769,16 @@ Const *CStringToConst(const char *str)
 		return makeConst(TEXTOID, -1, InvalidOid, -1, PointerGetDatum(cstring_to_text(str)), false, false);
 }
 
+/*
+ * rdfnode_to_cstring
+ * ------------------
+ * Copies the raw content of an rdfnode varlena into a new null-terminated
+ * C string.
+ *
+ * node: the rdfnode to extract from
+ *
+ * returns a palloc'd null-terminated C string
+ */
 char *rdfnode_to_cstring(rdfnode *node)
 {
 	/* Get a pointer to the actual data and its length */
@@ -800,6 +828,16 @@ bool IsStringDataType(Oid type)
 	return result;
 }
 
+/*
+ * is_valid_xsd_double
+ * -------------------
+ * Validates an xsd:double lexical form. Accepts NaN, INF, and -INF per
+ * the XSD specification, in addition to standard decimal/exponent forms.
+ *
+ * lexical: null-terminated lexical string to validate
+ *
+ * returns true if the string is a valid xsd:double
+ */
 bool is_valid_xsd_double(const char *lexical)
 {
 	regex_t regex;
@@ -824,6 +862,15 @@ bool is_valid_xsd_double(const char *lexical)
 	return is_valid;
 }
 
+/*
+ * is_valid_xsd_int
+ * ----------------
+ * Validates an xsd:integer lexical form.
+ *
+ * lexical: null-terminated lexical string to validate
+ *
+ * returns true if the string is a valid integer
+ */
 bool is_valid_xsd_int(const char *lexical)
 {
 	regex_t regex;
@@ -844,6 +891,16 @@ bool is_valid_xsd_int(const char *lexical)
 	return is_valid;
 }
 
+/*
+ * is_valid_xsd_dateTime
+ * ---------------------
+ * Validates an xsd:dateTime lexical form using a manual character-by-character
+ * parser (YYYY-MM-DDTHH:MM:SS with optional fractional seconds and timezone).
+ *
+ * lexical: null-terminated lexical string to validate
+ *
+ * returns true if the string is a valid xsd:dateTime
+ */
 bool is_valid_xsd_dateTime(const char *lexical)
 {
 	const char *p = lexical;
@@ -972,6 +1029,15 @@ bool is_valid_xsd_dateTime(const char *lexical)
 	return true;
 }
 
+/*
+ * is_valid_xsd_time
+ * -----------------
+ * Validates an xsd:time lexical form.
+ *
+ * lexical: null-terminated lexical string to validate
+ *
+ * returns true if the string is a valid xsd:time
+ */
 bool is_valid_xsd_time(const char *lexical)
 {
 	regex_t regex;
@@ -993,6 +1059,15 @@ bool is_valid_xsd_time(const char *lexical)
 	return is_valid;
 }
 
+/*
+ * is_valid_xsd_date
+ * -----------------
+ * Validates an xsd:date lexical form.
+ *
+ * lexical: null-terminated lexical string to validate
+ *
+ * returns true if the string is a valid xsd:date
+ */
 bool is_valid_xsd_date(const char *lexical)
 {
 	regex_t regex;
@@ -1050,7 +1125,7 @@ bool IsSPARQLVariableValid(const char *str)
  * IsSPARQLParsable
  * ------------------
  * Checks if a SPARQL query can be parsed and modified to accommodate possible
- * pusdhown instructions. If it returns false it does not mean that the query
+ * pushdown instructions. If it returns false it does not mean that the query
  * is invalid. It just means that it contains unsupported clauses and it cannot
  * be modifed.
  *
@@ -1085,11 +1160,11 @@ bool IsSPARQLParsable(struct RDFfdwState *state)
 
 /*
  * IsExpressionPushable
- * ------------
+ * --------------------
  * Checks if an expression attached to a column can be pushed down, in case it
  * is used in a condition in the SQL WHERE clause.
  *
- * state: SPARQL, SERVER and FOREIGN TABLE info
+ * expression: SPARQL expression string from the column's 'expression' option
  *
  * returns 'true' if the expression can be pushed down or 'false' otherwise
  */

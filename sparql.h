@@ -45,7 +45,7 @@ typedef enum
 typedef struct
 {
     Numeric numeric_value;  /* accumulated numeric value (SUM), sum for average (AVG) */
-    float8 float_value;  /* accumulated numeric value (SUM), sum for average (AVG) */
+    float8 float_value;     /* reserved for float accumulation (currently unused) */
     text *rdfnode_value;    /* current min/max as full rdfnode text (MIN/MAX) */
     StringInfo result_str;  /* accumulated concatenated string (GROUP_CONCAT) */
     text *separator;        /* separator between values (GROUP_CONCAT) */
