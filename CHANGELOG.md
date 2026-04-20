@@ -1,5 +1,5 @@
 # 2.5
-Release date: **yyyy-mm-dd**
+Release date: **2026-04-20**
 
 ## Enhancements
 
