@@ -2869,7 +2869,10 @@ CREATE FOREIGN TABLE museums_brittany (
 Then set up the [Workspace](https://docs.geoserver.org/latest/en/user/data/webadmin/workspaces.html) and [Store](https://docs.geoserver.org/latest/en/user/data/webadmin/stores.html), go to  **Layers -> Add a new layer**, select the proper workspace and go to **Configure new SQL view...** to create a layer create a layer with a native **SQL statement**:
 
 ```sql
-SELECT id, label, ville, geom
+SELECT 
+ sparql.lex(label) AS label, 
+ sparql.lex(ville) AS ville,
+ sparql.lex(geom)::text::geometry AS geom
 FROM museums_brittany
 ```
 
