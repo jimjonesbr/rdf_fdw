@@ -20,3 +20,6 @@ docker run -d \
 docker exec -itw /rdf_fdw/ $PG_CONTAINER make clean &&
 docker exec -itw /rdf_fdw/ $PG_CONTAINER make PG_CONFIG=/usr/lib/postgresql/18/bin/pg_config &&
 docker exec -itw /rdf_fdw/ $PG_CONTAINER make install
+
+# deploy GeoServer in the same network
+# docker run -it --network pgnet -p 8080:8080 docker.osgeo.org/geoserver:3.0.

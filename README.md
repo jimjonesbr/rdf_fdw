@@ -2802,12 +2802,10 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE german_public_universities (
-  id text                   OPTIONS (variable '?uri', nodetype 'iri'),
-  name text                 OPTIONS (variable '?name',nodetype 'literal'),
-  lon numeric               OPTIONS (variable '?lon', nodetype 'literal'),
-  lat numeric               OPTIONS (variable '?lat', nodetype 'literal'),
-  geom geometry(point,4326) OPTIONS (variable '?wkt', nodetype 'literal',
-                                    expression 'CONCAT("POINT(",?lon," ",?lat,")") AS ?wkt')
+  id   rdfnode OPTIONS (variable '?uri'),
+  name rdfnode OPTIONS (variable '?name'),
+  lon  rdfnode OPTIONS (variable '?lon'),
+  lat  rdfnode OPTIONS (variable '?lat')
 ) SERVER dbpedia OPTIONS (
   sparql '
     PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -2827,8 +2825,12 @@ CREATE FOREIGN TABLE german_public_universities (
 Now that we have our `FOREIGN TABLE` in place, we just need to create a [New PostGIS Connection in QGIS](https://docs.qgis.org/3.34/en/docs/user_manual/managing_data_source/opening_data.html#creating-a-stored-connection) and go to **Database > DB Manager ...**, select the table we just created and query the data using SQL:
 
 ```sql
-SELECT id, name, geom
-FROM german_public_universities
+SELECT 
+  id, name,
+  sparql.lex(
+    sparql.concat('POINT(', lon, ' ', lat, ')')
+    )::geometry AS geom
+FROM german_public_universities;
 ```
 ![unis](examples/img/qgis-query.png?raw=true)
 
@@ -2847,10 +2849,10 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://query.wikidata.org/sparql');
 
 CREATE FOREIGN TABLE museums_brittany (
-  id text                   OPTIONS (variable '?villeId', nodetype 'iri'),
-  label text                OPTIONS (variable '?museumLabel',nodetype 'literal'),
-  ville text                OPTIONS (variable '?villeIdLabel', nodetype 'literal'),
-  geom geometry(point,4326) OPTIONS (variable '?coord', nodetype 'literal')
+  id    rdfnode   OPTIONS (variable '?villeId'),
+  label rdfnode   OPTIONS (variable '?museumLabel'),
+  ville rdfnode   OPTIONS (variable '?villeIdLabel'),
+  geom  rdfnode   OPTIONS (variable '?coord')
 ) SERVER wikidata OPTIONS (
   sparql '
     SELECT DISTINCT ?museumLabel ?villeId ?villeIdLabel ?coord
