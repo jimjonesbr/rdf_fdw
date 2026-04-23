@@ -2826,7 +2826,7 @@ Now that we have our `FOREIGN TABLE` in place, we just need to create a [New Pos
 
 ```sql
 SELECT 
-  id, name,
+  sparql.lex(name),
   sparql.lex(
     sparql.concat('POINT(', lon, ' ', lat, ')')
     )::geometry AS geom
