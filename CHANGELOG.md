@@ -1,3 +1,6 @@
+# 2.6
+Release date: **YYYY-MM-DD**
+
 # 2.5
 Release date: **2026-04-20**
 

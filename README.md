@@ -82,7 +82,7 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '2.5';
+CREATE EXTENSION rdf_fdw WITH VERSION '2.6';
 ```
 
 To run the predefined regression tests: 
@@ -106,7 +106,7 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '2.5';
+ALTER EXTENSION rdf_fdw UPDATE TO '2.6';
 ```
 
 ## [Deploy with Docker](#deploy-with-docker)
@@ -1067,9 +1067,9 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 
 ```sql
 SELECT rdf_fdw_version();
-                                            rdf_fdw_version                                             
---------------------------------------------------------------------------------------------------------
- rdf_fdw 2.5 (PostgreSQL 18.1 (Debian 18.1-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
+                                              rdf_fdw_version                                               
+------------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.6-dev (PostgreSQL 18.3 (Debian 18.3-1.pgdg13+1), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -1091,8 +1091,8 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
- rdf_fdw    | 2.5
- PostgreSQL | 18.1 (Debian 18.1-1.pgdg13+2)
+ rdf_fdw    | 2.6-dev
+ PostgreSQL | 18.3 (Debian 18.3-1.pgdg13+1)
  libxml     | 2.9.14
  libcurl    | 8.14.1
  ssl        | GnuTLS/3.8.9
@@ -1100,7 +1100,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2026-04-19 17:50:09 UTC
+ built      | 2026-04-24 05:32:22 UTC
 (10 rows)
 ```
 
