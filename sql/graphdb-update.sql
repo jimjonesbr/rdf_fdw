@@ -155,5 +155,7 @@ UPDATE ft SET object = '"foo"@en';
 
 /* cleanup */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate = '<http://foo.bar>');
+UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate <> '<http://foo.bar>');
 DELETE FROM ft;
 DROP SERVER graphdb CASCADE;

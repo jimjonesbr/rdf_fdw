@@ -511,11 +511,39 @@ ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 /* cleanup */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
-DELETE FROM ft;
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang');
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o}
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANG(?o) = "non-existent-lang")
+}
+
+INFO:  SPARQL returned 0 records.
+
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) <> 'en');
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANG(?o) != "en")
+}
 
 INFO:  SPARQL returned 4 records.
 

@@ -481,11 +481,39 @@ ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 /* bulk DELETE all inserted triples */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
-DELETE FROM ft;
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang'); /* Test DELETE with subquery returning no results */
 INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
 {?s ?p ?o}
+
+INFO:  SPARQL returned 71 records.
+
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANG(?o) = "non-existent-lang")
+}
+
+INFO:  SPARQL returned 0 records.
+
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE subject <> '<http://foo.bar>');
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 71 records.
+
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s != <http://foo.bar>)
+}
 
 INFO:  SPARQL returned 71 records.
 

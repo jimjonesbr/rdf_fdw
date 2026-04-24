@@ -133,7 +133,8 @@ DELETE FROM ft;
 
 /* bulk DELETE all inserted triples */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
-DELETE FROM ft;
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang'); /* Test DELETE with subquery returning no results */
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE subject <> '<http://foo.bar>');
 SELECT count(*) FROM ft;
 
 DROP SERVER graphdb CASCADE;

@@ -142,7 +142,8 @@ DELETE FROM ft;
 
 /* cleanup */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
-DELETE FROM ft;
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang');
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) <> 'en');
 SELECT count(*) FROM ft;
 
 DROP SERVER fuseki CASCADE;

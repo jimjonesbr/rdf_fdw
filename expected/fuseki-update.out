@@ -599,6 +599,47 @@ ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 /* cleanup */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate = '<http://foo.bar>');
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://foo.bar>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate <> '<http://foo.bar>');
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p != <http://foo.bar>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "updated" };
+
+
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':
 
@@ -608,7 +649,7 @@ SELECT ?s ?p ?o
 INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'fuseki':
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "updated" };
 
 
 DROP SERVER fuseki CASCADE;
