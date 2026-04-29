@@ -133,8 +133,8 @@ RUN git clone --branch v2.5 https://github.com/jimjonesbr/rdf_fdw.git && \
 Build and run the image:
 
 ```bash
-docker build -t rdf_fdw_image .
-docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_image
+docker build -t rdf_fdw:18-2.5 .
+docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-2.5
 ```
 
 Create the extension inside the running container:
@@ -2907,8 +2907,8 @@ RUN git clone https://github.com/jimjonesbr/rdf_fdw.git && \
 Deployment
 
 ```bash
- $ docker build -t rdf_fdw_image .
- $ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw_image
+ $ docker build -t rdf_fdw:18-dev .
+ $ docker run --name my_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-dev
  $ docker exec -u postgres my_container psql -d mydatabase -c "CREATE EXTENSION rdf_fdw;"
 ```
 
