@@ -15,6 +15,7 @@ docker run -d \
   --env POSTGRES_HOST_AUTH_METHOD=trust \
   --ip $IP_ADDRESS \
   --volume  $RDF_FDW_PATH:/rdf_fdw:Z \
+  -p 54318:5432 \
   $POSTGRES18_IMAGE -c logging_collector=on &&
 
 docker exec -itw /rdf_fdw/ $PG_CONTAINER make clean &&
