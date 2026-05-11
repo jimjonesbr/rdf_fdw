@@ -237,7 +237,10 @@ invalid
 SELECT * FROM sparql.describe('fuseki', '   ');
 ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE https://www.uni-muenster.de'); -- missing < >
-ERROR:  bad request (HTTP status 400)
+ERROR:  SPARQL query error
+DETAIL:  Parse error: Line 1, column 10: Unresolved prefixed name: https:
+
+HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
 /* DESCRIBE pattern with a blank node */
 SELECT * FROM sparql.describe('fuseki', '_:bnode1');
 ERROR:  invalid DESCRIBE query:
@@ -245,7 +248,10 @@ ERROR:  invalid DESCRIBE query:
 _:bnode1
 
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE _:bnode1');
-ERROR:  bad request (HTTP status 400)
+ERROR:  SPARQL query error
+DETAIL:  Parse error: Encountered " <BLANK_NODE_LABEL> "_:bnode1 "" at line 1, column 10.
+
+HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
 /* malformed entity IRI */
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <htt://i.am.malformed>');
  subject | predicate | object 

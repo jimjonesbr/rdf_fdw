@@ -27,6 +27,13 @@
 #define REQUEST_SUCCESS 0
 #define REQUEST_FAIL -1
 
+/*
+ * Maximum number of bytes from an HTTP error response body to include in
+ * error messages and server logs.  Prevents huge HTML error pages (e.g.
+ * from misconfigured proxies) from flooding PostgreSQL logs.
+ */
+#define RDF_FDW_MAX_ERROR_BODY 512
+
 /* Table options */
 #define RDF_TABLE_OPTION_SPARQL "sparql"
 #define RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN "sparql_update_pattern"

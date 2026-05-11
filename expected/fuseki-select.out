@@ -3038,7 +3038,10 @@ SERVER fuseki OPTIONS (
   sparql 'SELECT * WHERE {?s ?p }' -- missing object in triple pattern
 );
 SELECT * FROM ft_invalid_sparql;
-ERROR:  bad request (HTTP status 400)
+ERROR:  SPARQL query error
+DETAIL:  Parse error: Encountered " "}" "} "" at line 3, column 8.
+
+HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
 /* invalid SERVER url */
 CREATE SERVER server_invalid_url
 FOREIGN DATA WRAPPER rdf_fdw 
