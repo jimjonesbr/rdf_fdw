@@ -78,30 +78,66 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Universidade de Münster"@pt')
 RETURNING *;
 
-/* 
- * Here we transfer data from Wikidata to Fuseki. 
- * The NAMED GRAPH is manually specified in the sparql
- * and sparql_update_pattern options. Fuseki will then
- * create the graph in query time, if it does not exist.
+/*
+ * Here we transfer data from a local static graph into a destination named
+ * graph in Fuseki. This exercises the cross-FDW INSERT-SELECT code path
+ * without depending on any external network service.
+ *
+ * The source graph <http://rdf-fdw.test/wikidata-static> is pre-loaded with
+ * a fixed snapshot of Wikidata altLabel data for Q192490 (PostgreSQL).
  */
-CREATE SERVER wikidata
-FOREIGN DATA WRAPPER rdf_fdw 
-OPTIONS (
-  endpoint 'https://query.wikidata.org/sparql');
 
+/* Load static source data into a local named graph */
+CREATE FOREIGN TABLE rdbms_static (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'false',
+  sparql 'SELECT * { GRAPH <http://rdf-fdw.test/wikidata-static> {?s ?p ?o} }',
+  sparql_update_pattern 'GRAPH <http://rdf-fdw.test/wikidata-static> { ?s ?p ?o . }'
+);
+
+INSERT INTO rdbms_static (s, p, o) VALUES
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PG"@zh-CN'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"POSTGRE SQL"@vi'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PgSQL"@pl'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgre SQL"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgre"@pl'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgre"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PostgreSQL project"@de'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PostgreSQL, слободни софтвер"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgres"@mul'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgresql"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"pgsql"@pt-BR'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"postgres"@nl'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"پست گر اس کیوال"@fa'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"پستگر اسکیوال"@fa'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"পোস্টজিআরই"@bn'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"போசுகிரசு"@ta'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"โพสต์เกรส"@th'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"ポスグレ"@ja'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"ポストグレスキューエル"@ja');
+
+/* Read from the static local graph — same code path as reading from a remote endpoint */
 CREATE FOREIGN TABLE rdbms_wikidata (
   s rdfnode OPTIONS (variable '?s'),
   p rdfnode OPTIONS (variable '?p'),
   o rdfnode OPTIONS (variable '?o')
 )
-SERVER wikidata OPTIONS (
+SERVER fuseki OPTIONS (
   log_sparql 'false',
   sparql $$
-    SELECT * {?s ?p ?o .
-    FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
-    FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)}
+    SELECT * {
+      GRAPH <http://rdf-fdw.test/wikidata-static> {
+        ?s ?p ?o .
+        FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
+        FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)
+      }
+    }
   $$
-  );
+);
 
 CREATE FOREIGN TABLE rdbms_fuseki (
   s rdfnode OPTIONS (variable '?s'),
@@ -246,6 +282,7 @@ INSERT INTO ft (subject, predicate, object) VALUES
 /* cleanup */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 DELETE FROM ft;
+DELETE FROM rdbms_fuseki;    -- clear <http://www.uni-muenster.de/graph>
+DELETE FROM rdbms_static;    -- clear <http://rdf-fdw.test/wikidata-static>
 SELECT sparql.drop_context('testctx', true);
 DROP SERVER fuseki CASCADE;
-DROP SERVER wikidata CASCADE;
