@@ -1,0 +1,550 @@
+\pset null '(null)'
+CREATE SERVER qlever
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://qlever:7001/sparql',
+  update_url 'http://qlever:7001/update');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER qlever OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER qlever OPTIONS (token 'secret');
+/* bulk INSERT triples */
+INSERT INTO ft (subject, predicate, object)
+SELECT
+  sparql.iri('<https://www.uni-muenster.de/rdf_fdw/delete-test>'),
+  sparql.iri('http://www.w3.org/1999/02/22-rdf-syntax-ns#value'),
+  i::rdfnode
+FROM generate_series(1,10) AS j (i);
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "2"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "3"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "4"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "5"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "8"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "10"^^<http://www.w3.org/2001/XMLSchema#int> };
+
+
+/* DELETE single triple */
+DELETE FROM ft WHERE object = 8::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "8"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "8"^^<http://www.w3.org/2001/XMLSchema#int> };
+
+
+SELECT * FROM ft WHERE object = 8::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "8"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE range of triples */
+DELETE FROM ft WHERE object BETWEEN 2::rdfnode AND 5::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o >= "2"^^<http://www.w3.org/2001/XMLSchema#int>)
+ FILTER(?o <= "5"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "2"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "3"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "4"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "5"^^<http://www.w3.org/2001/XMLSchema#int> };
+
+
+SELECT * FROM ft WHERE object BETWEEN 2::rdfnode AND 5::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o >= "2"^^<http://www.w3.org/2001/XMLSchema#int>)
+ FILTER(?o <= "5"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with special character */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"🐘"@de');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
+
+
+DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "🐘"@de)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
+
+
+SELECT * FROM ft WHERE object = '"🐘"@de'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "🐘"@de)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with empty literal */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '""@pt');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> ""@pt };
+
+
+DELETE FROM ft WHERE object = sparql.strlang('""', 'pt')::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = ""@pt)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> ""@pt };
+
+
+SELECT * FROM ft WHERE object = sparql.strlang('""', 'pt')::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = ""@pt)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE with compound WHERE condition */
+DELETE FROM ft WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'
+  AND predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'
+  AND object = 10::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de/rdf_fdw/delete-test>)
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#value>)
+ FILTER(?o = "10"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "10"^^<http://www.w3.org/2001/XMLSchema#int> };
+
+
+SELECT * FROM ft 
+WHERE subject = '<https://www.uni-muenster.de/rdf_fdw/delete-test>'
+  AND predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'
+  AND object = 10::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de/rdf_fdw/delete-test>)
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#value>)
+ FILTER(?o = "10"^^<http://www.w3.org/2001/XMLSchema#int>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with typed literal */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string> };
+
+
+DELETE FROM ft WHERE object = sparql.strdt('rdf_fdw','<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw" };
+
+
+SELECT * FROM ft WHERE object = sparql.strdt('rdf_fdw','<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with very long IRI */
+INSERT INTO ft (subject, predicate, object) VALUES
+  (('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode,
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string>');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw"^^<http://www.w3.org/2001/XMLSchema#string> };
+
+
+DELETE FROM ft WHERE subject = ('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx> <http://www.w3.org/2000/01/rdf-schema#comment> "rdf_fdw" };
+
+
+SELECT * FROM ft WHERE subject = ('<https://przykład.pl/' || repeat('x', 1000) || '>')::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://przykład.pl/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE non-existent triple (should succeed silently with DELETE 0) */
+DELETE FROM ft WHERE object = 'foo'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "foo")
+}
+
+INFO:  SPARQL returned 0 records.
+
+/* DELETE with literals containing escaped quotes */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"\"WWU\""@en');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "\"WWU\""@en };
+
+
+DELETE FROM ft WHERE object = '"\"WWU\""@en'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "\"WWU\""@en)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "\"WWU\""@en };
+
+
+SELECT * FROM ft WHERE object = '"\"WWU\""@en'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "\"WWU\""@en)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE with literals containing newline */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  E'"Line1\nLine2"@en');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "Line1\nLine2"@en };
+
+
+DELETE FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "Line1\nLine2"@en)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "Line1\nLine2"@en };
+
+
+SELECT * FROM ft WHERE object = E'"Line1\nLine2"@en'::rdfnode;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = "Line1\nLine2"@en)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* DELETE triple with RETURNING */
+INSERT INTO ft (subject, predicate, object) VALUES
+  ('<https://www.uni-muenster.de/rdf_fdw/delete-test>',
+  '<http://www.w3.org/2000/01/rdf-schema#comment>',
+  '"🐘"@de');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
+
+
+DELETE FROM ft WHERE object = '"🐘"@de'::rdfnode
+RETURNING OLD.subject, OLD.predicate, OLD.object;
+ERROR:  missing FROM-clause entry for table "old"
+LINE 2: RETURNING OLD.subject, OLD.predicate, OLD.object;
+                  ^
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER qlever OPTIONS (SET token 'wrong-token'); -- wrong token
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+ERROR:  SPARQL query error
+DETAIL:  Access token was provided but it was invalid
+HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+ALTER USER MAPPING FOR postgres
+SERVER qlever OPTIONS (SET token 'secret'); -- restore correct token
+/* read-only server: blocks DELETE regardless of triple pattern */
+ALTER SERVER qlever OPTIONS (ADD readonly 'true');
+DELETE FROM ft;
+ERROR:  foreign table "ft" does not allow deletes
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+DELETE FROM ft WHERE object = '<http://dbpedia.org/resource/University>'; -- succeeds: table override allows writes
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = <http://dbpedia.org/resource/University>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+SELECT * FROM ft WHERE object = '<http://dbpedia.org/resource/University>';
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o = <http://dbpedia.org/resource/University>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER qlever OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+DELETE FROM ft;
+ERROR:  foreign table "ft" does not allow deletes
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER qlever OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+DELETE FROM ft;
+ERROR:  foreign table "ft" does not allow deletes
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 6 records.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 6 records.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+/* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang');
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 6 records.
+
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANG(?o) = "non-existent-lang")
+}
+
+INFO:  SPARQL returned 0 records.
+
+DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) <> 'en');
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 6 records.
+
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(LANG(?o) != "en")
+}
+
+INFO:  SPARQL returned 5 records.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "1"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "6"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "7"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "9"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de/rdf_fdw/delete-test> <http://www.w3.org/2000/01/rdf-schema#comment> "🐘"@de };
+
+
+SELECT count(*) FROM ft;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT  * 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+ count 
+-------
+     1
+(1 row)
+
+DROP SERVER qlever CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server qlever

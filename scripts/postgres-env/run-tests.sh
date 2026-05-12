@@ -5,7 +5,7 @@ CONTAINER_NAME=rdf_pg18
 
 bash $TEST_ENV_PATH/fuseki/deploy-fuseki.sh
 bash $TEST_ENV_PATH/graphdb/deploy-graphdb.sh
-#bash $TEST_ENV_PATH/qlever/deploy-qlever.sh
+bash $TEST_ENV_PATH/qlever/deploy-qlever.sh
 bash $TEST_ENV_PATH/squid/deploy-proxy-env.sh
 
 # Build and install rdf_fdw
@@ -23,5 +23,5 @@ docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
 # SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
 # SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres SKIP_EXTERNAL_TESTS=1 installcheck 
+docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 installcheck 
 echo -e "\n== Tests completed ==\n"

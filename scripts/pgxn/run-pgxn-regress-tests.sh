@@ -3,7 +3,6 @@
 CODEPATH="/home/jim/git/rdf_fdw"
 TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
 PGVERSIONS="9.5,9.6,10,11,12,13,14,15,16,17,18,19"
-#PGVERSIONS="9.5"
 IMAGENAME="pgxn-image"
 NETWORK_NAME="pgnet"
 
@@ -24,7 +23,7 @@ do
     
     bash $TEST_ENV_PATH/fuseki/deploy-fuseki.sh
     bash $TEST_ENV_PATH/graphdb/deploy-graphdb.sh
-    #bash $TEST_ENV_PATH/qlever/deploy-qlever.sh
+    bash $TEST_ENV_PATH/qlever/deploy-qlever.sh
     bash $TEST_ENV_PATH/squid/deploy-proxy-env.sh
 
     # SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access

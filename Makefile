@@ -47,7 +47,13 @@ REGRESS += create_extension \
 			sparql-functions
 
 ifndef SKIP_UPDATE_TESTS
-  REGRESS += fuseki-delete \
+  REGRESS += qlever-delete \
+			 qlever-update \
+  			 qlever-insert \
+			 qlever-select \
+			 qlever-describe \
+			 qlever-table-clone \
+  			 fuseki-delete \
   			 fuseki-update \
 			 fuseki-insert \
 			 fuseki-select \
@@ -64,7 +70,8 @@ ifndef SKIP_UPDATE_TESTS
 endif
 
 ifndef SKIP_STRESS_TESTS
-  REGRESS += fuseki-stress \
+  REGRESS += qlever-stress \
+  		     fuseki-stress \
   		     graphdb-stress	
 endif
 

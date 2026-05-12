@@ -1,0 +1,289 @@
+\pset null '(null)'
+CREATE SERVER qlever
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://qlever:7001/sparql',
+  update_url 'http://qlever:7001/update');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER qlever OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER qlever OPTIONS (token 'secret');
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"University of Münster"@en'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univerrrsity of Münsterrr"@en-US'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Univêrsity of Münsta"@en-GB'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#time>', '"18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/established>', '"1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/modified>', '"2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/wikiPageExtracted>', '"2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#lat>', '"51.9636"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2003/01/geo/wgs84_pos#long>', '"7.6136"^^<http://www.w3.org/2001/XMLSchema#float>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/rector>', '"Johannes Wessels"'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/state>', '<http://dbpedia.org/resource/North_Rhine-Westphalia>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/city>', '<http://dbpedia.org/resource/Münster>'),
+        ('<http://dbpedia.org/resource/Münster>', '<http://dbpedia.org/property/name>', '"Münster"@de'),
+        ('<http://dbpedia.org/resource/North_Rhine-Westphalia>', '<http://dbpedia.org/property/name>', '"Nordrhein-Westfalen"@de'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"Hello 👋 PostgreSQL 🐘"@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string>'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '""'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '". <= pontos => ."@pt'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\n <= salto de línea => \n"@es'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\" <= double-quotes => \""@en'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),        
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/administrativeStaff>', '"1924"^^<http://www.w3.org/2001/XMLSchema#short>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/students>', '"49098"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/budget>', '"803600000"^^<http://www.w3.org/2001/XMLSchema#long>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/tuition>', '"1500.00"^^<http://www.w3.org/2001/XMLSchema#double>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/veryLargeNumber>', '"9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/verySmallNumber>', '"0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/restingDate>', '"2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>'),
+        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/ontology/internationally>', '"true"^^<http://www.w3.org/2001/XMLSchema#boolean>');
+INFO:  SPARQL query sent to 'qlever':
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#float> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
+INSERT DATA { <http://dbpedia.org/resource/Münster> <http://dbpedia.org/property/name> "Münster"@de };
+INSERT DATA { <http://dbpedia.org/resource/North_Rhine-Westphalia> <http://dbpedia.org/property/name> "Nordrhein-Westfalen"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "Hello 👋 PostgreSQL 🐘"@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string> };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> ". <= pontos => ."@pt };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\n <= salto de línea => \n"@es };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\" <= double-quotes => \""@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\t <= Tabulatorzeichen => \t"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/administrativeStaff> "1924"^^<http://www.w3.org/2001/XMLSchema#short> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/students> "49098"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#long> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.00"^^<http://www.w3.org/2001/XMLSchema#double> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
+
+
+/* IRI description */
+SELECT subject, predicate, object
+FROM sparql.describe('qlever', 'DESCRIBE <https://www.uni-muenster.de>')
+ORDER BY object::text COLLATE "C";
+ERROR:  HTTP error 406 from 'qlever'
+DETAIL:  Response: {
+    "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
+    "query": "DESCRIBE <https://www.uni-muenster.de>",
+    "resultsize": 0,
+    "status": "ERROR",
+    "time": {
+    ... (truncated).
+/* graph pattern description */
+SELECT subject, predicate, object
+FROM sparql.describe('qlever','
+  PREFIX dbp: <http://dbpedia.org/property/>
+  DESCRIBE ?s
+  WHERE { 
+    ?s dbp:name ?o .
+  }')
+WHERE subject = '<https://www.uni-muenster.de>'
+ORDER BY object::text COLLATE "C";
+ERROR:  HTTP error 406 from 'qlever'
+DETAIL:  Response: {
+    "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
+    "query": "\n  PREFIX dbp: <http://dbpedia.org/property/>\n  DESCRIBE ?s\n  WHERE { \n    ?s dbp:name ?o .\n  }",
+... (truncated).
+/* IN clause to filter results */
+SELECT subject, predicate, object
+FROM sparql.describe('qlever', 'DESCRIBE <https://www.uni-muenster.de>')
+WHERE predicate IN ('<http://dbpedia.org/property/name>','<http://schema.org/dateModified>')
+ORDER BY object::text COLLATE "C";
+ERROR:  HTTP error 406 from 'qlever'
+DETAIL:  Response: {
+    "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
+    "query": "DESCRIBE <https://www.uni-muenster.de>",
+    "resultsize": 0,
+    "status": "ERROR",
+    "time": {
+    ... (truncated).
+/* using named prefixes and base URI */
+SELECT subject, predicate, object
+FROM sparql.describe(
+    query =>'describe <http://dbpedia.org/resource/Münster>',
+    server => 'qlever', 
+    base_uri => 'http://test.base.uri/')
+WHERE predicate = '<http://dbpedia.org/property/name>'
+ORDER BY object::text COLLATE "C";
+ERROR:  HTTP error 406 from 'qlever'
+DETAIL:  Response: {
+    "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
+    "query": "describe <http://dbpedia.org/resource/Münster>",
+    "resultsize": 0,
+    "status": "ERROR",
+    "time... (truncated).
+/* empty server */
+SELECT * FROM sparql.describe('', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  SERVER cannot be empty
+/* empty DESCRIBE pattern */
+SELECT * FROM sparql.describe('qlever', '');
+ERROR:  DESCRIBE pattern cannot be empty
+/* empty SERVER and DESCRIBE pattern */
+SELECT * FROM sparql.describe('', '');
+ERROR:  SERVER cannot be empty
+/* NULL DESCRIBE pattern */
+SELECT * FROM sparql.describe('qlever', NULL);
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* NULL SERVER */
+SELECT * FROM sparql.describe(NULL, 'DESCRIBE <https://www.uni-muenster.de>');
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* NULL SERVER and DESCRIBE pattern */
+SELECT * FROM sparql.describe(NULL, NULL);
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+/* invalid SERVER */
+SELECT * FROM sparql.describe('invalid', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  invalid SERVER: invalid
+SELECT * FROM sparql.describe('    ', 'DESCRIBE <https://www.uni-muenster.de>');
+ERROR:  a SERVER cannot contain only whitespace characters
+/* invalid DESCRIBE pattern */
+SELECT * FROM sparql.describe('qlever', 'invalid');
+ERROR:  invalid DESCRIBE query:
+
+invalid
+
+SELECT * FROM sparql.describe('qlever', '   ');
+ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
+SELECT * FROM sparql.describe('qlever', 'DESCRIBE https://www.uni-muenster.de'); -- missing < >
+ERROR:  SPARQL query error
+DETAIL:  {
+    "exception": "Invalid SPARQL query: Token \"/\": mismatched input '/' expecting <EOF>",
+    "metadata": {
+        "line": 1,
+        "positionInLine": 15,
+        "startIndex": 15,
+        "stopIndex": 15
+    },
+    "query": "DESCRIBE https://www.uni-muenster.de",
+    "resultsize": 0,
+    "status": "ERROR",
+    "time": {
+        "computeResult": 0,
+        "total": 0
+    }
+}
+HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+/* DESCRIBE pattern with a blank node */
+SELECT * FROM sparql.describe('qlever', '_:bnode1');
+ERROR:  invalid DESCRIBE query:
+
+_:bnode1
+
+SELECT * FROM sparql.describe('qlever', 'DESCRIBE _:bnode1');
+ERROR:  SPARQL query error
+DETAIL:  {
+    "exception": "Invalid SPARQL query: Token \"_:bnode1\": mismatched input '_:bnode1' expecting {'*', IRI_REF, PNAME_NS, PNAME_LN, VAR1, VAR2, PREFIX_LANGTAG}",
+    "metadata": {
+        "line": 1,
+        "positionInLine": 9,
+        "startIndex": 9,
+        "stopIndex": 16
+    },
+    "query": "DESCRIBE _:bnode1",
+    "resultsize": 0,
+    "status": "ERROR",
+    "time": {
+        "computeResult": 0,
+        "total": 0
+    }
+}
+HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+/* malformed entity IRI */
+SELECT * FROM sparql.describe('qlever', 'DESCRIBE <htt://i.am.malformed>');
+ERROR:  HTTP error 406 from 'qlever'
+DETAIL:  Response: {
+    "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
+    "query": "DESCRIBE <htt://i.am.malformed>",
+    "resultsize": 0,
+    "status": "ERROR",
+    "time": {
+        "co... (truncated).
+/* SELECT query */
+SELECT * FROM sparql.describe('qlever', 'SELECT ?s ?p ?o WHERE {?s ?p ?o}');
+ERROR:  invalid DESCRIBE query:
+
+SELECT ?s ?p ?o WHERE {?s ?p ?o}
+
+/* cleanup */
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 32 records.
+
+INFO:  SPARQL query sent to 'qlever':
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/administrativeStaff> "1924"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/students> "49098"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/budget> "803600000"^^<http://www.w3.org/2001/XMLSchema#int> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/verySmallNumber> "1e-15"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/tuition> "1500.0"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/veryLargeNumber> "10000000000000000000.0"^^<http://www.w3.org/2001/XMLSchema#decimal> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "" };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\t <= Tabulatorzeichen => \t"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\n <= salto de línea => \n"@es };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> ". <= pontos => ."@pt };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\" <= double-quotes => \""@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "explicit string literal" };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "Hello 👋 PostgreSQL 🐘"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/rector> "Johannes Wessels" };
+DELETE DATA { <http://dbpedia.org/resource/Münster> <http://dbpedia.org/property/name> "Münster"@de };
+DELETE DATA { <http://dbpedia.org/resource/North_Rhine-Westphalia> <http://dbpedia.org/property/name> "Nordrhein-Westfalen"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/restingDate> "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/wikiPageExtracted> "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
+
+
+DROP SERVER qlever CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server qlever
