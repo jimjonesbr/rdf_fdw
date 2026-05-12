@@ -55,18 +55,11 @@ SELECT DISTINCT ?name ?lon ?lat
   }
 ORDER BY  ASC (?lat)  ASC (?name)  ASC (?lon)
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 0 records.
 
-                          name                          | lon |    lat    
---------------------------------------------------------+-----+-----------
- Hainaut, Province de, Wallonia, Belgium, Europe, World |   3 | 50.766667
- West Flanders, Flanders, Belgium, Europe, World        |   3 | 50.983333
- Flanders, Belgium, Europe, World                       |   3 |        51
- West Flanders, Flanders, Belgium, Europe, World        |   3 |      51.1
- West Flanders, Flanders, Belgium, Europe, World        |   3 | 51.116667
- West Flanders, Flanders, Belgium, Europe, World        |   3 | 51.133333
- West Flanders, Flanders, Belgium, Europe, World        |   3 |     51.25
-(7 rows)
+ name | lon | lat 
+------+-----+-----
+(0 rows)
 
 SELECT uri, lon, lat
 FROM getty_places
@@ -97,14 +90,11 @@ SELECT ?place ?name ?lon ?lat
 ORDER BY  ASC (?lon)
 LIMIT 3
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 0 records.
 
-                uri                 | lon |    lat    
-------------------------------------+-----+-----------
- http://vocab.getty.edu/tgn/7238466 |   3 |     51.25
- http://vocab.getty.edu/tgn/7237990 |   3 | 51.116667
- http://vocab.getty.edu/tgn/7248650 |   3 | 51.116667
-(3 rows)
+ uri | lon | lat 
+-----+-----+-----
+(0 rows)
 
 SELECT * FROM (
   SELECT DISTINCT ON (name) name, lon, lat
@@ -137,12 +127,11 @@ SELECT ?name ?lon ?lat
 }
 ORDER BY  ASC (?name)
 
-INFO:  SPARQL returned 5 records.
+INFO:  SPARQL returned 0 records.
 
-                      name                       | lon |  lat  
--------------------------------------------------+-----+-------
- West Flanders, Flanders, Belgium, Europe, World |   3 | 51.25
-(1 row)
+ name | lon | lat 
+------+-----+-----
+(0 rows)
 
 /*
  * == Non-Italians Who Worked in Italy ==
@@ -209,20 +198,11 @@ INFO:  SPARQL query sent to 'getty':
   FILTER NOT EXISTS {?x foaf:focus/(schema:nationality|(schema:nationality/gvp:broaderExtended)) aat:300111198}}
   
 
-INFO:  SPARQL returned 174 records.
+INFO:  SPARQL returned 0 records.
 
-           name            |                                  bio                                  | birth 
----------------------------+-----------------------------------------------------------------------+-------
- Juán de España            | Spanish artist and goldsmith, active 1455                             |  1415
- Worst, Jan                | Dutch artist, active ca. 1645-1655                                    |  1605
- Mander, Karel van, III    | Dutch portraitist and decorative artist, 1608-1670, active in Denmark |  1608
- Ulft, Jacob van der       | Dutch artist, 1627-1689                                               |  1627
- Fiammingo, Giacomo        | Flemish artist, fl. 1655                                              |  1635
- Marotte, Charles          | French artist, fl. ca.1719-1743                                       |  1699
- Troll, Johann Heinrich    | Swiss artist, 1756-1824                                               |  1756
- Beys, G.                  | French artist, fl. ca.1786-1800                                       |  1766
- Vaucher, Gabriel Constant | Swiss artist, 1768-1814                                               |  1768
-(9 rows)
+ name | bio | birth 
+------+-----+-------
+(0 rows)
 
 DROP SERVER getty CASCADE;
 NOTICE:  drop cascades to 2 other objects

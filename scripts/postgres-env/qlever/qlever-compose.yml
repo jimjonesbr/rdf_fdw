@@ -1,0 +1,40 @@
+services:
+
+  qlever-index:
+    image: adfreiburg/qlever:latest
+    user: "${QLEVER_UID}:${QLEVER_GID}"
+    entrypoint: bash
+    command: >
+      -c "cd /index &&
+          echo '{ \"ascii-prefixes-only\": false, \"num-triples-per-batch\": 100000 }' > test.settings.json &&
+          printf '<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n' |
+          qlever-index -i test -s test.settings.json --vocabulary-type on-disk-compressed -F nt -f - 2>&1"
+    volumes:
+      - qlever-index-data:/index
+    restart: "no"
+
+  qlever-server:
+    image: adfreiburg/qlever:latest
+    container_name: qlever
+    user: "${QLEVER_UID}:${QLEVER_GID}"
+    entrypoint: bash
+    working_dir: /index
+    command: >
+      -c "/qlever/qlever-server -i /index/test -p 7001 -j 8 -m 5G -c 2G -e 1G -k 200 -n"
+    ports:
+      - "7001:7001"
+    volumes:
+      - qlever-index-data:/index
+    networks:
+      - pgnet
+    depends_on:
+      qlever-index:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  qlever-index-data:
+
+networks:
+  pgnet:
+    external: true

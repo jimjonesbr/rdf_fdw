@@ -1084,7 +1084,7 @@ SELECT ?p ?o
  FILTER(ISBLANK(BNODE(?o)))
 }
 
-ERROR:  bad request (HTTP status 400)
+ERROR:  SPARQL query error
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf

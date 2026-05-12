@@ -138,8 +138,30 @@ SELECT ?s ?p ?o
 {?s ?p ?o}
 
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -152,6 +174,17 @@ ORDER BY ASC(?s)
 OFFSET 0 LIMIT 100
 
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 /* Wrong password - must fail */
 ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_user 'proxyuser', SET proxy_password 'wrongpass');
 SELECT * FROM ft;
@@ -161,8 +194,30 @@ SELECT ?s ?p ?o
 {?s ?p ?o}
 
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -175,6 +230,17 @@ ORDER BY ASC(?s)
 OFFSET 0 LIMIT 100
 
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 /* No password - must fail */
 ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (DROP proxy_password);
 SELECT * FROM ft;
@@ -184,8 +250,30 @@ SELECT ?s ?p ?o
 {?s ?p ?o}
 
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -198,6 +286,17 @@ ORDER BY ASC(?s)
 OFFSET 0 LIMIT 100
 
 ERROR:  HTTP error 407 from 'fuseki'
+DETAIL:  Response: <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ERROR: Cache Access Denied</title>
+<style type="text/css"><!-- 
+ /*
+ * Copyright (C) 1996-2024 The Squid Software Foundation and contributors
+ *
+ * Squid software is distributed under GPLv2+ license and includes
+ * contributions... (truncated).
 /* Cleanup */
 DROP TABLE public.t1;
 DROP SERVER fuseki CASCADE;
