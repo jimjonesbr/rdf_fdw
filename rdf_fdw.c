@@ -198,6 +198,7 @@ static struct RDFfdwOption valid_options[] =
 		/* User Mapping */
 		{RDF_USERMAPPING_OPTION_USER, UserMappingRelationId, false, false},
 		{RDF_USERMAPPING_OPTION_PASSWORD, UserMappingRelationId, false, false},
+		{RDF_USERMAPPING_OPTION_TOKEN, UserMappingRelationId, false, false},
 		{RDF_USERMAPPING_OPTION_PROXYUSER, UserMappingRelationId, false, false},
 		{RDF_USERMAPPING_OPTION_PROXYPASSWORD, UserMappingRelationId, false, false},
 
@@ -2732,6 +2733,31 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 		}
 	}
 
+	/*
+	 * 'token' (Bearer auth) and 'user'/'password' (Basic auth) are mutually
+	 * exclusive: combining them is ambiguous and unsupported.
+	 */
+	if (catalog == UserMappingRelationId)
+	{
+		bool has_token = false;
+		bool has_user  = false;
+
+		foreach (cell, options_list)
+		{
+			DefElem *def = (DefElem *)lfirst(cell);
+			if (strcmp(def->defname, RDF_USERMAPPING_OPTION_TOKEN) == 0)
+				has_token = true;
+			else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_USER) == 0)
+				has_user = true;
+		}
+
+		if (has_token && has_user)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
+					 errmsg("options 'token' and 'user' cannot be combined"),
+					 errhint("Use 'token' for Bearer authentication (RFC 6750) or 'user'/'password' for HTTP Basic Authentication, but not both.")));
+	}
+
 	elog(DEBUG1, "%s exit", __func__);
 	PG_RETURN_VOID();
 }
@@ -4237,6 +4263,11 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 					state->password = pstrdup(defGetString(def));
 					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
 				}
+				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_TOKEN) == 0)
+				{
+					state->token = pstrdup(defGetString(def));
+					elog(DEBUG2, "%s: %s '*******'", __func__, def->defname);
+				}
 				else if (strcmp(def->defname, RDF_USERMAPPING_OPTION_PROXYUSER) == 0)
 				{
 					state->proxy_user = pstrdup(defGetString(def));
@@ -4293,6 +4324,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, CStringToConst(state->custom_params));
 	result = lappend(result, CStringToConst(state->user));
 	result = lappend(result, CStringToConst(state->password));
+	result = lappend(result, CStringToConst(state->token));
 	result = lappend(result, IntToConst((int)state->request_redirect));
 	result = lappend(result, IntToConst((int)state->enable_pushdown));
 	result = lappend(result, IntToConst((int)state->is_sparql_parsable));
@@ -4437,6 +4469,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	cell = list_next(list, cell);
 
 	state->password = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
+
+	state->token = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
 	state->request_redirect = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
@@ -5031,6 +5066,21 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			/* For SPARQL SELECT/DESCRIBE: use standard accept header */
 			headers = curl_slist_append(headers, accept_header.data);
+		}
+
+		/*
+		 * Bearer token authentication as defined by RFC 6750
+		 * (https://datatracker.ietf.org/doc/html/rfc6750).
+		 * This is the standard mechanism for OAuth 2.0 token-based
+		 * authentication.
+		 */
+		if (state->token)
+		{
+			StringInfoData auth_header;
+			initStringInfo(&auth_header);
+			appendStringInfo(&auth_header, "Authorization: Bearer %s", state->token);
+			headers = curl_slist_append(headers, auth_header.data);
+			elog(DEBUG2, "%s: setting Authorization: Bearer *******", __func__);
 		}
 
 		curl_easy_setopt(state->curl, CURLOPT_HTTPHEADER, headers);

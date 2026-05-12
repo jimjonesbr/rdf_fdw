@@ -142,6 +142,7 @@
 /* User mapping options */
 #define RDF_USERMAPPING_OPTION_USER "user"
 #define RDF_USERMAPPING_OPTION_PASSWORD "password"
+#define RDF_USERMAPPING_OPTION_TOKEN "token"
 #define RDF_USERMAPPING_OPTION_PROXYUSER "proxy_user"
 #define RDF_USERMAPPING_OPTION_PROXYPASSWORD "proxy_password"
 
@@ -185,6 +186,7 @@ typedef struct RDFfdwState
 	char *sparql;					   /* Final SPARQL query sent to the endpoint (after pushdown) */
 	char *user;						   /* User name for HTTP basic authentication */
 	char *password;					   /* Password for HTTP basic authentication */
+	char *token;					   /* Bearer token for HTTP token-based authentication */
 	char *sparql_prefixes;			   /* SPARQL PREFIX entries */
 	char *sparql_select;			   /* SPARQL SELECT containing the columns / variables used in the SQL query */
 	char *sparql_from;				   /* SPARQL FROM clause entries*/

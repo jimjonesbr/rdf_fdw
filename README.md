@@ -226,16 +226,32 @@ OPTIONS (
 );
 ```
 
+**Token Authentication**
+
+Some SPARQL endpoints support token-based authentication via an HTTP `Authorization: Bearer` header ([RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)). Use the `token` option instead of `user`/`password` in these cases.
+
+Example with Bearer token:
+
+```sql
+CREATE SERVER qlever
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (endpoint 'http://qlever:7001/sparql');
+
+CREATE USER MAPPING FOR postgres
+SERVER qlever OPTIONS (token 'mysecrettoken');
+```
+
 Options:
 
 | Option | Type | Description |
 |---|---:|---|
-| `user` | **required** | Remote username for authentication. |
-| `password` | optional | Remote user's password (if required by the endpoint). |
+| `user` | optional | Remote username for HTTP Basic Authentication. |
+| `password` | optional | Remote user's password (used with `user`). |
+| `token` | optional | Bearer token for HTTP token-based authentication ([RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)). When set, sends `Authorization: Bearer <token>`. Cannot be combined with `user`/`password`. |
 | `proxy_user` | optional | Proxy username (when `http_proxy` is set on the server). |
 | `proxy_password` | optional | Proxy password (when `http_proxy` is set on the server). |
 
-Authentication: when a `user` is supplied, `rdf_fdw` uses HTTP Basic Authentication. Other schemes (OAuth, client certificates, etc.) are not supported by this mapping.
+Authentication: when `user` is supplied, `rdf_fdw` uses HTTP Basic Authentication. When `token` is supplied, it sends an `Authorization: Bearer` header per RFC 6750. Other schemes (OAuth flows, client certificates, etc.) are not supported.
 
 > [!NOTE]
 > To list mappings in `psql` use `\deu[+]` or query `pg_user_mappings`.
@@ -2742,6 +2758,9 @@ sparql.describe(server text, query text, raw_literal boolean, base_uri text) →
 **Description**
 
 The `sparql.describe` function executes a SPARQL `DESCRIBE` query against a specified RDF triplestore `SERVER`. It retrieves RDF triples describing a resource (or resources) identified by the query and returns them as a table with three columns: subject, predicate, and object. This function is useful for exploring RDF data by fetching detailed descriptions of resources from a triplestore.
+
+> [!NOTE]
+> `sparql.describe` requires the SPARQL endpoint to return DESCRIBE results in **`application/rdf+xml`** format. This is the default behaviour of most established triplestores (Fuseki, GraphDB, Virtuoso, Blazegraph). Endpoints that do not support RDF/XML for graph responses will receive an HTTP 406 error.
 
 **Parameters**
 

@@ -1,6 +1,22 @@
 # 2.6
 Release date: **YYYY-MM-DD**
 
+## Enhancements
+
+* **Add `token` option to USER MAPPING**: A new `token` option allows Bearer token authentication ([RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)) for SPARQL endpoints that use token-based access control instead of HTTP Basic Authentication. When set, `rdf_fdw` sends an `Authorization: Bearer <token>` HTTP header with every request.
+
+  ```sql
+  CREATE USER MAPPING FOR postgres
+  SERVER myserver OPTIONS (token 'mysecrettoken');
+  ```
+## Bug Fixes
+
+* **Fixed `CURLE_WRITE_ERROR(23)` on SPARQL UPDATE and unrecognised `Content-Type` responses**: `HeaderCallbackFunction` was returning `0` for any `Content-Type` not recognised as an RDF or SPARQL XML type. Returning `0` from a libcurl write callback signals an abort and triggers `CURLE_WRITE_ERROR(23)`, causing endpoints that respond with `application/json` — such as QLever on successful UPDATEs or Fuseki on HTTP 400 errors — to produce a spurious "unable to connect" error instead of the real outcome. Fixed by returning `realsize` for unrecognised `Content-Type` headers.
+
+* **SPARQL UPDATE response body is now discarded**: For `INSERT`, `DELETE`, and `UPDATE` operations only the HTTP status code matters; the response body is irrelevant. Previously the full body was accumulated in memory, which wasted resources for endpoints that return large JSON documents on success or failure. A dedicated `DiscardWriteCallback` is now used for UPDATE requests so the body is never buffered.
+
+* **HTTP error response bodies are now truncated in log and error messages**: Error bodies included in `errdetail()` and server-log `elog()` calls were previously unbounded. A misconfigured proxy returning a large HTML error page would be written verbatim into the PostgreSQL server log. Error bodies are now truncated to 512 bytes (`RDF_FDW_MAX_ERROR_BODY`) before being included in any message.
+
 # 2.5
 Release date: **2026-04-20**
 
