@@ -9,7 +9,9 @@ export QLEVER_GID=$(id -g)
 
 echo -e "\n== Deploying QLever for tests ==\n"
 
-docker compose -f $QLEVER_ENV_PATH/qlever-compose.yml down -v 2>/dev/null || true
+docker rm --force qlever qlever_qlever-index_1 2>/dev/null || true
+docker pod rm --force pod_qlever 2>/dev/null || true
+docker volume rm qlever_qlever-index-data 2>/dev/null || true
 docker compose -f $QLEVER_ENV_PATH/qlever-compose.yml up -d qlever-backend
 
 echo "Waiting for QLever SPARQL endpoint..."
