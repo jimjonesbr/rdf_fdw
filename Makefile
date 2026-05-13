@@ -47,7 +47,13 @@ REGRESS += create_extension \
 			sparql-functions
 
 ifndef SKIP_UPDATE_TESTS
-  REGRESS += qlever-delete \
+  REGRESS += virtuoso-delete \
+			 virtuoso-update \
+  			 virtuoso-insert \
+			 virtuoso-select \
+			 virtuoso-describe \
+			 virtuoso-table-clone \
+  			 qlever-delete \
 			 qlever-update \
   			 qlever-insert \
 			 qlever-select \
@@ -70,7 +76,8 @@ ifndef SKIP_UPDATE_TESTS
 endif
 
 ifndef SKIP_STRESS_TESTS
-  REGRESS += qlever-stress \
+  REGRESS += virtuoso-stress \
+  			 qlever-stress \
   		     fuseki-stress \
   		     graphdb-stress	
 endif

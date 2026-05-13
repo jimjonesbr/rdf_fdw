@@ -3,6 +3,7 @@
 TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
 CONTAINER_NAME=rdf_pg18
 
+bash $TEST_ENV_PATH/virtuoso/deploy-virtuoso.sh
 bash $TEST_ENV_PATH/fuseki/deploy-fuseki.sh
 bash $TEST_ENV_PATH/graphdb/deploy-graphdb.sh
 bash $TEST_ENV_PATH/qlever/deploy-qlever.sh

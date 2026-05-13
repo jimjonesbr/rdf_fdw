@@ -1,0 +1,706 @@
+\pset null '(null)'
+CREATE SERVER virtuoso
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://virtuoso:8890/sparql-auth',
+  update_url 'http://virtuoso:8890/sparql-auth');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }',
+  sparql_update_pattern 
+    'GRAPH <http://rdf-fdw.test/default> {
+       ?s ?p ?o .
+     }'
+  );
+CREATE USER MAPPING FOR postgres
+SERVER virtuoso OPTIONS (user 'dba', password 'secret');
+INSERT INTO ft (subject, predicate, object)
+VALUES  ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische Wilhelms-Universität Münster"@de');
+INFO:  SPARQL query sent to 'virtuoso':
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                     object                     
+-------------------------------+----------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+UPDATE ft SET
+  object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "University of Münster"@en .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |           object           
+-------------------------------+----------------------------------------------+----------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "University of Münster"@en
+(1 row)
+
+UPDATE ft 
+SET object = '""'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "University of Münster"@en .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "" .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   | object 
+-------------------------------+----------------------------------------------+--------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | ""
+(1 row)
+
+UPDATE ft 
+SET object = '🐘'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "" .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "🐘" .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   | object 
+-------------------------------+----------------------------------------------+--------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "🐘"
+(1 row)
+
+/* update using existing column */
+UPDATE ft 
+SET object = predicate
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "🐘" .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#label> .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                    object                    
+-------------------------------+----------------------------------------------+----------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | <http://www.w3.org/2000/01/rdf-schema#label>
+(1 row)
+
+/* update literals with quotes */
+UPDATE ft 
+SET object = '"\"text with quotes\""'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> <http://www.w3.org/2000/01/rdf-schema#label> .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "\"text with quotes\"" .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |         object         
+-------------------------------+----------------------------------------------+------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "\"text with quotes\""
+(1 row)
+
+/* update literals containing newlines */
+UPDATE ft 
+SET object = '"text \n newline"'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "\"text with quotes\"" .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text \n newline" .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |  object   
+-------------------------------+----------------------------------------------+-----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "text    +
+                               |                                              |  newline"
+(1 row)
+
+/* update to xsd:string literal (graphdb might omit xsd:string datatype) */
+UPDATE ft 
+SET object = '"text xsd string"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text \n newline" .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text xsd string"^^<http://www.w3.org/2001/XMLSchema#string> .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                            object                            
+-------------------------------+----------------------------------------------+--------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "text xsd string"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+/* update to xsd:int literal */
+UPDATE ft 
+SET object = 42::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "text xsd string"^^<http://www.w3.org/2001/XMLSchema#string> .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42"^^<http://www.w3.org/2001/XMLSchema#int> .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                    object                    
+-------------------------------+----------------------------------------------+----------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+/* update to xsd:decimal literal */
+UPDATE ft 
+SET object = 42.37::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42"^^<http://www.w3.org/2001/XMLSchema#int> .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                       object                        
+-------------------------------+----------------------------------------------+-----------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* update to xsd:long literal */
+UPDATE ft 
+SET object = 423712345678911::rdfnode
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "42.37"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#long> .
+     } };
+
+
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                            object                             
+-------------------------------+----------------------------------------------+---------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* update with NULL - must fail (after SELECT since FDW must fetch OLD values first) */
+UPDATE ft 
+SET object = NULL
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  NULL value in column "object" violates RDF constraint
+DETAIL:  SPARQL variable '?o' cannot be NULL in RDF triple patterns.
+HINT:  RDF triples require all components to be non-NULL. Filter NULL values in your query or provide default values.
+SELECT * FROM ft
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |                            object                             
+-------------------------------+----------------------------------------------+---------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* update rdfnode with a blank node */
+UPDATE ft 
+SET object = sparql.bnode()
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  blank nodes are not allowed in UPDATE operations
+HINT:  Blank nodes are document-local and have no global meaning. Use IRIs instead.
+/* update with RETURNING */
+UPDATE ft SET
+  object = '"Westfälische Wilhelms-Universität Münster"@de'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>'
+RETURNING OLD.subject, OLD.predicate, OLD.object,
+          NEW.subject AS new_subject, NEW.predicate AS new_predicate, NEW.object AS new_object;
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "423712345678911"^^<http://www.w3.org/2001/XMLSchema#integer> .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de .
+     } };
+
+
+            subject            |                  predicate                   |                            object                             |          new_subject          |                new_predicate                 |                   new_object                   
+-------------------------------+----------------------------------------------+---------------------------------------------------------------+-------------------------------+----------------------------------------------+------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "423712345678911"^^<http://www.w3.org/2001/XMLSchema#integer> | <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "Westfälische Wilhelms-Universität Münster"@de
+(1 row)
+
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER virtuoso OPTIONS (SET user 'dba', SET password 'foo'); -- wrong password
+UPDATE ft SET
+  object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>'
+  AND predicate = '<http://www.w3.org/2000/01/rdf-schema#label>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+}
+
+ERROR:  SERVER authentication failed (HTTP status 401)
+HINT:  Check the user and password set in the USER MAPPING for the PostgreSQL user "postgres" and try again.
+ALTER USER MAPPING FOR postgres
+SERVER virtuoso OPTIONS (SET user 'dba', SET password 'secret'); -- restore correct password
+/* read-only server: blocks UPDATE regardless of triple pattern */
+ALTER SERVER virtuoso OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+UPDATE ft SET object = '"foo"@en'; -- succeeds: table override allows writes
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "Westfälische Wilhelms-Universität Münster"@de .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en .
+     } };
+
+
+SELECT * FROM ft WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |                  predicate                   |  object  
+-------------------------------+----------------------------------------------+----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "foo"@en
+(1 row)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER virtuoso OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER virtuoso OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+UPDATE ft SET object = '"foo"@en';
+ERROR:  foreign table "ft" does not allow updates
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+/* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate = '<http://foo.bar>');
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://foo.bar>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate <> '<http://foo.bar>');
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p != <http://foo.bar>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "updated" };
+
+
+ERROR:  bad request (HTTP status 400)
+DELETE FROM ft;
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'virtuoso':
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+
+
+ERROR:  bad request (HTTP status 400)
+DROP SERVER virtuoso CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server virtuoso

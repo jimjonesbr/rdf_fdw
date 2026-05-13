@@ -1,0 +1,595 @@
+SELECT sparql.add_context('testctx', 'test context');
+ add_context 
+-------------
+ 
+(1 row)
+
+SELECT sparql.add_prefix('testctx', 'rdf', 'http://www.w3.org/2000/01/rdf-schema#');
+ add_prefix 
+------------
+ 
+(1 row)
+
+CREATE SERVER virtuoso
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint 'http://virtuoso:8890/sparql-auth',
+  prefix_context 'testctx',
+  batch_size '5'); 
+CREATE USER MAPPING FOR postgres
+SERVER virtuoso OPTIONS (user 'dba', password 'secret');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  foo       rdfnode OPTIONS (variable '?foo'), -- will be ignored
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'false',
+  sparql 'SELECT * { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }',
+  sparql_update_pattern 
+    'GRAPH <http://rdf-fdw.test/default> {
+       ?s ?p ?o .
+       ?s rdf:comment "added via rdf_fdw 🐘"^^<http://www.w3.org/2001/XMLSchema#string>.
+     }'
+  );
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', ''),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '""'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '""@es'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"University of Münster"@en'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische \"Wilhelms-Universität\" Münster"@de'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische \nWilhelms-Universität\n Münster"@de'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische .. Wilhelms-Universität . Münster"@de'),
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso>', '🐘'::rdfnode);
+SELECT subject, predicate, object FROM ft
+WHERE subject = '<https://www.uni-muenster.de>'
+ORDER BY predicate, object::text COLLATE "C";
+            subject            |                      predicate                       |                              object                               
+-------------------------------+------------------------------------------------------+-------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso> | "🐘"
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>    | "http://dbpedia.org/resource/University"
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>       | "added via rdf_fdw 🐘"^^<http://www.w3.org/2001/XMLSchema#string>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | ""
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | ""@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "University of Münster"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische                                                    +
+                               |                                                      | Wilhelms-Universität                                             +
+                               |                                                      |  Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische .. Wilhelms-Universität . Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische \"Wilhelms-Universität\" Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "foo"@en
+(10 rows)
+
+/* Test DEFAULT values handling */
+ALTER FOREIGN TABLE ft ALTER COLUMN object SET DEFAULT '"default literal"'::rdfnode;
+INSERT INTO ft (subject, predicate) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#altLabel>');
+SELECT subject, predicate, object FROM ft 
+WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#altLabel>';
+            subject            |                    predicate                    |      object       
+-------------------------------+-------------------------------------------------+-------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#altLabel> | "default literal"
+(1 row)
+
+ALTER FOREIGN TABLE ft ALTER COLUMN object DROP DEFAULT;
+/* insert large literal */
+ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'false'); -- disable logging to not flood the ouput file
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#altLabel>', repeat('b', 1000000)::rdfnode);
+SELECT subject, predicate, sparql.strlen(object)
+FROM ft WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#altLabel>';
+            subject            |                    predicate                    | strlen  
+-------------------------------+-------------------------------------------------+---------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#altLabel> |      15
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#altLabel> | 1000000
+(2 rows)
+
+/* bulk insert */
+INSERT INTO ft (subject, predicate, object)
+SELECT
+  sparql.iri('https://www.uni-muenster.de'),
+  sparql.iri('http://www.w3.org/1999/02/22-rdf-syntax-ns#value'),
+  i::rdfnode
+FROM generate_series(1,100) AS j (i);
+SELECT count(*) FROM ft;
+ count 
+-------
+   112
+(1 row)
+
+/* insert with RETURNING */
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Universidade de Münster"@pt')
+RETURNING *;
+            subject            |                  predicate                   | foo |            object            
+-------------------------------+----------------------------------------------+-----+------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> |     | "Universidade de Münster"@pt
+(1 row)
+
+/*
+ * Here we transfer data from a local static graph into a destination named
+ * graph in virtuoso. This exercises the cross-FDW INSERT-SELECT code path
+ * without depending on any external network service.
+ *
+ * The source graph <http://rdf-fdw.test/wikidata-static> is pre-loaded with
+ * a fixed snapshot of Wikidata altLabel data for Q192490 (PostgreSQL).
+ */
+/* Load static source data into a local named graph */
+CREATE FOREIGN TABLE rdbms_static (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'false',
+  sparql 'SELECT * { GRAPH <http://rdf-fdw.test/wikidata-static> {?s ?p ?o} }',
+  sparql_update_pattern 'GRAPH <http://rdf-fdw.test/wikidata-static> { ?s ?p ?o . }'
+);
+INSERT INTO rdbms_static (s, p, o) VALUES
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PG"@zh-CN'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"POSTGRE SQL"@vi'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PgSQL"@pl'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgre SQL"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgre"@pl'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgre"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PostgreSQL project"@de'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"PostgreSQL, слободни софтвер"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgres"@mul'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"Postgresql"@sr'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"pgsql"@pt-BR'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"postgres"@nl'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"پست گر اس کیوال"@fa'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"پستگر اسکیوال"@fa'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"পোস্টজিআরই"@bn'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"போசுகிரசு"@ta'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"โพสต์เกรส"@th'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"ポスグレ"@ja'),
+  ('<http://www.wikidata.org/entity/Q192490>', '<http://www.w3.org/2004/02/skos/core#altLabel>', '"ポストグレスキューエル"@ja');
+/* Read from the static local graph — same code path as reading from a remote endpoint */
+CREATE FOREIGN TABLE rdbms_wikidata (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'false',
+  sparql $$
+    SELECT * {
+      GRAPH <http://rdf-fdw.test/wikidata-static> {
+        ?s ?p ?o .
+        FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
+        FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)
+      }
+    }
+  $$
+);
+CREATE FOREIGN TABLE rdbms_virtuoso (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'true',
+  sparql $$
+    SELECT * {
+      GRAPH <http://www.uni-muenster.de/graph> {
+        ?s ?p ?o .    
+      FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
+      FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)
+      }
+    }
+    $$,
+  sparql_update_pattern $$
+    GRAPH <http://www.uni-muenster.de/graph> {
+      ?s ?p ?o .
+    }
+  $$);
+INSERT INTO rdbms_virtuoso (s, p, o)
+SELECT s, p, o FROM rdbms_wikidata;
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PgSQL"@pl .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl .
+    } };
+
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr .
+    } };
+
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پست گر اس کیوال"@fa .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پستگر اسکیوال"@fa .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "পোস্টজিআরই"@bn .
+    } };
+
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "போசுகிரசு"@ta .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "โพสต์เกรส"@th .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポスグレ"@ja .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポストグレスキューエル"@ja .
+    } };
+
+
+SELECT * FROM rdbms_virtuoso 
+ORDER BY o::text COLLATE "C";
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?s ?p ?o 
+{
+      GRAPH <http://www.uni-muenster.de/graph> {
+        ?s ?p ?o .    
+      FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
+      FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)
+      }
+    }
+
+INFO:  SPARQL returned 19 records.
+
+                    s                     |                       p                        |                 o                 
+------------------------------------------+------------------------------------------------+-----------------------------------
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PG"@zh-cn
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "POSTGRE SQL"@vi
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PgSQL"@pl
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre SQL"@sr
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre"@pl
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre"@sr
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL project"@de
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL, слободни софтвер"@sr
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@mul
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgresql"@sr
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "pgsql"@pt-br
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "postgres"@nl
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "پست گر اس کیوال"@fa
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "پستگر اسکیوال"@fa
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "পোস্টজিআরই"@bn
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "போசுகிரசு"@ta
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "โพสต์เกรส"@th
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "ポスグレ"@ja
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "ポストグレスキューエル"@ja
+(19 rows)
+
+COPY (
+  SELECT s, p , o
+  FROM rdbms_virtuoso 
+  ORDER BY o::text COLLATE "C"
+) TO STDOUT DELIMITER E' ';
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?s ?p ?o 
+{
+      GRAPH <http://www.uni-muenster.de/graph> {
+        ?s ?p ?o .    
+      FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
+      FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)
+      }
+    }
+
+INFO:  SPARQL returned 19 records.
+
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE\ SQL"@vi
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PgSQL"@pl
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre\ SQL"@sr
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL\ project"@de
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL,\ слободни\ софтвер"@sr
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پست\ گر\ اس\ کیوال"@fa
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پستگر\ اسکیوال"@fa
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "পোস্টজিআরই"@bn
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "போசுகிரசு"@ta
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "โพสต์เกรส"@th
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポスグレ"@ja
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポストグレスキューエル"@ja
+/*** Exception tests ***/
+/* COPY .. FROM must fail - not supported */
+COPY ft (subject, predicate, object) FROM STDIN WITH (DELIMITER ' ');
+ERROR:  COPY FROM is not supported by rdf_fdw
+/* INSERT must fail - all columns must be of type rdfnode */
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  rdfExecForeignInsert: column 'predicate' is not of type rdfnode
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+/* INSERT must fail - no column with the variable ?p */
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate OPTIONS (SET variable '?bar');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  SPARQL variable '?p' in 'sparql_update_pattern' is not mapped to any table column
+/* ALTER COLUMN must fail - variable is required */
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate OPTIONS (DROP variable);
+ERROR:  required option 'variable' is missing
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  SPARQL variable '?p' in 'sparql_update_pattern' is not mapped to any table column
+\set VERBOSITY terse
+/* invalid sparql_update_pattern - no triple pattern */
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate OPTIONS (SET variable '?p');
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?o .');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+/* invalid sparql_update_pattern - no variable */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'foo .');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+/* invalid update_url - no URL */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p o .');
+ALTER SERVER virtuoso OPTIONS (ADD update_url 'foo');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  invalid update_url: 'foo'
+/* invalid triple pattern - no sparql_update_pattern OPTION */
+ALTER SERVER virtuoso OPTIONS (DROP update_url);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* invalid triple pattern - empty sparql_update_pattern OPTION */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern ' ');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+/* invalid value - NULL value */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> { ?s ?p ?o . }');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', NULL);
+ERROR:  NULL value in column "object" violates RDF constraint
+/* invalid value - blank node */
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', sparql.bnode());
+ERROR:  blank nodes are not allowed in INSERT operations
+/* invalid credentials test */
+ALTER USER MAPPING FOR postgres
+SERVER virtuoso OPTIONS (SET user 'dba', SET password 'foo'); -- wrong password
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"foo"@de');
+ERROR:  SERVER authentication failed (HTTP status 401)
+ALTER USER MAPPING FOR postgres
+SERVER virtuoso OPTIONS (SET user 'dba', SET password 'secret'); -- restore correct password
+/* read-only server: blocks INSERT regardless of triple pattern */
+ALTER SERVER virtuoso OPTIONS (ADD readonly 'true');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* table overrides server: server is readonly but table explicitly sets readonly=false */
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', '"foo"@en'); -- succeeds: table override allows writes
+SELECT * FROM ft WHERE object = '"foo"@en';
+            subject            |                     predicate                     | foo |  object  
+-------------------------------+---------------------------------------------------+-----+----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> |     | "foo"@en
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      |     | "foo"@en
+(2 rows)
+
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+/* read-only foreign table: server is writable, table explicitly read-only */
+ALTER SERVER virtuoso OPTIONS (SET readonly 'false');
+ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* read-write server and foreign table, but no triple pattern */
+ALTER SERVER virtuoso OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
+ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  foreign table "ft" does not allow inserts
+/* invalid triple patterns */
+ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
+ERROR:  empty value in option 'sparql_update_pattern'
+INSERT INTO ft (subject, predicate, object) VALUES
+('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  'sparql_update_pattern' contains no valid triple patterns
+/* cleanup */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> { ?s ?p ?o . }'); -- restore correct pattern
+DELETE FROM ft;
+DELETE FROM rdbms_virtuoso;    -- clear <http://www.uni-muenster.de/graph>
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?s ?p ?o 
+{
+      GRAPH <http://www.uni-muenster.de/graph> {
+        ?s ?p ?o .    
+      FILTER(?s=<http://www.wikidata.org/entity/Q192490>)
+      FILTER(?p=<http://www.w3.org/2004/02/skos/core#altLabel>)
+      }
+    }
+
+INFO:  SPARQL returned 19 records.
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PgSQL"@pl .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl .
+    } };
+
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr .
+    } };
+
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پست گر اس کیوال"@fa .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پستگر اسکیوال"@fa .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "পোস্টজিআরই"@bn .
+    } };
+
+
+INFO:  SPARQL query sent to 'virtuoso':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "போசுகிரசு"@ta .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "โพสต์เกรส"@th .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポスグレ"@ja .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "ポストグレスキューエル"@ja .
+    } };
+
+
+DELETE FROM rdbms_static;    -- clear <http://rdf-fdw.test/wikidata-static>
+SELECT sparql.drop_context('testctx', true);
+ drop_context 
+--------------
+ 
+(1 row)
+
+DROP SERVER virtuoso CASCADE;
+NOTICE:  drop cascades to 5 other objects
