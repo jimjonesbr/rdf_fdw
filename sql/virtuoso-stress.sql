@@ -2,7 +2,6 @@ CREATE SERVER virtuoso
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint   'http://virtuoso:8890/sparql-auth',
-  update_url 'http://virtuoso:8890/sparql-auth',
   batch_size '10000');
 
 CREATE FOREIGN TABLE ft (
