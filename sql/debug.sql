@@ -129,3 +129,32 @@ DELETE FROM ft
 WHERE subject = '<https://www.uni-muenster.de>';
 
 DROP SERVER fuseki CASCADE;
+
+/* Bearer token credential redaction
+ *
+ * Verifies that the Authorization: Bearer header value is replaced with
+ * [REDACTED] in server logs and never written in plaintext.  Fuseki does
+ * not accept Bearer tokens so the request will return HTTP 401, but the
+ * important assertion is in the DEBUG output that precedes the error.
+ */
+
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://fuseki:3030/dt/sparql');
+
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o} LIMIT 1'
+);
+
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (token 'my_secret_bearer_token');
+
+SELECT * FROM ft;
+
+DROP SERVER fuseki CASCADE;

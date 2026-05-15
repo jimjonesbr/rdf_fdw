@@ -23,6 +23,15 @@ docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
 # SKIP_STRESS_TESTS=1   - skip long running stress tests
 # SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
 # SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
+# SKIP_DEBUG_TESTS=1    - skip tests that need debug output (debug.out)
 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 installcheck 
+docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
+    SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 \
+    installcheck 
+
+docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
+    SKIP_EXTERNAL_TESTS=1 SKIP_UPDATE_TESTS=1 SKIP_STRESS_TESTS=1 \
+    installcheck
+docker exec -itw /rdf_fdw/ $CONTAINER_NAME cat results/debug.out | grep "Authorization"
+
 echo -e "\n== Tests completed ==\n"

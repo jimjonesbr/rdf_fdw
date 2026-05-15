@@ -75,6 +75,10 @@ ifndef SKIP_UPDATE_TESTS
 			 proxy-auth
 endif
 
+ifndef SKIP_DEBUG_TESTS
+  REGRESS += debug
+endif
+
 ifndef SKIP_STRESS_TESTS
   REGRESS += virtuoso-stress \
   			 qlever-stress \

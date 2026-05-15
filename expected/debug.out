@@ -100,7 +100,7 @@ DEBUG:  DeserializePlanData exit
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfEndForeignScan: called 
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
@@ -152,7 +152,7 @@ DEBUG:  DeserializePlanData exit
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -219,7 +219,7 @@ DEBUG:  DeserializePlanData exit
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -374,7 +374,8 @@ DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
 DEBUG:  ExecuteSPARQL called for INSERT operation
 DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
@@ -675,7 +676,8 @@ DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3E%3D%20%221780-01-01%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
@@ -684,7 +686,7 @@ DEBUG:  ExecuteSPARQL: http response size = 549
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
 DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
 DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
@@ -942,7 +944,8 @@ DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
@@ -951,7 +954,7 @@ DEBUG:  ExecuteSPARQL: http response size = 545
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -1017,7 +1020,8 @@ DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 1 statement(s)
 DEBUG:  ExecuteSPARQL called for UPDATE operation
 DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
@@ -1218,7 +1222,8 @@ DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
@@ -1228,7 +1233,7 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
 DEBUG:    LoadRDFData: appending record 2
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -1288,7 +1293,8 @@ DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
 DEBUG:  ExecuteSPARQL called for DELETE operation
 DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
@@ -1661,31 +1667,57 @@ DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
 DEBUG:  ExecuteSPARQL called for INSERT operation
 DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] * Server auth using Basic with user 'admin'
+DEBUG:  [curl] > POST /dt/update HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: */*
+DEBUG:  [curl] > Content-Type: application/sparql-update
+DEBUG:  [curl] > Content-Length: 271
+DEBUG:  [curl] * upload completely sent off: 271 bytes
+DEBUG:  [curl] < HTTP/1.1 204 No Content
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Set-Cookie: JSESSIONID=node08p0zq7sikbn51ataa6hv6nf5j7.node0; Path=/
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Thu, 14-May-2026 07:31:40 GMT; SameSite=lax
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 14
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -2158,38 +2190,65 @@ DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3E%3D%20%221780-01-01%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] * Server auth using Basic with user 'admin'
+DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: application/sparql-results+xml
+DEBUG:  [curl] > Content-Length: 507
+DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
+DEBUG:  [curl] * upload completely sent off: 507 bytes
+DEBUG:  [curl] < HTTP/1.1 200 OK
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 15
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Pragma: no-cache
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Content-Type: application/sparql-results+xml
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Transfer-Encoding: chunked
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
 DEBUG:  WriteMemoryCallback called
 DEBUG:  WriteMemoryCallback exit: returning '549' (realsize)
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 549
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfIterateForeignScan called
 DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 1
 DEBUG:    FetchNextBinding: called > rowcount = 0/1
@@ -2622,38 +2681,65 @@ DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] * Server auth using Basic with user 'admin'
+DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: application/sparql-results+xml
+DEBUG:  [curl] > Content-Length: 273
+DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
+DEBUG:  [curl] * upload completely sent off: 273 bytes
+DEBUG:  [curl] < HTTP/1.1 200 OK
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 16
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Pragma: no-cache
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Content-Type: application/sparql-results+xml
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Transfer-Encoding: chunked
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
 DEBUG:  WriteMemoryCallback called
 DEBUG:  WriteMemoryCallback exit: returning '545' (realsize)
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 545
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -2803,31 +2889,57 @@ DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 1 statement(s)
 DEBUG:  ExecuteSPARQL called for UPDATE operation
 DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] * Server auth using Basic with user 'admin'
+DEBUG:  [curl] > POST /dt/update HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: */*
+DEBUG:  [curl] > Content-Type: application/sparql-update
+DEBUG:  [curl] > Content-Length: 242
+DEBUG:  [curl] * upload completely sent off: 242 bytes
+DEBUG:  [curl] < HTTP/1.1 204 No Content
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Set-Cookie: JSESSIONID=node09drcfyg590e631jel3ad1vyk8.node0; Path=/
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Thu, 14-May-2026 07:31:40 GMT; SameSite=lax
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 17
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -3043,31 +3155,58 @@ DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] * Server auth using Basic with user 'admin'
+DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: application/sparql-results+xml
+DEBUG:  [curl] > Content-Length: 194
+DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
+DEBUG:  [curl] * upload completely sent off: 194 bytes
+DEBUG:  [curl] < HTTP/1.1 200 OK
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 18
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Pragma: no-cache
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Content-Type: application/sparql-results+xml
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Transfer-Encoding: chunked
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
 DEBUG:  WriteMemoryCallback called
 DEBUG:  WriteMemoryCallback exit: returning '865' (realsize)
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 865
@@ -3075,7 +3214,7 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
 DEBUG:    LoadRDFData: appending record 2
-DEBUG:  LoadRDFData exit
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -3295,31 +3434,57 @@ DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
 DEBUG:  ExecuteSPARQL called for DELETE operation
 DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
-DEBUG:    ExecuteSPARQL: timeout > 300
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] * Server auth using Basic with user 'admin'
+DEBUG:  [curl] > POST /dt/update HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: */*
+DEBUG:  [curl] > Content-Type: application/sparql-update
+DEBUG:  [curl] > Content-Length: 249
+DEBUG:  [curl] * upload completely sent off: 249 bytes
+DEBUG:  [curl] < HTTP/1.1 204 No Content
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Set-Cookie: JSESSIONID=node01042stw5ui2ag1ulvx476o16k29.node0; Path=/
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Thu, 14-May-2026 07:31:40 GMT; SameSite=lax
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 19
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
 DEBUG:  HeaderCallbackFunction called
 DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -3330,6 +3495,240 @@ DEBUG:  rdfEndForeignScan: called
 DEBUG:  rdfEndForeignScan: freeing xmldoc
 DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+DROP SERVER fuseki CASCADE;
+DEBUG:  drop auto-cascades to type ft
+DEBUG:  drop auto-cascades to type ft[]
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki
+/* Bearer token credential redaction
+ *
+ * Verifies that the Authorization: Bearer header value is replaced with
+ * [REDACTED] in server logs and never written in plaintext.  Fuseki does
+ * not accept Bearer tokens so the request will return HTTP 401, but the
+ * important assertion is in the DEBUG output that precedes the error.
+ */
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://fuseki:3030/dt/sparql');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  CheckURL called: 'http://fuseki:3030/dt/sparql'
+DEBUG:    CheckURL handler return code: 0
+DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
+DEBUG:  rdf_fdw_validator exit
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o} LIMIT 1'
+);
+DEBUG:  rdf_fdw_validator called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  IsSPARQLVariableValid called: str='?s'
+DEBUG:  IsSPARQLVariableValid exit: returning 'true'
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  IsSPARQLVariableValid called: str='?p'
+DEBUG:  IsSPARQLVariableValid exit: returning 'true'
+DEBUG:  rdf_fdw_validator exit
+DEBUG:  rdf_fdw_validator called
+DEBUG:  IsSPARQLVariableValid called: str='?o'
+DEBUG:  IsSPARQLVariableValid exit: returning 'true'
+DEBUG:  rdf_fdw_validator exit
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (token 'my_secret_bearer_token');
+DEBUG:  rdf_fdw_validator called
+DEBUG:  rdf_fdw_validator exit
+SELECT * FROM ft;
+DEBUG:  rdfGetForeignRelSize called
+DEBUG:  rdfGetForeignPlan called
+DEBUG:  InitSession called
+DEBUG:  LoadRDFServerInfo called
+DEBUG:  LoadRDFServerInfo exit
+DEBUG:  LoadRDFTableInfo called
+DEBUG:    LoadRDFTableInfo: (0) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (0) adding sparql variable > '?s'
+DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
+DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
+DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
+DEBUG:  IsSPARQLParsable called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
+DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword exit: returning '25' (keyword_position)
+DEBUG:  IsSPARQLParsable exit: returning 'false'
+DEBUG:  LoadRDFTableInfo exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: token '*******'
+DEBUG:  LoadRDFUserMapping exit
+DEBUG:  InitSession: looking for columns in the SELECT entry list
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
+DEBUG:  SetUsedColumns exit
+DEBUG:  InitSession: looking for columns used in WHERE conditions
+DEBUG:  ExtractSPARQLPrefixes called
+DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
+DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
+DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  DeparseSPARQLWhereGraphPattern called
+DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
+DEBUG:  InitSession: skipping WHERE condition parsing for non-parsable query
+DEBUG:  DeparseSQLOrderBy called
+DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
+DEBUG:  DeparseSQLLimit called 
+DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
+DEBUG:  DeparseSPARQLFrom called
+DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:  DeparseSPARQLFrom exit: returning ''
+DEBUG:  InitSession exit
+DEBUG:    rdfGetForeignPlan: SPARQL cannot be fully parsed (is_sparql_parsable=false). The raw SPARQL will be used and all filters will be applied locally.
+DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 0 total)
+DEBUG:  SerializePlanData called
+DEBUG:  SerializePlanData: serializing table with 3 columns
+DEBUG:  SerializePlanData: column name 'subject'
+DEBUG:  SerializePlanData: sparqlvar '?s'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '1'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'predicate'
+DEBUG:  SerializePlanData: sparqlvar '?p'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '2'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData: column name 'object'
+DEBUG:  SerializePlanData: sparqlvar '?o'
+DEBUG:  SerializePlanData: expression '(null)'
+DEBUG:  SerializePlanData: literaltype '(null)'
+DEBUG:  SerializePlanData: literal_format '(null)'
+DEBUG:  SerializePlanData: nodetype 'literal'
+DEBUG:  SerializePlanData: language '(null)'
+DEBUG:  SerializePlanData: pgtype 'RDFNODEOID'
+DEBUG:  SerializePlanData: pgtypmod '-1'
+DEBUG:  SerializePlanData: pgattnum '3'
+DEBUG:  SerializePlanData: used '1'
+DEBUG:  SerializePlanData: pushable '1'
+DEBUG:  SerializePlanData exit
+DEBUG:  rdfBeginForeignScan called
+DEBUG:  DeserializePlanData called
+DEBUG:    DeserializePlanData: deserializing table with 3 columns
+DEBUG:    DeserializePlanData: column name 'subject'
+DEBUG:    DeserializePlanData: column name 'predicate'
+DEBUG:    DeserializePlanData: column name 'object'
+DEBUG:  DeserializePlanData exit
+DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=SELECT%20%2A%20WHERE%20%7B%3Fs%20%3Fp%20%3Fo%7D%20LIMIT%201
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:  ExecuteSPARQL: setting Authorization: Bearer *******
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:  [curl] * Host fuseki:3030 was resolved.
+DEBUG:  [curl] * IPv6: (none)
+DEBUG:  [curl] * IPv4: 172.19.42.48
+DEBUG:  [curl] *   Trying 172.19.42.48:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * using HTTP/1.x
+DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
+DEBUG:  [curl] > Host: fuseki:3030
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > Accept: application/sparql-results+xml
+DEBUG:  [curl] > Authorization: [REDACTED]
+DEBUG:  [curl] > Content-Length: 65
+DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
+DEBUG:  [curl] * upload completely sent off: 65 bytes
+DEBUG:  [curl] < HTTP/1.1 200 OK
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Accept-Encoding
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Vary: Origin
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Fuseki-Request-Id: 20
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Pragma: no-cache
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Content-Type: application/sparql-results+xml
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < Transfer-Encoding: chunked
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  [curl] < 
+DEBUG:  HeaderCallbackFunction called
+DEBUG:  HeaderCallbackFunction exit
+DEBUG:  WriteMemoryCallback called
+DEBUG:  WriteMemoryCallback exit: returning '207' (realsize)
+DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=207
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 207
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:  LoadRDFData exit: SELECT query processed
+DEBUG:  rdfIterateForeignScan called
+DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 0
+DEBUG:  rdfEndForeignScan: called 
+DEBUG:  rdfEndForeignScan: freeing xmldoc
+DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
+DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
 DROP SERVER fuseki CASCADE;
 DEBUG:  drop auto-cascades to type ft

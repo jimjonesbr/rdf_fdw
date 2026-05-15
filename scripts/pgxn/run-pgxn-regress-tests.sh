@@ -3,7 +3,7 @@
 CODEPATH="/home/jim/git/rdf_fdw"
 TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
 PGVERSIONS="9.5,9.6,10,11,12,13,14,15,16,17,18,19"
-#PGVERSIONS="10"
+#PGVERSIONS="9.5"
 IMAGENAME="pgxn-image"
 NETWORK_NAME="pgnet"
 
@@ -31,13 +31,14 @@ do
     # SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
     # SKIP_STRESS_TESTS=1   - skip long running stress tests
     # SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
+    # SKIP_DEBUG_TESTS=1    - skip tests that need debug output (debug.out)
     #
     # ex. "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean"
 
     docker run \
         --network $NETWORK_NAME \
         -itw /ext --rm \
-        --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
+        --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 SKIP_EXTERNAL_TESTS=1 SKIP_DEBUG_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
 
     
     echo -e "\n\n== Tests finished for PostgreSQL $pgv ==\n\n"    
