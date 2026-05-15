@@ -3064,6 +3064,17 @@ WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (2)
 WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (3)
 ERROR:  unable to connect to 'server_invalid_url'
 DETAIL:  Timeout was reached (curl error code 28).
+/* Test max_response_size option - this sets it to 10 bytes */
+ALTER SERVER fuseki OPTIONS (ADD max_response_size '10');
+SELECT * FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+ERROR:  SPARQL response exceeds max_response_size limit of 10 bytes
+HINT:  Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.
+ALTER SERVER fuseki OPTIONS (SET max_response_size '0');
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':

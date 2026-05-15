@@ -80,10 +80,10 @@ ifndef SKIP_DEBUG_TESTS
 endif
 
 ifndef SKIP_STRESS_TESTS
-  REGRESS += virtuoso-stress \
-  			 qlever-stress \
-  		     fuseki-stress \
-  		     graphdb-stress	
+  REGRESS += fuseki-stress \
+  		     graphdb-stress	\
+			 virtuoso-stress \
+			 qlever-stress
 endif
 
 ifndef SKIP_EXTERNAL_TESTS

@@ -166,6 +166,7 @@
 #define RDF_SERVER_OPTION_ENABLE_XML_HUGE "enable_xml_huge"
 #define RDF_SERVER_OPTION_BATCH_SIZE "batch_size" 
 #define RDF_SERVER_OPTION_READONLY "readonly"
+#define RDF_SERVER_OPTION_MAX_RESPONSE_SIZE "max_response_size"
 
 extern Oid RDFNODEOID;
 
@@ -220,6 +221,7 @@ typedef struct RDFfdwState
 	long connect_timeout;				   /* Timeout for establishing a connection to the SPARQL endpoint */
 	long request_timeout;				   /* Timeout for the entire HTTP request (connect + transfer) */
 	long max_retries;				   /* Number of retry attempts for failed SPARQL queries */
+	long max_response_size;			   /* Maximum allowed HTTP response body size in bytes (0 = unlimited) */
 	xmlDocPtr xmldoc;				   /* XML document where the result of SPARQL queries will be stored */
 	Oid foreigntableid;				   /* FOREIGN TABLE oid */
 	List *records;					   /* List of records retrieved from a SPARQL request (after parsing 'xmldoc')*/

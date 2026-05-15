@@ -157,6 +157,7 @@ struct MemoryStruct
 {
 	char *memory;
 	size_t size;
+	size_t max_size; /* 0 = unlimited */
 };
 
 static struct RDFfdwOption valid_options[] =
@@ -181,6 +182,7 @@ static struct RDFfdwOption valid_options[] =
 		{RDF_SERVER_OPTION_ENABLE_XML_HUGE, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_BATCH_SIZE, ForeignServerRelationId, false, false},
 		{RDF_SERVER_OPTION_READONLY, ForeignServerRelationId, false, false},
+		{RDF_SERVER_OPTION_MAX_RESPONSE_SIZE, ForeignServerRelationId, false, false},
 		/* Foreign Tables */
 		{RDF_TABLE_OPTION_SPARQL, ForeignTableRelationId, true, false},
 		{RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN, ForeignTableRelationId, false, false},
@@ -2594,6 +2596,21 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					}
 				}
 
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_MAX_RESPONSE_SIZE) == 0)
+				{
+					char *endptr;
+					char *max_size_str = defGetString(def);
+					long max_size_val = strtol(max_size_str, &endptr, 0);
+
+					if (max_size_str[0] == '\0' || *endptr != '\0' || max_size_val < 0)
+					{
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, max_size_str),
+								 errhint("Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).")));
+					}
+				}
+
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_PUSHDOWN) == 0)
 				{
 					char *enable_pushdown = defGetString(def);
@@ -4148,6 +4165,12 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 				char *maxretry_str = defGetString(def);
 				state->max_retries = strtol(maxretry_str, &tailpt, 0);
 			}
+			else if (strcmp(RDF_SERVER_OPTION_MAX_RESPONSE_SIZE, def->defname) == 0)
+			{
+				char *tailpt;
+				char *max_size_str = defGetString(def);
+				state->max_response_size = strtol(max_size_str, &tailpt, 0);
+			}
 			else if (strcmp(RDF_SERVER_OPTION_READONLY, def->defname) == 0)
 				state->readonly = defGetBoolean(def);
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
@@ -4334,6 +4357,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->connect_timeout));
 	result = lappend(result, IntToConst((int)state->request_timeout));
 	result = lappend(result, IntToConst((int)state->max_retries));
+	result = lappend(result, IntToConst((int)state->max_response_size));
 	result = lappend(result, OidToConst(state->foreigntableid));
 
 	elog(DEBUG2, "%s: serializing table with %d columns", __func__, state->numcols);
@@ -4501,6 +4525,9 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	state->max_retries = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
+	state->max_response_size = (long)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	cell = list_next(list, cell);
+
 	state->foreigntableid = DatumGetObjectId(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
@@ -4570,14 +4597,17 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 {
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
-	char *ptr = repalloc(mem->memory, mem->size + realsize + 1);
+	char *ptr;
 
 	elog(DEBUG3, "%s called", __func__);
 
-	if (!ptr)
+	if (mem->max_size > 0 && mem->size + realsize > mem->max_size)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
-				 errmsg("out of memory (repalloc returned NULL)")));
+				(errcode(ERRCODE_FDW_ERROR),
+				 errmsg("SPARQL response exceeds max_response_size limit of %zu bytes", mem->max_size),
+				 errhint("Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.")));
+
+	ptr = repalloc(mem->memory, mem->size + realsize + 1);
 
 	mem->memory = ptr;
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
@@ -5018,8 +5048,10 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	chunk.memory = palloc(1);
 	chunk.size = 0; /* no data at this point */
+	chunk.max_size = (size_t) state->max_response_size;
 	chunk_header.memory = palloc(1);
 	chunk_header.size = 0; /* no data at this point */
+	chunk_header.max_size = 0; /* no limit on headers */
 
 	elog(DEBUG1, "%s called for %s operation", __func__,
 		 (state->sparql_query_type == SPARQL_INSERT) ? "INSERT" : (state->sparql_query_type == SPARQL_DELETE) ? "DELETE"

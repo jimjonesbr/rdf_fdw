@@ -9,6 +9,15 @@ Release date: **YYYY-MM-DD**
   CREATE USER MAPPING FOR postgres
   SERVER myserver OPTIONS (token 'mysecrettoken');
   ```
+
+* **Add `max_response_size` option to FOREIGN SERVERS**: A new `max_response_size` server option caps the HTTP response body size in bytes. If the endpoint sends more data than the configured limit, the query is aborted with an error before PostgreSQL allocates further memory. The default is `0` (unlimited). This is particularly useful when connecting to public or untrusted SPARQL endpoints to prevent runaway memory consumption from unexpectedly large result sets.
+
+  ```sql
+  -- Reject responses larger than 100 MB
+  CREATE SERVER dbpedia
+  FOREIGN DATA WRAPPER rdf_fdw
+  OPTIONS (endpoint 'https://dbpedia.org/sparql', max_response_size '104857600');
+  ```
 ## Bug Fixes
 
 * **Fixed `CURLE_WRITE_ERROR(23)` on SPARQL UPDATE and unrecognised `Content-Type` responses**: `HeaderCallbackFunction` was returning `0` for any `Content-Type` not recognised as an RDF or SPARQL XML type. Returning `0` from a libcurl write callback signals an abort and triggers `CURLE_WRITE_ERROR(23)`, causing endpoints that respond with `application/json` — such as QLever on successful UPDATEs or Fuseki on HTTP 400 errors — to produce a spurious "unable to connect" error instead of the real outcome. Fixed by returning `realsize` for unrecognised `Content-Type` headers.

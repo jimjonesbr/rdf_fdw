@@ -697,6 +697,11 @@ SERVER server_invalid_url OPTIONS (
 
 SELECT * FROM ft_server_invalid_url;
 
+/* Test max_response_size option - this sets it to 10 bytes */
+ALTER SERVER fuseki OPTIONS (ADD max_response_size '10');
+SELECT * FROM ft;
+ALTER SERVER fuseki OPTIONS (SET max_response_size '0');
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER server_invalid_url CASCADE;

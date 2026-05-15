@@ -107,3 +107,43 @@ OPTIONS (
   endpoint 'https://dbpedia.org/sparql',
   readonly ''
 );
+
+/* invalid max_response_size - empty string */
+CREATE SERVER rdfserver_error15
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size ''
+);
+
+/* invalid max_response_size - white space */
+CREATE SERVER rdfserver_error16
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size ' '
+);
+
+/* invalid max_response_size - negative value */
+CREATE SERVER rdfserver_error17
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size '-1'
+);
+
+/* invalid max_response_size - non-numeric value */
+CREATE SERVER rdfserver_error18
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size 'foo'
+);
+
+/* invalid max_response_size - float value */
+CREATE SERVER rdfserver_error19
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size '1.5'
+);

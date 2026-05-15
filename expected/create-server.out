@@ -115,3 +115,47 @@ OPTIONS (
   readonly ''
 );
 ERROR:  empty value in option 'readonly'
+/* invalid max_response_size - empty string */
+CREATE SERVER rdfserver_error15
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size ''
+);
+ERROR:  empty value in option 'max_response_size'
+/* invalid max_response_size - white space */
+CREATE SERVER rdfserver_error16
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size ' '
+);
+ERROR:  invalid max_response_size: ' '
+HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+/* invalid max_response_size - negative value */
+CREATE SERVER rdfserver_error17
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size '-1'
+);
+ERROR:  invalid max_response_size: '-1'
+HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+/* invalid max_response_size - non-numeric value */
+CREATE SERVER rdfserver_error18
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size 'foo'
+);
+ERROR:  invalid max_response_size: 'foo'
+HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+/* invalid max_response_size - float value */
+CREATE SERVER rdfserver_error19
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  max_response_size '1.5'
+);
+ERROR:  invalid max_response_size: '1.5'
+HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).

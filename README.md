@@ -92,7 +92,7 @@ $ make PGUSER=postgres installcheck
 ```
 
 > [!NOTE]  
-> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory.
+> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory. When connecting to untrusted or public endpoints, consider setting `max_response_size` on the `SERVER` to cap the response body and prevent runaway allocations.
 
 
 ## [Update Extension](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#update-extension)
@@ -183,6 +183,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `prefix_context` | optional | Name of a prefix context whose `PREFIX` entries are prepended to generated SPARQL queries. |
 | `enable_xml_huge` | optional | Enable libxml2's `XML_PARSE_HUGE` to process very large or deeply nested responses (dangerous; default `false`). Use only for trusted endpoints. |
 | `readonly` | optional | Mark the server as read-only (default `false`). When `true`, all `INSERT`, `UPDATE`, and `DELETE` operations on any foreign table backed by this server are rejected before reaching the endpoint. Table-level `readonly` takes precedence over this setting. |
+| `max_response_size` | optional | Maximum allowed HTTP response body size in bytes (default `0` = unlimited). If the response exceeds this limit, the query is aborted with an error. Use this to protect against runaway result sets from untrusted or misbehaving endpoints. |
 
 > [!NOTE]
 > To view server options in `psql` use the meta-command `\des[+]`.
