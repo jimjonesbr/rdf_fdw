@@ -5148,6 +5148,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			elog(DEBUG2, "  %s: setting request redirect: %d", __func__, state->request_redirect);
 			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
 
+			/* Never forward credentials to a redirected host */
+			curl_easy_setopt(state->curl, CURLOPT_UNRESTRICTED_AUTH, 0L);
+
 			if (state->request_max_redirect)
 			{
 				elog(DEBUG2, "  %s: setting maxredirs: %ld", __func__, state->request_max_redirect);
