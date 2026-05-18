@@ -131,8 +131,13 @@ DELETE FROM ft;
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
 DELETE FROM ft;
 
-/* bulk DELETE all inserted triples */
+/* invalid data type */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+DELETE FROM ft WHERE predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'; -- should fail, predicate column is now text, not rdfnode
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+
+/* bulk DELETE all inserted triples */
 DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang'); /* Test DELETE with subquery returning no results */
 DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE subject <> '<http://foo.bar>');
 SELECT count(*) FROM ft;

@@ -3102,6 +3102,13 @@ WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (2)
 WARNING:  ExecuteSPARQL: request to 'server_invalid_url' failed (3)
 ERROR:  unable to connect to 'server_invalid_url'
 DETAIL:  Timeout was reached (curl error code 28).
+/* invalid data type */
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+-- should fail, predicate column is now text, not rdfnode
+INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  invalid data type for INSERT on column "predicate"
+DETAIL:  Only columns of type rdfnode can be used in INSERT operations.
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'qlever':

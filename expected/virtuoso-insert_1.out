@@ -61,8 +61,7 @@ ORDER BY predicate, object::text COLLATE "C";
                                |                                                      |  Münster"@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische .. Wilhelms-Universität . Münster"@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "Westfälische \"Wilhelms-Universität\" Münster"@de
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>         | "foo"@en
-(10 rows)
+(9 rows)
 
 /* Test DEFAULT values handling */
 ALTER FOREIGN TABLE ft ALTER COLUMN object SET DEFAULT '"default literal"'::rdfnode;
@@ -98,7 +97,7 @@ FROM generate_series(1,100) AS j (i);
 SELECT count(*) FROM ft;
  count 
 -------
-   112
+   111
 (1 row)
 
 /* insert with RETURNING */
@@ -371,7 +370,8 @@ ERROR:  cannot copy to foreign table "ft"
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
-ERROR:  rdfExecForeignInsert: column 'predicate' is not of type rdfnode
+ERROR:  invalid data type for INSERT on column "predicate"
+DETAIL:  Only columns of type rdfnode can be used in INSERT operations.
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
 /* INSERT must fail - no column with the variable ?p */
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate OPTIONS (SET variable '?bar');
@@ -443,8 +443,7 @@ SELECT * FROM ft WHERE object = '"foo"@en';
             subject            |                     predicate                     | foo |  object  
 -------------------------------+---------------------------------------------------+-----+----------
  <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> |     | "foo"@en
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label>      |     | "foo"@en
-(2 rows)
+(1 row)
 
 ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
 /* read-only foreign table: server is writable, table explicitly read-only */
@@ -470,8 +469,14 @@ ERROR:  empty value in option 'sparql_update_pattern'
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
-/* cleanup */
+/* invalid data type */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> { ?s ?p ?o . }'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+-- should fail, predicate column is now text, not rdfnode
+INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  invalid data type for INSERT on column "predicate"
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+/* cleanup */
 DELETE FROM ft;
 DELETE FROM rdbms_virtuoso;    -- clear <http://www.uni-muenster.de/graph>
 INFO:  SPARQL query sent to 'virtuoso':

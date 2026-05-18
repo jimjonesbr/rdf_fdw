@@ -268,8 +268,14 @@ ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 
-/* cleanup */
+/* invalid data type */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+-- should fail, predicate column is now text, not rdfnode
+INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+
+/* cleanup */
 DELETE FROM ft;
 DELETE FROM rdbms_graphdb;   -- clear <http://www.uni-muenster.de/graph>
 DELETE FROM rdbms_static;    -- clear <http://rdf-fdw.test/wikidata-static>

@@ -3246,6 +3246,22 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	/* Validate SPARQL update pattern and variable mapping */
 	ValidateSPARQLUpdatePattern(state);
 
+	/* Validate that all mapped columns are of type rdfnode */
+	for (int i = 0; i < state->numcols; i++)
+	{
+		RDFfdwColumn *col = state->rdfTable->cols[i];
+
+		if (col->sparqlvar && strlen(col->sparqlvar) > 0 && col->pgtype != RDFNODEOID)
+		{
+			const char *op_name = (operation == CMD_INSERT) ? "INSERT" :
+								  (operation == CMD_DELETE) ? "DELETE" : "UPDATE";
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("invalid data type for %s on column \"%s\"", op_name, col->name),
+					 errdetail("Only columns of type rdfnode can be used in %s operations.", op_name)));
+		}
+	}
+
 	/* Create temporary memory context for per-row allocations */
 	state->temp_cxt = AllocSetContextCreate(CurrentMemoryContext,
 											"rdf_fdw temporary context",
@@ -3342,12 +3358,6 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 		char *value_str;
 		char *replaced;
 		bool needs_escaping = false;
-
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		/* Skip columns without SPARQL variable mapping */
 		if (!sparql_var || strlen(sparql_var) == 0)
@@ -3518,12 +3528,6 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 			continue;
 		}
 
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
-
 		/* Convert the datum to string representation */
 		value_str = DatumToString(datum, col->pgtype);
 
@@ -3650,12 +3654,6 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		AttrNumber junk_attno;
 		bool needs_escaping = false;
 
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
-
 		elog(DEBUG2, "%s [%d] DELETE: column loaded: %s, sparql_var: %s",
 			 __func__, i, col->name,
 			 sparql_var ? sparql_var : "(null)");
@@ -3777,12 +3775,6 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		char *value_str;
 		char *replaced;
 		bool needs_escaping = false;
-
-		/* Ensure the column is of rdfnode type */
-		if (col->pgtype != RDFNODEOID)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
-					 errmsg("%s: column '%s' is not of type rdfnode", __func__, col->name)));
 
 		/* Skip columns without SPARQL variable mapping */
 		if (!sparql_var || strlen(sparql_var) == 0)

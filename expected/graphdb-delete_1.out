@@ -479,8 +479,24 @@ INFO:  SPARQL returned 71 records.
 
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
-/* bulk DELETE all inserted triples */
+/* invalid data type */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+DELETE FROM ft WHERE predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'; -- should fail, predicate column is now text, not rdfnode
+INFO:  SPARQL query sent to 'graphdb':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#value>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ERROR:  invalid data type for DELETE on column "predicate"
+DETAIL:  Only columns of type rdfnode can be used in DELETE operations.
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+/* bulk DELETE all inserted triples */
 DELETE FROM ft WHERE object IN (SELECT object FROM ft WHERE sparql.lang(object) = 'non-existent-lang'); /* Test DELETE with subquery returning no results */
 INFO:  SPARQL query sent to 'graphdb':
 

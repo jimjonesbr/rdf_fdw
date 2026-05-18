@@ -597,8 +597,21 @@ INFO:  SPARQL returned 1 record.
 
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
-/* cleanup */
+/* invalid data type */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  invalid data type for UPDATE on column "predicate"
+DETAIL:  Only columns of type rdfnode can be used in UPDATE operations.
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+/* cleanup */
 UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate = '<http://foo.bar>');
 INFO:  SPARQL query sent to 'fuseki':
 

@@ -642,8 +642,21 @@ INFO:  SPARQL returned 1 record.
 
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
+/* invalid data type */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> {?s ?p ?o .}'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+UPDATE ft SET object = '"foo"@en';
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
+
+INFO:  SPARQL returned 1 record.
+
+ERROR:  invalid data type for UPDATE on column "predicate"
+DETAIL:  Only columns of type rdfnode can be used in UPDATE operations.
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
 /* cleanup */
-ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate = '<http://foo.bar>');
 INFO:  SPARQL query sent to 'virtuoso':
 
@@ -681,11 +694,10 @@ SELECT ?s ?p
 INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'virtuoso':
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
-INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "updated" };
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {<https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en .} };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {<https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "updated" .} };
 
 
-ERROR:  bad request (HTTP status 400)
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'virtuoso':
 
@@ -695,10 +707,9 @@ SELECT ?s ?p ?o
 INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'virtuoso':
-DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "foo"@en };
+DELETE DATA { GRAPH <http://rdf-fdw.test/default> {<https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "updated" .} };
 
 
-ERROR:  bad request (HTTP status 400)
 DROP SERVER virtuoso CASCADE;
 NOTICE:  drop cascades to 2 other objects
 DETAIL:  drop cascades to foreign table ft

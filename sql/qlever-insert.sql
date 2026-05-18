@@ -697,6 +697,12 @@ SERVER server_invalid_url OPTIONS (
 
 SELECT * FROM ft_server_invalid_url;
 
+/* invalid data type */
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+-- should fail, predicate column is now text, not rdfnode
+INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER server_invalid_url CASCADE;

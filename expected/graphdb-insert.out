@@ -371,7 +371,8 @@ ERROR:  COPY FROM is not supported by rdf_fdw
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
-ERROR:  rdfExecForeignInsert: column 'predicate' is not of type rdfnode
+ERROR:  invalid data type for INSERT on column "predicate"
+DETAIL:  Only columns of type rdfnode can be used in INSERT operations.
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
 /* INSERT must fail - no column with the variable ?p */
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate OPTIONS (SET variable '?bar');
@@ -462,8 +463,14 @@ ERROR:  empty value in option 'sparql_update_pattern'
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
-/* cleanup */
+/* invalid data type */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+-- should fail, predicate column is now text, not rdfnode
+INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+ERROR:  invalid data type for INSERT on column "predicate"
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+/* cleanup */
 DELETE FROM ft;
 DELETE FROM rdbms_graphdb;   -- clear <http://www.uni-muenster.de/graph>
 INFO:  SPARQL query sent to 'graphdb':

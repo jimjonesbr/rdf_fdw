@@ -167,8 +167,13 @@ UPDATE ft SET object = '"foo"@en';
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
 UPDATE ft SET object = '"foo"@en';
 
+/* invalid data type */
+ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> {?s ?p ?o .}'); -- restore correct pattern
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
+UPDATE ft SET object = '"foo"@en';
+ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
+
 /* cleanup */
-ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p ?o .'); -- restore correct pattern
 UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate = '<http://foo.bar>');
 UPDATE ft SET object = '"updated"'::rdfnode WHERE subject IN (SELECT subject FROM ft WHERE predicate <> '<http://foo.bar>');
 DELETE FROM ft;
