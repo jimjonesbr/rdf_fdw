@@ -3919,14 +3919,18 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 {
 	ListCell *cell;
 	TupleDesc tupdesc;
-#if PG_VERSION_NUM < 130000
-	Relation rel = heap_open(state->foreigntableid, NoLock);
-#else
-	Relation rel = table_open(state->foreigntableid, NoLock);
-#endif
+	StringInfoData deprecated_cols;
+	Relation rel;
 
 	elog(DEBUG1, "%s called", __func__);
 
+#if PG_VERSION_NUM < 130000
+	rel = heap_open(state->foreigntableid, NoLock);
+#else
+	rel = table_open(state->foreigntableid, NoLock);
+#endif
+
+	initStringInfo(&deprecated_cols);
 	state->numcols = rel->rd_att->natts;
 	tupdesc = rel->rd_att;
 
@@ -3951,7 +3955,6 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->nodetype = RDF_COLUMN_OPTION_NODETYPE_LITERAL;
 		state->rdfTable->cols[i]->used = false;
 
-#if PG_VERSION_NUM < 110000
 		if (attr->atttypid == RDFNODEOID)
 			elog(DEBUG2, "  %s: (%d) adding data type RDFNODEOID", __func__, i);
 		else
@@ -3961,17 +3964,14 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
 		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
 		state->rdfTable->cols[i]->pgattnum = attr->attnum;
-#else
-		if (attr->atttypid == RDFNODEOID)
-			elog(DEBUG2, "  %s: (%d) adding data type RDFNODEOID", __func__, i);
-		else
-			elog(DEBUG2, "  %s: (%d) adding data type %u", __func__, i, attr->atttypid);
 
-		state->rdfTable->cols[i]->pgtype = attr->atttypid;
-		state->rdfTable->cols[i]->name = pstrdup(NameStr(attr->attname));
-		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
-		state->rdfTable->cols[i]->pgattnum = attr->attnum;
-#endif
+		if (attr->atttypid != RDFNODEOID)
+		{
+			if (deprecated_cols.len > 0)
+				appendStringInfoString(&deprecated_cols, ", ");
+
+			appendStringInfoString(&deprecated_cols, NameStr(attr->attname));
+		}
 
 		foreach (lc, options)
 		{
@@ -4015,6 +4015,13 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			}
 		}
 	}
+
+	if (deprecated_cols.len > 0)
+		ereport(WARNING,
+				(errcode(ERRCODE_WARNING_DEPRECATED_FEATURE),
+				 errmsg("the rdf_fdw FOREIGN TABLE \"%s\" has columns using native PostgreSQL types which are deprecated: %s",
+						RelationGetRelationName(rel), deprecated_cols.data),
+				 errhint("Use the \"rdfnode\" type instead.")));
 
 #if PG_VERSION_NUM < 130000
 	heap_close(rel, NoLock);

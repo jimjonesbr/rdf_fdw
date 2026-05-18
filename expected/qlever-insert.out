@@ -3106,6 +3106,8 @@ DETAIL:  Timeout was reached (curl error code 28).
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 -- should fail, predicate column is now text, not rdfnode
 INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
+WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
+HINT:  Use the "rdfnode" type instead.
 ERROR:  invalid data type for INSERT on column "predicate"
 DETAIL:  Only columns of type rdfnode can be used in INSERT operations.
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;

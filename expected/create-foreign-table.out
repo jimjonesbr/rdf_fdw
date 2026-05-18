@@ -33,6 +33,8 @@ CREATE FOREIGN TABLE table_error4 (
    sparql 'SELECT * WHERE {?s ?p ?o}');
 SELECT * FROM table_error4
 LIMIT 3;
+WARNING:  the rdf_fdw FOREIGN TABLE "table_error4" has columns using native PostgreSQL types which are deprecated: name
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'testserver':
 
 SELECT ?foo 

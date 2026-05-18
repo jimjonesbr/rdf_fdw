@@ -614,6 +614,8 @@ WHERE
   label <> 'foo' AND
   label IN ('hello', 'world') AND
   label NOT IN ('foo', 'bar');
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                     QUERY PLAN                                                                    
 --------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -637,6 +639,8 @@ WHERE
   version BETWEEN 10 AND 100 AND
   version IN (42, 43) AND
   version NOT IN (0, 99);
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                                               QUERY PLAN                                                                                                              
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -658,6 +662,8 @@ WHERE
   num_smallint >= 42::smallint AND
   num_smallint <= 42::smallint AND
   num_smallint BETWEEN 10::smallint AND 100::smallint;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                       QUERY PLAN                                                                       
 -------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -679,6 +685,8 @@ WHERE
   num_int >= 42 AND
   num_int <= 42 AND
   num_int BETWEEN 10 AND 100;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -700,6 +708,8 @@ WHERE
   num_real >= 1.5::real AND
   num_real <= 1.5::real AND
   num_real BETWEEN 1.0::real AND 2.0::real;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                        QUERY PLAN                                                                       
 --------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -721,6 +731,8 @@ WHERE
   num_double >= 1.5::double precision AND
   num_double <= 1.5::double precision AND
   num_double BETWEEN 1.0::double precision AND 2.0::double precision;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                QUERY PLAN                                                                               
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -742,6 +754,8 @@ WHERE
   num_numeric >= 1.5::numeric AND
   num_numeric <= 1.5::numeric AND
   num_numeric BETWEEN 1.0::numeric AND 2.0::numeric;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                       QUERY PLAN                                                                                      
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -763,6 +777,8 @@ WHERE
   modified >= '2015-07-12 20:41:25'::timestamp AND
   modified <= '2015-07-12 20:41:25'::timestamp AND
   modified BETWEEN '2014-07-12 20:41:25'::timestamp AND '2016-07-12 20:41:25'::timestamp;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                                                                                                                                                                                                                                                                                       QUERY PLAN                                                                                                                                                                                                                                                                                                                                                      
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -784,6 +800,8 @@ WHERE
   tstz >= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   tstz <= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   tstz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                                                                                                                                                                                                                                                                                                       QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                      
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -807,6 +825,8 @@ WHERE
   dt BETWEEN '2017-05-01'::date AND '2019-05-01'::date AND
   dt IN ('2018-05-01', '2019-05-01') AND
   dt NOT IN ('2000-01-01', '2020-01-01');
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                                                                                                                                                                                                                                                                                                                                        QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                       
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -828,6 +848,8 @@ WHERE
   ttz >= '12:00:00 UTC'::timetz AND
   ttz <= '12:00:00 UTC'::timetz AND
   ttz BETWEEN '10:00:00 UTC'::timetz AND '14:00:00 UTC'::timetz;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                                                                                                                                                                                                                   QUERY PLAN                                                                                                                                                                                                                                                                                  
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -844,6 +866,8 @@ SELECT bl FROM pgtypes_ft
 WHERE
   bl IS true AND
   bl IS NOT false;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -859,6 +883,8 @@ SELECT bl FROM pgtypes_ft
 WHERE
   bl IS false AND
   bl IS NOT true;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -875,6 +901,8 @@ SELECT bl FROM pgtypes_ft
 WHERE
   bl = true AND
   bl <> false;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                  QUERY PLAN                  
 ---------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -890,6 +918,8 @@ WHERE
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT type FROM pgtypes_ft
 WHERE type = 'http://example.org/SomeType';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                            QUERY PLAN                            
 -----------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -915,6 +945,8 @@ WHERE
   length(label) >= 5 AND
   length(label) <= 5 AND
   length(label) BETWEEN 1 AND 99;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                                        QUERY PLAN                                                                                                       
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -935,6 +967,8 @@ WHERE
   abs(version) < 99 AND
   abs(version) <= 42 AND
   abs(version) BETWEEN 10 AND 100;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                           QUERY PLAN                                                                                          
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -955,6 +989,8 @@ WHERE
   round(num_numeric) < 99 AND
   round(num_numeric) <= 2 AND
   round(num_numeric) BETWEEN 1 AND 99;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                               QUERY PLAN                                                                                              
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -975,6 +1011,8 @@ WHERE
   ceil(num_numeric) < 99 AND
   ceil(num_numeric) <= 2 AND
   ceil(num_numeric) BETWEEN 1 AND 99;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                           QUERY PLAN                                                                                           
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -995,6 +1033,8 @@ WHERE
   floor(num_numeric) < 99 AND
   floor(num_numeric) <= 1 AND
   floor(num_numeric) BETWEEN 1 AND 99;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                                                                                               QUERY PLAN                                                                                              
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -1009,6 +1049,8 @@ WHERE
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT label FROM pgtypes_ft
 WHERE substring(label, 1, 5) = 'hello';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                      QUERY PLAN                      
 -----------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -1023,6 +1065,8 @@ WHERE substring(label, 1, 5) = 'hello';
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT label FROM pgtypes_ft
 WHERE md5(label) = '5d41402abc4b2a76b9719d911017c592';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
                               QUERY PLAN                               
 -----------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
@@ -1990,6 +2034,8 @@ SERVER test_server OPTIONS (
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, c FROM np_groupby
 WHERE c > 1;
+WARNING:  the rdf_fdw FOREIGN TABLE "np_groupby" has columns using native PostgreSQL types which are deprecated: c
+HINT:  Use the "rdfnode" type instead.
             QUERY PLAN             
 -----------------------------------
  Foreign Scan on public.np_groupby

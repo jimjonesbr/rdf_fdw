@@ -136,6 +136,8 @@ CALL
         create_table => true,
         commit_page => false
     );
+WARNING:  the rdf_fdw FOREIGN TABLE "ft2" has columns using native PostgreSQL types which are deprecated: subject, predicate, object
+HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t2" created based on FOREIGN TABLE "public.ft2":
 
   CREATE TABLE public.t2 AS SELECT * FROM public.ft2 WITH NO DATA;
@@ -216,6 +218,8 @@ CALL
         create_table => true,
         commit_page => false
     );
+WARNING:  the rdf_fdw FOREIGN TABLE "ft3" has columns using native PostgreSQL types which are deprecated: subject, predicate, object
+HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "public.ft3":
 
   CREATE TABLE public.t3 AS SELECT * FROM public.ft3 WITH NO DATA;
@@ -260,6 +264,8 @@ CALL
         create_table => true,
         commit_page => false
     );
+WARNING:  the rdf_fdw FOREIGN TABLE "ft4" has columns using native PostgreSQL types which are deprecated: subject, predicate, object
+HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t4" created based on FOREIGN TABLE "public.ft4":
 
   CREATE TABLE public.t4 AS SELECT * FROM public.ft4 WITH NO DATA;
@@ -304,6 +310,8 @@ CALL
         create_table => true,
         commit_page => false
     );
+WARNING:  the rdf_fdw FOREIGN TABLE "ft5" has columns using native PostgreSQL types which are deprecated: subject, predicate, object
+HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t5" created based on FOREIGN TABLE "public.ft5":
 
   CREATE TABLE public.t5 AS SELECT * FROM public.ft5 WITH NO DATA;
@@ -348,6 +356,8 @@ CALL
         create_table => true,
         commit_page => false
     );
+WARNING:  the rdf_fdw FOREIGN TABLE "ft6" has columns using native PostgreSQL types which are deprecated: subject, predicate, object
+HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t6" created based on FOREIGN TABLE "public.ft6":
 
   CREATE TABLE public.t6 AS SELECT * FROM public.ft6 WITH NO DATA;

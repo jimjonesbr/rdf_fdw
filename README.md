@@ -276,17 +276,17 @@ Table options:
 
 #### Column types
 
-Columns may be declared as `rdfnode` (**recommended**) or as standard PostgreSQL types. Use `rdfnode` when you need to preserve RDF semantics (IRIs, language tags, datatypes). Native types enable automatic casting of RDF literals into SQL types.
+Columns must be declared as `rdfnode`. Support for native PostgreSQL types (e.g. `text`, `int`, `date`) is deprecated and will be removed in a future version. Use `rdfnode` to preserve full RDF semantics (IRIs, language tags, datatypes).
 
 #### Column options
 
 | Option | Type | Description |
 |--------|------|-------------|
 | `variable` | **required** | SPARQL variable mapped to this column (e.g. `?name`). In `OPTIONS` write the variable with a leading `?` or `$`, but those characters are not part of the stored name. |
-| `expression` | optional | SPARQL expression to evaluate for this column (used with native types). |
-| `language` | optional | Language tag to apply when comparing or formatting literals (e.g. `en`). Use `*` to ignore language. |
-| `literal_type` | optional | Expected XSD datatype for the literal (e.g. `xsd:date`). Use `*` to ignore type. |
-| `nodetype` | optional | Hint whether the value is `literal` or `iri` (default `literal`). |
+| `expression` | optional | **Deprecated.** SPARQL expression to evaluate for this column. Only valid for native PostgreSQL type columns, which are deprecated. |
+| `language` | optional | **Deprecated.** Language tag to apply when comparing or formatting literals (e.g. `en`). Use `*` to ignore language. Only valid for native PostgreSQL type columns, which are deprecated. |
+| `literal_type` | optional | **Deprecated.** Expected XSD datatype for the literal (e.g. `xsd:date`). Use `*` to ignore type. Only valid for native PostgreSQL type columns, which are deprecated. |
+| `nodetype` | optional | **Deprecated.** Hint whether the value is `literal` or `iri` (default `literal`). Only valid for native PostgreSQL type columns, which are deprecated. |
 
 #### Examples
 
@@ -303,7 +303,10 @@ SERVER linkedgeodata OPTIONS (
      WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o}');
 ```
 
-Example (typed native columns):
+> [!WARNING]
+> The example below uses native PostgreSQL column types, which are **deprecated**. Use `rdfnode` columns instead.
+
+Example (typed native columns — deprecated):
 
 ```sql
 CREATE FOREIGN TABLE film (
@@ -411,14 +414,6 @@ SELECT CAST(CURRENT_TIMESTAMP AS rdfnode);
  "2025-05-16T06:41:50.221129Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 ```
-
-**Choosing Between rdfnode and Native PostgreSQL Types**
-
-You can define foreign table columns using either:
-
-* `rdfnode` **(recommended)** — Use this when you want to preserve the full RDF term, including language tags, datatypes, and IRIs. This is also required if you want to use SPARQL functions, which do not support native PostgreSQL types.
-
-* PostgreSQL native types (e.g., `text`, `int`, `date`) — Use these when you prefer automatic type coercion and simpler SQL filtering, treating RDF values more like regular PostgreSQL data.
 
 **Comparison of `rdfnode` with Native PostgreSQL Types**
 

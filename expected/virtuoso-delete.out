@@ -566,6 +566,8 @@ HINT:  A triple pattern requires at least three components (subject, predicate, 
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> { ?s ?p ?o . }'); -- restore correct pattern
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 DELETE FROM ft WHERE predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'; -- should fail, predicate column is now text, not rdfnode
+WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
@@ -576,6 +578,8 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 4 records.
 
+WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
+HINT:  Use the "rdfnode" type instead.
 ERROR:  invalid data type for DELETE on column "predicate"
 DETAIL:  Only columns of type rdfnode can be used in DELETE operations.
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;

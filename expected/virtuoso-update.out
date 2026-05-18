@@ -646,6 +646,8 @@ HINT:  A triple pattern requires at least three components (subject, predicate, 
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern 'GRAPH <http://rdf-fdw.test/default> {?s ?p ?o .}'); -- restore correct pattern
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 UPDATE ft SET object = '"foo"@en';
+WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
@@ -653,6 +655,8 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 1 record.
 
+WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
+HINT:  Use the "rdfnode" type instead.
 ERROR:  invalid data type for UPDATE on column "predicate"
 DETAIL:  Only columns of type rdfnode can be used in UPDATE operations.
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
