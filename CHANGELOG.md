@@ -3,7 +3,7 @@ Release date: **YYYY-MM-DD**
 
 ## Enhancements
 
-* **Add `token` option to USER MAPPING**: A new `token` option allows Bearer token authentication ([RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)) for SPARQL endpoints that use token-based access control instead of HTTP Basic Authentication. When set, `rdf_fdw` sends an `Authorization: Bearer <token>` HTTP header with every request.
+* **Add `token` option to USER MAPPING**: A new `token` option allows Bearer token authentication (RFC 6750) for SPARQL endpoints that use token-based access control instead of HTTP Basic Authentication. When set, `rdf_fdw` sends an `Authorization: Bearer <token>` HTTP header with every request.
 
   ```sql
   CREATE USER MAPPING FOR postgres
