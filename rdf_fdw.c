@@ -729,7 +729,7 @@ static void rdfEndForeignInsert(EState *estate, ResultRelInfo *rinfo);
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */
-static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value);
+static Datum CreateDatum(int pgtype, int pgtypmod, char *value);
 static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
@@ -1476,8 +1476,9 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
  *
  * returns Datum
  */
-static Datum CreateDatum(HeapTuple tuple, int pgtype, int pgtypmod, char *value)
+static Datum CreateDatum(int pgtype, int pgtypmod, char *value)
 {
+	HeapTuple tuple;
 	regproc typinput;
 
 	elog(DEBUG3, "%s called", __func__);
@@ -1803,11 +1804,11 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 			Form_pg_attribute att = TupleDescAttr(funcctx->attinmeta->tupdesc, i);
 
 			if (strcmp(NameStr(att->attname), "subject") == 0)
-				values[i] = CreateDatum(tuple, att->atttypid, att->atttypmod, triple->subject);
+				values[i] = CreateDatum(att->atttypid, att->atttypmod, triple->subject);
 			else if (strcmp(NameStr(att->attname), "predicate") == 0)
-				values[i] = CreateDatum(tuple, att->atttypid, att->atttypmod, triple->predicate);
+				values[i] = CreateDatum(att->atttypid, att->atttypmod, triple->predicate);
 			else if (strcmp(NameStr(att->attname), "object") == 0)
-				values[i] = CreateDatum(tuple, att->atttypid, att->atttypmod, triple->object);
+				values[i] = CreateDatum(att->atttypid, att->atttypmod, triple->object);
 			else
 				nulls[i] = true;
 		}
