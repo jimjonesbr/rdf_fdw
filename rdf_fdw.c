@@ -5193,7 +5193,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		}
 		/* Don't use CURLOPT_FAILONERROR so we can capture error response bodies */
-		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, false);
+		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, 0L);
 
 		/*
 		 * Enable libcurl verbose output, but route it exclusively through
