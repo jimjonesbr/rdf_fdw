@@ -1,3 +1,4 @@
+\pset null '(null)'
 SELECT sparql.add_context('testctx', 'test context');
  add_context 
 -------------
@@ -10,21 +11,21 @@ SELECT sparql.add_prefix('testctx', 'rdf', 'http://www.w3.org/2000/01/rdf-schema
  
 (1 row)
 
-CREATE SERVER fuseki
+CREATE SERVER qlever
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
-  endpoint 'http://fuseki:3030/dt/update', -- this tests if the regular endpoint is used for updates
+  endpoint 'http://qlever:7001/update', -- this tests if the regular endpoint is used for updates
   prefix_context 'testctx',
   batch_size '5'); 
 CREATE USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (user 'admin', password 'secret');
+SERVER qlever OPTIONS (token 'secret');
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
   foo       rdfnode OPTIONS (variable '?foo'), -- will be ignored
   object    rdfnode OPTIONS (variable '?o') 
 )
-SERVER fuseki OPTIONS (
+SERVER qlever OPTIONS (
   log_sparql 'false',
   sparql 'SELECT * {?s ?p ?o}',
   sparql_update_pattern 
@@ -44,8 +45,8 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Westfälische .. Wilhelms-Universität . Münster"@de'),
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#seeAlso>', '🐘'::rdfnode);
 /* Set the endpoint to the right URL and add update_url */
-ALTER SERVER fuseki OPTIONS (ADD update_url 'http://fuseki:3030/dt/update',
-                             SET endpoint 'http://fuseki:3030/dt/sparql');
+ALTER SERVER qlever OPTIONS (ADD update_url 'http://qlever:7001/update',
+                             SET endpoint 'http://qlever:7001/sparql');
 SELECT subject, predicate, object FROM ft
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY predicate, object::text COLLATE "C";
@@ -84,8 +85,8 @@ SELECT subject, predicate, sparql.strlen(object)
 FROM ft WHERE predicate = '<http://www.w3.org/2000/01/rdf-schema#altLabel>';
             subject            |                    predicate                    | strlen  
 -------------------------------+-------------------------------------------------+---------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#altLabel> |      15
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#altLabel> | 1000000
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#altLabel> |      15
 (2 rows)
 
 /* bulk insert */
@@ -105,14 +106,14 @@ SELECT count(*) FROM ft;
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"Universidade de Münster"@pt')
 RETURNING *;
-            subject            |                  predicate                   | foo |            object            
--------------------------------+----------------------------------------------+-----+------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> |     | "Universidade de Münster"@pt
+            subject            |                  predicate                   |  foo   |            object            
+-------------------------------+----------------------------------------------+--------+------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | (null) | "Universidade de Münster"@pt
 (1 row)
 
 /*
  * Here we transfer data from a local static graph into a destination named
- * graph in Fuseki. This exercises the cross-FDW INSERT-SELECT code path
+ * graph in qlever. This exercises the cross-FDW INSERT-SELECT code path
  * without depending on any external network service.
  *
  * The source graph <http://rdf-fdw.test/wikidata-static> is pre-loaded with
@@ -124,7 +125,7 @@ CREATE FOREIGN TABLE rdbms_static (
   p rdfnode OPTIONS (variable '?p'),
   o rdfnode OPTIONS (variable '?o')
 )
-SERVER fuseki OPTIONS (
+SERVER qlever OPTIONS (
   log_sparql 'false',
   sparql 'SELECT * { GRAPH <http://rdf-fdw.test/wikidata-static> {?s ?p ?o} }',
   sparql_update_pattern 'GRAPH <http://rdf-fdw.test/wikidata-static> { ?s ?p ?o . }'
@@ -155,7 +156,7 @@ CREATE FOREIGN TABLE rdbms_wikidata (
   p rdfnode OPTIONS (variable '?p'),
   o rdfnode OPTIONS (variable '?o')
 )
-SERVER fuseki OPTIONS (
+SERVER qlever OPTIONS (
   log_sparql 'false',
   sparql $$
     SELECT * {
@@ -167,12 +168,12 @@ SERVER fuseki OPTIONS (
     }
   $$
 );
-CREATE FOREIGN TABLE rdbms_fuseki (
+CREATE FOREIGN TABLE rdbms_qlever (
   s rdfnode OPTIONS (variable '?s'),
   p rdfnode OPTIONS (variable '?p'),
   o rdfnode OPTIONS (variable '?o')
 )
-SERVER fuseki OPTIONS (
+SERVER qlever OPTIONS (
   log_sparql 'true',
   sparql $$
     SELECT * {
@@ -188,9 +189,9 @@ SERVER fuseki OPTIONS (
       ?s ?p ?o .
     }
   $$);
-INSERT INTO rdbms_fuseki (s, p, o)
+INSERT INTO rdbms_qlever (s, p, o)
 SELECT s, p, o FROM rdbms_wikidata;
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -199,7 +200,7 @@ INSERT DATA {
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -207,28 +208,28 @@ INSERT DATA {
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
-    } };
-INSERT DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl .
     } };
-
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr .
     } };
+
+
+INFO:  SPARQL query sent to 'qlever':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
+    } };
+INSERT DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -240,16 +241,16 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -265,7 +266,7 @@ INSERT DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
@@ -286,9 +287,9 @@ INSERT DATA {
     } };
 
 
-SELECT * FROM rdbms_fuseki 
+SELECT * FROM rdbms_qlever 
 ORDER BY o::text COLLATE "C";
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?s ?p ?o 
@@ -327,10 +328,10 @@ INFO:  SPARQL returned 19 records.
 
 COPY (
   SELECT s, p , o
-  FROM rdbms_fuseki 
+  FROM rdbms_qlever 
   ORDER BY o::text COLLATE "C"
 ) TO STDOUT DELIMITER E' ';
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?s ?p ?o 
@@ -366,7 +367,7 @@ INFO:  SPARQL returned 19 records.
 /*** Exception tests ***/
 /* COPY .. FROM must fail - not supported */
 COPY ft (subject, predicate, object) FROM STDIN WITH (DELIMITER ' ');
-ERROR:  COPY FROM is not supported by rdf_fdw
+ERROR:  cannot copy to foreign table "ft"
 /* INSERT must fail - all columns must be of type rdfnode */
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 INSERT INTO ft (subject, predicate, object) VALUES
@@ -401,13 +402,13 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 /* invalid update_url - no URL */
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern '?s ?p o .');
-ALTER SERVER fuseki OPTIONS (SET update_url 'foo');
+ALTER SERVER qlever OPTIONS (SET update_url 'foo');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ERROR:  invalid update_url: 'foo'
 /* invalid triple pattern - no sparql_update_pattern OPTION */
-ALTER SERVER fuseki OPTIONS (SET update_url 'http://fuseki:3030/dt/update',
-                             SET endpoint 'http://fuseki:3030/dt/sparql');
+ALTER SERVER qlever OPTIONS (SET update_url 'http://qlever:7001/update',
+                             SET endpoint 'http://qlever:7001/sparql');
 ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
@@ -428,14 +429,14 @@ INSERT INTO ft (subject, predicate, object) VALUES
 ERROR:  blank nodes are not allowed in INSERT operations
 /* invalid credentials test */
 ALTER USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
+SERVER qlever OPTIONS (SET token 'bad_token'); -- wrong token
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"foo"@de');
-ERROR:  authentication failed on server "fuseki" (HTTP 401)
+ERROR:  bad request on server "qlever" (HTTP 400)
 ALTER USER MAPPING FOR postgres
-SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
+SERVER qlever OPTIONS (SET token 'secret'); -- restore correct token
 /* read-only server: blocks INSERT regardless of triple pattern */
-ALTER SERVER fuseki OPTIONS (ADD readonly 'true');
+ALTER SERVER qlever OPTIONS (ADD readonly 'true');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ERROR:  foreign table "ft" does not allow inserts
@@ -444,20 +445,20 @@ ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'false');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', '"foo"@en'); -- succeeds: table override allows writes
 SELECT * FROM ft WHERE object = '"foo"@en';
-            subject            |                     predicate                     | foo |  object  
--------------------------------+---------------------------------------------------+-----+----------
- <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> |     | "foo"@en
+            subject            |                     predicate                     |  foo   |  object  
+-------------------------------+---------------------------------------------------+--------+----------
+ <https://www.uni-muenster.de> | <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> | (null) | "foo"@en
 (1 row)
 
 ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
 /* read-only foreign table: server is writable, table explicitly read-only */
-ALTER SERVER fuseki OPTIONS (SET readonly 'false');
+ALTER SERVER qlever OPTIONS (SET readonly 'false');
 ALTER FOREIGN TABLE ft OPTIONS (ADD readonly 'true');
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ERROR:  foreign table "ft" does not allow inserts
 /* read-write server and foreign table, but no triple pattern */
-ALTER SERVER fuseki OPTIONS (DROP readonly);
+ALTER SERVER qlever OPTIONS (DROP readonly);
 ALTER FOREIGN TABLE ft OPTIONS (DROP readonly);
 ALTER FOREIGN TABLE ft OPTIONS (DROP sparql_update_pattern);
 INSERT INTO ft (subject, predicate, object) VALUES
@@ -483,8 +484,8 @@ ERROR:  invalid data type for INSERT on column "predicate"
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
 /* cleanup */
 DELETE FROM ft;
-DELETE FROM rdbms_fuseki;    -- clear <http://www.uni-muenster.de/graph>
-INFO:  SPARQL query sent to 'fuseki':
+DELETE FROM rdbms_qlever;    -- clear <http://www.uni-muenster.de/graph>
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?s ?p ?o 
@@ -498,7 +499,7 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 19 records.
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 DELETE DATA { 
@@ -507,7 +508,7 @@ DELETE DATA {
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -515,28 +516,28 @@ DELETE DATA {
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
-    } };
-DELETE DATA { 
-    GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@pl .
     } };
-
-
-INFO:  SPARQL query sent to 'fuseki':
-PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
-
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
       <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre"@sr .
     } };
+
+
+INFO:  SPARQL query sent to 'qlever':
+PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
+
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre SQL"@sr .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE SQL"@vi .
+    } };
+DELETE DATA { 
+    GRAPH <http://www.uni-muenster.de/graph> {
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -548,16 +549,16 @@ DELETE DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL project"@de .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL, слободни софтвер"@sr .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -573,7 +574,7 @@ DELETE DATA {
     } };
 
 
-INFO:  SPARQL query sent to 'fuseki':
+INFO:  SPARQL query sent to 'qlever':
 PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 DELETE DATA { 
@@ -601,5 +602,5 @@ SELECT sparql.drop_context('testctx', true);
  
 (1 row)
 
-DROP SERVER fuseki CASCADE;
+DROP SERVER qlever CASCADE;
 NOTICE:  drop cascades to 5 other objects

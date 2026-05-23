@@ -431,7 +431,7 @@ ALTER USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (SET user 'admin', SET password 'foo'); -- wrong password
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"foo"@de');
-ERROR:  SERVER authentication failed (HTTP status 401)
+ERROR:  authentication failed on server "fuseki" (HTTP 401)
 ALTER USER MAPPING FOR postgres
 SERVER fuseki OPTIONS (SET user 'admin', SET password 'secret'); -- restore correct password
 /* read-only server: blocks INSERT regardless of triple pattern */

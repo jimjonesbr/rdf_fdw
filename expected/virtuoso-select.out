@@ -1612,8 +1612,8 @@ SELECT ?s ?p ?o
  FILTER(?o = "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22007 Error DT011: Cannot convert T18:18:42 to time : Incorrect hour field length
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T18:18:42 to time : Incorrect hour field length
 
 SPARQL query:
 define sql:big-data-const 0
@@ -1622,7 +1622,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(?o = "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>)
-}.
+}
 SELECT * FROM ft
 WHERE object > '12:00:00'::time;
 INFO:  SPARQL query sent to 'virtuoso':
@@ -1633,8 +1633,8 @@ SELECT ?s ?p ?o
  FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22007 Error DT011: Cannot convert T12:00:00 to time : Incorrect hour field length
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T12:00:00 to time : Incorrect hour field length
 
 SPARQL query:
 define sql:big-data-const 0
@@ -1643,7 +1643,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
-}.
+}
 SELECT * FROM ft
 WHERE object < '23:59:59'::time;
 INFO:  SPARQL query sent to 'virtuoso':
@@ -1654,8 +1654,8 @@ SELECT ?s ?p ?o
  FILTER(?o < "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22007 Error DT011: Cannot convert T23:59:59 to time : Incorrect hour field length
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T23:59:59 to time : Incorrect hour field length
 
 SPARQL query:
 define sql:big-data-const 0
@@ -1664,7 +1664,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(?o < "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}.
+}
 SELECT * FROM ft
 WHERE object BETWEEN '12:00:00'::time AND '23:59:59'::time;
 INFO:  SPARQL query sent to 'virtuoso':
@@ -1676,8 +1676,8 @@ SELECT ?s ?p ?o
  FILTER(?o <= "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22007 Error DT011: Cannot convert T23:59:59 to time : Incorrect hour field length
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T23:59:59 to time : Incorrect hour field length
 
 SPARQL query:
 define sql:big-data-const 0
@@ -1687,7 +1687,7 @@ SELECT ?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?o >= "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
  FILTER(?o <= "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}.
+}
 /* SPARQL - 17.3 Operator Mapping (timetz) */
 /* SPARQL - 17.3 Operator Mapping (boolean) */
 SELECT * FROM ft
@@ -2123,8 +2123,8 @@ SELECT ?s ?p ?o
  FILTER(SUBSTR(?o, 7, 2) = "👋 "@en)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function substr() needs a string value as 1st argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function substr() needs a string value as 1st argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2133,7 +2133,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(SUBSTR(?o, 7, 2) = "👋 "@en)
-}.
+}
 /* SPARQL 17.4.3.4 - UCASE */
 SELECT * FROM ft
 WHERE sparql.ucase(object) = sparql.strlang('WESTFÄLISCHE WILHELMS-UNIVERSITÄT MÜNSTER', 'de');
@@ -2145,8 +2145,8 @@ SELECT ?s ?p ?o
  FILTER(UCASE(?o) = "WESTFÄLISCHE WILHELMS-UNIVERSITÄT MÜNSTER"@de)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 UCASE() function needs a string value as 1st argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 UCASE() function needs a string value as 1st argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2155,7 +2155,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(UCASE(?o) = "WESTFÄLISCHE WILHELMS-UNIVERSITÄT MÜNSTER"@de)
-}.
+}
 /* SPARQL 17.4.3.5 - LCASE */
 SELECT * FROM ft
 WHERE sparql.lcase(object) = sparql.strlang('westfälische wilhelms-universität münster', 'de');
@@ -2167,8 +2167,8 @@ SELECT ?s ?p ?o
  FILTER(LCASE(?o) = "westfälische wilhelms-universität münster"@de)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 LCASE() function needs a string value as 1st argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 LCASE() function needs a string value as 1st argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2177,7 +2177,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(LCASE(?o) = "westfälische wilhelms-universität münster"@de)
-}.
+}
 /* SPARQL 17.4.3.6 - STRSTARTS */
 SELECT * FROM ft
 WHERE sparql.strstarts(sparql.str(object), 'Westfäl');
@@ -2227,8 +2227,8 @@ SELECT ?s ?p ?o
  FILTER(CONTAINS(?o, "Wilhelms"@de))
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2237,7 +2237,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(CONTAINS(?o, "Wilhelms"@de))
-}.
+}
 SELECT * FROM ft
 WHERE sparql.contains(object, E'"\t <= Tabulator"@de');
 INFO:  SPARQL query sent to 'virtuoso':
@@ -2248,8 +2248,8 @@ SELECT ?s ?p ?o
  FILTER(CONTAINS(?o, "\t <= Tabulator"@de))
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2258,7 +2258,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(CONTAINS(?o, "\t <= Tabulator"@de))
-}.
+}
 SELECT * FROM ft
 WHERE sparql.contains(object, '". <= pontos"@pt');
 INFO:  SPARQL query sent to 'virtuoso':
@@ -2269,8 +2269,8 @@ SELECT ?s ?p ?o
  FILTER(CONTAINS(?o, ". <= pontos"@pt))
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2279,7 +2279,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(CONTAINS(?o, ". <= pontos"@pt))
-}.
+}
 SELECT * FROM ft
 WHERE sparql.contains(object, E'"\n <= salto"@es');
 INFO:  SPARQL query sent to 'virtuoso':
@@ -2290,8 +2290,8 @@ SELECT ?s ?p ?o
  FILTER(CONTAINS(?o, "\n <= salto"@es))
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2300,7 +2300,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(CONTAINS(?o, "\n <= salto"@es))
-}.
+}
 SELECT * FROM ft
 WHERE sparql.contains(object, '"\" <= double"@en');
 INFO:  SPARQL query sent to 'virtuoso':
@@ -2311,8 +2311,8 @@ SELECT ?s ?p ?o
  FILTER(CONTAINS(?o, "\" <= double"@en))
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function CONTAINS() needs a string value as first argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2321,7 +2321,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(CONTAINS(?o, "\" <= double"@en))
-}.
+}
 /* SPARQL 17.4.3.9 - STRBEFORE */
 SELECT * FROM ft
 WHERE sparql.strbefore(sparql.str(object), ' Wilhelms') = 'Westfälische';
@@ -2628,8 +2628,8 @@ SELECT ?s ?p ?o
  FILTER(ABS(?o) = "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for abs().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for abs().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2638,7 +2638,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(ABS(?o) = "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.4.2 - round */
 SELECT * FROM ft
 WHERE sparql.round(object) = 52::numeric::rdfnode;
@@ -2650,8 +2650,8 @@ SELECT ?s ?p ?o
  FILTER(ROUND(?o) = "52"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_round_impl().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_round_impl().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2660,7 +2660,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(ROUND(?o) = "52"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.4.3 - ceil */
 SELECT * FROM ft
 WHERE sparql.ceil(object) = 52::numeric::rdfnode;
@@ -2672,8 +2672,8 @@ SELECT ?s ?p ?o
  FILTER(CEIL(?o) = "52"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_ceil_impl().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_ceil_impl().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2682,7 +2682,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(CEIL(?o) = "52"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.4.4 - floor */
 SELECT * FROM ft
 WHERE sparql.floor(object) = 51::numeric::rdfnode;
@@ -2694,8 +2694,8 @@ SELECT ?s ?p ?o
  FILTER(FLOOR(?o) = "51"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_floor_impl().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_floor_impl().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2704,7 +2704,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(FLOOR(?o) = "51"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.4.5 - RAND */
 SELECT setseed(0.42);
  setseed 
@@ -2731,8 +2731,8 @@ SELECT ?s ?p ?o
  FILTER(YEAR(?o) = "1780"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for year().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for year().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2741,7 +2741,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(YEAR(?o) = "1780"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 SELECT * FROM ft
 WHERE sparql.year(object) + 1 = 2026;
 INFO:  SPARQL query sent to 'virtuoso':
@@ -2752,8 +2752,8 @@ SELECT ?s ?p ?o
  FILTER(YEAR(?o) + 1 = 2026)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for year().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for year().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2762,7 +2762,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(YEAR(?o) + 1 = 2026)
-}.
+}
 /* SPARQL 17.4.5.3 - month */
 SELECT * FROM ft
 WHERE sparql.month(object) = 4::numeric::rdfnode;
@@ -2774,8 +2774,8 @@ SELECT ?s ?p ?o
  FILTER(MONTH(?o) = "4"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for month().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for month().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2784,7 +2784,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(MONTH(?o) = "4"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.5.4 - day */
 SELECT * FROM ft
 WHERE sparql.day(object) = 16::numeric::rdfnode;
@@ -2796,8 +2796,8 @@ SELECT ?s ?p ?o
  FILTER(DAY(?o) = "16"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for day().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for day().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2806,7 +2806,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(DAY(?o) = "16"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 7.4.5.5 - hours */
 SELECT * FROM ft
 WHERE sparql.hours(object) = 18::numeric::rdfnode;
@@ -2818,8 +2818,8 @@ SELECT ?s ?p ?o
  FILTER(HOURS(?o) = "18"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for hour().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for hour().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2828,7 +2828,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(HOURS(?o) = "18"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.5.6 - minutes */
 SELECT * FROM ft
 WHERE sparql.minutes(object) = 30::numeric::rdfnode;
@@ -2840,8 +2840,8 @@ SELECT ?s ?p ?o
  FILTER(MINUTES(?o) = "30"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for minute().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for minute().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2850,7 +2850,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(MINUTES(?o) = "30"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.5.7 - seconds */
 SELECT * FROM ft
 WHERE sparql.seconds(object) = 42::numeric::rdfnode;
@@ -2862,8 +2862,8 @@ SELECT ?s ?p ?o
  FILTER(SECONDS(?o) = "42"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_seconds_impl().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for rdf_seconds_impl().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2872,7 +2872,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(SECONDS(?o) = "42"^^<http://www.w3.org/2001/XMLSchema#decimal>)
-}.
+}
 /* SPARQL 17.4.5.8 - timezone */
 SELECT * FROM ft
 WHERE sparql.timezone(object) = '"PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>';
@@ -2884,8 +2884,8 @@ SELECT ?s ?p ?o
  FILTER(TIMEZONE(?o) = "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for timezone().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for timezone().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2894,7 +2894,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(TIMEZONE(?o) = "PT0S"^^<http://www.w3.org/2001/XMLSchema#dayTimeDuration>)
-}.
+}
 /* SPARQL 17.4.5.9 - tz */
 SELECT * FROM ft
 WHERE sparql.tz(object) = 'Z'::rdfnode;
@@ -2906,8 +2906,8 @@ SELECT ?s ?p ?o
  FILTER(TZ(?o) = "Z")
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for timezone().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for timezone().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -2916,7 +2916,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(TZ(?o) = "Z")
-}.
+}
 /* SPARQL 17.4.6.1 - MD5 */
 SELECT * FROM ft
 WHERE sparql.md5(sparql.str(object)) = '6c0bdbd38fc0772abda6fa1c98b74990'::rdfnode;
@@ -3145,8 +3145,8 @@ SELECT ?s ?p ?o
  FILTER(STRLEN(?o) = 0)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function strlen() needs a string value as an argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function strlen() needs a string value as an argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -3155,7 +3155,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(STRLEN(?o) = 0)
-}.
+}
 SELECT * FROM ft WHERE sparql.substr(object, 1, 0) = '""'::rdfnode;
 INFO:  SPARQL query sent to 'virtuoso':
 
@@ -3165,8 +3165,8 @@ SELECT ?s ?p ?o
  FILTER(SUBSTR(?o, 1, 0) = "")
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22023 Error SL001: The SPARQL 1.1 function substr() needs a string value as 1st argument
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22023 Error SL001: The SPARQL 1.1 function substr() needs a string value as 1st argument
 
 SPARQL query:
 define sql:big-data-const 0
@@ -3175,7 +3175,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(SUBSTR(?o, 1, 0) = "")
-}.
+}
 -- Very large/small decimals
 SELECT * FROM ft
 WHERE object = 9999999999999999999::numeric::rdfnode
@@ -3189,8 +3189,8 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR128: Numeric value out of range for <temporary space column>(0, 0)
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR128: Numeric value out of range for <temporary space column>(0, 0)
 
 SPARQL query:
 define sql:big-data-const 0
@@ -3200,7 +3200,7 @@ SELECT ?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?o = "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
-ORDER BY  ASC (?p).
+ORDER BY  ASC (?p)
 SELECT * FROM ft
 WHERE object = 0.000000000000001::numeric::rdfnode
 ORDER BY predicate;
@@ -3260,8 +3260,8 @@ SELECT ?s ?p ?o
  FILTER(DAY(?o) = 29)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'virtuoso': Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for day().
+ERROR:  internal error on server "virtuoso" (HTTP 500)
+DETAIL:  Virtuoso 22003 Error SR586: Incomplete RDF box as argument 0 for day().
 
 SPARQL query:
 define sql:big-data-const 0
@@ -3271,7 +3271,7 @@ SELECT ?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(MONTH(?o) = 2)
  FILTER(DAY(?o) = 29)
-}.
+}
 -- NOT conditions
 SELECT * FROM ft
 WHERE NOT sparql.isiri(object) AND
@@ -3401,7 +3401,7 @@ SERVER virtuoso OPTIONS (
   sparql 'SELECT * WHERE {?s ?p }' -- missing object in triple pattern
 );
 SELECT * FROM ft_invalid_sparql;
-ERROR:  SPARQL query error
+ERROR:  bad request on server "virtuoso" (HTTP 400)
 DETAIL:  Virtuoso 37000 Error SP030: SPARQL compiler, line 4: syntax error at '}' before '}'
 
 SPARQL query:
@@ -3409,7 +3409,7 @@ define sql:big-data-const 0
 
 SELECT ?s ?p ?o 
 {?s ?p }
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* invalid SERVER url */
 CREATE SERVER server_invalid_url
 FOREIGN DATA WRAPPER rdf_fdw 

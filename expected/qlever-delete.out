@@ -428,9 +428,9 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  SPARQL query error
+ERROR:  bad request on server "qlever" (HTTP 400)
 DETAIL:  Access token was provided but it was invalid
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 ALTER USER MAPPING FOR postgres
 SERVER qlever OPTIONS (SET token 'secret'); -- restore correct token
 /* read-only server: blocks DELETE regardless of triple pattern */

@@ -141,7 +141,7 @@ SELECT ?s ?p ?o
  FILTER(SAMETERM(?o, <http://dbpedia.org/resource/North_Rhine-Westphalia>))
 }
 
-ERROR:  SPARQL query error
+ERROR:  bad request on server "qlever" (HTTP 400)
 DETAIL:  {
     "exception": "Invalid SPARQL query: Built-in function \"sameterm\"  not yet implemented; if you need it, just add it to SparqlQleverVisitor.cpp::visitTypesafe(Parser::BuiltInCallContext following the already implemented functions there",
     "metadata": {
@@ -151,7 +151,7 @@ DETAIL:  {
         "stopIndex": 136
     },
     "query": "\nSELECT ?s ?p ?o \n{?s ?p ?o\n ## rdf_fdw pushdown conditions ##\n FILTER(SAMETERM(?o, <http://dbpedia.org/resource/North_Rhine-W... (truncated)
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* SPARQL 17.4.1.9 - IN */
 SELECT * FROM ft
 WHERE object IN (sparql.iri('http://dbpedia.org/resource/North_Rhine-Westphalia'),
@@ -1544,7 +1544,7 @@ SELECT ?s ?p ?o
  FILTER(SAMETERM(?o, "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>))
 }
 
-ERROR:  SPARQL query error
+ERROR:  bad request on server "qlever" (HTTP 400)
 DETAIL:  {
     "exception": "Invalid SPARQL query: Built-in function \"sameterm\"  not yet implemented; if you need it, just add it to SparqlQleverVisitor.cpp::visitTypesafe(Parser::BuiltInCallContext following the already implemented functions there",
     "metadata": {
@@ -1554,7 +1554,7 @@ DETAIL:  {
         "stopIndex": 137
     },
     "query": "\nSELECT ?s ?p ?o \n{?s ?p ?o\n ## rdf_fdw pushdown conditions ##\n FILTER(SAMETERM(?o, \"1780-04-16\"^^<http://www.w3.org/2001/XM... (truncated)
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* SPARQL 17.4.2.1 - isIRI */
 SELECT * FROM ft
 WHERE 
@@ -2445,8 +2445,8 @@ SELECT ?s ?p ?o
  FILTER(YEAR(?o) = "1780"^^<http://www.w3.org/2001/XMLSchema#decimal>)
 }
 
-ERROR:  internal server error (HTTP status 500)
-DETAIL:  Response from 'qlever': {
+ERROR:  internal error on server "qlever" (HTTP 500)
+DETAIL:  {
     "exception": "Reference value for filtering date values over expression YEAR is of invalid datatype: Double.\nPlease provide an integer value as reference year.",
     "query": "\nSELECT ?s ?p ?o \n{?s ?p ?o\n ## rdf_fdw pushdown conditions ##\n FILTER(YEAR(?o) = \"1780\"^^<http://www.w3.org/2001/XMLSchema#decimal>)\n}",
     "resultsize": 0,
@@ -2455,7 +2455,7 @@ DETAIL:  Response from 'qlever': {
         "computeResult": 0,
         "total": 0
     }
-}.
+}
 SELECT * FROM ft
 WHERE sparql.year(object) + 1 = 2026;
 INFO:  SPARQL query sent to 'qlever':
@@ -3071,7 +3071,7 @@ SERVER qlever OPTIONS (
   sparql 'SELECT * WHERE {?s ?p }' -- missing object in triple pattern
 );
 SELECT * FROM ft_invalid_sparql;
-ERROR:  SPARQL query error
+ERROR:  bad request on server "qlever" (HTTP 400)
 DETAIL:  {
     "exception": "Invalid SPARQL query: Token \"}\": mismatched input '}' expecting {'(', '[', 'true', 'false', IRI_REF, PNAME_NS, PNAME_LN, BLANK_NODE_LABEL, VAR1, VAR2, PREFIX_LANGTAG, INTEGER, DECIMAL, DOUBLE, INTEGER_POSITIVE, DECIMAL_POSITIVE, DOUBLE_POSITIVE, INTEGER_NEGATIVE, DECIMAL_NEGATIVE, DOUBLE_NEGATIVE, STRING_LITERAL1, STRING_LITERAL2, STRING_LITERAL_LONG1, STRING_LITERAL_LONG2, NIL, ANON}",
     "metadata": {
@@ -3079,7 +3079,7 @@ DETAIL:  {
         "positionInLine": 7,
         "startIndex": 25,
         ... (truncated)
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* invalid SERVER url */
 CREATE SERVER server_invalid_url
 FOREIGN DATA WRAPPER rdf_fdw 

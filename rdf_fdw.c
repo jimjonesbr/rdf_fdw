@@ -4588,11 +4588,6 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	return state;
 }
 
-static size_t DiscardWriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-	return size * nmemb;
-}
-
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
 	size_t realsize = size * nmemb;
@@ -5177,21 +5172,19 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, HeaderCallbackFunction);
 		curl_easy_setopt(state->curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
 
-		/* For SPARQL UPDATE operations, we only need the HTTP status code;
-		 * discard the response body to avoid write-callback failures when
-		 * the endpoint returns large JSON bodies (e.g. QLever). */
+		/* For SPARQL UPDATE operations, collect the response body so that
+		 * error details (e.g. auth failure messages) can be surfaced in the
+		 * PostgreSQL error.  max_size is reset to 0 (unlimited) to avoid a
+		 * false "exceeds max_response_size" error when the endpoint returns
+		 * a large body on a successful update (e.g. QLever JSON). */
 		if (state->sparql_query_type == SPARQL_INSERT ||
-				state->sparql_query_type == SPARQL_DELETE ||
-				state->sparql_query_type == SPARQL_UPDATE)
-		{
-			curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, DiscardWriteCallback);
-			curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, NULL);
-		}
-		else
-		{
-			curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-			curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
-		}
+			state->sparql_query_type == SPARQL_DELETE ||
+			state->sparql_query_type == SPARQL_UPDATE)
+			chunk.max_size = 0;
+
+		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+		curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
 		/* Don't use CURLOPT_FAILONERROR so we can capture error response bodies */
 		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, 0L);
 
@@ -5299,83 +5292,64 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			if (state->xmldoc)
 				xmlFreeDoc(state->xmldoc);
 
-			if (chunk.size > 0 && chunk.memory)
 			{
-				/*
-				 * Truncate the error body before logging or including in error
-				 * messages. Endpoints may return large HTML pages on errors (e.g.
-				 * from misconfigured proxies), which would flood server logs.
-				 */
-				char display_body[RDF_FDW_MAX_ERROR_BODY + 16];
-				if (chunk.size > RDF_FDW_MAX_ERROR_BODY)
+				StringInfoData display_body;
+				bool has_body = (chunk.size > 0 && chunk.memory);
+
+				initStringInfo(&display_body);
+
+				if (has_body)
 				{
-					memcpy(display_body, chunk.memory, RDF_FDW_MAX_ERROR_BODY);
-					strcpy(display_body + RDF_FDW_MAX_ERROR_BODY, "... (truncated)");
+					/*
+					 * Truncate the error body before logging or including in
+					 * error messages.  Endpoints may return large HTML pages on
+					 * errors (e.g. from misconfigured proxies), which would
+					 * flood server logs.
+					 */
+					if (chunk.size > RDF_FDW_MAX_ERROR_BODY)
+					{
+						appendBinaryStringInfo(&display_body, chunk.memory, RDF_FDW_MAX_ERROR_BODY);
+						appendStringInfoString(&display_body, "... (truncated)");
+					}
+					else
+					{
+						appendStringInfoString(&display_body, chunk.memory);
+					}
+					elog(DEBUG1, "%s: error response body: %s", __func__, display_body.data);
 				}
 				else
 				{
-					memcpy(display_body, chunk.memory, chunk.size + 1);
+					elog(DEBUG1, "%s: no response body available for HTTP error %ld", __func__, response_code);
 				}
-
-				/* HTTP error with response body */
-				elog(DEBUG1, "%s: error response body: %s", __func__, display_body);
 
 				if (response_code == 400)
 					ereport(ERROR,
 							(errcode(ERRCODE_SYNTAX_ERROR),
-							 errmsg("SPARQL query error"),
-							 errdetail("%s", display_body),
-							 errhint("The SPARQL endpoint returned: Bad Request (HTTP 400).")));
+							 errmsg("bad request on server \"%s\" (HTTP 400)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("Check the SPARQL query syntax.")));
 				else if (response_code == 401)
 					ereport(ERROR,
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("SERVER authentication failed (HTTP status %ld)", response_code),
-							 errdetail("Response: %s", display_body),
-							 errhint("Check the user and password set in the USER MAPPING for the current PostgreSQL user: \"%s\" and try again.", GetUserNameFromId(GetUserId(), false))));
+							 errmsg("authentication failed on server \"%s\" (HTTP 401)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("Check the credentials in the USER MAPPING for PostgreSQL user \"%s\".", GetUserNameFromId(GetUserId(), false))));
 				else if (response_code == 404)
 					ereport(ERROR,
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("SERVER not found (HTTP status %ld)", response_code),
-							 errdetail("Response: %s", display_body),
-							 errhint("Check the SERVER endpoint URL: '%s'.", state->endpoint)));
+							 errmsg("endpoint not found on server \"%s\" (HTTP 404)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("Check the endpoint URL: \"%s\".", state->endpoint)));
 				else if (response_code == 500)
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
-							 errmsg("internal server error (HTTP status %ld)", response_code),
-							 errdetail("Response from '%s': %s.", state->server->servername, display_body)));
+							 errmsg("internal error on server \"%s\" (HTTP 500)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0));
 				else
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
-							 errmsg("HTTP error %ld from '%s'", response_code, state->server->servername),
-							 errdetail("Response: %s.", display_body)));
-			}
-			else
-			{
-				/* HTTP error without response body */
-				elog(DEBUG1, "%s: no response body available for HTTP error %ld", __func__, response_code);
-
-				if (response_code == 400)
-					ereport(ERROR,
-							(errcode(ERRCODE_SYNTAX_ERROR),
-							 errmsg("bad request (HTTP status %ld)", response_code)));
-				else if (response_code == 401)
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("SERVER authentication failed (HTTP status %ld)", response_code),
-							 errhint("Check the user and password set in the USER MAPPING for the PostgreSQL user \"%s\" and try again.", GetUserNameFromId(GetUserId(), false))));
-				else if (response_code == 404)
-					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
-							 errmsg("SERVER not found (HTTP status %ld)", response_code),
-							 errhint("Check the SERVER endpoint URL: '%s'.", state->endpoint)));
-				else if (response_code == 500)
-					ereport(ERROR,
-							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
-							 errmsg("internal server error (HTTP status %ld)", response_code)));
-				else
-					ereport(ERROR,
-							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
-							 errmsg("HTTP error %ld from '%s'", response_code, state->server->servername)));
+							 errmsg("HTTP %ld error on server \"%s\"", response_code, state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0));
 			}
 		}
 		else if (res != CURLE_OK)

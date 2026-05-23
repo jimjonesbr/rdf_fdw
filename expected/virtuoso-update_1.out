@@ -541,8 +541,8 @@ SELECT ?s ?p ?o
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
 }
 
-ERROR:  SERVER authentication failed (HTTP status 401)
-HINT:  Check the user and password set in the USER MAPPING for the PostgreSQL user "postgres" and try again.
+ERROR:  authentication failed on server "virtuoso" (HTTP 401)
+HINT:  Check the credentials in the USER MAPPING for PostgreSQL user "postgres".
 ALTER USER MAPPING FOR postgres
 SERVER virtuoso OPTIONS (SET user 'dba', SET password 'secret'); -- restore correct password
 /* read-only server: blocks UPDATE regardless of triple pattern */

@@ -3047,7 +3047,7 @@ SERVER graphdb OPTIONS (
   sparql 'SELECT * WHERE {?s ?p }' -- missing object in triple pattern
 );
 SELECT * FROM ft_invalid_sparql;
-ERROR:  SPARQL query error
+ERROR:  bad request on server "graphdb" (HTTP 400)
 DETAIL:  MALFORMED QUERY: Encountered " "}" "} "" at line 3, column 8.
 Was expecting one of:
     "(" ...
@@ -3072,7 +3072,7 @@ Was expecting one of:
     <DOUBLE_POSITIVE> ...
     <DOUBLE_NEGATIVE> ...
     <STRING_LITE... (truncated)
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* invalid SERVER url */
 CREATE SERVER server_invalid_url
 FOREIGN DATA WRAPPER rdf_fdw 

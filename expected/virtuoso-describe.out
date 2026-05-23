@@ -298,13 +298,13 @@ invalid
 SELECT * FROM sparql.describe('virtuoso', '   ');
 ERROR:  a DESCRIBE pattern cannot contain only whitespace characters
 SELECT * FROM sparql.describe('virtuoso', 'DESCRIBE https://www.uni-muenster.de'); -- missing < >
-ERROR:  SPARQL query error
+ERROR:  bad request on server "virtuoso" (HTTP 400)
 DETAIL:  Virtuoso 37000 Error SP030: SPARQL compiler, line 2: Undefined namespace prefix at 'https' before '/'
 
 SPARQL query:
 define sql:big-data-const 0
 DESCRIBE https://www.uni-muenster.de
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* DESCRIBE pattern with a blank node */
 SELECT * FROM sparql.describe('virtuoso', '_:bnode1');
 ERROR:  invalid DESCRIBE query:
@@ -312,13 +312,13 @@ ERROR:  invalid DESCRIBE query:
 _:bnode1
 
 SELECT * FROM sparql.describe('virtuoso', 'DESCRIBE _:bnode1');
-ERROR:  SPARQL query error
+ERROR:  bad request on server "virtuoso" (HTTP 400)
 DETAIL:  Virtuoso 37000 Error SP030: SPARQL compiler, line 2: syntax error at '_:bnode1' before '}'
 
 SPARQL query:
 define sql:big-data-const 0
 DESCRIBE _:bnode1
-HINT:  The SPARQL endpoint returned: Bad Request (HTTP 400).
+HINT:  Check the SPARQL query syntax.
 /* malformed entity IRI */
 SELECT * FROM sparql.describe('virtuoso', 'DESCRIBE <htt://i.am.malformed>');
  subject | predicate | object 
