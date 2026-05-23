@@ -429,7 +429,7 @@ ALTER USER MAPPING FOR postgres
 SERVER virtuoso OPTIONS (SET user 'dba', SET password 'foo'); -- wrong password
 INSERT INTO ft (subject, predicate, object) VALUES
 ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', '"foo"@de');
-ERROR:  SERVER authentication failed (HTTP status 401)
+ERROR:  authentication failed on server "virtuoso" (HTTP 401)
 ALTER USER MAPPING FOR postgres
 SERVER virtuoso OPTIONS (SET user 'dba', SET password 'secret'); -- restore correct password
 /* read-only server: blocks INSERT regardless of triple pattern */
