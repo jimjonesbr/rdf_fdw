@@ -35,6 +35,8 @@ SERVER linkedgeodata OPTIONS (
 SELECT * FROM hbf
 WHERE label = 'Gare centrale de Leipzig'
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -68,6 +70,8 @@ INFO:  SPARQL returned 6 records.
 SELECT * FROM hbf
 WHERE label IN ('Leipzig Hbf', 'Gare centrale de Leipzig')
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -100,6 +104,8 @@ INFO:  SPARQL returned 6 records.
 SELECT label, type FROM hbf
 WHERE label = ANY(ARRAY['Leipzig Hbf', 'Gare centrale de Leipzig'])
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?type 
@@ -132,6 +138,8 @@ INFO:  SPARQL returned 6 records.
 SELECT * FROM hbf
 WHERE fake_string IN ('Leipzig Hbf', 'Gare centrale de Leipzig')
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -159,6 +167,8 @@ INFO:  SPARQL returned 0 records.
 SELECT * FROM hbf
 WHERE label NOT IN ('foo','bar')
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -198,6 +208,8 @@ INFO:  SPARQL returned 12 records.
 SELECT * FROM hbf
 ORDER BY label COLLATE "C"
 LIMIT 1;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -223,6 +235,8 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM hbf
 ORDER BY label COLLATE "C"
 FETCH FIRST ROW ONLY;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -248,6 +262,8 @@ INFO:  SPARQL returned 1 record.
 SELECT * FROM hbf
 ORDER BY label COLLATE "C"
 FETCH FIRST 2 ROWS ONLY;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -276,6 +292,8 @@ SELECT * FROM hbf
 ORDER BY label COLLATE "C"
 OFFSET 1
 LIMIT 1;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -302,6 +320,8 @@ SELECT * FROM hbf
 ORDER BY label COLLATE "C"
 OFFSET 1
 FETCH FIRST ROW ONLY;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -328,6 +348,8 @@ INFO:  SPARQL returned 2 records.
 SELECT * FROM hbf
 ORDER BY label COLLATE "C" ASC
 LIMIT 2;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -354,6 +376,8 @@ INFO:  SPARQL returned 2 records.
 SELECT * FROM hbf
 ORDER BY label COLLATE "C" DESC
 LIMIT 2;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -380,6 +404,8 @@ INFO:  SPARQL returned 2 records.
 SELECT * FROM hbf
 ORDER BY label COLLATE "C" ASC, type COLLATE "C" DESC
 LIMIT 3;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -408,6 +434,8 @@ INFO:  SPARQL returned 3 records.
 SELECT DISTINCT label COLLATE "C", modified 
 FROM hbf 
 ORDER BY label COLLATE "C", modified;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified 
@@ -433,6 +461,8 @@ INFO:  SPARQL returned 2 records.
 SELECT DISTINCT ON (label COLLATE "C", modified) label, modified, version 
 FROM hbf
 ORDER BY label COLLATE "C", modified;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version 
@@ -467,6 +497,8 @@ WHERE
   fake_date = '2018-05-01'::date AND
   fake_string = 'foo'
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("T11:30:42"^^xsd:time AS ?tm) ("T14:45:13-05:00"^^xsd:time AS ?tmtz) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -512,6 +544,8 @@ WHERE
   fake_date <> '2020-05-01'::date AND
   fake_string <> 'bar'
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified ?version ?wc ?lat ?lon ?type (STRDT("foo",<http://www.w3.org/2001/XMLSchema#string>) AS ?str) ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -556,6 +590,8 @@ WHERE
   fake_timestamptz > '2010-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date > '2017-05-01'::date
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -596,6 +632,8 @@ WHERE
   fake_timestamptz < '2012-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date < '2019-05-01'::date
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -636,6 +674,8 @@ WHERE
   fake_timestamptz >= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date >= '2018-05-01'::date
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -676,6 +716,8 @@ WHERE
   fake_timestamptz <= '2011-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date <= '2018-05-01'::date
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -716,6 +758,8 @@ WHERE
   fake_timestamptz BETWEEN '2010-01-10 14:45:13.815-05:00'::timestamptz AND '2012-01-10 14:45:13.815-05:00'::timestamptz AND
   fake_date BETWEEN '2017-05-01'::date AND '2019-05-01'::date
 ORDER BY label COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified ?version ?lat ?lon ("2018-05-01"^^xsd:date AS ?dt) ("2011-01-10T14:45:13.815-05:00"^^xsd:dateTime AS ?tstz) 
@@ -762,6 +806,8 @@ WHERE
   length(label) >= 24 AND
   length(label) BETWEEN 10 AND 88
 ORDER BY label COLLATE "C", type COLLATE "C";
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT ?label ?type 
@@ -808,6 +854,8 @@ WHERE
   abs(version) <=  19 AND
   abs(version) BETWEEN 01 AND 99
 ORDER BY label COLLATE "C", abs(version);
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?version 
@@ -850,6 +898,8 @@ WHERE
   round(lat) <= 51 AND
   round(lat) BETWEEN 01 AND 99
 ORDER BY label COLLATE "C", round(lat);
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?lat 
@@ -892,6 +942,8 @@ WHERE
   ceil(lat) <= 52 AND
   ceil(lat) BETWEEN 01 AND 99
 ORDER BY label COLLATE "C", ceil(lat);
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?lat 
@@ -934,6 +986,8 @@ WHERE
   floor(lat) <= 51 AND
   floor(lat) BETWEEN 01 AND 99
 ORDER BY label COLLATE "C", floor(lat);
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?lat 
@@ -969,6 +1023,8 @@ INFO:  SPARQL returned 2 records.
 SELECT DISTINCT label, modified
 FROM hbf
 WHERE substring(label,1,7) = 'Leipzig';
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label ?modified 
@@ -1006,6 +1062,8 @@ WHERE
   EXTRACT(minutes FROM modified) = 41  AND
   EXTRACT(seconds FROM modified) = 25
 FETCH FIRST ROW ONLY;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
     label    |         modified         
 -------------+--------------------------
  Leipzig Hbf | Sun Jul 12 20:41:25 2015
@@ -1016,6 +1074,8 @@ ALTER FOREIGN TABLE hbf OPTIONS (SET log_sparql 'true');
 SELECT DISTINCT label, md5(label) 
 FROM hbf
 WHERE md5(label) = '0ef548c961d447732b145dc39df17df4';
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf" has columns using native PostgreSQL types which are deprecated: label, modified, version, wheelchair, lat, lon, type, fake_string, fake_date, fake_time, fake_timetz, fake_timestamptz
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
 SELECT DISTINCT ?label 
@@ -1058,6 +1118,8 @@ SERVER linkedgeodata OPTIONS (
 ');
 SELECT * FROM hbf_np1
 WHERE p = 'http://linkedgeodata.org/ontology/operator';
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf_np1" has columns using native PostgreSQL types which are deprecated: p, o
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
     PREFIX dc: <http://purl.org/dc/terms/>
@@ -1093,6 +1155,8 @@ SERVER linkedgeodata OPTIONS (
 ');
 SELECT * FROM hbf_np2
 WHERE p = 'http://geovocab.org/geometry#geometry';
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf_np2" has columns using native PostgreSQL types which are deprecated: p, o
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 
     PREFIX dc: <http://purl.org/dc/terms/>
@@ -1121,6 +1185,8 @@ SERVER linkedgeodata OPTIONS (
   sparql 'SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} LIMIT 10');
 SELECT * FROM hbf_np3
 WHERE p = 'http://www.w3.org/2000/01/rdf-schema#label';
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf_np3" has columns using native PostgreSQL types which are deprecated: p, o
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} LIMIT 10
 
@@ -1142,6 +1208,8 @@ SERVER linkedgeodata OPTIONS (
   sparql 'SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} ORDER BY ?o');
 SELECT * FROM hbf_np4
 WHERE p = 'http://www.w3.org/2000/01/rdf-schema#label';
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf_np4" has columns using native PostgreSQL types which are deprecated: p, o
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 SELECT * WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} ORDER BY ?o
 
@@ -1163,6 +1231,8 @@ SERVER linkedgeodata OPTIONS (
   sparql 'SELECT ?p (count(?o) AS ?c) WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} GROUP BY ?p');
 SELECT * FROM hbf_np5
 WHERE p = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' AND c > 1;
+WARNING:  the rdf_fdw FOREIGN TABLE "hbf_np5" has columns using native PostgreSQL types which are deprecated: p, c
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'linkedgeodata':
 SELECT ?p (count(?o) AS ?c) WHERE {<http://linkedgeodata.org/triplify/node376142577> ?p ?o} GROUP BY ?p
 

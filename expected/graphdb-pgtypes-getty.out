@@ -36,6 +36,8 @@ SELECT DISTINCT name, lon, lat
 FROM getty_places 
 ORDER BY lat
 LIMIT 10;
+WARNING:  the rdf_fdw FOREIGN TABLE "getty_places" has columns using native PostgreSQL types which are deprecated: uri, name, namec, lon, lat
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'getty':
 PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -67,6 +69,8 @@ WHERE
   name = 'West Flanders, Flanders, Belgium, Europe, World'
 ORDER BY lon
 LIMIT 3;
+WARNING:  the rdf_fdw FOREIGN TABLE "getty_places" has columns using native PostgreSQL types which are deprecated: uri, name, namec, lon, lat
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'getty':
 PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -102,6 +106,8 @@ SELECT * FROM (
   WHERE lat BETWEEN 51.10 AND 52.10 AND lon BETWEEN 2.9 AND 3.0) j
 ORDER BY lat
 LIMIT 3;
+WARNING:  the rdf_fdw FOREIGN TABLE "getty_places" has columns using native PostgreSQL types which are deprecated: uri, name, namec, lon, lat
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'getty':
 PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>
 PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -175,6 +181,8 @@ FROM getty_non_italians
 WHERE bio ~~* '%artist%'
 ORDER BY birth 
 LIMIT 10;
+WARNING:  the rdf_fdw FOREIGN TABLE "getty_non_italians" has columns using native PostgreSQL types which are deprecated: uri, name, bio, birth
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'getty':
 
   PREFIX ontogeo: <http://www.ontotext.com/owlim/geo#>

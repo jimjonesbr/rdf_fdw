@@ -88,7 +88,7 @@ INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/interna
 SELECT subject, predicate, object
 FROM sparql.describe('qlever', 'DESCRIBE <https://www.uni-muenster.de>')
 ORDER BY object::text COLLATE "C";
-ERROR:  HTTP 406 error on server "qlever"
+ERROR:  unacceptable response format on server "qlever" (HTTP 406)
 DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "DESCRIBE <https://www.uni-muenster.de>",
@@ -96,6 +96,7 @@ DETAIL:  {
     "status": "ERROR",
     "time": {
     ... (truncated)
+HINT:  The endpoint does not support the requested format. Check the 'format' option in CREATE SERVER.
 /* graph pattern description */
 SELECT subject, predicate, object
 FROM sparql.describe('qlever','
@@ -106,17 +107,18 @@ FROM sparql.describe('qlever','
   }')
 WHERE subject = '<https://www.uni-muenster.de>'
 ORDER BY object::text COLLATE "C";
-ERROR:  HTTP 406 error on server "qlever"
+ERROR:  unacceptable response format on server "qlever" (HTTP 406)
 DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "\n  PREFIX dbp: <http://dbpedia.org/property/>\n  DESCRIBE ?s\n  WHERE { \n    ?s dbp:name ?o .\n  }",
 ... (truncated)
+HINT:  The endpoint does not support the requested format. Check the 'format' option in CREATE SERVER.
 /* IN clause to filter results */
 SELECT subject, predicate, object
 FROM sparql.describe('qlever', 'DESCRIBE <https://www.uni-muenster.de>')
 WHERE predicate IN ('<http://dbpedia.org/property/name>','<http://schema.org/dateModified>')
 ORDER BY object::text COLLATE "C";
-ERROR:  HTTP 406 error on server "qlever"
+ERROR:  unacceptable response format on server "qlever" (HTTP 406)
 DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "DESCRIBE <https://www.uni-muenster.de>",
@@ -124,6 +126,7 @@ DETAIL:  {
     "status": "ERROR",
     "time": {
     ... (truncated)
+HINT:  The endpoint does not support the requested format. Check the 'format' option in CREATE SERVER.
 /* using named prefixes and base URI */
 SELECT subject, predicate, object
 FROM sparql.describe(
@@ -132,13 +135,14 @@ FROM sparql.describe(
     base_uri => 'http://test.base.uri/')
 WHERE predicate = '<http://dbpedia.org/property/name>'
 ORDER BY object::text COLLATE "C";
-ERROR:  HTTP 406 error on server "qlever"
+ERROR:  unacceptable response format on server "qlever" (HTTP 406)
 DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "describe <http://dbpedia.org/resource/Münster>",
     "resultsize": 0,
     "status": "ERROR",
     "time... (truncated)
+HINT:  The endpoint does not support the requested format. Check the 'format' option in CREATE SERVER.
 /* empty server */
 SELECT * FROM sparql.describe('', 'DESCRIBE <https://www.uni-muenster.de>');
 ERROR:  SERVER cannot be empty
@@ -225,7 +229,7 @@ DETAIL:  {
 HINT:  Check the SPARQL query syntax.
 /* malformed entity IRI */
 SELECT * FROM sparql.describe('qlever', 'DESCRIBE <htt://i.am.malformed>');
-ERROR:  HTTP 406 error on server "qlever"
+ERROR:  unacceptable response format on server "qlever" (HTTP 406)
 DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "DESCRIBE <htt://i.am.malformed>",
@@ -233,6 +237,7 @@ DETAIL:  {
     "status": "ERROR",
     "time": {
         "co... (truncated)
+HINT:  The endpoint does not support the requested format. Check the 'format' option in CREATE SERVER.
 /* SELECT query */
 SELECT * FROM sparql.describe('qlever', 'SELECT ?s ?p ?o WHERE {?s ?p ?o}');
 ERROR:  invalid DESCRIBE query:

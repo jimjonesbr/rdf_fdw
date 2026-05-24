@@ -1084,7 +1084,7 @@ SELECT ?p ?o
  FILTER(ISBLANK(BNODE(?o)))
 }
 
-ERROR:  SPARQL query error
+ERROR:  bad request on server "linkedgeodata" (HTTP 400)
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT p, o, sparql.strdt(o,'xsd:string')
 FROM hbf

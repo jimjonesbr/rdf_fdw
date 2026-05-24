@@ -131,14 +131,14 @@ CREATE UNLOGGED TABLE temp_describe AS
 SELECT subject, predicate, object
 FROM sparql.describe('qlever', 'DESCRIBE <https://www.uni-muenster.de>')
 ORDER BY object::bigint;
-ERROR:  HTTP error 406 from 'qlever'
-DETAIL:  Response: {
+ERROR:  HTTP 406 error on server "qlever"
+DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "DESCRIBE <https://www.uni-muenster.de>",
     "resultsize": 0,
     "status": "ERROR",
     "time": {
-    ... (truncated).
+    ... (truncated)
 SELECT count(*) FROM temp_describe;
 ERROR:  relation "temp_describe" does not exist
 LINE 1: SELECT count(*) FROM temp_describe;

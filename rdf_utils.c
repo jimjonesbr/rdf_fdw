@@ -86,7 +86,9 @@ bool is_valid_language_tag(const char *lan)
 	reti = regcomp(&regex, pattern, REG_EXTENDED);
 
 	if (reti)
-		ereport(ERROR, (errmsg("could not compile regex for language tag")));
+		ereport(ERROR,
+			(errcode(ERRCODE_INTERNAL_ERROR),
+			 errmsg("could not compile regex for language tag")));
 
 	reti = regexec(&regex, lan, 0, NULL, 0);
 
@@ -851,7 +853,9 @@ bool is_valid_xsd_double(const char *lexical)
 	reti = regcomp(&regex, pattern, REG_EXTENDED);
 
 	if (reti)
-		ereport(ERROR, (errmsg("could not compile regex for xsd:double")));
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("could not compile regex for xsd:double")));
 
 	reti = regexec(&regex, lexical, 0, NULL, 0);
 
@@ -881,7 +885,9 @@ bool is_valid_xsd_int(const char *lexical)
 	reti = regcomp(&regex, pattern, REG_EXTENDED);
 
 	if (reti)
-		ereport(ERROR, (errmsg("could not compile regex for xsd:int")));
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("could not compile regex for xsd:int")));
 
 	reti = regexec(&regex, lexical, 0, NULL, 0);
 	if (reti == 0)
@@ -1048,7 +1054,9 @@ bool is_valid_xsd_time(const char *lexical)
 	reti = regcomp(&regex, pattern, REG_EXTENDED);
 
 	if (reti)
-		ereport(ERROR, (errmsg("could not compile regex for xsd:time")));
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("could not compile regex for xsd:time")));
 
 	reti = regexec(&regex, lexical, 0, NULL, 0);
 
@@ -1078,7 +1086,9 @@ bool is_valid_xsd_date(const char *lexical)
 	reti = regcomp(&regex, pattern, REG_EXTENDED);
 
 	if (reti)
-		ereport(ERROR, (errmsg("could not compile regex for xsd:date")));
+		ereport(ERROR,
+				(errcode(ERRCODE_INTERNAL_ERROR),
+				 errmsg("could not compile regex for xsd:date")));
 
 	reti = regexec(&regex, lexical, 0, NULL, 0);
 
@@ -1483,7 +1493,7 @@ void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 	if (!has_triple)
 	{
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 				 errmsg("'%s' contains no valid triple patterns",
 						RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN),
 				 errhint("A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.")));
@@ -1533,7 +1543,7 @@ void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 			if (!found)
 			{
 				ereport(ERROR,
-						(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+						(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 						 errmsg("SPARQL variable '?%s' in '%s' is not mapped to any table column",
 								var_name.data, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
 			}

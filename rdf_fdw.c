@@ -1858,21 +1858,21 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	if (PG_ARGISNULL(0))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'foreign_table' cannot be NULL")));
 	else
 		foreign_table_name = PG_GETARG_TEXT_P(0);
 
 	if (PG_ARGISNULL(1))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'target_table' cannot be NULL")));
 	else
 		target_table_name = PG_GETARG_TEXT_P(1);
 
 	if (PG_ARGISNULL(2))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'begin_offset' cannot be NULL"),
 				 errhint("Either set it to 0 or ignore the paramter to start the pagination from the beginning.")));
 	else
@@ -1880,14 +1880,14 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	if (PG_ARGISNULL(3))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'fetch_size' cannot be NULL")));
 	else
 		fetch_size = PG_GETARG_INT32(3);
 
 	if (PG_ARGISNULL(4))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'max_records' cannot be NULL")));
 	else
 		max_records = PG_GETARG_INT32(4);
@@ -1902,65 +1902,65 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	if (PG_ARGISNULL(6))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'sort_order' cannot be NULL")));
 	else
 		sort_order = PG_GETARG_TEXT_P(6);
 
 	if (PG_ARGISNULL(7))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'create_table' cannot be NULL")));
 	else
 		create_table = PG_GETARG_BOOL(7);
 
 	if (PG_ARGISNULL(8))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'verbose' cannot be NULL")));
 	else
 		verbose = PG_GETARG_BOOL(8);
 
 	if (PG_ARGISNULL(9))
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("'commit_page' cannot be NULL")));
 	else
 		commit_page = PG_GETARG_BOOL(9);
 
 	if (strlen(text_to_cstring(foreign_table_name)) == 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("no 'foreign_table' provided")));
 
 	if (strlen(text_to_cstring(target_table_name)) == 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("no 'target_table' provided")));
 	else
 		state->target_table_name = text_to_cstring(target_table_name);
 
 	if (fetch_size < 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid 'fetch_size': %d", fetch_size),
 				 errhint("The page size corresponds to the number of records that are retrieved after each iteration and therefore must be a positive number.")));
 
 	if (max_records < 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid 'max_records': %d", max_records),
 				 errhint("'max_records' corresponds to the total number of records that are retrieved from the FOREIGN TABLE and therefore must be a positive number.")));
 
 	if (begin_offset < 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid 'begin_offset': %d", begin_offset)));
 
 	if (strcasecmp(text_to_cstring(sort_order), "ASC") != 0 &&
 		strcasecmp(text_to_cstring(sort_order), "DESC") != 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid 'sort_order': %s", text_to_cstring(sort_order)),
 				 errhint("The 'sort_order' must be either 'ASC' (ascending) or 'DESC' (descending).")));
 
@@ -2010,7 +2010,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 		if (SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
 			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
+					(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 					 errmsg("unable to create target table '%s'", state->target_table_name)));
 
 		if (verbose)
@@ -2061,7 +2061,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 */
 	if (!match)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 				 errmsg("target table mismatch"),
 				 errhint("At least one column of '%s' must match with the FOREIGN TABLE '%s'.",
 						 state->target_table_name,
@@ -2126,7 +2126,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 		if (!orderby_variable && strlen(state->ordering_pgcolumn) != 0)
 			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
+					(errcode(ERRCODE_FDW_COLUMN_NAME_NOT_FOUND),
 					 errmsg("invalid 'ordering_column': %s", state->ordering_pgcolumn),
 					 errhint("The column '%s' does not exist in the foreign table '%s'.",
 							 state->ordering_pgcolumn,
@@ -2404,7 +2404,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 		if (ret < 0)
 			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
+					(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 					 errmsg("SPI_execp returned %d. Unable to insert data into '%s'", ret, state->target_table_name)));
 
 		if (state->commit_page)
@@ -2445,7 +2445,7 @@ static Oid GetRelOidFromName(char *relname, char *code)
 
 	if (strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("internal error: '%s' unknown relation type", code)));
 
 	SPI_connect();
@@ -2465,7 +2465,7 @@ static Oid GetRelOidFromName(char *relname, char *code)
 
 	if (res == InvalidOid)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_UNDEFINED_TABLE),
 				 errmsg("invalid relation: '%s' is not a %s", relname,
 						strcmp(code, RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table")));
 
@@ -3185,7 +3185,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	/* Validate operation type */
 	if (operation != CMD_INSERT && operation != CMD_DELETE && operation != CMD_UPDATE)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("unsupported operation type: %d", operation)));
 
 	/* Create and initialize the FDW state */
@@ -3238,7 +3238,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 			op_name = "UPDATE";
 
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 				 errmsg("%s operation requires a valid triple pattern in '%s'",
 						op_name, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN),
 				 errhint("Check the '%s' option in the FOREIGN TABLE.", RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
@@ -3257,7 +3257,7 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 			const char *op_name = (operation == CMD_INSERT) ? "INSERT" :
 								  (operation == CMD_DELETE) ? "DELETE" : "UPDATE";
 			ereport(ERROR,
-					(errcode(ERRCODE_FDW_ERROR),
+					(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
 					 errmsg("invalid data type for %s on column \"%s\"", op_name, col->name),
 					 errdetail("Only columns of type rdfnode can be used in %s operations.", op_name)));
 		}
@@ -3308,11 +3308,9 @@ static void FlushSPARQLStatements(RDFfdwState *state)
 	state->sparql = final_query.data;
 
 	if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
-	{
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_ERROR),
 				 errmsg("failed to execute batched SPARQL statements")));
-	}
 
 	/* Reset batch buffer */
 	resetStringInfo(&state->batch_statements);
@@ -3340,7 +3338,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 	state = (RDFfdwState *)rinfo->ri_FdwState;
 	if (!state)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("%s failed to initialize state", __func__)));
 
 	/* Switch to temporary context for per-row allocations */
@@ -3466,7 +3464,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	state = (RDFfdwState *)rinfo->ri_FdwState;
 	if (!state)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("%s failed to initialize state", __func__)));
 
 	/*
@@ -3475,7 +3473,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	 */
 	if (planSlot == NULL)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("%s: planSlot is NULL", __func__)));
 
 	/* Switch to temporary context for per-row allocations */
@@ -3620,7 +3618,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 	state = (RDFfdwState *)rinfo->ri_FdwState;
 	if (!state)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("%s failed to initialize state", __func__)));
 
 	/*
@@ -3629,7 +3627,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 	 */
 	if (planSlot == NULL)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("%s: unable to access OLD tuples", __func__)));
 
 	/* Switch to temporary context for per-row allocations */
@@ -3904,14 +3902,14 @@ static void rdfBeginForeignInsert(ModifyTableState *mtstate,
 								  ResultRelInfo *resultRelInfo)
 {
 	ereport(ERROR,
-			(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 			 errmsg("COPY FROM is not supported by rdf_fdw")));
 }
 
 static void rdfEndForeignInsert(EState *estate, ResultRelInfo *resultRelInfo)
 {
 	ereport(ERROR,
-			(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 			 errmsg("COPY FROM is not supported by rdf_fdw")));
 }
 #endif /*PG_VERSION_NUM >= 110000*/
@@ -4598,7 +4596,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
 	if (mem->max_size > 0 && mem->size + realsize > mem->max_size)
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_ERROR),
+				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
 				 errmsg("SPARQL response exceeds max_response_size limit of %zu bytes", mem->max_size),
 				 errhint("Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.")));
 
@@ -5334,17 +5332,42 @@ static int ExecuteSPARQL(RDFfdwState *state)
 							 errmsg("authentication failed on server \"%s\" (HTTP 401)", state->server->servername),
 							 has_body ? errdetail("%s", display_body.data) : 0,
 							 errhint("Check the credentials in the USER MAPPING for PostgreSQL user \"%s\".", GetUserNameFromId(GetUserId(), false))));
+				else if (response_code == 403)
+					ereport(ERROR,
+							(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
+							 errmsg("access denied on server \"%s\" (HTTP 403)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("The server understood the request but the authenticated user lacks permission to access the endpoint.")));
 				else if (response_code == 404)
 					ereport(ERROR,
-							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
+							(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
 							 errmsg("endpoint not found on server \"%s\" (HTTP 404)", state->server->servername),
 							 has_body ? errdetail("%s", display_body.data) : 0,
 							 errhint("Check the endpoint URL: \"%s\".", state->endpoint)));
+				else if (response_code == 406)
+					ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							errmsg("unacceptable response format on server \"%s\" (HTTP 406)", state->server->servername),
+							has_body ? errdetail("%s", display_body.data) : 0,
+							errhint("The endpoint does not support the requested format. "
+									"Check the 'format' option in CREATE SERVER.")));
+				else if (response_code == 429)
+					ereport(ERROR,
+							(errcode(ERRCODE_FDW_ERROR),
+							 errmsg("too many requests on server \"%s\" (HTTP 429)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.")));
 				else if (response_code == 500)
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
 							 errmsg("internal error on server \"%s\" (HTTP 500)", state->server->servername),
 							 has_body ? errdetail("%s", display_body.data) : 0));
+				else if (response_code == 503)
+					ereport(ERROR,
+							(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
+							 errmsg("service unavailable on server \"%s\" (HTTP 503)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("The endpoint is temporarily unavailable. Try again later.")));
 				else
 					ereport(ERROR,
 							(errcode(ERRCODE_EXTERNAL_ROUTINE_EXCEPTION),
@@ -5796,7 +5819,7 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 #endif		   /* PG_VERSION_NUM */
 	default:
 		ereport(ERROR,
-				(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_REPLY),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("unknown node type found: %d.", expr->type)));
 		break;
 	}
@@ -7641,7 +7664,8 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 
 			/* Expect and skip ':' */
 			if (p >= end_prefixes || sparql[p] != ':')
-				ereport(ERROR, (errmsg("Malformed PREFIX: expected ':' after prefix label")));
+				ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								errmsg("Malformed PREFIX: expected ':' after prefix label")));
 			p++;
 
 			/* Skip whitespace after ':' */
@@ -7650,7 +7674,8 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 
 			/* Expect '<' */
 			if (p >= end_prefixes || sparql[p] != '<')
-				ereport(ERROR, (errmsg("Malformed PREFIX: expected '<' before URI")));
+				ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								errmsg("Malformed PREFIX: expected '<' before URI")));
 			p++;
 
 			/* Read URI up to '>' */
@@ -7662,7 +7687,8 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 			}
 
 			if (p >= end_prefixes || sparql[p] != '>')
-				ereport(ERROR, (errmsg("Malformed PREFIX: unterminated URI")));
+				ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								errmsg("Malformed PREFIX: unterminated URI")));
 			p++; /* Skip '>' */
 
 			/* Store the prefix */
@@ -7962,7 +7988,8 @@ Datum rdfnode_to_numeric(PG_FUNCTION_ARGS)
 
 	if (!p.isNumeric)
 		ereport(ERROR,
-				(errmsg("cannot cast non-numeric RDF literal to numeric")));
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast non-numeric RDF literal to numeric")));
 
 	PG_RETURN_DATUM(DirectFunctionCall3(numeric_in,
 										CStringGetDatum(p.lex),
@@ -8269,7 +8296,8 @@ Datum rdfnode_to_float8(PG_FUNCTION_ARGS)
 
 	if (!p.isNumeric)
 		ereport(ERROR,
-				(errmsg("cannot cast non-numeric RDF literal to double precision")));
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast non-numeric RDF literal to double precision")));
 
 	PG_RETURN_DATUM(DirectFunctionCall1(float8in, CStringGetDatum(p.lex)));
 }
@@ -9235,7 +9263,9 @@ Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 	StringInfoData buf;
 
 	if (timestamp2tm(ts, NULL, &tm, &fsec, &tzn, NULL) != 0)
-		ereport(ERROR, (errmsg("invalid timestamp")));
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("invalid timestamp")));
 
 	initStringInfo(&buf);
 	appendStringInfo(&buf,
@@ -9268,7 +9298,9 @@ Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 	Datum result;
 
 	if (!p.isDateTime && !p.isDate)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s", text_to_cstring(t))));
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("cannot cast RDF literal: %s", text_to_cstring(t))));
 
 	result = DatumGetTimestamp(DirectFunctionCall3(timestamp_in,
 												   CStringGetDatum(p.lex),
@@ -9352,7 +9384,9 @@ Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
 	StringInfoData buf;
 
 	if (timestamp2tm(ts, NULL, &tm, &fsec, NULL, NULL) != 0)
-		ereport(ERROR, (errmsg("invalid timestamp")));
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("invalid timestamp")));
 
 	initStringInfo(&buf);
 	appendStringInfo(&buf,
@@ -10117,7 +10151,9 @@ Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 	bool result;
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", p.raw)));
+		ereport(ERROR,
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast RDF literal: %s to boolean", p.raw)));
 
 	if (pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0)
 		result = true;
@@ -10125,7 +10161,8 @@ Datum rdfnode_to_boolean(PG_FUNCTION_ARGS)
 		result = false;
 	else
 		ereport(ERROR,
-				(errmsg("cannot cast RDF literal: %s to boolean", p.raw),
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast RDF literal: %s to boolean", p.raw),
 				 errdetail("Expected values for xsd:boolean are \"true\" or \"false\".")));
 
 	PG_RETURN_BOOL(result);
@@ -10139,7 +10176,9 @@ Datum rdfnode_eq_boolean(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+		ereport(ERROR,
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast RDF literal: %s to boolean", literal)));
 
 	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && val)
 		PG_RETURN_BOOL(true);
@@ -10157,7 +10196,9 @@ Datum rdfnode_neq_boolean(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+		ereport(ERROR,
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast RDF literal: %s to boolean", literal)));
 
 	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && !val)
 		PG_RETURN_BOOL(true);
@@ -10189,7 +10230,9 @@ Datum boolean_eq_rdfnode(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+		ereport(ERROR,
+			(errcode(ERRCODE_CANNOT_COERCE),
+			 errmsg("cannot cast RDF literal: %s to boolean", literal)));
 
 	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && val)
 		PG_RETURN_BOOL(true);
@@ -10207,7 +10250,9 @@ Datum boolean_neq_rdfnode(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	if (strcmp(p.dtype, RDF_XSD_BOOLEAN) != 0 && strcmp(p.dtype, RDF_XSD_INTEGER) != 0)
-		ereport(ERROR, (errmsg("cannot cast RDF literal: %s to boolean", literal)));
+		ereport(ERROR,
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast RDF literal: %s to boolean", literal)));
 
 	if ((pg_strcasecmp(p.lex, "true") == 0 || strcmp(p.lex, "1") == 0) && !val)
 		PG_RETURN_BOOL(true);
@@ -10226,7 +10271,8 @@ Datum rdfnode_to_interval(PG_FUNCTION_ARGS)
 
 	if (strcmp(p.dtype, RDF_XSD_DURATION) != 0)
 		ereport(ERROR,
-				(errmsg("cannot cast RDF literal: %s to interval", p.raw),
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast RDF literal: %s to interval", p.raw),
 				 errdetail("Expected xsd:duration.")));
 
 	result = DirectFunctionCall3(interval_in,
@@ -10609,7 +10655,7 @@ Datum rdf_fdw_sum_sfunc(PG_FUNCTION_ARGS)
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("sum_rdfnode_sfunc called in non-aggregate context")));
 
 	/*
@@ -10681,7 +10727,7 @@ Datum rdf_fdw_avg_sfunc(PG_FUNCTION_ARGS)
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("avg_rdfnode_sfunc called in non-aggregate context")));
 
 	/* Delegate to the actual implementation in sparql.c */
@@ -10743,7 +10789,7 @@ Datum rdf_fdw_min_sfunc(PG_FUNCTION_ARGS)
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("min_rdfnode_sfunc called in non-aggregate context")));
 
 	/*
@@ -10794,7 +10840,7 @@ Datum rdf_fdw_max_sfunc(PG_FUNCTION_ARGS)
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("max_rdfnode_sfunc called in non-aggregate context")));
 
 	/*
@@ -10845,7 +10891,7 @@ Datum rdf_fdw_sample_sfunc(PG_FUNCTION_ARGS)
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("sample_rdfnode_sfunc called in non-aggregate context")));
 
 	/*
@@ -10896,7 +10942,7 @@ Datum rdf_fdw_group_concat_sfunc(PG_FUNCTION_ARGS)
 	/* Verify we're being called as an aggregate */
 	if (!AggCheckCallContext(fcinfo, &aggcontext))
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("group_concat_rdfnode_sfunc called in non-aggregate context")));
 
 	/*

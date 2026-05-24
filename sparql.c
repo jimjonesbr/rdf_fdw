@@ -401,12 +401,14 @@ char *strdt(char *literal, char *datatype)
     elog(DEBUG3, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
 
     if (strlen(lex_datatype) == 0)
-        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                        errmsg("datatype IRI cannot be empty")));
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("datatype IRI cannot be empty")));
 
     if (ContainsWhitespaces(datatype))
-        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                        errmsg("datatype IRI cannot contain whitespaces")));
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("datatype IRI cannot contain whitespaces")));
 
     initStringInfo(&buf);
 
@@ -1278,7 +1280,7 @@ char *lcase(char *str)
 
     if (!str)
         ereport(ERROR,
-                (errcode(ERRCODE_INTERNAL_ERROR),
+                (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
                  errmsg("LCASE cannot be NULL")));
 
     if (strlen(str) == 0)
@@ -1369,7 +1371,7 @@ char *ucase(char *str)
 
     if (!str)
         ereport(ERROR,
-                (errcode(ERRCODE_INTERNAL_ERROR),
+                (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
                  errmsg("UCASE cannot be NULL")));
 
     if (strlen(str) == 0)
@@ -1863,7 +1865,7 @@ int strlen_rdf(char *str)
 
     if (!str)
         ereport(ERROR,
-                (errcode(ERRCODE_INTERNAL_ERROR),
+                (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
                  errmsg("STRLEN cannot be NULL")));
 
     if (strlen(str) == 0)
