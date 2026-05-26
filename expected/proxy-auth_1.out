@@ -120,7 +120,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -132,8 +132,9 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -145,6 +146,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -160,7 +162,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -172,8 +174,9 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -185,6 +188,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -200,7 +204,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -212,8 +216,9 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -225,6 +230,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
