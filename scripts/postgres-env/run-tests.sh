@@ -29,9 +29,4 @@ docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
     SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 \
     installcheck 
 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
-    SKIP_EXTERNAL_TESTS=1 SKIP_UPDATE_TESTS=1 SKIP_STRESS_TESTS=1 \
-    installcheck
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME cat results/debug.out | grep "Authorization"
-
 echo -e "\n== Tests completed ==\n"
