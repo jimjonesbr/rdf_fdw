@@ -2,8 +2,7 @@ CREATE SERVER virtuoso
 FOREIGN DATA WRAPPER rdf_fdw 
 OPTIONS (
   endpoint   'http://virtuoso:8890/sparql-auth',
-  update_url 'http://virtuoso:8890/sparql-auth',
-  batch_size '500');
+  batch_size '10000');
 CREATE FOREIGN TABLE ft (
   subject   rdfnode OPTIONS (variable '?s'),
   predicate rdfnode OPTIONS (variable '?p'),
@@ -43,56 +42,51 @@ FROM ft;
 
 /* deleting triple with large literal */
 DELETE FROM ft;
-/* inserting 5000 triples (Virtuoso 7.20 caps ORDER BY at 10000 rows) */
+/* inserting a one million triples */
 INSERT INTO ft (subject, predicate, object)
 SELECT '<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#label>', i::rdfnode 
-FROM generate_series(1,5000) AS g(i);
+FROM generate_series(1,1000000) AS g(i);
+ERROR:  bad request on server "virtuoso" (HTTP 400)
+DETAIL:  Virtuoso 37000 Error SP031: SPARQL: Internal error: The length of generated SQL text has exceeded 10000 lines of code
+
+SPARQL query:
+define sql:big-data-const 0
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "1"^^<http://www.w3.org/2001/XMLSchema#int> .
+     } };
+INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
+       <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#label> "2"^^<http://www.w3.org/200... (truncated)
+HINT:  Check the SPARQL query syntax.
 SELECT * FROM ft
 LIMIT 5;
-            subject            |                  predicate                   |                   object                    
--------------------------------+----------------------------------------------+---------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "1"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "3"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "4"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "5"^^<http://www.w3.org/2001/XMLSchema#int>
-(5 rows)
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
-/* selecting 5000 triples from the foreign table */
+/* selecting one million triples from the foreign table */
 CREATE UNLOGGED TABLE temp_ft AS SELECT * FROM ft;
 SELECT count(*) FROM temp_ft;
  count 
 -------
-  5000
+     0
 (1 row)
 
 SELECT * FROM temp_ft
 WHERE 
   subject = '<https://www.uni-muenster.de>'::rdfnode AND
-  object BETWEEN 2500::rdfnode AND 2510::rdfnode
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode
 ORDER BY object::bigint;
-            subject            |                  predicate                   |                     object                     
--------------------------------+----------------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2500"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2501"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2502"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2503"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2504"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2505"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2506"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2507"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2508"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2509"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#label> | "2510"^^<http://www.w3.org/2001/XMLSchema#int>
-(11 rows)
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
 DROP TABLE temp_ft;
-/* cloning 5000 triples from the foreign table */
+/* cloning one million triples from the foreign table */
 CALL
     rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.ft_clone',
-        fetch_size => 5000,
+        fetch_size => 100000,
         create_table => true,
         verbose => true
     );
@@ -107,16 +101,15 @@ INFO:
 foreign_table: 'ft'
 target_table: 'public.ft_clone'
 create_table: 'true'
-fetch_size: 5000
+fetch_size: 100000
 begin_offset: 0
 max_records: 0
 ordering_column: 'NOT SET'
 ordering sparql variable: '?s'
 sort_order: 'ASC'
 
-INFO:  [0 - 5000]: 5000 records inserted
 DROP TABLE ft_clone;
-/* describing subject with 5000 triples */
+/* describing subject with one million triples */
 CREATE UNLOGGED TABLE temp_describe AS
 SELECT subject, predicate, object
 FROM sparql.describe('virtuoso', 'DESCRIBE <https://www.uni-muenster.de>')
@@ -130,13 +123,13 @@ SELECT count(*) FROM temp_describe;
 SELECT * FROM temp_describe
 WHERE 
   subject = '<https://www.uni-muenster.de>'::rdfnode AND
-  object BETWEEN 2500::rdfnode AND 2510::rdfnode;
+  object BETWEEN 500000::rdfnode AND 500010::rdfnode;
  subject | predicate | object 
 ---------+-----------+--------
 (0 rows)
 
 DROP TABLE temp_describe;
-/* deleting 5000 triples */
+/* deleting a million triples */
 DELETE FROM ft;
 SELECT * FROM ft;
  subject | predicate | object 

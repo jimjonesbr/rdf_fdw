@@ -4586,7 +4586,7 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	return state;
 }
 
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
@@ -4611,7 +4611,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	return realsize;
 }
 
-static size_t HeaderCallbackFunction(char *contents, size_t size, size_t nmemb, void *userp)
+static size_t CURLHeaderCallback(char *contents, size_t size, size_t nmemb, void *userp)
 {
 
 	size_t realsize = size * nmemb;
@@ -4690,7 +4690,7 @@ IsSensitiveHeader(const char *line)
 }
 
 /*
- * CurlDebugCallback
+ * CURLDebugCallback
  * -----------------
  * Custom libcurl debug callback. Routes all verbose output through
  * PostgreSQL's elog() at DEBUG3 level rather than writing directly to
@@ -4704,7 +4704,7 @@ IsSensitiveHeader(const char *line)
  * userptr : user-supplied pointer (unused)
  */
 static int
-CurlDebugCallback(CURL *handle, curl_infotype type, char *data, size_t size, void *userptr)
+CURLDebugCallback(CURL *handle, curl_infotype type, char *data, size_t size, void *userptr)
 {
 	const char    *prefix;
 	StringInfoData buf;
@@ -5167,7 +5167,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, url_buffer.data);
 		}
 
-		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, HeaderCallbackFunction);
+		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, CURLHeaderCallback);
 		curl_easy_setopt(state->curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
 
 		/* For SPARQL UPDATE operations, collect the response body so that
@@ -5180,7 +5180,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			state->sparql_query_type == SPARQL_UPDATE)
 			chunk.max_size = 0;
 
-		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, CURLWriteMemoryCallback);
 		curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
 		/* Don't use CURLOPT_FAILONERROR so we can capture error response bodies */
@@ -5188,12 +5188,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		/*
 		 * Enable libcurl verbose output, but route it exclusively through
-		 * CurlDebugCallback instead of stderr. The callback emits at DEBUG3
+		 * CURLDebugCallback instead of stderr. The callback emits at DEBUG3
 		 * (gated by log_min_messages) and redacts Authorization headers so
 		 * credentials are never written to server logs.
 		 */
 		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
-		curl_easy_setopt(state->curl, CURLOPT_DEBUGFUNCTION, CurlDebugCallback);
+		curl_easy_setopt(state->curl, CURLOPT_DEBUGFUNCTION, CURLDebugCallback);
 		curl_easy_setopt(state->curl, CURLOPT_DEBUGDATA, NULL);
 
 		/* Set the progress callback function */
@@ -5351,6 +5351,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 							has_body ? errdetail("%s", display_body.data) : 0,
 							errhint("The endpoint does not support the requested format. "
 									"Check the 'format' option in CREATE SERVER.")));
+				else if (response_code == 407)
+					ereport(ERROR,
+							(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
+							 errmsg("proxy authentication required on server \"%s\" (HTTP 407)", state->server->servername),
+							 has_body ? errdetail("%s", display_body.data) : 0,
+							 errhint("The endpoint requires proxy authentication. Check the proxy settings.")));
 				else if (response_code == 429)
 					ereport(ERROR,
 							(errcode(ERRCODE_FDW_ERROR),

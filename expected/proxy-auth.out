@@ -137,7 +137,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -149,8 +149,9 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -162,6 +163,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -173,7 +175,7 @@ SELECT ?s ?p ?o
 ORDER BY ASC(?s) 
 OFFSET 0 LIMIT 100
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -185,6 +187,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 /* Wrong password - must fail */
 ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_user 'proxyuser', SET proxy_password 'wrongpass');
 SELECT * FROM ft;
@@ -193,7 +196,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -205,8 +208,9 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -218,6 +222,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -229,7 +234,7 @@ SELECT ?s ?p ?o
 ORDER BY ASC(?s) 
 OFFSET 0 LIMIT 100
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -241,6 +246,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 /* No password - must fail */
 ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (DROP proxy_password);
 SELECT * FROM ft;
@@ -249,7 +255,7 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -261,8 +267,9 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 SELECT * FROM sparql.describe('fuseki', 'DESCRIBE <https://www.uni-muenster.de>');
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -274,6 +281,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 CALL rdf_fdw_clone_table(
         foreign_table => 'public.ft',
         target_table  => 'public.t1'
@@ -285,7 +293,7 @@ SELECT ?s ?p ?o
 ORDER BY ASC(?s) 
 OFFSET 0 LIMIT 100
 
-ERROR:  HTTP 407 error on server "fuseki"
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
 DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 <meta type="copyright" content="Copyright (C) 1996-2021 The Squid Software Foundation and contributors">
@@ -297,6 +305,7 @@ DETAIL:  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR
  *
  * Squid software is distributed under GPLv2+ license and includes
  * contributions... (truncated)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 /* Cleanup */
 DROP TABLE public.t1;
 DROP SERVER fuseki CASCADE;

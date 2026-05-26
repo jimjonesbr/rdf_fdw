@@ -131,7 +131,7 @@ CREATE UNLOGGED TABLE temp_describe AS
 SELECT subject, predicate, object
 FROM sparql.describe('qlever', 'DESCRIBE <https://www.uni-muenster.de>')
 ORDER BY object::bigint;
-ERROR:  HTTP 406 error on server "qlever"
+ERROR:  unacceptable response format on server "qlever" (HTTP 406)
 DETAIL:  {
     "exception": "Not a single media type known to this parser was detected in \"application/rdf+xml\". Currently the following media types are supported: application/sparql-results+json, application/sparql-results+xml, application/qlever-results+json, text/tab-separated-values, text/csv, text/turtle, application/n-triples, application/octet-stream, application/qlever-export+octet-stream",
     "query": "DESCRIBE <https://www.uni-muenster.de>",
@@ -139,6 +139,7 @@ DETAIL:  {
     "status": "ERROR",
     "time": {
     ... (truncated)
+HINT:  The endpoint does not support the requested format. Check the 'format' option in CREATE SERVER.
 SELECT count(*) FROM temp_describe;
 ERROR:  relation "temp_describe" does not exist
 LINE 1: SELECT count(*) FROM temp_describe;
