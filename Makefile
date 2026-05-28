@@ -9,13 +9,13 @@ DATA = rdf_fdw--2.6.sql rdf_fdw--2.5--2.6.sql \
 	   rdf_fdw--2.1--2.2.sql \
 	   rdf_fdw--2.1.sql
 
-RDF_CONFIG = pkg-config
 CURL_CONFIG = curl-config
+XML2_CONFIG = xml2-config
 PG_CONFIG = pg_config
 
 SHLIB_LINK := $(shell $(CURL_CONFIG) --libs)
 
-PG_CPPFLAGS = $(shell xml2-config --cflags) \
+PG_CPPFLAGS = $(shell $(XML2_CONFIG) --cflags) \
 	-DRDF_FDW_CC="\"$(CC)\"" \
 	-DRDF_FDW_BUILD_DATE="\"$(shell date -u +'%Y-%m-%d %H:%M:%S UTC')\""
 
