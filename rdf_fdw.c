@@ -33,6 +33,7 @@
 #include "catalog/pg_foreign_data_wrapper.h"
 #include "catalog/pg_foreign_server.h"
 #include "catalog/pg_foreign_table.h"
+#include "catalog/namespace.h"
 #include "catalog/pg_namespace.h"
 #include "catalog/pg_operator.h"
 #include "catalog/pg_proc.h"
@@ -2001,12 +2002,22 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	if (create_table)
 	{
 		StringInfoData ct;
+		RangeVar   *tt_rv;
+		char	   *quoted_target;
+		char	   *quoted_foreign;
+
+		tt_rv = makeRangeVarFromNameList(textToQualifiedNameList(target_table_name));
+		quoted_target  = quote_qualified_identifier(tt_rv->schemaname, tt_rv->relname);
+		quoted_foreign = quote_qualified_identifier(
+			get_namespace_name(get_rel_namespace(state->foreigntableid)),
+			get_rel_name(state->foreigntableid));
+
 		SPI_connect();
 
 		initStringInfo(&ct);
 		appendStringInfo(&ct, "CREATE TABLE %s AS SELECT * FROM %s WITH NO DATA;",
-						 state->target_table_name,
-						 text_to_cstring(foreign_table_name));
+					 quoted_target,
+					 quoted_foreign);
 
 		if (SPI_exec(NameStr(ct), 0) != SPI_OK_UTILITY)
 			ereport(ERROR,
@@ -2264,11 +2275,16 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	regproc typinput;
 	HeapTuple tuple;
 	Datum datum;
-
+	RangeVar *rv;
 	int ret = -1;
 	int processed_records = 0;
+	char *quoted_target;
 
 	elog(DEBUG1, "%s called", __func__);
+
+	rv = makeRangeVarFromNameList(
+			textToQualifiedNameList(cstring_to_text(state->target_table_name)));
+	quoted_target = quote_qualified_identifier(rv->schemaname, rv->relname);
 
 	SPI_connect_ext(SPI_OPT_NONATOMIC);
 
@@ -2379,7 +2395,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 					appendStringInfo(&insert_cols, "%s %s",
 									 colindex > 1 ? "," : "",
-									 state->rdfTable->cols[i]->name);
+									 quote_identifier(state->rdfTable->cols[i]->name));
 
 					appendStringInfo(&insert_pidx, "%s$%d",
 									 colindex > 1 ? "," : "",
@@ -2394,7 +2410,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 		initStringInfo(&insert_stmt);
 		appendStringInfo(&insert_stmt, "INSERT INTO %s (%s) VALUES (%s);",
-						 state->target_table_name,
+						 quoted_target,
 						 NameStr(insert_cols),
 						 NameStr(insert_pidx));
 
@@ -2425,52 +2441,45 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 /*
  * GetRelOidFromName
  * ---------------
- * Retrieves the Oid of a relation based on its name and type
+ * Retrieves the OID of a relation by name, validating that it has the expected
+ * relkind.
  *
- * relname: relation name
- * code   : code of relation type, as in 'relkind' of pg_class.
+ * relname: relation name (optionally schema-qualified)
+ * code   : expected relkind character, as defined in pg_class.relkind
  *
- * returns the Oid of the given relation
+ * Returns the OID of the relation, or raises an error.
  */
 static Oid GetRelOidFromName(char *relname, char *code)
 {
-	StringInfoData str;
-	Oid res = 0;
-	int ret;
+	RangeVar   *rv;
+	Oid			relid;
+	char		relkind;
 
 	elog(DEBUG1, "%s called: relname='%s', code='%s'", __func__, relname, code);
-
-	initStringInfo(&str);
-	appendStringInfo(&str, "SELECT CASE relkind WHEN '%s' THEN oid ELSE 0 END FROM pg_class WHERE oid = '%s'::regclass::oid;", code, relname);
 
 	if (strcmp(code, RDF_FOREIGN_TABLE_CODE) != 0 && strcmp(code, RDF_ORDINARY_TABLE_CODE) != 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("internal error: '%s' unknown relation type", code)));
 
-	SPI_connect();
+	rv = makeRangeVarFromNameList(textToQualifiedNameList(cstring_to_text(relname)));
+	relid = RangeVarGetRelid(rv, NoLock, true);
 
-	ret = SPI_exec(NameStr(str), 0);
-
-	if (ret > 0 && SPI_tuptable != NULL)
-	{
-		SPITupleTable *tuptable = SPI_tuptable;
-		TupleDesc tupdesc = tuptable->tupdesc;
-
-		HeapTuple tuple = tuptable->vals[0];
-		res = (Oid)atoi(SPI_getvalue(tuple, tupdesc, 1));
-	}
-
-	SPI_finish();
-
-	if (res == InvalidOid)
+	if (!OidIsValid(relid))
 		ereport(ERROR,
 				(errcode(ERRCODE_UNDEFINED_TABLE),
+				 errmsg("relation \"%s\" does not exist", relname)));
+
+	relkind = get_rel_relkind(relid);
+
+	if (relkind != code[0])
+		ereport(ERROR,
+				(errcode(ERRCODE_WRONG_OBJECT_TYPE),
 				 errmsg("invalid relation: '%s' is not a %s", relname,
 						strcmp(code, RDF_FOREIGN_TABLE_CODE) == 0 ? "foreign table" : "table")));
 
-	elog(DEBUG1, "%s exit: returning '%u'", __func__, res);
-	return res;
+	elog(DEBUG1, "%s exit: returning '%u'", __func__, relid);
+	return relid;
 }
 #endif /* PG_VERSION_NUM >= 110000 */
 
