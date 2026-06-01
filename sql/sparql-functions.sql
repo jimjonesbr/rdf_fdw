@@ -55,6 +55,10 @@ SELECT sparql.strlang(sparql.strlang('"foo"^^<http://www.w3.org/2001/XMLSchema#s
 SELECT sparql.strlang(sparql.strlang('f"o"o','en'),'de');
 SELECT sparql.strlang(sparql.strlang('x\"y','pl'),'it');
 SELECT sparql.strlang('foo', 'xyz');
+SELECT sparql.strlang('foo', 'EN');
+SELECT sparql.strlang('foo', 'EN-GB');
+SELECT sparql.strlang('foo', 'eN-gb');
+SELECT sparql.strlang('foo', 'EN-Latn-US-valencia');
 
 /* STR */
 SELECT sparql.str('foo');

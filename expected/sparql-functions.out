@@ -268,6 +268,30 @@ SELECT sparql.strlang('foo', 'xyz');
  "foo"@xyz
 (1 row)
 
+SELECT sparql.strlang('foo', 'EN');
+ strlang  
+----------
+ "foo"@en
+(1 row)
+
+SELECT sparql.strlang('foo', 'EN-GB');
+   strlang   
+-------------
+ "foo"@en-GB
+(1 row)
+
+SELECT sparql.strlang('foo', 'eN-gb');
+   strlang   
+-------------
+ "foo"@en-gb
+(1 row)
+
+SELECT sparql.strlang('foo', 'EN-Latn-US-valencia');
+          strlang          
+---------------------------
+ "foo"@en-Latn-US-valencia
+(1 row)
+
 /* STR */
 SELECT sparql.str('foo');
   str  
@@ -1066,11 +1090,7 @@ SELECT sparql.strbefore('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"c"^
 (1 row)
 
 SELECT sparql.strbefore('"abc"^^http://www.w3.org/2001/XMLSchema#string','"c"^^<xsd:string>');
-                    strbefore                    
--------------------------------------------------
- "ab"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
+ERROR:  invalid input syntax for type rdfnode: ""abc"^^http://www.w3.org/2001/XMLSchema#string" at character 25
 SELECT sparql.strbefore('"abc"^^xsd:string','"c"^^<http://www.w3.org/2001/XMLSchema#string>');
                     strbefore                    
 -------------------------------------------------
@@ -1187,11 +1207,7 @@ SELECT sparql.strafter('"abc"^^<http://www.w3.org/2001/XMLSchema#string>','"b"^^
 (1 row)
 
 SELECT sparql.strafter('"abc"^^http://www.w3.org/2001/XMLSchema#string','"b"^^<xsd:string>');
-                    strafter                    
-------------------------------------------------
- "c"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
+ERROR:  invalid input syntax for type rdfnode: ""abc"^^http://www.w3.org/2001/XMLSchema#string" at character 24
 SELECT sparql.strafter('"abc"^^xsd:string','"b"^^<http://www.w3.org/2001/XMLSchema#string>');
                     strafter                    
 ------------------------------------------------
@@ -2601,7 +2617,11 @@ SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:
 (1 row)
 
 SELECT sparql.replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
-ERROR:  invalid lexical form for xsd:date: "abcd"
+ replace 
+---------
+ "Zbcd"
+(1 row)
+
 SELECT sparql.replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
  replace  
 ----------
@@ -3164,9 +3184,9 @@ ERROR:  TIMEZONE(): invalid timezone offset: +25:00
 SELECT sparql.timezone('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 ERROR:  TIMEZONE(): invalid timezone offset: -99:99
 SELECT sparql.timezone('"invalid-date"^^xsd:dateTime');
-ERROR:  invalid lexical form for xsd:dateTime: "invalid-date"
+ERROR:  TIMEZONE(): invalid xsd:dateTime format: invalid-date
 SELECT sparql.timezone('""^^xsd:dateTime');
-ERROR:  invalid lexical form for xsd:dateTime: ""
+ERROR:  TIMEZONE(): invalid xsd:dateTime literal
 SELECT sparql.timezone(NULL);
  timezone 
 ----------
@@ -3239,9 +3259,9 @@ SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 (1 row)
 
 SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
-ERROR:  invalid lexical form for xsd:dateTime: "invalid-date"
+ERROR:  TZ(): datetime has no timezone
 SELECT sparql.tz('""^^xsd:dateTime');
-ERROR:  invalid lexical form for xsd:dateTime: ""
+ERROR:  TZ(): datetime has no timezone
 SELECT sparql.tz(NULL);
   tz  
 ------

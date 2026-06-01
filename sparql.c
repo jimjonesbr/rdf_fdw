@@ -248,6 +248,8 @@ char *strlang(char *literal, char *language)
     StringInfoData buf;
     char *lex_language = lex(language);
     char *lex_literal = lex(literal);
+    char *tag;
+    char *dash;
 
     elog(DEBUG3, "%s called: literal='%s', language='%s'", __func__, literal, language);
 
@@ -256,12 +258,20 @@ char *strlang(char *literal, char *language)
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("language tag cannot be empty")));
 
+
+    /* primary language subtags are always lowercase */
+    tag = pstrdup(lex_language);
+    dash = strchr(tag, '-');
+
+    for (char *p = tag; *p && p != dash; p++)
+        *p = pg_tolower((unsigned char)*p);
+
     initStringInfo(&buf);
 
     if (strlen(lex_literal) == 0)
-        appendStringInfo(&buf, "\"\"@%s", lex_language);
+        appendStringInfo(&buf, "\"\"@%s", tag);
     else
-        appendStringInfo(&buf, "%s@%s", str(literal), lex_language);
+        appendStringInfo(&buf, "%s@%s", str(literal), tag);
 
     elog(DEBUG3, "%s exit: returning => '%s'", __func__, buf.data);
 
