@@ -1721,17 +1721,14 @@ INFO:  SPARQL query sent to 'fuseki':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER("_:bnode1" != ?s)
+ FILTER(_:bnode1 != ?s)
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
+ERROR:  bad request on server "fuseki" (HTTP 400)
+DETAIL:  Parse error: Encountered " <BLANK_NODE_LABEL> "_:bnode1 "" at line 5, column 9.
 
-            subject            |                   predicate                    | object 
--------------------------------+------------------------------------------------+--------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
-(1 row)
-
+HINT:  Check the SPARQL query syntax.
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT * FROM ft
 WHERE sparql.strdt('1780-04-16', 'http://www.w3.org/2001/XMLSchema#date') = object;

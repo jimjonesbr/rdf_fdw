@@ -203,10 +203,10 @@ char *cstring_to_rdfliteral(char *input)
 	/* return the string as-is if the input is an IRI */
 	if (isIRI(input))
 		return input;
-	
-	// /* return the string as-is if the input is a blank node */
-	// if (isBlank(input))
-	// 	return input;
+
+	/* return the string as-is if the input is a blank node */
+	if (isBlank(input))
+		return input;
 
 	if (!input || strlen(input) == 0)
 	{

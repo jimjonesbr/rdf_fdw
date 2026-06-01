@@ -2007,16 +2007,15 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER("_:bnode1" != ?s)
+ FILTER(_:bnode1 != ?s)
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 0 records.
 
-            subject            |                   predicate                    | object 
--------------------------------+------------------------------------------------+--------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
-(1 row)
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT * FROM ft

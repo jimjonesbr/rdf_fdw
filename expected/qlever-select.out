@@ -1751,17 +1751,14 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER("_:bnode1" != ?s)
+ FILTER(_:bnode1 != ?s)
 }
 LIMIT 1
 
-INFO:  SPARQL returned 1 record.
-
-            subject            |                   predicate                   |                       object                       
--------------------------------+-----------------------------------------------+----------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally> | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(1 row)
-
+ERROR:  bad request on server "qlever" (HTTP 400)
+DETAIL:  {
+    "exception": "Invalid SPARQL query: Token \"_:bnode1\": mismatched input '_:bnode1' expecting {'(', '+', '!', '-', 'true', 'false', GROUP_CONCAT, NOT, STR, LANG, LANGMATCHES, DATATYPE, BOUND, IRI, URI, BNODE, RAND, ABS, CEIL, FLOOR, ROUND, CONCAT, STRLEN, UCASE, LCASE, ENCODE_FOR_URI, CONTAINS, STRSTARTS, STRENDS, STRBEFORE, STRAFTER, YEAR, MONTH, DAY, HOURS, MINUTES, SECONDS, TIMEZONE, TZ, NOW, UUID, STRUUID, SHA1, SHA256, SHA384, SHA512, MD5, COALESCE, IF, STRLANG, STRDT, SAMETERM, ISIRI, ISURI, ISB... (truncated)
+HINT:  Check the SPARQL query syntax.
 /* SPARQL 17.4.2.10 - STRDT */
 SELECT * FROM ft
 WHERE sparql.strdt('1780-04-16', 'http://www.w3.org/2001/XMLSchema#date') = object;

@@ -35,6 +35,8 @@ Release date: **YYYY-MM-DD**
 
 * **rdfnodes with invalid trailing content now raise an error**: rdfnodes with trailing content, which can contain malicious SPARQL instructions, were being silently truncated. While this avoided any attempt of SPARQL injection, it could lead to confusion, since the user was never aware of this truncation. The function `rdfnode_in` now raises an error if such content is detected.
 
+* **Blank nodes in FILTER expressions**: Blank nodes in FILTER expressions are now passed as blank nodes; previously, they were cast as literals. This allows triplestores that deviate from the SPARQL specification to handle blank nodes according to their own implementation.
+
 # 2.5
 Release date: **2026-04-20**
 
