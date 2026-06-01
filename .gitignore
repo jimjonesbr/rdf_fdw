@@ -73,3 +73,5 @@ debian/packages/
 # IDE files and local scripts
 local-tests/
 .vscode/
+
+.deps/
