@@ -37,6 +37,8 @@ Release date: **YYYY-MM-DD**
 
 * **Blank nodes in FILTER expressions**: Blank nodes in FILTER expressions are now passed as blank nodes; previously, they were cast as literals. This allows triplestores that deviate from the SPARQL specification to handle blank nodes according to their own implementation.
 
+* **Invalid `rdfnode` input now raises an error**: Inputs to `rdfnode_in` that are not a valid RDF literal, IRI, or blank node now raise `ERRCODE_INVALID_TEXT_REPRESENTATION` instead of being silently coerced. IRIs and blank nodes are returned as-is without unnecessary literal parsing.
+
 # 2.5
 Release date: **2026-04-20**
 

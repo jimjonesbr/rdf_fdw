@@ -140,11 +140,9 @@ SELECT '"𝄞"^^<http://example.org/dt>'::rdfnode;
 
 /* language tags (BCP 47) */
 SELECT '"foo"@'::rdfnode;                       -- invalid: empty tag
- rdfnode 
----------
- "foo"@
-(1 row)
-
+ERROR:  invalid input syntax for type rdfnode: ""foo"@"
+LINE 2: SELECT '"foo"@'::rdfnode;
+               ^
 SELECT '"foo"@en-US'::rdfnode;                  -- valid
    rdfnode   
 -------------
@@ -419,11 +417,9 @@ LINE 1: SELECT E'"foo"\n@en'::rdfnode;
                ^
 /* datatype IRI variants */
 SELECT '"abc"^^<>'::rdfnode;                     -- empty datatype IRI
-  rdfnode  
------------
- "abc"^^<>
-(1 row)
-
+ERROR:  invalid input syntax for type rdfnode: ""abc"^^<>"
+LINE 2: SELECT '"abc"^^<>'::rdfnode;
+               ^
 SELECT '"abc"^^<not an uri>'::rdfnode;           -- invalid IRI
 ERROR:  datatype IRI cannot contain whitespaces
 LINE 1: SELECT '"abc"^^<not an uri>'::rdfnode;

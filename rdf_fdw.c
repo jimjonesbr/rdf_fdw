@@ -7954,10 +7954,11 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 		else
 			appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
 	}
+	else if (isIRI(str_in) || isBlank(str_in))
+		appendStringInfo(&r, "%s", pstrdup(str_in));
 	else
-	{
-		appendStringInfo(&r, "%s", pstrdup(unescape_unicode(str_in)));
-	}
+		ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						errmsg("invalid input syntax for type rdfnode: \"%s\"", str_in)));
 
 	len = strlen(r.data);
 

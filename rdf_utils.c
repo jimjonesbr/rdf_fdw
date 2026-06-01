@@ -200,12 +200,8 @@ char *cstring_to_rdfliteral(char *input)
 
 	elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
-	/* return the string as-is if the input is an IRI */
-	if (isIRI(input))
-		return input;
-
-	/* return the string as-is if the input is a blank node */
-	if (isBlank(input))
+	/* return the string as-is if the input is an IRI or blank node */
+	if (isIRI(input) || isBlank(input))
 		return input;
 
 	if (!input || strlen(input) == 0)
