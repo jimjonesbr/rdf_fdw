@@ -120,13 +120,13 @@ SELECT '😀'::rdfnode;
  "😀"
 (1 row)
 
-SELECT '"x^^y"'::rdfnode;           -- → "x^^y"
+SELECT '"x^^y"'::rdfnode;                       -- "x^^y"
  rdfnode 
 ---------
  "x^^y"
 (1 row)
 
-SELECT '"a\\"b"@en'::rdfnode;       -- → "a\"b"@en
+SELECT '"a\\"b"@en'::rdfnode;                   -- "a\"b"@en
   rdfnode   
 ------------
  "a\\"b"@en
@@ -138,6 +138,395 @@ SELECT '"𝄞"^^<http://example.org/dt>'::rdfnode;
  "𝄞"^^<http://example.org/dt>
 (1 row)
 
+/* language tags (BCP 47) */
+SELECT '"foo"@'::rdfnode;                       -- invalid: empty tag
+ rdfnode 
+---------
+ "foo"@
+(1 row)
+
+SELECT '"foo"@en-US'::rdfnode;                  -- valid
+   rdfnode   
+-------------
+ "foo"@en-US
+(1 row)
+
+SELECT '"foo"@en-Latn-US-valencia'::rdfnode;    -- valid extended BCP 47
+          rdfnode          
+---------------------------
+ "foo"@en-Latn-US-valencia
+(1 row)
+
+SELECT '"foo"@123'::rdfnode;                    -- invalid: must start with letter
+ERROR:  invalid language tag: "123"
+LINE 1: SELECT '"foo"@123'::rdfnode;
+               ^
+SELECT '"foo"@EN'::rdfnode;                     -- valid; canonical form lowercases primary tag
+ rdfnode  
+----------
+ "foo"@EN
+(1 row)
+
+SELECT '"foo"@en-us'::rdfnode;                  -- region should canonicalize to UPPER
+   rdfnode   
+-------------
+ "foo"@en-us
+(1 row)
+
+SELECT '"foo"@en-'::rdfnode;                    -- invalid trailing hyphen
+ERROR:  invalid language tag: "en-"
+LINE 1: SELECT '"foo"@en-'::rdfnode;
+               ^
+/* IRIs and blank nodes */
+SELECT '<http://example.org/foo>'::rdfnode;
+         rdfnode          
+--------------------------
+ <http://example.org/foo>
+(1 row)
+
+SELECT '<urn:isbn:0451450523>'::rdfnode;
+        rdfnode        
+-----------------------
+ <urn:isbn:0451450523>
+(1 row)
+
+SELECT '<http://example.org/foo bar>'::rdfnode; -- invalid: spaces in IRI
+            rdfnode             
+--------------------------------
+ "<http://example.org/foo bar>"
+(1 row)
+
+SELECT '<>'::rdfnode;                           -- relative empty IRI
+ rdfnode 
+---------
+ "<>"
+(1 row)
+
+SELECT '_:b1'::rdfnode;                         -- blank node
+ rdfnode 
+---------
+ _:b1
+(1 row)
+
+SELECT '_:'::rdfnode;                           -- invalid blank node label
+ rdfnode 
+---------
+ "_:"
+(1 row)
+
+/* numeric edge cases */
+SELECT '"+42"^^xsd:int'::rdfnode;               -- explicit plus (valid)
+ERROR:  invalid lexical form for xsd:int: "+42"
+LINE 2: SELECT '"+42"^^xsd:int'::rdfnode;
+               ^
+SELECT '"042"^^xsd:int'::rdfnode;               -- leading zeros (valid lex, non-canonical)
+                    rdfnode                    
+-----------------------------------------------
+ "042"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT '"2147483647"^^xsd:int'::rdfnode::int;   -- INT_MAX
+    int4    
+------------
+ 2147483647
+(1 row)
+
+SELECT '"2147483648"^^xsd:int'::rdfnode;        -- overflow → must error
+                       rdfnode                        
+------------------------------------------------------
+ "2147483648"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+SELECT '"-2147483648"^^xsd:int'::rdfnode::int;  -- INT_MIN
+    int4     
+-------------
+ -2147483648
+(1 row)
+
+SELECT '"3.14e0"^^xsd:double'::rdfnode;         -- exponent
+                       rdfnode                       
+-----------------------------------------------------
+ "3.14e0"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT '"3."^^xsd:decimal'::rdfnode;            -- XSD 1.1: invalid; XSD 1.0: valid
+                     rdfnode                      
+--------------------------------------------------
+ "3."^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT '"-0"^^xsd:integer'::rdfnode;            -- valid lex, canonical is "0"
+                     rdfnode                      
+--------------------------------------------------
+ "-0"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT '"1.0"^^xsd:integer'::rdfnode;           -- must error: invalid lexical form for integer
+ERROR:  invalid lexical form for xsd:integer: "1.0"
+LINE 1: SELECT '"1.0"^^xsd:integer'::rdfnode;
+               ^
+/* xsd:boolean alternative lexical forms */
+SELECT '"1"^^xsd:boolean'::rdfnode::boolean;     -- true
+ bool 
+------
+ t
+(1 row)
+
+SELECT '"0"^^xsd:boolean'::rdfnode::boolean;     -- false
+ bool 
+------
+ f
+(1 row)
+
+SELECT '"TRUE"^^xsd:boolean'::rdfnode;           -- invalid (case-sensitive)
+                      rdfnode                       
+----------------------------------------------------
+ "TRUE"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+SELECT '"yes"^^xsd:boolean'::rdfnode;            -- invalid
+                      rdfnode                      
+---------------------------------------------------
+ "yes"^^<http://www.w3.org/2001/XMLSchema#boolean>
+(1 row)
+
+/* date/time variations */
+SELECT '"2025-04-25T18:44:38+02:00"^^xsd:dateTime'::rdfnode;
+                                 rdfnode                                  
+--------------------------------------------------------------------------
+ "2025-04-25T18:44:38+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '"2025-04-25T18:44:38.123Z"^^xsd:dateTime'::rdfnode;
+                                 rdfnode                                 
+-------------------------------------------------------------------------
+ "2025-04-25T18:44:38.123Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '"-0044-03-15T12:00:00Z"^^xsd:dateTime'::rdfnode;   -- BCE
+ERROR:  invalid lexical form for xsd:dateTime: "-0044-03-15T12:00:00Z"
+LINE 1: SELECT '"-0044-03-15T12:00:00Z"^^xsd:dateTime'::rdfnode;
+               ^
+SELECT '"2025-04-25Z"^^xsd:date'::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "2025-04-25Z"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '"2025-04-25-08:00"^^xsd:date'::rdfnode;
+                           rdfnode                           
+-------------------------------------------------------------
+ "2025-04-25-08:00"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '"24:00:00"^^xsd:time'::rdfnode;          -- XSD 1.1: valid; XSD 1.0: invalid
+ERROR:  invalid lexical form for xsd:time: "24:00:00"
+LINE 1: SELECT '"24:00:00"^^xsd:time'::rdfnode;
+               ^
+SELECT '"2025-02-29"^^xsd:date'::rdfnode;        -- not a leap year → invalid
+                        rdfnode                        
+-------------------------------------------------------
+ "2025-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '"2024-02-29"^^xsd:date'::rdfnode;        -- leap year → valid
+                        rdfnode                        
+-------------------------------------------------------
+ "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+/* gYear / gMonth / gDay */
+SELECT '"2025"^^<http://www.w3.org/2001/XMLSchema#gYear>'::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "2025"^^<http://www.w3.org/2001/XMLSchema#gYear>
+(1 row)
+
+SELECT '"--04"^^<http://www.w3.org/2001/XMLSchema#gMonth>'::rdfnode;
+                      rdfnode                      
+---------------------------------------------------
+ "--04"^^<http://www.w3.org/2001/XMLSchema#gMonth>
+(1 row)
+
+SELECT '"---25"^^<http://www.w3.org/2001/XMLSchema#gDay>'::rdfnode;
+                     rdfnode                      
+--------------------------------------------------
+ "---25"^^<http://www.w3.org/2001/XMLSchema#gDay>
+(1 row)
+
+SELECT '"2025-04"^^<http://www.w3.org/2001/XMLSchema#gYearMonth>'::rdfnode;
+                         rdfnode                          
+----------------------------------------------------------
+ "2025-04"^^<http://www.w3.org/2001/XMLSchema#gYearMonth>
+(1 row)
+
+/* escape sequences inside literals */
+SELECT E'"line1\\nline2"'::rdfnode;              -- \n inside literal
+    rdfnode     
+----------------
+ "line1\nline2"
+(1 row)
+
+SELECT E'"tab\\there"'::rdfnode;                 -- \t
+   rdfnode   
+-------------
+ "tab\there"
+(1 row)
+
+SELECT E'"\\u00E9"'::rdfnode;                    -- é
+ rdfnode 
+---------
+ "é"
+(1 row)
+
+SELECT E'"\\U0001F600"'::rdfnode;                -- 😀
+ rdfnode 
+---------
+ "😀"
+(1 row)
+
+SELECT E'"backslash\\\\test"'::rdfnode;          -- \\
+      rdfnode      
+-------------------
+ "backslash\\test"
+(1 row)
+
+SELECT E'"quote\\""'::rdfnode;                   -- \"
+  rdfnode  
+-----------
+ "quote\""
+(1 row)
+
+/* whitespace handling */
+SELECT '  "foo"@en  '::rdfnode;                  -- leading/trailing
+   rdfnode   
+-------------
+ "  \"foo\""
+(1 row)
+
+SELECT '"foo" @en'::rdfnode;                     -- space before @ -> invalid
+ERROR:  invalid input syntax for type rdfnode: ""foo" @en"
+LINE 1: SELECT '"foo" @en'::rdfnode;
+               ^
+SELECT '"foo"^^ xsd:string'::rdfnode;            -- space after ^^ -> invalid
+ERROR:  invalid input syntax for type rdfnode: ""foo"^^ xsd:string"
+LINE 1: SELECT '"foo"^^ xsd:string'::rdfnode;
+               ^
+SELECT E'"foo"\n@en'::rdfnode;                   -- newline before @ -> invalid
+ERROR:  invalid input syntax for type rdfnode: ""foo"
+@en"
+LINE 1: SELECT E'"foo"\n@en'::rdfnode;
+               ^
+/* datatype IRI variants */
+SELECT '"abc"^^<>'::rdfnode;                     -- empty datatype IRI
+  rdfnode  
+-----------
+ "abc"^^<>
+(1 row)
+
+SELECT '"abc"^^<not an uri>'::rdfnode;           -- invalid IRI
+ERROR:  datatype IRI cannot contain whitespaces
+LINE 1: SELECT '"abc"^^<not an uri>'::rdfnode;
+               ^
+SELECT '"abc"^^xsd:'::rdfnode;                   -- empty local part
+    rdfnode    
+---------------
+ "abc"^^<xsd:>
+(1 row)
+
+SELECT '"abc"^^:bar'::rdfnode;                   -- empty prefix
+    rdfnode    
+---------------
+ "abc"^^<:bar>
+(1 row)
+
+/* interval with mixed signs */ 
+SELECT '1 year -3 days'::interval::rdfnode;      -- xsd:duration cannot mix signs
+                        rdfnode                        
+-------------------------------------------------------
+ "-P1Y3D"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 day 12 hours'::interval::rdfnode;
+                         rdfnode                         
+---------------------------------------------------------
+ "-P1DT12H"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+/* NULL handling */
+SELECT NULL::rdfnode;
+ rdfnode 
+---------
+ 
+(1 row)
+
+SELECT NULL::text::rdfnode;
+ rdfnode 
+---------
+ 
+(1 row)
+
+SELECT ''::rdfnode IS NOT NULL;                  -- empty string != NULL
+ ?column? 
+----------
+ t
+(1 row)
+
+/* equality / ordering (RDF term equality vs value equality) */
+SELECT '"1"^^xsd:int'::rdfnode = '"1"^^xsd:integer'::rdfnode;  -- term !=, value =
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"@en'::rdfnode = '"foo"@EN'::rdfnode;              -- lang tag case
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"'::rdfnode = '"foo"^^xsd:string'::rdfnode;        -- RDF 1.1: equal
+ ?column? 
+----------
+ t
+(1 row)
+
+/* long literals */
+SELECT length(repeat('a', 1000000)::rdfnode::text);            -- large literal
+ length  
+---------
+ 1000002
+(1 row)
+
+SELECT length(sparql.strdt(repeat('a', 1000000)::rdfnode,'<http://www.w3.org/2001/XMLSchema#string>')::text); -- large literal withd data type
+ length  
+---------
+ 1000045
+(1 row)
+
+SELECT length(sparql.strlang(repeat('a', 1000000)::rdfnode,'de')::text); -- large literal withd data type
+ length  
+---------
+ 1000005
+(1 row)
+
+/* literals with malicious trailing content */
+SELECT  '"x"@en } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo" }'::rdfnode;
+ERROR:  invalid input syntax for type rdfnode: ""x"@en } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo" }"
+LINE 2: SELECT  '"x"@en } ; INSERT DATA {<http://fake.object> <http:...
+                ^
+SELECT  '"x" } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo"'::rdfnode;
+ERROR:  invalid input syntax for type rdfnode: ""x" } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo""
+LINE 1: SELECT  '"x" } ; INSERT DATA {<http://fake.object> <http://f...
+                ^
+SELECT  '"42"^^xsd:long } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo"'::rdfnode;
+ERROR:  invalid input syntax for type rdfnode: ""42"^^xsd:long } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo""
+LINE 1: SELECT  '"42"^^xsd:long } ; INSERT DATA {<http://fake.object...
+                ^
+SELECT  '"42"^^<http://www.w3.org/2001/XMLSchema#long> } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo"'::rdfnode;
+ERROR:  invalid input syntax for type rdfnode: ""42"^^<http://www.w3.org/2001/XMLSchema#long> } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo""
+LINE 1: SELECT  '"42"^^<http://www.w3.org/2001/XMLSchema#long> } ; I...
+                ^
 SELECT '"9223372036854775.807"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
        numeric        
 ----------------------

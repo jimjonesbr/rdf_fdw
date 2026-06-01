@@ -7841,12 +7841,82 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 	initStringInfo(&r);
 
 	if (strlen(str_in) == 0)
-	{
 		appendStringInfo(&r, "\"\"");
-	}
 	else if (isLiteral(str_in))
 	{
-		char *node = cstring_to_rdfliteral(str_in);
+		char *node;
+
+		/*
+		 * Reject trailing content after a quoted RDF literal boundary.
+		 *
+		 * Only applies when the input itself starts with '"' — i.e. it is
+		 * already a quoted literal.  Raw inputs like 'f"o"o' or
+		 * '  "foo"@en  ' do not start with '"' and are handled by
+		 * cstring_to_rdfliteral, which escapes all internal quotes and
+		 * carries no injection or truncation risk.
+		 *
+		 * Walk past: the lexical content (honouring backslash-escapes and
+		 * doubled-quote "" escapes as lex() does), the closing '"', and
+		 * then an optional lang tag (@xx[-yy]) or datatype (^^<IRI> or
+		 * ^^prefix:name).  Anything remaining is not valid RDF.
+		 */
+		if (*str_in == '"')
+		{
+			const char *p = str_in + 1; /* skip opening '"' */
+
+			while (*p)
+			{
+				if (*p == '"')
+				{
+					if (*(p + 1) == '"')			/* "" escape */
+					{
+						p += 2;
+						continue;
+					}
+					if (p > str_in + 1 && *(p - 1) == '\\') /* \" escape */
+					{
+						p++;
+						continue;
+					}
+					break; /* unescaped closing '"' */
+				}
+				p++;
+			}
+
+			if (*p == '"')
+			{
+				p++; /* skip closing '"' */
+
+				if (*p == '@')
+				{
+					p++;
+					while (*p && (isalnum((unsigned char)*p) || *p == '-' || *p == '_'))
+						p++;
+				}
+				else if (p[0] == '^' && p[1] == '^')
+				{
+					p += 2;
+					if (*p == '<')
+					{
+						p++;
+						while (*p && *p != '>') p++;
+						if (*p == '>') p++;
+					}
+					else
+					{
+						while (*p && !isspace((unsigned char)*p)) p++;
+					}
+				}
+
+				if (*p != '\0')
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							 errmsg("invalid input syntax for type rdfnode: \"%s\"",
+									str_in)));
+			}
+		}
+
+		node = cstring_to_rdfliteral(str_in);
 
 		lexical = lex(node);
 		lan = lang(node);

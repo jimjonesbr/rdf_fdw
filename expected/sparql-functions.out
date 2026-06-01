@@ -349,11 +349,7 @@ SELECT sparql.lang(sparql.strdt('foo','xsd:string'));
 (1 row)
 
 SELECT sparql.lang('"f"oo"@it');
- lang 
-------
- 
-(1 row)
-
+ERROR:  invalid input syntax for type rdfnode: ""f"oo"@it" at character 20
 SELECT sparql.lang('');
  lang 
 ------

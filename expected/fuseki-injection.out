@@ -1,0 +1,77 @@
+\pset null '(null)'
+CREATE SERVER fuseki
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update');
+CREATE FOREIGN TABLE ft (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o') 
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .'
+);
+CREATE USER MAPPING FOR postgres
+SERVER fuseki OPTIONS (user 'admin', password 'secret');
+INSERT INTO ft VALUES (
+  '<http://example.org/s>',
+  '<http://example.org/p>',
+  '"x"@en } ; INSERT DATA { <http://example.org/pwned> <http://example.org/pwned> <http://example.org/pwned> } ; INSERT DATA { <http://example.org/keep> <http://example.org/keep> "x"@en'
+);
+ERROR:  invalid input syntax for type rdfnode: ""x"@en } ; INSERT DATA { <http://example.org/pwned> <http://example.org/pwned> <http://example.org/pwned> } ; INSERT DATA { <http://example.org/keep> <http://example.org/keep> "x"@en"
+LINE 4:   '"x"@en } ; INSERT DATA { <http://example.org/pwned> <http...
+          ^
+SELECT count(*) FROM ft WHERE subject = '<http://example.org/pwned>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <http://example.org/pwned>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ count 
+-------
+     0
+(1 row)
+
+-- value is the RDF literal whose lexical form is one backslash followed by
+-- whatever the attacker wants the SPARQL engine to parse next.
+INSERT INTO ft VALUES (
+  '<http://example.org/s>',
+  '<http://example.org/p>',
+  E'"\\\\\\\\"'        -- the four-char string:  "  \  \  "
+);
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA { <http://example.org/s> <http://example.org/p> "\"\\\\"" };
+
+
+ERROR:  bad request on server "fuseki" (HTTP 400)
+DETAIL:  Lexical error at line 2, column 0.  Encountered: <EOF> after prefix "\" };\n"
+
+HINT:  Check the SPARQL query syntax.
+SELECT object FROM ft WHERE subject = '<http://example.org/s>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <http://example.org/s>)
+}
+
+INFO:  SPARQL returned 0 records.
+
+ object 
+--------
+(0 rows)
+
+/* Cleanup */
+DROP SERVER fuseki CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to foreign table ft
+drop cascades to user mapping for postgres on server fuseki
