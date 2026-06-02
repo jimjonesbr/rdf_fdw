@@ -41,6 +41,8 @@ Release date: **YYYY-MM-DD**
 
 * **Accept ill-typed literals**: Ill-typed literals are no longer rejected by `rdfnode_in` -- a literal is ill-typed if its lexical form falls outside the lexical space of its datatype (e.g., `"foo"^^xsd:int`). While semantically inconsistent under RDF 1.1, these literals are syntactically valid RDF. Validation is now deferred to the underlying triplestore rather than being enforced at the database level.
 
+* **Fixed wrong ordering of string and language-tagged literals in `sparql.min()` / `sparql.max()`**: The aggregate comparator (`rdfnode_cmp_for_aggregate`) was using `varstr_cmp` with `DEFAULT_COLLATION_OID` for lexical comparisons of plain literals, `xsd:string` literals, and language-tagged literals. On databases whose locale is not `C`, this produces locale-dependent ordering (e.g., accented characters may be folded or reordered), which violates [SPARQL 1.1 §17.3](https://www.w3.org/TR/sparql11-query/#OperatorMapping) — string ordering must follow Unicode codepoint order. Both calls have been replaced with `strcmp`.
+
 # 2.5
 Release date: **2026-04-20**
 

@@ -16,7 +16,7 @@
 #include "sparql.h"
 
 #include "utils/builtins.h"
-#include "varatt.h"
+//#include "varatt.h"
 #include "utils/date.h"
 #include "utils/numeric.h"
 #include "utils/timestamp.h"
@@ -788,22 +788,13 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 		int langCmp = pg_strcasecmp(rdfnode1.lang, rdfnode2.lang);
 		if (langCmp != 0)
 			return langCmp;
-		return varstr_cmp(rdfnode1.lex, strlen(rdfnode1.lex),
-						  rdfnode2.lex, strlen(rdfnode2.lex),
-						  DEFAULT_COLLATION_OID);
+		return strcmp(rdfnode1.lex, rdfnode2.lex); /* unicode codepoint order */
 	}
 
 	/* Simple literals and xsd:string: lexical comparison */
-	if ((rdfnode1.isPlainLiteral && rdfnode2.isPlainLiteral) ||
-		(rdfnode1.isString && rdfnode2.isString) ||
-		(rdfnode1.isPlainLiteral && rdfnode2.isString) ||
-		(rdfnode1.isString && rdfnode2.isPlainLiteral))
-	{
-		int cmp = varstr_cmp(rdfnode1.lex, strlen(rdfnode1.lex),
-							 rdfnode2.lex, strlen(rdfnode2.lex),
-							 DEFAULT_COLLATION_OID);
-		return cmp;
-	}
+	if ((rdfnode1.isPlainLiteral || rdfnode1.isString) &&
+		(rdfnode2.isPlainLiteral || rdfnode2.isString))
+		return strcmp(rdfnode1.lex, rdfnode2.lex); /* unicode codepoint order */
 
 	/* Numeric literals: use numeric comparison */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
