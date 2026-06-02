@@ -75,3 +75,19 @@ SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode <> '"2025-04-25 18:44:38"^
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode <> '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode <> '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
 SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode <> '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode;
+
+-- === RDF 1.1 §17.4.1.7: term inequality of identical ill-typed literals ===
+-- These all must return FALSE, not raise type errors.
+SELECT '"forty-two"^^xsd:int'::rdfnode <> '"forty-two"^^xsd:int'::rdfnode;        -- f
+SELECT '"2025-13-01"^^xsd:date'::rdfnode <> '"2025-13-01"^^xsd:date'::rdfnode;    -- f
+SELECT '"25:00:00"^^xsd:time'::rdfnode <> '"25:00:00"^^xsd:time'::rdfnode;        -- f
+SELECT '"nAn"^^xsd:double'::rdfnode <> '"nAn"^^xsd:double'::rdfnode;              -- f
+SELECT '""^^xsd:integer'::rdfnode <> '""^^xsd:integer'::rdfnode;                  -- f
+
+-- Datatype prefix expansion: byte-equal after normalization
+SELECT '"42"^^xsd:int'::rdfnode 
+    <> '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                   -- f
+
+-- Datatype mismatch (even ill-typed): should return t, not error
+SELECT '"42"^^xsd:int'::rdfnode <> '"42"^^xsd:date'::rdfnode;                     -- t
+SELECT '"invalid"^^xsd:dateTime'::rdfnode <> '"invalid"^^xsd:time'::rdfnode;      -- t

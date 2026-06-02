@@ -16,6 +16,7 @@
 #include "sparql.h"
 
 #include "utils/builtins.h"
+#include "varatt.h"
 #include "utils/date.h"
 #include "utils/numeric.h"
 #include "utils/timestamp.h"
@@ -30,10 +31,16 @@
 /*
  * rdfnode_eq
  * ----------
- * Returns true if two rdfnode values are SPARQL-equal. IRIs are compared
- * by raw string; plain literals and xsd:string use locale-aware comparison;
- * numeric, date, time, and duration types delegate to their PostgreSQL
- * equivalents. Falls back to lexical comparison for unrecognised types.
+ * Returns true if two rdfnode values are SPARQL-equal.
+ *
+ * Implements RDF 1.1 / SPARQL 1.1 equality semantics:
+ *   - Term equality fast path: byte-identical normalized forms are equal,
+ *     even if the lexical is ill-typed (SPARQL §17.4.1.7).
+ *   - IRIs and blank nodes compare by raw string.
+ *   - Plain literals and xsd:string compare by codepoint.
+ *   - Numeric, date, time, dateTime, and duration delegate to PostgreSQL's
+ *     value-space comparators.
+ *   - Falls back to lexical comparison for unrecognised datatypes.
  *
  * n1, n2: the rdfnode operands
  *
@@ -41,10 +48,35 @@
  */
 bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 {
-	rdfnode_info a = parse_rdfnode(n1);
-	rdfnode_info b = parse_rdfnode(n2);
+	rdfnode_info a, b;
 
 	elog(DEBUG3, "%s called", __func__);
+
+	/*
+	 * === RDF 1.1 term-equality fast path ===
+	 *
+	 * Two RDF terms are equal if their normalized lexical form, datatype
+	 * IRI, and language tag are identical. rdfnode_in() stores literals
+	 * in canonical form (datatype IRIs always expanded to <full-iri>),
+	 * so byte-identical varlena payloads imply identical RDF terms.
+	 *
+	 * This MUST short-circuit before any value-space comparison: SPARQL
+	 * §17.4.1.7 (RDFterm-equal) requires identical ill-typed literals to
+	 * compare equal rather than raise a type error. Without this,
+	 *     '"invalid"^^xsd:dateTime' = '"invalid"^^xsd:dateTime'
+	 * would call timestamptz_in("invalid") and ERROR instead of returning
+	 * TRUE.
+	 *
+	 * It's also a performance win for the common case of comparing a
+	 * literal to itself or to its own canonicalized form.
+	 */
+	if (VARSIZE_ANY_EXHDR(n1) == VARSIZE_ANY_EXHDR(n2) &&
+		memcmp(VARDATA_ANY(n1), VARDATA_ANY(n2), VARSIZE_ANY_EXHDR(n1)) == 0)
+		return true;
+
+	a = parse_rdfnode(n1);
+	b = parse_rdfnode(n2);
+
 	elog(DEBUG4, "%s: a.lex='%s', a.dtype='%s', a.lang='%s', a.isNumeric='%d'", __func__,
 		 a.lex, a.dtype ? a.dtype : "(null)", a.lang ? a.lang : "(null)", a.isNumeric);
 	elog(DEBUG4, "%s: b.lex='%s', b.dtype='%s', b.lang='%s', b.isNumeric='%d'", __func__,
@@ -52,75 +84,65 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 
 	if (a.isIRI && b.isIRI)
 		return strcmp(a.raw, b.raw) == 0;
-	/*
-	 * plain (no language or data type) and xsd:string literals
-	 * are considered the same, so we only compare their contents
-	 * directly.
-	 */
-	if ((a.isPlainLiteral && b.isPlainLiteral) ||
-		(a.isPlainLiteral && b.isString) ||
-		(a.isString && b.isPlainLiteral) ||
-		(a.isString && b.isString))
-		return varstr_cmp(a.lex, strlen(a.lex),
-						  b.lex, strlen(b.lex),
-						  DEFAULT_COLLATION_OID) == 0;
 
 	/*
-	 * plain literals (no language or data type) can only be compared
-	 * to xsd:string or other plain literals.
+	 * Plain literals (no language or datatype) and xsd:string literals are
+	 * value-equal per RDF 1.1, so compare their lexical forms directly.
 	 */
-	if ((!a.isPlainLiteral && !a.isString && b.isPlainLiteral) ||
-		(!b.isPlainLiteral && !b.isString && a.isPlainLiteral))
-		return false;
+	if ((a.isPlainLiteral || a.isString) && (b.isPlainLiteral || b.isString))
+		return strcmp(a.lex, b.lex) == 0;
 
-	/* if one literal has a language tag, the other must have one as well */
-	if ((strlen(a.lang) != 0 && strlen(b.lang) == 0) ||
-		(strlen(a.lang) == 0 && strlen(b.lang) != 0))
-		return false;
-
-	/* both literals must share the same language tag, if any */
-	if ((strlen(a.lang) != 0 && strlen(b.lang) != 0) &&
-		pg_strcasecmp(a.lang, b.lang) != 0)
-		return false;
-
-	/* numeric and non-numeric literals cannot be compared */
-	if ((a.isNumeric && !b.isNumeric) ||
-		(!a.isNumeric && b.isNumeric))
-		return false;
 	/*
-	 * both literals must share the data type tag, except
-	 * numeric data types, as "1"^^xsd:int and "1"^xsd:short
-	 * are the same.
+	 * A plain literal can only compare equal to another plain literal or
+	 * an xsd:string. Anything else is inequal.
 	 */
-	if ((strlen(a.dtype) != 0 && strlen(b.dtype) != 0) &&
-		(!a.isNumeric && !b.isNumeric) &&
+	if ((a.isPlainLiteral && !b.isPlainLiteral && !b.isString) ||
+		(b.isPlainLiteral && !a.isPlainLiteral && !a.isString))
+		return false;
+
+	/* If one has a language tag, both must. */
+	if ((strlen(a.lang) != 0) != (strlen(b.lang) != 0))
+		return false;
+
+	/* Language tags must match (case-insensitive per BCP 47). */
+	if (strlen(a.lang) != 0 && pg_strcasecmp(a.lang, b.lang) != 0)
+		return false;
+
+	/* Numeric and non-numeric literals cannot be compared. */
+	if (a.isNumeric != b.isNumeric)
+		return false;
+
+	/*
+	 * For non-numeric datatyped literals, datatypes must match. (Numeric
+	 * subtypes such as xsd:int / xsd:short / xsd:integer are interchangeable.)
+	 */
+	if (!a.isNumeric && !b.isNumeric &&
+		strlen(a.dtype) != 0 && strlen(b.dtype) != 0 &&
 		strcmp(a.dtype, b.dtype) != 0)
 		return false;
 
+	/* === Value-space comparisons === */
 	if (a.isNumeric && b.isNumeric)
 	{
+		Datum a_val, b_val;
 
-		Datum a_val;
-		Datum b_val;
-
-		if (strcmp(a.dtype, RDF_XSD_DOUBLE) == 0)
+		if (strcmp(a.dtype, RDF_XSD_DOUBLE) == 0 ||
+			strcmp(b.dtype, RDF_XSD_DOUBLE) == 0 ||
+			strcmp(a.dtype, RDF_XSD_FLOAT) == 0 ||
+			strcmp(b.dtype, RDF_XSD_FLOAT) == 0)
 		{
 			a_val = DirectFunctionCall1(float8in, CStringGetDatum(a.lex));
 			b_val = DirectFunctionCall1(float8in, CStringGetDatum(b.lex));
-
 			return DatumGetBool(DirectFunctionCall2(float8eq, a_val, b_val));
 		}
 		else
 		{
-			a_val = DirectFunctionCall3(numeric_in,
-										CStringGetDatum(a.lex),
+			a_val = DirectFunctionCall3(numeric_in, CStringGetDatum(a.lex),
 										ObjectIdGetDatum(InvalidOid),
 										Int32GetDatum(-1));
-			b_val = DirectFunctionCall3(numeric_in,
-										CStringGetDatum(b.lex),
+			b_val = DirectFunctionCall3(numeric_in, CStringGetDatum(b.lex),
 										ObjectIdGetDatum(InvalidOid),
 										Int32GetDatum(-1));
-
 			return DatumGetBool(DirectFunctionCall2(numeric_eq, a_val, b_val));
 		}
 	}
@@ -134,30 +156,35 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 
 	if (a.isDateTime && b.isDateTime)
 	{
-		Datum a_val = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-															  CStringGetDatum(a.lex),
-															  ObjectIdGetDatum(InvalidOid),
-															  Int32GetDatum(-1)));
-		Datum b_val = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-															  CStringGetDatum(b.lex),
-															  ObjectIdGetDatum(InvalidOid),
-															  Int32GetDatum(-1)));
-		TimestampTz a_ts = DatumGetTimestampTz(a_val);
-		TimestampTz b_ts = DatumGetTimestampTz(b_val);
-
-		return timestamptz_cmp_internal(a_ts, b_ts) == 0;
+		Datum a_val = DirectFunctionCall3(timestamptz_in, CStringGetDatum(a.lex),
+									ObjectIdGetDatum(InvalidOid),
+									Int32GetDatum(-1));
+		Datum b_val = DirectFunctionCall3(timestamptz_in, CStringGetDatum(b.lex),
+									ObjectIdGetDatum(InvalidOid),
+									Int32GetDatum(-1));
+		return timestamptz_cmp_internal(DatumGetTimestampTz(a_val),
+										DatumGetTimestampTz(b_val)) == 0;
 	}
 
 	if (a.isDuration && b.isDuration)
 	{
-		Datum a_val = DirectFunctionCall3(interval_in,
-										  CStringGetDatum(a.lex),
-										  ObjectIdGetDatum(InvalidOid),
-										  Int32GetDatum(-1));
-		Datum b_val = DirectFunctionCall3(interval_in,
-										  CStringGetDatum(b.lex),
-										  ObjectIdGetDatum(InvalidOid),
-										  Int32GetDatum(-1));
+		Datum a_val, b_val;
+		bool a_neg = (a.lex[0] == '-');
+		bool b_neg = (b.lex[0] == '-');
+
+		a_val = DirectFunctionCall3(interval_in,
+									CStringGetDatum(a_neg ? a.lex + 1 : a.lex),
+									ObjectIdGetDatum(InvalidOid),
+									Int32GetDatum(-1));
+		b_val = DirectFunctionCall3(interval_in,
+									CStringGetDatum(b_neg ? b.lex + 1 : b.lex),
+									ObjectIdGetDatum(InvalidOid),
+									Int32GetDatum(-1));
+
+		if (a_neg)
+			a_val = DirectFunctionCall1(interval_um, a_val);
+		if (b_neg)
+			b_val = DirectFunctionCall1(interval_um, b_val);
 
 		return DatumGetBool(DirectFunctionCall2(interval_eq, a_val, b_val));
 	}

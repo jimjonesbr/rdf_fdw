@@ -341,18 +341,18 @@ SERVER dbpedia OPTIONS (
 > Use `\d[+]` or `\det[+]` in `psql` to view foreign table columns and options.
 
 #### [RDF Node Handling](#rdf-node-handling)
-The `rdf_fdw` extension introduces a custom data type called `rdfnode` that represents full RDF nodes exactly as they appear in a triplestore. It supports:
+The `rdf_fdw` extension introduces a custom data type called `rdfnode` that represents full RDF nodes exactly as they appear in a triplestore — preserving their full structure, including datatype IRIs and language tags. It supports all RDF term categories:
 
 - **IRIs** (e.g., `<http://example.org/resource>`)
 - **Plain literals** (e.g., `"42"`)
 - **Literals with language tags** (e.g., `"foo"@es`)
 - **Typed literals** (e.g., `"42"^^xsd:integer`)
 
-This type is useful when you want to inspect or preserve the full structure of RDF terms—including their language tags or datatypes—rather than just working with their values.
+`rdfnode` is a container, not a validator. Ill-typed literals — where the lexical form falls outside the value space of the declared datatype (e.g., `"foo"^^xsd:date`) — are accepted without error. Datatype conformance is the triplestore's responsibility; rdfnode stores whatever the endpoint returns.
 
 **Casting Between `rdfnode` and Native PostgreSQL Types**
 
-Although `rdfnode` preserves the full RDF term, you can cast it to standard PostgreSQL types like `text`, `int`, or `date` when you only care about the literal value. Likewise, native PostgreSQL values can be cast into `rdfnode`, with appropriate RDF serialization.
+When you need to work with the underlying value rather than the full RDF term, `rdfnode` can be cast to standard PostgreSQL types. The cast strips the datatype annotation and parses the lexical form. If the lexical form is invalid for the target type (e.g., casting `"foo"^^xsd:date` to `date`), the cast raises an error at runtime.
 
 From `rdfnode` to PostgreSQL:
 
@@ -417,7 +417,7 @@ SELECT CAST(CURRENT_TIMESTAMP AS rdfnode);
 
 **Comparison of `rdfnode` with Native PostgreSQL Types**
 
-`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules.
+`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules. Comparisons between rdfnode values of incompatible datatypes — for example, a string literal against an integer — raise a type error rather than returning false, consistent with SPARQL 1.1 semantics.
 
 Examples: `rdfnode` vs `rdfnode`
 
@@ -453,7 +453,7 @@ SELECT '"foo"^^xsd:string'::rdfnode < '"foobar"^^xsd:string'::rdfnode;
 (1 row)
 ```
 
-The `rdfnode` data type also allow comparisons with PostgreSQL native data types, such as `int`, `date`, `numeric`, etc.
+The `rdfnode` data type also allows comparisons with PostgreSQL native data types, such as `int`, `date`, `numeric`, etc.
 
 Examples: `rdfnode` vs PostgreSQL types
 

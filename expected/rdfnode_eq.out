@@ -216,7 +216,11 @@ SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:string'::rdfnode;
 (1 row)
 
 SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;
-ERROR:  invalid lexical form for xsd:date: "42" at character 35
+ ?column? 
+----------
+ f
+(1 row)
+
 SELECT '"-0"^^xsd:int'::rdfnode = '"0"^^xsd:int'::rdfnode;
  ?column? 
 ----------
@@ -255,7 +259,7 @@ SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-11"^^xsd:date'::rdfnode;
 (1 row)
 
 SELECT '"2011-10-08"^^xsd:date'::rdfnode = '""^^xsd:date'::rdfnode;
-ERROR:  invalid lexical form for xsd:date: "" at character 44
+ERROR:  invalid input syntax for type date: ""
 SELECT '"0001-01-01"^^xsd:date'::rdfnode = '"0001-01-01"^^xsd:date'::rdfnode;
  ?column? 
 ----------
@@ -264,9 +268,17 @@ SELECT '"0001-01-01"^^xsd:date'::rdfnode = '"0001-01-01"^^xsd:date'::rdfnode;
 
 -- Invalid datetime
 SELECT '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode;
-ERROR:  date/time field value out of range: "2025-13-01T12:00:00"
+ ?column? 
+----------
+ t
+(1 row)
+
 SELECT '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode;
-ERROR:  date/time field value out of range: "2025-04-25T25:00:00Z"
+ ?column? 
+----------
+ t
+(1 row)
+
 SELECT '"1.0E308"^^xsd:double'::rdfnode = '"1.0E308"^^xsd:double'::rdfnode;
  ?column? 
 ----------
@@ -274,7 +286,11 @@ SELECT '"1.0E308"^^xsd:double'::rdfnode = '"1.0E308"^^xsd:double'::rdfnode;
 (1 row)
 
 SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:dateTime'::rdfnode;
-ERROR:  invalid lexical form for xsd:dateTime: "invalid" at character 8
+ ?column? 
+----------
+ t
+(1 row)
+
 -- Time
 SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^xsd:time'::rdfnode;
  ?column? 
@@ -302,9 +318,17 @@ SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"'::rdfnode;
 
 -- String comparison fallbacks
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
+ ?column? 
+----------
+ t
+(1 row)
+
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
-ERROR:  invalid lexical form for xsd:dateTime: "2025-04-25 18:44:38" at character 8
+ ?column? 
+----------
+ f
+(1 row)
+
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
  ?column? 
 ----------
@@ -318,6 +342,62 @@ SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:
 (1 row)
 
 SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
+-- These all must return TRUE, not raise type errors.
+SELECT '"forty-two"^^xsd:int'::rdfnode = '"forty-two"^^xsd:int'::rdfnode;        -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-13-01"^^xsd:date'::rdfnode = '"2025-13-01"^^xsd:date'::rdfnode;    -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"25:00:00"^^xsd:time'::rdfnode = '"25:00:00"^^xsd:time'::rdfnode;        -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"nAn"^^xsd:double'::rdfnode = '"nAn"^^xsd:double'::rdfnode;              -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '""^^xsd:integer'::rdfnode = '""^^xsd:integer'::rdfnode;                  -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Datatype prefix expansion: these are byte-equal after normalization
+SELECT '"42"^^xsd:int'::rdfnode 
+     = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                  -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Different ill-typed literals: behavior depends on policy
+-- (currently raises ERROR; that's allowed per SPARQL §17.3.1)
+-- SELECT '"foo"^^xsd:int'::rdfnode = '"bar"^^xsd:int'::rdfnode;
+-- Datatype mismatch with ill-typed values: should return f, not error
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;                     -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:time'::rdfnode;      -- f
  ?column? 
 ----------
  f

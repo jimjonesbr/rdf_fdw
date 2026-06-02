@@ -75,3 +75,23 @@ SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
 SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode;
+
+-- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
+-- These all must return TRUE, not raise type errors.
+SELECT '"forty-two"^^xsd:int'::rdfnode = '"forty-two"^^xsd:int'::rdfnode;        -- t
+SELECT '"2025-13-01"^^xsd:date'::rdfnode = '"2025-13-01"^^xsd:date'::rdfnode;    -- t
+SELECT '"25:00:00"^^xsd:time'::rdfnode = '"25:00:00"^^xsd:time'::rdfnode;        -- t
+SELECT '"nAn"^^xsd:double'::rdfnode = '"nAn"^^xsd:double'::rdfnode;              -- t
+SELECT '""^^xsd:integer'::rdfnode = '""^^xsd:integer'::rdfnode;                  -- t
+
+-- Datatype prefix expansion: these are byte-equal after normalization
+SELECT '"42"^^xsd:int'::rdfnode 
+     = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                  -- t
+
+-- Different ill-typed literals: behavior depends on policy
+-- (currently raises ERROR; that's allowed per SPARQL §17.3.1)
+-- SELECT '"foo"^^xsd:int'::rdfnode = '"bar"^^xsd:int'::rdfnode;
+
+-- Datatype mismatch with ill-typed values: should return f, not error
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;                     -- f
+SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:time'::rdfnode;      -- f

@@ -2352,9 +2352,9 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 								char *escaped = cstring_to_rdfliteral((char *)content);
 
 								if (datatype)
-									appendStringInfo(&literal_value, "%s^^%s", escaped, (char *)datatype);
+									appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
 								else if (lang)
-									appendStringInfo(&literal_value, "%s@%s", escaped, (char *)lang);
+									appendStringInfo(&literal_value, "%s", strlang(escaped, (char *)lang));
 								else
 									appendStringInfo(&literal_value, "%s", escaped);
 							}
@@ -6090,9 +6090,9 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 							char *escaped = cstring_to_rdfliteral(node_value);
 
 							if (datatype)
-								appendStringInfo(&literal_value, "%s^^%s", escaped, (char *)datatype);
+								appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
 							else if (lang)
-								appendStringInfo(&literal_value, "%s@%s", escaped, (char *)lang);
+								appendStringInfo(&literal_value, "%s", strlang(escaped, (char *)lang));
 							else
 								appendStringInfo(&literal_value, "%s", escaped);
 						}
@@ -7841,42 +7841,44 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 	initStringInfo(&r);
 
 	if (strlen(str_in) == 0)
-		appendStringInfo(&r, "\"\"");
+	{
+		appendStringInfoString(&r, "\"\"");
+	}
 	else if (isLiteral(str_in))
 	{
 		char *node;
 
 		/*
 		 * Reject trailing content after a quoted RDF literal boundary.
-		 *
-		 * Only applies when the input itself starts with '"' — i.e. it is
-		 * already a quoted literal.  Raw inputs like 'f"o"o' or
-		 * '  "foo"@en  ' do not start with '"' and are handled by
-		 * cstring_to_rdfliteral, which escapes all internal quotes and
-		 * carries no injection or truncation risk.
-		 *
-		 * Walk past: the lexical content (honouring backslash-escapes and
-		 * doubled-quote "" escapes as lex() does), the closing '"', and
-		 * then an optional lang tag (@xx[-yy]) or datatype (^^<IRI> or
-		 * ^^prefix:name).  Anything remaining is not valid RDF.
+		 * Only applies when the input starts with '"'.
 		 */
 		if (*str_in == '"')
 		{
-			const char *p = str_in + 1; /* skip opening '"' */
+			const char *p = str_in + 1;
 
 			while (*p)
 			{
 				if (*p == '"')
 				{
-					if (*(p + 1) == '"')			/* "" escape */
+					if (*(p + 1) == '"') /* "" escape */
 					{
 						p += 2;
 						continue;
 					}
-					if (p > str_in + 1 && *(p - 1) == '\\') /* \" escape */
+					/* Count preceding backslashes; odd = escaped */
 					{
-						p++;
-						continue;
+						const char *q = p;
+						int backslashes = 0;
+						while (q > str_in + 1 && *(q - 1) == '\\')
+						{
+							backslashes++;
+							q--;
+						}
+						if (backslashes % 2 == 1)
+						{
+							p++;
+							continue;
+						}
 					}
 					break; /* unescaped closing '"' */
 				}
@@ -7890,7 +7892,8 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 				if (*p == '@')
 				{
 					p++;
-					while (*p && (isalnum((unsigned char)*p) || *p == '-' || *p == '_'))
+					/* BCP 47 chars only: letters, digits, hyphen */
+					while (*p && (isalnum((unsigned char)*p) || *p == '-'))
 						p++;
 				}
 				else if (p[0] == '^' && p[1] == '^')
@@ -7899,12 +7902,18 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 					if (*p == '<')
 					{
 						p++;
-						while (*p && *p != '>') p++;
-						if (*p == '>') p++;
+						while (*p && *p != '>')
+							p++;
+						if (*p == '>')
+							p++;
 					}
 					else
 					{
-						while (*p && !isspace((unsigned char)*p)) p++;
+						/* prefix:local — restrict to PN-ish chars */
+						while (*p && (isalnum((unsigned char)*p) ||
+									  *p == ':' || *p == '_' ||
+									  *p == '-' || *p == '.'))
+							p++;
 					}
 				}
 
@@ -7912,67 +7921,59 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 					ereport(ERROR,
 							(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 							 errmsg("invalid input syntax for type rdfnode: \"%s\"",
-									str_in)));
+									str_in),
+							 errdetail("Trailing content after RDF literal.")));
 			}
 		}
 
 		node = cstring_to_rdfliteral(str_in);
-
 		lexical = lex(node);
 		lan = lang(node);
 		dtype = datatype(node);
 
-		/* xsd data tyoe validations */
-		if (strcmp(dtype, RDF_XSD_DOUBLE) == 0 && !is_valid_xsd_double(lexical))
-			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-							errmsg("invalid lexical form for xsd:double: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_INT) == 0 && !is_valid_xsd_int(lexical))
-			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-							errmsg("invalid lexical form for xsd:int: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_INTEGER) == 0 && !is_valid_xsd_int(lexical))
-			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-							errmsg("invalid lexical form for xsd:integer: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_DATE) == 0 && !is_valid_xsd_date(lexical))
-			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-							errmsg("invalid lexical form for xsd:date: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_DATETIME) == 0 && !is_valid_xsd_dateTime(lexical))
-			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-							errmsg("invalid lexical form for xsd:dateTime: \"%s\"", lexical)));
-		else if (strcmp(dtype, RDF_XSD_TIME) == 0 && !is_valid_xsd_time(lexical))
-			ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-							errmsg("invalid lexical form for xsd:time: \"%s\"", lexical)));
-		else if (strlen(lan) != 0)
+		/*
+		 * RDF 1.1 allows ill-typed literals: a literal whose lexical form is
+		 * not in the lexical space of its datatype is still a legal RDF term.
+		 * Therefore we do NOT validate the lexical form here. Value-space
+		 * checks happen in the cast functions (rdfnode -> int/timestamp/...).
+		 *
+		 * The only checks at construction time are syntactic:
+		 *   - the language tag must be well-formed BCP 47
+		 *   - the datatype IRI must be a valid IRI (handled in parse path)
+		 */
+		if (strlen(lan) != 0)
 		{
 			if (!is_valid_language_tag(lan))
-				ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-								errmsg("invalid language tag: \"%s\"", lan)));
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid language tag: \"%s\"", lan)));
 
-			appendStringInfo(&r, "%s", pstrdup(strlang(unescape_unicode(lexical), lan)));
+			appendStringInfoString(&r, strlang(unescape_unicode(lexical), lan));
 		}
 		else if (strlen(dtype) != 0)
-			appendStringInfo(&r, "%s", pstrdup(strdt(unescape_unicode(lexical), dtype)));
+		{
+			appendStringInfoString(&r, strdt(unescape_unicode(lexical), dtype));
+		}
 		else
-			appendStringInfo(&r, "%s", pstrdup(str(unescape_unicode(str_in))));
+		{
+			appendStringInfoString(&r, str(unescape_unicode(str_in)));
+		}
 	}
 	else if (isIRI(str_in) || isBlank(str_in))
-		appendStringInfo(&r, "%s", pstrdup(str_in));
+	{
+		appendStringInfoString(&r, str_in);
+	}
 	else
-		ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-						errmsg("invalid input syntax for type rdfnode: \"%s\"", str_in)));
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("invalid input syntax for type rdfnode: \"%s\"",
+						str_in)));
+	}
 
 	len = strlen(r.data);
-
-	/*
-	 * Allocate memory for the rdfnode (use palloc0 to clear memory).
-	 * r.data is already null-terminated by StringInfo, so no extra +1 is needed.
-	 */
 	result = (rdfnode *)palloc0(VARHDRSZ + len);
 	SET_VARSIZE(result, VARHDRSZ + len);
-
-	/*
-	 * copy string data into the result structure.
-	 * no need for explicit null-termination here
-	 */
 	memcpy(result->vl_data, r.data, len);
 
 	PG_RETURN_POINTER(result);
