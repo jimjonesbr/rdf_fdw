@@ -16,7 +16,9 @@
 #include "sparql.h"
 
 #include "utils/builtins.h"
-//#include "varatt.h"
+#if PG_VERSION_NUM >= 190000
+#include "varatt.h"
+#endif
 #include "utils/date.h"
 #include "utils/numeric.h"
 #include "utils/timestamp.h"
