@@ -14,7 +14,7 @@ echo -e "\n== Building and Installing rdf_fdw on PostgreSQL 18 ==\n"
 
 docker exec -itw /rdf_fdw/ $CONTAINER_NAME make uninstall 2>/dev/null || true
 docker exec -itw /rdf_fdw/ $CONTAINER_NAME make clean
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make
+docker exec -itw /rdf_fdw/ $CONTAINER_NAME make CFLAGS="-DUSE_ASSERT_CHECKING -O0 -g" 
 docker exec -itw /rdf_fdw/ $CONTAINER_NAME make install
 docker restart $CONTAINER_NAME
 docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
