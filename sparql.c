@@ -40,7 +40,11 @@ char *lex(char *input)
 {
     StringInfoData output;
     const char *start = input;
-    int len = strlen(input);
+    int len;
+
+    Assert(input != NULL);
+
+    len = strlen(input);
 
     initStringInfo(&output);
     elog(DEBUG3, "%s called: input='%s'", __func__, input);
@@ -194,6 +198,8 @@ char *lang(char *input)
         return "";
 
     lexical_form = lex(input);
+    Assert(lexical_form != NULL); /* this shouldn't happen */
+
     ptr = input;
 
     /* find the end of the lexical form in the original input */
@@ -246,10 +252,24 @@ char *lang(char *input)
 char *strlang(char *literal, char *language)
 {
     StringInfoData buf;
-    char *lex_language = lex(language);
-    char *lex_literal = lex(literal);
+    char *lex_language;
+    char *lex_literal;
     char *tag;
     char *dash;
+
+    /*
+     * STRICT: Executor handles NULL from SQL but
+     * internal calls should not pass NULL.
+     */
+    Assert(literal != NULL);
+    Assert(language != NULL);
+
+    lex_language = lex(language);
+    lex_literal = lex(literal);
+
+    /* lex() always returns a non-NULL string */
+    Assert(lex_language != NULL);
+    Assert(lex_literal != NULL);
 
     elog(DEBUG3, "%s called: literal='%s', language='%s'", __func__, literal, language);
 
@@ -298,11 +318,29 @@ char *strlang(char *literal, char *language)
  */
 bool strstarts(char *str, char *substr)
 {
-    char *str_lexical = lex(str);
-    char *substr_lexical = lex(substr);
-    size_t str_len = strlen(str_lexical);
-    size_t substr_len = strlen(substr_lexical);
+    char *str_lexical;
+    char *substr_lexical;
+    size_t str_len;
+    size_t substr_len;
     int result;
+
+    /* 
+     * STRICT: executor handles NULL from SQL but
+     * internal calls should not pass NULL.
+     */
+    Assert(str != NULL);
+    Assert(substr != NULL);
+
+    str_lexical = lex(str);
+    substr_lexical = lex(substr);
+
+    /* lex() always returns a non-NULL string */
+    Assert(str_lexical != NULL);
+    Assert(substr_lexical != NULL);
+
+    str_len = strlen(str_lexical);
+    substr_len = strlen(substr_lexical);
+
 
     elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
@@ -352,11 +390,28 @@ bool strstarts(char *str, char *substr)
  */
 bool strends(char *str, char *substr)
 {
-    char *str_lexical = lex(str);
-    char *substr_lexical = lex(substr);
-    size_t str_len = strlen(str_lexical);
-    size_t substr_len = strlen(substr_lexical);
+    char *str_lexical;
+    char *substr_lexical;
+    size_t str_len;
+    size_t substr_len;
     int result;
+
+    /*
+     * STRICT: executor handles NULL from SQL but
+     * internal calls should not pass NULL.
+     */
+    Assert(str != NULL);
+    Assert(substr != NULL);
+
+    str_lexical = lex(str);
+    substr_lexical = lex(substr);
+
+    /* lex() always returns a non-NULL string */
+    Assert(str_lexical != NULL);
+    Assert(substr_lexical != NULL);
+
+    str_len = strlen(str_lexical);
+    substr_len = strlen(substr_lexical);
 
     elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str, substr);
 
@@ -406,7 +461,15 @@ bool strends(char *str, char *substr)
 char *strdt(char *literal, char *datatype)
 {
     StringInfoData buf;
-    char *lex_datatype = lex(datatype);
+    char *lex_datatype;
+
+    Assert(literal != NULL);
+    Assert(datatype != NULL);
+
+    lex_datatype = lex(datatype);
+
+    /* this shouldn't happen */
+    Assert(lex_datatype != NULL);
 
     elog(DEBUG3, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
 
@@ -895,6 +958,11 @@ bool langmatches(char *lang_tag, char *pattern)
 
     pattern = lex(pattern);
     tag = lex(lang_tag); /* e.g., "en" from lang('"foo"@en') */
+
+    /* this shouldn't happen */
+    Assert(pattern != NULL);
+    Assert(tag != NULL);
+
     /* Handle pattern: bare string or quoted literal */
     if (pattern[0] == '"' && strrchr(pattern, '"') > pattern)
         pat = lex(pattern); /* e.g., "\"en\"" -> "en" */
@@ -983,6 +1051,7 @@ char *datatype(char *input)
 
     elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
+    /* Handle NULL or empty input */
     if (input == NULL || *input == '\0')
     {
         elog(DEBUG3, "%s exit: returning empty string for NULL or empty input", __func__);
@@ -990,6 +1059,10 @@ char *datatype(char *input)
     }
 
     ptr = cstring_to_rdfliteral(input);
+
+    /* this shouldn't happen */
+    Assert(ptr != NULL);
+
     len = strlen(ptr);
 
     initStringInfo(&buf);
@@ -1093,11 +1166,16 @@ char *encode_for_uri(char *str_in)
     const char *unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
     size_t in_len;
     char *res;
-
     StringInfoData buf;
-    initStringInfo(&buf);
+
+    /*
+     * STRICT: executor handles NULL from SQL but
+     * internal calls should not pass NULL
+     */
+    Assert(str_in != NULL);
 
     elog(DEBUG3, "%s called: str='%s'", __func__, str_in);
+    initStringInfo(&buf);
 
     str_in = lex(str_in);
     in_len = strlen(str_in);
@@ -1312,10 +1390,8 @@ char *lcase(char *str)
 
     lexical = lex(str);
 
-    if (lexical == NULL)
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("LCASE failed to extract lexical value: %s", str)));
+    /* this shouldn't happen */
+    Assert(lexical != NULL);
 
     str_datatype = datatype(str);
 
@@ -1403,10 +1479,8 @@ char *ucase(char *str)
 
     lexical = lex(str);
 
-    if (lexical == NULL)
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("UCASE failed to extract lexical value: %s", str)));
+    /* this shouldn't happen */
+    Assert(lexical != NULL);
 
     str_datatype = datatype(str);
 
@@ -1642,9 +1716,21 @@ char *strbefore(char *str, char *delimiter)
 
     elog(DEBUG3, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
 
+    /*
+     * STRICT: executor handles NULL from SQL but
+     * internal calls should not pass NULL
+     */
+    Assert(str != NULL);
+    Assert(delimiter != NULL);
+
     str_lexical = lex(str);
     delimiter_lexical = lex(delimiter);
     lang1 = lang(str);
+
+    /* this shouldn't happen */
+    Assert(str_lexical != NULL);
+    Assert(delimiter_lexical != NULL);
+    Assert(lang1 != NULL);
 
     /* extract datatypes if no language tags */
     if (strlen(lang1) == 0)
@@ -1744,9 +1830,21 @@ char *strafter(char *str, char *delimiter)
 
     elog(DEBUG3, "%s called: str='%s', delimiter='%s'", __func__, str, delimiter);
 
+    /*
+     * STRICT: executor handles NULL from SQL but
+     * internal calls should not pass NULL
+     */
+    Assert(str != NULL);
+    Assert(delimiter != NULL);
+
     lexstr = lex(str);
     lexdelimiter = lex(delimiter);
     lang1 = lang(str);
+
+    /* this shouldn't happen */
+    Assert(lexstr != NULL);
+    Assert(lexdelimiter != NULL);
+    Assert(lang1 != NULL);
 
     /* extract datatype if no language tag */
     if (strlen(lang1) == 0)
