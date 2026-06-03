@@ -31,7 +31,7 @@ SELECT '"foo"@en-US'::rdfnode;                  -- valid
 SELECT '"foo"@en-Latn-US-valencia'::rdfnode;    -- valid extended BCP 47
 SELECT '"foo"@123'::rdfnode;                    -- invalid: must start with letter
 SELECT '"foo"@EN'::rdfnode;                     -- valid; canonical form lowercases primary tag
-SELECT '"foo"@en-us'::rdfnode;                  -- region should canonicalize to UPPER
+SELECT '"foo"@en-us'::rdfnode;                  -- subtags after the primary are stored as-is (no region canonicalization)
 SELECT '"foo"@en-'::rdfnode;                    -- invalid trailing hyphen
 
 /* IRIs and blank nodes */
@@ -111,8 +111,8 @@ SELECT '"foo"'::rdfnode = '"foo"^^xsd:string'::rdfnode;        -- RDF 1.1: equal
 
 /* long literals */
 SELECT length(repeat('a', 1000000)::rdfnode::text);            -- large literal
-SELECT length(sparql.strdt(repeat('a', 1000000)::rdfnode,'<http://www.w3.org/2001/XMLSchema#string>')::text); -- large literal withd data type
-SELECT length(sparql.strlang(repeat('a', 1000000)::rdfnode,'de')::text); -- large literal withd data type
+SELECT length(sparql.strdt(repeat('a', 1000000)::rdfnode,'<http://www.w3.org/2001/XMLSchema#string>')::text); -- large literal with data type
+SELECT length(sparql.strlang(repeat('a', 1000000)::rdfnode,'de')::text); -- large literal with data type
 
 /* literals with malicious trailing content */
 SELECT  '"x"@en } ; INSERT DATA {<http://fake.object> <http://fake.predicate> "foo" }'::rdfnode;

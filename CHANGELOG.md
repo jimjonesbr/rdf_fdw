@@ -43,6 +43,10 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed wrong ordering of string and language-tagged literals in `sparql.min()` / `sparql.max()`**: The aggregate comparator (`rdfnode_cmp_for_aggregate`) was using `varstr_cmp` with `DEFAULT_COLLATION_OID` for lexical comparisons of plain literals, `xsd:string` literals, and language-tagged literals. On databases whose locale is not `C`, this produces locale-dependent ordering (e.g., accented characters may be folded or reordered), which violates [SPARQL 1.1 §17.3](https://www.w3.org/TR/sparql11-query/#OperatorMapping) — string ordering must follow Unicode codepoint order. Both calls have been replaced with `strcmp`.
 
+* **Fixed negative `xsd:duration` round-trip**: Casting a negative PostgreSQL `interval` to `rdfnode` produces a valid XSD duration with a leading `-` (e.g., `-P1Y2M`), but casting that value back to `interval` failed with `invalid input syntax for type interval: "-P1Y2M"` because PostgreSQL's `interval_in` does not accept the XSD negative-duration notation. A helper `xsd_duration_to_pg_interval` now strips the leading `-`, parses the positive form, and negates the result.
+
+* **Fixed trailing zeros in fractional seconds of `xsd:duration` output**: `interval_to_rdfnode` was always formatting sub-second values with six decimal places (e.g., `PT1M0.500000S`). It now strips trailing zeros, producing the canonical lexical form (e.g., `PT1M0.5S`).
+
 # 2.5
 Release date: **2026-04-20**
 

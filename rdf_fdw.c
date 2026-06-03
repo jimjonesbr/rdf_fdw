@@ -10349,12 +10349,40 @@ Datum boolean_neq_rdfnode(PG_FUNCTION_ARGS)
 		PG_RETURN_BOOL(false);
 }
 
+/*
+ * xsd_duration_to_pg_interval
+ * ----------------------------
+ * Converts an XSD duration lexical form to a PostgreSQL Interval Datum.
+ *
+ * XSD uses a leading '-' before 'P' to denote negative durations (e.g.
+ * "-P1Y2M"), but PostgreSQL's interval_in() only accepts the ISO 8601
+ * element-level form.  Strip the leading '-', parse the positive form, and
+ * negate the result with interval_um().
+ *
+ * lex: the bare lexical value extracted from the rdfnode (e.g. "P1DT4H" or
+ *      "-P1Y2M")
+ *
+ * returns a Datum holding the PostgreSQL Interval
+ */
+static Datum
+xsd_duration_to_pg_interval(const char *lex)
+{
+	Datum result = DirectFunctionCall3(interval_in,
+									   CStringGetDatum(lex[0] == '-' ? lex + 1 : lex),
+									   ObjectIdGetDatum(InvalidOid),
+									   Int32GetDatum(-1));
+
+	if (lex[0] == '-')
+		result = DirectFunctionCall1(interval_um, result);
+
+	return result;
+}
+
 /* interval */
 Datum rdfnode_to_interval(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum result;
 
 	if (strcmp(p.dtype, RDF_XSD_DURATION) != 0)
 		ereport(ERROR,
@@ -10362,12 +10390,7 @@ Datum rdfnode_to_interval(PG_FUNCTION_ARGS)
 				 errmsg("cannot cast RDF literal: %s to interval", p.raw),
 				 errdetail("Expected xsd:duration.")));
 
-	result = DirectFunctionCall3(interval_in,
-								 CStringGetDatum(p.lex),
-								 ObjectIdGetDatum(InvalidOid),
-								 Int32GetDatum(-1));
-
-	PG_RETURN_DATUM(result);
+	PG_RETURN_DATUM(xsd_duration_to_pg_interval(p.lex));
 }
 
 Datum rdfnode_eq_interval(PG_FUNCTION_ARGS)
@@ -10375,12 +10398,7 @@ Datum rdfnode_eq_interval(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_eq,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10393,12 +10411,7 @@ Datum rdfnode_neq_interval(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_ne,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10411,11 +10424,7 @@ Datum rdfnode_lt_interval(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_lt,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10428,11 +10437,7 @@ Datum rdfnode_le_interval(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_le,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10445,11 +10450,7 @@ Datum rdfnode_gt_interval(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_gt,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10462,11 +10463,7 @@ Datum rdfnode_ge_interval(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	Interval *val = PG_GETARG_INTERVAL_P(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_ge,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10534,7 +10531,18 @@ Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 				appendStringInfo(&buf, "%dM", abs(mins));
 
 			if (usecs != 0)
-				appendStringInfo(&buf, "%d.%06dS", abs(secs), abs(usecs));
+			{
+				/* Format fractional seconds without trailing zeros */
+				char frac[8];
+				int flen;
+
+				snprintf(frac, sizeof(frac), "%06d", abs(usecs));
+				flen = 6;
+				while (flen > 1 && frac[flen - 1] == '0')
+					flen--;
+				frac[flen] = '\0';
+				appendStringInfo(&buf, "%d.%sS", abs(secs), frac);
+			}
 			else if (secs != 0)
 				appendStringInfo(&buf, "%dS", abs(secs));
 		}
@@ -10551,12 +10559,7 @@ Datum interval_eq_rdfnode(PG_FUNCTION_ARGS)
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_eq,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10569,12 +10572,7 @@ Datum interval_neq_rdfnode(PG_FUNCTION_ARGS)
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_ne,
 												   rdf_interval,
 												   IntervalPGetDatum(val)));
@@ -10587,11 +10585,7 @@ Datum interval_lt_rdfnode(PG_FUNCTION_ARGS)
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_lt,
 												   IntervalPGetDatum(val),
 												   rdf_interval));
@@ -10604,14 +10598,11 @@ Datum interval_le_rdfnode(PG_FUNCTION_ARGS)
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_le,
 												   IntervalPGetDatum(val),
 												   rdf_interval));
+
 	PG_RETURN_BOOL(result);
 }
 
@@ -10620,11 +10611,7 @@ Datum interval_gt_rdfnode(PG_FUNCTION_ARGS)
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_gt,
 												   IntervalPGetDatum(val),
 												   rdf_interval));
@@ -10637,11 +10624,7 @@ Datum interval_ge_rdfnode(PG_FUNCTION_ARGS)
 	Interval *val = PG_GETARG_INTERVAL_P(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_interval = DirectFunctionCall3(interval_in,
-											 CStringGetDatum(p.lex),
-											 ObjectIdGetDatum(InvalidOid),
-											 Int32GetDatum(-1));
-
+	Datum rdf_interval = xsd_duration_to_pg_interval(p.lex);
 	bool result = DatumGetBool(DirectFunctionCall2(interval_ge,
 												   IntervalPGetDatum(val),
 												   rdf_interval));

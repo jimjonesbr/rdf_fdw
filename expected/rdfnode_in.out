@@ -173,7 +173,7 @@ SELECT '"foo"@EN'::rdfnode;                     -- valid; canonical form lowerca
  "foo"@en
 (1 row)
 
-SELECT '"foo"@en-us'::rdfnode;                  -- region should canonicalize to UPPER
+SELECT '"foo"@en-us'::rdfnode;                  -- subtags after the primary are stored as-is (no region canonicalization)
    rdfnode   
 -------------
  "foo"@en-us
@@ -513,13 +513,13 @@ SELECT length(repeat('a', 1000000)::rdfnode::text);            -- large literal
  1000002
 (1 row)
 
-SELECT length(sparql.strdt(repeat('a', 1000000)::rdfnode,'<http://www.w3.org/2001/XMLSchema#string>')::text); -- large literal withd data type
+SELECT length(sparql.strdt(repeat('a', 1000000)::rdfnode,'<http://www.w3.org/2001/XMLSchema#string>')::text); -- large literal with data type
  length  
 ---------
  1000045
 (1 row)
 
-SELECT length(sparql.strlang(repeat('a', 1000000)::rdfnode,'de')::text); -- large literal withd data type
+SELECT length(sparql.strlang(repeat('a', 1000000)::rdfnode,'de')::text); -- large literal with data type
  length  
 ---------
  1000005
@@ -997,9 +997,9 @@ SELECT '0.000001 seconds'::interval::rdfnode;
 (1 row)
 
 SELECT '1 minute 0.5 seconds'::interval::rdfnode;
-                           rdfnode                            
---------------------------------------------------------------
- "PT1M0.500000S"^^<http://www.w3.org/2001/XMLSchema#duration>
+                         rdfnode                         
+---------------------------------------------------------
+ "PT1M0.5S"^^<http://www.w3.org/2001/XMLSchema#duration>
 (1 row)
 
 SELECT '-1 year -2 months'::interval::rdfnode;
@@ -1027,7 +1027,11 @@ SELECT '1 year 2 months 3 days 4 hours 5 minutes 6 seconds'::interval::rdfnode::
 (1 row)
 
 SELECT '-1 year -2 months'::interval::rdfnode::interval;
-ERROR:  invalid input syntax for type interval: "-P1Y2M"
+      interval       
+---------------------
+ @ 1 year 2 mons ago
+(1 row)
+
 SELECT '5.123456 seconds'::interval::rdfnode::interval;
     interval     
 -----------------
