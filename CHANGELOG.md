@@ -47,6 +47,9 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed trailing zeros in fractional seconds of `xsd:duration` output**: `interval_to_rdfnode` was always formatting sub-second values with six decimal places (e.g., `PT1M0.500000S`). It now strips trailing zeros, producing the canonical lexical form (e.g., `PT1M0.5S`).
 
+* **Fixed `LANGMATCHES` to correctly return `false` when the language tag is empty**: Previously, `LANGMATCHES("", "*")` returned `true`, violating SPARQL 1.1 and RFC 4647 basic filtering semantics, which require `"*"` to match only non-empty language tags. This affected queries filtering untagged literals via `FILTER LANGMATCHES(LANG(?x), "*")`, which would incorrectly include
+  untagged literals in results.
+
 # 2.5
 Release date: **2026-04-20**
 

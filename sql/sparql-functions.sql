@@ -291,6 +291,16 @@ SELECT sparql.langmatches('en', '"en"');
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '');
 SELECT sparql.langmatches('', '"*"');
 SELECT sparql.langmatches('en-US', 'en');
+/* "*" must not match empty language tags */
+SELECT sparql.langmatches('', '"*"');                                     -- f
+SELECT sparql.langmatches(sparql.lang('"hello"'), '"*"');                 -- f (no lang tag)
+SELECT sparql.langmatches(sparql.lang('""'), '"*"');                      -- f (empty literal, no lang)
+SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"*"');     -- f (typed, no lang)
+/* subtag prefix matching */
+SELECT sparql.langmatches('en-Latn-US', 'en');                            -- t
+SELECT sparql.langmatches('zh-Hant-TW', 'zh');                            -- t
+SELECT sparql.langmatches('zh-Hant-TW', 'zh-Hant');                       -- t
+SELECT sparql.langmatches('zh-Hant-TW', 'zh-Hans');                       -- f
 
 /* ISBLANK */
 SELECT sparql.isblank('_:b1');

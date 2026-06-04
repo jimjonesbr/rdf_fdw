@@ -1465,7 +1465,7 @@ SELECT sparql.langmatches(sparql.lang('"hello"'), '"en"');
 SELECT sparql.langmatches(sparql.lang('"hello"'), '"*"');
  langmatches 
 -------------
- t
+ f
 (1 row)
 
 SELECT sparql.langmatches(sparql.lang('""@en'), '"en"');
@@ -1477,7 +1477,7 @@ SELECT sparql.langmatches(sparql.lang('""@en'), '"en"');
 SELECT sparql.langmatches(sparql.lang('""'), '"*"');
  langmatches 
 -------------
- t
+ f
 (1 row)
 
 SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"en"');
@@ -1489,7 +1489,7 @@ SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"en"');
 SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"*"');
  langmatches 
 -------------
- t
+ f
 (1 row)
 
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en"^^xsd:string');
@@ -1531,13 +1531,63 @@ SELECT sparql.langmatches(sparql.lang('"hello"@en'), '');
 SELECT sparql.langmatches('', '"*"');
  langmatches 
 -------------
- t
+ f
 (1 row)
 
 SELECT sparql.langmatches('en-US', 'en');
  langmatches 
 -------------
  t
+(1 row)
+
+/* "*" must not match empty language tags */
+SELECT sparql.langmatches('', '"*"');                                     -- f
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT sparql.langmatches(sparql.lang('"hello"'), '"*"');                 -- f (no lang tag)
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT sparql.langmatches(sparql.lang('""'), '"*"');                      -- f (empty literal, no lang)
+ langmatches 
+-------------
+ f
+(1 row)
+
+SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"*"');     -- f (typed, no lang)
+ langmatches 
+-------------
+ f
+(1 row)
+
+/* subtag prefix matching */
+SELECT sparql.langmatches('en-Latn-US', 'en');                            -- t
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('zh-Hant-TW', 'zh');                            -- t
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('zh-Hant-TW', 'zh-Hant');                       -- t
+ langmatches 
+-------------
+ t
+(1 row)
+
+SELECT sparql.langmatches('zh-Hant-TW', 'zh-Hans');                       -- f
+ langmatches 
+-------------
+ f
 (1 row)
 
 /* ISBLANK */

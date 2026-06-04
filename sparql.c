@@ -945,79 +945,65 @@ bool langmatches(char *lang_tag, char *pattern)
 {
     char *tag;
     char *pat;
-    bool result;
+    bool  result;
 
     elog(DEBUG3, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag, pattern);
 
-    /* Handle NULL inputs */
     if (!lang_tag || !pattern)
     {
-        elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (NULL input)", __func__);
         return false;
     }
 
-    pattern = lex(pattern);
-    tag = lex(lang_tag); /* e.g., "en" from lang('"foo"@en') */
+    tag = lex(lang_tag);
+    pat = lex(pattern);
 
-    /* this shouldn't happen */
-    Assert(pattern != NULL);
     Assert(tag != NULL);
+    Assert(pat != NULL);
 
-    /* Handle pattern: bare string or quoted literal */
-    if (pattern[0] == '"' && strrchr(pattern, '"') > pattern)
-        pat = lex(pattern); /* e.g., "\"en\"" -> "en" */
-    else
-        pat = pattern; /* e.g., "en" as-is */
-
-    /* Empty tag only matches "*" pattern (case-insensitive) */
+    /*
+     * Per SPARQL 1.1 spec and RFC 4647 basic filtering:
+     * "*" matches any NON-EMPTY language tag. An empty tag (from a literal
+     * with no language tag) never matches anything, including "*".
+     */
     if (strlen(tag) == 0)
     {
-        result = (strcasecmp(pat, "*") == 0);
-        elog(DEBUG3, "%s exit: returning '%s' (empty tag, pattern='%s')",
-             __func__, result ? "true" : "false", pat);
-        return result;
+        elog(DEBUG3, "%s exit: returning 'false' (empty tag)", __func__);
+        return false;
     }
 
-    /* Exact match (case-insensitive) */
-    if (strcasecmp(tag, pat) == 0)
+    /* "*" matches any non-empty tag */
+    if (strcasecmp(pat, "*") == 0)
     {
         result = true;
     }
-    /* Wildcard match: "*" matches any non-empty tag */
-    else if (strcasecmp(pat, "*") == 0)
+    /* Exact match (case-insensitive), e.g. "en" matches "en", "EN-US" matches "en-us" */
+    else if (strcasecmp(tag, pat) == 0)
     {
         result = true;
     }
-    /* SPARQL rule: prefix match with hyphen, e.g. "en" matches "en-US" */
+    /*
+     * Prefix subtag match per RFC 4647 basic filtering:
+     * pattern "en" matches tag "en-US", "en-Latn-US", etc.
+     * The tag must start with the pattern followed by '-'.
+     */
     else if (strncasecmp(tag, pat, strlen(pat)) == 0 &&
              tag[strlen(pat)] == '-')
     {
         result = true;
     }
-    /* Prefix match with wildcard (e.g., "en-*" matches "en" or "en-us") */
-    else if (strchr(pat, '*'))
+    /*
+     * Wildcard suffix pattern, e.g. "en-*" matches "en" and "en-US".
+     * Strip the trailing "-*" and match the prefix.
+     */
+    else if (strlen(pat) >= 2 &&
+             pat[strlen(pat) - 1] == '*' &&
+             pat[strlen(pat) - 2] == '-')
     {
-        char *prefix_end = strchr(pat, '*');
-        size_t prefix_len = prefix_end - pat;
-        size_t tag_len = strlen(tag);
+        size_t prefix_len = strlen(pat) - 2; /* length of "en" in "en-*" */
 
-        if (prefix_len > 0 && tag_len >= (prefix_len - 1) &&
-            strncasecmp(tag, pat, prefix_len - 1) == 0)
-        {
-            if (tag_len == prefix_len - 1 ||
-                (tag_len > prefix_len && tag[prefix_len - 1] == '-' && prefix_end[1] == '\0'))
-            {
-                result = true;
-            }
-            else
-            {
-                result = false;
-            }
-        }
-        else
-        {
-            result = false;
-        }
+        result = (strncasecmp(tag, pat, prefix_len) == 0 &&
+                  (tag[prefix_len] == '\0' || tag[prefix_len] == '-'));
     }
     else
     {
