@@ -50,6 +50,8 @@ Release date: **YYYY-MM-DD**
 * **Fixed `LANGMATCHES` to correctly return `false` when the language tag is empty**: Previously, `LANGMATCHES("", "*")` returned `true`, violating SPARQL 1.1 and RFC 4647 basic filtering semantics, which require `"*"` to match only non-empty language tags. This affected queries filtering untagged literals via `FILTER LANGMATCHES(LANG(?x), "*")`, which would incorrectly include
   untagged literals in results.
 
+* **Fixed `SECONDS()` return type and value**: the `text` overload was incorrectly declared as returning `int` instead of `numeric`, causing fractional seconds to be truncated. Additionally, timezone-aware `xsd:dateTime` values were returning the wrong seconds value due to implicit session timezone adjustment during timestamp casting; the lexical form is now cast to `timestamptz` to preserve the correct component.
+
 # 2.5
 Release date: **2026-04-20**
 
