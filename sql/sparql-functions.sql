@@ -83,6 +83,7 @@ SELECT sparql.lang(NULL);
 SELECT sparql.lang('<http://example.org>'); 
 
 /* DATATYPE */
+SELECT sparql.datatype('foo');
 SELECT sparql.datatype('"foo"^^xsd:string');
 SELECT sparql.datatype('"foo"^^<http://www.w3.org/2001/XMLSchema#string>');
 SELECT sparql.datatype(sparql.strdt('foo','xsd:string'));
@@ -222,6 +223,7 @@ SELECT sparql.strbefore('"abc"', '');
 SELECT sparql.strbefore('', 'xyz');
 SELECT sparql.strbefore('', '');
 SELECT sparql.strbefore('""','""');
+SELECT sparql.strbefore('"abc"', '"b"^^xsd:integer');
 
 /* STRAFTER */
 SELECT sparql.strafter('"abc"','"b"');
@@ -451,6 +453,11 @@ SELECT sparql.substr('"foo"', NULL);
 SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"@de'::rdfnode, 1, 24);
 SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"'::rdfnode, 1, 24);
 SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode, 1, 24);
+SELECT sparql.substr('"foobar"', 0);       -- SPARQL is 1-indexed; pos 0 is defined as "" or same as pos 1 per XPath
+SELECT sparql.substr('"foobar"', 1, 0);    -- zero-length -> ""
+SELECT sparql.substr('"foobar"', 10);      -- beyond length -> ""
+SELECT sparql.substr('"foobar"', 2, 100);  -- length beyond string end -> "oobar"
+SELECT sparql.substr('"foobar"', NULL, 3); -- NULL arg
 
 /* CONCAT */
 SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');
@@ -469,6 +476,8 @@ SELECT sparql.concat('"foo"^^xsd:string','"&"^^xsd:string', NULL);
 SELECT sparql.concat('"foo"@en','"bar"@de');
 SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"^^<http://www.w3.org/2001/XMLSchema#string>');
 SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"');
+SELECT sparql.concat('"foo"@en', '"bar"@de');
+SELECT sparql.concat('"a"@en', '"b"@en', '"c"@fr');  -- should be "abc" (plain, not @en)
 
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
@@ -585,6 +594,8 @@ SELECT sparql.year('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.year('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::timestamp);
+SELECT sparql.year(NULL);
+
 
 /* MONTH */
 SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -592,6 +603,7 @@ SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.month('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::timestamp);
+SELECT sparql.month(NULL);
 
 /* DAYS */
 SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -599,6 +611,7 @@ SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"');
 SELECT sparql.day('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::timestamp);
+SELECT sparql.day(NULL);
 
 /* HOURS */
 SELECT sparql.hours('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -607,6 +620,7 @@ SELECT sparql.hours('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.hours('2011-01-10T14:45:13.815-05:00'::timestamp);
 SELECT sparql.hours('14:45:13'::time);
+SELECT sparql.hours(NULL);
 
 /* MINUTES */
 SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -615,6 +629,7 @@ SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00');
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::date);
 SELECT sparql.minutes('2011-01-10T14:45:13.815-05:00'::timestamp);
 SELECT sparql.minutes('14:45:13'::time);
+SELECT sparql.minutes(NULL);
 
 /* SECONDS */
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
@@ -623,6 +638,7 @@ SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::timestamp),3);
 SELECT pg_catalog.round(sparql.seconds('14:45:13.815'::time),3);
+SELECT sparql.seconds(NULL);
 
 /* TIMEZONE */
 SELECT sparql.timezone('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
@@ -667,6 +683,10 @@ SELECT sparql.sameterm('"abc"', '"abc"');
 SELECT sparql.sameterm('"abc"@en', '"abc"@en');
 SELECT sparql.sameterm('"abc"@en', '"abc"');
 SELECT sparql.sameterm('"abc"^^xsd:string', '"abc"');
+SELECT sparql.sameterm('<http://example.org>', '<http://example.org>');   -- t (IRIs)
+SELECT sparql.sameterm('_:b1', '_:b1');  -- t (same blank node label)
+SELECT sparql.sameterm('_:b1', '_:b2');  -- f (different labels)
+SELECT sparql.sameterm('"1"^^xsd:integer', '"01"^^xsd:integer');  -- f (different lexical form)
 SELECT sparql.sameterm(NULL, '"abc"');
 SELECT sparql.sameterm(NULL, NULL);
 
@@ -694,3 +714,7 @@ SELECT sparql.md5('""');
 SELECT sparql.md5(NULL);
 SELECT sparql.md5('"Münster"');
 SELECT sparql.md5(repeat('a', 10000));
+
+/* RAND */
+SELECT sparql.rand() >= 0 AND sparql.rand() < 1;  -- should be t
+SELECT sparql.rand() != sparql.rand();            -- should be t (very low probability of being f)  

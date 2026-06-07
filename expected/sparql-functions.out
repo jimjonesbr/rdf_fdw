@@ -399,6 +399,12 @@ SELECT sparql.lang('<http://example.org>');
 (1 row)
 
 /* DATATYPE */
+SELECT sparql.datatype('foo');
+                 datatype                  
+-------------------------------------------
+ <http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
 SELECT sparql.datatype('"foo"^^xsd:string');
                  datatype                  
 -------------------------------------------
@@ -1161,6 +1167,12 @@ SELECT sparql.strbefore('""','""');
  strbefore 
 -----------
  ""
+(1 row)
+
+SELECT sparql.strbefore('"abc"', '"b"^^xsd:integer');
+ strbefore 
+-----------
+ NULL
 (1 row)
 
 /* STRAFTER */
@@ -2340,6 +2352,32 @@ SELECT sparql.substr('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http:
  "łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
+SELECT sparql.substr('"foobar"', 0);       -- SPARQL is 1-indexed; pos 0 is defined as "" or same as pos 1 per XPath
+ERROR:  SUBSTR start position must be >= 1
+SELECT sparql.substr('"foobar"', 1, 0);    -- zero-length -> ""
+ substr 
+--------
+ ""
+(1 row)
+
+SELECT sparql.substr('"foobar"', 10);      -- beyond length -> ""
+ substr 
+--------
+ ""
+(1 row)
+
+SELECT sparql.substr('"foobar"', 2, 100);  -- length beyond string end -> "oobar"
+ substr  
+---------
+ "oobar"
+(1 row)
+
+SELECT sparql.substr('"foobar"', NULL, 3); -- NULL arg
+ substr 
+--------
+ NULL
+(1 row)
+
 /* CONCAT */
 SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');
   concat  |  concat  
@@ -2435,6 +2473,18 @@ SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"');
   concat  
 ----------
  "foobar"
+(1 row)
+
+SELECT sparql.concat('"foo"@en', '"bar"@de');
+  concat  
+----------
+ "foobar"
+(1 row)
+
+SELECT sparql.concat('"a"@en', '"b"@en', '"c"@fr');  -- should be "abc" (plain, not @en)
+ concat 
+--------
+ "abc"
 (1 row)
 
   /* REPLACE */
@@ -3009,6 +3059,12 @@ SELECT sparql.year('2011-01-10T14:45:13.815-05:00'::timestamp);
  2011
 (1 row)
 
+SELECT sparql.year(NULL);
+ year 
+------
+ NULL
+(1 row)
+
 /* MONTH */
 SELECT sparql.month('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
  month 
@@ -3040,6 +3096,12 @@ SELECT sparql.month('2011-01-10T14:45:13.815-05:00'::timestamp);
      1
 (1 row)
 
+SELECT sparql.month(NULL);
+ month 
+-------
+  NULL
+(1 row)
+
 /* DAYS */
 SELECT sparql.day('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
  day 
@@ -3069,6 +3131,12 @@ SELECT sparql.day('2011-01-10T14:45:13.815-05:00'::timestamp);
  day 
 -----
   10
+(1 row)
+
+SELECT sparql.day(NULL);
+ day  
+------
+ NULL
 (1 row)
 
 /* HOURS */
@@ -3108,6 +3176,12 @@ SELECT sparql.hours('14:45:13'::time);
     14
 (1 row)
 
+SELECT sparql.hours(NULL);
+ hours 
+-------
+  NULL
+(1 row)
+
 /* MINUTES */
 SELECT sparql.minutes('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
  minutes 
@@ -3145,23 +3219,29 @@ SELECT sparql.minutes('14:45:13'::time);
       45
 (1 row)
 
+SELECT sparql.minutes(NULL);
+ minutes 
+---------
+    NULL
+(1 row)
+
 /* SECONDS */
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime'),3);
  round  
 --------
- 14.000
+ 13.815
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('"2011-01-10T14:45:13.815-05:00"'),3);
  round  
 --------
- 14.000
+ 13.815
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'),3);
  round  
 --------
- 14.000
+ 13.815
 (1 row)
 
 SELECT pg_catalog.round(sparql.seconds('2011-01-10T14:45:13.815-05:00'::date),3);
@@ -3180,6 +3260,12 @@ SELECT pg_catalog.round(sparql.seconds('14:45:13.815'::time),3);
  round  
 --------
  13.815
+(1 row)
+
+SELECT sparql.seconds(NULL);
+ seconds 
+---------
+    NULL
 (1 row)
 
 /* TIMEZONE */
@@ -3358,6 +3444,30 @@ SELECT sparql.sameterm('"abc"^^xsd:string', '"abc"');
  f
 (1 row)
 
+SELECT sparql.sameterm('<http://example.org>', '<http://example.org>');   -- t (IRIs)
+ sameterm 
+----------
+ t
+(1 row)
+
+SELECT sparql.sameterm('_:b1', '_:b1');  -- t (same blank node label)
+ sameterm 
+----------
+ t
+(1 row)
+
+SELECT sparql.sameterm('_:b1', '_:b2');  -- f (different labels)
+ sameterm 
+----------
+ f
+(1 row)
+
+SELECT sparql.sameterm('"1"^^xsd:integer', '"01"^^xsd:integer');  -- f (different lexical form)
+ sameterm 
+----------
+ f
+(1 row)
+
 SELECT sparql.sameterm(NULL, '"abc"');
  sameterm 
 ----------
@@ -3496,5 +3606,18 @@ SELECT sparql.md5(repeat('a', 10000));
                 md5                 
 ------------------------------------
  "0d0c9c4db6953fee9e03f528cafd7d3e"
+(1 row)
+
+/* RAND */
+SELECT sparql.rand() >= 0 AND sparql.rand() < 1;  -- should be t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT sparql.rand() != sparql.rand();            -- should be t (very low probability of being f)  
+ ?column? 
+----------
+ t
 (1 row)
 
