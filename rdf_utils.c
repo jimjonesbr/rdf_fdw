@@ -795,14 +795,17 @@ Const *CStringToConst(const char *str)
  */
 char *rdfnode_to_cstring(rdfnode *node)
 {
+	char *data;
+	int len;
+	char *result;
 	Assert(node != NULL);
 
 	/* Get a pointer to the actual data and its length */
-	char *data = VARDATA_ANY(node);
-	int len = VARSIZE_ANY_EXHDR(node);
+	data = VARDATA_ANY(node);
+	len = VARSIZE_ANY_EXHDR(node);
 
 	/* Allocate a null-terminated C string */
-	char *result = palloc(len + 1);
+	result = palloc(len + 1);
 	memcpy(result, data, len);
 	result[len] = '\0';
 
@@ -1331,13 +1334,15 @@ char *str_replace(const char *source, const char *search, const char *replace)
 	StringInfoData result;
 	const char *pos = source;
 	const char *found;
+	size_t search_len;
+	size_t replace_len;
 
 	Assert(source != NULL);
 	Assert(search != NULL);
 	Assert(replace != NULL);
 
-	size_t search_len = strlen(search);
-	size_t replace_len = strlen(replace);
+	search_len = strlen(search);
+	replace_len = strlen(replace);
 
 	initStringInfo(&result);
 
