@@ -57,6 +57,8 @@ static const TypeXSDMap type_map[] = {
  */
 bool ContainsWhitespaces(char *str)
 {
+	Assert(str != NULL);
+
 	elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
 	for (int i = 0; str[i] != '\0'; i++)
@@ -83,6 +85,8 @@ bool is_valid_language_tag(const char *lan)
 	bool is_valid = false;
 	const char *pattern = "^[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*$";
 
+	Assert(lan != NULL);
+
 	reti = regcomp(&regex, pattern, REG_EXTENDED);
 
 	if (reti)
@@ -105,6 +109,8 @@ bool is_valid_language_tag(const char *lan)
  */
 bool isPlainLiteral(char *literal)
 {
+	Assert(literal != NULL);
+
 	if (strlen(lang(literal)) != 0 || strlen(datatype(literal)) != 0)
 		return false;
 
@@ -134,18 +140,15 @@ bool LiteralsCompatible(char *literal1, char *literal2)
 	char *dt1;
 	char *dt2;
 
+	Assert(literal1 != NULL);
+	Assert(literal2 != NULL);
+
 	elog(DEBUG3, "%s called: literal1='%s', literal2='%s'", __func__, literal1, literal2);
 
 	lang1 = lang(literal1);
 	lang2 = lang(literal2);
 	dt1 = datatype(literal1);
 	dt2 = datatype(literal2);
-
-	if (!literal1 || !literal2)
-	{
-		elog(DEBUG3, "%s exit: returning 'false' (one of the arguments is NULL)", __func__);
-		return false;
-	}
 
 	/*TODO: check if RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED is needed, as the prefix is expaded elsewhere */
 
@@ -200,15 +203,15 @@ char *cstring_to_rdfliteral(char *input)
 
 	elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
-	/* return the string as-is if the input is an IRI or blank node */
-	if (isIRI(input) || isBlank(input))
-		return input;
-
 	if (!input || strlen(input) == 0)
 	{
 		elog(DEBUG3, "%s exit: returning empty literal '\"\"'", __func__);
 		return "\"\""; /* empty input becomes empty literal */
 	}
+
+	/* return the string as-is if the input is an IRI or blank node */
+	if (isIRI(input) || isBlank(input))
+		return input;
 
 	start = input;
 	len = strlen(start);
@@ -409,6 +412,9 @@ void pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 char *unescape_unicode(const char *input)
 {
 	StringInfoData buf;
+
+	Assert(input != NULL);
+
 	initStringInfo(&buf);
 
 	elog(DEBUG2, "%s: Input='%s'", __func__, input);
@@ -551,6 +557,8 @@ char *unescape_unicode(const char *input)
 bool IsFunctionPushable(char *funcname)
 {
 	bool result;
+
+	Assert(funcname != NULL);
 
 	elog(DEBUG3, "%s called: funcname='%s'", __func__, funcname);
 
@@ -713,6 +721,8 @@ char *FormatSQLExtractField(char *field)
 {
 	char *res;
 
+	Assert(field != NULL);
+
 	elog(DEBUG3, "%s called: field='%s'", __func__, field);
 
 	if (strcasecmp(field, "year") == 0 || strcasecmp(field, "years") == 0)
@@ -748,6 +758,8 @@ char *FormatSQLExtractField(char *field)
  */
 char *ConstToCString(Const *constant)
 {
+	Assert(constant != NULL);
+
 	if (constant->constisnull)
 		return NULL;
 	else
@@ -783,6 +795,8 @@ Const *CStringToConst(const char *str)
  */
 char *rdfnode_to_cstring(rdfnode *node)
 {
+	Assert(node != NULL);
+
 	/* Get a pointer to the actual data and its length */
 	char *data = VARDATA_ANY(node);
 	int len = VARSIZE_ANY_EXHDR(node);
@@ -843,6 +857,8 @@ bool IsStringDataType(Oid type)
  */
 bool IsSPARQLVariableValid(const char *str)
 {
+	Assert(str != NULL);
+
 	elog(DEBUG3, "%s called: str='%s'", __func__, str);
 
 	if (str[0] != '?' && str[0] != '$')
@@ -878,6 +894,10 @@ bool IsSPARQLParsable(struct RDFfdwState *state)
 {
 	int keyword_count = 0;
 	bool result;
+
+	Assert(state != NULL);
+	Assert(state->raw_sparql != NULL);
+
 	elog(DEBUG3, "%s called", __func__);
 	/*
 	 * SPARQL Queries containing SUB SELECTS are not supported. So, if any number
@@ -914,6 +934,8 @@ bool IsExpressionPushable(char *expression)
 	char *open = " \n(";
 	char *close = " \n(";
 	bool result;
+
+	Assert(expression != NULL);
 
 	elog(DEBUG3, "%s called: expression='%s'", __func__, expression);
 
@@ -1049,6 +1071,8 @@ int CheckURL(char *url)
 	CURLUcode code;
 	CURLU *handler = curl_url();
 
+	Assert(url != NULL);
+
 	elog(DEBUG3, "%s called: '%s'", __func__, url);
 
 	code = curl_url_set(handler, CURLUPART_URL, url, 0);
@@ -1088,8 +1112,13 @@ int CheckURL(char *url)
 void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 {
 	const char *pos;
-	const char *pattern = state->sparql_update_pattern;
+	const char *pattern;
 	bool has_triple = false;
+
+	Assert(state != NULL);
+	Assert(state->sparql_update_pattern != NULL);
+
+	pattern = state->sparql_update_pattern;
 
 	/* Check for at least one valid triple pattern (must have at least 3 components) */
 	{
@@ -1302,6 +1331,11 @@ char *str_replace(const char *source, const char *search, const char *replace)
 	StringInfoData result;
 	const char *pos = source;
 	const char *found;
+
+	Assert(source != NULL);
+	Assert(search != NULL);
+	Assert(replace != NULL);
+
 	size_t search_len = strlen(search);
 	size_t replace_len = strlen(replace);
 
