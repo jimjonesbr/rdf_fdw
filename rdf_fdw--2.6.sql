@@ -3233,33 +3233,38 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION sparql.tz(lit rdfnode)
 RETURNS rdfnode AS $$
 DECLARE
-  lexical text := sparql.lex(lit);
-  tz_offset text;
+  lexical    text := sparql.lex(lit);
+  tz_offset  text;
+  hh         int;
+  mm         int;
 BEGIN
-  -- Extract the timezone part: ±HH:MM or Z at the end of the string
   tz_offset := substring(lexical from '([-+]\d{2}:\d{2}|Z)$');
 
   IF tz_offset IS NULL THEN
-    -- Return an empty string or raise an error based on your requirements
     RAISE EXCEPTION 'TZ(): datetime has no timezone';
   END IF;
 
-  -- If the timezone is 'Z', return 'Z'
   IF tz_offset = 'Z' THEN
-    RETURN 'Z';
+    RETURN '"Z"';
   END IF;
 
-  -- Otherwise, return the timezone offset ±HH:MM
-  RETURN tz_offset;
+  hh := abs(substring(tz_offset from 2 for 2)::int);
+  mm := substring(tz_offset from 5 for 2)::int;
+
+  IF hh > 14 OR mm > 59 OR (hh = 14 AND mm > 0) THEN
+    RAISE EXCEPTION 'TZ(): invalid timezone offset: %', tz_offset;
+  END IF;
+
+  RETURN '"' || tz_offset || '"';
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION sparql.tz(text)
 RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.tz($1::rdfnode);
 END;
-$$ LANGUAGE plpgsql STABLE STRICT;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 /* SPARQL 17.4.6 Hash Functions */
 CREATE FUNCTION sparql.md5(rdfnode) RETURNS rdfnode
