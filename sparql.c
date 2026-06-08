@@ -198,7 +198,7 @@ char *lang(char *input)
         return "";
 
     lexical_form = lex(input);
-    Assert(lexical_form != NULL); /* this shouldn't happen */
+    Assert(lexical_form != NULL);
 
     ptr = input;
 
@@ -468,7 +468,6 @@ char *strdt(char *literal, char *datatype)
 
     lex_datatype = lex(datatype);
 
-    /* this shouldn't happen */
     Assert(lex_datatype != NULL);
 
     elog(DEBUG3, "%s called: literal='%s', datatype='%s'", __func__, literal, datatype);
@@ -1046,7 +1045,6 @@ char *datatype(char *input)
 
     ptr = cstring_to_rdfliteral(input);
 
-    /* this shouldn't happen */
     Assert(ptr != NULL);
 
     len = strlen(ptr);
@@ -1713,7 +1711,6 @@ char *strbefore(char *str, char *delimiter)
     delimiter_lexical = lex(delimiter);
     lang1 = lang(str);
 
-    /* this shouldn't happen */
     Assert(str_lexical != NULL);
     Assert(delimiter_lexical != NULL);
     Assert(lang1 != NULL);
@@ -1827,7 +1824,6 @@ char *strafter(char *str, char *delimiter)
     lexdelimiter = lex(delimiter);
     lang1 = lang(str);
 
-    /* this shouldn't happen */
     Assert(lexstr != NULL);
     Assert(lexdelimiter != NULL);
     Assert(lang1 != NULL);

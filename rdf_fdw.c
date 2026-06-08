@@ -1000,7 +1000,7 @@ Datum rdf_fdw_datatype(PG_FUNCTION_ARGS)
 
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("Unsupported input type for rdf_fdw_datatype: %u", argtype)));
+				 errmsg("unsupported input type for rdf_fdw_datatype: %u", argtype)));
 	}
 }
 
@@ -1489,7 +1489,7 @@ static Datum CreateDatum(int pgtype, int pgtypmod, char *value)
 	if (!HeapTupleIsValid(tuple))
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-				 errmsg("cache lookup failed for type %u (osm_id)", pgtype)));
+				 errmsg("unknown PostgreSQL type OID %u", pgtype)));
 
 	typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
 	ReleaseSysCache(tuple);
@@ -7680,7 +7680,7 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 			/* Expect and skip ':' */
 			if (p >= end_prefixes || sparql[p] != ':')
 				ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								errmsg("Malformed PREFIX: expected ':' after prefix label")));
+								errmsg("malformed PREFIX: expected ':' after prefix label")));
 			p++;
 
 			/* Skip whitespace after ':' */
@@ -7690,7 +7690,7 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 			/* Expect '<' */
 			if (p >= end_prefixes || sparql[p] != '<')
 				ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								errmsg("Malformed PREFIX: expected '<' before URI")));
+								errmsg("malformed PREFIX: expected '<' before URI")));
 			p++;
 
 			/* Read URI up to '>' */
@@ -7703,7 +7703,7 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 
 			if (p >= end_prefixes || sparql[p] != '>')
 				ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								errmsg("Malformed PREFIX: unterminated URI")));
+								errmsg("malformed PREFIX: unterminated URI")));
 			p++; /* Skip '>' */
 
 			/* Store the prefix */
