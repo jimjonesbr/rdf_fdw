@@ -74,10 +74,10 @@ SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode > '"2025-04-25T12:00
  f
 (1 row)
 
-SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode > '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Error or defined behavior
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode > '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Incomparable (mixed timezone), returns f
  ?column? 
 ----------
- t
+ f
 (1 row)
 
 -- String and simple literals

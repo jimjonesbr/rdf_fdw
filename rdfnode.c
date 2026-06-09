@@ -31,6 +31,32 @@
 #include <string.h>
 
 /*
+ * datetime_has_tz
+ * ---------------
+ * Returns true if the XSD dateTime lexical form contains a timezone designator
+ * (Z, +HH:MM, or -HH:MM). The search is restricted to the portion of the
+ * string after the 'T' (or space) date/time separator so that the '-'
+ * characters in the date portion (e.g. 2025-04-25) are not mistaken for
+ * a timezone offset.
+ */
+static bool
+datetime_has_tz(const char *lex)
+{
+	const char *sep = strchr(lex, 'T');
+
+	if (sep == NULL)
+		sep = strchr(lex, ' ');   /* accept space-separated variant */
+	if (sep == NULL)
+		return false;
+
+	/* After the separator the time part uses only digits and ':', so any
+	 * 'Z', '+', or '-' that follows must be a timezone designator. */
+	return strchr(sep, 'Z') != NULL ||
+		   strchr(sep, '+') != NULL ||
+		   strchr(sep, '-') != NULL;
+}
+
+/*
  * rdfnode_eq
  * ----------
  * Returns true if two rdfnode values are SPARQL-equal.
@@ -158,14 +184,35 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 
 	if (a.isDateTime && b.isDateTime)
 	{
-		Datum a_val = DirectFunctionCall3(timestamptz_in, CStringGetDatum(a.lex),
-									ObjectIdGetDatum(InvalidOid),
-									Int32GetDatum(-1));
-		Datum b_val = DirectFunctionCall3(timestamptz_in, CStringGetDatum(b.lex),
-									ObjectIdGetDatum(InvalidOid),
-									Int32GetDatum(-1));
-		return timestamptz_cmp_internal(DatumGetTimestampTz(a_val),
-										DatumGetTimestampTz(b_val)) == 0;
+		bool a_has_tz = datetime_has_tz(a.lex);
+		bool b_has_tz = datetime_has_tz(b.lex);
+
+		/*
+		 * Per XSD §3.2.7.4 / SPARQL 1.1 §17.3: a timezone-aware dateTime and
+		 * a timezone-naive one are not equal (incomparable value spaces).
+		 */
+		if (a_has_tz != b_has_tz)
+			return false;
+
+		if (a_has_tz)
+		{
+			/* Both timezone-aware: normalise to UTC and compare. */
+			Datum a_val = DirectFunctionCall3(timestamptz_in, CStringGetDatum(a.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timestamptz_in, CStringGetDatum(b.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return timestamptz_cmp_internal(DatumGetTimestampTz(a_val),
+											DatumGetTimestampTz(b_val)) == 0;
+		}
+		else
+		{
+			/* Both timezone-naive: compare without any TZ conversion. */
+			Datum a_val = DirectFunctionCall3(timestamp_in, CStringGetDatum(a.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timestamp_in, CStringGetDatum(b.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timestamp_eq, a_val, b_val));
+		}
 	}
 
 	if (a.isDuration && b.isDuration)
@@ -261,26 +308,33 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
-		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
-							  strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
-							  strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_tz1 = datetime_has_tz(rdfnode1.lex);
+		bool has_tz2 = datetime_has_tz(rdfnode2.lex);
 
-		/* If either literal lacks a timezone, they are incomparable */
-		if (!has_timezone1 || !has_timezone2)
+		/* Mixed timezone: per SPARQL 1.1 §17.3, incomparable. */
+		if (has_tz1 != has_tz2)
 			return false;
 
-		/* Proceed with timestamp comparison */
-		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode1.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode2.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		return timestamptz_cmp_internal(arg1, arg2) >= 0;
+		if (has_tz1)
+		{
+			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode1.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode2.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			return timestamptz_cmp_internal(arg1, arg2) >= 0;
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timestamp_ge, arg1, arg2));
+		}
 	}
 
 	/* xsd:time literals */
@@ -381,26 +435,33 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
-		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
-							  strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
-							  strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_tz1 = datetime_has_tz(rdfnode1.lex);
+		bool has_tz2 = datetime_has_tz(rdfnode2.lex);
 
-		/* If either literal lacks a timezone, they are incomparable */
-		if (!has_timezone1 || !has_timezone2)
+		/* Mixed timezone: per SPARQL 1.1 §17.3, incomparable. */
+		if (has_tz1 != has_tz2)
 			return false;
 
-		/* Proceed with timestamp comparison */
-		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode1.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode2.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		return timestamptz_cmp_internal(arg1, arg2) <= 0;
+		if (has_tz1)
+		{
+			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode1.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode2.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			return timestamptz_cmp_internal(arg1, arg2) <= 0;
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timestamp_le, arg1, arg2));
+		}
 	}
 
 	/* xsd:time literals */
@@ -501,26 +562,33 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	/* xsd:dateTime literals */
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
-		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
-							  strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
-							  strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_tz1 = datetime_has_tz(rdfnode1.lex);
+		bool has_tz2 = datetime_has_tz(rdfnode2.lex);
 
-		/* If either literal lacks a timezone, they are incomparable */
-		if (!has_timezone1 || !has_timezone2)
+		/* Mixed timezone: per SPARQL 1.1 §17.3, incomparable. */
+		if (has_tz1 != has_tz2)
 			return false;
 
-		/* Proceed with timestamp comparison */
-		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode1.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode2.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		return timestamptz_cmp_internal(arg1, arg2) > 0;
+		if (has_tz1)
+		{
+			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode1.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode2.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			return timestamptz_cmp_internal(arg1, arg2) > 0;
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timestamp_gt, arg1, arg2));
+		}
 	}
 
 	/* xsd:time literals */
@@ -622,26 +690,33 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	/* xsd:dateTime literals */
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
-		/* Check if either literal lacks a timezone */
-		bool has_timezone1 = (strstr(rdfnode1.lex, "Z") != NULL ||
-							  strpbrk(rdfnode1.lex, "+-") != NULL);
-		bool has_timezone2 = (strstr(rdfnode2.lex, "Z") != NULL ||
-							  strpbrk(rdfnode2.lex, "+-") != NULL);
+		bool has_tz1 = datetime_has_tz(rdfnode1.lex);
+		bool has_tz2 = datetime_has_tz(rdfnode2.lex);
 
-		/* If either literal lacks a timezone, they are incomparable */
-		if (!has_timezone1 || !has_timezone2)
+		/* Mixed timezone: per SPARQL 1.1 §17.3, incomparable. */
+		if (has_tz1 != has_tz2)
 			return false;
 
-		/* Proceed with timestamp comparison */
-		arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode1.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													   CStringGetDatum(rdfnode2.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-		return timestamptz_cmp_internal(arg1, arg2) < 0;
+		if (has_tz1)
+		{
+			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode1.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+														   CStringGetDatum(rdfnode2.lex),
+														   ObjectIdGetDatum(InvalidOid),
+														   Int32GetDatum(-1)));
+			return timestamptz_cmp_internal(arg1, arg2) < 0;
+		}
+		else
+		{
+			arg1 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode1.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			arg2 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode2.lex),
+									   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timestamp_lt, arg1, arg2));
+		}
 	}
 
 	/* xsd:time literals */
@@ -855,17 +930,34 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 	/* xsd:dateTime literals */
 	if (rdfnode1.isDateTime && rdfnode2.isDateTime)
 	{
-		TimestampTz ts1, ts2;
+		bool has_tz1 = datetime_has_tz(rdfnode1.lex);
+		bool has_tz2 = datetime_has_tz(rdfnode2.lex);
 
-		ts1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													  CStringGetDatum(rdfnode1.lex),
-													  ObjectIdGetDatum(InvalidOid),
-													  Int32GetDatum(-1)));
-		ts2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-													  CStringGetDatum(rdfnode2.lex),
-													  ObjectIdGetDatum(InvalidOid),
-													  Int32GetDatum(-1)));
-		return timestamptz_cmp_internal(ts1, ts2);
+		if (has_tz1 && has_tz2)
+		{
+			TimestampTz ts1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+												  CStringGetDatum(rdfnode1.lex),
+												  ObjectIdGetDatum(InvalidOid),
+												  Int32GetDatum(-1)));
+			TimestampTz ts2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+												  CStringGetDatum(rdfnode2.lex),
+												  ObjectIdGetDatum(InvalidOid),
+												  Int32GetDatum(-1)));
+			return timestamptz_cmp_internal(ts1, ts2);
+		}
+		else if (!has_tz1 && !has_tz2)
+		{
+			Datum d1 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode1.lex),
+										   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum d2 = DirectFunctionCall3(timestamp_in, CStringGetDatum(rdfnode2.lex),
+										   ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetInt32(DirectFunctionCall2(timestamp_cmp, d1, d2));
+		}
+		else
+		{
+			/* Mixed: timezone-aware sorts after timezone-naive for a stable order. */
+			return has_tz1 ? 1 : -1;
+		}
 	}
 
 	/* xsd:time literals */

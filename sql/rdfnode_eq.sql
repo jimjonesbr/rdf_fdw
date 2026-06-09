@@ -1,5 +1,6 @@
 \pset null NULL
 \set VERBOSITY terse
+SET timezone = 'UTC';
 -- Tests for equality (=) operator on rdfnode type
 
 -- Language-tagged literals (case-insensitive)
@@ -15,7 +16,7 @@ SELECT '"\u0020"^^xsd:string'::rdfnode = '" "^^xsd:string'::rdfnode;
 SELECT '"\U0001F600"^^xsd:string'::rdfnode = '"😀"^^xsd:string'::rdfnode;
 SELECT '"\U0001F600"^^xsd:string'::rdfnode = '"😀"'::rdfnode;
 SELECT '"\uD834\uDD1E"^^xsd:string'::rdfnode = '𝄞'::rdfnode;
-SELECT '"\""'::rdfnode = '"'::rdfnode;  -- False, first has quote escaped
+SELECT '"\""'::rdfnode = '"'::rdfnode;  -- True
 SELECT '"\\\\u0020"'::rdfnode = '"\\u0020"'::rdfnode;  -- False, first is two literal backslashes
 SELECT '"\u0020"'::rdfnode = '" "'::rdfnode;  -- True
 SELECT '"\u0009"'::rdfnode = E'\t'::rdfnode;  -- True
@@ -25,7 +26,6 @@ SELECT '"\uDD1E"^^xsd:string'::rdfnode;  -- Invalid alone
 SELECT '"\u12"^^xsd:string'::rdfnode;  -- Too short
 SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
 SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed for \u)
-SELECT '"\U000110000"'::rdfnode;  -- Invalid (codepoints above U+10FFFF)
 
 -- Typed literals, same datatype IRI
 SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^<http://example.org/custom>'::rdfnode;

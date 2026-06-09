@@ -16,7 +16,7 @@ SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"2021-01-01"^^xsd:date'::rdfnode; -
 SELECT '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode; -- Returns t
 SELECT '"18:44:38"^^xsd:time'::rdfnode >= '"18:45:00"^^xsd:time'::rdfnode; -- Returns t
 SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Returns t
-SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Error or defined behavior
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Incomparable (mixed timezone), returns f
 
 -- String and simple literals
 SELECT '"abc"^^xsd:string'::rdfnode >= '"abd"^^xsd:string'::rdfnode; -- Returns t

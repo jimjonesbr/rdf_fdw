@@ -54,6 +54,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed `TZ()` to reject invalid timezone offsets**: when given an `xsd:dateTime` literal with an out-of-range timezone offset (e.g., `"2020-12-01T08:00:00+25:00"^^xsd:dateTime`), the function would previously extract and return the offset as-is without validation. It now raises an error for offsets outside the valid XSD range of `±14:00`.
 
+* **Fixed session-timezone-dependent `xsd:dateTime` comparisons**: All `rdfnode` comparison operators (`=`, `<>`, `<`, `<=`, `>`, `>=`) and the aggregate comparator were calling PostgreSQL's `timestamptz_in()` for every `xsd:dateTime` literal, including timezone-naive ones. This caused two bugs: (1) comparing a timezone-naive literal with a timezone-aware one could return `true` instead of the correct SPARQL result of incomparable (`false`), depending on the session timezone; (2) the old timezone-detection heuristic used `strpbrk(lex, "+-")`, which matched the `-` separators in the date portion (e.g., `2025-04-25`) and incorrectly classified every well-formed dateTime as timezone-aware. The fix introduces a `datetime_has_tz()` helper that restricts the search for `Z`, `+`, and `-` to the time portion of the lexical form (after the `T` or space separator). Timezone-aware pairs are compared via `timestamptz_in()` / `timestamptz_cmp_internal()`; timezone-naive pairs via `timestamp_in()` without any session-timezone influence; and mixed pairs return `false` (incomparable) per XSD §3.2.7.4 and SPARQL 1.1 §17.3 (Operator Mapping).
+
 # 2.5
 Release date: **2026-04-20**
 

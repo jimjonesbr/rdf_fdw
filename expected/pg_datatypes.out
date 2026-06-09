@@ -435,7 +435,7 @@ SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"foo"^^xsd:string'::rdf
 (1 row)
 
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '""^^xsd:dateTime'::rdfnode;
-ERROR:  invalid input syntax for type timestamp with time zone: ""
+ERROR:  invalid input syntax for type timestamp: ""
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------

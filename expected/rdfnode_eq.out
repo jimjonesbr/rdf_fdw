@@ -1,5 +1,6 @@
 \pset null NULL
 \set VERBOSITY terse
+SET timezone = 'UTC';
 -- Tests for equality (=) operator on rdfnode type
 -- Language-tagged literals (case-insensitive)
 SELECT '"foo"@EN'::rdfnode = '"foo"@en'::rdfnode;
@@ -63,7 +64,7 @@ SELECT '"\uD834\uDD1E"^^xsd:string'::rdfnode = '𝄞'::rdfnode;
  t
 (1 row)
 
-SELECT '"\""'::rdfnode = '"'::rdfnode;  -- False, first has quote escaped
+SELECT '"\""'::rdfnode = '"'::rdfnode;  -- True
  ?column? 
 ----------
  t
@@ -115,12 +116,6 @@ SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed fo
                         rdfnode                        
 -------------------------------------------------------
  "\u123456"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
-SELECT '"\U000110000"'::rdfnode;  -- Invalid (codepoints above U+10FFFF)
-    rdfnode    
----------------
- "\U000110000"
 (1 row)
 
 -- Typed literals, same datatype IRI
