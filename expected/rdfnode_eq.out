@@ -342,6 +342,42 @@ SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^
  f
 (1 row)
 
+SELECT '"2025-04-25T18:44:38+00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode; -- Both are TZ-aware and equal in UTC; +00:00 and Z are the same offset
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T10:00:00Z"^^xsd:dateTime'::rdfnode; -- Different offsets, same UTC instant
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Same clock time, different UTC instant
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode; -- Both naive: equal
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T13:00:00"^^xsd:dateTime'::rdfnode; -- Both naive, different times
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- The canonical mixed-tz case
+ ?column? 
+----------
+ f
+(1 row)
+
 -- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
 -- These all must return TRUE, not raise type errors.
 SELECT '"forty-two"^^xsd:int'::rdfnode = '"forty-two"^^xsd:int'::rdfnode;        -- t
@@ -372,6 +408,24 @@ SELECT '""^^xsd:integer'::rdfnode = '""^^xsd:integer'::rdfnode;                 
  ?column? 
 ----------
  t
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdfnode = '"4.2"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"4.2"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ f
 (1 row)
 
 -- Datatype prefix expansion: these are byte-equal after normalization

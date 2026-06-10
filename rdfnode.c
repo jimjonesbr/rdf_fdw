@@ -154,6 +154,17 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	{
 		Datum a_val, b_val;
 
+		/*
+		 * SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN,
+		 * as stated at 4.3.1 "If $arg1 or $arg2 is NaN, the function returns false."
+		 * 
+		 * 4.3.1 op:numeric-equal
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-equal
+		 */
+		if ((a.isNumeric && pg_strcasecmp(a.lex, "NaN") == 0) ||
+			(b.isNumeric && pg_strcasecmp(b.lex, "NaN") == 0))
+			return false;
+
 		if (strcmp(a.dtype, RDF_XSD_DOUBLE) == 0 ||
 			strcmp(b.dtype, RDF_XSD_DOUBLE) == 0 ||
 			strcmp(a.dtype, RDF_XSD_FLOAT) == 0 ||
@@ -262,11 +273,6 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	if (!LiteralsComparable(n1, n2))
 		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
-	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
-	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
-		return false;
-
 	/* string and plain literals */
 	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
 	{
@@ -276,6 +282,24 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
 	{
+		/*
+		 * SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN,
+		 * as stated at 4.3.3 "The function call op:numeric-greater-than($A, $B)
+		 * is defined to return the same result as op:numeric-less-than($B, $A)",
+		 * which says "If $arg1 or $arg2 is NaN, the function returns false." --
+		 * equally stated at 4.3.1.
+		 *
+		 * 4.3.3 op:numeric-greater-than
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-greater-than
+		 * 4.3.2 op:numeric-less-than
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-less-than
+		 * 4.3.1 op:numeric-equal
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-equal
+		 */
+		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+			return false;
+
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -389,11 +413,6 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	if (!LiteralsComparable(n1, n2))
 		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
-	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
-	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
-		return false;
-
 	/* string and plain literals */
 	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
 	{
@@ -403,6 +422,19 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
 	{
+		/*
+		 * SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN,
+		 * as stated at 4.3.1 "If $arg1 or $arg2 is NaN, the function returns false."
+		 *
+		 * 4.3.2 op:numeric-less-than
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-less-than
+		 * 4.3.1 op:numeric-equal
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-equal
+		 */
+		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+			return false;
+
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -516,11 +548,6 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	if (!LiteralsComparable(n1, n2))
 		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
-	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
-	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
-		return false;
-
 	/* string and plain literals */
 	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
 	{
@@ -529,6 +556,21 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
 	{
+		/*
+		 * SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN,
+		 * as stated at 4.3.3 "The function call op:numeric-greater-than($A, $B)
+		 * is defined to return the same result as op:numeric-less-than($B, $A)",
+		 * which says "If $arg1 or $arg2 is NaN, the function returns false."
+		 *
+		 * 4.3.3 op:numeric-greater-than
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-greater-than
+		 * 4.3.2 op:numeric-less-than
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-less-than
+		 */
+		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+			return false;
+
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
@@ -643,11 +685,6 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	if (!LiteralsComparable(n1, n2))
 		return false; /* unreachable due to error in LiteralsComparable, but kept for safety */
 
-	/* SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN. */
-	if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-		(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
-		return false;
-
 	/* string and plain literals */
 	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
 	{
@@ -657,6 +694,17 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
 	{
+		/*
+		 * SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN,
+		 * as stated at 4.3.2 "If $arg1 or $arg2 is NaN, the function returns false."
+		 *
+		 * 4.3.2 op:numeric-less-than
+		 * https://www.w3.org/TR/xpath-functions/#func-numeric-less-than
+		 */
+		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
+			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+			return false;
+
 		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
 		{
 			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));

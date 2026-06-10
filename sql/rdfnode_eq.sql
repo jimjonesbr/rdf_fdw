@@ -75,6 +75,12 @@ SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
 SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
 SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode;
+SELECT '"2025-04-25T18:44:38+00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode; -- Both are TZ-aware and equal in UTC; +00:00 and Z are the same offset
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T10:00:00Z"^^xsd:dateTime'::rdfnode; -- Different offsets, same UTC instant
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Same clock time, different UTC instant
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode; -- Both naive: equal
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T13:00:00"^^xsd:dateTime'::rdfnode; -- Both naive, different times
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- The canonical mixed-tz case
 
 -- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
 -- These all must return TRUE, not raise type errors.
@@ -83,6 +89,9 @@ SELECT '"2025-13-01"^^xsd:date'::rdfnode = '"2025-13-01"^^xsd:date'::rdfnode;   
 SELECT '"25:00:00"^^xsd:time'::rdfnode = '"25:00:00"^^xsd:time'::rdfnode;        -- t
 SELECT '"nAn"^^xsd:double'::rdfnode = '"nAn"^^xsd:double'::rdfnode;              -- t
 SELECT '""^^xsd:integer'::rdfnode = '""^^xsd:integer'::rdfnode;                  -- t
+SELECT '"NaN"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
+SELECT '"NaN"^^xsd:double'::rdfnode = '"4.2"^^xsd:double'::rdfnode;              -- f
+SELECT '"4.2"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
 
 -- Datatype prefix expansion: these are byte-equal after normalization
 SELECT '"42"^^xsd:int'::rdfnode 
