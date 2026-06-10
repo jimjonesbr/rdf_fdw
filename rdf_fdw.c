@@ -6053,6 +6053,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 								xmlFree(datatype);
 							if (literal_value.data)
 								pfree(literal_value.data);
+							if (name.data)
+								pfree(name.data);
 
 							slot->tts_isnull[i] = true;
 							continue;
@@ -6124,10 +6126,12 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 							xmlFree(datatype);
 						if (prop)
 							xmlFree(prop);
+						if (name.data)
+        					pfree(name.data);
 
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-								 errmsg("cache lookup failed for type %u > column '%s(%s)'", pgtype, name.data, sparqlvar)));
+								 errmsg("cache lookup failed for type %u > column '%s(%s)'", pgtype, sparqlvar, sparqlvar)));
 					}
 
 					typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
