@@ -2,50 +2,50 @@
 \pset null NULL
 
 -- Numeric comparisons
-SELECT '"1"^^xsd:int'::rdfnode >= '"2"^^xsd:int'::rdfnode; -- Returns t
-SELECT '"1"^^xsd:int'::rdfnode >= '"1"^^xsd:int'::rdfnode; -- Returns t
-SELECT '"42.0"^^xsd:decimal'::rdfnode >= '"42.1"^^xsd:decimal'::rdfnode; -- Returns t
-SELECT '"42.0"^^xsd:double'::rdfnode >= '"42.0"^^xsd:decimal'::rdfnode; -- Returns t
-SELECT '"0.0"^^xsd:decimal'::rdfnode >= '"-0.0"^^xsd:decimal'::rdfnode; -- Returns t
-SELECT '"1e308"^^xsd:double'::rdfnode >= '"INF"^^xsd:double'::rdfnode; -- Returns t
-SELECT '"42"^^xsd:int'::rdfnode >= '"43"^^xsd:short'::rdfnode; -- Returns t
-SELECT '"42"^^xsd:byte'::rdfnode >= '"42"^^xsd:int'::rdfnode; -- Returns t
+SELECT '"1"^^xsd:int'::rdfnode >= '"2"^^xsd:int'::rdfnode;
+SELECT '"1"^^xsd:int'::rdfnode >= '"1"^^xsd:int'::rdfnode;
+SELECT '"42.0"^^xsd:decimal'::rdfnode >= '"42.1"^^xsd:decimal'::rdfnode;
+SELECT '"42.0"^^xsd:double'::rdfnode >= '"42.0"^^xsd:decimal'::rdfnode;
+SELECT '"0.0"^^xsd:decimal'::rdfnode >= '"-0.0"^^xsd:decimal'::rdfnode;
+SELECT '"1e308"^^xsd:double'::rdfnode >= '"INF"^^xsd:double'::rdfnode;
+SELECT '"42"^^xsd:int'::rdfnode >= '"43"^^xsd:short'::rdfnode;
+SELECT '"42"^^xsd:byte'::rdfnode >= '"42"^^xsd:int'::rdfnode;
 
 -- Date and time
-SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"2021-01-01"^^xsd:date'::rdfnode; -- Returns t
-SELECT '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode; -- Returns t
-SELECT '"18:44:38"^^xsd:time'::rdfnode >= '"18:45:00"^^xsd:time'::rdfnode; -- Returns t
-SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Returns t
-SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Incomparable (mixed timezone), returns f
+SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"2021-01-01"^^xsd:date'::rdfnode;
+SELECT '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode;
+SELECT '"18:44:38"^^xsd:time'::rdfnode >= '"18:45:00"^^xsd:time'::rdfnode;
+SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode;
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode;
 
 -- String and simple literals
-SELECT '"abc"^^xsd:string'::rdfnode >= '"abd"^^xsd:string'::rdfnode; -- Returns t
-SELECT '"abc"^^xsd:string'::rdfnode >= '"abc"^^xsd:string'::rdfnode; -- Returns t
-SELECT '"a"'::rdfnode >= '"b"'::rdfnode; -- Returns t
-SELECT '""^^xsd:string'::rdfnode >= '"a"^^xsd:string'::rdfnode; -- Returns t
-SELECT '"\u00E9"^^xsd:string'::rdfnode >= '"\u00EA"^^xsd:string'::rdfnode; -- Returns t
+SELECT '"abc"^^xsd:string'::rdfnode >= '"abd"^^xsd:string'::rdfnode;
+SELECT '"abc"^^xsd:string'::rdfnode >= '"abc"^^xsd:string'::rdfnode;
+SELECT '"a"'::rdfnode >= '"b"'::rdfnode;
+SELECT '""^^xsd:string'::rdfnode >= '"a"^^xsd:string'::rdfnode;
+SELECT '"\u00E9"^^xsd:string'::rdfnode >= '"\u00EA"^^xsd:string'::rdfnode;
 
--- Language-tagged literals
-SELECT '"a"@en'::rdfnode >= '"b"@en'::rdfnode; -- ERROR: cannot compare language-tagged literals
-SELECT '"chat"@en'::rdfnode >= '"chat"@fr'::rdfnode; -- ERROR: cannot compare language-tagged literals
-SELECT '"abc"@de'::rdfnode >= '"abc"@en'::rdfnode; -- ERROR: cannot compare language-tagged literals
-SELECT '"abc"@en'::rdfnode >= '"abc"@EN'::rdfnode; -- ERROR: cannot compare language-tagged literals
+-- Language-tagged literals (cannot be compared)
+SELECT '"a"@en'::rdfnode >= '"b"@en'::rdfnode;
+SELECT '"chat"@en'::rdfnode >= '"chat"@fr'::rdfnode;
+SELECT '"abc"@de'::rdfnode >= '"abc"@en'::rdfnode;
+SELECT '"abc"@en'::rdfnode >= '"abc"@EN'::rdfnode;
 
 -- xsd:anyURI comparisons
-SELECT '"http://a"^^xsd:anyURI'::rdfnode >= '"http://b"^^xsd:anyURI'::rdfnode; -- Returns t
-SELECT '"http://a"^^xsd:anyURI'::rdfnode >= '"http://a"^^xsd:anyURI'::rdfnode; -- Returns t
-SELECT '""^^xsd:anyURI'::rdfnode >= '"http://b"^^xsd:anyURI'::rdfnode; -- Returns t
-SELECT '"http://\u00E9"^^xsd:anyURI'::rdfnode >= '"http://\u00EA"^^xsd:anyURI'::rdfnode; -- Returns t
+SELECT '"http://a"^^xsd:anyURI'::rdfnode >= '"http://b"^^xsd:anyURI'::rdfnode;
+SELECT '"http://a"^^xsd:anyURI'::rdfnode >= '"http://a"^^xsd:anyURI'::rdfnode;
+SELECT '""^^xsd:anyURI'::rdfnode >= '"http://b"^^xsd:anyURI'::rdfnode;
+SELECT '"http://\u00E9"^^xsd:anyURI'::rdfnode >= '"http://\u00EA"^^xsd:anyURI'::rdfnode;
 
--- Incompatible datatype comparisons
-SELECT '"41"'::rdfnode >= '"42"^^xsd:int'::rdfnode; -- ERROR: cannot compare literals of different datatypes
-SELECT '"abc"^^xsd:string'::rdfnode >= '"2020-01-01"^^xsd:date'::rdfnode; -- ERROR: cannot compare literals of different datatypes
-SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"abc"^^xsd:string'::rdfnode; -- ERROR: cannot compare literals of different datatypes
-SELECT '"41"^^xsd:int'::rdfnode >= '"42"^^ex:customDatatype'::rdfnode; -- ERROR: cannot compare literals of different datatypes
+-- Incompatible datatype comparisons (cannot be compared)
+SELECT '"41"'::rdfnode >= '"42"^^xsd:int'::rdfnode;
+SELECT '"abc"^^xsd:string'::rdfnode >= '"2020-01-01"^^xsd:date'::rdfnode;
+SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"abc"^^xsd:string'::rdfnode;
+SELECT '"41"^^xsd:int'::rdfnode >= '"42"^^ex:customDatatype'::rdfnode;
 
 -- NaN and infinities
-SELECT '"42"^^xsd:double'::rdfnode >= '"NaN"^^xsd:double'::rdfnode; -- Returns f
-SELECT '"NaN"^^xsd:double'::rdfnode >= '"NaN"^^xsd:double'::rdfnode; -- Returns f
-SELECT '"NaN"^^xsd:double'::rdfnode >= '"42"^^xsd:double'::rdfnode; -- Returns f
-SELECT '"999999999"^^xsd:double'::rdfnode >= '"INF"^^xsd:double'::rdfnode; -- Returns t
-SELECT '"-999999999"^^xsd:double'::rdfnode >= '"-INF"^^xsd:double'::rdfnode; -- Returns f
+SELECT '"42"^^xsd:double'::rdfnode >= '"NaN"^^xsd:double'::rdfnode;
+SELECT '"NaN"^^xsd:double'::rdfnode >= '"NaN"^^xsd:double'::rdfnode;
+SELECT '"NaN"^^xsd:double'::rdfnode >= '"42"^^xsd:double'::rdfnode;
+SELECT '"999999999"^^xsd:double'::rdfnode >= '"INF"^^xsd:double'::rdfnode;
+SELECT '"-999999999"^^xsd:double'::rdfnode >= '"-INF"^^xsd:double'::rdfnode;
