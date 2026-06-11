@@ -11,12 +11,23 @@ SELECT '"1e308"^^xsd:double'::rdfnode >= '"INF"^^xsd:double'::rdfnode;
 SELECT '"42"^^xsd:int'::rdfnode >= '"43"^^xsd:short'::rdfnode;
 SELECT '"42"^^xsd:byte'::rdfnode >= '"42"^^xsd:int'::rdfnode;
 
--- Date and time
+-- Date
 SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"2021-01-01"^^xsd:date'::rdfnode;
+
+-- Datetime
 SELECT '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode;
-SELECT '"18:44:38"^^xsd:time'::rdfnode >= '"18:45:00"^^xsd:time'::rdfnode;
 SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode;
 SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode;
+
+-- Time
+SELECT '"10:00:00"^^xsd:time'::rdfnode >= '"11:00:00"^^xsd:time'::rdfnode;
+SELECT '"11:00:00"^^xsd:time'::rdfnode >= '"10:00:00"^^xsd:time'::rdfnode;
+-- timezone-aware ordering
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode >= '"09:00:00+02:00"^^xsd:time'::rdfnode;
+SELECT '"09:00:00+02:00"^^xsd:time'::rdfnode >= '"10:00:00+02:00"^^xsd:time'::rdfnode;
+-- mixed tz/no-tz
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode >= '"10:00:00"^^xsd:time'::rdfnode;
+SELECT '"10:00:00"^^xsd:time'::rdfnode >= '"10:00:00+02:00"^^xsd:time'::rdfnode;
 
 -- String and simple literals
 SELECT '"abc"^^xsd:string'::rdfnode >= '"abd"^^xsd:string'::rdfnode;

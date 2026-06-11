@@ -31,6 +31,25 @@
 #include <string.h>
 
 /*
+ * time_has_tz
+ * -----------
+ * Returns true if the XSD time lexical form contains a timezone designator
+ * (Z, +HH:MM, or -HH:MM). Since there is no date portion, the entire string
+ * is scanned, but the leading digits and ':' characters of the time value
+ * mean any 'Z', '+', or '-' must be a timezone designator.
+ *
+ * Note: '-' cannot appear in the time portion itself (HH:MM:SS.sss),
+ * so any '-' in the string is unambiguously a timezone offset.
+ */
+static bool
+time_has_tz(const char *lex)
+{
+    return strchr(lex, 'Z') != NULL ||
+           strchr(lex, '+') != NULL ||
+           strchr(lex, '-') != NULL;
+}
+
+/*
  * datetime_has_tz
  * ---------------
  * Returns true if the XSD dateTime lexical form contains a timezone designator
@@ -97,6 +116,10 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	 *
 	 * It's also a performance win for the common case of comparing a
 	 * literal to itself or to its own canonicalized form.
+	 * 
+	 * Note: unlike the ordering operators, this function does not use
+	 * LiteralsComparable(). That function raises ERROR on type mismatches,
+	 * but SPARQL §17.4.1.7 requires equality to return false instead.
 	 */
 	if (VARSIZE_ANY_EXHDR(n1) == VARSIZE_ANY_EXHDR(n2) &&
 		memcmp(VARDATA_ANY(n1), VARDATA_ANY(n2), VARSIZE_ANY_EXHDR(n1)) == 0)
@@ -223,6 +246,37 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 			Datum b_val = DirectFunctionCall3(timestamp_in, CStringGetDatum(b.lex),
 											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 			return DatumGetBool(DirectFunctionCall2(timestamp_eq, a_val, b_val));
+		}
+	}
+
+	/* xsd:time literals */
+	if (a.isTime && b.isTime)
+	{
+		bool a_has_tz = time_has_tz(a.lex);
+		bool b_has_tz = time_has_tz(b.lex);
+
+		/*
+		 * Per XSD §3.2.8 / SPARQL 1.1 §17.3: a timezone-aware time and
+		 * a timezone-naive one are not equal (incomparable value spaces).
+		 */
+		if (a_has_tz != b_has_tz)
+			return false;
+
+		if (a_has_tz)
+		{
+			Datum a_val = DirectFunctionCall3(timetz_in, CStringGetDatum(a.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timetz_in, CStringGetDatum(b.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timetz_eq, a_val, b_val));
+		}
+		else
+		{
+			Datum a_val = DirectFunctionCall3(time_in, CStringGetDatum(a.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(time_in, CStringGetDatum(b.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(time_eq, a_val, b_val));
 		}
 	}
 
@@ -369,15 +423,32 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	/* xsd:time literals */
 	if (rdfnode1.isTime && rdfnode2.isTime)
 	{
-		arg1 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		return DatumGetBool(DirectFunctionCall2(time_ge, arg1, arg2));
+		bool a_has_tz = time_has_tz(rdfnode1.lex);
+		bool b_has_tz = time_has_tz(rdfnode2.lex);
+
+		/*
+		 * Per XSD §3.2.8 / SPARQL 1.1 §17.3: a timezone-aware time and
+		 * a timezone-naive one are not equal (incomparable value spaces).
+		 */
+		if (a_has_tz != b_has_tz)
+			return false;
+
+		if (a_has_tz)
+		{
+			Datum a_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timetz_ge, a_val, b_val));
+		}
+		else
+		{
+			Datum a_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(time_ge, a_val, b_val));
+		}
 	}
 
 	/* xsd:boolean literals */
@@ -512,15 +583,32 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	/* xsd:time literals */
 	if (rdfnode1.isTime && rdfnode2.isTime)
 	{
-		arg1 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		return DatumGetBool(DirectFunctionCall2(time_le, arg1, arg2));
+		bool a_has_tz = time_has_tz(rdfnode1.lex);
+		bool b_has_tz = time_has_tz(rdfnode2.lex);
+
+		/*
+		 * Per XSD §3.2.8 / SPARQL 1.1 §17.3: a timezone-aware time and
+		 * a timezone-naive one are not equal (incomparable value spaces).
+		 */
+		if (a_has_tz != b_has_tz)
+			return false;
+
+		if (a_has_tz)
+		{
+			Datum a_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timetz_le, a_val, b_val));
+		}
+		else
+		{
+			Datum a_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(time_le, a_val, b_val));
+		}
 	}
 
 	/* xsd:boolean literals */
@@ -657,15 +745,32 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	/* xsd:time literals */
 	if (rdfnode1.isTime && rdfnode2.isTime)
 	{
-		arg1 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		return DatumGetBool(DirectFunctionCall2(time_gt, arg1, arg2));
+		bool a_has_tz = time_has_tz(rdfnode1.lex);
+		bool b_has_tz = time_has_tz(rdfnode2.lex);
+
+		/*
+		 * Per XSD §3.2.8 / SPARQL 1.1 §17.3: a timezone-aware time and
+		 * a timezone-naive one are not equal (incomparable value spaces).
+		 */
+		if (a_has_tz != b_has_tz)
+			return false;
+
+		if (a_has_tz)
+		{
+			Datum a_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timetz_gt, a_val, b_val));
+		}
+		else
+		{
+			Datum a_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(time_gt, a_val, b_val));
+		}
 	}
 
 	/* xsd:boolean literals */
@@ -799,15 +904,32 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	/* xsd:time literals */
 	if (rdfnode1.isTime && rdfnode2.isTime)
 	{
-		arg1 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode1.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		arg2 = DirectFunctionCall3(time_in,
-								   CStringGetDatum(rdfnode2.lex),
-								   ObjectIdGetDatum(InvalidOid),
-								   Int32GetDatum(-1));
-		return DatumGetBool(DirectFunctionCall2(time_lt, arg1, arg2));
+		bool a_has_tz = time_has_tz(rdfnode1.lex);
+		bool b_has_tz = time_has_tz(rdfnode2.lex);
+
+		/*
+		 * Per XSD §3.2.8 / SPARQL 1.1 §17.3: a timezone-aware time and
+		 * a timezone-naive one are not equal (incomparable value spaces).
+		 */
+		if (a_has_tz != b_has_tz)
+			return false;
+
+		if (a_has_tz)
+		{
+			Datum a_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(timetz_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(timetz_lt, a_val, b_val));
+		}
+		else
+		{
+			Datum a_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode1.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			Datum b_val = DirectFunctionCall3(time_in, CStringGetDatum(rdfnode2.lex),
+											  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+			return DatumGetBool(DirectFunctionCall2(time_lt, a_val, b_val));
+		}
 	}
 
 	/* xsd:boolean literals */

@@ -68,6 +68,17 @@ SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^xsd:time'::rdfnode;
 SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
 SELECT '"18:44:38"^^xsd:time'::rdfnode = '"20:44:38"^^xsd:time'::rdfnode;
 SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"'::rdfnode;
+-- timezone-naive equality
+SELECT '"10:00:00"^^xsd:time'::rdfnode = '"10:00:00"^^xsd:time'::rdfnode;
+SELECT '"10:00:00"^^xsd:time'::rdfnode = '"11:00:00"^^xsd:time'::rdfnode;
+-- timezone-aware equality
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode = '"10:00:00+02:00"^^xsd:time'::rdfnode;
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode = '"11:00:00+02:00"^^xsd:time'::rdfnode;
+-- UTC variants
+SELECT '"10:00:00Z"^^xsd:time'::rdfnode = '"10:00:00+00:00"^^xsd:time'::rdfnode;
+-- mixed tz/no-tz
+SELECT '"10:00:00"^^xsd:time'::rdfnode = '"10:00:00+02:00"^^xsd:time'::rdfnode;
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode = '"10:00:00"^^xsd:time'::rdfnode;
 
 -- String comparison fallbacks
 SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode;

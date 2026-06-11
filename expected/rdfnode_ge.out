@@ -49,23 +49,18 @@ SELECT '"42"^^xsd:byte'::rdfnode >= '"42"^^xsd:int'::rdfnode;
  t
 (1 row)
 
--- Date and time
+-- Date
 SELECT '"2020-01-01"^^xsd:date'::rdfnode >= '"2021-01-01"^^xsd:date'::rdfnode;
  ?column? 
 ----------
  f
 (1 row)
 
+-- Datetime
 SELECT '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T18:45:00"^^xsd:dateTime'::rdfnode;
  ?column? 
 ----------
  t
-(1 row)
-
-SELECT '"18:44:38"^^xsd:time'::rdfnode >= '"18:45:00"^^xsd:time'::rdfnode;
- ?column? 
-----------
- f
 (1 row)
 
 SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode;
@@ -75,6 +70,45 @@ SELECT '"2025-04-25T14:00:00+02:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:0
 (1 row)
 
 SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode >= '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- Time
+SELECT '"10:00:00"^^xsd:time'::rdfnode >= '"11:00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"11:00:00"^^xsd:time'::rdfnode >= '"10:00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- timezone-aware ordering
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode >= '"09:00:00+02:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"09:00:00+02:00"^^xsd:time'::rdfnode >= '"10:00:00+02:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- mixed tz/no-tz
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode >= '"10:00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"10:00:00"^^xsd:time'::rdfnode >= '"10:00:00+02:00"^^xsd:time'::rdfnode;
  ?column? 
 ----------
  f

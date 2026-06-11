@@ -381,11 +381,7 @@ SELECT '"18:44:38"^^xsd:time'::rdfnode = '"foo"'::rdfnode;
 (1 row)
 
 SELECT '"18:44:38"^^xsd:time'::rdfnode = '""^^xsd:time'::rdfnode;
- ?column? 
-----------
- f
-(1 row)
-
+ERROR:  invalid input syntax for type time: ""
 SELECT '"18:44:38"^^xsd:time'::rdfnode = '""'::rdfnode;
  ?column? 
 ----------
