@@ -71,7 +71,7 @@ debian/packages/
 *.buildinfo
 
 # IDE files and local scripts
-local-tests/
 .vscode/
+TODO
 
 .deps/
