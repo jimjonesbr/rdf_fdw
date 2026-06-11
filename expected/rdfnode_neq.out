@@ -526,3 +526,46 @@ SELECT '"false"^^xsd:boolean'::rdfnode <> '"false"^^xsd:boolean'::rdfnode;
  f
 (1 row)
 
+-- Durations
+SELECT '"P1Y"^^xsd:duration'::rdfnode <> '"-P1Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-P1Y"^^xsd:duration'::rdfnode <> '"P1Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-P1Y"^^xsd:duration'::rdfnode <> '"-P1Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-P1Y"^^xsd:duration'::rdfnode <> '"-P2Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"P7D"^^xsd:duration'::rdfnode <> '"P1W"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"P1M"^^xsd:duration'::rdfnode <> '"P1M"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"PT0S"^^xsd:duration'::rdfnode <> '"P0D"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+

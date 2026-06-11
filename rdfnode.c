@@ -462,14 +462,22 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	/* xsd:duration literals */
 	if (rdfnode1.isDuration && rdfnode2.isDuration)
 	{
+		bool neg1 = (rdfnode1.lex[0] == '-');
+		bool neg2 = (rdfnode2.lex[0] == '-');
+
 		arg1 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode1.lex),
+								   CStringGetDatum(neg1 ? rdfnode1.lex + 1 : rdfnode1.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		arg2 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode2.lex),
+								   CStringGetDatum(neg2 ? rdfnode2.lex + 1 : rdfnode2.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
+
+		if (neg1)
+			arg1 = DirectFunctionCall1(interval_um, arg1);
+		if (neg2)
+			arg2 = DirectFunctionCall1(interval_um, arg2);
 
 		return DatumGetBool(DirectFunctionCall2(interval_ge, arg1, arg2));
 	}
@@ -622,14 +630,22 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	/* xsd:duration literals */
 	if (rdfnode1.isDuration && rdfnode2.isDuration)
 	{
+		bool neg1 = (rdfnode1.lex[0] == '-');
+		bool neg2 = (rdfnode2.lex[0] == '-');
+
 		arg1 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode1.lex),
+								   CStringGetDatum(neg1 ? rdfnode1.lex + 1 : rdfnode1.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		arg2 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode2.lex),
+								   CStringGetDatum(neg2 ? rdfnode2.lex + 1 : rdfnode2.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
+
+		if (neg1)
+			arg1 = DirectFunctionCall1(interval_um, arg1);
+		if (neg2)
+			arg2 = DirectFunctionCall1(interval_um, arg2);
 
 		return DatumGetBool(DirectFunctionCall2(interval_le, arg1, arg2));
 	}
@@ -784,14 +800,22 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	/* xsd:duration literals */
 	if (rdfnode1.isDuration && rdfnode2.isDuration)
 	{
+		bool neg1 = (rdfnode1.lex[0] == '-');
+		bool neg2 = (rdfnode2.lex[0] == '-');
+
 		arg1 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode1.lex),
+								   CStringGetDatum(neg1 ? rdfnode1.lex + 1 : rdfnode1.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		arg2 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode2.lex),
+								   CStringGetDatum(neg2 ? rdfnode2.lex + 1 : rdfnode2.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
+
+		if (neg1)
+			arg1 = DirectFunctionCall1(interval_um, arg1);
+		if (neg2)
+			arg2 = DirectFunctionCall1(interval_um, arg2);
 
 		return DatumGetBool(DirectFunctionCall2(interval_gt, arg1, arg2));
 	}
@@ -943,14 +967,22 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	/* xsd:duration literals */
 	if (rdfnode1.isDuration && rdfnode2.isDuration)
 	{
+		bool neg1 = (rdfnode1.lex[0] == '-');
+		bool neg2 = (rdfnode2.lex[0] == '-');
+
 		arg1 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode1.lex),
+								   CStringGetDatum(neg1 ? rdfnode1.lex + 1 : rdfnode1.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		arg2 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode2.lex),
+								   CStringGetDatum(neg2 ? rdfnode2.lex + 1 : rdfnode2.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
+
+		if (neg1)
+			arg1 = DirectFunctionCall1(interval_um, arg1);
+		if (neg2)
+			arg2 = DirectFunctionCall1(interval_um, arg2);
 
 		return DatumGetBool(DirectFunctionCall2(interval_lt, arg1, arg2));
 	}

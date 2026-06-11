@@ -121,3 +121,12 @@ SELECT '"true"^^xsd:boolean'::rdfnode = '"false"^^xsd:boolean'::rdfnode;
 SELECT '"false"^^xsd:boolean'::rdfnode = '"true"^^xsd:boolean'::rdfnode;
 SELECT '"true"^^xsd:boolean'::rdfnode = '"true"^^xsd:boolean'::rdfnode;
 SELECT '"false"^^xsd:boolean'::rdfnode = '"false"^^xsd:boolean'::rdfnode;
+
+-- Durations
+SELECT '"P1Y"^^xsd:duration'::rdfnode = '"-P1Y"^^xsd:duration'::rdfnode;
+SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"P1Y"^^xsd:duration'::rdfnode;
+SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"-P1Y"^^xsd:duration'::rdfnode;
+SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"-P2Y"^^xsd:duration'::rdfnode;
+SELECT '"P7D"^^xsd:duration'::rdfnode = '"P1W"^^xsd:duration'::rdfnode;
+SELECT '"P1M"^^xsd:duration'::rdfnode = '"P1M"^^xsd:duration'::rdfnode;
+SELECT '"PT0S"^^xsd:duration'::rdfnode = '"P0D"^^xsd:duration'::rdfnode;
