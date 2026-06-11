@@ -185,3 +185,28 @@ SELECT '"-999999999"^^xsd:double'::rdfnode >= '"-INF"^^xsd:double'::rdfnode;
  t
 (1 row)
 
+-- Boolean comparisons
+SELECT '"true"^^xsd:boolean'::rdfnode >= '"false"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"false"^^xsd:boolean'::rdfnode >= '"true"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"true"^^xsd:boolean'::rdfnode >= '"true"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"false"^^xsd:boolean'::rdfnode >= '"false"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+

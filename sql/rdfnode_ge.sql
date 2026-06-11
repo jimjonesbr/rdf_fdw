@@ -49,3 +49,9 @@ SELECT '"NaN"^^xsd:double'::rdfnode >= '"NaN"^^xsd:double'::rdfnode;
 SELECT '"NaN"^^xsd:double'::rdfnode >= '"42"^^xsd:double'::rdfnode;
 SELECT '"999999999"^^xsd:double'::rdfnode >= '"INF"^^xsd:double'::rdfnode;
 SELECT '"-999999999"^^xsd:double'::rdfnode >= '"-INF"^^xsd:double'::rdfnode;
+
+-- Boolean comparisons
+SELECT '"true"^^xsd:boolean'::rdfnode >= '"false"^^xsd:boolean'::rdfnode;
+SELECT '"false"^^xsd:boolean'::rdfnode >= '"true"^^xsd:boolean'::rdfnode;
+SELECT '"true"^^xsd:boolean'::rdfnode >= '"true"^^xsd:boolean'::rdfnode;
+SELECT '"false"^^xsd:boolean'::rdfnode >= '"false"^^xsd:boolean'::rdfnode;

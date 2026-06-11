@@ -104,3 +104,9 @@ SELECT '"42"^^xsd:int'::rdfnode
 -- Datatype mismatch with ill-typed values: should return f, not error
 SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;                     -- f
 SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:time'::rdfnode;      -- f
+
+-- Boolean comparisons
+SELECT '"true"^^xsd:boolean'::rdfnode = '"false"^^xsd:boolean'::rdfnode;
+SELECT '"false"^^xsd:boolean'::rdfnode = '"true"^^xsd:boolean'::rdfnode;
+SELECT '"true"^^xsd:boolean'::rdfnode = '"true"^^xsd:boolean'::rdfnode;
+SELECT '"false"^^xsd:boolean'::rdfnode = '"false"^^xsd:boolean'::rdfnode;

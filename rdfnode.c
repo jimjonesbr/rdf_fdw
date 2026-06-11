@@ -226,6 +226,13 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 		}
 	}
 
+	if (a.isBoolean && b.isBoolean)
+	{
+		Datum a_val = DirectFunctionCall1(boolin, CStringGetDatum(a.lex));
+		Datum b_val = DirectFunctionCall1(boolin, CStringGetDatum(b.lex));
+		return DatumGetBool(DirectFunctionCall2(booleq, a_val, b_val));
+	}
+
 	if (a.isDuration && b.isDuration)
 	{
 		Datum a_val, b_val;
@@ -275,9 +282,7 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 
 	/* string and plain literals */
 	if ((rdfnode1.isString || rdfnode1.isPlainLiteral) && (rdfnode2.isString || rdfnode2.isPlainLiteral))
-	{
 		return strcmp(rdfnode1.lex, rdfnode2.lex) >= 0; /* unicode codepoint order */
-	}
 
 	/* numeric literals */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
@@ -373,6 +378,14 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(time_ge, arg1, arg2));
+	}
+
+	/* xsd:boolean literals */
+	if (rdfnode1.isBoolean && rdfnode2.isBoolean)
+	{
+		arg1 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(boolge, arg1, arg2));
 	}
 
 	/* xsd:duration literals */
@@ -508,6 +521,14 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(time_le, arg1, arg2));
+	}
+
+	/* xsd:boolean literals */
+	if (rdfnode1.isBoolean && rdfnode2.isBoolean)
+	{
+		arg1 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(boolle, arg1, arg2));
 	}
 
 	/* xsd:duration literals */
@@ -647,6 +668,14 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 		return DatumGetBool(DirectFunctionCall2(time_gt, arg1, arg2));
 	}
 
+	/* xsd:boolean literals */
+	if (rdfnode1.isBoolean && rdfnode2.isBoolean)
+	{
+		arg1 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(boolgt, arg1, arg2));
+	}
+
 	/* xsd:duration literals */
 	if (rdfnode1.isDuration && rdfnode2.isDuration)
 	{
@@ -779,6 +808,14 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(time_lt, arg1, arg2));
+	}
+
+	/* xsd:boolean literals */
+	if (rdfnode1.isBoolean && rdfnode2.isBoolean)
+	{
+		arg1 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode1.lex));
+		arg2 = DirectFunctionCall1(boolin, CStringGetDatum(rdfnode2.lex));
+		return DatumGetBool(DirectFunctionCall2(boollt, arg1, arg2));
 	}
 
 	/* xsd:duration literals */
@@ -1072,6 +1109,7 @@ bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 	bool bothDuration = rdfnode1.isDuration && rdfnode2.isDuration;
 	bool bothString = (rdfnode1.isString || rdfnode1.isPlainLiteral) &&
 					  (rdfnode2.isString || rdfnode2.isPlainLiteral);
+	bool bothBoolean = rdfnode1.isBoolean && rdfnode2.isBoolean;
 
 	/* check for language-tagged literals (not comparable) */
 	if (strlen(rdfnode1.lang) != 0 || strlen(rdfnode2.lang) != 0)
@@ -1083,7 +1121,7 @@ bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 	 * literals are comparable only if both are of the same comparable category:
 	 * numeric, date, dateTime, or duration
 	 */
-	if (bothNumeric || bothDate || bothDateTime || bothDuration || bothString || bothTime)
+	if (bothNumeric || bothDate || bothDateTime || bothDuration || bothString || bothTime || bothBoolean)
 		return true;
 
 	ereport(ERROR,
@@ -1123,6 +1161,7 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 	result.isDuration = false;
 	result.isTime = false;
 	result.isIRI = false;
+	result.isBoolean = false;
 
 	/* flag the literal as simple if there is no language or data type*/
 	if (strlen(result.dtype) == 0 && strlen(result.lang) == 0)
@@ -1131,42 +1170,27 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 	if (isIRI(raw))
 		result.isIRI = true;
 	else if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
-	{
 		result.isString = true;
-		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_STRING);
-	}
 	else if ((result.isNumeric = isNumeric(raw)))
-	{
 		elog(DEBUG4, "literal '%s' is numeric ", result.raw);
-	}
 	else if (strcmp(result.dtype, RDF_XSD_DATE) == 0)
-	{
 		result.isDate = true;
-		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_DATE);
-	}
 	else if (strcmp(result.dtype, RDF_XSD_DATETIME) == 0)
-	{
 		result.isDateTime = true;
-		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_DATETIME);
-	}
 	else if (strcmp(result.dtype, RDF_XSD_DURATION) == 0)
-	{
 		result.isDuration = true;
-		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_DURATION);
-	}
 	else if (strcmp(result.dtype, RDF_XSD_TIME) == 0)
-	{
 		result.isTime = true;
-		elog(DEBUG4, "literal '%s' is %s ", result.raw, RDF_XSD_TIME);
-	}
+	else if (strcmp(result.dtype, RDF_XSD_BOOLEAN) == 0)
+		result.isBoolean = true;
 	/*
 	 * allow lexicographic comparison for xsd:anyURI literals, aligning with
 	 * SPARQL 1.1’s treatment of xsd:anyURI as xsd:string.
 	 */
 	else if (strcmp(result.dtype, RDF_XSD_ANYURI) == 0)
-	{
 		result.isPlainLiteral = true;
-	}
+
+	elog(DEBUG4, "literal '%s' is %s ", result.raw, result.dtype);
 
 	elog(DEBUG3, "%s exit", __func__);
 	return result;

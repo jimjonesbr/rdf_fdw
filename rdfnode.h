@@ -26,14 +26,15 @@ typedef struct
 	char *lex;			 /* literal's lexical value: "foo"^^xsd:string -> foo */
 	char *dtype;		 /* literal's data type, e.g xsd:string, xsd:short */
 	char *lang;			 /* literal's language tag, e.g. 'en', 'de', 'es' */
-	bool isPlainLiteral; /* literal has no language or data type*/
-	bool isNumeric;		 /* literal has a numeric value, e.g. xsd:int, xsd:float*/
+	bool isPlainLiteral; /* literal has no language or data type */
+	bool isNumeric;		 /* literal has a numeric value, e.g. xsd:int, xsd:float */
 	bool isString;		 /* xsd:string literal */
 	bool isDateTime;	 /* xsd:dateTime literal */
-	bool isDate;		 /* xsd:date literal*/
+	bool isDate;		 /* xsd:date literal */
 	bool isDuration;	 /* xsd:duration */
 	bool isTime;		 /* xsd:time */
-	bool isIRI;			 /* RDF IRI*/
+	bool isBoolean;		 /* xsd:boolean */
+	bool isIRI;			 /* RDF IRI */
 } rdfnode_info;
 
 extern bool rdfnode_eq(rdfnode *n1, rdfnode *n2);

@@ -1,6 +1,10 @@
 \pset null NULL
 \set VERBOSITY terse
--- Tests for equality (=) operator on rdfnode type
+SET timezone <> 'UTC';
+ERROR:  syntax error at or near "<>" at character 14
+-- Tests for inequality (<>) operator on rdfnode type -- basically
+-- the same tests in rdfnode_eq but with a <> operator. Just for 
+-- peace of mind :)
 -- Language-tagged literals (case-insensitive)
 SELECT '"foo"@EN'::rdfnode <> '"foo"@en'::rdfnode;
  ?column? 
@@ -63,7 +67,7 @@ SELECT '"\uD834\uDD1E"^^xsd:string'::rdfnode <> '𝄞'::rdfnode;
  f
 (1 row)
 
-SELECT '"\""'::rdfnode <> '"'::rdfnode;  -- False, first has quote escaped
+SELECT '"\""'::rdfnode <> '"'::rdfnode;  -- True
  ?column? 
 ----------
  f
@@ -115,12 +119,6 @@ SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed fo
                         rdfnode                        
 -------------------------------------------------------
  "\u123456"^^<http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
-SELECT '"\U000110000"'::rdfnode;  -- Invalid (codepoints above U+10FFFF)
-    rdfnode    
----------------
- "\U000110000"
 (1 row)
 
 -- Typed literals, same datatype IRI
@@ -347,56 +345,138 @@ SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode <> '"2025-04-25T18:44:38Z"
  t
 (1 row)
 
--- === RDF 1.1 §17.4.1.7: term inequality of identical ill-typed literals ===
--- These all must return FALSE, not raise type errors.
-SELECT '"forty-two"^^xsd:int'::rdfnode <> '"forty-two"^^xsd:int'::rdfnode;        -- f
+SELECT '"2025-04-25T18:44:38+00:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode; -- Both are TZ-aware and equal in UTC; +00:00 and Z are the same offset
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"2025-13-01"^^xsd:date'::rdfnode <> '"2025-13-01"^^xsd:date'::rdfnode;    -- f
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T10:00:00Z"^^xsd:dateTime'::rdfnode; -- Different offsets, same UTC instant
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"25:00:00"^^xsd:time'::rdfnode <> '"25:00:00"^^xsd:time'::rdfnode;        -- f
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Same clock time, different UTC instant
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode; -- Both naive: equal
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '"nAn"^^xsd:double'::rdfnode <> '"nAn"^^xsd:double'::rdfnode;              -- f
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T13:00:00"^^xsd:dateTime'::rdfnode; -- Both naive, different times
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- The canonical mixed-tz case
+ ?column? 
+----------
+ t
+(1 row)
+
+-- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
+-- These all must return TRUE, not raise type errors.
+SELECT '"forty-two"^^xsd:int'::rdfnode <> '"forty-two"^^xsd:int'::rdfnode;        -- t
  ?column? 
 ----------
  f
 (1 row)
 
-SELECT '""^^xsd:integer'::rdfnode <> '""^^xsd:integer'::rdfnode;                  -- f
+SELECT '"2025-13-01"^^xsd:date'::rdfnode <> '"2025-13-01"^^xsd:date'::rdfnode;    -- t
  ?column? 
 ----------
  f
 (1 row)
 
--- Datatype prefix expansion: byte-equal after normalization
+SELECT '"25:00:00"^^xsd:time'::rdfnode <> '"25:00:00"^^xsd:time'::rdfnode;        -- t
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"nAn"^^xsd:double'::rdfnode <> '"nAn"^^xsd:double'::rdfnode;              -- t
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '""^^xsd:integer'::rdfnode <> '""^^xsd:integer'::rdfnode;                  -- t
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdfnode <> '"NaN"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdfnode <> '"4.2"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"4.2"^^xsd:double'::rdfnode <> '"NaN"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Datatype prefix expansion: these are byte-equal after normalization
 SELECT '"42"^^xsd:int'::rdfnode 
-    <> '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                   -- f
+     <> '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                  -- t
  ?column? 
 ----------
  f
 (1 row)
 
--- Datatype mismatch (even ill-typed): should return t, not error
-SELECT '"42"^^xsd:int'::rdfnode <> '"42"^^xsd:date'::rdfnode;                     -- t
+-- Different ill-typed literals: behavior depends on policy
+-- (currently raises ERROR; that's allowed per SPARQL §17.3.1)
+-- SELECT '"foo"^^xsd:int'::rdfnode <> '"bar"^^xsd:int'::rdfnode;
+-- Datatype mismatch with ill-typed values: should return f, not error
+SELECT '"42"^^xsd:int'::rdfnode <> '"42"^^xsd:date'::rdfnode;                     -- f
  ?column? 
 ----------
  t
 (1 row)
 
-SELECT '"invalid"^^xsd:dateTime'::rdfnode <> '"invalid"^^xsd:time'::rdfnode;      -- t
+SELECT '"invalid"^^xsd:dateTime'::rdfnode <> '"invalid"^^xsd:time'::rdfnode;      -- f
  ?column? 
 ----------
  t
+(1 row)
+
+-- Boolean comparisons
+SELECT '"true"^^xsd:boolean'::rdfnode <> '"false"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"false"^^xsd:boolean'::rdfnode <> '"true"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"true"^^xsd:boolean'::rdfnode <> '"true"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"false"^^xsd:boolean'::rdfnode <> '"false"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ f
 (1 row)
 

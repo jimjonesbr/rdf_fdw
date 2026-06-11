@@ -58,6 +58,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed NaN‑NaN comparison bug**: Previously the expression `?a = ?b` returned true when both operands were the literal `"NaN"^^xsd:double` (or "NaN"^^xsd:float). According to SPARQL 1.1 (which follows the XSD 1.1 definition of xsd:double and the IEEE‑754 rules), a `NaN` value is never equal to any value, including another `NaN`; all numeric comparison operators must therefore evaluate to `false` for `NaN` operands. See [XPath and XQuery Functions and Operators 3.1](https://www.w3.org/TR/xpath-functions/) at [4.3.1 op:numeric-equal](https://www.w3.org/TR/xpath-functions/#func-numeric-equal), [4.3.2 op:numeric-less-than](https://www.w3.org/TR/xpath-functions/#func-numeric-less-than), and [4.3.3 op:numeric-greater-than](https://www.w3.org/TR/xpath-functions/#func-numeric-greater-than).
 
+* **Add missing boolean-boolean comparison**: This adds `xsd:boolean` support to `rdfnode` comparison operators (`=`, `<>`, `<`, `<=`, `>`, `>=`), using PostgreSQL's `boolin` / `booleq` / `boollt` / `boolle` / `boolgt` / `boolge` functions.
+
 # 2.5
 Release date: **2026-04-20**
 
