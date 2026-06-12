@@ -78,6 +78,12 @@ SELECT '18:30:25'::time without time zone::rdfnode;
  "18:30:25"^^<http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
+SELECT '18:30:25+02:00'::time with time zone::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "18:30:25+02"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
 SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;
                               rdfnode                               
 --------------------------------------------------------------------
@@ -94,6 +100,12 @@ SELECT '1 year 2 months 3 weeks 4 days 5 hours 6 minutes 7 seconds'::interval::r
                             rdfnode                             
 ----------------------------------------------------------------
  "P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 year -2 months -3 weeks -4 days -5 hours -6 minutes -7 seconds'::interval::rdfnode;
+                             rdfnode                             
+-----------------------------------------------------------------
+ "-P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>
 (1 row)
 
 SELECT '"42"^^<http://www.w3.org/2001/XMLSchema#short>'::rdfnode::int2;
@@ -144,6 +156,18 @@ SELECT '"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
  f
 (1 row)
 
+SELECT '"1"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
+ bool 
+------
+ t
+(1 row)
+
+SELECT '"0"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode::boolean;
+ bool 
+------
+ f
+(1 row)
+
 SELECT '"rdf_fdw"'::rdfnode::text;
    text    
 -----------
@@ -160,6 +184,12 @@ SELECT '"2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
     date    
 ------------
  2025-01-01
+(1 row)
+
+SELECT  '"18:30:25+02:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode::time with time zone;
+   timetz    
+-------------
+ 18:30:25+02
 (1 row)
 
 SELECT '"18:30:25"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode::time without time zone;
@@ -184,5 +214,11 @@ SELECT '"P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode
                    interval                    
 -----------------------------------------------
  @ 1 year 2 mons 25 days 5 hours 6 mins 7 secs
+(1 row)
+
+SELECT '"-P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode::interval;
+                     interval                      
+---------------------------------------------------
+ @ 1 year 2 mons 25 days 5 hours 6 mins 7 secs ago
 (1 row)
 
