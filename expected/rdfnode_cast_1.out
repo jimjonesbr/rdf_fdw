@@ -43,17 +43,13 @@ SELECT 42.12345::double precision::rdfnode;
 (1 row)
 
 SELECT 'Infinity'::numeric::rdfnode;
-                     rdfnode                      
---------------------------------------------------
- "INF"^^<http://www.w3.org/2001/XMLSchema#double>
-(1 row)
-
+ERROR:  invalid input syntax for type numeric: "Infinity"
+LINE 1: SELECT 'Infinity'::numeric::rdfnode;
+               ^
 SELECT '-Infinity'::numeric::rdfnode;
-                      rdfnode                      
----------------------------------------------------
- "-INF"^^<http://www.w3.org/2001/XMLSchema#double>
-(1 row)
-
+ERROR:  invalid input syntax for type numeric: "-Infinity"
+LINE 1: SELECT '-Infinity'::numeric::rdfnode;
+               ^
 SELECT 'Infinity'::float4::rdfnode;
                      rdfnode                     
 -------------------------------------------------
@@ -217,17 +213,9 @@ SELECT '"42.123456650"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode::flo
 (1 row)
 
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
- numeric  
-----------
- Infinity
-(1 row)
-
+ERROR:  invalid input syntax for type numeric: "INF"
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
-  numeric  
------------
- -Infinity
-(1 row)
-
+ERROR:  invalid input syntax for type numeric: "-INF"
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float4;
   float4  
 ----------

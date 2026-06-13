@@ -8297,12 +8297,17 @@ Datum numeric_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	Numeric val = PG_GETARG_NUMERIC(0);
 	char *val_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(val)));
-
 	StringInfoData buf;
 	initStringInfo(&buf);
 
-	/* format numeric as an RDF literal */
-	appendStringInfo(&buf, "\"%s\"^^%s", val_str, RDF_XSD_DECIMAL);
+	if (numeric_is_nan(val))
+		appendStringInfo(&buf, "\"NaN\"^^%s", RDF_XSD_DOUBLE);
+	else if (strcmp(val_str, "Infinity") == 0)
+		appendStringInfo(&buf, "\"INF\"^^%s", RDF_XSD_DOUBLE);
+	else if (strcmp(val_str, "-Infinity") == 0)
+		appendStringInfo(&buf, "\"-INF\"^^%s", RDF_XSD_DOUBLE);
+	else
+		appendStringInfo(&buf, "\"%s\"^^%s", val_str, RDF_XSD_DECIMAL);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
@@ -8464,13 +8469,23 @@ Datum float8_ge_rdfnode(PG_FUNCTION_ARGS)
 Datum float8_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	float8 val = PG_GETARG_FLOAT8(0);
-	char *valstr;
 	StringInfoData buf;
-
-	valstr = DatumGetCString(DirectFunctionCall1(float8out, Float8GetDatum(val)));
-
 	initStringInfo(&buf);
-	appendStringInfo(&buf, "\"%s\"^^%s", valstr, RDF_XSD_DOUBLE);
+
+	/* Normalize PostgreSQL float output to XSD lexical forms.
+	 * XSD 1.1 Part 2 §3.3.5 defines INF/-INF/NaN as the valid lexical
+	 * representations for IEEE 754 special values; "Infinity"/"-Infinity"
+	 * are not valid XSD lexical forms.
+	 */
+	if (isnan(val))
+		appendStringInfo(&buf, "\"NaN\"^^%s", RDF_XSD_DOUBLE);
+	else if (isinf(val))
+		appendStringInfo(&buf, val < 0 ? "\"-INF\"^^%s" : "\"INF\"^^%s", RDF_XSD_DOUBLE);
+	else
+	{
+		char *valstr = DatumGetCString(DirectFunctionCall1(float8out, Float8GetDatum(val)));
+		appendStringInfo(&buf, "\"%s\"^^%s", valstr, RDF_XSD_DOUBLE);
+	}
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
@@ -8556,10 +8571,15 @@ Datum float4_to_rdfnode(PG_FUNCTION_ARGS)
 	StringInfoData buf;
 	initStringInfo(&buf);
 
+	/* Normalize PostgreSQL float output to XSD lexical forms.
+	 * XSD 1.1 Part 2 §3.3.5 defines INF/-INF/NaN as the valid lexical
+	 * representations for IEEE 754 special values; "Infinity"/"-Infinity"
+	 * are not valid XSD lexical forms.
+	 */	
 	if (isnan(val))
 		appendStringInfo(&buf, "\"NaN\"^^%s", RDF_XSD_FLOAT);
 	else if (isinf(val))
-		appendStringInfo(&buf, val < 0 ? "\"-Infinity\"^^%s" : "\"Infinity\"^^%s", RDF_XSD_FLOAT);
+		appendStringInfo(&buf, val < 0 ? "\"-INF\"^^%s" : "\"INF\"^^%s", RDF_XSD_FLOAT);
 	else
 		appendStringInfo(&buf, "\"%g\"^^%s", val, RDF_XSD_FLOAT);
 

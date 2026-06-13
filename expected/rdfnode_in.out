@@ -631,9 +631,9 @@ SELECT (-42.73)::real::rdfnode::real;
 (1 row)
 
 SELECT 'INF'::real::rdfnode;
-                       rdfnode                        
-------------------------------------------------------
- "Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
+                     rdfnode                     
+-------------------------------------------------
+ "INF"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 SELECT 'INF'::real::rdfnode::real;
@@ -643,9 +643,9 @@ SELECT 'INF'::real::rdfnode::real;
 (1 row)
 
 SELECT '-INF'::real::rdfnode;
-                        rdfnode                        
--------------------------------------------------------
- "-Infinity"^^<http://www.w3.org/2001/XMLSchema#float>
+                     rdfnode                      
+--------------------------------------------------
+ "-INF"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 SELECT '-INF'::real::rdfnode::real;
