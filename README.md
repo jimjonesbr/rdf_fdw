@@ -415,9 +415,9 @@ SELECT CAST(CURRENT_TIMESTAMP AS rdfnode);
 (1 row)
 ```
 
-**Comparison of `rdfnode` with Native PostgreSQL Types**
+**Comparisons Operators with `rdfnode`**
 
-`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules. Comparisons between rdfnode values of incompatible datatypes — for example, a string literal against an integer — raise a type error rather than returning false, consistent with SPARQL 1.1 semantics.
+`rdfnode` supports standard comparison operators like `=`, `!=`, `<`, `<=`, `>`, `>=` — just like in SPARQL. Comparisons follow SPARQL 1.1 [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) rules. Value-space comparison is supported for `xsd:boolean`, `xsd:date`, `xsd:dateTime`, `xsd:time`, `xsd:duration`, `xsd:string`, and all numeric XSD types (`xsd:integer`, `xsd:int`, `xsd:decimal`, `xsd:float`, `xsd:double`, etc.). Literals of unrecognised datatypes fall back to lexical comparison.
 
 Examples: `rdfnode` vs `rdfnode`
 
@@ -1310,6 +1310,15 @@ sparql.sum(value rdfnode) → rdfnode
 
 Computes the sum of numeric `rdfnode` values with XSD type promotion according to SPARQL 1.1 specification ([section 18.5.1.3](https://www.w3.org/TR/sparql11-query/#aggregates)). The function follows XPath type promotion rules where numeric types are promoted in the hierarchy: `xsd:integer` < `xsd:decimal` < `xsd:float` < `xsd:double`. The result type is determined by the highest type encountered during aggregation.
 
+> [!NOTE]  
+> The `SUM` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.3](https://www.w3.org/TR/sparql11-query/#aggregates)):
+>* NULL values (unbound variables) are skipped during aggregation
+>* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: "The sum of no bindings is 0")
+>* If the input set contains any non-numeric values, the aggregate returns NULL.
+>* Returns SQL NULL if all values are non-numeric (no numeric values to sum)
+>* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
+>* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
+
 Examples:
 
 ```sql
@@ -1344,15 +1353,6 @@ FROM (VALUES ('"10.5"^^xsd:decimal'::rdfnode),
 (1 row)
 ```
 
-> [!NOTE]  
-> The `SUM` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.3](https://www.w3.org/TR/sparql11-query/#aggregates)):
->* NULL values (unbound variables) are skipped during aggregation
->* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: "The sum of no bindings is 0")
->* Non-numeric values cause type errors and are excluded from the aggregate (similar to NULL)
->* Returns SQL NULL if all values are non-numeric (no numeric values to sum)
->* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
->* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
-
 #### [AVG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#avg)
 
 ```sql
@@ -1360,6 +1360,14 @@ sparql.avg(value rdfnode) → rdfnode
 ```
 
 Computes the average (arithmetic mean) of numeric `rdfnode` values with XSD type promotion according to SPARQL 1.1 specification ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)). Like `SUM`, the function follows XPath type promotion rules: `xsd:integer` < `xsd:decimal` < `xsd:float` < `xsd:double`. The result type is determined by the highest type encountered during aggregation.
+
+> [!NOTE]
+> The `AVG` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)):
+>* NULL values (unbound variables) are skipped during aggregation
+>* Returns NULL for empty sets or when all values are NULL (per spec: "The average of no bindings is an error")
+>* If the input set contains any non-numeric values, the aggregate returns NULL
+>* The result type is always at least `xsd:decimal` (integer inputs produce a decimal average)
+>* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
 
 Examples:
 
@@ -1401,6 +1409,9 @@ sparql.min(value rdfnode) → rdfnode
 ```
 
 Returns the minimum numeric `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.5](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the minimum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison.
+
+> [!NOTE]
+> When the input set contains values of different type categories (e.g. numeric and string, or date and integer), the ordering across categories follows the term ordering defined in [SPARQL 1.1 §15.1](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#modOrderBy). This ordering is only partially specified by the spec, and results for mixed-type sets may differ from other triplestores.
 
 Examples:
 
@@ -1444,6 +1455,9 @@ sparql.max(value rdfnode) → rdfnode
 ```
 
 Returns the maximum numeric `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.6](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the maximum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison.
+
+> [!NOTE]
+> When the input set contains values of different type categories (e.g. numeric and string, or date and integer), the ordering across categories follows the term ordering defined in [SPARQL 1.1 §15.1](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#modOrderBy). This ordering is only partially specified by the spec, and results for mixed-type sets may differ from other triplestores.
 
 Examples:
 
