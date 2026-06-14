@@ -189,6 +189,8 @@ SELECT sparql.strdt('foo', '<nonsense>');
  "foo"^^<nonsense>
 (1 row)
 
+SELECT sparql.strdt('_:b1', 'xsd:string');
+ERROR:  invalid argument: _:b1
 /* STRLANG */
 SELECT sparql.strlang('foo',NULL);
  strlang 
@@ -292,6 +294,8 @@ SELECT sparql.strlang('foo', 'EN-Latn-US-valencia');
  "foo"@en-Latn-US-valencia
 (1 row)
 
+SELECT sparql.strlang('_:b1', 'en');
+ERROR:  invalid argument: _:b1
 /* STR */
 SELECT sparql.str('foo');
   str  
@@ -689,6 +693,8 @@ SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
  <42>
 (1 row)
 
+SELECT sparql.iri('_:b1');
+ERROR:  invalid argument: _:b1
   /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
  isiri 

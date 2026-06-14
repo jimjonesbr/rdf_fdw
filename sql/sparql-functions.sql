@@ -40,6 +40,7 @@ SELECT sparql.strdt('foo', '<http://example.org/type>');
 SELECT sparql.strdt('foo', 'foo:bar');
 SELECT sparql.strdt('foo', 'xsd:string');
 SELECT sparql.strdt('foo', '<nonsense>');
+SELECT sparql.strdt('_:b1', 'xsd:string');
 
 /* STRLANG */
 SELECT sparql.strlang('foo',NULL);
@@ -59,6 +60,7 @@ SELECT sparql.strlang('foo', 'EN');
 SELECT sparql.strlang('foo', 'EN-GB');
 SELECT sparql.strlang('foo', 'eN-gb');
 SELECT sparql.strlang('foo', 'EN-Latn-US-valencia');
+SELECT sparql.strlang('_:b1', 'en');
 
 /* STR */
 SELECT sparql.str('foo');
@@ -135,6 +137,7 @@ SELECT sparql.iri('"a:b:c"'), sparql.iri('a:b:c'), sparql.iri('<a:b:c>');
 SELECT sparql.iri('"http:/not-a-scheme"'), sparql.iri('http:/not-a-scheme'), sparql.iri('<http:/not-a-scheme>');
 SELECT sparql.iri('"foo"@en');
 SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
+SELECT sparql.iri('_:b1');
 
   /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 

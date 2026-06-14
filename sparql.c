@@ -264,6 +264,12 @@ char *strlang(char *literal, char *language)
     Assert(literal != NULL);
     Assert(language != NULL);
 
+    if (isBlank(literal))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("invalid argument: %s", literal),
+                 errdetail("Blank nodes cannot have language tags.")));
+
     lex_language = lex(language);
     lex_literal = lex(literal);
 
@@ -466,6 +472,12 @@ char *strdt(char *literal, char *datatype)
     Assert(literal != NULL);
     Assert(datatype != NULL);
 
+    if (isBlank(literal))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("invalid argument: %s", literal),
+                 errdetail("Blank nodes cannot have data types.")));
+
     lex_datatype = lex(datatype);
 
     Assert(lex_datatype != NULL);
@@ -567,6 +579,12 @@ char *iri(char *input)
 
     if (!input || *input == '\0')
         return "<>";
+
+    if (isBlank(input))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("invalid argument: %s", input),
+                 errdetail("Blank nodes cannot be converted to IRIs.")));
 
     if (isIRI(input))
         return pstrdup(input);
