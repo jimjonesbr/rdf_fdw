@@ -209,10 +209,6 @@ char *cstring_to_rdfliteral(char *input)
 		return "\"\""; /* empty input becomes empty literal */
 	}
 
-	/* return the string as-is if the input is an IRI or blank node */
-	if (isIRI(input) || isBlank(input))
-		return input;
-
 	start = input;
 	len = strlen(start);
 

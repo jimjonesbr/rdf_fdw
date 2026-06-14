@@ -695,6 +695,12 @@ SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
 
 SELECT sparql.iri('_:b1');
 ERROR:  invalid argument: _:b1
+SELECT sparql.iri('"<https://example/>"');
+         iri          
+----------------------
+ <<https://example/>>
+(1 row)
+
   /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
  isiri 
@@ -715,6 +721,12 @@ SELECT sparql.isIRI('http://example/');
 (1 row)
 
 SELECT sparql.isIRI('"http://example/"');
+ isiri 
+-------
+ f
+(1 row)
+
+SELECT sparql.isIRI('"<http://example/>"');
  isiri 
 -------
  f
@@ -781,6 +793,12 @@ SELECT sparql.isURI('<http://example/>');
 (1 row)
 
 SELECT sparql.isURI('path');
+ isuri 
+-------
+ f
+(1 row)
+
+SELECT sparql.isURI('"<http://example/>"');
  isuri 
 -------
  f
@@ -1691,6 +1709,12 @@ SELECT sparql.isblank(NULL);
  isblank 
 ---------
  NULL
+(1 row)
+
+SELECT sparql.isblank('"_:b1"');
+ isblank 
+---------
+ f
 (1 row)
 
 /* ISNUMERIC */

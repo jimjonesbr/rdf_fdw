@@ -66,6 +66,10 @@ Release date: **YYYY-MM-DD**
 
 * **Reject blank nodes in `IRI`, `STRDT`, and `STRLANG`**: These functions require a simple literal as their first argument. Previously, passing a blank node (e.g. `_:b1` or the result of `sparql.bnode()`) silently produced an invalid RDF term such as `_:b1@en` or a blank node with an attached datatype. Now these functions raise an error with a descriptive message when given a blank node.
 
+* Fixed `cstring_to_rdfliteral()` incorrectly treating literal content that resembles a blank node label (`_:...`) or IRI (`<...>`) as an actual blank node/IRI term, causing `rdfnode_in()` to strip quotes from literals such as `"_:b1"` and `"<http://example.org>"`, making `sparql.isblank()` and  `sparql.isiri()` return incorrect results for these literals.
+
+* **Fixed SPARQL pushdown for IRI-valued constants**: rdfnodes containing IRIs, when placed in the **left side** in an operation, were being incorrectly rendered as quoted literals, e.g. `WHERE '<http://example.org/property>'::rdfnode = sparql.iri(p)` was being pushed down as `Remote Filter: (("http://example.org/property" = IRI(?p)))` instead of `Remote Filter: ((<http://example.org/property> = IRI(?p)))`. The `T_OpExpr` path in `DeparseExpr` now skips the rdfnode normalisation when dealing with IRIs and blank nodes.
+
 # 2.5
 Release date: **2026-04-20**
 

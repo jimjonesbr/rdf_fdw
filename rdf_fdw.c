@@ -6523,11 +6523,26 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						}
 						else if (right_column->literaltype)
 							appendStringInfo(&left_filter_arg, "%s", strdt(left, right_column->literaltype));
+						else if (isIRI(left) || isBlank(left))
+							appendStringInfo(&left_filter_arg, "%s", left);
 						else
 							appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfliteral(left));
 					}
+					else if (isIRI(left))
+						appendStringInfo(&left_filter_arg, "%s", left);
 					else
-						appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfliteral(left));
+					{
+						char *xsd_type = MapSPARQLDatatype(leftargtype);
+						char *literal = cstring_to_rdfliteral(left);
+
+						if (xsd_type && isPlainLiteral(literal) && rightargtype == RDFNODEOID)
+							appendStringInfo(&left_filter_arg, "%s^^<%s%s>",
+											 literal,
+											 RDF_XSD_BASE_URI,
+											 MapSPARQLDatatype(leftargtype));
+						else
+							appendStringInfo(&left_filter_arg, "%s", cstring_to_rdfliteral(left));
+					}
 				}
 				/* check if the argument is a column */
 				else if (left_column && leftexpr->type == T_Var)

@@ -138,12 +138,14 @@ SELECT sparql.iri('"http:/not-a-scheme"'), sparql.iri('http:/not-a-scheme'), spa
 SELECT sparql.iri('"foo"@en');
 SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
 SELECT sparql.iri('_:b1');
+SELECT sparql.iri('"<https://example/>"');
 
   /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
 SELECT sparql.isIRI('<mailto:foo@example.com>');
 SELECT sparql.isIRI('http://example/');
 SELECT sparql.isIRI('"http://example/"');
+SELECT sparql.isIRI('"<http://example/>"');
 SELECT sparql.isIRI('path');
 SELECT sparql.isIRI('"path"');
 SELECT sparql.isIRI('"foo"^^xsd:string');
@@ -155,6 +157,7 @@ SELECT sparql.isIRI(NULL);
 SELECT sparql.isIRI('<not-an-iri');
 SELECT sparql.isURI('<http://example/>');
 SELECT sparql.isURI('path');
+SELECT sparql.isURI('"<http://example/>"');
 
   /* STRSTARTS */
 SELECT sparql.strstarts('"foobar"','"foo"'), sparql.strstarts('foobar','foo');
@@ -322,6 +325,7 @@ SELECT sparql.isblank('_');
 SELECT sparql.isblank(' ');
 SELECT sparql.isblank('');
 SELECT sparql.isblank(NULL);
+SELECT sparql.isblank('"_:b1"');
 
 /* ISNUMERIC */
 SELECT sparql.isnumeric('12');
