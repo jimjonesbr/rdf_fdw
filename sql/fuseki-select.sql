@@ -665,6 +665,20 @@ WHERE
   object = '"Westfälische Wilhelms-Universität Münster"@de' AND
   subject::text = '<https://www.uni-muenster.de>';
 
+/* 
+ * invalid foreign table option - SPARQL variable '?foo' does not exist 
+ * in the SPARQL query. The query will return only empty rows.
+ */
+CREATE FOREIGN TABLE ft_invalid_variable (
+  s rdfnode OPTIONS (variable '?foo') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}'
+);
+
+SELECT * FROM ft_invalid_variable
+FETCH FIRST 3 ROWS ONLY;
+
 /* Invalid SPARQL query test */
 CREATE FOREIGN TABLE ft_invalid_sparql (
   s rdfnode OPTIONS (variable '?s'),

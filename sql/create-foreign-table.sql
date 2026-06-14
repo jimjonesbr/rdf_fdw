@@ -23,19 +23,6 @@ CREATE FOREIGN TABLE table_error3 (
 ) SERVER testserver OPTIONS 
   (foo 'SELECT * WHERE {?s ?p ?o}');
 
-/* 
- * invalid foreign table option - SPARQL variable '?foo' does not exist 
- * in the SPARQL query. The query will return only empty rows.
- */
-CREATE FOREIGN TABLE table_error4 (
-  name text OPTIONS (variable '?foo')
-) SERVER testserver OPTIONS 
-  (log_sparql 'true', 
-   sparql 'SELECT * WHERE {?s ?p ?o}');
-
-SELECT * FROM table_error4
-LIMIT 3;
-
 /* invalid foreign table option - log_sparql must be boolean */
 CREATE FOREIGN TABLE table_error5 (
   name text OPTIONS (variable '?s')

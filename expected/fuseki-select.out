@@ -3025,6 +3025,25 @@ WHERE
    Remote Filter: ((?p = <http://dbpedia.org/property/name>) && (?o = "Westfälische Wilhelms-Universität Münster"@de))
 (6 rows)
 
+/* 
+ * invalid foreign table option - SPARQL variable '?foo' does not exist 
+ * in the SPARQL query. The query will return only empty rows.
+ */
+CREATE FOREIGN TABLE ft_invalid_variable (
+  s rdfnode OPTIONS (variable '?foo') 
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}'
+);
+SELECT * FROM ft_invalid_variable
+FETCH FIRST 3 ROWS ONLY;
+   s    
+--------
+ (null)
+ (null)
+ (null)
+(3 rows)
+
 /* Invalid SPARQL query test */
 CREATE FOREIGN TABLE ft_invalid_sparql (
   s rdfnode OPTIONS (variable '?s'),
@@ -3117,7 +3136,8 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/interna
 DROP SERVER server_invalid_url CASCADE;
 NOTICE:  drop cascades to foreign table ft_server_invalid_url
 DROP SERVER fuseki CASCADE;
-NOTICE:  drop cascades to 3 other objects
+NOTICE:  drop cascades to 4 other objects
 DETAIL:  drop cascades to foreign table ft
 drop cascades to user mapping for postgres on server fuseki
+drop cascades to foreign table ft_invalid_variable
 drop cascades to foreign table ft_invalid_sparql
