@@ -1021,7 +1021,6 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 	text *substr_arg = PG_GETARG_TEXT_PP(1);
 	char *str = text_to_cstring(str_arg);
 	char *substr = text_to_cstring(substr_arg);
-	char *lang_str = lang(str);
 
 	if (!LiteralsCompatible(str, substr))
 	{
