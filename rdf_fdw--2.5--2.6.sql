@@ -135,3 +135,11 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql STRICT IMMUTABLE;
+
+/* validate the argument with :: before calling the C function */
+CREATE OR REPLACE FUNCTION sparql.datatype(text)
+RETURNS rdfnode AS $$
+BEGIN
+  RETURN sparql.datatype($1::rdfnode);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;

@@ -2678,8 +2678,11 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_datatype'
 LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.datatype(text) RETURNS rdfnode
-AS 'MODULE_PATHNAME', 'rdf_fdw_datatype'
-LANGUAGE C IMMUTABLE STRICT;
+AS $$
+BEGIN
+  RETURN sparql.datatype($1::rdfnode);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.datatype(name) RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_datatype'
