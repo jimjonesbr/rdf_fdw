@@ -1708,7 +1708,7 @@ SELECT sparql.isblank('');
 SELECT sparql.isblank(NULL);
  isblank 
 ---------
- NULL
+ f
 (1 row)
 
 SELECT sparql.isblank('"_:b1"');
@@ -1933,6 +1933,18 @@ SELECT sparql.isliteral('_:bnode');
  isliteral 
 -----------
  f
+(1 row)
+
+SELECT sparql.isliteral('"<http://example.org>"');
+ isliteral 
+-----------
+ t
+(1 row)
+
+SELECT sparql.isliteral('"_:bnode"');
+ isliteral 
+-----------
+ t
 (1 row)
 
 SELECT sparql.isliteral('');

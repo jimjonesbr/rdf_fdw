@@ -70,6 +70,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed SPARQL pushdown for IRI-valued constants**: rdfnodes containing IRIs, when placed in the **left side** in an operation, were being incorrectly rendered as quoted literals, e.g. `WHERE '<http://example.org/property>'::rdfnode = sparql.iri(p)` was being pushed down as `Remote Filter: (("http://example.org/property" = IRI(?p)))` instead of `Remote Filter: ((<http://example.org/property> = IRI(?p)))`. The `T_OpExpr` path in `DeparseExpr` now skips the rdfnode normalisation when dealing with IRIs and blank nodes.
 
+* **Fixes isBlank result for NULL inputs**: the SQL declaration of isBlank was defined as `STRICT` which led function calls with `NULL` inputs to directly return `NULL`, but isBlank should return `false` instead, ans its companions `isIRI`, `isLiteral`, and `isNumeric` do.
+
 # 2.5
 Release date: **2026-04-20**
 

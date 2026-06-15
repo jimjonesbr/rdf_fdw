@@ -1128,9 +1128,16 @@ Datum rdf_fdw_langmatches(PG_FUNCTION_ARGS)
 
 Datum rdf_fdw_isBlank(PG_FUNCTION_ARGS)
 {
-	text *term_text = PG_GETARG_TEXT_PP(0);
-	char *term = text_to_cstring(term_text);
-	bool result = isBlank(term);
+	text *term_text;
+	bool result;
+	char *term;
+
+	if (PG_ARGISNULL(0))
+		PG_RETURN_BOOL(false);
+
+	term_text = PG_GETARG_TEXT_PP(0);
+	term = text_to_cstring(term_text);
+	result = isBlank(term);
 
 	PG_RETURN_BOOL(result);
 }

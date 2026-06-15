@@ -2606,7 +2606,7 @@ COMMENT ON FUNCTION sparql.isURI(rdfnode) IS 'Checks if the input text is a vali
 
 CREATE FUNCTION sparql.isblank(rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isBlank'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.isblank(rdfnode) IS 'Checks if the input text is a blank node.';
 
 CREATE FUNCTION sparql.isliteral(rdfnode) RETURNS boolean

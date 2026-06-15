@@ -366,6 +366,8 @@ SELECT sparql.isliteral('"bonjour"@fr');
 SELECT sparql.isliteral('12');
 SELECT sparql.isliteral('<http://example.org>');
 SELECT sparql.isliteral('_:bnode');
+SELECT sparql.isliteral('"<http://example.org>"');
+SELECT sparql.isliteral('"_:bnode"');
 SELECT sparql.isliteral('');
 SELECT sparql.isliteral('" "');
 SELECT sparql.isliteral('""');
