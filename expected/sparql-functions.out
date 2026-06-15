@@ -486,11 +486,7 @@ ERROR:  invalid input syntax for type rdfnode: ""foo"^<xsd:string>"
 SELECT sparql.datatype('"foo"^^xsd:string>');
 ERROR:  invalid input syntax for type rdfnode: ""foo"^^xsd:string>"
 SELECT sparql.datatype('"foo"^^<xsd:string');
-                 datatype                  
--------------------------------------------
- <http://www.w3.org/2001/XMLSchema#string>
-(1 row)
-
+ERROR:  invalid input syntax for type rdfnode: ""foo"^^<xsd:string"
 SELECT sparql.datatype(cast('2018-05-01' AS date));
                 datatype                 
 -----------------------------------------

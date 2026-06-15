@@ -7926,6 +7926,13 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 							p++;
 						if (*p == '>')
 							p++;
+						else
+							ereport(ERROR,
+									(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+									 errmsg("invalid input syntax for type rdfnode: \"%s\"",
+											str_in),
+									 errdetail("Unterminated IRI in datatype annotation: "
+											   "missing closing '>'.")));
 					}
 					else
 					{

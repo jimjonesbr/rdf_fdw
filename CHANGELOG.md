@@ -80,6 +80,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed `DATATYPE()` hanlding of malformed literals**: `DATATPYE()` now correctly raises an error for syntactically malformed literals passed as `text` (e.g. `"foo"^<xsd:string>` with a single caret, or `"foo"^^xsd:string>` with an unbalanced angle bracket) by delegating validation to the rdfnode type cast before processing.
 
+* **Fixed `rdfnode` input parser**: `rdfnode_in` now correctly rejects typed literals with an unterminated IRI in the datatype annotation (e.g. `"foo"^^<xsd:string` missing the closing `>`). Previously the parser silently dropped the malformed datatype annotation and returned a plain literal (`"foo"`), which was incorrect and could mask data quality issues.
+
 # 2.5
 Release date: **2026-04-20**
 
