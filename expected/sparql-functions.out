@@ -2948,9 +2948,9 @@ SELECT sparql.round(NULL);
 (1 row)
 
 SELECT sparql.round(CAST(2.49999 AS numeric));
-                     round                      
-------------------------------------------------
- "2"^^<http://www.w3.org/2001/XMLSchema#double>
+                      round                      
+-------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT sparql.round(CAST(2.5 AS double precision));

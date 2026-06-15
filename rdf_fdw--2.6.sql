@@ -2925,6 +2925,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
+CREATE FUNCTION sparql.round(numeric) RETURNS rdfnode AS $$
+BEGIN
+  IF $1 > 0.0 THEN
+    RETURN pg_catalog.floor($1 + 0.5)::rdfnode;
+  ELSE
+    RETURN pg_catalog.ceil($1 + 0.5)::rdfnode;
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
 CREATE FUNCTION sparql.ceil(text) RETURNS rdfnode AS $$
 BEGIN
   RETURN sparql.ceil($1::rdfnode)::rdfnode;

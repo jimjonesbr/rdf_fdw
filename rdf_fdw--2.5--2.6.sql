@@ -66,3 +66,13 @@ CREATE OR REPLACE FUNCTION sparql.isblank(rdfnode) RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdf_fdw_isBlank'
 LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION sparql.isblank(rdfnode) IS 'Checks if the input text is a blank node.';
+
+CREATE OR REPLACE FUNCTION sparql.round(numeric) RETURNS rdfnode AS $$
+BEGIN
+  IF $1 > 0.0 THEN
+    RETURN pg_catalog.floor($1 + 0.5)::rdfnode;
+  ELSE
+    RETURN pg_catalog.ceil($1 + 0.5)::rdfnode;
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
