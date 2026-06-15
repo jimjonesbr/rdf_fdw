@@ -76,6 +76,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed incorrect XSD data type for numeric arguments in `ROUND()`**: The funcion `ROUND()` was incorrectly returning `xsd:double` for PG `numeric` arguments, and it now returns `xsd:decimal` as also defined in other numeric functions, such as `CEIL()`, `FLOOR()`, or `ABS()`.
 
+* **Fixed TIMEZONE() consistently for invalid XSD types**: `TIMEZONE()` now consistently raises an error when the argument carries a non-xsd:dateTime datatype (e.g. `xsd:string`) instead of returning `NULL`. A wrong datatype is a type error, not an unknown value, and should be surfaced explicitly.
+
 # 2.5
 Release date: **2026-04-20**
 

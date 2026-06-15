@@ -3384,11 +3384,7 @@ SELECT sparql.timezone(NULL);
 (1 row)
 
 SELECT sparql.timezone('"not a date"^^xsd:string');
- timezone 
-----------
- NULL
-(1 row)
-
+ERROR:  TIMEZONE(): argument must be xsd:dateTime, got <http://www.w3.org/2001/XMLSchema#string>
 /* TZ */
 SELECT sparql.tz('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
     tz    

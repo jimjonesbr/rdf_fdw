@@ -3185,10 +3185,11 @@ DECLARE
   hours int;
   minutes int;
   sign text;
+  dt text := sparql.datatype($1);
 BEGIN
   -- Validate input
-  IF sparql.datatype($1) <> '<http://www.w3.org/2001/XMLSchema#dateTime>' THEN
-    RETURN NULL;
+  IF dt <> '<http://www.w3.org/2001/XMLSchema#dateTime>' THEN
+    RAISE EXCEPTION 'TIMEZONE(): argument must be xsd:dateTime, got %', dt ;
   END IF;
 
   IF lexical IS NULL OR lexical = '' THEN
