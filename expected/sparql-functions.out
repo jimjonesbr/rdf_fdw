@@ -1416,13 +1416,25 @@ SELECT sparql.contains('"foobar"@en', '"foo"@fr');
 SELECT sparql.contains('"123"^^<http://example.com/int>', '"2"');
  contains 
 ----------
- t
+ NULL
 (1 row)
 
 SELECT sparql.contains('"abc"', '"def"@en');
  contains 
 ----------
- f
+ NULL
+(1 row)
+
+SELECT sparql.contains('"foobar"@en', '"bar"^^xsd:string');
+ contains 
+----------
+ t
+(1 row)
+
+SELECT sparql.contains('"foobar"^^xsd:string', '"foo"');
+ contains 
+----------
+ t
 (1 row)
 
 /* LANGMATCHES */

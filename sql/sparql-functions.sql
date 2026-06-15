@@ -272,6 +272,8 @@ SELECT sparql.contains(NULL, NULL);
 SELECT sparql.contains('"foobar"@en', '"foo"@fr');
 SELECT sparql.contains('"123"^^<http://example.com/int>', '"2"');
 SELECT sparql.contains('"abc"', '"def"@en');
+SELECT sparql.contains('"foobar"@en', '"bar"^^xsd:string');
+SELECT sparql.contains('"foobar"^^xsd:string', '"foo"');
 
 /* LANGMATCHES */
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en"');

@@ -1023,15 +1023,10 @@ Datum rdf_fdw_contains(PG_FUNCTION_ARGS)
 	char *substr = text_to_cstring(substr_arg);
 	char *lang_str = lang(str);
 
-	if (strlen(lang_str) != 0)
+	if (!LiteralsCompatible(str, substr))
 	{
-		char *lang_substr = lang(substr);
-
-		if (strlen(lang_substr) != 0 && pg_strcasecmp(lang_str, lang_substr) != 0)
-		{
-			elog(DEBUG3, "%s exit: returning NULL (string and substring have different languag tags)", __func__);
-			PG_RETURN_NULL();
-		}
+		elog(DEBUG3, "%s exit: returning NULL (incompatible literals)", __func__);
+		PG_RETURN_NULL();
 	}
 
 	PG_RETURN_BOOL(contains(str, substr));

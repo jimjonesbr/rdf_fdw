@@ -72,6 +72,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixes isBlank result for NULL inputs**: the SQL declaration of isBlank was defined as `STRICT` which led function calls with `NULL` inputs to directly return `NULL`, but isBlank should return `false` instead, ans its companions `isIRI`, `isLiteral`, and `isNumeric` do.
 
+* **Fixed `CONCAT` result for incompatible arguments**: `CONTAINS()` now correctly returns `NULL` instead of `false` when argument types are incompatible, e.g. a plain literal paired with a language-tagged literal such as `@en`). It now also now correctly returns `NULL` instead of true when either argument carries a non-string datatype (i.e. anything other than `xsd:string` or `rdf:langString`). The function was previously operating on the raw lexical form regardless of the datatype, which produced incorrect results for custom-typed literals such as `"123"^^<http://example.com/int>`.
+
 # 2.5
 Release date: **2026-04-20**
 
