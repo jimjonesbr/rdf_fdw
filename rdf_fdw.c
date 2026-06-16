@@ -6311,6 +6311,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	Datum datum;
 	ListCell *cell;
 	BooleanTest *btest;
+	BoolExpr *boolexpr;
 	FuncExpr *func;
 	struct RDFfdwColumn *col = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
@@ -6404,6 +6405,24 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			 index, state->rdfTable->cols[index]->name);
 
 		break;
+	case T_BoolExpr:
+		boolexpr = (BoolExpr *) expr;
+
+		if (boolexpr->boolop == NOT_EXPR)
+		{
+			/* NOT always has exactly one argument */
+			char *inner = DeparseExpr(state, foreignrel,
+									(Expr *) linitial(boolexpr->args));
+
+			/* if the inner expression is not pushable, neither is the NOT */
+			if (inner == NULL)
+				return NULL;
+
+			return psprintf("(!%s)", inner);
+		}
+
+		/* Todo: OR_EXPR and AND_EXPR will be added here in the future */
+		return NULL;
 	case T_OpExpr:
 		elog(DEBUG2, "%s [T_OpExpr]: start (expr->type='%u')", __func__, expr->type);
 		oper = (OpExpr *)expr;

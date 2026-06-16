@@ -1087,16 +1087,15 @@ WHERE
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.bound(o) AND
   NOT sparql.bound(x);
-                                      QUERY PLAN                                       
----------------------------------------------------------------------------------------
+                                               QUERY PLAN                                                
+---------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_opt_ft
    Output: p, o, sparql.bound(p), sparql.bound(x)
-   Filter: (NOT sparql.bound(rdfnode_opt_ft.x))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o ?x 
-   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (BOUND(?o)))
-(7 rows)
+   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (BOUND(?o)) && ((!BOUND(?x))))
+(6 rows)
 
 /* ================================================================
  * SPARQL 17.4.1.3 - COALESCE
@@ -1146,16 +1145,15 @@ WHERE
   p = '<http://example.org/property>' AND
   sparql.isIRI(p) AND
   NOT sparql.isIRI(o);
-                               QUERY PLAN                               
-------------------------------------------------------------------------
+                                        QUERY PLAN                                        
+------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.isiri(p), sparql.isiri(o)
-   Filter: (NOT sparql.isiri(rdfnode_ft.o))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/property>) && (isIRI(?p)))
-(7 rows)
+   Remote Filter: ((?p = <http://example.org/property>) && (isIRI(?p)) && ((!isIRI(?o))))
+(6 rows)
 
 /* ================================================================
  * SPARQL 17.4.2.2 - isBlank
@@ -1184,16 +1182,15 @@ WHERE
   p = '<http://example.org/property>' AND
   sparql.isliteral(o) AND
   NOT sparql.isliteral(p);
-                                 QUERY PLAN                                 
-----------------------------------------------------------------------------
+                                            QUERY PLAN                                            
+--------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.isliteral(o), sparql.isliteral(p)
-   Filter: (NOT sparql.isliteral(rdfnode_ft.p))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/property>) && (ISLITERAL(?o)))
-(7 rows)
+   Remote Filter: ((?p = <http://example.org/property>) && (ISLITERAL(?o)) && ((!ISLITERAL(?p))))
+(6 rows)
 
 /* ================================================================
  * SPARQL 17.4.2.4 - isNumeric
@@ -1205,16 +1202,15 @@ WHERE
   p = '<http://example.org/count>' AND
   sparql.isnumeric(o) AND
   NOT sparql.isnumeric(p);
-                               QUERY PLAN                                
--------------------------------------------------------------------------
+                                          QUERY PLAN                                           
+-----------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.isnumeric(o), sparql.isnumeric(p)
-   Filter: (NOT sparql.isnumeric(rdfnode_ft.p))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/count>) && (ISNUMERIC(?o)))
-(7 rows)
+   Remote Filter: ((?p = <http://example.org/count>) && (ISNUMERIC(?o)) && ((!ISNUMERIC(?p))))
+(6 rows)
 
 /* ================================================================
  * SPARQL 17.4.2.5 - str

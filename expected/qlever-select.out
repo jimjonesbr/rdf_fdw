@@ -2947,28 +2947,34 @@ WHERE NOT sparql.isiri(object) AND
 INFO:  SPARQL query sent to 'qlever':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER((!isIRI(?o)))
+ FILTER((!ISBLANK(?o)))
+ FILTER((!ISNUMERIC(?o)))
+ FILTER((!LANGMATCHES(LANG(?o), "en")))
+}
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 14 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>   | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>            | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ""
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "        <= Tabulatorzeichen =>         "@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "                                                                  +
                                |                                                 |  <= salto de línea =>                                              +
                                |                                                 | "@es
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ". <= pontos => ."@pt
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "explicit string literal"
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>            | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
 (14 rows)
 
 -- SELECT ... INTO TEMPORARY TABLE

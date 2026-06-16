@@ -2949,9 +2949,15 @@ WHERE NOT sparql.isiri(object) AND
 INFO:  SPARQL query sent to 'graphdb':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o}
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER((!isIRI(?o)))
+ FILTER((!ISBLANK(?o)))
+ FILTER((!ISNUMERIC(?o)))
+ FILTER((!LANGMATCHES(LANG(?o), "en")))
+}
 
-INFO:  SPARQL returned 144 records.
+INFO:  SPARQL returned 14 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
