@@ -2579,7 +2579,11 @@ SELECT sparql.replace('""', '"b"', '"Z"'), sparql.replace('', 'b', 'Z');
 (1 row)
 
 SELECT sparql.replace('"abcd"', '""', '"Z"'), sparql.replace('abcd', '', 'Z');
-ERROR:  pattern cannot be empty in REPLACE()
+   replace   |   replace   
+-------------+-------------
+ "ZaZbZcZdZ" | "ZaZbZcZdZ"
+(1 row)
+
 SELECT sparql.replace('"abcd"', '"b"', '""'), sparql.replace('abcd', 'b', '');
  replace | replace 
 ---------+---------
@@ -2605,7 +2609,11 @@ SELECT sparql.replace('', 'a', 'Z');                -- Empty input string
 (1 row)
 
 SELECT sparql.replace('abcd', '', 'Z');             -- Empty pattern
-ERROR:  pattern cannot be empty in REPLACE()
+   replace   
+-------------
+ "ZaZbZcZdZ"
+(1 row)
+
 SELECT sparql.replace('abcd', 'a', '');             -- Empty replacement
  replace 
 ---------
@@ -2613,7 +2621,11 @@ SELECT sparql.replace('abcd', 'a', '');             -- Empty replacement
 (1 row)
 
 SELECT sparql.replace('', '', 'Z');                 -- Empty pattern and replacement
-ERROR:  pattern cannot be empty in REPLACE()
+ replace 
+---------
+ "Z"
+(1 row)
+
 SELECT sparql.replace('abcd', 'a', 'Z');            -- Pattern at the beginning
  replace 
 ---------
@@ -2665,7 +2677,7 @@ SELECT sparql.replace('"abcd"', '"b"', '"Z"');      -- Special characters inside
 SELECT sparql.replace('ab\cd', 'b\\', 'Z');         -- Escaped backslashes
  replace 
 ---------
- "ab\cd"
+ "aZcd"
 (1 row)
 
 SELECT sparql.replace('ab"cd', '"b"', '"Z"');       -- Quotes in the input
@@ -2777,9 +2789,17 @@ SELECT sparql.replace('ababab', 'ab', 'XY');         -- Non-global replacement (
 (1 row)
 
 SELECT sparql.replace('abcd', '', 'Z', 'g');         -- Empty pattern with global flag
-ERROR:  pattern cannot be empty in REPLACE()
+   replace   
+-------------
+ "ZaZbZcZdZ"
+(1 row)
+
 SELECT sparql.replace('abcd', '', 'Z');              -- Empty pattern without global flag
-ERROR:  pattern cannot be empty in REPLACE()
+   replace   
+-------------
+ "ZaZbZcZdZ"
+(1 row)
+
 SELECT sparql.replace('abcd', 'z', 'Z');             -- No pattern match
  replace 
 ---------
@@ -2817,7 +2837,11 @@ SELECT sparql.replace('""', '"b"', '"Z"');           -- Empty literal as input
 (1 row)
 
 SELECT sparql.replace('"b"', '""', '"Z"');            -- Empty pattern in replacement
-ERROR:  pattern cannot be empty in REPLACE()
+ replace 
+---------
+ "ZbZ"
+(1 row)
+
 SELECT sparql.replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
  replace 
 ---------
@@ -2834,6 +2858,18 @@ SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
  replace 
 ---------
  "Zcd"
+(1 row)
+
+SELECT sparql.replace('abc.def', '[.]', 'X', 'g');   -- character class containing a literal dot, matches only the .
+  replace  
+-----------
+ "abcXdef"
+(1 row)
+
+SELECT sparql.replace('abc.def', '.', 'X', 'g');     -- regex wildcard, matches any character, so all 7 characters are replaced
+  replace  
+-----------
+ "XXXXXXX"
 (1 row)
 
 /* ABS */

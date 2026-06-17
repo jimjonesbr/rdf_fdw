@@ -143,3 +143,48 @@ BEGIN
   RETURN sparql.datatype($1::rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+/*
+Fixed `sparql.replace()` to use regex semantics (via `regexp_replace`) for the
+3-argument form, consistent with the 4-argument form and the SPARQL 1.1 spec,
+which defines REPLACE() in terms of XPath regex in all forms. It now accepts
+empty string patterns, which are valid per XPath regex semantics and match at
+every position in the input string.
+*/
+CREATE OR REPLACE FUNCTION sparql.replace(text, text, text)
+RETURNS rdfnode AS $$
+BEGIN
+  RETURN pg_catalog.regexp_replace(
+    CASE WHEN left($1, 1) = '"' THEN sparql.lex($1::rdfnode) ELSE $1 END,
+    CASE WHEN left($2, 1) = '"' THEN sparql.lex($2::rdfnode) ELSE $2 END,
+    CASE WHEN left($3, 1) = '"' THEN sparql.lex($3::rdfnode) ELSE $3 END,
+    'g'
+  )::rdfnode;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode)
+RETURNS rdfnode AS $$
+BEGIN
+  RETURN pg_catalog.regexp_replace(
+    sparql.lex($1),
+    sparql.lex($2),
+    sparql.lex($3),
+    'g'
+  )::rdfnode;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode, rdfnode)
+RETURNS rdfnode AS $$
+BEGIN
+  RETURN sparql.str(
+    pg_catalog.regexp_replace(
+      sparql.lex($1),
+      sparql.lex($2),
+      sparql.lex($3),
+      sparql.lex($4) || 'g'
+    )::rdfnode
+  );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;

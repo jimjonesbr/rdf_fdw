@@ -546,6 +546,8 @@ SELECT sparql.replace('"b"', '""', '"Z"');            -- Empty pattern in replac
 SELECT sparql.replace('abcd', 'a.b', 'Z', 'g');      -- Dot in pattern (regex)
 SELECT sparql.replace('abcd', '[a-b]', 'Z', 'g');     -- Range in regex pattern
 SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
+SELECT sparql.replace('abc.def', '[.]', 'X', 'g');   -- character class containing a literal dot, matches only the .
+SELECT sparql.replace('abc.def', '.', 'X', 'g');     -- regex wildcard, matches any character, so all 7 characters are replaced
 
 /* ABS */
 SELECT sparql.abs('"-1"^^xsd:int');

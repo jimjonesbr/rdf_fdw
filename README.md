@@ -2430,20 +2430,30 @@ SELECT sparql.langmatches('en', '*');
 
 ```sql
 sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode, flags rdfnode DEFAULT '') → rdfnode
-
 ```
 
-Replaces parts of the **lexical form** using a regular expression. Implements the SPARQL 1.1 [REPLACE()](https://www.w3.org/TR/sparql11-query/#func-replace) function.
+Replaces parts of the **lexical form** using a regular expression. Implements the SPARQL 1.1 [REPLACE()](https://www.w3.org/TR/sparql11-query/#func-replace) function. All occurrences of the pattern are replaced.
 
-* Supports `i`, `m`, and `g` flags.
+* Supports `i`, `m`, and `s` flags.
+* An empty pattern matches at every position in the string, inserting the replacement between each character and at both ends.
 
 ```sql
-SELECT sparql.replace('"foo bar foo"', 'foo', 'baz', 'g');
+SELECT sparql.replace('"foo bar foo"', 'foo', 'baz');
     replace    
 ---------------
  "baz bar baz"
 (1 row)
+
+SELECT sparql.replace('"abc"', '', 'Z');
+   replace   
+-------------
+ "ZaZbZcZ"
+(1 row)
 ```
+
+> [!NOTE]
+> The regex engine follows PostgreSQL's POSIX ERE dialect rather than the XPath regex dialect required by the SPARQL 1.1 spec. For most common patterns these are equivalent, but Unicode category escapes (`\p{L}`, `\p{N}`, etc.) and XPath-style backreferences (`$1`, `$2`) in replacement strings are not supported.
+
 ### [Functions on Numerics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-numerics)
 
 #### [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)

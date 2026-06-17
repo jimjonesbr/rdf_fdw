@@ -2810,31 +2810,38 @@ COMMENT ON FUNCTION sparql.langmatches(rdfnode, rdfnode) IS 'Checks if the langu
 CREATE FUNCTION sparql.replace(text, text, text)
 RETURNS rdfnode AS $$
 BEGIN
-  IF sparql.lex($2::rdfnode) = '' THEN
-    RAISE EXCEPTION 'pattern cannot be empty in REPLACE()';
-  END IF;
-  RETURN pg_catalog.replace(sparql.lex($1::rdfnode), sparql.lex($2::rdfnode), sparql.lex($3::rdfnode))::rdfnode;
+  RETURN pg_catalog.regexp_replace(
+    CASE WHEN left($1, 1) = '"' THEN sparql.lex($1::rdfnode) ELSE $1 END,
+    CASE WHEN left($2, 1) = '"' THEN sparql.lex($2::rdfnode) ELSE $2 END,
+    CASE WHEN left($3, 1) = '"' THEN sparql.lex($3::rdfnode) ELSE $3 END,
+    'g'
+  )::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode)
 RETURNS rdfnode AS $$
 BEGIN
-  IF sparql.lex($2) = '' THEN
-    RAISE EXCEPTION 'pattern cannot be empty in REPLACE()';
-  END IF;
-  RETURN pg_catalog.replace(sparql.lex($1), sparql.lex($2), sparql.lex($3))::rdfnode;
+  RETURN pg_catalog.regexp_replace(
+    sparql.lex($1),
+    sparql.lex($2),
+    sparql.lex($3),
+    'g'
+  )::rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode, rdfnode)
-RETURNS rdfnode
-AS $$
+RETURNS rdfnode AS $$
 BEGIN
-  IF sparql.lex($2) = '' THEN
-     RAISE EXCEPTION 'pattern cannot be empty in REPLACE()';
-  END IF;
-  RETURN sparql.str(pg_catalog.regexp_replace(sparql.lex($1), sparql.lex($2), sparql.lex($3), sparql.lex($4) || 'g')::rdfnode);
+  RETURN sparql.str(
+    pg_catalog.regexp_replace(
+      sparql.lex($1),
+      sparql.lex($2),
+      sparql.lex($3),
+      sparql.lex($4) || 'g'
+    )::rdfnode
+  );
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
