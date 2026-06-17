@@ -296,6 +296,8 @@ SELECT sparql.langmatches(sparql.lang('"hello"^^xsd:string'), '"*"');
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"en"^^xsd:string');
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '"*"^^xsd:string');
 SELECT sparql.langmatches(sparql.lang('"hello"@en-us'), '"EN-*"^^xsd:string');
+SELECT sparql.langmatches('', '');
+SELECT sparql.langmatches('en', '');
 SELECT sparql.langmatches('', '"en"');
 SELECT sparql.langmatches('en', '"en"');
 SELECT sparql.langmatches(sparql.lang('"hello"@en'), '');
@@ -489,6 +491,7 @@ SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"^^<http://www.
 SELECT sparql.concat('"foo"^^<http://www.vocab.es#UNKNOWN>','"bar"');
 SELECT sparql.concat('"foo"@en', '"bar"@de');
 SELECT sparql.concat('"a"@en', '"b"@en', '"c"@fr');  -- should be "abc" (plain, not @en)
+SELECT sparql.concat(NULL, NULL, NULL, NULL);
 
   /* REPLACE */
 SELECT sparql.replace('"abcd"', '"b"', '"Z"'), sparql.replace('abcd', 'b', 'Z');
