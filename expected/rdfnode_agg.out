@@ -1,3 +1,4 @@
+\pset null NULL
 -- ==========================================
 -- SPARQL SUM()/AVG() Aggregate Tests
 -- ==========================================
@@ -187,9 +188,9 @@ WITH j (val) AS (
         (NULL::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 16: sum/avg of empty set (no rows)
@@ -198,9 +199,9 @@ WITH j (val) AS (
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j WHERE val IS NULL;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 17: sum/avg with xsd:string mixed in
@@ -211,9 +212,9 @@ WITH j (val) AS (
         ('"30"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 18: sum/avg with non-numeric only 
@@ -222,9 +223,9 @@ WITH j (val) AS (
         ('"not-a-number"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 19: sum/avg on multiple xsd:string
@@ -234,9 +235,9 @@ WITH j (val) AS (
         ('"banana"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
 SELECT sparql.avg(val), sparql.sum(val) FROM j;
- avg | sum 
------+-----
-     | 
+ avg  | sum  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 20: sum/avg on xsd:date
@@ -246,9 +247,9 @@ WITH j (val) AS (
         ('"2023-06-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 21: sum/avg on xsd:dateTime 
@@ -258,9 +259,9 @@ WITH j (val) AS (
         ('"2023-06-15T15:45:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 22: sum/avg on xsd:time 
@@ -270,9 +271,9 @@ WITH j (val) AS (
         ('"15:45:00"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 23: sum/avg on xsd:duration 
@@ -282,9 +283,9 @@ WITH j (val) AS (
         ('"P2M"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 24: sum/avg on xsd:boolean
@@ -294,9 +295,9 @@ WITH j (val) AS (
         ('"false"^^<http://www.w3.org/2001/XMLSchema#boolean>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 25: sum/avg with mixed numeric and xsd:date
@@ -306,9 +307,9 @@ WITH j (val) AS (
         ('"2023-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 26: sum/avg with mixed numeric and xsd:string
@@ -318,9 +319,9 @@ WITH j (val) AS (
         ('"text"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
- sum | avg 
------+-----
-     | 
+ sum  | avg  
+------+------
+ NULL | NULL
 (1 row)
 
 -- ==========================================
@@ -465,9 +466,9 @@ WITH j (val) AS (
         (NULL::rdfnode)
 )
 SELECT sparql.min(val), sparql.max(val) FROM j;
- min | max 
------+-----
-     | 
+ min  | max  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 38: min/max of empty set (no rows)
@@ -476,9 +477,9 @@ WITH j (val) AS (
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
 SELECT sparql.min(val), sparql.max(val) FROM j WHERE val IS NULL;
- min | max 
------+-----
-     | 
+ min  | max  
+------+------
+ NULL | NULL
 (1 row)
 
 -- Test 39: min/max with equal values
@@ -963,7 +964,7 @@ WITH j (val) AS (
 SELECT sparql.sample(val) FROM j;
  sample 
 --------
- 
+ NULL
 (1 row)
 
 -- Test 76: SAMPLE with empty set
@@ -973,7 +974,7 @@ WITH j (val) AS (
 SELECT sparql.sample(val) FROM j;
  sample 
 --------
- 
+ NULL
 (1 row)
 
 -- Test 77: SAMPLE with mixed numeric types
