@@ -26,7 +26,7 @@ MAJORVERSION := $(shell $(PG_CONFIG) --version | awk '{ \
   if (v[1] < 10) printf("%d%02d", v[1], v[2]); \
   else print v[1] }')
 
-REGRESS += create_extension \
+REGRESS +=  create-extension \
 			upgrade \
 			create-server \
 			create-foreign-table \

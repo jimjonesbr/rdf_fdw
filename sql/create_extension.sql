@@ -1,1 +1,0 @@
-CREATE EXTENSION rdf_fdw VERSION '2.1';

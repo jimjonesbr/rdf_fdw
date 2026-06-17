@@ -1,0 +1,1 @@
+CREATE EXTENSION rdf_fdw;

@@ -1,3 +1,6 @@
+DROP EXTENSION IF EXISTS rdf_fdw;
+CREATE EXTENSION rdf_fdw VERSION '2.1';
+
 SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
 
 CREATE SERVER fs FOREIGN DATA WRAPPER rdf_fdw
