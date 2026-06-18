@@ -10222,7 +10222,7 @@ Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
 	int tz, tz_hours, tz_mins;
 	StringInfoData buf;
 
-#if PG_VERSION_NUM >= 100000
+#if PG_VERSION_NUM >= 110000
     if (timetz2tm(t, &tm, &fsec, &tz) != 0)
         ereport(ERROR,
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
