@@ -3479,9 +3479,9 @@ ERROR:  TZ(): invalid timezone offset: +25:00
 SELECT sparql.tz('"2020-12-01T08:00:00-99:99"^^xsd:dateTime');
 ERROR:  TZ(): invalid timezone offset: -99:99
 SELECT sparql.tz('"invalid-date"^^xsd:dateTime');
-ERROR:  TZ(): datetime has no timezone
+ERROR:  TZ(): invalid xsd:dateTime format: invalid-date
 SELECT sparql.tz('""^^xsd:dateTime');
-ERROR:  TZ(): datetime has no timezone
+ERROR:  TZ(): invalid xsd:dateTime format: 
 SELECT sparql.tz(NULL);
   tz  
 ------
@@ -3489,7 +3489,7 @@ SELECT sparql.tz(NULL);
 (1 row)
 
 SELECT sparql.tz('"not a date"^^xsd:string');
-ERROR:  TZ(): datetime has no timezone
+ERROR:  TZ(): argument must be xsd:dateTime, got <http://www.w3.org/2001/XMLSchema#string>
 /*BOUND */
 SELECT sparql.bound(NULL);
  bound 

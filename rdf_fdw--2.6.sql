@@ -3251,14 +3251,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
-CREATE OR REPLACE FUNCTION sparql.tz(lit rdfnode)
+CREATE FUNCTION sparql.tz(lit rdfnode)
 RETURNS rdfnode AS $$
 DECLARE
   lexical    text := sparql.lex(lit);
   tz_offset  text;
   hh         int;
   mm         int;
+  dt         text := sparql.datatype($1);
 BEGIN
+
+  -- Validate input
+  IF dt <> '<http://www.w3.org/2001/XMLSchema#dateTime>' THEN
+    RAISE EXCEPTION 'TZ(): argument must be xsd:dateTime, got %', dt;
+  END IF;
+
+  -- Basic xsd:dateTime format validation
+  IF NOT lexical ~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.\d+)?([+-]\d{2}:\d{2}|Z)?$' THEN
+    RAISE EXCEPTION 'TZ(): invalid xsd:dateTime format: %', lexical;
+  END IF;
+
   tz_offset := substring(lexical from '([-+]\d{2}:\d{2}|Z)$');
 
   IF tz_offset IS NULL THEN

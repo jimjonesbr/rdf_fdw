@@ -188,3 +188,53 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+
+/* add error message for invalid input */
+CREATE OR REPLACE FUNCTION sparql.tz(lit rdfnode)
+RETURNS rdfnode AS $$
+DECLARE
+  lexical    text := sparql.lex(lit);
+  tz_offset  text;
+  hh         int;
+  mm         int;
+  dt         text := sparql.datatype($1);
+BEGIN
+
+  -- This validation was added in 2.6
+  IF dt <> '<http://www.w3.org/2001/XMLSchema#dateTime>' THEN
+    RAISE EXCEPTION 'TZ(): argument must be xsd:dateTime, got %', dt;
+  END IF;
+
+  -- This validation was added in 2.6
+  IF NOT lexical ~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.\d+)?([+-]\d{2}:\d{2}|Z)?$' THEN
+    RAISE EXCEPTION 'TZ(): invalid xsd:dateTime format: %', lexical;
+  END IF;
+
+  tz_offset := substring(lexical from '([-+]\d{2}:\d{2}|Z)$');
+
+  IF tz_offset IS NULL THEN
+    RAISE EXCEPTION 'TZ(): datetime has no timezone';
+  END IF;
+
+  IF tz_offset = 'Z' THEN
+    RETURN '"Z"';
+  END IF;
+
+  hh := abs(substring(tz_offset from 2 for 2)::int);
+  mm := substring(tz_offset from 5 for 2)::int;
+
+  IF hh > 14 OR mm > 59 OR (hh = 14 AND mm > 0) THEN
+    RAISE EXCEPTION 'TZ(): invalid timezone offset: %', tz_offset;
+  END IF;
+
+  RETURN '"' || tz_offset || '"';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION sparql.tz(text)
+RETURNS rdfnode AS $$
+BEGIN
+  RETURN sparql.tz($1::rdfnode);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
