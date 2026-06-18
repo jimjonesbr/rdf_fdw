@@ -980,6 +980,12 @@ SELECT '04:05:06 PST'::timetz::rdfnode::timetz;
  04:05:06-08
 (1 row)
 
+SELECT '18:30:25.123456+02:00'::timetz::rdfnode;
+                             rdfnode                              
+------------------------------------------------------------------
+ "18:30:25.123456+02:00"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
 SELECT true::rdfnode;
                       rdfnode                       
 ----------------------------------------------------

@@ -204,6 +204,7 @@ SELECT '04:05:06-08:00'::timetz::rdfnode;
 SELECT '04:05:06-08:00'::timetz::rdfnode::timetz;
 SELECT '04:05:06 PST'::timetz::rdfnode;
 SELECT '04:05:06 PST'::timetz::rdfnode::timetz;
+SELECT '18:30:25.123456+02:00'::timetz::rdfnode;
 
 SELECT true::rdfnode;
 SELECT false::rdfnode;

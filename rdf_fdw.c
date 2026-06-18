@@ -10219,31 +10219,73 @@ Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
 	TimeTzADT *t = PG_GETARG_TIMETZADT_P(0);
 	struct pg_tm tm;
 	fsec_t fsec;
-	int tz;
+	int tz, tz_hours, tz_mins;
 	StringInfoData buf;
 
-	if (timetz2tm(t, &tm, &fsec, &tz) != 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("invalid time with time zone")));
+#if PG_VERSION_NUM >= 100000
+    if (timetz2tm(t, &tm, &fsec, &tz) != 0)
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("invalid time with time zone")));
+#else
+    /* TimeTzADT is {TimeADT time; int32 zone;} in older PG */
+    tz = t->zone;
+    {
+        TimeADT time = t->time;
+        tm.tm_hour = (int)(time / USECS_PER_HOUR);
+        time -= (TimeADT)tm.tm_hour * USECS_PER_HOUR;
+        tm.tm_min = (int)(time / USECS_PER_MINUTE);
+        time -= (TimeADT)tm.tm_min * USECS_PER_MINUTE;
+        tm.tm_sec = (int)(time / USECS_PER_SEC);
+        fsec = (fsec_t)(time - (TimeADT)tm.tm_sec * USECS_PER_SEC);
+    }
+#endif
 
 	initStringInfo(&buf);
 
-	int tz_hours = abs(tz) / 3600;
-	int tz_mins  = (abs(tz) % 3600) / 60;
+	tz_hours = abs(tz) / 3600;
+	tz_mins  = (abs(tz) % 3600) / 60;
 
-	if (tz == 0)
-		appendStringInfo(&buf,
-						 "\"%02d:%02d:%02d+00:00\"^^%s",
-						 tm.tm_hour, tm.tm_min, tm.tm_sec,
-						 RDF_XSD_TIME);
+	if (fsec != 0)
+	{
+		char frac[8];
+		int flen;
+
+		snprintf(frac, sizeof(frac), "%06d", (int)fsec);
+		flen = 6;
+		while (flen > 1 && frac[flen - 1] == '0')
+			flen--;
+		frac[flen] = '\0';
+
+		if (tz == 0)
+			appendStringInfo(&buf,
+							"\"%02d:%02d:%02d.%s+00:00\"^^%s",
+							tm.tm_hour, tm.tm_min, tm.tm_sec,
+							frac, RDF_XSD_TIME);
+		else
+			appendStringInfo(&buf,
+							"\"%02d:%02d:%02d.%s%c%02d:%02d\"^^%s",
+							tm.tm_hour, tm.tm_min, tm.tm_sec,
+							frac,
+							tz < 0 ? '+' : '-',
+							tz_hours, tz_mins,
+							RDF_XSD_TIME);
+	}
 	else
-		appendStringInfo(&buf,
-						 "\"%02d:%02d:%02d%c%02d:%02d\"^^%s",
-						 tm.tm_hour, tm.tm_min, tm.tm_sec,
-						 tz < 0 ? '+' : '-',
-						 tz_hours, tz_mins,
-						 RDF_XSD_TIME);
+	{
+		if (tz == 0)
+			appendStringInfo(&buf,
+							"\"%02d:%02d:%02d+00:00\"^^%s",
+							tm.tm_hour, tm.tm_min, tm.tm_sec,
+							RDF_XSD_TIME);
+		else
+			appendStringInfo(&buf,
+							"\"%02d:%02d:%02d%c%02d:%02d\"^^%s",
+							tm.tm_hour, tm.tm_min, tm.tm_sec,
+							tz < 0 ? '+' : '-',
+							tz_hours, tz_mins,
+							RDF_XSD_TIME);
+	}
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
