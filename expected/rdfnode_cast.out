@@ -43,15 +43,15 @@ SELECT 42.12345::double precision::rdfnode;
 (1 row)
 
 SELECT 'Infinity'::numeric::rdfnode;
-                     rdfnode                      
---------------------------------------------------
- "INF"^^<http://www.w3.org/2001/XMLSchema#double>
+                      rdfnode                      
+---------------------------------------------------
+ "INF"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT '-Infinity'::numeric::rdfnode;
-                      rdfnode                      
----------------------------------------------------
- "-INF"^^<http://www.w3.org/2001/XMLSchema#double>
+                      rdfnode                       
+----------------------------------------------------
+ "-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT 'Infinity'::float4::rdfnode;
@@ -91,9 +91,9 @@ SELECT '-Infinity'::double precision::rdfnode;
 (1 row)
 
 SELECT 'NaN'::numeric::rdfnode;
-                     rdfnode                      
---------------------------------------------------
- "NaN"^^<http://www.w3.org/2001/XMLSchema#double>
+                      rdfnode                      
+---------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 SELECT 'NaN'::float4::rdfnode;

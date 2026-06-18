@@ -64,7 +64,7 @@ Release date: **YYYY-MM-DD**
 
 * **Add missing boolean-boolean comparison**: This adds `xsd:boolean` support to `rdfnode` comparison operators (`=`, `<>`, `<`, `<=`, `>`, `>=`), using PostgreSQL's `boolin` / `booleq` / `boollt` / `boolle` / `boolgt` / `boolge` functions.
 
-* **Fixed invalid XSD lexical forms for infinity in `rdfnode` cast functions**: `float4_to_rdfnode`, `float8_to_rdfnode`, `numeric_to_rdfnode`, and `numeric_to_rdfnode` were producing `"Infinity"` and `"-Infinity"` as lexical forms, which are not valid XSD representations. XSD 1.1 Part 2 §3.3.4/§3.3.5 defines `INF` and `-INF` as the only valid lexical forms for positive and negative infinity in `xsd:float` and `xsd:double`. The cast functions now produce `"INF"^^xsd:float`, `"-INF"^^xsd:float`, `"INF"^^xsd:double`, and `"-INF"^^xsd:double` respectively. Numeric infinity (`xsd:decimal`) is mapped to `xsd:double` following the same convention.
+* **Fixed invalid XSD lexical forms for infinity in `rdfnode` cast functions**: `float4_to_rdfnode`, `float8_to_rdfnode`, `numeric_to_rdfnode`, and `numeric_to_rdfnode` were producing `"Infinity"` and `"-Infinity"` as lexical forms, which are not valid XSD representations. XSD 1.1 Part 2 §3.3.4/§3.3.5 defines `INF` and `-INF` as the only valid lexical forms for positive and negative infinity in `xsd:float` and `xsd:double`. 
 
 * **Reject blank nodes in `IRI`, `STRDT`, and `STRLANG`**: These functions require a simple literal as their first argument. Previously, passing a blank node (e.g. `_:b1` or the result of `sparql.bnode()`) silently produced an invalid RDF term such as `_:b1@en` or a blank node with an attached datatype. Now these functions raise an error with a descriptive message when given a blank node.
 
@@ -105,7 +105,7 @@ Release date: **2026-04-20**
   ```
 ## Minor Changes
 
-Fixed `rdfReScanForeignScan` to reset the row index, making it correct for any future plan shape where PostgreSQL omits the Materialize node above a foreign scan.
+* **Fixed `rdfReScanForeignScan` to reset the row index**, making it correct for any future plan shape where PostgreSQL omits the Materialize node above a foreign scan.
 
 # 2.4
 Release date: **2026-02-14**

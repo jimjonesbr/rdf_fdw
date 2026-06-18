@@ -8343,11 +8343,11 @@ Datum numeric_to_rdfnode(PG_FUNCTION_ARGS)
 	initStringInfo(&buf);
 
 	if (numeric_is_nan(val))
-		appendStringInfo(&buf, "\"NaN\"^^%s", RDF_XSD_DOUBLE);
+		appendStringInfo(&buf, "\"NaN\"^^%s", RDF_XSD_DECIMAL);
 	else if (strcmp(val_str, "Infinity") == 0)
-		appendStringInfo(&buf, "\"INF\"^^%s", RDF_XSD_DOUBLE);
+		appendStringInfo(&buf, "\"INF\"^^%s", RDF_XSD_DECIMAL);
 	else if (strcmp(val_str, "-Infinity") == 0)
-		appendStringInfo(&buf, "\"-INF\"^^%s", RDF_XSD_DOUBLE);
+		appendStringInfo(&buf, "\"-INF\"^^%s", RDF_XSD_DECIMAL);
 	else
 		appendStringInfo(&buf, "\"%s\"^^%s", val_str, RDF_XSD_DECIMAL);
 
