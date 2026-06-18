@@ -458,16 +458,76 @@ SELECT '"abc"^^:bar'::rdfnode;                   -- empty prefix
 (1 row)
 
 /* interval with mixed signs */ 
-SELECT '1 year -3 days'::interval::rdfnode;      -- xsd:duration cannot mix signs
+SELECT '1 year -3 days'::interval::rdfnode;
                         rdfnode                        
 -------------------------------------------------------
- "-P1Y3D"^^<http://www.w3.org/2001/XMLSchema#duration>
+ "P1Y-3D"^^<http://www.w3.org/2001/XMLSchema#duration>
 (1 row)
 
 SELECT '-1 day 12 hours'::interval::rdfnode;
                          rdfnode                         
 ---------------------------------------------------------
- "-P1DT12H"^^<http://www.w3.org/2001/XMLSchema#duration>
+ "P-1DT12H"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '3 days -4 hours'::interval::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "P3DT-4H"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-2 months 5 days'::interval::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "P-2M5D"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 month -30 minutes'::interval::rdfnode;
+                         rdfnode                         
+---------------------------------------------------------
+ "P1MT-30M"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-4 hours'::interval::rdfnode;
+                       rdfnode                        
+------------------------------------------------------
+ "-PT4H"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 day -0.5 seconds'::interval::rdfnode;
+                         rdfnode                          
+----------------------------------------------------------
+ "-P1DT0.5S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 day -0.5 seconds'::interval::rdfnode;
+                         rdfnode                          
+----------------------------------------------------------
+ "P1DT-0.5S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 month 30 minutes'::interval::rdfnode;
+                         rdfnode                         
+---------------------------------------------------------
+ "P-1MT30M"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '1 day -1.5 seconds'::interval::rdfnode; 
+                         rdfnode                          
+----------------------------------------------------------
+ "P1DT-1.5S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 day -1.5 seconds'::interval::rdfnode;
+                         rdfnode                          
+----------------------------------------------------------
+ "-P1DT1.5S"^^<http://www.w3.org/2001/XMLSchema#duration>
+(1 row)
+
+SELECT '-1 day 0.5 seconds'::interval::rdfnode;
+                         rdfnode                          
+----------------------------------------------------------
+ "P-1DT0.5S"^^<http://www.w3.org/2001/XMLSchema#duration>
 (1 row)
 
 /* NULL handling */

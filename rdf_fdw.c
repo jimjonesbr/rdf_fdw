@@ -10562,11 +10562,12 @@ Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 	bool is_negative = false;
 	int years, months, days, hours, mins, secs, usecs;
 	bool is_zero;
+	bool has_positive = (iv->month > 0 || iv->day > 0 || iv->time > 0);
+	bool has_negative = (iv->month < 0 || iv->day < 0 || iv->time < 0);
 
 	initStringInfo(&buf);
 
-	/* deparse interval */
-	if (iv->month < 0 || iv->day < 0 || iv->time < 0)
+	if (has_negative && !has_positive)
 		is_negative = true;
 
 	years = iv->month / 12;
@@ -10598,11 +10599,11 @@ Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 
 		/* add years, months, and days */
 		if (years != 0)
-			appendStringInfo(&buf, "%dY", abs(years));
+			appendStringInfo(&buf, "%dY", is_negative ? abs(years) : years);
 		if (months != 0)
-			appendStringInfo(&buf, "%dM", abs(months));
+			appendStringInfo(&buf, "%dM", is_negative ? abs(months) : months);
 		if (days != 0)
-			appendStringInfo(&buf, "%dD", abs(days));
+			appendStringInfo(&buf, "%dD", is_negative ? abs(days) : days);
 
 		/* add time portion (hours, minutes, seconds, microseconds) */
 		if (hours != 0 || mins != 0 || secs != 0 || usecs != 0)
@@ -10610,25 +10611,31 @@ Datum interval_to_rdfnode(PG_FUNCTION_ARGS)
 			appendStringInfoChar(&buf, 'T');
 
 			if (hours != 0)
-				appendStringInfo(&buf, "%dH", abs(hours));
+				appendStringInfo(&buf, "%dH", is_negative ? abs(hours) : hours);
 			if (mins != 0)
-				appendStringInfo(&buf, "%dM", abs(mins));
+				appendStringInfo(&buf, "%dM", is_negative ? abs(mins) : mins);
 
 			if (usecs != 0)
 			{
-				/* Format fractional seconds without trailing zeros */
+				int64 total_usecs = (int64)secs * USECS_PER_SEC + usecs;  /* preserves combined sign */
+				int abs_secs = (int)(labs(total_usecs) / USECS_PER_SEC);
+				int abs_usecs = (int)(labs(total_usecs) % USECS_PER_SEC);
 				char frac[8];
 				int flen;
 
-				snprintf(frac, sizeof(frac), "%06d", abs(usecs));
+				snprintf(frac, sizeof(frac), "%06d", abs_usecs);
 				flen = 6;
 				while (flen > 1 && frac[flen - 1] == '0')
 					flen--;
 				frac[flen] = '\0';
-				appendStringInfo(&buf, "%d.%sS", abs(secs), frac);
+
+				if (is_negative)
+					appendStringInfo(&buf, "%d.%sS", abs_secs, frac);
+				else
+					appendStringInfo(&buf, "%s%d.%sS", total_usecs < 0 ? "-" : "", abs_secs, frac);
 			}
 			else if (secs != 0)
-				appendStringInfo(&buf, "%dS", abs(secs));
+				appendStringInfo(&buf, "%dS", is_negative ? abs(secs) : secs);
 		}
 	}
 

@@ -98,8 +98,18 @@ SELECT '"abc"^^xsd:'::rdfnode;                   -- empty local part
 SELECT '"abc"^^:bar'::rdfnode;                   -- empty prefix
 
 /* interval with mixed signs */ 
-SELECT '1 year -3 days'::interval::rdfnode;      -- xsd:duration cannot mix signs
+SELECT '1 year -3 days'::interval::rdfnode;
 SELECT '-1 day 12 hours'::interval::rdfnode;
+SELECT '3 days -4 hours'::interval::rdfnode;
+SELECT '-2 months 5 days'::interval::rdfnode;
+SELECT '1 month -30 minutes'::interval::rdfnode;
+SELECT '-4 hours'::interval::rdfnode;
+SELECT '-1 day -0.5 seconds'::interval::rdfnode;
+SELECT '1 day -0.5 seconds'::interval::rdfnode;
+SELECT '-1 month 30 minutes'::interval::rdfnode;
+SELECT '1 day -1.5 seconds'::interval::rdfnode; 
+SELECT '-1 day -1.5 seconds'::interval::rdfnode;
+SELECT '-1 day 0.5 seconds'::interval::rdfnode;
 
 /* NULL handling */
 SELECT NULL::rdfnode;
