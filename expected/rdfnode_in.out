@@ -895,9 +895,9 @@ SELECT '00:00:00'::time::rdfnode::time;
 (1 row)
 
 SELECT '04:05:06-08:00'::timetz::rdfnode;
-                        rdfnode                         
---------------------------------------------------------
- "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
+                          rdfnode                          
+-----------------------------------------------------------
+ "04:05:06-08:00"^^<http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
 SELECT '04:05:06-08:00'::timetz::rdfnode::timetz;
@@ -907,9 +907,9 @@ SELECT '04:05:06-08:00'::timetz::rdfnode::timetz;
 (1 row)
 
 SELECT '04:05:06 PST'::timetz::rdfnode;
-                        rdfnode                         
---------------------------------------------------------
- "04:05:06-08"^^<http://www.w3.org/2001/XMLSchema#time>
+                          rdfnode                          
+-----------------------------------------------------------
+ "04:05:06-08:00"^^<http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
 SELECT '04:05:06 PST'::timetz::rdfnode::timetz;

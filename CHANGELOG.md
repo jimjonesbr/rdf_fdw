@@ -87,6 +87,8 @@ Release date: **YYYY-MM-DD**
 * **Fixed `REPLACE()` to use regex semantics**: `REPLACE()` now uses `regexp_replace` for the
 3-argument form, consistent with the 4-argument form and the SPARQL 1.1 spec, which defines REPLACE() in terms of XPath regex in all forms. It now accepts empty string patterns, which are valid per XPath regex semantics and match at every position in the input string.
 
+* **Fixed `timetz` to `rdfnode` cast**: the function `timetz_to_rdfnode` was entirely relying on PostgreSQL's `timetz_out` to convert the strings, which was leading to a minute truncation when the timestamp's minutes was `:00`. It now produces well-formed `xsd:time` timezone offsets (`+02:00` instead of `+02`).
+
 # 2.5
 Release date: **2026-04-20**
 

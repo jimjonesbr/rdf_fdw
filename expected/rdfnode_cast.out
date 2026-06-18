@@ -151,9 +151,9 @@ SELECT '18:30:25'::time without time zone::rdfnode;
 (1 row)
 
 SELECT '18:30:25+02:00'::time with time zone::rdfnode;
-                        rdfnode                         
---------------------------------------------------------
- "18:30:25+02"^^<http://www.w3.org/2001/XMLSchema#time>
+                          rdfnode                          
+-----------------------------------------------------------
+ "18:30:25+02:00"^^<http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
 SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;

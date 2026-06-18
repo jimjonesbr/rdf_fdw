@@ -10217,15 +10217,33 @@ Datum rdfnode_neq_timetz(PG_FUNCTION_ARGS)
 Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeTzADT *t = PG_GETARG_TIMETZADT_P(0);
-	char *timetzstr;
+	struct pg_tm tm;
+	fsec_t fsec;
+	int tz;
 	StringInfoData buf;
-	timetzstr = DatumGetCString(DirectFunctionCall1(timetz_out, TimeTzADTPGetDatum(t)));
+
+	if (timetz2tm(t, &tm, &fsec, &tz) != 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("invalid time with time zone")));
 
 	initStringInfo(&buf);
-	appendStringInfo(&buf,
-					 "\"%s\"^^%s",
-					 timetzstr,
-					 RDF_XSD_TIME);
+
+	int tz_hours = abs(tz) / 3600;
+	int tz_mins  = (abs(tz) % 3600) / 60;
+
+	if (tz == 0)
+		appendStringInfo(&buf,
+						 "\"%02d:%02d:%02d+00:00\"^^%s",
+						 tm.tm_hour, tm.tm_min, tm.tm_sec,
+						 RDF_XSD_TIME);
+	else
+		appendStringInfo(&buf,
+						 "\"%02d:%02d:%02d%c%02d:%02d\"^^%s",
+						 tm.tm_hour, tm.tm_min, tm.tm_sec,
+						 tz < 0 ? '+' : '-',
+						 tz_hours, tz_mins,
+						 RDF_XSD_TIME);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
