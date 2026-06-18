@@ -1,3 +1,5 @@
+SET datestyle = 'ISO, YMD';
+SET timezone = 'UTC';
 
 SELECT '"foo"'::rdfnode;
 SELECT '"foo"^^xsd:string'::rdfnode;

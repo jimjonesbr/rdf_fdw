@@ -1,3 +1,5 @@
+SET datestyle = 'ISO, YMD';
+SET timezone = 'UTC';
 SELECT '"foo"'::rdfnode;
  rdfnode 
 ---------
@@ -817,21 +819,21 @@ SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
 (1 row)
 
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode::timestamptz;
-             timestamptz             
--------------------------------------
- Fri Apr 25 11:44:38.149101 2025 PDT
+          timestamptz          
+-------------------------------
+ 2025-04-25 18:44:38.149101+00
 (1 row)
 
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
                                   rdfnode                                   
 ----------------------------------------------------------------------------
- "2025-04-26T01:44:38.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ "2025-04-25T18:44:38.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
-         timestamptz          
-------------------------------
- Fri Apr 25 18:44:38 2025 PDT
+      timestamptz       
+------------------------
+ 2025-04-25 18:44:38+00
 (1 row)
 
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
@@ -841,9 +843,9 @@ SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
 (1 row)
 
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
-        timestamp         
---------------------------
- Fri Apr 25 18:44:38 2025
+      timestamp      
+---------------------
+ 2025-04-25 18:44:38
 (1 row)
 
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
@@ -853,9 +855,9 @@ SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
 (1 row)
 
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
-        timestamp         
---------------------------
- Fri Apr 25 18:44:38 2025
+      timestamp      
+---------------------
+ 2025-04-25 18:44:38
 (1 row)
 
 SELECT '2020-05-12'::date::rdfnode;
@@ -867,7 +869,7 @@ SELECT '2020-05-12'::date::rdfnode;
 SELECT '2020-05-12'::date::rdfnode::date;
     date    
 ------------
- 05-12-2020
+ 2020-05-12
 (1 row)
 
 SELECT '18:44:38'::time::rdfnode;
