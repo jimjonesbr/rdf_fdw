@@ -37,6 +37,8 @@ Release date: **YYYY-MM-DD**
 
 * **rdfnodes with invalid trailing content now raise an error**: rdfnodes with trailing content, which can contain malicious SPARQL instructions, were being silently truncated. While this avoided any attempt of SPARQL injection, it could lead to confusion, since the user was never aware of this truncation. The function `rdfnode_in` now raises an error if such content is detected.
 
+* **Fixes trailing whitespace truncation in rdfnode**: `rdfnode` generated from strings containing trailing whitespaces were being truncated. This is now fixed.
+
 * **Blank nodes in FILTER expressions**: Blank nodes in FILTER expressions are now passed as blank nodes; previously, they were cast as literals. This allows triplestores that deviate from the SPARQL specification to handle blank nodes according to their own implementation.
 
 * **Invalid `rdfnode` input now raises an error**: Inputs to `rdfnode_in` that are not a valid RDF literal, IRI, or blank node now raise `ERRCODE_INVALID_TEXT_REPRESENTATION` instead of being silently coerced. IRIs and blank nodes are returned as-is without unnecessary literal parsing.

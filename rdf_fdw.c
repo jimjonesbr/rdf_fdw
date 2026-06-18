@@ -7885,16 +7885,22 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 	}
 	else if (isLiteral(str_in))
 	{
-		char *node;
-
 		/*
-		 * Reject trailing content after a quoted RDF literal boundary.
-		 * Only applies when the input starts with '"'.
+		 * A typed/language-tagged RDF literal must begin with '"'. If the
+		 * input does not start with a quote, it cannot legally carry a
+		 * language tag or datatype, so the entire string is treated as the
+		 * lexical form of a plain string literal (escaped + quoted).
+		 *
+		 * NOTE: this guard must wrap the whole parse path — not just the
+		 * trailing-content check — otherwise inputs like '  "foo"@en  '
+		 * get silently mis-parsed and truncated.
 		 */
 		if (*str_in == '"')
 		{
+			char *node;
 			const char *p = str_in + 1;
 
+			/* Reject trailing content after a quoted RDF literal boundary. */
 			while (*p)
 			{
 				if (*p == '"')
@@ -7904,7 +7910,6 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 						p += 2;
 						continue;
 					}
-					/* Count preceding backslashes; odd = escaped */
 					{
 						const char *q = p;
 						int backslashes = 0;
@@ -7931,7 +7936,6 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 				if (*p == '@')
 				{
 					p++;
-					/* BCP 47 chars only: letters, digits, hyphen */
 					while (*p && (isalnum((unsigned char)*p) || *p == '-'))
 						p++;
 				}
@@ -7955,7 +7959,6 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 					}
 					else
 					{
-						/* prefix:local — restrict to PN-ish chars */
 						while (*p && (isalnum((unsigned char)*p) ||
 									  *p == ':' || *p == '_' ||
 									  *p == '-' || *p == '.'))
@@ -7970,39 +7973,40 @@ Datum rdfnode_in(PG_FUNCTION_ARGS)
 									str_in),
 							 errdetail("Trailing content after RDF literal.")));
 			}
-		}
 
-		node = cstring_to_rdfliteral(str_in);
-		lexical = lex(node);
-		lan = lang(node);
-		dtype = datatype(node);
+			node = cstring_to_rdfliteral(str_in);
+			lexical = lex(node);
+			lan = lang(node);
+			dtype = datatype(node);
 
-		/*
-		 * RDF 1.1 allows ill-typed literals: a literal whose lexical form is
-		 * not in the lexical space of its datatype is still a legal RDF term.
-		 * Therefore we do NOT validate the lexical form here. Value-space
-		 * checks happen in the cast functions (rdfnode -> int/timestamp/...).
-		 *
-		 * The only checks at construction time are syntactic:
-		 *   - the language tag must be well-formed BCP 47
-		 *   - the datatype IRI must be a valid IRI (handled in parse path)
-		 */
-		if (strlen(lan) != 0)
-		{
-			if (!is_valid_language_tag(lan))
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-						 errmsg("invalid language tag: \"%s\"", lan)));
+			if (strlen(lan) != 0)
+			{
+				if (!is_valid_language_tag(lan))
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+							 errmsg("invalid language tag: \"%s\"", lan)));
 
-			appendStringInfoString(&r, strlang(unescape_unicode(lexical), lan));
-		}
-		else if (strlen(dtype) != 0)
-		{
-			appendStringInfoString(&r, strdt(unescape_unicode(lexical), dtype));
+				appendStringInfoString(&r, strlang(unescape_unicode(lexical), lan));
+			}
+			else if (strlen(dtype) != 0)
+			{
+				appendStringInfoString(&r, strdt(unescape_unicode(lexical), dtype));
+			}
+			else
+			{
+				appendStringInfoString(&r, str(unescape_unicode(str_in)));
+			}
 		}
 		else
 		{
-			appendStringInfoString(&r, str(unescape_unicode(str_in)));
+			/*
+			* No leading quote: not RDF literal syntax, so the whole input is
+			* the (already-escaped) lexical form of a plain string literal.
+			* We call cstring_to_rdfliteral() directly rather than str(), because
+			* str() runs lex() first, which re-extracts an embedded quoted region
+			* and truncates inputs like '  "foo"@en  '.
+			*/
+			appendStringInfoString(&r, cstring_to_rdfliteral(unescape_unicode(str_in)));
 		}
 	}
 	else if (isIRI(str_in) || isBlank(str_in))

@@ -27,6 +27,7 @@ SELECT '"x^^y"'::rdfnode;                       -- "x^^y"
 SELECT '"a\\"b"@en'::rdfnode;                   -- "a\"b"@en
 SELECT '"𝄞"^^<http://example.org/dt>'::rdfnode;
 
+
 /* language tags (BCP 47) */
 SELECT '"foo"@'::rdfnode;                       -- invalid: empty tag
 SELECT '"foo"@en-US'::rdfnode;                  -- valid
@@ -86,10 +87,13 @@ SELECT E'"backslash\\\\test"'::rdfnode;          -- \\
 SELECT E'"quote\\""'::rdfnode;                   -- \"
 
 /* whitespace handling */
-SELECT '  "foo"@en  '::rdfnode;                  -- leading/trailing
+SELECT '  "foo"@en  '::rdfnode;                  -- leading/trailing with language tag
+SELECT '  "foo"^^xsd:int  '::rdfnode;            -- leading/trailing with data type
 SELECT '"foo" @en'::rdfnode;                     -- space before @ -> invalid
 SELECT '"foo"^^ xsd:string'::rdfnode;            -- space after ^^ -> invalid
 SELECT E'"foo"\n@en'::rdfnode;                   -- newline before @ -> invalid
+SELECT 'foo"bar"@en'::rdfnode;                   -- embedded quote + lang-looking suffix: keep verbatim
+SELECT 'x\"y'::rdfnode;                          -- already-escaped text, must NOT double-escape
 
 /* datatype IRI variants */
 SELECT '"abc"^^<>'::rdfnode;                     -- empty datatype IRI

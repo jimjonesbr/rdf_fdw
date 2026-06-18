@@ -414,10 +414,16 @@ SELECT E'"quote\\""'::rdfnode;                   -- \"
 (1 row)
 
 /* whitespace handling */
-SELECT '  "foo"@en  '::rdfnode;                  -- leading/trailing
-   rdfnode   
--------------
- "  \"foo\""
+SELECT '  "foo"@en  '::rdfnode;                  -- leading/trailing with language tag
+     rdfnode      
+------------------
+ "  \"foo\"@en  "
+(1 row)
+
+SELECT '  "foo"^^xsd:int  '::rdfnode;            -- leading/trailing with data type
+        rdfnode         
+------------------------
+ "  \"foo\"^^xsd:int  "
 (1 row)
 
 SELECT '"foo" @en'::rdfnode;                     -- space before @ -> invalid
@@ -436,6 +442,18 @@ ERROR:  invalid input syntax for type rdfnode: ""foo"
 LINE 1: SELECT E'"foo"\n@en'::rdfnode;
                ^
 DETAIL:  Trailing content after RDF literal.
+SELECT 'foo"bar"@en'::rdfnode;                   -- embedded quote + lang-looking suffix: keep verbatim
+     rdfnode     
+-----------------
+ "foo\"bar\"@en"
+(1 row)
+
+SELECT 'x\"y'::rdfnode;                          -- already-escaped text, must NOT double-escape
+ rdfnode 
+---------
+ "x\"y"
+(1 row)
+
 /* datatype IRI variants */
 SELECT '"abc"^^<>'::rdfnode;                     -- empty datatype IRI
 ERROR:  invalid input syntax for type rdfnode: ""abc"^^<>"
