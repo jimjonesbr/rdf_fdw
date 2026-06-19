@@ -159,9 +159,9 @@ SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;
 (1 row)
 
 SELECT '2025-01-01 18:30:25 UTC'::timestamp with time zone::rdfnode;
-                                  rdfnode                                   
-----------------------------------------------------------------------------
- "2025-01-01T18:30:25.000000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+                               rdfnode                               
+---------------------------------------------------------------------
+ "2025-01-01T18:30:25Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
 SELECT '1 year 2 months 3 weeks 4 days 5 hours 6 minutes 7 seconds'::interval::rdfnode;

@@ -21,7 +21,7 @@ Release date: **YYYY-MM-DD**
 
 * **Pushdown now handles `NOT` boolean expressions**: this allows `NOT BOUND()`, `NOT isIRI()`, `NOT isLiteral()`, and `NOT isNumeric()` to be translated to SPARQL `FILTER (!...)` and executed at the remote endpoint instead of being evaluated locally after fetching. This reduces the number of rows transferred from the endpoint when these conditions are selective.
 
-* **Add support for PostgreSQL BCE years**: It is now possible to convert PostgreSQL `timestamp` and `timestamptz` to `rdfnode`, which will map it XSD astronomical year numbering, e.g. (`1 BC` -> `0000`, `2 BC` -> `-0001`, etc.)
+* **Add support for BCE dates and timestamps in rdfnode casts**: PostgreSQL represents BCE years using BC notation and has no year 0, while XML Schema uses astronomical year numbering (`0000 = 1 BC`, `-0001 = 2 BC`, etc.). Add conversion logic for date, `timestamp`, and `timestamptz` casts to ensure correct round-tripping of BCE values between PostgreSQL and RDF literals.
 
 ## Deprecations
 

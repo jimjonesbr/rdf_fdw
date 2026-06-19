@@ -9425,11 +9425,11 @@ Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 
 	initStringInfo(&buf);
 
-	/* necessary for BC timestamptz values */
+	/* necessary for BCE timestamptz values */
 	if (tm.tm_year < 0)
-        appendStringInfo(&buf, "\"-%04d", -tm.tm_year);
-    else
-        appendStringInfo(&buf, "\"%04d", tm.tm_year);
+		appendStringInfo(&buf, "\"-%04d", -tm.tm_year);
+	else
+		appendStringInfo(&buf, "\"%04d", tm.tm_year);
 
 	appendStringInfo(&buf,
 					 "-%02d-%02dT%02d:%02d:%02d",
@@ -9605,15 +9605,15 @@ Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
 	if (timestamp2tm(ts, NULL, &tm, &fsec, NULL, NULL) != 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				errmsg("invalid timestamp")));
+				 errmsg("invalid timestamp")));
 
 	initStringInfo(&buf);
 
-	/* necessary for BC timestamptz values */
+	/* necessary for BCE timestamp values */
 	if (tm.tm_year < 0)
-        appendStringInfo(&buf, "\"-%04d", -tm.tm_year);
-    else
-        appendStringInfo(&buf, "\"%04d", tm.tm_year);
+		appendStringInfo(&buf, "\"-%04d", -tm.tm_year);
+	else
+		appendStringInfo(&buf, "\"%04d", tm.tm_year);
 
 	appendStringInfo(&buf,
 					 "-%02d-%02dT%02d:%02d:%02d",
@@ -9699,10 +9699,40 @@ Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum result = DirectFunctionCall3(date_in,
-									   CStringGetDatum(p.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
+	StringInfoData buf;
+	Datum result;
+
+	if (!p.isDateTime && !p.isDate)
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("cannot cast RDF literal: %s", text_to_cstring(t))));
+
+	initStringInfo(&buf);
+
+	/*
+	 * XSD astronomical year:
+	 *
+	 *   0001 = 1 AD
+	 *   0000 = 1 BC
+	 *  -0001 = 2 BC
+	 *  -0002 = 3 BC
+	 *  ...
+	 */
+	if (*p.lex == '-')
+	{
+		char *rest;
+		int year = strtol(p.lex + 1, &rest, 10);
+		appendStringInfo(&buf, "%04d%s BC", year + 1, rest);
+	}
+	else if (strncmp(p.lex, "0000-", 5) == 0)
+		appendStringInfo(&buf, "0001%s BC", p.lex + 4);
+	else
+		appendStringInfoString(&buf, p.lex);
+
+	result = DirectFunctionCall3(date_in,
+								CStringGetDatum(buf.data),
+								ObjectIdGetDatum(InvalidOid),
+								Int32GetDatum(-1));
 
 	PG_RETURN_DATEADT(DatumGetDateADT(result));
 }
@@ -9866,9 +9896,14 @@ Datum date_to_rdfnode(PG_FUNCTION_ARGS)
 	j2date(d + POSTGRES_EPOCH_JDATE, &year, &month, &day);
 
 	initStringInfo(&buf);
-	appendStringInfo(&buf,
-					 "\"%04d-%02d-%02d\"^^%s",
-					 year, month, day, RDF_XSD_DATE);
+
+	/* necessary for BCE date values */
+	if (year < 0)
+		appendStringInfo(&buf, "\"-%04d", -year);
+	else
+		appendStringInfo(&buf, "\"%04d", year);
+
+	appendStringInfo(&buf, "-%02d-%02d\"^^%s", month, day, RDF_XSD_DATE);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }

@@ -1195,10 +1195,88 @@ SELECT '2020-05-12'::date::rdfnode;
  "2020-05-12"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
+SELECT '0001-01-01 AD'::date::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "0001-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '0001-01-01 BC'::date::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "0000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '0002-01-01 BC'::date::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "-0001-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '0003-01-01 BC'::date::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "-0002-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT '0044-03-15 BC'::date::rdfnode;
+                        rdfnode                         
+--------------------------------------------------------
+ "-0043-03-15"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
 SELECT '2020-05-12'::date::rdfnode::date;
     date    
 ------------
  2020-05-12
+(1 row)
+
+SELECT '0001-01-01 AD'::date::rdfnode::date;
+    date    
+------------
+ 0001-01-01
+(1 row)
+
+SELECT '0001-01-01 BC'::date::rdfnode::date;
+     date      
+---------------
+ 0001-01-01 BC
+(1 row)
+
+SELECT '0002-01-01 BC'::date::rdfnode::date;
+     date      
+---------------
+ 0002-01-01 BC
+(1 row)
+
+SELECT '0003-01-01 BC'::date::rdfnode::date;
+     date      
+---------------
+ 0003-01-01 BC
+(1 row)
+
+SELECT '0044-03-15 BC'::date::rdfnode::date;
+     date      
+---------------
+ 0044-03-15 BC
+(1 row)
+
+SELECT '"0000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
+     date      
+---------------
+ 0001-01-01 BC
+(1 row)
+
+SELECT '"-0043-03-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
+     date      
+---------------
+ 0044-03-15 BC
+(1 row)
+
+SELECT '"0000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date::rdfnode;
+                        rdfnode                        
+-------------------------------------------------------
+ "0000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
 SELECT '18:44:38'::time::rdfnode;

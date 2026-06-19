@@ -243,7 +243,20 @@ SELECT '0044-03-15 18:33:45.123456 BC'::timestamptz::rdfnode::timestamptz;
 
 /* date <-> rdfnode round-trip */
 SELECT '2020-05-12'::date::rdfnode;
+SELECT '0001-01-01 AD'::date::rdfnode;
+SELECT '0001-01-01 BC'::date::rdfnode;
+SELECT '0002-01-01 BC'::date::rdfnode;
+SELECT '0003-01-01 BC'::date::rdfnode;
+SELECT '0044-03-15 BC'::date::rdfnode;
 SELECT '2020-05-12'::date::rdfnode::date;
+SELECT '0001-01-01 AD'::date::rdfnode::date;
+SELECT '0001-01-01 BC'::date::rdfnode::date;
+SELECT '0002-01-01 BC'::date::rdfnode::date;
+SELECT '0003-01-01 BC'::date::rdfnode::date;
+SELECT '0044-03-15 BC'::date::rdfnode::date;
+SELECT '"0000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
+SELECT '"-0043-03-15"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date;
+SELECT '"0000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'::rdfnode::date::rdfnode;
 
 SELECT '18:44:38'::time::rdfnode;
 SELECT '18:44:38'::time::rdfnode::time;
