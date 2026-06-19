@@ -1447,15 +1447,17 @@ FROM rdfnode_ft
 WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o), 'en') AND
-  sparql.strstarts(o, '"hel"@en');
-                                                              QUERY PLAN                                                              
---------------------------------------------------------------------------------------------------------------------------------------
+  sparql.strstarts(o, '"hel"@en') AND
+  sparql.strstarts(o, '"日本"') AND
+  sparql.strstarts(o, '"🐘"');
+                                                                                        QUERY PLAN                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.strstarts(o, '"hel"'::rdfnode)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (LANGMATCHES(LANG(?o), "en")) && (STRSTARTS(?o, "hel"@en)))
+   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (LANGMATCHES(LANG(?o), "en")) && (STRSTARTS(?o, "hel"@en)) && (STRSTARTS(?o, "日本")) && (STRSTARTS(?o, "🐘")))
 (6 rows)
 
 /* ================================================================
@@ -1467,15 +1469,17 @@ FROM rdfnode_ft
 WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o), 'en') AND
-  sparql.strends(o, '"llo"');
-                                                           QUERY PLAN                                                            
----------------------------------------------------------------------------------------------------------------------------------
+  sparql.strends(o, '"llo"') AND
+  sparql.strends(o, '"日本"') AND
+  sparql.strends(o, '"🐘"');
+                                                                                   QUERY PLAN                                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.strends(o, '"llo"'::rdfnode)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (LANGMATCHES(LANG(?o), "en")) && (STRENDS(?o, "llo")))
+   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (LANGMATCHES(LANG(?o), "en")) && (STRENDS(?o, "llo")) && (STRENDS(?o, "日本")) && (STRENDS(?o, "🐘")))
 (6 rows)
 
 /* ================================================================

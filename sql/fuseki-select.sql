@@ -41,7 +41,9 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '". <= pontos => ."@pt'),
         ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\n <= salto de línea => \n"@es'),
         ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\" <= double-quotes => \""@en'),
-        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),        
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"日本"@jp'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"ישראל"@il'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/administrativeStaff>', '"1924"^^<http://www.w3.org/2001/XMLSchema#short>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/students>', '"49098"^^<http://www.w3.org/2001/XMLSchema#int>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
@@ -64,6 +66,10 @@ WHERE sparql.sameterm(object, sparql.iri('http://dbpedia.org/resource/North_Rhin
 SELECT * FROM ft
 WHERE object IN (sparql.iri('http://dbpedia.org/resource/North_Rhine-Westphalia'),
                  sparql.iri('http://dbpedia.org/resource/Münster'));
+
+SELECT * FROM ft
+WHERE object IN (sparql.strlang('日本','jp'),
+                 sparql.strlang('ישראל','il'));
 
 CREATE TEMPORARY TABLE tmp (c rdfnode, o rdfnode);
 INSERT INTO tmp (c, o)

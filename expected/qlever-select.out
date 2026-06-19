@@ -37,7 +37,9 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
         ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '". <= pontos => ."@pt'),
         ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\n <= salto de línea => \n"@es'),
         ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\" <= double-quotes => \""@en'),
-        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),        
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"\t <= Tabulatorzeichen => \t"@de'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"日本"@jp'),
+        ('<https://www.uni-muenster.de>', '<http://www.w3.org/2000/01/rdf-schema#comment>', '"ישראל"@il'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/administrativeStaff>', '"1924"^^<http://www.w3.org/2001/XMLSchema#short>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/students>', '"49098"^^<http://www.w3.org/2001/XMLSchema#int>'),
         ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/academicStaff>', '"4956"^^<http://www.w3.org/2001/XMLSchema#int>'),
@@ -69,6 +71,8 @@ INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schem
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\n <= salto de línea => \n"@es };
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\" <= double-quotes => \""@en };
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "\t <= Tabulatorzeichen => \t"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "日本"@jp };
+INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "ישראל"@il };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/administrativeStaff> "1924"^^<http://www.w3.org/2001/XMLSchema#short> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/students> "49098"^^<http://www.w3.org/2001/XMLSchema#int> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/academicStaff> "4956"^^<http://www.w3.org/2001/XMLSchema#int> };
@@ -92,7 +96,7 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
             subject            |                     predicate                     |                                object                                
 -------------------------------+---------------------------------------------------+----------------------------------------------------------------------
@@ -124,11 +128,13 @@ INFO:  SPARQL returned 30 records.
                                |                                                   | "@es
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "日本"@jp
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(30 rows)
+(32 rows)
 
 /* SPARQL 17.4.1.7 - RDFterm-equal */
 SELECT * FROM ft
@@ -172,6 +178,25 @@ INFO:  SPARQL returned 2 records.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/state> | <http://dbpedia.org/resource/North_Rhine-Westphalia>
 (2 rows)
 
+SELECT * FROM ft
+WHERE object IN (sparql.strlang('日本','jp'),
+                 sparql.strlang('ישראל','il'));
+INFO:  SPARQL query sent to 'qlever':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?o IN ("日本"@jp, "ישראל"@il))
+}
+
+INFO:  SPARQL returned 2 records.
+
+            subject            |                   predicate                    |   object   
+-------------------------------+------------------------------------------------+------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "日本"@jp
+(2 rows)
+
 CREATE TEMPORARY TABLE tmp (c rdfnode, o rdfnode);
 INSERT INTO tmp (c, o)
 VALUES (8036::rdfnode,'<http://dbpedia.org/resource/North_Rhine-Westphalia>');
@@ -182,7 +207,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
             subject            |              predicate              |                        object                        
 -------------------------------+-------------------------------------+------------------------------------------------------
@@ -202,7 +227,7 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
             subject            |              predicate               |                        object                        
 -------------------------------+--------------------------------------+------------------------------------------------------
@@ -537,7 +562,7 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
                      predicate                     |                                object                                
 ---------------------------------------------------+----------------------------------------------------------------------
@@ -1369,7 +1394,7 @@ SELECT ?s ?p ?o
  FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
 }
 
-INFO:  SPARQL returned 11 records.
+INFO:  SPARQL returned 13 records.
 
             subject            |                   predicate                    |                               object                               
 -------------------------------+------------------------------------------------+--------------------------------------------------------------------
@@ -1383,8 +1408,10 @@ INFO:  SPARQL returned 11 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "explicit string literal"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "日本"@jp
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>    | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
-(11 rows)
+(13 rows)
 
 SELECT * FROM ft
 WHERE object < '23:59:59'::time;
@@ -1606,7 +1633,7 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
             subject            |                     predicate                     |                                object                                
 -------------------------------+---------------------------------------------------+----------------------------------------------------------------------
@@ -1637,10 +1664,12 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "日本"@jp
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#decimal>
-(28 rows)
+(30 rows)
 
 /* SPARQL 17.4.2.4 - isNumeric */
 SELECT * FROM ft
@@ -2065,7 +2094,7 @@ SELECT ?s ?p ?o
  FILTER(STRBEFORE(?o, "NOTFOUND") = "")
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
             subject            |                   predicate                    |                    object                    
 -------------------------------+------------------------------------------------+----------------------------------------------
@@ -2078,7 +2107,9 @@ INFO:  SPARQL returned 7 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "\" <= double-quotes => \""@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "explicit string literal"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en
-(7 rows)
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "日本"@jp
+(9 rows)
 
 /* SPARQL 17.4.3.10 - STRAFTER */
 SELECT * FROM ft
@@ -2111,7 +2142,7 @@ SELECT ?s ?p ?o
  FILTER(STRAFTER(?o, "NOTFOUND") = "")
 }
 
-INFO:  SPARQL returned 7 records.
+INFO:  SPARQL returned 9 records.
 
             subject            |                   predicate                    |                    object                    
 -------------------------------+------------------------------------------------+----------------------------------------------
@@ -2124,7 +2155,9 @@ INFO:  SPARQL returned 7 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "\" <= double-quotes => \""@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "explicit string literal"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "Hello 👋 PostgreSQL 🐘"@en
-(7 rows)
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "日本"@jp
+(9 rows)
 
 /* SPARQL 17.4.3.11 - ENCODE_FOR_URI */
 SELECT * FROM ft
@@ -2235,7 +2268,7 @@ SELECT ?p ?o
  FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#comment>)
 }
 
-INFO:  SPARQL returned 8 records.
+INFO:  SPARQL returned 10 records.
 
                                object                               |                        datatype                         
 --------------------------------------------------------------------+---------------------------------------------------------
@@ -2249,7 +2282,9 @@ INFO:  SPARQL returned 8 records.
  "explicit string literal"                                          | <http://www.w3.org/2001/XMLSchema#string>
  "Hello 👋 PostgreSQL 🐘"@en                                        | <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
  "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> | <http://www.w3.org/2001/XMLSchema#UNKNOWN>
-(8 rows)
+ "ישראל"@il                                                         | <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+ "日本"@jp                                                          | <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString>
+(10 rows)
 
 /* SPARQL 17.4.3.13 - langMatches */
 SELECT * FROM ft
@@ -2704,13 +2739,13 @@ SELECT ?o
  FILTER(isLITERAL(?o))
 }
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
                                                                                                                                                                       obj_list                                                                                                                                                                       
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  "true | 2024-02-29 | 2025-12-24T13:00:42Z | 4956 | 1924 | 803600000 | 1780-04-16 | 2025-12-24T18:30:42 | Univerrrsity of Münsterrr | Univêrsity of Münsta | University of Münster | Westfälische Wilhelms-Universität Münster | Johannes Wessels | 49098 | 1500.0 | 10000000000000000000.0 | 1e-15 |  |          <= Tabulatorzeichen =>          | +
   <= salto de línea =>                                                                                                                                                                                                                                                                                                                              +
-  | . <= pontos => . | \" <= double-quotes => \" | explicit string literal | Hello 👋 PostgreSQL 🐘 | unknown literal type | 18:18:42 | 51.9636 | 7.6136"
+  | . <= pontos => . | \" <= double-quotes => \" | explicit string literal | Hello 👋 PostgreSQL 🐘 | unknown literal type | ישראל | 日本 | 18:18:42 | 51.9636 | 7.6136"
 (1 row)
 
 SELECT sparql.group_concat(object, '') AS obj_list
@@ -2724,13 +2759,13 @@ SELECT ?o
  FILTER(isLITERAL(?o))
 }
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
                                                                                                                                          obj_list                                                                                                                                         
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  "true2024-02-292025-12-24T13:00:42Z495619248036000001780-04-162025-12-24T18:30:42Univerrrsity of MünsterrrUnivêrsity of MünstaUniversity of MünsterWestfälische Wilhelms-Universität MünsterJohannes Wessels490981500.010000000000000000000.01e-15       <= Tabulatorzeichen =>         +
   <= salto de línea =>                                                                                                                                                                                                                                                                   +
- . <= pontos => .\" <= double-quotes => \"explicit string literalHello 👋 PostgreSQL 🐘unknown literal type18:18:4251.96367.6136"
+ . <= pontos => .\" <= double-quotes => \"explicit string literalHello 👋 PostgreSQL 🐘unknown literal typeישראל日本18:18:4251.96367.6136"
 (1 row)
 
 /* SPARQL Aggregate SAMPLE */
@@ -2745,7 +2780,7 @@ SELECT ?o
  FILTER(isLITERAL(?o))
 }
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
                      obj_sample                     
 ----------------------------------------------------
@@ -2766,7 +2801,7 @@ SELECT ?s ?p ?o
 }
 ORDER BY  ASC (?p)
 
-INFO:  SPARQL returned 28 records.
+INFO:  SPARQL returned 30 records.
 
             subject            |                     predicate                     |                    lex                    
 -------------------------------+---------------------------------------------------+-------------------------------------------
@@ -2797,10 +2832,12 @@ INFO:  SPARQL returned 28 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | explicit string literal
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | Hello 👋 PostgreSQL 🐘
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | unknown literal type
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ישראל
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | 日本
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>       | 18:18:42
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | 51.9636
  <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | 7.6136
-(28 rows)
+(30 rows)
 
 -- Empty literals in various contexts
 SELECT * FROM ft WHERE object = '""'::rdfnode;
@@ -2955,7 +2992,7 @@ SELECT ?s ?p ?o
  FILTER((!LANGMATCHES(LANG(?o), "en")))
 }
 
-INFO:  SPARQL returned 14 records.
+INFO:  SPARQL returned 16 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -2974,8 +3011,10 @@ INFO:  SPARQL returned 14 records.
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ". <= pontos => ."@pt
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "explicit string literal"
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "ישראל"@il
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "日本"@jp
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#time>     | "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>
-(14 rows)
+(16 rows)
 
 -- SELECT ... INTO TEMPORARY TABLE
 SELECT subject, predicate, object
@@ -2990,12 +3029,12 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
 SELECT count(*) FROM tmp2;
  count 
 -------
-    30
+    32
 (1 row)
 
 -- SELECT ... INTO TABLE
@@ -3011,12 +3050,12 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
 SELECT count(*) FROM t2;
  count 
 -------
-    30
+    32
 (1 row)
 
 DROP TABLE t2;
@@ -3123,7 +3162,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o}
 
-INFO:  SPARQL returned 30 records.
+INFO:  SPARQL returned 32 records.
 
 INFO:  SPARQL query sent to 'qlever':
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/ontology/internationally> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> };
@@ -3150,6 +3189,8 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "ישראל"@il };
+DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#comment> "日本"@jp };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/city> <http://dbpedia.org/resource/Münster> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/state> <http://dbpedia.org/resource/North_Rhine-Westphalia> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };

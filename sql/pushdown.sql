@@ -788,7 +788,9 @@ FROM rdfnode_ft
 WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o), 'en') AND
-  sparql.strstarts(o, '"hel"@en');
+  sparql.strstarts(o, '"hel"@en') AND
+  sparql.strstarts(o, '"日本"') AND
+  sparql.strstarts(o, '"🐘"');
 
 /* ================================================================
  * SPARQL 17.4.3.7 - STRENDS
@@ -800,7 +802,9 @@ FROM rdfnode_ft
 WHERE
   p = sparql.iri('http://www.w3.org/2000/01/rdf-schema#label') AND
   sparql.langmatches(sparql.lang(o), 'en') AND
-  sparql.strends(o, '"llo"');
+  sparql.strends(o, '"llo"') AND
+  sparql.strends(o, '"日本"') AND
+  sparql.strends(o, '"🐘"');
 
 /* ================================================================
  * SPARQL 17.4.3.8 - CONTAINS
