@@ -21,6 +21,8 @@ Release date: **YYYY-MM-DD**
 
 * **Pushdown now handles `NOT` boolean expressions**: this allows `NOT BOUND()`, `NOT isIRI()`, `NOT isLiteral()`, and `NOT isNumeric()` to be translated to SPARQL `FILTER (!...)` and executed at the remote endpoint instead of being evaluated locally after fetching. This reduces the number of rows transferred from the endpoint when these conditions are selective.
 
+* **Add support for PostgreSQL BCE years**: It is now possible to convert PostgreSQL `timestamp` and `timestamptz` to `rdfnode`, which will map it XSD astronomical year numbering, e.g. (`1 BC` -> `0000`, `2 BC` -> `-0001`, etc.)
+
 ## Deprecations
 
 * **Native PostgreSQL column types in `FOREIGN TABLE` definitions**: Declaring foreign table columns with standard PostgreSQL types (e.g. `text`, `int`, `date`, `timestamp`) is deprecated. The `rdfnode` type must be used instead, as it correctly represents the full RDF term — including IRIs, language tags, and XSD datatypes — and is required by all SPARQL functions. Existing tables continue to work but will emit a `WARNING` on every query listing the affected columns. The column options `expression`, `language`, `literal_type`, and `nodetype` are also deprecated, as they are only meaningful for native-typed columns. Support for native column types will be removed in a future release.

@@ -186,6 +186,7 @@ SELECT 4273::smallint::rdfnode::smallint;
 SELECT (-4273)::smallint::rdfnode;
 SELECT (-4273)::smallint::rdfnode::smallint;
 
+/* timestamp <-> rdfnode round-trip */
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode::timestamptz;
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
@@ -194,15 +195,53 @@ SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
+SELECT '"0000-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp;
+SELECT '"-0043-03-15T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp;
+SELECT '"0000-12-31T23:59:59.999999"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp::rdfnode;
+SELECT '0044-03-15 BC'::timestamp::rdfnode;
+SELECT '0044-03-15 BC'::timestamp::rdfnode::timestamp;
+SELECT '0044-03-15 18:33:45 BC'::timestamp::rdfnode;
+SELECT '0001-01-01 AD'::timestamp::rdfnode;
+SELECT '0001-01-01 BC'::timestamp::rdfnode;
+SELECT '0002-01-01 BC'::timestamp::rdfnode;
+SELECT '0003-01-01 BC'::timestamp::rdfnode;
+SELECT '0044-03-15 BC'::timestamp::rdfnode;
+SELECT '0044-03-15 BC'::timestamp::rdfnode::timestamp;
+SELECT '0044-03-15 18:33:45 BC'::timestamp::rdfnode::timestamp;
+SELECT '0001-01-01 AD'::timestamp::rdfnode::timestamp;
+SELECT '0001-01-01 BC'::timestamp::rdfnode::timestamp;
+SELECT '0002-01-01 BC'::timestamp::rdfnode::timestamp;
+SELECT '0003-01-01 BC'::timestamp::rdfnode::timestamp;
+SELECT '0044-03-15 BC'::timestamp::rdfnode::timestamp;
+SELECT '0044-03-15 18:33:45.123456 BC'::timestamp::rdfnode::timestamp;
+
+/* timestamptz <-> rdfnode round-trip */
 SET timezone = 'America/New_York';
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
 SET timezone = 'UTC';
-SELECT '0044-03-15 BC'::timestamp::rdfnode;
+SELECT '"0000-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+SELECT '"-0001-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+SELECT '"-0043-03-15T12:34:56+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+SELECT '"-0043-03-15T12:34:56-05:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+SELECT '"0000-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz::rdfnode;
 SELECT '0044-03-15 BC'::timestamptz::rdfnode;
-SELECT '0044-03-15 18:33:45 BC'::timestamp::rdfnode;
 SELECT '0044-03-15 18:33:45 BC'::timestamptz::rdfnode;
+SELECT '0001-01-01 AD'::timestamptz::rdfnode;
+SELECT '0001-01-01 BC'::timestamptz::rdfnode;
+SELECT '0002-01-01 BC'::timestamptz::rdfnode;
+SELECT '0003-01-01 BC'::timestamptz::rdfnode;
+SELECT '0044-03-15 BC'::timestamptz::rdfnode;
+SELECT '0044-03-15 BC'::timestamptz::rdfnode::timestamptz;
+SELECT '0044-03-15 18:33:45 BC'::timestamptz::rdfnode::timestamptz;
+SELECT '0001-01-01 AD'::timestamptz::rdfnode::timestamptz;
+SELECT '0001-01-01 BC'::timestamptz::rdfnode::timestamptz;
+SELECT '0002-01-01 BC'::timestamptz::rdfnode::timestamptz;
+SELECT '0003-01-01 BC'::timestamptz::rdfnode::timestamptz;
+SELECT '0044-03-15 BC'::timestamptz::rdfnode::timestamptz;
+SELECT '0044-03-15 18:33:45.123456 BC'::timestamptz::rdfnode::timestamptz;
 
+/* date <-> rdfnode round-trip */
 SELECT '2020-05-12'::date::rdfnode;
 SELECT '2020-05-12'::date::rdfnode::date;
 

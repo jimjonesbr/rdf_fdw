@@ -9448,10 +9448,40 @@ Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum result = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
-														   CStringGetDatum(p.lex),
-														   ObjectIdGetDatum(InvalidOid),
-														   Int32GetDatum(-1)));
+	StringInfoData buf;
+	Datum result;
+
+	if (!p.isDateTime && !p.isDate)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("cannot cast RDF literal: %s", text_to_cstring(t))));
+
+	initStringInfo(&buf);
+
+	/*
+	 * XSD astronomical year:
+	 *
+	 *   0001 = 1 AD
+	 *   0000 = 1 BC
+	 *  -0001 = 2 BC
+	 *  -0002 = 3 BC
+	 *  ...
+	 */
+	if (*p.lex == '-')
+	{
+		char *rest;
+		int year = strtol(p.lex + 1, &rest, 10);
+		appendStringInfo(&buf, "%04d%s BC", year + 1, rest);
+	}
+	else if (strncmp(p.lex, "0000-", 5) == 0)
+		appendStringInfo(&buf, "0001%s BC", p.lex + 4);
+	else
+		appendStringInfoString(&buf, p.lex);
+
+	result = DirectFunctionCall3(timestamptz_in,
+								 CStringGetDatum(buf.data),
+								 ObjectIdGetDatum(InvalidOid),
+								 Int32GetDatum(-1));
 
 	PG_RETURN_DATUM(result);
 }
@@ -9461,6 +9491,7 @@ Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
+	StringInfoData buf;
 	Datum result;
 
 	if (!p.isDateTime && !p.isDate)
@@ -9468,8 +9499,30 @@ Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("cannot cast RDF literal: %s", text_to_cstring(t))));
 
+	initStringInfo(&buf);
+
+	/*
+	 * XSD astronomical year:
+	 *
+	 *   0001 = 1 AD
+	 *   0000 = 1 BC
+	 *  -0001 = 2 BC
+	 *  -0002 = 3 BC
+	 *  ...
+	 */
+	if (*p.lex == '-')
+	{
+		char *rest;
+		int year = strtol(p.lex + 1, &rest, 10);
+		appendStringInfo(&buf, "%04d%s BC", year + 1, rest);
+	}
+	else if (strncmp(p.lex, "0000-", 5) == 0)
+		appendStringInfo(&buf, "0001%s BC", p.lex + 4);
+	else
+		appendStringInfoString(&buf, p.lex);
+
 	result = DatumGetTimestamp(DirectFunctionCall3(timestamp_in,
-												   CStringGetDatum(p.lex),
+												   CStringGetDatum(buf.data),
 												   ObjectIdGetDatum(InvalidOid),
 												   Int32GetDatum(-1)));
 

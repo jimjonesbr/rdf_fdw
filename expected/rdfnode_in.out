@@ -890,6 +890,7 @@ SELECT (-4273)::smallint::rdfnode::smallint;
  -4273
 (1 row)
 
+/* timestamp <-> rdfnode round-trip */
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
                                   rdfnode                                   
 ----------------------------------------------------------------------------
@@ -938,6 +939,121 @@ SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
  2025-04-25 18:44:38
 (1 row)
 
+SELECT '"0000-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0001-01-01 00:00:00 BC
+(1 row)
+
+SELECT '"-0043-03-15T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0044-03-15 00:00:00 BC
+(1 row)
+
+SELECT '"0000-12-31T23:59:59.999999"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp::rdfnode;
+                                  rdfnode                                  
+---------------------------------------------------------------------------
+ "0000-12-31T23:59:59.999999"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamp::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-0043-03-15T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0044-03-15 00:00:00 BC
+(1 row)
+
+SELECT '0044-03-15 18:33:45 BC'::timestamp::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-0043-03-15T18:33:45"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0001-01-01 AD'::timestamp::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "0001-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0001-01-01 BC'::timestamp::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "0000-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0002-01-01 BC'::timestamp::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-0001-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0003-01-01 BC'::timestamp::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-0002-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamp::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-0043-03-15T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0044-03-15 00:00:00 BC
+(1 row)
+
+SELECT '0044-03-15 18:33:45 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0044-03-15 18:33:45 BC
+(1 row)
+
+SELECT '0001-01-01 AD'::timestamp::rdfnode::timestamp;
+      timestamp      
+---------------------
+ 0001-01-01 00:00:00
+(1 row)
+
+SELECT '0001-01-01 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0001-01-01 00:00:00 BC
+(1 row)
+
+SELECT '0002-01-01 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0002-01-01 00:00:00 BC
+(1 row)
+
+SELECT '0003-01-01 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0003-01-01 00:00:00 BC
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamp::rdfnode::timestamp;
+       timestamp        
+------------------------
+ 0044-03-15 00:00:00 BC
+(1 row)
+
+SELECT '0044-03-15 18:33:45.123456 BC'::timestamp::rdfnode::timestamp;
+           timestamp           
+-------------------------------
+ 0044-03-15 18:33:45.123456 BC
+(1 row)
+
+/* timestamptz <-> rdfnode round-trip */
 SET timezone = 'America/New_York';
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
                                rdfnode                               
@@ -952,18 +1068,127 @@ SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
 (1 row)
 
 SET timezone = 'UTC';
-SELECT '0044-03-15 BC'::timestamp::rdfnode;
-                              rdfnode                               
---------------------------------------------------------------------
- "-043-03-15T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+SELECT '"0000-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0001-01-01 00:00:00+00 BC
+(1 row)
+
+SELECT '"-0001-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0002-01-01 00:00:00+00 BC
+(1 row)
+
+SELECT '"-0043-03-15T12:34:56+02:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0044-03-15 10:34:56+00 BC
+(1 row)
+
+SELECT '"-0043-03-15T12:34:56-05:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0044-03-15 17:34:56+00 BC
+(1 row)
+
+SELECT '"0000-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamptz::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "0000-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
 SELECT '0044-03-15 BC'::timestamptz::rdfnode;
-                               rdfnode                               
----------------------------------------------------------------------
- "-043-03-15T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+                               rdfnode                                
+----------------------------------------------------------------------
+ "-0043-03-15T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
 (1 row)
 
+SELECT '0044-03-15 18:33:45 BC'::timestamptz::rdfnode;
+                               rdfnode                                
+----------------------------------------------------------------------
+ "-0043-03-15T18:33:45Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0001-01-01 AD'::timestamptz::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "0001-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0001-01-01 BC'::timestamptz::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "0000-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0002-01-01 BC'::timestamptz::rdfnode;
+                               rdfnode                                
+----------------------------------------------------------------------
+ "-0001-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0003-01-01 BC'::timestamptz::rdfnode;
+                               rdfnode                                
+----------------------------------------------------------------------
+ "-0002-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamptz::rdfnode;
+                               rdfnode                                
+----------------------------------------------------------------------
+ "-0043-03-15T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamptz::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0044-03-15 00:00:00+00 BC
+(1 row)
+
+SELECT '0044-03-15 18:33:45 BC'::timestamptz::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0044-03-15 18:33:45+00 BC
+(1 row)
+
+SELECT '0001-01-01 AD'::timestamptz::rdfnode::timestamptz;
+      timestamptz       
+------------------------
+ 0001-01-01 00:00:00+00
+(1 row)
+
+SELECT '0001-01-01 BC'::timestamptz::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0001-01-01 00:00:00+00 BC
+(1 row)
+
+SELECT '0002-01-01 BC'::timestamptz::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0002-01-01 00:00:00+00 BC
+(1 row)
+
+SELECT '0003-01-01 BC'::timestamptz::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0003-01-01 00:00:00+00 BC
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamptz::rdfnode::timestamptz;
+        timestamptz        
+---------------------------
+ 0044-03-15 00:00:00+00 BC
+(1 row)
+
+SELECT '0044-03-15 18:33:45.123456 BC'::timestamptz::rdfnode::timestamptz;
+           timestamptz            
+----------------------------------
+ 0044-03-15 18:33:45.123456+00 BC
+(1 row)
+
+/* date <-> rdfnode round-trip */
 SELECT '2020-05-12'::date::rdfnode;
                         rdfnode                        
 -------------------------------------------------------
