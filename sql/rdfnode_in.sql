@@ -190,11 +190,14 @@ SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode;
 SELECT '2025-04-25 18:44:38.149101+00'::timestamptz::rdfnode::timestamptz;
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
-
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamp::rdfnode::timestamp;
+SET timezone = 'America/New_York';
+SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
+SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
+SET timezone = 'UTC';
 
 SELECT '2020-05-12'::date::rdfnode;
 SELECT '2020-05-12'::date::rdfnode::date;

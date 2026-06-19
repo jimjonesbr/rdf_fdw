@@ -9416,21 +9416,23 @@ Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 	TimestampTz ts = PG_GETARG_TIMESTAMPTZ(0);
 	struct pg_tm tm;
 	fsec_t fsec;
-	const char *tzn;
 	StringInfoData buf;
 
-	if (timestamp2tm(ts, NULL, &tm, &fsec, &tzn, NULL) != 0)
+	if (timestamp2tm(ts, NULL, &tm, &fsec, NULL, NULL) != 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid timestamp")));
 
 	initStringInfo(&buf);
 	appendStringInfo(&buf,
-					 "\"%04d-%02d-%02dT%02d:%02d:%02d.%06dZ\"^^%s",
+					 "\"%04d-%02d-%02dT%02d:%02d:%02d",
 					 tm.tm_year, tm.tm_mon, tm.tm_mday,
-					 tm.tm_hour, tm.tm_min, tm.tm_sec,
-					 (int)fsec,
-					 RDF_XSD_DATETIME);
+					 tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	if (fsec != 0)
+		appendStringInfo(&buf, ".%06d", (int)fsec);
+
+	appendStringInfo(&buf, "Z\"^^%s", RDF_XSD_DATETIME);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
