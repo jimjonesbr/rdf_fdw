@@ -1169,7 +1169,7 @@ WHERE sparql.isblank(o);
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((ISBLANK(?o)))
+   Remote Filter: ((isBLANK(?o)))
 (6 rows)
 
 /* ================================================================
@@ -1189,7 +1189,7 @@ WHERE
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/property>) && (ISLITERAL(?o)) && ((!ISLITERAL(?p))))
+   Remote Filter: ((?p = <http://example.org/property>) && (isLITERAL(?o)) && ((!isLITERAL(?p))))
 (6 rows)
 
 /* ================================================================
@@ -1305,7 +1305,7 @@ WHERE
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/property>) && (ISBLANK(BNODE(?o))))
+   Remote Filter: ((?p = <http://example.org/property>) && (isBLANK(BNODE(?o))))
 (6 rows)
 
 /* ================================================================

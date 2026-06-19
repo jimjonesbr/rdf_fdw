@@ -1584,7 +1584,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ISBLANK(?s))
+ FILTER(isBLANK(?s))
 }
 
 INFO:  SPARQL returned 0 records.
@@ -1602,7 +1602,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 ORDER BY  ASC (?p)
 
@@ -2701,7 +2701,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 
 INFO:  SPARQL returned 28 records.
@@ -2721,7 +2721,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 
 INFO:  SPARQL returned 28 records.
@@ -2742,7 +2742,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 
 INFO:  SPARQL returned 28 records.
@@ -2762,7 +2762,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 ORDER BY  ASC (?p)
 
@@ -2950,7 +2950,7 @@ SELECT ?s ?p ?o
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER((!isIRI(?o)))
- FILTER((!ISBLANK(?o)))
+ FILTER((!isBLANK(?o)))
  FILTER((!ISNUMERIC(?o)))
  FILTER((!LANGMATCHES(LANG(?o), "en")))
 }

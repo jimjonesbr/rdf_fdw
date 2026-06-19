@@ -1840,7 +1840,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISBLANK(?s))
+ FILTER(isBLANK(?s))
 }
 
 INFO:  SPARQL returned 0 records.
@@ -1858,7 +1858,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 ORDER BY  ASC (?p)
 
@@ -3018,7 +3018,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 
 INFO:  SPARQL returned 27 records.
@@ -3038,7 +3038,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 
 INFO:  SPARQL returned 27 records.
@@ -3059,7 +3059,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 
 INFO:  SPARQL returned 27 records.
@@ -3079,7 +3079,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(ISLITERAL(?o))
+ FILTER(isLITERAL(?o))
 }
 ORDER BY  ASC (?p)
 
@@ -3283,7 +3283,7 @@ SELECT ?s ?p ?o
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER((!isIRI(?o)))
- FILTER((!ISBLANK(?o)))
+ FILTER((!isBLANK(?o)))
  FILTER((!ISNUMERIC(?o)))
  FILTER((!LANGMATCHES(LANG(?o), "en")))
 }

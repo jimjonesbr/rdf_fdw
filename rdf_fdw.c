@@ -7147,11 +7147,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			else if (strcmp(opername, "encode_for_uri") == 0)
 				appendStringInfo(&result, "ENCODE_FOR_URI(%s)", NameStr(args));
 			else if (strcmp(opername, "isblank") == 0)
-				appendStringInfo(&result, "ISBLANK(%s)", NameStr(args));
+				appendStringInfo(&result, "isBLANK(%s)", NameStr(args));
 			else if (strcmp(opername, "isnumeric") == 0)
 				appendStringInfo(&result, "ISNUMERIC(%s)", NameStr(args));
 			else if (strcmp(opername, "isliteral") == 0)
-				appendStringInfo(&result, "ISLITERAL(%s)", NameStr(args));
+				appendStringInfo(&result, "isLITERAL(%s)", NameStr(args));
 			else if (strcmp(opername, "bnode") == 0)
 				appendStringInfo(&result, "BNODE(%s)", NameStr(args));
 			else if (strcmp(opername, "lcase") == 0)
