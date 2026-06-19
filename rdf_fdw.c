@@ -9424,9 +9424,16 @@ Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS)
 				 errmsg("invalid timestamp")));
 
 	initStringInfo(&buf);
+
+	/* necessary for BC timestamptz values */
+	if (tm.tm_year < 0)
+        appendStringInfo(&buf, "\"-%04d", -tm.tm_year);
+    else
+        appendStringInfo(&buf, "\"%04d", tm.tm_year);
+
 	appendStringInfo(&buf,
-					 "\"%04d-%02d-%02dT%02d:%02d:%02d",
-					 tm.tm_year, tm.tm_mon, tm.tm_mday,
+					 "-%02d-%02dT%02d:%02d:%02d",
+					 tm.tm_mon, tm.tm_mday,
 					 tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	if (fsec != 0)
@@ -9548,9 +9555,16 @@ Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
 				errmsg("invalid timestamp")));
 
 	initStringInfo(&buf);
+
+	/* necessary for BC timestamptz values */
+	if (tm.tm_year < 0)
+        appendStringInfo(&buf, "\"-%04d", -tm.tm_year);
+    else
+        appendStringInfo(&buf, "\"%04d", tm.tm_year);
+
 	appendStringInfo(&buf,
-					 "\"%04d-%02d-%02dT%02d:%02d:%02d",
-					 tm.tm_year, tm.tm_mon, tm.tm_mday,
+					 "-%02d-%02dT%02d:%02d:%02d",
+					 tm.tm_mon, tm.tm_mday,
 					 tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	if (fsec != 0)

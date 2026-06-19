@@ -952,6 +952,18 @@ SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
 (1 row)
 
 SET timezone = 'UTC';
+SELECT '0044-03-15 BC'::timestamp::rdfnode;
+                              rdfnode                               
+--------------------------------------------------------------------
+ "-043-03-15T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
+SELECT '0044-03-15 BC'::timestamptz::rdfnode;
+                               rdfnode                               
+---------------------------------------------------------------------
+ "-043-03-15T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+
 SELECT '2020-05-12'::date::rdfnode;
                         rdfnode                        
 -------------------------------------------------------

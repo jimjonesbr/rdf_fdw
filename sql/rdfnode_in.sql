@@ -198,6 +198,10 @@ SET timezone = 'America/New_York';
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode;
 SELECT '2025-04-25 18:44:38'::timestamptz::rdfnode::timestamptz;
 SET timezone = 'UTC';
+SELECT '0044-03-15 BC'::timestamp::rdfnode;
+SELECT '0044-03-15 BC'::timestamptz::rdfnode;
+SELECT '0044-03-15 18:33:45 BC'::timestamp::rdfnode;
+SELECT '0044-03-15 18:33:45 BC'::timestamptz::rdfnode;
 
 SELECT '2020-05-12'::date::rdfnode;
 SELECT '2020-05-12'::date::rdfnode::date;
