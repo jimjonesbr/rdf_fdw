@@ -3036,11 +3036,8 @@ static void rdfEndForeignScan(ForeignScanState *node)
 			xmlFreeDoc(state->xmldoc);
 		}
 
-		if (state)
-		{
-			elog(DEBUG2, "%s: freeing rdf_fdw state", __func__);
-			pfree(state);
-		}
+		elog(DEBUG2, "%s: freeing rdf_fdw state", __func__);
+		pfree(state);
 	}
 
 	elog(DEBUG1, "%s exit rdf_fdw: so long .. \n", __func__);
