@@ -5084,11 +5084,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	else
 	{
 		/* SPARQL SELECT/DESCRIBE: use URL-encoded form parameters */
+		char *escaped_url = curl_easy_escape(state->curl, state->sparql, 0);
+
 		initStringInfo(&url_buffer);
-		appendStringInfo(&url_buffer, "%s=%s", state->query_param, curl_easy_escape(state->curl, state->sparql, 0));
+		appendStringInfo(&url_buffer, "%s=%s", state->query_param, escaped_url);
 
 		if (state->custom_params)
-			appendStringInfo(&url_buffer, "&%s", curl_easy_escape(state->curl, state->custom_params, 0));
+			appendStringInfo(&url_buffer, "&%s", escaped_url);
+
+		if (escaped_url)
+			curl_free(escaped_url);
 
 		elog(DEBUG2, "  %s: url built > %s?%s", __func__, state->endpoint, url_buffer.data);
 	}
