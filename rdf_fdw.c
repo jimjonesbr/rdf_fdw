@@ -5332,6 +5332,10 @@ static int ExecuteSPARQL(RDFfdwState *state)
 					elog(DEBUG1, "%s: no response body available for HTTP error %ld", __func__, response_code);
 				}
 
+				curl_slist_free_all(headers);
+				curl_easy_cleanup(state->curl);
+				curl_global_cleanup();
+
 				if (response_code == 400)
 					ereport(ERROR,
 							(errcode(ERRCODE_SYNTAX_ERROR),
@@ -5397,22 +5401,26 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			/* cURL/network error */
 			size_t len = strlen(errbuf);
+			const char *curl_err = curl_easy_strerror(res);
 			fprintf(stderr, "\nlibcurl: (%d) ", res);
 
 			xmlFreeDoc(state->xmldoc);
+			curl_slist_free_all(headers);
+			curl_easy_cleanup(state->curl);
+			curl_global_cleanup();
 
 			if (len)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
 						 errmsg("unable to connect to '%s'", state->server->servername),
-						 errdetail("%s (curl error code %u).", curl_easy_strerror(res), res)));
+						 errdetail("%s (curl error code %u).", curl_err, res)));
 			}
 			else
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
-						 errmsg("%s => (%u) '%s'\n", __func__, res, curl_easy_strerror(res))));
+						 errmsg("%s => (%u) '%s'\n", __func__, res, curl_err)));
 			}
 		}
 		else

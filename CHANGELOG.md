@@ -91,6 +91,8 @@ Release date: **YYYY-MM-DD**
 
 * **Fixed `timetz` to `rdfnode` cast**: the function `timetz_to_rdfnode` relied entirely on PostgreSQL's `timetz_out` to convert the strings, which led to a minute truncation when the timestamp's minutes was `:00`. It now produces well-formed `xsd:time` timezone offsets (`+02:00` instead of `+02`).
 
+* **Fixed small memory leaks in `ExecuteSPARQL`**: the buffer returned by `curl_easy_escape` was not being released with `curl_free`, and curl handles (`curl_easy_cleanup`, `curl_slist_free_all`, `curl_global_cleanup`) were not called on HTTP and network error paths.
+
 # 2.5
 Release date: **2026-04-20**
 
