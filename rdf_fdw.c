@@ -2037,11 +2037,9 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * it either existed before the function call or was just created.
 	 */
 #if PG_VERSION_NUM < 130000
-	state->target_table = heap_open(GetRelOidFromName(state->target_table_name, RDF_ORDINARY_TABLE_CODE), NoLock);
-	heap_close(state->target_table, NoLock);
+	state->target_table = heap_open(GetRelOidFromName(state->target_table_name, RDF_ORDINARY_TABLE_CODE), AccessShareLock);
 #else
-	state->target_table = table_open(GetRelOidFromName(state->target_table_name, RDF_ORDINARY_TABLE_CODE), NoLock);
-	table_close(state->target_table, NoLock);
+	state->target_table = table_open(GetRelOidFromName(state->target_table_name, RDF_ORDINARY_TABLE_CODE), AccessShareLock);
 #endif
 	/*
 	 * Here we check if the target table matches the columns of the
@@ -2067,6 +2065,12 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			}
 		}
 	}
+
+#if PG_VERSION_NUM < 130000
+	heap_close(state->target_table, AccessShareLock);
+#else
+	table_close(state->target_table, AccessShareLock);
+#endif
 
 	/*
 	 * If both foreign and target table share no column we better stop it right here.
@@ -2353,9 +2357,15 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 								char *escaped = cstring_to_rdfliteral((char *)content);
 
 								if (datatype)
+								{
 									appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
+									xmlFree(datatype);
+								}
 								else if (lang)
+								{
 									appendStringInfo(&literal_value, "%s", strlang(escaped, (char *)lang));
+									xmlFree(lang);
+								}
 								else
 									appendStringInfo(&literal_value, "%s", escaped);
 							}
@@ -2464,7 +2474,7 @@ static Oid GetRelOidFromName(char *relname, char *code)
 				 errmsg("internal error: '%s' unknown relation type", code)));
 
 	rv = makeRangeVarFromNameList(textToQualifiedNameList(cstring_to_text(relname)));
-	relid = RangeVarGetRelid(rv, NoLock, true);
+	relid = RangeVarGetRelid(rv, AccessShareLock, true);
 
 	if (!OidIsValid(relid))
 		ereport(ERROR,
