@@ -5055,10 +5055,10 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	struct curl_slist *headers = NULL;
 	long response_code;
 
-	chunk.memory = palloc(1);
+	chunk.memory = palloc0(1);
 	chunk.size = 0; /* no data at this point */
 	chunk.max_size = (size_t) state->max_response_size;
-	chunk_header.memory = palloc(1);
+	chunk_header.memory = palloc0(1);
 	chunk_header.size = 0; /* no data at this point */
 	chunk_header.max_size = 0; /* no limit on headers */
 
@@ -5537,7 +5537,11 @@ static void LoadRDFData(RDFfdwState *state)
 
 		/* Execute the SPARQL query */
 		if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
+		{
+			if (state->xmldoc)
+				xmlFreeDoc(state->xmldoc);
 			elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
+		}
 
 		elog(DEBUG2, "  %s: loading 'xmlroot'", __func__);
 
