@@ -10911,6 +10911,8 @@ static void LoadPrefixes(RDFfdwState *state)
 
 	if (state->prefix_context)
 	{
+		MemoryContext oldcontext = CurrentMemoryContext;
+
 		if (SPI_connect() != SPI_OK_CONNECT)
 			elog(ERROR, "rdf_fdw: SPI_connect failed");
 
@@ -10930,13 +10932,13 @@ static void LoadPrefixes(RDFfdwState *state)
 		{
 			HeapTuple tuple = SPI_tuptable->vals[i];
 			TupleDesc tupdesc = SPI_tuptable->tupdesc;
-			RDFPrefix *entry = palloc(sizeof(RDFPrefix));
 			char *uri;
 			char *prefix = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 1, &isnull));
+			RDFPrefix *entry;
+			MemoryContext spicontext;
 
 			if (isnull)
 			{
-				pfree(entry);
 				elog(WARNING, "%s: NULL prefix skipped", __func__);
 				continue;
 			}
@@ -10946,18 +10948,18 @@ static void LoadPrefixes(RDFfdwState *state)
 			if (isnull)
 			{
 				elog(WARNING, "%s: NULL URI skipped", __func__);
-				pfree(entry);
-				if (uri)
-					pfree(uri);
 				continue;
 			}
 
+			/* allocate the entry and list cell in the CALLER's context */
+			spicontext = MemoryContextSwitchTo(oldcontext);
+
+			entry = palloc(sizeof(RDFPrefix));
 			entry->prefix = pstrdup(prefix);
 			entry->url = pstrdup(uri);
 			state->prefixes = lappend(state->prefixes, entry);
 
-			pfree(uri);
-			pfree(prefix);
+			MemoryContextSwitchTo(spicontext);
 		}
 
 		SPI_finish();
