@@ -6,9 +6,9 @@ GRAPHDB_REPOSITORY="test"
 # Deploy GraphDB for tests
 echo -e "\n== Deploying GraphDB for tests ==\n"
 
-docker stop graphdb 2>/dev/null || true
-docker rm graphdb 2>/dev/null || true
-docker run -d --name graphdb \
+podman stop graphdb 2>/dev/null || true
+podman rm graphdb 2>/dev/null || true
+podman run -d --name graphdb \
   --network $NETWORK_NAME \
   -p 7200:7200 \
   -e GRAPHDB_HOME=/opt/graphdb/home \

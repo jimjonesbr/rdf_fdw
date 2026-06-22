@@ -7,8 +7,8 @@ PROXY_AUTH_PORT=3129
 # Deploy Squid proxy WITHOUT authentication
 echo -e "\n== Deploying Squid proxy (no auth) ==\n"
 
-docker stop squid-no-auth 2>/dev/null || true
-docker rm squid-no-auth 2>/dev/null || true
+podman stop squid-no-auth 2>/dev/null || true
+podman rm squid-no-auth 2>/dev/null || true
 
 cat > /tmp/squid-no-auth.conf <<EOF
 http_port 3128
@@ -18,9 +18,10 @@ http_access allow localnet
 http_access deny all
 EOF
 
-docker run -d --name squid-no-auth \
+podman run -d --name squid-no-auth \
   --network $NETWORK_NAME \
   --ip 172.19.42.100 \
+  --no-hosts \
   -v /tmp/squid-no-auth.conf:/etc/squid/squid.conf:ro,z \
   ubuntu/squid:latest
 
@@ -28,19 +29,19 @@ echo "Waiting for Squid (no auth) to start..."
 sleep 1
 
 # Verify Squid is running
-if docker exec squid-no-auth squid -k check 2>/dev/null; then
+if podman exec squid-no-auth squid -k check 2>/dev/null; then
     echo "Squid (no auth) is ready!"
 else
     echo "ERROR: Squid failed to start"
-    docker logs squid-no-auth
+    podman logs squid-no-auth
     exit 1
 fi
 
 # Deploy Squid proxy WITH authentication
 echo -e "\n== Deploying Squid proxy (with auth) ==\n"
 
-docker stop squid-auth 2>/dev/null || true
-docker rm squid-auth 2>/dev/null || true
+podman stop squid-auth 2>/dev/null || true
+podman rm squid-auth 2>/dev/null || true
 
 # Create password file (user: proxyuser, password: proxypass)
 # Using openssl to create bcrypt hash instead of htpasswd
@@ -58,9 +59,10 @@ http_access allow authenticated
 http_access deny all
 EOF
 
-docker run -d --name squid-auth \
+podman run -d --name squid-auth \
   --network $NETWORK_NAME \
   --ip 172.19.42.101 \
+  --no-hosts \
   -v /tmp/squid-auth.conf:/etc/squid/squid.conf:ro,z \
   -v /tmp/squid-passwords:/etc/squid/passwords:ro,z \
   ubuntu/squid:latest
@@ -69,10 +71,10 @@ echo "Waiting for Squid (with auth) to start..."
 sleep 1
 
 # Verify Squid is running
-if docker exec squid-auth squid -k check 2>/dev/null; then
+if podman exec squid-auth squid -k check 2>/dev/null; then
     echo "Squid (with auth) is ready!"
 else
     echo "ERROR: Squid (with auth) failed to start"
-    docker logs squid-auth
+    podman logs squid-auth
     exit 1
 fi

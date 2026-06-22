@@ -4,9 +4,9 @@ NETWORK_NAME=pgnet
 
 echo -e "\n== Deploying Blazegraph for tests ==\n"
 
-docker stop blazegraph 2>/dev/null || true
-docker rm blazegraph 2>/dev/null || true
-docker run -d --name blazegraph \
+podman stop blazegraph 2>/dev/null || true
+podman rm blazegraph 2>/dev/null || true
+podman run -d --name blazegraph \
   --network $NETWORK_NAME \
   -p 9999:9999 \
   -e JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8" \

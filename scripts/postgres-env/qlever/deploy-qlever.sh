@@ -9,10 +9,10 @@ export QLEVER_GID=$(id -g)
 
 echo -e "\n== Deploying QLever for tests ==\n"
 
-docker rm --force qlever qlever_qlever-index_1 2>/dev/null || true
-docker pod rm --force pod_qlever 2>/dev/null || true
-docker volume rm qlever_qlever-index-data 2>/dev/null || true
-docker compose -f $QLEVER_ENV_PATH/qlever-compose.yml up -d qlever-backend
+podman rm --force qlever qlever_qlever-index_1 2>/dev/null || true
+podman pod rm --force pod_qlever 2>/dev/null || true
+podman volume rm qlever_qlever-index-data 2>/dev/null || true
+podman compose -f $QLEVER_ENV_PATH/qlever-compose.yml up -d qlever-backend
 
 echo "Waiting for QLever SPARQL endpoint..."
 for i in $(seq 1 90); do
@@ -28,5 +28,5 @@ for i in $(seq 1 90); do
 done
 
 echo "ERROR: QLever did not become ready in time." >&2
-docker compose -f $QLEVER_ENV_PATH/qlever-compose.yml logs >&2
+podman compose -f $QLEVER_ENV_PATH/qlever-compose.yml logs >&2
 exit 1

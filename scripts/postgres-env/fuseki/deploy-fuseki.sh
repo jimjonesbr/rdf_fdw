@@ -3,12 +3,11 @@
 NETWORK_NAME=pgnet
 FUSEKI_DATASET="dt"
 
-# Deploy Fuseki for tests
 echo -e "\n== Deploying Fuseki for tests ==\n"
 
-docker stop fuseki 2>/dev/null || true
-docker rm fuseki 2>/dev/null || true
-docker run -d --name fuseki \
+podman stop fuseki 2>/dev/null || true
+podman rm fuseki 2>/dev/null || true
+podman run -d --name fuseki \
   --network $NETWORK_NAME \
   -p 3030:3030 \
   -e ADMIN_PASSWORD=secret \
