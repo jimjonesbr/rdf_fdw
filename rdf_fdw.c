@@ -2322,8 +2322,10 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 			for (result = record->children; result != NULL; result = result->next)
 			{
 				StringInfoData name;
+				xmlChar *n = xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG);
 				initStringInfo(&name);
-				appendStringInfo(&name, "?%s", (char *)xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG));
+				appendStringInfo(&name, "?%s", (char *)n);
+				xmlFree(n);
 
 				if (strcmp(sparqlvar, NameStr(name)) == 0 && state->rdfTable->cols[i]->used)
 				{
@@ -2357,15 +2359,9 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 								char *escaped = cstring_to_rdfliteral((char *)content);
 
 								if (datatype)
-								{
 									appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
-									xmlFree(datatype);
-								}
 								else if (lang)
-								{
 									appendStringInfo(&literal_value, "%s", strlang(escaped, (char *)lang));
-									xmlFree(lang);
-								}
 								else
 									appendStringInfo(&literal_value, "%s", escaped);
 							}
@@ -2376,7 +2372,10 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						datum = CStringGetDatum(literal_value.data);
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
+
 						xmlFree(content);
+						xmlFree(lang);
+						xmlFree(datatype);
 
 						if (pgtype == RDFNODEOID)
 							cvals[colindex] = DirectFunctionCall1(rdfnode_in, datum);
