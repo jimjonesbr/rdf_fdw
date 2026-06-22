@@ -8,11 +8,11 @@ IMAGENAME="pgxn-image"
 NETWORK_NAME="pgnet"
 
 # builds a custom pgxn image with extension dependencies (libxml2 and libcurl)
-echo -e "\n== Building PGXN Docker Image ==\n"
-docker build --tag $IMAGENAME . &&
+echo -e "\n== Building PGXN podman Image ==\n"
+podman build --tag $IMAGENAME . &&
 
-# create a custom docker network for postgres and fuseki containers to communicate
-docker network create --driver=bridge --subnet=172.19.42.0/24 $NETWORK_NAME
+# create a custom podman network for postgres and fuseki containers to communicate
+podman network create --driver=bridge --subnet=172.19.42.0/24 $NETWORK_NAME
 
 # keeps things clean
 make -C $CODEPATH clean &&
@@ -35,8 +35,9 @@ do
     #
     # ex. "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean"
 
-    docker run \
+    podman run \
         --network $NETWORK_NAME \
+        --no-hosts \
         -itw /ext --rm \
         --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 SKIP_EXTERNAL_TESTS=1 SKIP_DEBUG_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
 
@@ -44,4 +45,4 @@ do
     echo -e "\n\n== Tests finished for PostgreSQL $pgv ==\n\n"    
 done
 
-make -C $CODEPATH clean
+#make -C $CODEPATH clean

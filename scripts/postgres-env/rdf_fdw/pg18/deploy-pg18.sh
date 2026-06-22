@@ -4,12 +4,12 @@ PG_CONTAINER=rdf_pg18
 NETWORK_NAME=pgnet
 IP_ADDRESS="172.19.42.18"
 
-docker build -t $POSTGRES18_IMAGE .
+podman build -t $POSTGRES18_IMAGE .
 
-docker stop $PG_CONTAINER
-docker rm $PG_CONTAINER
-docker network create --driver=bridge --subnet=172.19.42.0/24 $NETWORK_NAME
-docker run -d \
+podman stop $PG_CONTAINER
+podman rm $PG_CONTAINER
+podman network create --driver=bridge --subnet=172.19.42.0/24 $NETWORK_NAME
+podman run -d \
   --name   $PG_CONTAINER \
   --network $NETWORK_NAME \
   --env POSTGRES_HOST_AUTH_METHOD=trust \
@@ -19,9 +19,9 @@ docker run -d \
   -p 54318:5432 \
   $POSTGRES18_IMAGE -c logging_collector=on &&
 
-docker exec -itw /rdf_fdw/ $PG_CONTAINER make clean &&
-docker exec -itw /rdf_fdw/ $PG_CONTAINER make PG_CONFIG=/usr/lib/postgresql/18/bin/pg_config &&
-docker exec -itw /rdf_fdw/ $PG_CONTAINER make install
+podman exec -itw /rdf_fdw/ $PG_CONTAINER make clean &&
+podman exec -itw /rdf_fdw/ $PG_CONTAINER make PG_CONFIG=/usr/lib/postgresql/18/bin/pg_config &&
+podman exec -itw /rdf_fdw/ $PG_CONTAINER make install
 
 # deploy GeoServer in the same network
-# docker run -it --network pgnet -p 8080:8080 docker.osgeo.org/geoserver:3.0.
+# podman run -it --network pgnet -p 8080:8080 docker.osgeo.org/geoserver:3.0.
