@@ -5576,7 +5576,11 @@ static void LoadRDFData(RDFfdwState *state)
 		root = xmlDocGetRootElement(state->xmldoc);
 
 		if (root == NULL)
+		{
+			xmlFreeDoc(state->xmldoc);
+			state->xmldoc = NULL;
 			elog(ERROR, "%s: SPARQL XML result has no root element", __func__);
+		}
 
 		for (results = root->children; results != NULL; results = results->next)
 		{
