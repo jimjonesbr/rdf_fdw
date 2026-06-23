@@ -124,7 +124,7 @@ FROM postgres:18
 RUN apt-get update && \
     apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
-RUN git clone --branch v2.5 https://github.com/jimjonesbr/rdf_fdw.git && \
+RUN git clone --branch v2.6 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
     make -j && \
     make install
@@ -133,8 +133,8 @@ RUN git clone --branch v2.5 https://github.com/jimjonesbr/rdf_fdw.git && \
 Build and run the image:
 
 ```bash
-docker build -t rdf_fdw:18-2.5 .
-docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-2.5
+docker build -t rdf_fdw:18-2.6 .
+docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-2.6
 ```
 
 Create the extension inside the running container:
@@ -1079,10 +1079,10 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 
 ```sql
 SELECT rdf_fdw_version();
-                                              rdf_fdw_version                                               
-------------------------------------------------------------------------------------------------------------
- rdf_fdw 2.6-dev (PostgreSQL 18.3 (Debian 18.3-1.pgdg13+1), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
-(1 row)
+                                            rdf_fdw_version                                             
+--------------------------------------------------------------------------------------------------------
+ rdf_fdw 2.6 (PostgreSQL 18.3 (Debian 18.3-1.pgdg13+1), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
+ (1 row)
 ```
 
 ### [rdf_fdw_settings](#rdf_fdw_settings)
@@ -1103,7 +1103,7 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
- rdf_fdw    | 2.6-dev
+ rdf_fdw    | 2.6
  PostgreSQL | 18.3 (Debian 18.3-1.pgdg13+1)
  libxml     | 2.9.14
  libcurl    | 8.14.1
@@ -1112,7 +1112,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2026-04-24 05:32:22 UTC
+ built      | 2026-06-23 06:17:57 UTC
 (10 rows)
 ```
 
