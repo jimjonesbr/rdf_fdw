@@ -284,36 +284,12 @@ DEBUG:  rdf_fdw_validator exit
 INSERT INTO ft (subject, predicate, object)
 VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Westfälische Wilhelms-Universität Münster"@de'),
        ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/founded>', '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>');
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
 DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
 DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
 DEBUG:  unescape_unicode: Input='1780-10-02'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
@@ -402,8 +378,6 @@ LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
 DEBUG:  unescape_unicode: Input='1780-12-31'
 DEBUG:  unescape_unicode: Output='1780-12-31'
-DEBUG:  unescape_unicode: Input='<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  unescape_unicode: Output='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
 DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
@@ -687,10 +661,7 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
 DEBUG:  LoadRDFData exit: SELECT query processed
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+DEBUG:  strdt: data type not an IRI
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
 DEBUG:  rdfEndForeignScan: called 
@@ -707,18 +678,6 @@ UPDATE ft
 SET object = '"University of Münster"@en'
 WHERE subject = '<https://www.uni-muenster.de>'
   AND predicate = '<http://dbpedia.org/property/name>';
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
-                        ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
-                        ^
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
-                          ^
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
-LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
-                          ^
 DEBUG:  unescape_unicode: Input='University of Münster'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
@@ -998,10 +957,6 @@ DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
 DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
 DEBUG:  rdfExecForeignUpdate called
@@ -1041,12 +996,6 @@ DEBUG:  rdfEndForeignScan exit rdf_fdw: so long ..
 
 DELETE FROM ft
 WHERE subject = '<https://www.uni-muenster.de>';
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
-                        ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
-                        ^
 DEBUG:  rdfAddForeignUpdateTargets called
 DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'subject' (attnum=1)
 DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'predicate' (attnum=2)
@@ -1277,16 +1226,9 @@ DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
 DEBUG:  unescape_unicode: Input='University of Münster'
 DEBUG:  unescape_unicode: Output='University of Münster'
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
+DEBUG:  strdt: data type not an IRI
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
 DEBUG:  rdfEndForeignModify called
@@ -1369,22 +1311,10 @@ LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
                 ^
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
 LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
                                                  ^
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
 LINE 2: VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
                                                  ^
 DEBUG:  isLiteral called: term='"Westfälische Wilhelms-Universität Münster"@de'
@@ -1441,6 +1371,12 @@ LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
 DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
+DEBUG:  isBlank called: term='Westfälische Wilhelms-Universität Münster'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
+DEBUG:  isBlank exit: returning 'false'
+LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
+                                                             ^
 DEBUG:  lex called: input='de'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
@@ -1474,22 +1410,10 @@ LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
                 ^
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                ^
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
 LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
                                                  ^
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
-LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
-                                                 ^
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
 LINE 3:        ('<https://www.uni-muenster.de>', '<http://dbpedia.or...
                                                  ^
 DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
@@ -1540,6 +1464,12 @@ LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  isBlank exit: returning 'false'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
@@ -1553,6 +1483,12 @@ DEBUG:  unescape_unicode: Input='1780-10-02'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
 DEBUG:  unescape_unicode: Output='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  isBlank called: term='1780-10-02'
+LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
+                                                             ^
+DEBUG:  isBlank exit: returning 'false'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
@@ -1677,46 +1613,46 @@ DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] * Server auth using Basic with user 'admin'
 DEBUG:  [curl] > POST /dt/update HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
 DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: */*
 DEBUG:  [curl] > Content-Type: application/sparql-update
 DEBUG:  [curl] > Content-Length: 271
 DEBUG:  [curl] * upload completely sent off: 271 bytes
 DEBUG:  [curl] < HTTP/1.1 204 No Content
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Set-Cookie: JSESSIONID=node08p0zq7sikbn51ataa6hv6nf5j7.node0; Path=/
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Set-Cookie: JSESSIONID=node01kxg9t6d85hnn1073lbsh6cd8a122.node0; Path=/
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Thu, 14-May-2026 07:31:40 GMT; SameSite=lax
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 14
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Mon, 22-Jun-2026 07:13:31 GMT; SameSite=lax
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 407
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
@@ -1748,58 +1684,21 @@ LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
 DEBUG:  isLiteral exit: returning 'true' (simple literal - no ^^ or @)
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
-DEBUG:  cstring_to_rdfliteral called: input='https://www.uni-muenster.de'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  cstring_to_rdfliteral exit: returning => '"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  lex called: input='"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  lang called: input='"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  lex called: input='"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  lang exit: returning empty string
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  datatype called: input='"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  cstring_to_rdfliteral called: input='"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  cstring_to_rdfliteral exit: returning => '"\"https://www.uni-muenster.de\""'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
 DEBUG:  unescape_unicode: Input='https://www.uni-muenster.de'
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
 DEBUG:  unescape_unicode: Output='https://www.uni-muenster.de'
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
-DEBUG:  str called: input='https://www.uni-muenster.de'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
-DEBUG:  lex called: input='https://www.uni-muenster.de'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
 DEBUG:  cstring_to_rdfliteral called: input='https://www.uni-muenster.de'
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
 DEBUG:  cstring_to_rdfliteral exit: returning => '"https://www.uni-muenster.de"'
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
-DEBUG:  str exit: returning literal '"https://www.uni-muenster.de"'
-LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
-                               ^
 DEBUG:  iri called: input='"https://www.uni-muenster.de"'
+DEBUG:  isBlank called: term='"https://www.uni-muenster.de"'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='"https://www.uni-muenster.de"'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  rdf_fdw_iri called
@@ -1809,28 +1708,15 @@ DEBUG:  isBlank exit: returning 'false'
 DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
 DEBUG:  isLiteral exit: returning 'true' (simple literal - no ^^ or @)
-DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
-DEBUG:  lex called: input='"1780-12-31"'
-DEBUG:  lang called: input='"1780-12-31"'
-DEBUG:  lex called: input='"1780-12-31"'
-DEBUG:  lang exit: returning empty string
-DEBUG:  datatype called: input='"1780-12-31"'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"\"1780-12-31\""'
-DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  unescape_unicode: Input='1780-12-31'
 DEBUG:  unescape_unicode: Output='1780-12-31'
-DEBUG:  str called: input='1780-12-31'
-DEBUG:  lex called: input='1780-12-31'
 DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
-DEBUG:  str exit: returning literal '"1780-12-31"'
 DEBUG:  isLiteral called: term='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  unescape_unicode: Output='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  rdf_fdw_strdt called
+DEBUG:  isBlank called: term='"1780-12-31"'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='"1780-12-31"', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -1950,7 +1836,8 @@ DEBUG:  lex called: input='<https://www.uni-muenster.de>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
-DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  cstring_to_rdfliteral exit: returning => '"<https://www.uni-muenster.de>"'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  lex called: input='<https://www.uni-muenster.de>'
 DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
 DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
@@ -1992,10 +1879,14 @@ DEBUG:  datatype called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#
 DEBUG:  cstring_to_rdfliteral called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lex called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank called: term='1780-01-01'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-01-01', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -2050,10 +1941,14 @@ DEBUG:  datatype called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#
 DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lex called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank called: term='1780-12-31'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-12-31', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -2196,51 +2091,51 @@ DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] * Server auth using Basic with user 'admin'
 DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
 DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: application/sparql-results+xml
 DEBUG:  [curl] > Content-Length: 507
 DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
 DEBUG:  [curl] * upload completely sent off: 507 bytes
 DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 15
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 408
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  WriteMemoryCallback called
-DEBUG:  WriteMemoryCallback exit: returning '549' (realsize)
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback exit: returning '549' (realsize)
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
 DEBUG:  ExecuteSPARQL: http response code = 200
@@ -2256,50 +2151,74 @@ DEBUG:    FetchNextBinding exit: returning 0
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  isBlank called: term='https://www.uni-muenster.de'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/founded'
+DEBUG:  isBlank called: term='http://dbpedia.org/property/founded'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://dbpedia.org/property/founded'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.org/2001/XMLSchema#date', node_type='literal'
 DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  isBlank called: term='"1780-10-02"'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  strdt called: literal='"1780-10-02"', datatype='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  ContainsWhitespaces called: str='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  strdt: data type not an IRI
+DEBUG:  ExpandDatatypePrefix called: str='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  ExpandDatatypePrefix exit: returning 'http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  str called: input='"1780-10-02"'
+DEBUG:  lex called: input='"1780-10-02"'
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  str exit: returning literal '"1780-10-02"'
+DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > '1780-10-02'
-DEBUG:  isLiteral called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank exit: returning 'false'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isLiteral exit: returning 'true' (valid datatype)
-DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  lang called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang exit: returning empty string
-DEBUG:  datatype called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  isBlank called: term='1780-10-02'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -2335,22 +2254,10 @@ LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
                         ^
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
-                        ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
-LINE 3: WHERE subject = '<https://www.uni-muenster.de>'
-                        ^
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
 LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
                           ^
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
-                          ^
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
-                          ^
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
 LINE 4:   AND predicate = '<http://dbpedia.org/property/name>';
                           ^
 DEBUG:  isLiteral called: term='"University of Münster"@en'
@@ -2405,6 +2312,12 @@ DEBUG:  unescape_unicode: Input='University of Münster'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
 DEBUG:  unescape_unicode: Output='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  isBlank called: term='University of Münster'
+LINE 2: SET object = '"University of Münster"@en'
+                     ^
+DEBUG:  isBlank exit: returning 'false'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
 DEBUG:  lex called: input='en'
@@ -2542,7 +2455,8 @@ DEBUG:  lex called: input='<https://www.uni-muenster.de>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
-DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  cstring_to_rdfliteral exit: returning => '"<https://www.uni-muenster.de>"'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  lex called: input='<https://www.uni-muenster.de>'
 DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
 DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
@@ -2582,7 +2496,8 @@ DEBUG:  lex called: input='<http://dbpedia.org/property/name>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='<http://dbpedia.org/property/name>'
 DEBUG:  cstring_to_rdfliteral called: input='<http://dbpedia.org/property/name>'
-DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  cstring_to_rdfliteral exit: returning => '"<http://dbpedia.org/property/name>"'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  lex called: input='<http://dbpedia.org/property/name>'
 DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<http://dbpedia.org/property/name>'
 DEBUG:  DeparseExpr exit: returning '<http://dbpedia.org/property/name>'
@@ -2687,51 +2602,51 @@ DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] * Server auth using Basic with user 'admin'
 DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
 DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: application/sparql-results+xml
 DEBUG:  [curl] > Content-Length: 273
 DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
 DEBUG:  [curl] * upload completely sent off: 273 bytes
 DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 16
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 409
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  WriteMemoryCallback called
-DEBUG:  WriteMemoryCallback exit: returning '545' (realsize)
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback exit: returning '545' (realsize)
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
 DEBUG:  ExecuteSPARQL: http response code = 200
@@ -2794,27 +2709,38 @@ DEBUG:    FetchNextBinding exit: returning 0
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  isBlank called: term='https://www.uni-muenster.de'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/name'
+DEBUG:  isBlank called: term='http://dbpedia.org/property/name'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://dbpedia.org/property/name'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: value='Westfälische Wilhelms-Universität Münster', lang='de', datatye='(null)', node_type='literal'
 DEBUG:  cstring_to_rdfliteral called: input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='de'
+DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  strlang called: literal='"Westfälische Wilhelms-Universität Münster"', language='de'
+DEBUG:  str called: input='"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  cstring_to_rdfliteral called: input='Westfälische Wilhelms-Universität Münster'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  str exit: returning literal '"Westfälische Wilhelms-Universität Münster"'
+DEBUG:  strlang exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > 'Westfälische Wilhelms-Universität Münster'
 DEBUG:  isLiteral called: term='"Westfälische Wilhelms-Universität Münster"@de'
@@ -2835,6 +2761,8 @@ DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Univer
 DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
+DEBUG:  isBlank called: term='Westfälische Wilhelms-Universität Münster'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='de'
 DEBUG:  lex called: input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  strlang called: literal='Westfälische Wilhelms-Universität Münster', language='de'
@@ -2899,46 +2827,46 @@ DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] * Server auth using Basic with user 'admin'
 DEBUG:  [curl] > POST /dt/update HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
 DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: */*
 DEBUG:  [curl] > Content-Type: application/sparql-update
 DEBUG:  [curl] > Content-Length: 242
 DEBUG:  [curl] * upload completely sent off: 242 bytes
 DEBUG:  [curl] < HTTP/1.1 204 No Content
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Set-Cookie: JSESSIONID=node09drcfyg590e631jel3ad1vyk8.node0; Path=/
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Set-Cookie: JSESSIONID=node010csbn6on0l9bpy4hiy4yerua123.node0; Path=/
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Thu, 14-May-2026 07:31:40 GMT; SameSite=lax
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 17
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Mon, 22-Jun-2026 07:13:31 GMT; SameSite=lax
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 410
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
@@ -2957,12 +2885,6 @@ DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
                         ^
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
-                        ^
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
-                        ^
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
 LINE 2: WHERE subject = '<https://www.uni-muenster.de>';
                         ^
 DEBUG:  rdfAddForeignUpdateTargets called
@@ -3059,7 +2981,8 @@ DEBUG:  lex called: input='<https://www.uni-muenster.de>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
-DEBUG:  datatype exit: returning empty string (not a valid literal)
+DEBUG:  cstring_to_rdfliteral exit: returning => '"<https://www.uni-muenster.de>"'
+DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  lex called: input='<https://www.uni-muenster.de>'
 DEBUG:  DeparseExpr [T_Const]: reached end of block with result='<https://www.uni-muenster.de>'
 DEBUG:  DeparseExpr exit: returning '<https://www.uni-muenster.de>'
@@ -3161,51 +3084,51 @@ DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] * Server auth using Basic with user 'admin'
 DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
 DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: application/sparql-results+xml
 DEBUG:  [curl] > Content-Length: 194
 DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
 DEBUG:  [curl] * upload completely sent off: 194 bytes
 DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 18
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 411
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  WriteMemoryCallback called
-DEBUG:  WriteMemoryCallback exit: returning '865' (realsize)
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback exit: returning '865' (realsize)
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
 DEBUG:  ExecuteSPARQL: http response code = 200
@@ -3269,27 +3192,38 @@ DEBUG:    FetchNextBinding exit: returning 0
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  isBlank called: term='https://www.uni-muenster.de'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/name'
+DEBUG:  isBlank called: term='http://dbpedia.org/property/name'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://dbpedia.org/property/name'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/name>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: value='University of Münster', lang='en', datatye='(null)', node_type='literal'
 DEBUG:  cstring_to_rdfliteral called: input='University of Münster'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"'
+DEBUG:  isBlank called: term='"University of Münster"'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='en'
+DEBUG:  lex called: input='"University of Münster"'
+DEBUG:  strlang called: literal='"University of Münster"', language='en'
+DEBUG:  str called: input='"University of Münster"'
+DEBUG:  lex called: input='"University of Münster"'
+DEBUG:  cstring_to_rdfliteral called: input='University of Münster'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"'
+DEBUG:  str exit: returning literal '"University of Münster"'
+DEBUG:  strlang exit: returning => '"University of Münster"@en'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > 'University of Münster'
 DEBUG:  isLiteral called: term='"University of Münster"@en'
@@ -3310,6 +3244,8 @@ DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
 DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  unescape_unicode: Input='University of Münster'
 DEBUG:  unescape_unicode: Output='University of Münster'
+DEBUG:  isBlank called: term='University of Münster'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='en'
 DEBUG:  lex called: input='University of Münster'
 DEBUG:  strlang called: literal='University of Münster', language='en'
@@ -3350,50 +3286,74 @@ DEBUG:    FetchNextBinding exit: returning 1
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
+DEBUG:  isBlank called: term='https://www.uni-muenster.de'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<https://www.uni-muenster.de>'
-DEBUG:  unescape_unicode: Output='<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/founded'
+DEBUG:  isBlank called: term='http://dbpedia.org/property/founded'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://dbpedia.org/property/founded'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
-DEBUG:  unescape_unicode: Input='<http://dbpedia.org/property/founded>'
-DEBUG:  unescape_unicode: Output='<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.org/2001/XMLSchema#date', node_type='literal'
 DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  isBlank called: term='"1780-10-02"'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  strdt called: literal='"1780-10-02"', datatype='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  ContainsWhitespaces called: str='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  ContainsWhitespaces exit: returning 'false'
+DEBUG:  strdt: data type not an IRI
+DEBUG:  ExpandDatatypePrefix called: str='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  ExpandDatatypePrefix exit: returning 'http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  str called: input='"1780-10-02"'
+DEBUG:  lex called: input='"1780-10-02"'
+DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
+DEBUG:  str exit: returning literal '"1780-10-02"'
+DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > '1780-10-02'
-DEBUG:  isLiteral called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank called: term='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank exit: returning 'false'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isLiteral exit: returning 'true' (valid datatype)
-DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  lang called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  lex called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang exit: returning empty string
-DEBUG:  datatype called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  isBlank called: term='1780-10-02'
+DEBUG:  isBlank exit: returning 'false'
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -3444,46 +3404,46 @@ DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] * Server auth using Basic with user 'admin'
 DEBUG:  [curl] > POST /dt/update HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
 DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: */*
 DEBUG:  [curl] > Content-Type: application/sparql-update
 DEBUG:  [curl] > Content-Length: 249
 DEBUG:  [curl] * upload completely sent off: 249 bytes
 DEBUG:  [curl] < HTTP/1.1 204 No Content
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Set-Cookie: JSESSIONID=node01042stw5ui2ag1ulvx476o16k29.node0; Path=/
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Set-Cookie: JSESSIONID=node07fgylnavi1ao2klnyir2wyzd124.node0; Path=/
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Thu, 14-May-2026 07:31:40 GMT; SameSite=lax
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 19
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Mon, 22-Jun-2026 07:13:31 GMT; SameSite=lax
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 412
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
@@ -3664,54 +3624,54 @@ DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=SELECT%2
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
-DEBUG:  ExecuteSPARQL: setting Authorization: Bearer *******
+DEBUG:  ExecuteSPARQL: setting Authorization: Bearer [REDACTED]
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:  [curl] * Host fuseki:3030 was resolved.
 DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.48
-DEBUG:  [curl] *   Trying 172.19.42.48:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.48) port 3030
+DEBUG:  [curl] * IPv4: 172.19.42.160
+DEBUG:  [curl] *   Trying 172.19.42.160:3030...
+DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
 DEBUG:  [curl] * using HTTP/1.x
 DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
 DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.6-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
+DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
 DEBUG:  [curl] > Accept: application/sparql-results+xml
 DEBUG:  [curl] > Authorization: [REDACTED]
 DEBUG:  [curl] > Content-Length: 65
 DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
 DEBUG:  [curl] * upload completely sent off: 65 bytes
 DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Date: Fri, 15 May 2026 07:31:40 GMT
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Vary: Origin
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  [curl] < Fuseki-Request-Id: 20
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  [curl] < Fuseki-Request-Id: 413
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
 DEBUG:  [curl] < 
-DEBUG:  HeaderCallbackFunction called
-DEBUG:  HeaderCallbackFunction exit
-DEBUG:  WriteMemoryCallback called
-DEBUG:  WriteMemoryCallback exit: returning '207' (realsize)
+DEBUG:  CURLHeaderCallback called
+DEBUG:  CURLHeaderCallback exit
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback exit: returning '207' (realsize)
 DEBUG:  [curl] * Connection #0 to host fuseki left intact
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=207
 DEBUG:  ExecuteSPARQL: http response code = 200

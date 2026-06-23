@@ -28,4 +28,7 @@ SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
 ALTER EXTENSION rdf_fdw UPDATE TO '2.6';
 SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
 
+ALTER EXTENSION rdf_fdw UPDATE TO '2.7';
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+
 DROP SERVER fs CASCADE;
