@@ -91,7 +91,7 @@ To run the predefined regression tests:
 $ make PGUSER=postgres installcheck
 ```
 
-> [!NOTE]  
+> [!WARNING]  
 > `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory. When connecting to untrusted or public endpoints, consider setting `max_response_size` on the `SERVER` to cap the response body and prevent runaway allocations.
 
 

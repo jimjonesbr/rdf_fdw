@@ -182,17 +182,163 @@ bool LiteralsCompatible(char *literal1, char *literal2)
 }
 
 /*
+ * FindLiteralClosingQuote
+ * -----------------------
+ *
+ * Given a string whose first character is '"', scans forward honoring
+ * backslash-escape semantics (a backslash escapes exactly the character
+ * that immediately follows it, so runs of backslashes are consumed two
+ * at a time) and returns a pointer to the first *unescaped* '"' that
+ * closes the literal, or NULL if the string ends before such a quote is
+ * found.
+ *
+ * This deliberately replaces two previous ad-hoc heuristics (a substring
+ * search for '@'/'^^' in cstring_to_rdfliteral(), and a single-character
+ * lookbehind in EscapeSPARQLLiteral()) that could both be confused by a
+ * lexical value containing a run of backslashes of the "wrong" parity,
+ * causing a quote to be mis-classified as escaped/unescaped and letting
+ * attacker-controlled content break out of the intended SPARQL string
+ * literal once the value was serialized into a request. Walking forward
+ * and consuming escape pairs as they're found is unambiguous regardless
+ * of how many backslashes precede a quote.
+ *
+ * input: pointer to the opening '"' of a candidate literal
+ *
+ * returns: pointer to the matching closing '"', or NULL if none exists
+ */
+static const char *
+FindLiteralClosingQuote(const char *input)
+{
+	const char *p = input + 1; /* skip opening quote */
+
+	while (*p)
+	{
+		if (*p == '\\' && *(p + 1))
+		{
+			p += 2; /* skip the escaped character, whatever it is */
+			continue;
+		}
+		if (*p == '"')
+			return p; /* unescaped closing quote */
+		p++;
+	}
+
+	return NULL;
+}
+
+/*
+ * IsValidLiteralSuffix
+ * ---------------------
+ *
+ * Validates that 'suffix' is either empty, or consists *entirely* of a
+ * well-formed SPARQL/Turtle language tag ("@lang") or datatype
+ * annotation ("^^prefix:name" or "^^<iri>"). Trailing bytes that don't
+ * fit this grammar are rejected rather than being passed through
+ * unexamined -- this is what closes off the trailing-content injection
+ * vector where an attacker appends syntax after what looks like a
+ * plausible "@lang" or "^^type" tag.
+ *
+ * suffix: pointer to the byte immediately following a literal's closing
+ *         quote (may point to the string terminator)
+ *
+ * returns: true if 'suffix' is empty or a complete, valid tag/datatype
+ *          with nothing left over; false otherwise
+ */
+static bool
+IsValidLiteralSuffix(const char *suffix)
+{
+	const char *p = suffix;
+
+	if (*p == '\0')
+		return true; /* no suffix at all is fine */
+
+	if (*p == '@')
+	{
+		p++;
+		if (!isalpha((unsigned char) *p))
+			return false;
+		while (isalnum((unsigned char) *p) || *p == '-')
+			p++;
+		return (*p == '\0');
+	}
+
+	if (p[0] == '^' && p[1] == '^')
+	{
+		p += 2;
+		if (*p == '<')
+		{
+			p++;
+			while (*p && *p != '>' && *p != '<' && *p != '"' &&
+				   *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r')
+				p++;
+			return (*p == '>' && *(p + 1) == '\0');
+		}
+		else
+		{
+			if (!isalpha((unsigned char) *p) && *p != '_')
+				return false;
+			while (isalnum((unsigned char) *p) || *p == '_' ||
+				   *p == ':' || *p == '-' || *p == '.')
+				p++;
+			return (*p == '\0');
+		}
+	}
+
+	return false;
+}
+
+/*
+ * AppendQuoteEscapedContent
+ * --------------------------
+ *
+ * Appends [from, to) to buf, adding a backslash before any '"' that
+ * isn't already protected by one, while leaving every other byte --
+ * including any backslashes already present in the input -- completely
+ * untouched. This preserves the original cstring_to_rdfliteral()
+ * contract (raw content may already contain legitimate escape sequences
+ * such as \", \n, \uXXXX that must survive unchanged; only unescaped
+ * quotes need a new backslash), while fixing how "already protected" is
+ * determined.
+ */
+static void
+AppendQuoteEscapedContent(StringInfoData *buf, const char *from, const char *to)
+{
+	const char *p;
+
+	for (p = from; p < to; p++)
+	{
+		if (*p == '"')
+		{
+			const char *q = p - 1;
+			int			nbackslash = 0;
+
+			while (q >= from && *q == '\\')
+			{
+				nbackslash++;
+				q--;
+			}
+
+			/* Even count (including zero): not yet escaped -- add one. */
+			if (nbackslash % 2 == 0)
+				appendStringInfoChar(buf, '\\');
+		}
+		appendStringInfoChar(buf, *p);
+	}
+}
+
+/*
  * cstring_to_rdfliteral
  * ---------------------
  *
  * Converts a raw string input into a valid RDF literal by adding quotes and escaping
- * internal quotes as needed. If the input is already a complete RDF literal (i.e.,
- * quoted with a language tag or datatype), it is returned unchanged.
+ * internal quotes as needed. If the input is already a complete, unambiguously
+ * escaped RDF literal (i.e., quoted, with a well-formed language tag or datatype
+ * suffix), it is returned unchanged.
  *
  * input: the raw string or partial literal to convert (e.g., "abc", "abc"@en, "ab\"c")
  *
  * returns: a string representing the RDF literal (e.g., "\"abc\"", "\"ab\\\"c\"")
- *          or the input as-is if already a complete literal.
+ *          or the input as-is if already a complete, validly-escaped literal.
  */
 char *cstring_to_rdfliteral(char *input)
 {
@@ -214,7 +360,16 @@ char *cstring_to_rdfliteral(char *input)
 
 	initStringInfo(&buf);
 
-	/* check if it's already a complete RDF literal */
+	/*
+	 * Check if it's already a complete RDF literal. Several call
+	 * sites (in particular rdfnode_in()'s own literal parser) rely
+	 * on its existing, deliberately permissive behavior to let a later
+	 * call to lang()/datatype() perform proper validation (e.g. to
+	 * reject an empty language tag or a malformed datatype IRI) on
+	 * whatever follows the quote -- tightening this check here would
+	 * silently change those validation/error paths instead of fixing the
+	 * actual bug, which is in the escaping loop below.
+	 */
 	if (*start == '"')
 	{
 		end = start + len - 1; /* last character */
@@ -233,32 +388,15 @@ char *cstring_to_rdfliteral(char *input)
 		}
 	}
 
-	/* not a complete literal, treat as raw content */
+	/*
+	 * Not recognized as a complete literal: treat the *entire* input
+	 * (including any leading/trailing quote bytes it happens to contain)
+	 * as raw content and escape it from scratch.
+	 */
 	end = start + len;
 
-	/* add opening quote */
 	appendStringInfoChar(&buf, '"');
-
-	/* process the content, escaping all quotes */
-	while (start < end)
-	{
-		if (*start == '"')
-		{
-			/* escape unless already escaped */
-			if (start == input || *(start - 1) != '\\')
-			{
-				appendStringInfoChar(&buf, '\\');
-			}
-			appendStringInfoChar(&buf, '"');
-		}
-		else
-		{
-			appendStringInfoChar(&buf, *start);
-		}
-		start++;
-	}
-
-	/* add closing quote */
+	AppendQuoteEscapedContent(&buf, start, end);
 	appendStringInfoChar(&buf, '"');
 
 	elog(DEBUG3, "%s exit: returning => '%s'", __func__, buf.data);
@@ -1360,6 +1498,51 @@ char *str_replace(const char *source, const char *search, const char *replace)
 	return result.data;
 }
 /*
+ * AppendControlEscapedLiteralContent
+ * -----------------------------------
+ *
+ * Appends [from, to) to buf, converting raw control-character bytes
+ * (newline, carriage return, tab) into their SPARQL/Turtle escape
+ * sequences, while copying any *existing* two-byte escape sequence
+ * (e.g. \" or \\ already produced by cstring_to_rdfliteral()/rdfnode_in)
+ * through verbatim rather than reinterpreting or double-escaping it.
+ */
+static void
+AppendControlEscapedLiteralContent(StringInfoData *buf, const char *from, const char *to)
+{
+	const char *p = from;
+
+	while (p < to)
+	{
+		if (*p == '\\' && p + 1 < to)
+		{
+			/* Pre-existing escape sequence: copy verbatim. */
+			appendStringInfoChar(buf, *p);
+			appendStringInfoChar(buf, *(p + 1));
+			p += 2;
+			continue;
+		}
+
+		switch (*p)
+		{
+			case '\n':
+				appendStringInfoString(buf, "\\n");
+				break;
+			case '\r':
+				appendStringInfoString(buf, "\\r");
+				break;
+			case '\t':
+				appendStringInfoString(buf, "\\t");
+				break;
+			default:
+				appendStringInfoChar(buf, *p);
+				break;
+		}
+		p++;
+	}
+}
+
+/*
  * EscapeSPARQLLiteral
  * -------------------
  *
@@ -1378,9 +1561,7 @@ char *str_replace(const char *source, const char *search, const char *replace)
 char *EscapeSPARQLLiteral(const char *input)
 {
 	StringInfoData result;
-	const char *ptr;
-	const char *closing_quote = NULL;
-	const char *lang_or_type = NULL;
+	const char *closing_quote;
 
 	if (!input || strlen(input) == 0)
 		return (char *)input;
@@ -1393,63 +1574,42 @@ char *EscapeSPARQLLiteral(const char *input)
 	if (input[0] != '"')
 		return (char *)input;
 
+	/*
+	 * Locate the true closing quote by walking forward and consuming
+	 * escape pairs as they're found (see FindLiteralClosingQuote()),
+	 * rather than a single-character lookbehind, which can misjudge the
+	 * boundary when the content contains a run of backslashes.
+	 */
+	closing_quote = FindLiteralClosingQuote(input);
+
+	if (!closing_quote || !IsValidLiteralSuffix(closing_quote + 1))
+	{
+		/*
+		 * Either there's no unambiguous closing quote, or what follows
+		 * it isn't a well-formed @lang/^^datatype suffix. Don't guess
+		 * or pass anything through unexamined -- re-escape the entire
+		 * input as raw content instead, exactly as cstring_to_rdfliteral()
+		 * does in the equivalent situation.
+		 */
+		initStringInfo(&result);
+		appendStringInfoChar(&result, '"');
+		AppendQuoteEscapedContent(&result, input, input + strlen(input));
+		appendStringInfoChar(&result, '"');
+		return result.data;
+	}
+
 	initStringInfo(&result);
-
-	/* Find the closing quote (not preceded by backslash) */
-	ptr = input + 1; /* skip opening quote */
-	while (*ptr != '\0')
-	{
-		if (*ptr == '"' && (ptr == input + 1 || *(ptr - 1) != '\\'))
-		{
-			closing_quote = ptr;
-			/* Check what follows the closing quote */
-			if (ptr[1] == '@' || (ptr[1] == '^' && ptr[2] == '^') || ptr[1] == '\0')
-			{
-				lang_or_type = ptr + 1; /* Point to @lang or ^^type or end of string */
-				break;
-			}
-		}
-		ptr++;
-	}
-
-	if (!closing_quote)
-	{
-		/* Malformed literal - return as-is */
-		return (char *)input;
-	}
 
 	/* Escape the content between quotes */
 	appendStringInfoChar(&result, '"'); /* opening quote */
-	ptr = input + 1;					/* reset to start of content */
-
-	while (ptr < closing_quote)
-	{
-		switch (*ptr)
-		{
-		case '\n':
-			appendStringInfoString(&result, "\\n");
-			break;
-		case '\r':
-			appendStringInfoString(&result, "\\r");
-			break;
-		case '\t':
-			appendStringInfoString(&result, "\\t");
-			break;
-		default:
-			appendStringInfoChar(&result, *ptr);
-			break;
-		}
-		ptr++;
-	}
+	AppendControlEscapedLiteralContent(&result, input + 1, closing_quote);
 
 	/* Add closing quote */
 	appendStringInfoChar(&result, '"');
 
-	/* Add language tag or datatype if present */
-	if (lang_or_type && *lang_or_type != '\0')
-	{
-		appendStringInfoString(&result, lang_or_type);
-	}
+	/* Add language tag or datatype if present (already validated above) */
+	if (*(closing_quote + 1) != '\0')
+		appendStringInfoString(&result, closing_quote + 1);
 
 	return result.data;
 }

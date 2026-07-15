@@ -292,3 +292,23 @@ SELECT '-1 year -2 months'::interval::rdfnode::interval;
 SELECT '5.123456 seconds'::interval::rdfnode::interval;
 SELECT '0 seconds'::interval::rdfnode::interval;
 SELECT '0.000001 seconds'::interval::rdfnode::interval;
+
+/* backslash runs of every parity, 0 through 8, immediately preceding
+ * the closing quote of an otherwise plain literal */
+SELECT n, (('"' || repeat('\', n) || '"'))::rdfnode = ((('"' || repeat('\', n) || '"'))::rdfnode)::text::rdfnode AS stable_roundtrip
+FROM generate_series(0, 8) AS n
+ORDER BY n;
+
+/* the exact payload from the original report: a lexical value that is
+ * two literal backslash characters */
+SELECT (('"' || repeat('\', 4) || '"'))::rdfnode;
+
+/* same backslash run, but immediately followed by a language tag --
+ * must not be confused with part of the escape run */
+SELECT (('"' || repeat('\', 4) || '"@en'))::rdfnode;
+
+/* trailing content after a closing quote + language tag is rejected, not silently accepted */
+SELECT '"x"@en } ; INSERT DATA { <http://evil/p> <http://evil/p> <http://evil/p> } #'::rdfnode;
+
+/* already-escaped text must still not be double-escaped */
+SELECT 'x\"y'::rdfnode;

@@ -1465,3 +1465,50 @@ SELECT '0.000001 seconds'::interval::rdfnode::interval;
  @ 0.000001 secs
 (1 row)
 
+/* backslash runs of every parity, 0 through 8, immediately preceding
+ * the closing quote of an otherwise plain literal */
+SELECT n, (('"' || repeat('\', n) || '"'))::rdfnode = ((('"' || repeat('\', n) || '"'))::rdfnode)::text::rdfnode AS stable_roundtrip
+FROM generate_series(0, 8) AS n
+ORDER BY n;
+ n | stable_roundtrip 
+---+------------------
+ 0 | t
+ 1 | t
+ 2 | t
+ 3 | t
+ 4 | t
+ 5 | t
+ 6 | t
+ 7 | t
+ 8 | t
+(9 rows)
+
+/* the exact payload from the original report: a lexical value that is
+ * two literal backslash characters */
+SELECT (('"' || repeat('\', 4) || '"'))::rdfnode;
+  rdfnode   
+------------
+ "\"\\\\\""
+(1 row)
+
+/* same backslash run, but immediately followed by a language tag --
+ * must not be confused with part of the escape run */
+SELECT (('"' || repeat('\', 4) || '"@en'))::rdfnode;
+  rdfnode  
+-----------
+ "\\\\"@en
+(1 row)
+
+/* trailing content after a closing quote + language tag is rejected, not silently accepted */
+SELECT '"x"@en } ; INSERT DATA { <http://evil/p> <http://evil/p> <http://evil/p> } #'::rdfnode;
+ERROR:  invalid input syntax for type rdfnode: ""x"@en } ; INSERT DATA { <http://evil/p> <http://evil/p> <http://evil/p> } #"
+LINE 2: SELECT '"x"@en } ; INSERT DATA { <http://evil/p> <http://evi...
+               ^
+DETAIL:  Trailing content after RDF literal.
+/* already-escaped text must still not be double-escaped */
+SELECT 'x\"y'::rdfnode;
+ rdfnode 
+---------
+ "x\"y"
+(1 row)
+
