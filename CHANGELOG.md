@@ -1,5 +1,5 @@
 # 2.7
-Release date: **Unreleased**
+Release date: **2026-07-16**
 
 ## Bug Fixes
 
@@ -7,7 +7,7 @@ Release date: **Unreleased**
 
   Thanks **Devrim Gündüz** (@devrimgunduz) for reporting and fixing this issue!
 
-* **Fixed invalid libcurl lifecycle**: `curl_global_init()`/`curl_global_cleanup()` were being called on every SPARQL request instead of once per backend process. This could interfere with other libcurl users loaded in the same backend (e.g. other FDWs). Global initialization now happens once in _`PG_init()`; cleanup is left to the OS at process exit.
+* **Fixed invalid libcurl lifecycle**: `curl_global_init()`/`curl_global_cleanup()` were being called on every SPARQL request instead of once per backend process. This could interfere with other libcurl users loaded in the same backend (e.g. other FDWs). Global initialization now happens once in `_PG_init()`; cleanup is left to the OS at process exit.
 
 # 2.6
 Release date: **2026-06-23**
