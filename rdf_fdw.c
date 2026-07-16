@@ -755,6 +755,20 @@ static char *DeparseSPARQLFrom(char *raw_sparql);
 static void ExtractSPARQLPrefixes(struct RDFfdwState *state);
 static Oid GetRDFNodeOID(void);
 static void LoadPrefixes(RDFfdwState *state);
+void _PG_init(void);
+
+void _PG_init(void)
+{
+	/*
+	 * Initialize libcurl's global state once per backend process.
+	 * Intentionally no matching _PG_fini()/curl_global_cleanup(): this is a
+	 * single-threaded, long-lived backend process that may share the address
+	 * space with other libcurl-using extensions (e.g. nominatim_fdw), and
+	 * _PG_fini() is not guaranteed to run on backend exit anyway. Global
+	 * state is reclaimed by the OS when the backend process terminates.
+	 */
+	curl_global_init(CURL_GLOBAL_ALL);
+}
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -5067,7 +5081,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 															  : (state->sparql_query_type == SPARQL_UPDATE)	  ? "UPDATE"
 																											  : "SELECT/DESCRIBE");
 
-	curl_global_init(CURL_GLOBAL_ALL);
 	state->curl = curl_easy_init();
 
 	initStringInfo(&accept_header);
@@ -5343,7 +5356,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 				curl_slist_free_all(headers);
 				curl_easy_cleanup(state->curl);
-				curl_global_cleanup();
 
 				if (response_code == 400)
 					ereport(ERROR,
@@ -5416,7 +5428,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			xmlFreeDoc(state->xmldoc);
 			curl_slist_free_all(headers);
 			curl_easy_cleanup(state->curl);
-			curl_global_cleanup();
 
 			if (len)
 			{
@@ -5448,7 +5459,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	pfree(chunk_header.memory);
 	curl_slist_free_all(headers);
 	curl_easy_cleanup(state->curl);
-	curl_global_cleanup();
 
 	/*
 	 * We thrown an error in case the SPARQL endpoint returns an empty XML doc
