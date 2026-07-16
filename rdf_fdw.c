@@ -767,7 +767,10 @@ void _PG_init(void)
 	 * _PG_fini() is not guaranteed to run on backend exit anyway. Global
 	 * state is reclaimed by the OS when the backend process terminates.
 	 */
-	curl_global_init(CURL_GLOBAL_ALL);
+	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK)
+        ereport(ERROR,
+                (errcode(ERRCODE_FDW_ERROR),
+                 errmsg("rdf_fdw: could not initialise libcurl")));
 }
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
