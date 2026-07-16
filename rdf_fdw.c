@@ -771,6 +771,8 @@ void _PG_init(void)
         ereport(ERROR,
                 (errcode(ERRCODE_FDW_ERROR),
                  errmsg("rdf_fdw: could not initialise libcurl")));
+
+	 xmlInitParser();
 }
 
 Datum rdf_fdw_handler(PG_FUNCTION_ARGS)
@@ -2961,7 +2963,6 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 	}
 
 	elog(DEBUG2, "%s: initializing XML parser", __func__);
-	xmlInitParser();
 
 	LoadRDFData(state);
 	state->rowcount = 0;
