@@ -1,5 +1,5 @@
 # 2.7
-Release date: **Unreleased**
+Release date: **2026-07-26**
 
 ## Bug Fixes
 
