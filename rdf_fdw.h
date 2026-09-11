@@ -21,7 +21,7 @@
 #include <libxml/tree.h>     /* xmlDocPtr, xmlNodePtr */
 #include "lib/stringinfo.h"  /* StringInfoData */
 /* Version */
-#define FDW_VERSION "2.7"
+#define FDW_VERSION "2.8-dev"
 
 /* Request status codes */
 #define REQUEST_SUCCESS 0
