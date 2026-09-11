@@ -16,6 +16,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **Fixed the `custom` server option having no effect**: When building the request for a SPARQL `SELECT`/`DESCRIBE`, the parameters configured in the `custom` server option were appended to the request as `&<the URL-encoded SPARQL query>` instead of `&<the custom parameters>`. Triplestore-specific parameters such as `signal_void=on` were therefore never sent to the endpoint, and the SPARQL query was sent twice in the same request, needlessly doubling its size. The configured parameters are now appended as intended.
+
 * **Fixed `request_max_redirect '0'` being silently ignored**: The redirect limit was only handed to libcurl when the configured value was non-zero (`if (state->request_max_redirect)`), so a `FOREIGN SERVER` with `request_redirect 'true'` and `request_max_redirect '0'` never set `CURLOPT_MAXREDIRS` at all and instead inherited libcurl's own default — 30 redirects since libcurl 8.3.0, and *unlimited* on older libcurl releases. Instead of refusing redirects, such a server would happily follow them. The limit is now always set explicitly, so it never depends on the libcurl release `rdf_fdw` happens to be linked against, and `request_max_redirect '0'` genuinely refuses redirects.
 
   The option is also validated at `CREATE SERVER`/`ALTER SERVER` time now, as the other numeric server options already were. Non-numeric values such as `request_max_redirect 'foo'` used to be silently accepted and turned into `0`, and negative values were passed straight to libcurl. Values that aren't non-negative integers are now rejected with an error.

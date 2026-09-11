@@ -5161,7 +5161,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		appendStringInfo(&url_buffer, "%s=%s", state->query_param, escaped_url);
 
 		if (state->custom_params)
-			appendStringInfo(&url_buffer, "&%s", escaped_url);
+			appendStringInfo(&url_buffer, "&%s", state->custom_params);
 
 		if (escaped_url)
 			curl_free(escaped_url);
