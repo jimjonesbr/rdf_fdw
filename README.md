@@ -176,8 +176,8 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
 | `request_timeout` | optional | Maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer. |
 | `connect_retry` | optional | Number of retry attempts on failure (default `3`). |
-| `request_redirect` | optional | Follow HTTP redirects (default `false`). |
-| `request_max_redirect` | optional | Max redirects allowed; `0` = unlimited. |
+| `request_max_redirect` | optional | Maximum number of HTTP redirects to follow (default `0`). `0` refuses any redirect; any higher value enables redirection and caps it at that many hops. Credentials are never forwarded to a redirected host. |
+| `request_redirect` | *deprecated* | Superseded by `request_max_redirect`, which now enables and bounds redirection on its own. Still accepted so that existing servers and dumps keep working: when set to `true` without an explicit `request_max_redirect`, up to `30` redirects are followed. It will be removed in a future major release. |
 | `custom` | optional | Triplestore-specific query parameters appended to the request URL (e.g. `signal_void=on`). |
 | `query_param` | optional | HTTP parameter name that carries the SPARQL query (default `query`). |
 | `prefix_context` | optional | Name of a prefix context whose `PREFIX` entries are prepended to generated SPARQL queries. |

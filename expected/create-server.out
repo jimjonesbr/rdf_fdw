@@ -159,3 +159,65 @@ OPTIONS (
 );
 ERROR:  invalid max_response_size: '1.5'
 HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+/* invalid request_max_redirect - non-numeric value */
+CREATE SERVER rdfserver_error20
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_max_redirect 'foo'
+);
+ERROR:  invalid request_max_redirect: 'foo'
+HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+/* invalid request_max_redirect - negative value */
+CREATE SERVER rdfserver_error21
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_max_redirect '-1'
+);
+ERROR:  invalid request_max_redirect: '-1'
+HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+/* invalid request_max_redirect - white space */
+CREATE SERVER rdfserver_error22
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_max_redirect ' '
+);
+ERROR:  invalid request_max_redirect: ' '
+HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+/* invalid request_max_redirect - float value */
+CREATE SERVER rdfserver_error23
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_max_redirect '1.5'
+);
+ERROR:  invalid request_max_redirect: '1.5'
+HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+/* valid request_max_redirect - 0 refuses any redirect */
+CREATE SERVER rdfserver_maxredirect0
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_max_redirect '0'
+);
+/* valid request_max_redirect - follow at most 5 redirects */
+CREATE SERVER rdfserver_maxredirect5
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_max_redirect '5'
+);
+/* deprecated request_redirect - still accepted, but warns */
+CREATE SERVER rdfserver_deprecated_redirect
+FOREIGN DATA WRAPPER rdf_fdw 
+OPTIONS (    
+  endpoint 'https://dbpedia.org/sparql',
+  request_redirect 'true'
+);
+WARNING:  option "request_redirect" is deprecated
+HINT:  Use 'request_max_redirect' alone instead: '0' refuses any redirect, any higher value enables redirection and caps it.
+DROP SERVER rdfserver_maxredirect0;
+DROP SERVER rdfserver_maxredirect5;
+DROP SERVER rdfserver_deprecated_redirect;

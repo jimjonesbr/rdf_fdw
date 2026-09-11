@@ -1,6 +1,25 @@
 # 2.8
 Release date: **unreleased**
 
+## Enhancements
+
+* **`request_max_redirect` is now the single option controlling HTTP redirects**: Redirection used to be governed by two options that had to agree with each other — `request_redirect` switched it on, and `request_max_redirect` bounded it — which made it possible to write server definitions whose two halves contradicted each other, and one of those combinations was silently broken (see the bug fix below). `request_max_redirect` now carries both meanings on its own: `0` (the default) refuses any redirect, and any higher value enables redirection and caps it at that many hops. The `-1` (unlimited) value has been dropped, since an unbounded redirect chain has no practical use against a SPARQL endpoint and invites never-ending redirect loops.
+
+  ```sql
+  -- follow at most 5 redirects
+  CREATE SERVER dbpedia
+  FOREIGN DATA WRAPPER rdf_fdw
+  OPTIONS (endpoint 'https://dbpedia.org/sparql', request_max_redirect '5');
+  ```
+
+  `request_redirect` is deprecated but still accepted, so existing servers and dumps continue to work: setting it raises a warning, and `request_redirect 'true'` without an explicit `request_max_redirect` follows up to 30 redirects, which is what libcurl would have done before. It will be removed in a future major release.
+
+## Bug Fixes
+
+* **Fixed `request_max_redirect '0'` being silently ignored**: The redirect limit was only handed to libcurl when the configured value was non-zero (`if (state->request_max_redirect)`), so a `FOREIGN SERVER` with `request_redirect 'true'` and `request_max_redirect '0'` never set `CURLOPT_MAXREDIRS` at all and instead inherited libcurl's own default — 30 redirects since libcurl 8.3.0, and *unlimited* on older libcurl releases. Instead of refusing redirects, such a server would happily follow them. The limit is now always set explicitly, so it never depends on the libcurl release `rdf_fdw` happens to be linked against, and `request_max_redirect '0'` genuinely refuses redirects.
+
+  The option is also validated at `CREATE SERVER`/`ALTER SERVER` time now, as the other numeric server options already were. Non-numeric values such as `request_max_redirect 'foo'` used to be silently accepted and turned into `0`, and negative values were passed straight to libcurl. Values that aren't non-negative integers are now rejected with an error.
+
 
 # 2.7
 Release date: **2026-07-26**

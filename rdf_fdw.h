@@ -93,6 +93,9 @@
 #define RDF_DEFAULT_CONNECTTIMEOUT 300
 #define RDF_DEFAULT_REQUEST_TIMEOUT 0
 #define RDF_DEFAULT_MAXRETRY 3
+#define RDF_DEFAULT_MAX_REDIRECT 0
+/* redirect limit assumed for the deprecated 'request_redirect' option */
+#define RDF_DEPRECATED_REDIRECT_LIMIT 30
 #define RDF_KEYWORD_NOT_FOUND -1
 #define RDF_DEFAULT_FORMAT "application/sparql-results+xml"
 #define RDF_RDFXML_FORMAT "application/rdf+xml"
@@ -154,7 +157,7 @@
 #define RDF_SERVER_OPTION_CONNECTTIMEOUT "connect_timeout"
 #define RDF_SERVER_OPTION_REQUEST_TIMEOUT "request_timeout"
 #define RDF_SERVER_OPTION_CONNECTRETRY "connect_retry"
-#define RDF_SERVER_OPTION_REQUEST_REDIRECT "request_redirect"
+#define RDF_SERVER_OPTION_REQUEST_REDIRECT "request_redirect" /* deprecated: superseded by request_max_redirect */
 #define RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT "request_max_redirect"
 #define RDF_SERVER_OPTION_HTTP_PROXY "http_proxy"
 #define RDF_SERVER_OPTION_HTTPS_PROXY "https_proxy"
@@ -209,7 +212,6 @@ typedef struct RDFfdwState
 	char *proxy_user_password;		   /* Password for proxy authentication. */
 	char *custom_params;			   /* Custom parameters used to compose the request URL */
 	char *base_uri;					   /* Base URI for possible relative references */
-	bool request_redirect;			   /* Enables or disables URL redirecting. */
 	bool enable_pushdown;			   /* Enables or disables pushdown of SQL commands */
 	bool enable_xml_huge;			   /* Enables or disables XML parser to handle huge XML documents */
 	bool is_sparql_parsable;		   /* Marks whether the SPARQL query is parsable for pushdown */

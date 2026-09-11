@@ -2620,6 +2620,31 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					}
 				}
 
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_REDIRECT) == 0)
+				{
+					ereport(WARNING,
+							(errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
+							 errmsg("option \"%s\" is deprecated", def->defname),
+							 errhint("Use '%s' alone instead: '0' refuses any redirect, "
+									 "any higher value enables redirection and caps it.",
+									 RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT)));
+				}
+
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT) == 0)
+				{
+					char *endptr;
+					char *maxredirect_str = defGetString(def);
+					long maxredirect_val = strtol(maxredirect_str, &endptr, 0);
+
+					if (maxredirect_str[0] == '\0' || *endptr != '\0' || maxredirect_val < 0)
+					{
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("invalid %s: '%s'", def->defname, maxredirect_str),
+								 errhint("Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).")));
+					}
+				}
+
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_BATCH_SIZE) == 0)
 				{
 					char *endptr;
@@ -4133,9 +4158,18 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 {
 	elog(DEBUG1, "%s called", __func__);
 
+	/*
+	 * Number of HTTP redirects this server may follow. It is the single knob
+	 * controlling redirection: '0' (the default) refuses any redirect, and any
+	 * higher value both enables redirection and caps it.
+	 */
+	state->request_max_redirect = RDF_DEFAULT_MAX_REDIRECT;
+
 	if (state->server)
 	{
 		ListCell *cell;
+		bool legacy_redirect = false;
+		bool max_redirect_set = false;
 
 		foreach (cell, state->server->options)
 		{
@@ -4206,12 +4240,22 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			else if (strcmp(RDF_SERVER_OPTION_READONLY, def->defname) == 0)
 				state->readonly = defGetBoolean(def);
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
-				state->request_redirect = defGetBoolean(def);
+			{
+				legacy_redirect = defGetBoolean(def);
+
+				ereport(WARNING,
+						(errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
+						 errmsg("option \"%s\" is deprecated", def->defname),
+						 errhint("Use '%s' alone instead: '0' refuses any redirect, "
+								 "any higher value enables redirection and caps it.",
+								 RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT)));
+			}
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)
 			{
 				char *tailpt;
 				char *maxredirect_str = defGetString(def);
 				state->request_max_redirect = strtol(maxredirect_str, &tailpt, 0);
+				max_redirect_set = true;
 			}
 			else if (strcmp(RDF_SERVER_OPTION_CONNECTTIMEOUT, def->defname) == 0)
 			{
@@ -4240,6 +4284,14 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			else if (strcmp(RDF_SERVER_OPTION_PREFIX_CONTEXT, def->defname) == 0)
 				state->prefix_context = defGetString(def);
 		}
+
+		/*
+		 * Servers created before 'request_redirect' was deprecated carry no
+		 * limit of their own, so give them the limit libcurl would have
+		 * applied back then.
+		 */
+		if (legacy_redirect && !max_redirect_set)
+			state->request_max_redirect = RDF_DEPRECATED_REDIRECT_LIMIT;
 	}
 
 	elog(DEBUG1, "%s exit", __func__);
@@ -4380,7 +4432,6 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, CStringToConst(state->user));
 	result = lappend(result, CStringToConst(state->password));
 	result = lappend(result, CStringToConst(state->token));
-	result = lappend(result, IntToConst((int)state->request_redirect));
 	result = lappend(result, IntToConst((int)state->enable_pushdown));
 	result = lappend(result, IntToConst((int)state->is_sparql_parsable));
 	result = lappend(result, IntToConst((int)state->log_sparql));
@@ -4528,9 +4579,6 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	cell = list_next(list, cell);
 
 	state->token = ConstToCString(lfirst(cell));
-	cell = list_next(list, cell);
-
-	state->request_redirect = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
 	state->enable_pushdown = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
@@ -5173,20 +5221,24 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			}
 		}
 
-		if (state->request_redirect == true)
+		if (state->request_max_redirect > 0)
 		{
-
-			elog(DEBUG2, "  %s: setting request redirect: %d", __func__, state->request_redirect);
+			elog(DEBUG2, "  %s: following redirects, maxredirs: %ld", __func__, state->request_max_redirect);
 			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 			/* Never forward credentials to a redirected host */
 			curl_easy_setopt(state->curl, CURLOPT_UNRESTRICTED_AUTH, 0L);
 
-			if (state->request_max_redirect)
-			{
-				elog(DEBUG2, "  %s: setting maxredirs: %ld", __func__, state->request_max_redirect);
-				curl_easy_setopt(state->curl, CURLOPT_MAXREDIRS, state->request_max_redirect);
-			}
+			/*
+			 * Set the limit explicitly, so that it never depends on the
+			 * default of the libcurl release this was linked against.
+			 */
+			curl_easy_setopt(state->curl, CURLOPT_MAXREDIRS, state->request_max_redirect);
+		}
+		else
+		{
+			elog(DEBUG2, "  %s: redirects disabled", __func__);
+			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 0L);
 		}
 
 		/* Set POST data based on query type */
