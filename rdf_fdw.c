@@ -158,7 +158,8 @@ struct MemoryStruct
 {
 	char *memory;
 	size_t size;
-	size_t max_size; /* 0 = unlimited */
+	size_t max_size;	  /* 0 = unlimited */
+	bool size_exceeded;	  /* max_size was reached, transfer aborted */
 };
 
 static struct RDFfdwOption valid_options[] =
@@ -4676,11 +4677,22 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 
 	elog(DEBUG3, "%s called", __func__);
 
+	/*
+	 * Never raise an error from within a libcurl callback: ereport() would
+	 * longjmp out of the middle of curl_easy_perform(), leaving the easy
+	 * handle and its header list - which libcurl allocates outside of
+	 * PostgreSQL's memory contexts - to leak. Flag the condition and abort
+	 * the transfer by returning a short write, so that curl_easy_perform()
+	 * fails with CURLE_WRITE_ERROR and the caller can report it after the
+	 * handle has been cleaned up.
+	 */
 	if (mem->max_size > 0 && mem->size + realsize > mem->max_size)
-		ereport(ERROR,
-				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
-				 errmsg("SPARQL response exceeds max_response_size limit of %zu bytes", mem->max_size),
-				 errhint("Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.")));
+	{
+		elog(DEBUG1, "%s: response exceeds max_response_size of %zu bytes, aborting transfer",
+			 __func__, mem->max_size);
+		mem->size_exceeded = true;
+		return 0;
+	}
 
 	ptr = repalloc(mem->memory, mem->size + realsize + 1);
 
@@ -5124,9 +5136,11 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	chunk.memory = palloc0(1);
 	chunk.size = 0; /* no data at this point */
 	chunk.max_size = (size_t) state->max_response_size;
+	chunk.size_exceeded = false;
 	chunk_header.memory = palloc0(1);
 	chunk_header.size = 0; /* no data at this point */
 	chunk_header.max_size = 0; /* no limit on headers */
+	chunk_header.size_exceeded = false;
 
 	elog(DEBUG1, "%s called for %s operation", __func__,
 		 (state->sparql_query_type == SPARQL_INSERT) ? "INSERT" : (state->sparql_query_type == SPARQL_DELETE) ? "DELETE"
@@ -5353,8 +5367,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		elog(DEBUG2, "  %s: cURL result=%d, HTTP status=%ld, response size=%zu",
 			 __func__, res, response_code, chunk.size);
 
-		/* Only retry on network errors (no response received), not on HTTP errors or HTTP successes */
-		if (res != CURLE_OK && response_code == 0)
+		/*
+		 * Only retry on network errors (no response received), not on HTTP
+		 * errors or HTTP successes - and never when the transfer was aborted
+		 * on purpose, as every attempt would hit the same limit.
+		 */
+		if (res != CURLE_OK && response_code == 0 && !chunk.size_exceeded)
 		{
 			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(state->curl)) != CURLE_OK; i++)
 			{
@@ -5365,6 +5383,27 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			}
 			/* Update response code after retries */
 			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
+		}
+
+		/*
+		 * The write callback aborts the transfer when the response outgrows
+		 * max_response_size. Report it here, where the libcurl handle can
+		 * still be released, and before any HTTP status is considered: the
+		 * response body is incomplete either way, so the size limit is what
+		 * the user needs to hear about.
+		 */
+		if (chunk.size_exceeded)
+		{
+			if (state->xmldoc)
+				xmlFreeDoc(state->xmldoc);
+
+			curl_slist_free_all(headers);
+			curl_easy_cleanup(state->curl);
+
+			ereport(ERROR,
+					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
+					 errmsg("SPARQL response exceeds max_response_size limit of %zu bytes", chunk.max_size),
+					 errhint("Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.")));
 		}
 
 		/* Check for HTTP errors first (with FAILONERROR=false, we get the response body) */
