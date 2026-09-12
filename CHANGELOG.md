@@ -38,6 +38,9 @@ Release date: **unreleased**
 
   The option is also validated at `CREATE SERVER`/`ALTER SERVER` time now, as the other numeric server options already were. Non-numeric values such as `request_max_redirect 'foo'` used to be silently accepted and turned into `0`, and negative values were passed straight to libcurl. Values that aren't non-negative integers are now rejected with an error.
 
+* **Fixed `lex()` misreading the closing quote of a literal ending in backslashes**: `lex()` decided whether a `"` was escaped using the same single-character lookbehind that was corrected in `cstring_to_rdfliteral()` and `EscapeSPARQLLiteral()` in 2.7 — it was simply missed at the time. That check cannot tell an odd-length backslash run, which does escape the quote that follows it, from an even-length one, whose backslashes form complete escape pairs and leave the quote unescaped. A literal whose lexical value ended in an even number of backslashes therefore hid its own closing quote: `lex()` ran to the end of the string, reported the literal as malformed, and callers fell back to escaping the whole input as raw content. `'"\\\\"'::rdfnode` came back as `"\"\\\\\""`, with the delimiting quotes folded into the lexical value, while the otherwise identical `'"\\\\"@en'` kept them. The lookbehind has been removed: escape pairs are consumed two bytes at a time, so a genuinely escaped quote never reaches that check, and the only way to arrive there with a backslash behind was to have just consumed `\\`, where the quote does close the literal — the check could only fire when it was wrong. Plain and language-tagged literals now agree on the lexical value, and a literal ending in a backslash run survives a round trip through `text` unchanged.
+
+  Reported by Tomas Vondra <tomas@vondra.me>
 
 # 2.7
 Release date: **2026-07-26**

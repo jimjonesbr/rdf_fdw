@@ -25,6 +25,20 @@ SELECT sparql.lex('""');
 SELECT sparql.lex('"\""');
 SELECT sparql.lex(NULL);
 
+/* an even-length backslash run before the closing quote is made of complete
+ * escape pairs and does NOT escape that quote, so the literal is well formed:
+ * lex() must return the run itself, with no quotes folded into it, and the
+ * plain and language-tagged forms must agree. (An odd-length run does escape
+ * the closing quote, leaving the literal unterminated; that path is covered
+ * separately.) */
+SELECT n,
+       sparql.lex(('"' || repeat('\', n) || '"')::rdfnode)    AS plain,
+       sparql.lex(('"' || repeat('\', n) || '"@en')::rdfnode) AS tagged,
+       sparql.lex(('"' || repeat('\', n) || '"')::rdfnode)
+         = sparql.lex(('"' || repeat('\', n) || '"@en')::rdfnode) AS agree
+FROM generate_series(0, 8, 2) AS n
+ORDER BY n;
+
 /* STRDT */
 SELECT sparql.strdt(NULL, 'http://www.w3.org/2001/XMLSchema#string');
 SELECT sparql.strdt('foo', NULL);

@@ -71,19 +71,20 @@ char *lex(char *input)
                     p += 2;
                     continue;
                 }
-                /* Check for backslash escape (\") */
-                if (p > start && *(p - 1) == '\\')
-                {
-                    /* Already appended by previous iteration */
-                    appendStringInfoChar(&output, *p);
-                    p++;
-                    continue;
-                }
                 /* Unescaped quote: closing quote found */
                 break;
             }
             if (*p == '\\' && *(p + 1))
             {
+                /*
+                 * A backslash escapes exactly the byte that follows it, so
+                 * escape pairs are consumed two at a time. This is what makes
+                 * a lookbehind ("is the previous byte a backslash?") both
+                 * unnecessary and wrong: after an escaped backslash the byte
+                 * before a quote is a backslash even though that quote is not
+                 * escaped, which used to hide the closing quote of values
+                 * ending in an even-length backslash run.
+                 */
                 appendStringInfoChar(&output, *p);
                 p++;
             }

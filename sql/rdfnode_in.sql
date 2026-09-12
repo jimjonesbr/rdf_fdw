@@ -299,6 +299,19 @@ SELECT n, (('"' || repeat('\', n) || '"'))::rdfnode = ((('"' || repeat('\', n) |
 FROM generate_series(0, 8) AS n
 ORDER BY n;
 
+/* the check above only says the value stops changing after the first
+ * conversion, which an inflated value also satisfies. This one pins the
+ * result to the input: a literal whose closing quote is not escaped -- an
+ * even-length backslash run -- must come back exactly as it was written,
+ * with no extra quote pair folded into it. */
+SELECT n,
+       length('"' || repeat('\', n) || '"')                     AS in_len,
+       length((('"' || repeat('\', n) || '"'))::rdfnode::text)  AS out_len,
+       (('"' || repeat('\', n) || '"'))::rdfnode::text
+         = ('"' || repeat('\', n) || '"')                       AS unchanged
+FROM generate_series(0, 8, 2) AS n
+ORDER BY n;
+
 /* the exact payload from the original report: a lexical value that is
  * two literal backslash characters */
 SELECT (('"' || repeat('\', 4) || '"'))::rdfnode;
