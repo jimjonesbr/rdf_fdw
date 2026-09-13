@@ -5374,12 +5374,25 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		 */
 		if (res != CURLE_OK && response_code == 0 && !chunk.size_exceeded)
 		{
-			for (long i = 1; i <= state->max_retries && (res = curl_easy_perform(state->curl)) != CURLE_OK; i++)
+			for (long i = 1; i <= state->max_retries; i++)
 			{
 				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i);
-				/* Reset chunk memory for retry */
+
+				/*
+				 * Discard whatever the failed attempt left behind *before*
+				 * retrying: a connection that drops mid-transfer may well
+				 * have written part of a response body already, and that
+				 * would otherwise be concatenated with the body of the retry.
+				 */
 				chunk.size = 0;
+				chunk.memory[0] = '\0';
 				chunk_header.size = 0;
+				chunk_header.memory[0] = '\0';
+
+				res = curl_easy_perform(state->curl);
+
+				if (res == CURLE_OK || chunk.size_exceeded)
+					break;
 			}
 			/* Update response code after retries */
 			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
