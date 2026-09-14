@@ -4024,7 +4024,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		state->rdfTable->cols[i]->pgtypmod = attr->atttypmod;
 		state->rdfTable->cols[i]->pgattnum = attr->attnum;
 
-		if (attr->atttypid != RDFNODEOID)
+		if (attr->atttypid != RDFNODEOID && !attr->attisdropped)
 		{
 			if (deprecated_cols.len > 0)
 				appendStringInfoString(&deprecated_cols, ", ");
@@ -4073,6 +4073,25 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 				state->rdfTable->cols[i]->language = pstrdup(defGetString(def));
 			}
 		}
+
+		/*
+		 * The 'variable' option is required, but PostgreSQL only runs an FDW
+		 * validator for columns that actually carry an OPTIONS clause. A
+		 * column declared without any options never reaches it, so the
+		 * requirement has to be enforced here: leaving sparqlvar NULL would
+		 * hand a NULL to every consumer below, starting with the pstrdup()
+		 * that builds the SPARQL SELECT clause.
+		 */
+		if (!attr->attisdropped && state->rdfTable->cols[i]->sparqlvar == NULL)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_OPTION_NAME_NOT_FOUND),
+					 errmsg("column \"%s\" of foreign table \"%s\" has no \"%s\" option",
+							state->rdfTable->cols[i]->name,
+							RelationGetRelationName(rel),
+							RDF_COLUMN_OPTION_VARIABLE),
+					 errhint("Every column of an rdf_fdw foreign table must be mapped to a SPARQL variable, e.g. OPTIONS (%s '?%s').",
+							 RDF_COLUMN_OPTION_VARIABLE,
+							 state->rdfTable->cols[i]->name)));
 	}
 
 	if (deprecated_cols.len > 0)

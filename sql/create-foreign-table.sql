@@ -112,5 +112,46 @@ CREATE FOREIGN TABLE t16 (
 ) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 SELECT * FROM t16;
 
+/* The 'variable' option is required, but PostgreSQL only runs an FDW
+ * validator for columns that actually carry an OPTIONS clause, so a column
+ * declared with no options at all never reached it and left the SPARQL
+ * variable unset. Every consumer dereferences it unconditionally, starting
+ * with the pstrdup() that builds the SPARQL SELECT clause, so planning a
+ * query against such a table used to crash the backend. It is rejected at
+ * plan time now; EXPLAIN is enough to reach the check, and no request is
+ * made to the endpoint. */
+CREATE FOREIGN TABLE t17 (
+  name rdfnode
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+EXPLAIN (COSTS OFF) SELECT name FROM t17;
+
+/* the same applies to a column that the query never selects: the option is
+ * required of every column, not only of the ones a given query happens to
+ * touch */
+CREATE FOREIGN TABLE t18 (
+  name rdfnode OPTIONS (variable '?s'),
+  untouched rdfnode
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+EXPLAIN (COSTS OFF) SELECT name FROM t18;
+
+/* dropped columns are exempt: they carry no options by construction and are
+ * never mapped to a SPARQL variable */
+CREATE FOREIGN TABLE t19 (
+  name rdfnode OPTIONS (variable '?s'),
+  gone rdfnode OPTIONS (variable '?g')
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ALTER FOREIGN TABLE t19 DROP COLUMN gone;
+EXPLAIN (COSTS OFF) SELECT name FROM t19;
+
+/* nor may a dropped column be named by the deprecated-types warning, which
+ * used to report "........pg.dropped.N........" as a column using a
+ * deprecated native PostgreSQL type */
+CREATE FOREIGN TABLE t20 (
+  name text OPTIONS (variable '?s'),
+  gone rdfnode OPTIONS (variable '?g')
+) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+ALTER FOREIGN TABLE t20 DROP COLUMN gone;
+EXPLAIN (COSTS OFF) SELECT name FROM t20;
+
 /* clean up */
 DROP SERVER testserver CASCADE;
