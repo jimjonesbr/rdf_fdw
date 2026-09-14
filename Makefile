@@ -109,7 +109,8 @@ ifdef INCLUDE_LOCAL_TESTS
 			 graphdb-describe \
 			 proxy \
 			 proxy-auth \
-			 stub-endpoint
+			 stub-endpoint \
+			 clone-node-types
 endif
 
 ifdef INCLUDE_DEBUG_TESTS

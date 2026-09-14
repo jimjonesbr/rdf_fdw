@@ -45,12 +45,7 @@ SELECT * FROM ft_single;
  *
  * A column takes its value from a single binding, so the scan stops at the
  * first match and the extra bindings are ignored.
- *
- * client_min_messages is raised because rdf_fdw_clone_table() still reports
- * rdfnode columns as using a deprecated native PostgreSQL type; that is a
- * separate defect and not what this test is about.
  */
-SET client_min_messages = error;
 CREATE TABLE cloned_repeated (s rdfnode);
 CALL rdf_fdw_clone_table(
   foreign_table => 'ft_repeated',
@@ -62,7 +57,6 @@ CALL rdf_fdw_clone_table(
 ERROR:  syntax error at or near "CALL"
 LINE 1: CALL rdf_fdw_clone_table(
         ^
-RESET client_min_messages;
 SELECT count(*) AS rows_cloned, min(s::text) AS value FROM cloned_repeated;
  rows_cloned | value 
 -------------+-------

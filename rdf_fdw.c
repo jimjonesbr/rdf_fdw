@@ -1883,6 +1883,8 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	elog(DEBUG1, "%s called", __func__);
 
+	RDFNODEOID = GetRDFNodeOID();
+
 	if (PG_ARGISNULL(0))
 		ereport(ERROR,
 				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
