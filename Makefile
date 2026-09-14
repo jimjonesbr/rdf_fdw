@@ -107,7 +107,8 @@ ifdef INCLUDE_LOCAL_TESTS
 			 graphdb-table-clone \
 			 graphdb-describe \
 			 proxy \
-			 proxy-auth
+			 proxy-auth \
+			 stub-endpoint
 endif
 
 ifdef INCLUDE_DEBUG_TESTS

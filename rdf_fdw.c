@@ -2349,6 +2349,12 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 				if (strcmp(sparqlvar, NameStr(name)) == 0 && state->rdfTable->cols[i]->used)
 				{
+					if (colindex >= state->numcols)
+						ereport(ERROR,
+								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+								 errmsg("SPARQL result set has more bindings than the foreign table has columns"),
+								 errdetail("Column '%s' of the response cannot be mapped: at most %d value(s) are expected per record.",
+										   colname, state->numcols)));
 
 					for (value = result->children; value != NULL; value = value->next)
 					{
@@ -2430,6 +2436,20 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 					appendStringInfo(&insert_pidx, "%s$%d",
 									 colindex > 1 ? "," : "",
 									 colindex);
+
+					pfree(name.data);
+
+					/*
+					 * A column takes its value from a single binding. Stop
+					 * scanning the row here: ctypes, cvals and cnulls are
+					 * sized by the number of columns, so letting a response
+					 * that repeats a variable inside one <result> advance
+					 * colindex again would write past the end of all three.
+					 * The remote endpoint chooses how many bindings it sends,
+					 * so the length and the content of that overflow are not
+					 * ours to control.
+					 */
+					break;
 				}
 
 				pfree(name.data);
