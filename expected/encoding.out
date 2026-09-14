@@ -1,0 +1,86 @@
+/*
+ * unescape_unicode() converts \u3042 and \U00003042 escapes into the *server*
+ * encoding, so both defects it used to carry are invisible in a UTF8
+ * database: there pg_unicode_to_server() emits UTF-8, a 5-byte buffer happens
+ * to be large enough, and the UTF-8 length function happens to agree with the
+ * server encoding. This test therefore runs in a database of its own, created
+ * with a non-UTF8 encoding.
+ *
+ * The length of the converted character used to be measured with
+ * pg_utf_mblen(), which decodes a UTF-8 lead byte -- but after the conversion
+ * the buffer holds server-encoding bytes. In EUC_JP, U+3042 converts to
+ * a4 a2, and pg_utf_mblen(0xa4) matches no UTF-8 lead-byte pattern and falls
+ * through to 1, so only the first byte was emitted. The resulting value is
+ * not valid in the server encoding, yet it could still be stored, after which
+ * reading it back through any encoding conversion failed. The destination
+ * buffer was also undersized: pg_unicode_to_server() requires
+ * MAX_UNICODE_EQUIVALENT_STRING + 1 bytes and hands it straight to the
+ * conversion procedure, which writes the whole converted string.
+ *
+ * The expected byte sequences are written out literally rather than derived
+ * from a U&'' literal, because PostgreSQL releases before 13 reject Unicode
+ * escapes above U+007F when the server encoding is not UTF8 -- that
+ * restriction was lifted by the same release that introduced
+ * pg_unicode_to_server(). They are a fixed property of EUC_JP in any case.
+ *
+ * This file is deliberately ASCII-only: a literal multi-byte character in it
+ * would be read as UTF-8 and rejected by the EUC_JP database.
+ */
+DROP DATABASE IF EXISTS rdf_fdw_euc_jp;
+NOTICE:  database "rdf_fdw_euc_jp" does not exist, skipping
+CREATE DATABASE rdf_fdw_euc_jp
+  ENCODING 'EUC_JP' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0;
+\c rdf_fdw_euc_jp
+CREATE EXTENSION rdf_fdw;
+SELECT getdatabaseencoding() AS server_encoding;
+ server_encoding 
+-----------------
+ EUC_JP
+(1 row)
+
+/*
+ * U+3042 is a4 a2 in EUC_JP, so the literal is 22 a4 a2 22 with its quotes.
+ * A truncated conversion yields 22 a4 22 instead.
+ */
+SELECT encode('"\u3042"'::rdfnode::text::bytea, 'hex') AS short_form,
+       encode('"\u3042"'::rdfnode::text::bytea, 'hex') = '22a4a222' AS short_form_ok;
+ short_form | short_form_ok 
+------------+---------------
+ 22a4a222   | t
+(1 row)
+
+/* the long form takes a separate branch of the same function and must reach
+ * the same answer */
+SELECT encode('"\U00003042"'::rdfnode::text::bytea, 'hex') = '22a4a222' AS long_form_ok;
+ long_form_ok 
+--------------
+ t
+(1 row)
+
+/* U+FF71 is 8e b1 in EUC_JP: a two-byte form whose lead byte is not a valid
+ * UTF-8 lead byte either, so it is truncated the same way */
+SELECT encode('"\uFF71"'::rdfnode::text::bytea, 'hex') AS halfwidth,
+       encode('"\uFF71"'::rdfnode::text::bytea, 'hex') = '228eb122' AS halfwidth_ok,
+       encode('"\U0000FF71"'::rdfnode::text::bytea, 'hex') = '228eb122' AS halfwidth_long_form_ok;
+ halfwidth | halfwidth_ok | halfwidth_long_form_ok 
+-----------+--------------+------------------------
+ 228eb122  | t            | t
+(1 row)
+
+/*
+ * A truncated conversion produced a value that was not valid in the server
+ * encoding but could still be stored, poisoning the table: the failure only
+ * surfaced later, on reading it back.
+ */
+CREATE TABLE encoded (n rdfnode);
+INSERT INTO encoded VALUES ('"\u3042"'::rdfnode);
+SELECT encode(n::text::bytea, 'hex') = '22a4a222' AS stored_intact,
+       encode(sparql.lex(n)::text::bytea, 'hex') = 'a4a2' AS lexical_form_ok
+FROM encoded;
+ stored_intact | lexical_form_ok 
+---------------+-----------------
+ t             | t
+(1 row)
+
+\c contrib_regression
+DROP DATABASE rdf_fdw_euc_jp;

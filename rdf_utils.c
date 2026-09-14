@@ -502,6 +502,24 @@ char *MapSPARQLDatatype(Oid pgtype)
 }
 
 #if PG_VERSION_NUM < 130000
+/*
+ * MAX_UNICODE_EQUIVALENT_STRING arrived in PostgreSQL 13 together with
+ * pg_unicode_to_server(), so it has to be supplied here for the older
+ * releases the shim below exists for. The value is the one core uses: a
+ * 4-byte UTF-8 character expanded by MAX_CONVERSION_GROWTH.
+ */
+#ifndef MAX_UNICODE_EQUIVALENT_STRING
+#define MAX_UNICODE_EQUIVALENT_STRING 16
+#endif
+
+/*
+ * Convert a single Unicode code point into a string in the server encoding.
+ *
+ * Compatibility shim for servers predating PostgreSQL 13, which did not
+ * export pg_unicode_to_server().  It follows the same contract as the core
+ * function: the caller must supply a buffer of at least
+ * MAX_UNICODE_EQUIVALENT_STRING + 1 bytes, and the result is NUL-terminated.
+ */
 void pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 {
 	unsigned char utf8buf[8]; /* Large enough for UTF-8 encoding */
@@ -522,6 +540,8 @@ void pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 	}
 	else
 	{
+		int converted_len;
+
 		converted = pg_do_encoding_conversion(utf8buf, len,
 											  PG_UTF8, GetDatabaseEncoding());
 
@@ -531,10 +551,25 @@ void pg_unicode_to_server(pg_wchar c, unsigned char *utf8)
 					 errmsg("Unicode character 0x%04x cannot be converted to server encoding \"%s\"",
 							c, GetDatabaseEncodingName())));
 
-		memcpy(utf8, converted, strlen((const char *)converted));
+		/*
+		 * The converted string is in the server encoding and may well be
+		 * longer than the UTF-8 form, so it must be measured on its own
+		 * rather than reusing the UTF-8 length computed above.
+		 */
+		converted_len = strlen((const char *)converted);
+
+		if (converted_len > MAX_UNICODE_EQUIVALENT_STRING)
+			ereport(ERROR,
+					(errcode(ERRCODE_CHARACTER_NOT_IN_REPERTOIRE),
+					 errmsg("Unicode character 0x%04x expands to %d bytes in server encoding \"%s\", exceeding the maximum of %d",
+							c, converted_len, GetDatabaseEncodingName(),
+							MAX_UNICODE_EQUIVALENT_STRING)));
+
+		memcpy(utf8, converted, converted_len);
+		len = converted_len;
 	}
 
-	utf8[len] = '\0'; /* Null-terminate (safe if utf8 has size ≥ 5) */
+	utf8[len] = '\0';
 }
 #endif
 
@@ -571,7 +606,7 @@ char *unescape_unicode(const char *input)
 			{
 				uint16_t codeunit;
 				char hex[5];
-				unsigned char utf8[5];
+				unsigned char utf8[MAX_UNICODE_EQUIVALENT_STRING + 1];
 				int len;
 
 				memcpy(hex, p + 2, 4);
@@ -600,7 +635,7 @@ char *unescape_unicode(const char *input)
 						elog(DEBUG2, "%s: Surrogate pair U+%04X U+%04X -> U+%X", __func__, codeunit, low, full);
 						memset(utf8, 0, sizeof(utf8));
 						pg_unicode_to_server(full, (unsigned char *)utf8);
-						len = pg_utf_mblen((const unsigned char *)utf8);
+						len = strlen((const char *)utf8);
 						appendBinaryStringInfo(&buf, (const char *)utf8, len);
 						p += 12;
 						continue;
@@ -610,8 +645,9 @@ char *unescape_unicode(const char *input)
 				if (codeunit >= 0xD800 && codeunit <= 0xDFFF)
 				{
 					elog(DEBUG2, "%s: Lone surrogate U+%04X -> U+FFFD", __func__, codeunit);
+					memset(utf8, 0, sizeof(utf8));
 					pg_unicode_to_server(0xFFFD, (unsigned char *)utf8);
-					len = pg_utf_mblen(utf8);
+					len = strlen((const char *)utf8);
 					appendBinaryStringInfo(&buf, (const char *)utf8, len);
 					p += 6;
 					continue;
@@ -619,7 +655,7 @@ char *unescape_unicode(const char *input)
 
 				memset(utf8, 0, sizeof(utf8));
 				pg_unicode_to_server(codeunit, (unsigned char *)utf8);
-				len = pg_utf_mblen(utf8);
+				len = strlen((const char *)utf8);
 				appendBinaryStringInfo(&buf, (const char *)utf8, len);
 				p += 6;
 				continue;
@@ -644,7 +680,7 @@ char *unescape_unicode(const char *input)
 			{
 				char hex[9];
 				uint32_t codepoint;
-				unsigned char utf8[5];
+				unsigned char utf8[MAX_UNICODE_EQUIVALENT_STRING + 1];
 				int len;
 
 				memcpy(hex, p + 2, 8);
@@ -660,7 +696,7 @@ char *unescape_unicode(const char *input)
 
 				memset(utf8, 0, sizeof(utf8));
 				pg_unicode_to_server(codepoint, utf8);
-				len = pg_utf_mblen(utf8);
+				len = strlen((const char *)utf8);
 				appendBinaryStringInfo(&buf, (const char *)utf8, len);
 				p += 10;
 				continue;
