@@ -1485,24 +1485,30 @@ ORDER BY n;
 
 /* the check above only says the value stops changing after the first
  * conversion, which an inflated value also satisfies. This one pins the
- * result to the input: a literal whose closing quote is not escaped -- an
- * even-length backslash run -- must come back exactly as it was written,
- * with no extra quote pair folded into it. */
+ * result to the input. An even-length backslash run leaves the closing quote
+ * unescaped, so the literal is well formed and must come back exactly as it
+ * was written; an odd-length run escapes it, so the literal is unterminated
+ * and is deliberately re-escaped as raw content. Either way the result is
+ * determined by the input alone. */
 SELECT n,
        length('"' || repeat('\', n) || '"')                     AS in_len,
        length((('"' || repeat('\', n) || '"'))::rdfnode::text)  AS out_len,
        (('"' || repeat('\', n) || '"'))::rdfnode::text
          = ('"' || repeat('\', n) || '"')                       AS unchanged
-FROM generate_series(0, 8, 2) AS n
+FROM generate_series(0, 8) AS n
 ORDER BY n;
  n | in_len | out_len | unchanged 
 ---+--------+---------+-----------
  0 |      2 |       2 | t
+ 1 |      3 |       6 | f
  2 |      4 |       4 | t
+ 3 |      5 |       8 | f
  4 |      6 |       6 | t
+ 5 |      7 |      10 | f
  6 |      8 |       8 | t
+ 7 |      9 |      12 | f
  8 |     10 |      10 | t
-(5 rows)
+(9 rows)
 
 /* the exact payload from the original report: a lexical value that is
  * two literal backslash characters */

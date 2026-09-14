@@ -25,18 +25,19 @@ SELECT sparql.lex('""');
 SELECT sparql.lex('"\""');
 SELECT sparql.lex(NULL);
 
-/* an even-length backslash run before the closing quote is made of complete
- * escape pairs and does NOT escape that quote, so the literal is well formed:
- * lex() must return the run itself, with no quotes folded into it, and the
- * plain and language-tagged forms must agree. (An odd-length run does escape
- * the closing quote, leaving the literal unterminated; that path is covered
- * separately.) */
+/* backslash runs of both parities before the closing quote. An even-length
+ * run is made of complete escape pairs and does NOT escape that quote, so the
+ * literal is well formed and lex() must return the run itself, with no quotes
+ * folded into it, and the plain and language-tagged forms must agree. An
+ * odd-length run does escape the closing quote, leaving the literal
+ * unterminated: lex() then returns the whole input, and lang() must find no
+ * tag rather than reading past it. */
 SELECT n,
        sparql.lex(('"' || repeat('\', n) || '"')::rdfnode)    AS plain,
        sparql.lex(('"' || repeat('\', n) || '"@en')::rdfnode) AS tagged,
        sparql.lex(('"' || repeat('\', n) || '"')::rdfnode)
          = sparql.lex(('"' || repeat('\', n) || '"@en')::rdfnode) AS agree
-FROM generate_series(0, 8, 2) AS n
+FROM generate_series(0, 8) AS n
 ORDER BY n;
 
 /* STRDT */
@@ -97,6 +98,31 @@ SELECT sparql.lang('');
 SELECT sparql.lang(' ');
 SELECT sparql.lang(NULL);
 SELECT sparql.lang('<http://example.org>'); 
+
+/* a literal whose only inner quote is escaped has no closing quote, so it is
+ * malformed and simply has no language tag. lang() used to locate the tag by
+ * skipping the opening quote and then advancing by the length of lex(), which
+ * for this input returns the whole string -- landing one byte past the end of
+ * the allocation. Whatever happened to sit there was read, and when it was
+ * '@' the scan walked on and copied adjacent heap bytes into the tag. */
+SELECT sparql.lang('"abc\"@en'::rdfnode) AS unterminated_has_no_tag;
+
+/* the same read, swept across every lexical length so it is not left to one
+ * allocation size to expose it: no tag may be recovered from any of them, and
+ * the stored value may never grow beyond what was supplied */
+SELECT count(*) AS tags_recovered_from_past_the_end
+FROM generate_series(1, 255) AS k
+WHERE sparql.lang(('"' || repeat('a', k) || '\"@en')::rdfnode)::text <> '';
+
+SELECT count(*) AS values_that_grew
+FROM generate_series(1, 255) AS k
+WHERE length(('"' || repeat('a', k) || '\"@en')::rdfnode::text)
+        <> length('"' || repeat('a', k) || '\"@en');
+
+/* a doubled quote is an escaped quote, not the end of the lexical form, so
+ * the tag after the real closing quote is still found */
+SELECT sparql.lex('"a""b"@en'::rdfnode) AS doubled_quote_lex,
+       sparql.lang('"a""b"@en'::rdfnode) AS doubled_quote_lang;
 
 /* DATATYPE */
 SELECT sparql.datatype('foo');

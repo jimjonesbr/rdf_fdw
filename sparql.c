@@ -191,38 +191,81 @@ char *lang(char *input)
 {
     StringInfoData buf;
     const char *ptr;
-    char *lexical_form;
+    const char *end;
 
     elog(DEBUG3, "%s called: input='%s'", __func__, input);
 
     if (!input || strlen(input) == 0)
         return "";
 
-    lexical_form = lex(input);
-    Assert(lexical_form != NULL);
-
     ptr = input;
+    end = input + strlen(input);
 
-    /* find the end of the lexical form in the original input */
+    /*
+     * Find the end of the lexical form in the original input.
+     *
+     * For a quoted literal this has to be done on the input itself. lex()
+     * does not return a substring of its argument there: it collapses
+     * doubled quotes, and for a literal with no closing quote it returns the
+     * whole input, opening quote included. Its length therefore says nothing
+     * about how many bytes of the input the lexical form occupies, and using
+     * it to advance a pointer into the input walks past the terminator.
+     */
     if (*ptr == '"')
     {
-        ptr++;                       /* skip opening quote */
-        ptr += strlen(lexical_form); /* move to end of lexical form */
-        if (*ptr == '"')
-            ptr++; /* skip closing quote */
+        ptr++; /* skip opening quote */
+
+        /* scan for the closing quote, honouring the escapes lex() knows */
+        while (ptr < end)
+        {
+            if (*ptr == '"')
+            {
+                /* a doubled quote is an escaped quote, not the end */
+                if (ptr + 1 < end && *(ptr + 1) == '"')
+                {
+                    ptr += 2;
+                    continue;
+                }
+
+                break;
+            }
+
+            if (*ptr == '\\' && ptr + 1 < end)
+                ptr++; /* skip the escaped character */
+
+            ptr++;
+        }
+
+        /* no closing quote: the literal is malformed and has no tag */
+        if (ptr == end)
+            return "";
+
+        ptr++; /* skip closing quote */
     }
     else
     {
-        ptr += strlen(lexical_form); /* unquoted case */
+        /*
+         * Unquoted: here lex() does return a prefix of the input (it cuts at
+         * a well-formed '@lang' or '^^datatype' and otherwise keeps
+         * everything), so its length is a valid offset. Clamp anyway so the
+         * two can never drift apart again.
+         */
+        char *lexical_form = lex(input);
+        size_t lexical_len = strlen(lexical_form);
+
+        Assert(lexical_form != NULL);
+
+        ptr = (lexical_len < (size_t)(end - ptr)) ? ptr + lexical_len : end;
     }
 
     /* check for language tag */
-    if (*ptr == '@')
+    if (ptr < end && *ptr == '@')
     {
         const char *tag_start = ptr + 1;
         const char *tag_end = tag_start;
 
-        while (*tag_end && (isalnum(*tag_end) || *tag_end == '-' || *tag_end == '_'))
+        while (tag_end < end &&
+               (isalnum((unsigned char)*tag_end) || *tag_end == '-' || *tag_end == '_'))
             tag_end++;
 
         initStringInfo(&buf);
