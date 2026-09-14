@@ -592,6 +592,33 @@ SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
 SELECT sparql.replace('abc.def', '[.]', 'X', 'g');   -- character class containing a literal dot, matches only the .
 SELECT sparql.replace('abc.def', '.', 'X', 'g');     -- regex wildcard, matches any character, so all 7 characters are replaced
 
+/* cstring_to_rdfliteral() ownership.
+ *
+ * concat(), lcase(), ucase(), substr() and strafter() all pfree() the buffer
+ * they hand to cstring_to_rdfliteral() right after storing its return value.
+ * That is only correct if the result is always freshly allocated. It used not
+ * to be: empty input returned a string constant, and an input that already
+ * looked like a complete literal was returned as-is, so those callers freed
+ * the very chunk they were about to return.
+ *
+ * The two inputs below take those two paths. Both lexical forms being empty
+ * builds "" and used to reach the string-constant return, which pfree() then
+ * read as a chunk header; '"a""@en' has no closing quote, so lex() returns
+ * the whole input, which still looks like a complete literal and used to be
+ * returned aliasing the buffer freed underneath it. */
+SELECT sparql.concat(''::rdfnode, ''::rdfnode, 'x'::rdfnode)                 AS constant_freed;
+SELECT sparql.concat(''::rdfnode, ''::rdfnode, 'x'::rdfnode, 'y'::rdfnode)   AS constant_freed_twice;
+SELECT sparql.lcase('"a""@en'::rdfnode)                                      AS aliased_lcase;
+SELECT sparql.ucase('"a""@en'::rdfnode)                                      AS aliased_ucase;
+SELECT sparql.strafter('"a""@en'::rdfnode, ''::rdfnode)                      AS aliased_strafter;
+SELECT sparql.concat('"a""@en'::rdfnode, ''::rdfnode)                        AS aliased_concat;
+SELECT sparql.substr('"a""@en'::rdfnode, 1)                                  AS aliased_substr;
+
+/* rdf_fdw_concat() keeps the returned pointer across loop iterations and
+ * pfree()s it again while processing the next element, so an aliased result
+ * was pushed onto the freelist twice */
+SELECT sparql.concat('"a""@en'::rdfnode, ''::rdfnode, 'x'::rdfnode)          AS freed_twice;
+
 /* ABS */
 SELECT sparql.abs('"-1"^^xsd:int');
 SELECT sparql.abs('"-1.42"^^xsd:double');

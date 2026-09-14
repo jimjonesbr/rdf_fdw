@@ -337,8 +337,15 @@ AppendQuoteEscapedContent(StringInfoData *buf, const char *from, const char *to)
  *
  * input: the raw string or partial literal to convert (e.g., "abc", "abc"@en, "ab\"c")
  *
- * returns: a string representing the RDF literal (e.g., "\"abc\"", "\"ab\\\"c\"")
- *          or the input as-is if already a complete, validly-escaped literal.
+ * returns: a palloc'd string representing the RDF literal (e.g., "\"abc\"",
+ *          "\"ab\\\"c\""), or a palloc'd copy of the input if it already is a
+ *          complete, validly-escaped literal.
+ *
+ * The result is always freshly allocated and owned by the caller. Returning
+ * either the argument itself or a string constant used to be possible, and
+ * callers that pfree() the buffer they passed in -- concat(), lcase(),
+ * ucase(), substr() and strafter() all do -- then freed the value they were
+ * about to return, or handed pfree() the address of a .rodata constant.
  */
 char *cstring_to_rdfliteral(char *input)
 {
@@ -352,13 +359,11 @@ char *cstring_to_rdfliteral(char *input)
 	if (!input || strlen(input) == 0)
 	{
 		elog(DEBUG3, "%s exit: returning empty literal '\"\"'", __func__);
-		return "\"\""; /* empty input becomes empty literal */
+		return pstrdup("\"\""); /* empty input becomes empty literal */
 	}
 
 	start = input;
 	len = strlen(start);
-
-	initStringInfo(&buf);
 
 	/*
 	 * Check if it's already a complete RDF literal. Several call
@@ -382,11 +387,13 @@ char *cstring_to_rdfliteral(char *input)
 			if (tag && tag > start + 1 && *(tag - 1) == '"')
 			{
 				elog(DEBUG3, "%s exit: returning => '%s'", __func__, input);
-				/* complete literal with lang or type, return as-is */
-				return input;
+				/* complete literal with lang or type, return a copy */
+				return pstrdup(input);
 			}
 		}
 	}
+
+	initStringInfo(&buf);
 
 	/*
 	 * Not recognized as a complete literal: treat the *entire* input
