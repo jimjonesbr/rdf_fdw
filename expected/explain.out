@@ -300,8 +300,8 @@ SELECT sparql.str(o), sparql.datatype(o) FROM ft
 WHERE sparql.isnumeric(o) AND o > 100
 ORDER BY o DESC
 LIMIT 3;
-                         QUERY PLAN                         
-------------------------------------------------------------
+                           QUERY PLAN                            
+-----------------------------------------------------------------
  Limit
    Output: (sparql.str(o)), (sparql.datatype(o)), o
    ->  Sort
@@ -309,9 +309,10 @@ LIMIT 3;
          Sort Key: ft.o DESC
          ->  Foreign Scan on public.ft
                Output: sparql.str(o), sparql.datatype(o), o
+               Filter: (sparql.isnumeric(ft.o) AND (ft.o > 100))
                Foreign Server: wikidata
                Pushdown: disabled
-(9 rows)
+(10 rows)
 
 DROP SERVER wikidata CASCADE;
 NOTICE:  drop cascades to foreign table ft

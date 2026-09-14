@@ -5159,7 +5159,7 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 * Try to deparse SQL WHERE conditions, if any, to create SPARQL FILTER expressions
 	 * Only do this for parsable queries - non-parsable queries should evaluate all conditions locally
 	 */
-	if (state->is_sparql_parsable)
+	if (state->enable_pushdown && state->is_sparql_parsable)
 		state->sparql_filter = DeparseSQLWhereConditions(state, baserel);
 	else
 	{

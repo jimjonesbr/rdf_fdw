@@ -24,6 +24,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **`WHERE` conditions were dropped when pushdown was disabled**: With `enable_pushdown 'false'` on a `SERVER` or `FOREIGN TABLE`, the conditions of a parsable `SPARQL` query were still deparsed and recorded as pushed down, so PostgreSQL left them out of the foreign scan's local filter — but the query actually sent to the endpoint was the unmodified raw one, without the corresponding `FILTER`. The conditions were therefore evaluated nowhere and the scan returned rows that should have been filtered out. Conditions are now only treated as remote when pushdown is enabled, and are otherwise evaluated locally.
+
 * **Handle libcurl initialization failures, and stop writing to `stderr`**: A failure of `curl_easy_init()` or `curl_easy_escape()` went unnoticed: the request was quietly skipped and reported as an empty result set rather than as an error. Both are now checked and raise a proper error. On network failures the extension also wrote a partial `libcurl: (<code>)` line straight to the backend's `stderr`, bypassing the server log's formatting; that leftover has been removed, and the error code it printed was already part of the error message raised right after it.
 
 * **Restricted redirects to HTTP and HTTPS**: `rdf_fdw` limits requests to the `http` and `https` protocols, but that restriction only covers the initial request — libcurl governs the protocols a redirect may lead to with a separate option, whose default also permits `ftp` and `ftps`. An endpoint could therefore answer with a redirect to an `ftp://` URL and have the backend follow it. Redirect targets are now restricted to `http` and `https` as well.
