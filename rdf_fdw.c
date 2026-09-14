@@ -69,6 +69,7 @@
 #include "storage/lock.h"
 #include "tcop/tcopprot.h"
 #include "utils/array.h"
+#include "utils/acl.h"
 #include "utils/builtins.h"
 #include "utils/catcache.h"
 #include "utils/date.h"
@@ -740,6 +741,7 @@ static int ExecuteSPARQL(RDFfdwState *state);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
+static void CheckForeignServerUsage(ForeignServer *server);
 static List *SerializePlanData(RDFfdwState *state);
 static struct RDFfdwState *DeserializePlanData(List *list);
 static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerInfo *root);
@@ -1767,6 +1769,8 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 					 errmsg("invalid SERVER: %s", quote_identifier(srvname))));
 
+		CheckForeignServerUsage(state->server);
+
 		/*
 		 * loading SERVER OPTIONS
 		 */
@@ -1875,6 +1879,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	char *orderby_variable = NULL;
 	StringInfoData select;
+	AclResult aclresult;
 
 	elog(DEBUG1, "%s called", __func__);
 
@@ -1989,6 +1994,20 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	state->foreigntableid = GetRelOidFromName(text_to_cstring(foreign_table_name), RDF_FOREIGN_TABLE_CODE);
 	state->foreign_table = GetForeignTable(state->foreigntableid);
 	state->server = GetForeignServer(state->foreign_table->serverid);
+
+	/*
+	 * Cloning a foreign table reads every row of it, so it must be no more
+	 * permissive than selecting from it. This is the only place that check
+	 * can happen: the procedure receives a relation name, not a relation, so
+	 * the executor never sees the foreign table and never checks anything.
+	 */
+	aclresult = pg_class_aclcheck(state->foreigntableid, GetUserId(), ACL_SELECT);
+
+	if (aclresult != ACLCHECK_OK)
+		aclcheck_error(aclresult, OBJECT_FOREIGN_TABLE,
+					   get_rel_name(state->foreigntableid));
+
+	CheckForeignServerUsage(state->server);
 
 	state->sort_order = text_to_cstring(sort_order);
 	state->enable_pushdown = false;
@@ -2498,6 +2517,10 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
  * code   : expected relkind character, as defined in pg_class.relkind
  *
  * Returns the OID of the relation, or raises an error.
+ *
+ * NOTE: resolving a name says nothing about whether the caller is allowed to
+ * touch what it resolves to. Entry points that accept a relation name from
+ * SQL must check the relevant privileges themselves.
  */
 static Oid GetRelOidFromName(char *relname, char *code)
 {
@@ -2532,6 +2555,51 @@ static Oid GetRelOidFromName(char *relname, char *code)
 	return relid;
 }
 #endif /* PG_VERSION_NUM >= 110000 */
+
+/*
+ * CheckForeignServerUsage
+ * -----------------------
+ * Verifies that the current user holds USAGE on 'server'.
+ *
+ * SQL-callable entry points that accept a SERVER or FOREIGN TABLE name have
+ * to do this for themselves. Nothing else on their path does: they are
+ * ordinary functions, so the executor never builds a range table entry for
+ * the foreign table and never runs the permission checks a plain SELECT would
+ * get. The server's options carry the endpoint, and its user mapping carries
+ * whatever credentials the DBA configured for it, so reaching one without
+ * USAGE means issuing authenticated requests as somebody else.
+ */
+static void CheckForeignServerUsage(ForeignServer *server)
+{
+	AclResult aclresult;
+
+	Assert(server != NULL);
+
+#if PG_VERSION_NUM >= 160000
+	aclresult = object_aclcheck(ForeignServerRelationId, server->serverid,
+								GetUserId(), ACL_USAGE);
+#else
+	aclresult = pg_foreign_server_aclcheck(server->serverid, GetUserId(),
+										   ACL_USAGE);
+#endif
+
+	if (aclresult != ACLCHECK_OK)
+	{
+		/*
+		 * aclcheck_error() took an AclObjectKind before PostgreSQL 11 and an
+		 * ObjectType from 11 on. The two enumerations do not agree on any
+		 * value, and rdf_fdw_describe() -- unlike rdf_fdw_clone_table() -- is
+		 * compiled for the older releases too, where passing OBJECT_FOREIGN_SERVER
+		 * silently selects ACL_KIND_TSCONFIGURATION and reports "permission
+		 * denied for text search configuration".
+		 */
+#if PG_VERSION_NUM >= 110000
+		aclcheck_error(aclresult, OBJECT_FOREIGN_SERVER, server->servername);
+#else
+		aclcheck_error(aclresult, ACL_KIND_FOREIGN_SERVER, server->servername);
+#endif
+	}
+}
 
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 {

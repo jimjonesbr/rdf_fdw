@@ -58,7 +58,8 @@ REGRESS +=  create-extension \
 			explain \
 			pushdown \
 			pg_datatypes \
-			sparql-functions
+			sparql-functions \
+			privileges
 
 #
 # The tests above need nothing but a PostgreSQL server, and are the ones that
