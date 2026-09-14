@@ -5190,11 +5190,17 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_URL, state->endpoint);
 
 		/* CURLOPT_PROTOCOLS was deprecated in libcurl 7.85 and its enum flags removed
-		 * in 8.0; use the string-based CURLOPT_PROTOCOLS_STR on newer versions. */
+		 * in 8.0; use the string-based CURLOPT_PROTOCOLS_STR on newer versions.
+		 *
+		 * The redirect counterpart has to be restricted separately: it does not
+		 * inherit from the option above, and libcurl allows FTP and FTPS on
+		 * redirects by default. */
 #if ((LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 85) || LIBCURL_VERSION_MAJOR < 7)
 		curl_easy_setopt(state->curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+		curl_easy_setopt(state->curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 #else
 		curl_easy_setopt(state->curl, CURLOPT_PROTOCOLS_STR, "http,https");
+		curl_easy_setopt(state->curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
 #endif
 
 		curl_easy_setopt(state->curl, CURLOPT_ERRORBUFFER, errbuf);
