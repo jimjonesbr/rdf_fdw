@@ -16,6 +16,8 @@ Release date: **unreleased**
 
 ## Minor Changes
 
+* **The extension is no longer declared relocatable**: `rdf_fdw.control` set `relocatable = true`, but the extension creates a `sparql` schema and installs part of itself there, so its objects live in two schemas and `ALTER EXTENSION rdf_fdw SET SCHEMA ...` was refused by PostgreSQL regardless. The control file now says `relocatable = false`, which is what the extension actually is.
+
 * **Regression tests that need a triplestore are now opt-in**: `make installcheck` used to run the full suite by default, including the tests that query locally deployed triplestores and public SPARQL endpoints, and four `SKIP_*` variables had to be set to get a run that needs nothing but PostgreSQL. That default made the extension awkward to test for anyone building it in a sandbox, such as a distribution packager. The polarity is now inverted: `make installcheck` runs only the tests that need no external service, and the groups that do are enabled with `INCLUDE_LOCAL_TESTS=1` (the triplestores deployed by `scripts/postgres-env`), `INCLUDE_EXTERNAL_TESTS=1` (public SPARQL endpoints), `INCLUDE_STRESS_TESTS=1`, `INCLUDE_DEBUG_TESTS=1`, or `INCLUDE_ALL_TESTS=1` for all of them.
 
 ## Bug Fixes
