@@ -102,6 +102,40 @@ WHERE
 ORDER BY o DESC
 LIMIT 3;
 
+/*
+ * A solution modifier that only looks like one, because it sits inside a
+ * string literal, must not be mistaken for a real one - and, more to the
+ * point, must not hide the real one that follows it. The query below cannot
+ * be rewritten, as it carries a LIMIT of its own: it has to be sent as it
+ * stands, with the SQL condition left to the executor. A "Remote Filter"
+ * here would mean the query was reconstructed and the user's LIMIT 5
+ * silently dropped.
+ */
+CREATE FOREIGN TABLE ft_quoted_limit (
+  s rdfnode OPTIONS (variable '?s'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 'SELECT * WHERE { ?s ?p ?o . FILTER(?o != " LIMIT ") } LIMIT 5'
+);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT s, o FROM ft_quoted_limit
+WHERE o = 100;
+
+/* the same query without the quoted keyword is rewritten as usual */
+CREATE FOREIGN TABLE ft_plain (
+  s rdfnode OPTIONS (variable '?s'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 'SELECT * WHERE { ?s ?p ?o . FILTER(?o != " nothing ") }'
+);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT s, o FROM ft_plain
+WHERE o = 100;
+
 /* EXPLAIN (VERBOSE) with pushdown disabled */
 ALTER FOREIGN TABLE ft OPTIONS (enable_pushdown 'false');
 

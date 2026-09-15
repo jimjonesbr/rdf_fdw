@@ -1187,24 +1187,34 @@ int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, 
 	else
 	{
 
+		/*
+		 * The keyword is searched for once per combination of a preceding and
+		 * a following delimiter, since a caller accepts several of each. Those
+		 * combinations are tried in the order the caller happened to list its
+		 * delimiters, which says nothing about where in the string they occur:
+		 * "FROM<g1> FROM <g2>" matches " FROM " before it matches " FROM<".
+		 * Every combination therefore has to be considered, keeping whichever
+		 * match sits closest to the start of the string, rather than returning
+		 * the first one that happens to be found.
+		 */
 		for (int i = 0; i < strlen(start_chars); i++)
 		{
 
 			for (int j = 0; j < strlen(end_chars); j++)
 			{
 				char *el;
+				char *search_from = str + start_position;
 				StringInfoData eval_token;
 				initStringInfo(&eval_token);
 
 				appendStringInfo(&eval_token, "%c%s%c", start_chars[i], keyword, end_chars[j]);
 
-				el = strcasestr(str + start_position, eval_token.data);
-
-				if (el != NULL)
+				while ((el = strcasestr(search_from, eval_token.data)) != NULL)
 				{
+					int position = el - str;
 					int nquotes = 0;
 
-					for (int k = 0; k <= (el - str); k++)
+					for (int k = 0; k <= position; k++)
 					{
 						if (str[k] == '\"')
 							nquotes++;
@@ -1212,13 +1222,18 @@ int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, 
 
 					/*
 					 * If the keyword is located after an opening double-quote it is a literal and should
-					 * not be considered as a keyword.
+					 * not be considered as a keyword. Carry on scanning instead of giving up on this
+					 * spelling: a keyword quoted once does not stop a later occurrence from being real.
 					 */
 					if (nquotes % 2 != 1)
-						keyword_position = el - str;
+					{
+						if (keyword_position == RDF_KEYWORD_NOT_FOUND || position < keyword_position)
+							keyword_position = position;
 
-					if (keyword_position != RDF_KEYWORD_NOT_FOUND)
 						break;
+					}
+
+					search_from = el + 1;
 				}
 			}
 		}

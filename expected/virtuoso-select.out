@@ -3440,11 +3440,12 @@ INFO:  SPARQL returned 1 record.
  * checked through the result set, since none of these graphs exist and the
  * queries therefore return no rows either way.
  *
- * FROM and FROM NAMED are declared on separate foreign tables on purpose.
- * LocateKeyword() picks the first match by delimiter combination rather than
- * by position, so a query mixing the two spellings loses some of its graphs
- * entirely; keeping them apart tests the whitespace handling without
- * depending on that.
+ * The first two tables keep FROM and FROM NAMED apart, so that each spelling
+ * is checked on its own. The third mixes them, together with the form that
+ * runs the keyword straight into the IRI: keyword detection used to match by
+ * delimiter combination rather than by position, and a query combining
+ * spellings this way silently lost the graphs whose delimiters were not the
+ * ones that happened to match first.
  */
 CREATE FOREIGN TABLE ft_default_graphs (
   subject   rdfnode OPTIONS (variable '?s'),
@@ -3508,6 +3509,49 @@ FROM NAMED <http://named-graph.n1>
 FROM NAMED <http://named-graph.n2>
 FROM NAMED <http://named-graph.n3>
 FROM NAMED <http://named-graph.n4>
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+LIMIT 1
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+CREATE FOREIGN TABLE ft_mixed_graphs (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'true',
+  sparql '
+    SELECT *
+    FROM<http://mixed-graph.m1>
+    FROM <http://mixed-graph.m2>
+    FROM
+    <http://mixed-graph.m3>
+    FROM NAMED<http://mixed-graph.m4>
+    FROM NAMED <http://mixed-graph.m5>
+    FROM NAMED
+    <http://mixed-graph.m6>
+    WHERE {?s ?p ?o}'
+);
+SELECT * FROM ft_mixed_graphs
+WHERE subject = '<https://www.uni-muenster.de>'
+LIMIT 1;
+INFO:  SPARQL query sent to 'virtuoso':
+
+SELECT ?s ?p ?o 
+FROM <http://mixed-graph.m1>
+FROM <http://mixed-graph.m2>
+FROM <http://mixed-graph.m3>
+FROM NAMED <http://mixed-graph.m4>
+FROM NAMED <http://mixed-graph.m5>
+FROM NAMED <http://mixed-graph.m6>
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?s = <https://www.uni-muenster.de>)
@@ -3697,9 +3741,10 @@ DELETE DATA { GRAPH <http://rdf-fdw.test/default> {
 DROP SERVER server_invalid_url CASCADE;
 NOTICE:  drop cascades to foreign table ft_server_invalid_url
 DROP SERVER virtuoso CASCADE;
-NOTICE:  drop cascades to 5 other objects
+NOTICE:  drop cascades to 6 other objects
 DETAIL:  drop cascades to foreign table ft
 drop cascades to user mapping for postgres on server virtuoso
 drop cascades to foreign table ft_default_graphs
 drop cascades to foreign table ft_named
+drop cascades to foreign table ft_mixed_graphs
 drop cascades to foreign table ft_invalid_sparql

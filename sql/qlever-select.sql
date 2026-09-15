@@ -671,11 +671,12 @@ WHERE
  * checked through the result set, since none of these graphs exist and the
  * queries therefore return no rows either way.
  *
- * FROM and FROM NAMED are declared on separate foreign tables on purpose.
- * LocateKeyword() picks the first match by delimiter combination rather than
- * by position, so a query mixing the two spellings loses some of its graphs
- * entirely; keeping them apart tests the whitespace handling without
- * depending on that.
+ * The first two tables keep FROM and FROM NAMED apart, so that each spelling
+ * is checked on its own. The third mixes them, together with the form that
+ * runs the keyword straight into the IRI: keyword detection used to match by
+ * delimiter combination rather than by position, and a query combining
+ * spellings this way silently lost the graphs whose delimiters were not the
+ * ones that happened to match first.
  */
 CREATE FOREIGN TABLE ft_default_graphs (
   subject   rdfnode OPTIONS (variable '?s'),
@@ -715,6 +716,30 @@ SERVER qlever OPTIONS (
 );
 
 SELECT * FROM ft_named
+WHERE subject = '<https://www.uni-muenster.de>'
+LIMIT 1;
+
+CREATE FOREIGN TABLE ft_mixed_graphs (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER qlever OPTIONS (
+  log_sparql 'true',
+  sparql '
+    SELECT *
+    FROM<http://mixed-graph.m1>
+    FROM <http://mixed-graph.m2>
+    FROM
+    <http://mixed-graph.m3>
+    FROM NAMED<http://mixed-graph.m4>
+    FROM NAMED <http://mixed-graph.m5>
+    FROM NAMED
+    <http://mixed-graph.m6>
+    WHERE {?s ?p ?o}'
+);
+
+SELECT * FROM ft_mixed_graphs
 WHERE subject = '<https://www.uni-muenster.de>'
 LIMIT 1;
 
