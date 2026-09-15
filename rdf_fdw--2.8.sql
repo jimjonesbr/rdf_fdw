@@ -2586,7 +2586,7 @@ COMMENT ON FUNCTION sparql.bound(rdfnode) IS 'Returns true if the argument is bo
 
 CREATE FUNCTION sparql.bound(text) RETURNS boolean AS $$
 BEGIN
-  RETURN sparql.bound($1::rdfnode);
+  RETURN sparql.bound($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -2685,7 +2685,7 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION sparql.datatype(text) RETURNS rdfnode
 AS $$
 BEGIN
-  RETURN sparql.datatype($1::rdfnode);
+  RETURN sparql.datatype($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2720,7 +2720,7 @@ COMMENT ON FUNCTION sparql.strdt(rdfnode, rdfnode) IS 'Combines text with a data
 CREATE FUNCTION sparql.strdt(text, text) 
 RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.strdt($1::rdfnode, $2::rdfnode);
+  RETURN sparql.strdt($1::@extschema@.rdfnode, $2::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2816,11 +2816,11 @@ CREATE FUNCTION sparql.replace(text, text, text)
 RETURNS rdfnode AS $$
 BEGIN
   RETURN pg_catalog.regexp_replace(
-    CASE WHEN left($1, 1) = '"' THEN sparql.lex($1::rdfnode) ELSE $1 END,
-    CASE WHEN left($2, 1) = '"' THEN sparql.lex($2::rdfnode) ELSE $2 END,
-    CASE WHEN left($3, 1) = '"' THEN sparql.lex($3::rdfnode) ELSE $3 END,
+    CASE WHEN left($1, 1) = '"' THEN sparql.lex($1::@extschema@.rdfnode) ELSE $1 END,
+    CASE WHEN left($2, 1) = '"' THEN sparql.lex($2::@extschema@.rdfnode) ELSE $2 END,
+    CASE WHEN left($3, 1) = '"' THEN sparql.lex($3::@extschema@.rdfnode) ELSE $3 END,
     'g'
-  )::rdfnode;
+  )::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2832,7 +2832,7 @@ BEGIN
     sparql.lex($2),
     sparql.lex($3),
     'g'
-  )::rdfnode;
+  )::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2845,7 +2845,7 @@ BEGIN
       sparql.lex($2),
       sparql.lex($3),
       sparql.lex($4) || 'g'
-    )::rdfnode
+    )::@extschema@.rdfnode
   );
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
@@ -2853,13 +2853,13 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 /* SPARQL 17.4.4 Functions on Numerics */
 CREATE FUNCTION sparql.abs(text) RETURNS rdfnode  AS $$
 BEGIN
-  --RETURN pg_catalog.abs(sparql.lex($1::rdfnode)::double precision)::rdfnode;
-  RETURN sparql.abs($1::rdfnode);
+  --RETURN pg_catalog.abs(sparql.lex($1::@extschema@.rdfnode)::double precision)::@extschema@.rdfnode;
+  RETURN sparql.abs($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(rdfnode) RETURNS rdfnode  AS $$
-DECLARE dt rdfnode;
+DECLARE dt @extschema@.rdfnode;
 BEGIN
   IF NOT sparql.isnumeric($1) THEN
     RAISE EXCEPTION 'invalid value for ABS(): %', $1;
@@ -2867,49 +2867,49 @@ BEGIN
 
   dt := sparql.datatype($1);
 
-  RETURN sparql.strdt(pg_catalog.abs(sparql.lex($1)::double precision)::rdfnode, dt);
+  RETURN sparql.strdt(pg_catalog.abs(sparql.lex($1)::double precision)::@extschema@.rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(smallint) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1)::rdfnode;
+  RETURN pg_catalog.abs($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(int) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.abs($1)::rdfnode;
+  RETURN pg_catalog.abs($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(bigint) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.abs($1)::rdfnode;
+  RETURN pg_catalog.abs($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(double precision) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1)::rdfnode;
+  RETURN pg_catalog.abs($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(numeric) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1)::rdfnode;
+  RETURN pg_catalog.abs($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.abs(real) RETURNS rdfnode  AS $$
 BEGIN
-  RETURN pg_catalog.abs($1)::rdfnode;
+  RETURN pg_catalog.abs($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.round(text) RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.round($1::rdfnode);
+  RETURN sparql.round($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2917,7 +2917,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
    and on a tie the one closer to positive infinity. That is floor(x + 0.5) for
    every x, negative values included: ROUND(-2.5) is -2, not -3. */
 CREATE FUNCTION sparql.round(rdfnode) RETURNS rdfnode AS $$
-DECLARE dt rdfnode;
+DECLARE dt @extschema@.rdfnode;
 BEGIN
   IF NOT sparql.isnumeric($1) THEN
     RAISE EXCEPTION 'invalid value for ROUND(): %', $1;
@@ -2933,7 +2933,7 @@ BEGIN
     RETURN sparql.strdt(sparql.round(sparql.lex($1)::double precision), dt);
   END IF;
 
-  RETURN sparql.strdt(pg_catalog.floor(sparql.lex($1)::numeric + 0.5)::rdfnode, dt);
+  RETURN sparql.strdt(pg_catalog.floor(sparql.lex($1)::numeric + 0.5)::@extschema@.rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -2942,7 +2942,7 @@ DECLARE r double precision;
 BEGIN
   /* An argument in [-0.5, 0) rounds to negative zero. */
   IF $1 >= -0.5 AND $1 < 0 THEN
-    RETURN (-0.0::double precision)::rdfnode;
+    RETURN (-0.0::double precision)::@extschema@.rdfnode;
   END IF;
 
   /* The fractional part is compared against one half rather than the half
@@ -2953,24 +2953,24 @@ BEGIN
     r := r + 1;
   END IF;
 
-  RETURN r::rdfnode;
+  RETURN r::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.round(numeric) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.floor($1 + 0.5)::rdfnode;
+  RETURN pg_catalog.floor($1 + 0.5)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.ceil(text) RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.ceil($1::rdfnode)::rdfnode;
+  RETURN sparql.ceil($1::@extschema@.rdfnode)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.ceil(rdfnode) RETURNS rdfnode AS $$
-DECLARE dt rdfnode;
+DECLARE dt @extschema@.rdfnode;
 BEGIN
   IF NOT sparql.isnumeric($1) THEN
     RAISE EXCEPTION 'invalid value for CEIL(): %', $1;
@@ -2978,30 +2978,30 @@ BEGIN
 
   dt := sparql.datatype($1);
 
-  RETURN sparql.strdt(pg_catalog.ceil(sparql.lex($1)::numeric)::rdfnode, dt);
+  RETURN sparql.strdt(pg_catalog.ceil(sparql.lex($1)::numeric)::@extschema@.rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.ceil(numeric) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.ceil($1)::rdfnode;
+  RETURN pg_catalog.ceil($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.ceil(double precision) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.ceil($1)::rdfnode;
+  RETURN pg_catalog.ceil($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.floor(text) RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.floor($1::rdfnode)::rdfnode;
+  RETURN sparql.floor($1::@extschema@.rdfnode)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.floor(rdfnode) RETURNS rdfnode AS $$
-DECLARE dt rdfnode;
+DECLARE dt @extschema@.rdfnode;
 BEGIN
   IF NOT sparql.isnumeric($1) THEN
     RAISE EXCEPTION 'invalid value for FLOOR(): %', $1;
@@ -3009,32 +3009,32 @@ BEGIN
 
   dt := sparql.datatype($1);
 
-  RETURN sparql.strdt(pg_catalog.floor(sparql.lex($1)::numeric)::rdfnode, dt);
+  RETURN sparql.strdt(pg_catalog.floor(sparql.lex($1)::numeric)::@extschema@.rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.floor(numeric) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.floor($1)::rdfnode;
+  RETURN pg_catalog.floor($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.floor(double precision) RETURNS rdfnode AS $$
 BEGIN
-  RETURN pg_catalog.floor($1)::rdfnode;
+  RETURN pg_catalog.floor($1)::@extschema@.rdfnode;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 CREATE FUNCTION sparql.rand() RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.strdt(random()::rdfnode,'xsd:double');
+  RETURN sparql.strdt(random()::@extschema@.rdfnode,'xsd:double');
 END;
 $$ LANGUAGE plpgsql STRICT;
 
 /* SPARQL 17.4.5 Functions on Dates and Times */
 CREATE FUNCTION sparql.now() RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.strdt(pg_catalog.now()::rdfnode, 'xsd:dateTime');
+  RETURN sparql.strdt(pg_catalog.now()::@extschema@.rdfnode, 'xsd:dateTime');
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3048,7 +3048,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE FUNCTION sparql.year(text)
 RETURNS int AS $$
 BEGIN
-  RETURN sparql.year($1::rdfnode);
+  RETURN sparql.year($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3069,7 +3069,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE FUNCTION sparql.month(text)
 RETURNS int AS $$
 BEGIN
-  RETURN sparql.month($1::rdfnode);
+  RETURN sparql.month($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3090,7 +3090,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE FUNCTION sparql.day(text)
 RETURNS int AS $$
 BEGIN
-  RETURN sparql.day($1::rdfnode);
+  RETURN sparql.day($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3117,7 +3117,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE FUNCTION sparql.hours(text)
 RETURNS int AS $$
 BEGIN
-  RETURN sparql.hours($1::rdfnode);
+  RETURN sparql.hours($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3153,7 +3153,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE FUNCTION sparql.minutes(text)
 RETURNS int AS $$
 BEGIN
-  RETURN sparql.minutes($1::rdfnode);
+  RETURN sparql.minutes($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3187,7 +3187,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE FUNCTION sparql.seconds(text)
 RETURNS numeric AS $$
 BEGIN
-  RETURN sparql.seconds($1::rdfnode);
+  RETURN sparql.seconds($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3265,7 +3265,7 @@ $$ LANGUAGE plpgsql STRICT IMMUTABLE;
 CREATE OR REPLACE FUNCTION sparql.timezone(text)
 RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.timezone($1::rdfnode);
+  RETURN sparql.timezone($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -3313,7 +3313,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION sparql.tz(text)
 RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.tz($1::rdfnode);
+  RETURN sparql.tz($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
@@ -3325,7 +3325,7 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION sparql.md5(text)
 RETURNS rdfnode AS $$
 BEGIN
-  RETURN sparql.md5($1::rdfnode);
+  RETURN sparql.md5($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 

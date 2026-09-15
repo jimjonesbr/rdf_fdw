@@ -3923,3 +3923,21 @@ SELECT bool_and(sparql.isblank(sparql.bnode()))     FROM generate_series(1,100);
  t
 (1 row)
 
+/* The function bodies name the schema the extension was installed into when
+ * they refer to the rdfnode type, so they do not depend on the caller having
+ * that schema on its search_path. */
+SET search_path = pg_catalog;
+SELECT sparql.round('"1.5"^^xsd:decimal'), sparql.abs('"-3"^^xsd:integer'),
+       sparql.ceil('"1.2"^^xsd:decimal'), sparql.floor('"1.8"^^xsd:decimal');
+                      round                      |                       abs                       |                      ceil                       |                      floor                      
+-------------------------------------------------+-------------------------------------------------+-------------------------------------------------+-------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#decimal> | "3"^^<http://www.w3.org/2001/XMLSchema#integer> | "2"^^<http://www.w3.org/2001/XMLSchema#decimal> | "1"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.year('"2025-04-16"^^xsd:date'), sparql.md5('"x"');
+ year |                md5                 
+------+------------------------------------
+ 2025 | "9dd4e461268c8034f5c8564e155c67a6"
+(1 row)
+
+RESET search_path;

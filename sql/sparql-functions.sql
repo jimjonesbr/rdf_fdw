@@ -831,3 +831,12 @@ SELECT count(DISTINCT b) FROM (SELECT sparql.bnode() AS b FROM generate_series(1
 SELECT bool_and(sparql.isiri(sparql.uuid()))        FROM generate_series(1,100);
 SELECT bool_and(sparql.isliteral(sparql.struuid())) FROM generate_series(1,100);
 SELECT bool_and(sparql.isblank(sparql.bnode()))     FROM generate_series(1,100);
+
+/* The function bodies name the schema the extension was installed into when
+ * they refer to the rdfnode type, so they do not depend on the caller having
+ * that schema on its search_path. */
+SET search_path = pg_catalog;
+SELECT sparql.round('"1.5"^^xsd:decimal'), sparql.abs('"-3"^^xsd:integer'),
+       sparql.ceil('"1.2"^^xsd:decimal'), sparql.floor('"1.8"^^xsd:decimal');
+SELECT sparql.year('"2025-04-16"^^xsd:date'), sparql.md5('"x"');
+RESET search_path;
