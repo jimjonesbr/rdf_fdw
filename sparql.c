@@ -669,10 +669,20 @@ char *bnode(char *input)
 
     if (input == NULL)
     {
-        /* BNODE(): Generate unique blank node using timestamp and counter */
+        /*
+         * BNODE(): every call must yield a distinct blank node.
+         *
+         * The counter never repeats within a backend, so it alone carries that
+         * guarantee; the timestamp only tells concurrent backends apart, which
+         * matters once the identifiers reach a shared triplestore. Both are
+         * emitted as separate fields, with a separator. Folding them into one
+         * number would not do: arithmetic can map two distinct pairs onto the
+         * same value, and without the separator "1" and "23" produce the same
+         * digits as "12" and "3".
+         */
         TimestampTz ts = GetCurrentTimestamp();
-        uint64 unique_id = counter++ ^ (uint64)ts;
-        appendStringInfo(&buf, "_:b%llu", (unsigned long long)unique_id);
+        appendStringInfo(&buf, "_:b%llu_%llu",
+                         (unsigned long long)ts, (unsigned long long)counter++);
     }
     else
     {
@@ -1265,8 +1275,14 @@ char *generate_uuid_v4(void)
 
     initStringInfo(&buf);
 
-    /* Use timestamp and counter for pseudo-randomness */
-    seed = (uint64)GetCurrentTimestamp() ^ counter++;
+    /*
+     * Seed from the timestamp and a per-backend call counter. The counter is
+     * scaled so that it moves bits the timestamp's own increments do not
+     * reach: combined at the same magnitude, one microsecond of elapsed time
+     * and one call cancel each other out, and two calls receive the same seed
+     * and therefore the same UUID.
+     */
+    seed = (uint64)GetCurrentTimestamp() + counter++ * UINT64CONST(0x9E3779B97F4A7C15);
 
     /* Generate 16 bytes of pseudo-random data */
     for (i = 0; i < 16; i++)

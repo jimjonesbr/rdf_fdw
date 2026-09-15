@@ -801,3 +801,13 @@ SELECT sparql.md5(repeat('a', 10000));
 /* RAND */
 SELECT sparql.rand() >= 0 AND sparql.rand() < 1;  -- should be t
 SELECT sparql.rand() != sparql.rand();            -- should be t (very low probability of being f)  
+
+/* BNODE, UUID and STRUUID generate a new value per call, so they must not be
+ * folded to a single constant for the whole query, and each must keep its own
+ * result shape across rows: UUID yields an IRI, STRUUID a string literal. */
+SELECT count(DISTINCT u) FROM (SELECT sparql.uuid() AS u FROM generate_series(1,100)) t;
+SELECT count(DISTINCT u) FROM (SELECT sparql.struuid() AS u FROM generate_series(1,100)) t;
+SELECT count(DISTINCT b) FROM (SELECT sparql.bnode() AS b FROM generate_series(1,100)) t;
+SELECT bool_and(sparql.isiri(sparql.uuid()))        FROM generate_series(1,100);
+SELECT bool_and(sparql.isliteral(sparql.struuid())) FROM generate_series(1,100);
+SELECT bool_and(sparql.isblank(sparql.bnode()))     FROM generate_series(1,100);

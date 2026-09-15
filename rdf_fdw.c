@@ -1235,14 +1235,20 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
 	elog(DEBUG3, "%s called", __func__);
 
 	/*
-	 * uuid() and bnode() both call this same C function. Distinguish them at
-	 * runtime by looking up the PostgreSQL function name via fn_oid, then cache
-	 * the result in fn_extra so the lookup only pays for itself once per query.
+	 * uuid() and struuid() both call this same C function, and differ only in
+	 * how they present the generated value. Distinguish them at runtime by
+	 * looking up the PostgreSQL function name via fn_oid, then cache the result
+	 * in fn_extra so the lookup only pays for itself once per query.
+	 *
+	 * The cache has to live in fn_mcxt, which lasts as long as the FmgrInfo
+	 * that holds the pointer. During expression evaluation the current context
+	 * is the per-tuple one, which is reset between rows, so a cache allocated
+	 * there would be read back as freed memory from the second row on.
 	 */
 	if (fcinfo->flinfo->fn_extra == NULL)
 	{
 		funcname = get_func_name(fcinfo->flinfo->fn_oid);
-		is_uuid_ptr = palloc(sizeof(int));
+		is_uuid_ptr = MemoryContextAlloc(fcinfo->flinfo->fn_mcxt, sizeof(int));
 		*is_uuid_ptr = (strcmp(funcname, "uuid") == 0) ? 1 : 0;
 		fcinfo->flinfo->fn_extra = is_uuid_ptr;
 		pfree(funcname);
@@ -7944,10 +7950,9 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 			 * Skip over to the graph IRI. SPARQL separates FROM, NAMED and the
 			 * IRI with any run of whitespace, not just a single space, so a
 			 * query broken across lines - "FROM\n  <http://...>" - has to be
-			 * accepted too. Testing for ' ' would leave the cursor sitting on
-			 * the newline, which the reader below then treated as the end of
-			 * the IRI, emitting a bare "FROM" with no graph at all and making
-			 * the whole query invalid SPARQL.
+			 * accepted too. A test for ' ' alone leaves the cursor on the
+			 * newline, which the reader below takes for the end of the IRI,
+			 * producing a bare "FROM" with no graph and an invalid query.
 			 *
 			 * The casts to unsigned char are required: plain char is signed
 			 * here, and a byte of a non-ASCII IRI would reach isspace() as a

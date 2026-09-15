@@ -2704,7 +2704,7 @@ COMMENT ON FUNCTION sparql.bnode(rdfnode) IS 'Creates a blank node from the inpu
 
 CREATE FUNCTION sparql.bnode() RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_bnode'
-LANGUAGE C IMMUTABLE;
+LANGUAGE C VOLATILE;
 COMMENT ON FUNCTION sparql.bnode() IS 'Generates a new blank node identifier.';
 
 CREATE FUNCTION sparql.strdt(rdfnode, rdfnode) RETURNS rdfnode
@@ -2726,12 +2726,12 @@ COMMENT ON FUNCTION sparql.strlang(rdfnode, rdfnode) IS 'Combines text with a la
 
 CREATE FUNCTION sparql.uuid() RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_uuid'
-LANGUAGE C IMMUTABLE;
+LANGUAGE C VOLATILE;
 COMMENT ON FUNCTION sparql.uuid() IS 'Generates a UUID string.';
 
 CREATE FUNCTION sparql.struuid() RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_uuid'
-LANGUAGE C IMMUTABLE;
+LANGUAGE C VOLATILE;
 COMMENT ON FUNCTION sparql.struuid() IS 'Generates a UUID string.';
 
 /* SPARQL 17.4.3  Functions on Strings */
