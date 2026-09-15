@@ -608,7 +608,7 @@ INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://foo.bar>)
@@ -626,7 +626,7 @@ INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?s ?p 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p != <http://foo.bar>)

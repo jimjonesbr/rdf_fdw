@@ -533,7 +533,7 @@ INFO:  SPARQL returned 5 records.
 
 INFO:  SPARQL query sent to 'qlever':
 
-SELECT ?o 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) = "non-existent-lang")
@@ -551,7 +551,7 @@ INFO:  SPARQL returned 5 records.
 
 INFO:  SPARQL query sent to 'qlever':
 
-SELECT ?o 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) != "en")

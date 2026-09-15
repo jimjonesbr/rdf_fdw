@@ -576,7 +576,7 @@ INFO:  SPARQL returned 5 records.
 
 INFO:  SPARQL query sent to 'virtuoso':
 
-SELECT ?o 
+SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) = "non-existent-lang")
@@ -594,7 +594,7 @@ INFO:  SPARQL returned 5 records.
 
 INFO:  SPARQL query sent to 'virtuoso':
 
-SELECT ?o 
+SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) != "en")

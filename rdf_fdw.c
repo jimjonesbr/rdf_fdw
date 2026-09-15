@@ -5865,6 +5865,9 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 	Var *variable;
 	ListCell *cell;
 
+	if (expr == NULL)
+		return;
+
 	elog(DEBUG2, "%s called: expression='%d'", __func__, expr->type);
 
 	switch (expr->type)
@@ -5902,6 +5905,35 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 			break;
 		}
 
+		/*
+		 * A varattno of 0 marks a whole-row reference - the entire row as a
+		 * single composite value, as in "SELECT t FROM ft t". It names no
+		 * individual attribute, so the loop below would match nothing and
+		 * leave every column unused. All of them are needed to assemble the
+		 * row, so mark them here. This is what postgres_fdw does as well.
+		 *
+		 * A query selecting nothing but the whole row happens to survive
+		 * without this, because an empty SELECT clause falls back to "*" in
+		 * CreateSPARQL(). One that also reads a column does not: it would
+		 * request only that column's variable and leave the rest of the
+		 * composite NULL.
+		 *
+		 * Note that these references are not always written by hand. The
+		 * planner adds them on its own, for instance as the row identity of
+		 * a semi-join, which is why a DELETE or UPDATE whose subquery reads
+		 * the same foreign table asks for every mapped variable.
+		 */
+		if (variable->varattno == 0)
+		{
+			elog(DEBUG2, "%s: whole-row reference, marking all %d columns as required",
+				 __func__, state->numcols);
+
+			for (int i = 0; i < state->numcols; i++)
+				state->rdfTable->cols[i]->used = true;
+
+			break;
+		}
+
 		for (int i = 0; i < state->numcols; i++)
 		{
 			if (state->rdfTable->cols[i]->pgattnum == variable->varattno)
@@ -5918,20 +5950,18 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 		{
 			SetUsedColumns((Expr *)lfirst(cell), state, foreignrelid);
 		}
-		foreach (cell, ((Aggref *)expr)->aggorder)
+		foreach (cell, ((Aggref *)expr)->aggdirectargs)
 		{
 			SetUsedColumns((Expr *)lfirst(cell), state, foreignrelid);
 		}
-		foreach (cell, ((Aggref *)expr)->aggdistinct)
-		{
-			SetUsedColumns((Expr *)lfirst(cell), state, foreignrelid);
-		}
+		SetUsedColumns(((Aggref *)expr)->aggfilter, state, foreignrelid);
 		break;
 	case T_WindowFunc:
 		foreach (cell, ((WindowFunc *)expr)->args)
 		{
 			SetUsedColumns((Expr *)lfirst(cell), state, foreignrelid);
 		}
+		SetUsedColumns(((WindowFunc *)expr)->aggfilter, state, foreignrelid);
 		break;
 #if PG_VERSION_NUM < 120000
 	case T_ArrayRef:

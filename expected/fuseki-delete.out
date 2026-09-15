@@ -541,7 +541,7 @@ INFO:  SPARQL returned 4 records.
 
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?o 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) = "non-existent-lang")
@@ -559,7 +559,7 @@ INFO:  SPARQL returned 4 records.
 
 INFO:  SPARQL query sent to 'fuseki':
 
-SELECT ?o 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(LANG(?o) != "en")

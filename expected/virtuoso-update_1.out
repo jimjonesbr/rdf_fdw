@@ -649,7 +649,7 @@ INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'virtuoso':
 
-SELECT ?s ?p 
+SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://foo.bar>)
@@ -667,7 +667,7 @@ INFO:  SPARQL returned 1 record.
 
 INFO:  SPARQL query sent to 'virtuoso':
 
-SELECT ?s ?p 
+SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
  FILTER(?p != <http://foo.bar>)

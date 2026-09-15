@@ -626,7 +626,7 @@ INFO:  SPARQL returned 2 records.
 
 INFO:  SPARQL query sent to 'qlever':
 
-SELECT ?s ?p 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://foo.bar>)
@@ -644,7 +644,7 @@ INFO:  SPARQL returned 2 records.
 
 INFO:  SPARQL query sent to 'qlever':
 
-SELECT ?s ?p 
+SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p != <http://foo.bar>)
