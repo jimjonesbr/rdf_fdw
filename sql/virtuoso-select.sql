@@ -664,6 +664,61 @@ WHERE
         sparql.substr(
           sparql.str(object), 1, 9))));
 
+
+/*
+ * SPARQL separates FROM, NAMED and the graph IRI with any run of whitespace,
+ * so every spelling below has to survive query reconstruction with its graph
+ * IRI intact. The assertion is the logged query: the graph names cannot be
+ * checked through the result set, since none of these graphs exist and the
+ * queries therefore return no rows either way.
+ *
+ * FROM and FROM NAMED are declared on separate foreign tables on purpose.
+ * LocateKeyword() picks the first match by delimiter combination rather than
+ * by position, so a query mixing the two spellings loses some of its graphs
+ * entirely; keeping them apart tests the whitespace handling without
+ * depending on that.
+ */
+CREATE FOREIGN TABLE ft_default_graphs (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'true',
+  sparql '
+    SELECT *
+    FROM <http://default-graph.d1>
+    FROM            <http://default-graph.d2>
+    FROM
+    <http://default-graph.d3>
+    WHERE {?s ?p ?o}'
+);
+
+SELECT * FROM ft_default_graphs
+WHERE subject = '<https://www.uni-muenster.de>'
+LIMIT 1;
+
+CREATE FOREIGN TABLE ft_named (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER virtuoso OPTIONS (
+  log_sparql 'true',
+  sparql '
+    SELECT *
+    FROM NAMED<http://named-graph.n1>
+    FROM NAMED <http://named-graph.n2>
+    FROM NAMED            <http://named-graph.n3>
+    FROM NAMED
+    <http://named-graph.n4>
+    WHERE {?s ?p ?o}'
+);
+
+SELECT * FROM ft_named
+WHERE subject = '<https://www.uni-muenster.de>'
+LIMIT 1;
+
 -- EXPLAIN of a query
 EXPLAIN (COSTS OFF)
 SELECT * FROM ft

@@ -7928,7 +7928,20 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 
 			entry_position = entry_position + (strlen(RDF_SPARQL_KEYWORD_FROM) + 1);
 
-			while (raw_sparql[entry_position] == ' ')
+			/*
+			 * Skip over to the graph IRI. SPARQL separates FROM, NAMED and the
+			 * IRI with any run of whitespace, not just a single space, so a
+			 * query broken across lines - "FROM\n  <http://...>" - has to be
+			 * accepted too. Testing for ' ' would leave the cursor sitting on
+			 * the newline, which the reader below then treated as the end of
+			 * the IRI, emitting a bare "FROM" with no graph at all and making
+			 * the whole query invalid SPARQL.
+			 *
+			 * The casts to unsigned char are required: plain char is signed
+			 * here, and a byte of a non-ASCII IRI would reach isspace() as a
+			 * negative value, which is undefined behaviour.
+			 */
+			while (isspace((unsigned char)raw_sparql[entry_position]))
 				entry_position++;
 
 			/* Is the SPARQL long enough for 'FROM NAMED' to be parsed? */
@@ -7943,14 +7956,12 @@ static char *DeparseSPARQLFrom(char *raw_sparql)
 					is_named = true;
 					entry_position = entry_position + strlen(RDF_SPARQL_KEYWORD_NAMED);
 
-					while (raw_sparql[entry_position] == ' ')
+					while (isspace((unsigned char)raw_sparql[entry_position]))
 						entry_position++;
 				}
 			}
 
-			while (raw_sparql[entry_position] != ' ' &&
-				   raw_sparql[entry_position] != '\n' &&
-				   raw_sparql[entry_position] != '\t' &&
+			while (!isspace((unsigned char)raw_sparql[entry_position]) &&
 				   raw_sparql[entry_position] != '\0')
 			{
 				appendStringInfo(&from_entry, "%c", raw_sparql[entry_position]);
