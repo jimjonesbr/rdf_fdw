@@ -153,5 +153,16 @@ CREATE FOREIGN TABLE t20 (
 ALTER FOREIGN TABLE t20 DROP COLUMN gone;
 EXPLAIN (COSTS OFF) SELECT name FROM t20;
 
+/* SPARQL names a variable with either sigil, and "?x" and "$x" are the same
+ * variable. A mapping declared with "$" must therefore behave exactly like the
+ * same mapping declared with "?", including in the SELECT clause rdf_fdw
+ * generates - the result bindings an endpoint sends back carry no sigil, and
+ * are matched against the mapped variable as "?name". */
+CREATE FOREIGN TABLE t21 (
+  s rdfnode OPTIONS (variable '$s'),
+  o rdfnode OPTIONS (variable '$o')
+) SERVER testserver OPTIONS (sparql 'SELECT * {$s ?p $o}');
+EXPLAIN (COSTS OFF) SELECT s, o FROM t21 WHERE o = 1::rdfnode;
+
 /* clean up */
 DROP SERVER testserver CASCADE;

@@ -193,12 +193,32 @@ HINT:  Use the "rdfnode" type instead.
    Remote Select: ?s 
 (4 rows)
 
+/* SPARQL names a variable with either sigil, and "?x" and "$x" are the same
+ * variable. A mapping declared with "$" must therefore behave exactly like the
+ * same mapping declared with "?", including in the SELECT clause rdf_fdw
+ * generates - the result bindings an endpoint sends back carry no sigil, and
+ * are matched against the mapped variable as "?name". */
+CREATE FOREIGN TABLE t21 (
+  s rdfnode OPTIONS (variable '$s'),
+  o rdfnode OPTIONS (variable '$o')
+) SERVER testserver OPTIONS (sparql 'SELECT * {$s ?p $o}');
+EXPLAIN (COSTS OFF) SELECT s, o FROM t21 WHERE o = 1::rdfnode;
+                              QUERY PLAN                               
+-----------------------------------------------------------------------
+ Foreign Scan on t21
+   Foreign Server: testserver
+   Pushdown: enabled
+   Remote Select: ?s ?o 
+   Remote Filter: ((?o = "1"^^<http://www.w3.org/2001/XMLSchema#int>))
+(5 rows)
+
 /* clean up */
 DROP SERVER testserver CASCADE;
-NOTICE:  drop cascades to 6 other objects
+NOTICE:  drop cascades to 7 other objects
 DETAIL:  drop cascades to foreign table t1
 drop cascades to foreign table t16
 drop cascades to foreign table t17
 drop cascades to foreign table t18
 drop cascades to foreign table t19
 drop cascades to foreign table t20
+drop cascades to foreign table t21

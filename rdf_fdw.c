@@ -4149,6 +4149,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			{
 				elog(DEBUG2, "  %s: (%d) adding sparql variable > '%s'", __func__, i, defGetString(def));
 				state->rdfTable->cols[i]->sparqlvar = pstrdup(defGetString(def));
+				state->rdfTable->cols[i]->sparqlvar[0] = '?';
 			}
 			else if (strcmp(def->defname, RDF_COLUMN_OPTION_EXPRESSION) == 0)
 			{
