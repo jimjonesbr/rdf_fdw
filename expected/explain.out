@@ -318,9 +318,8 @@ WHERE o = 100;
    Output: s, o
    Filter: (ft_quoted_limit.o = 100)
    Foreign Server: wikidata
-   Pushdown: enabled
-   Remote Select: ?s ?o 
-(6 rows)
+   Pushdown: unsupported SPARQL
+(5 rows)
 
 /* the same query without the quoted keyword is rewritten as usual */
 CREATE FOREIGN TABLE ft_plain (

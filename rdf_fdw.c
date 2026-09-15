@@ -3094,7 +3094,20 @@ static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es)
 		if (state->server && state->server->servername)
 			ExplainPropertyText("Foreign Server", state->server->servername, es);
 
-		if (state->enable_pushdown)
+		/*
+		 * "Pushdown" reports what the scan actually does, which is not the same
+		 * as what the enable_pushdown option asks for. A query that rdf_fdw
+		 * cannot rewrite is sent exactly as it was supplied in the table's
+		 * "sparql" option, and every SQL clause is left to the executor, even
+		 * though pushdown is switched on. The clauses below are still built
+		 * during planning in that case, but none of them reaches the endpoint,
+		 * so reporting them would describe a query that was never sent.
+		 */
+		if (!state->enable_pushdown)
+			ExplainPropertyText("Pushdown", "disabled", es);
+		else if (!state->is_sparql_parsable)
+			ExplainPropertyText("Pushdown", "unsupported SPARQL", es);
+		else
 		{
 			ExplainPropertyText("Pushdown", "enabled", es);
 
@@ -3113,8 +3126,6 @@ static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es)
 			if (state->sparql_limit && strlen(state->sparql_limit) > 0)
 				ExplainPropertyText("Remote Limit", state->sparql_limit, es);
 		}
-		else
-			ExplainPropertyText("Pushdown", "disabled", es);
 	}
 }
 

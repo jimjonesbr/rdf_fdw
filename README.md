@@ -1236,7 +1236,7 @@ The `rdf_fdw` extension provides detailed diagnostics in PostgreSQL [EXPLAIN](ht
 
 The plan output includes FDW-specific lines for each Foreign Scan node:
 * `Foreign Server:` shows the foreign server related to the queried foreign table.
-* `Pushdown: enabled` or `Pushdown: disabled`
+* `Pushdown:` reports what the scan does: `enabled` when the query was rewritten, `disabled` when the `enable_pushdown` option is off, and `unsupported SPARQL` when the query given in the table's `sparql` option cannot be rewritten - for instance because it already carries its own `LIMIT`, `ORDER BY`, `GROUP BY`, `UNION` or `MINUS`. In the latter two cases the query is sent exactly as it was supplied and every SQL clause is evaluated locally, so none of the `Remote` lines below are shown.
 * `Remote Filter:` shows the SPARQL FILTER expression(s) generated from SQL WHERE clauses.  
   If the WHERE clause cannot be translated to SPARQL FILTER expressions, the plan will display `Remote Filter: not pushable` to indicate that filtering is performed locally in PostgreSQL.
 * `Remote Sort Key:` shows the SPARQL ORDER BY clause if sorting is pushed down.

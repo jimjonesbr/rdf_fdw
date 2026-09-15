@@ -1966,9 +1966,8 @@ WHERE p = '<http://example.org/p>';
    Output: p, o
    Filter: (np_minus.p = '<http://example.org/p>'::rdfnode)
    Foreign Server: test_server
-   Pushdown: enabled
-   Remote Select: ?p ?o 
-(6 rows)
+   Pushdown: unsupported SPARQL
+(5 rows)
 
 CREATE FOREIGN TABLE np_union (
   p rdfnode OPTIONS (variable '?p'),
@@ -1985,9 +1984,8 @@ WHERE p = '<http://example.org/p>';
    Output: p, o
    Filter: (np_union.p = '<http://example.org/p>'::rdfnode)
    Foreign Server: test_server
-   Pushdown: enabled
-   Remote Select: ?p ?o 
-(6 rows)
+   Pushdown: unsupported SPARQL
+(5 rows)
 
 CREATE FOREIGN TABLE np_limit (
   p rdfnode OPTIONS (variable '?p'),
@@ -2004,9 +2002,8 @@ WHERE p = '<http://example.org/p>';
    Output: p, o
    Filter: (np_limit.p = '<http://example.org/p>'::rdfnode)
    Foreign Server: test_server
-   Pushdown: enabled
-   Remote Select: ?p ?o 
-(6 rows)
+   Pushdown: unsupported SPARQL
+(5 rows)
 
 CREATE FOREIGN TABLE np_orderby (
   p rdfnode OPTIONS (variable '?p'),
@@ -2023,9 +2020,8 @@ WHERE p = '<http://example.org/p>';
    Output: p, o
    Filter: (np_orderby.p = '<http://example.org/p>'::rdfnode)
    Foreign Server: test_server
-   Pushdown: enabled
-   Remote Select: ?p ?o 
-(6 rows)
+   Pushdown: unsupported SPARQL
+(5 rows)
 
 CREATE FOREIGN TABLE np_groupby (
   p rdfnode OPTIONS (variable '?p'),
@@ -2044,9 +2040,8 @@ HINT:  Use the "rdfnode" type instead.
    Output: p, c
    Filter: (np_groupby.c > 1)
    Foreign Server: test_server
-   Pushdown: enabled
-   Remote Select: ?p ?c 
-(6 rows)
+   Pushdown: unsupported SPARQL
+(5 rows)
 
 DROP SERVER test_server CASCADE;
 NOTICE:  drop cascades to 8 other objects
