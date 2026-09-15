@@ -6972,6 +6972,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		elog(DEBUG2, "%s [T_BooleanTest]: start (expr->type='%u')", __func__, expr->type);
 		btest = (BooleanTest *)expr;
 
+		if (btest->booltesttype != IS_TRUE && btest->booltesttype != IS_FALSE)
+			return NULL;
+
 		if (btest->arg->type != T_Var)
 		{
 			elog(DEBUG2, "  %s exit [T_BooleanTest]: returning NULL (argument type is not a T_Var)", __func__);
@@ -6980,10 +6983,16 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 		variable = (Var *)btest->arg;
 
+		if (variable->varno != foreignrel->relid || variable->varlevelsup != 0 ||
+			variable->varattno <= 0)
+			return NULL;
+
 		index = state->numcols - 1;
 		while (index >= 0 && state->rdfTable->cols[index]->pgattnum != variable->varattno)
 			--index;
 
+		if (index < 0)
+			return NULL;
 		arg = state->rdfTable->cols[index]->name;
 
 		if (arg == NULL)

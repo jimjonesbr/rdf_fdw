@@ -868,15 +868,16 @@ WHERE
   bl IS NOT false;
 WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
 HINT:  Use the "rdfnode" type instead.
-                                                                  QUERY PLAN                                                                   
------------------------------------------------------------------------------------------------------------------------------------------------
+                                  QUERY PLAN                                   
+-------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
    Output: bl
+   Filter: (pgtypes_ft.bl IS NOT FALSE)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?bl 
-   Remote Filter: ((?bl = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>) && (?bl != "false"^^<http://www.w3.org/2001/XMLSchema#boolean>))
-(6 rows)
+   Remote Filter: ((?bl = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>))
+(7 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT bl FROM pgtypes_ft
@@ -885,15 +886,16 @@ WHERE
   bl IS NOT true;
 WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
 HINT:  Use the "rdfnode" type instead.
-                                                                  QUERY PLAN                                                                   
------------------------------------------------------------------------------------------------------------------------------------------------
+                                   QUERY PLAN                                   
+--------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
    Output: bl
+   Filter: (pgtypes_ft.bl IS NOT TRUE)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?bl 
-   Remote Filter: ((?bl = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>) && (?bl != "true"^^<http://www.w3.org/2001/XMLSchema#boolean>))
-(6 rows)
+   Remote Filter: ((?bl = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>))
+(7 rows)
 
 /* boolean: = / <> (NOT pushable) */
 EXPLAIN (VERBOSE, COSTS OFF)
