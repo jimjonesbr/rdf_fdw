@@ -21,9 +21,12 @@ CREATE FOREIGN TABLE priv_ft (
 CREATE TABLE priv_stolen (s rdfnode);
 
 CREATE ROLE priv_role LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
-GRANT USAGE ON SCHEMA sparql TO priv_role;
 
 SET ROLE priv_role;
+
+/* the SPARQL function API is reachable without any grant of its own:
+ * the extension grants USAGE on its schema to PUBLIC */
+SELECT sparql.ucase('"hi"');
 
 /* no privileges at all: selecting from the table is refused by PostgreSQL */
 SELECT * FROM priv_ft;
@@ -37,9 +40,9 @@ CALL rdf_fdw_clone_table(
   create_table  => false,
   verbose       => false);
 
-/* rdf_fdw_describe() has the same gap for its SERVER argument. It is shielded
- * only by schema "sparql" not being granted to PUBLIC, which stops being true
- * the moment a DBA grants usage on it -- as this test does above. */
+/* rdf_fdw_describe() has the same gap for its SERVER argument, and nothing
+ * shields it: schema "sparql" is reachable by PUBLIC, so the check has to
+ * be its own. */
 SELECT * FROM sparql.describe('priv_srv', 'DESCRIBE <http://example.org/x>');
 
 RESET ROLE;
@@ -70,5 +73,4 @@ RESET ROLE;
 /* clean up */
 DROP TABLE priv_stolen;
 DROP SERVER priv_srv CASCADE;
-REVOKE USAGE ON SCHEMA sparql FROM priv_role;
 DROP ROLE priv_role;

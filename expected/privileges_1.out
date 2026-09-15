@@ -16,8 +16,15 @@ CREATE FOREIGN TABLE priv_ft (
 ) SERVER priv_srv OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
 CREATE TABLE priv_stolen (s rdfnode);
 CREATE ROLE priv_role LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
-GRANT USAGE ON SCHEMA sparql TO priv_role;
 SET ROLE priv_role;
+/* the SPARQL function API is reachable without any grant of its own:
+ * the extension grants USAGE on its schema to PUBLIC */
+SELECT sparql.ucase('"hi"');
+ ucase 
+-------
+ "HI"
+(1 row)
+
 /* no privileges at all: selecting from the table is refused by PostgreSQL */
 SELECT * FROM priv_ft;
 ERROR:  permission denied for relation priv_ft
@@ -30,9 +37,9 @@ CALL rdf_fdw_clone_table(
   create_table  => false,
   verbose       => false);
 ERROR:  syntax error at or near "CALL" at character 234
-/* rdf_fdw_describe() has the same gap for its SERVER argument. It is shielded
- * only by schema "sparql" not being granted to PUBLIC, which stops being true
- * the moment a DBA grants usage on it -- as this test does above. */
+/* rdf_fdw_describe() has the same gap for its SERVER argument, and nothing
+ * shields it: schema "sparql" is reachable by PUBLIC, so the check has to
+ * be its own. */
 SELECT * FROM sparql.describe('priv_srv', 'DESCRIBE <http://example.org/x>');
 ERROR:  permission denied for foreign server priv_srv
 RESET ROLE;
@@ -62,5 +69,4 @@ RESET ROLE;
 DROP TABLE priv_stolen;
 DROP SERVER priv_srv CASCADE;
 NOTICE:  drop cascades to foreign table priv_ft
-REVOKE USAGE ON SCHEMA sparql FROM priv_role;
 DROP ROLE priv_role;

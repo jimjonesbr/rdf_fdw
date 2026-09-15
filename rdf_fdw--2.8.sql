@@ -1,4 +1,9 @@
 CREATE SCHEMA sparql;
+/* The SPARQL function API is meant for everyone who can query a foreign
+   table. Its functions already carry the default PUBLIC EXECUTE, but that
+   is unreachable without USAGE on the schema holding them. The two tables
+   in this schema keep their default ACL and stay owner-only. */
+GRANT USAGE ON SCHEMA sparql TO PUBLIC;
 
 CREATE FUNCTION rdf_fdw_handler()
 RETURNS fdw_handler AS 'MODULE_PATHNAME'
