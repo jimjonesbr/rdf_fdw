@@ -650,6 +650,26 @@ SELECT sparql.round(CAST(42 AS bigint));
 SELECT sparql.round(CAST(42 AS smallint));
 SELECT sparql.round(CAST(42 AS int));
 
+/* SPARQL ROUND breaks ties towards positive infinity, so the result of a
+ * negative argument is not the mirror image of the positive one: ROUND(-2.5)
+ * is -2 while ROUND(2.5) is 3. Zero and the negative fractions above -1 are
+ * the cases a sign test gets wrong. */
+SELECT v AS input,
+       sparql.lex(sparql.round(('"'||v||'"^^xsd:decimal')::rdfnode)) AS as_decimal,
+       sparql.lex(sparql.round(('"'||v||'"^^xsd:double')::rdfnode))  AS as_double
+FROM (VALUES ('-2.5'),('-1.5'),('-1.2'),('-0.6'),('-0.5'),
+             ('0'),('0.5'),('1.2'),('1.5'),('2.5')) t(v);
+
+/* the half is compared against the fractional part rather than added first:
+ * in binary floating point 0.49999999999999994 + 0.5 is exactly 1 */
+SELECT sparql.lex(sparql.round('"0.49999999999999994"^^xsd:double'::rdfnode));
+
+/* the datatype of the argument survives, and the special values pass through */
+SELECT sparql.round('"1.5"^^xsd:float'), sparql.round('"1.5"^^xsd:double'),
+       sparql.round('"1.5"^^xsd:decimal'), sparql.round('"3"^^xsd:integer');
+SELECT sparql.round('"NaN"^^xsd:double'), sparql.round('"INF"^^xsd:double'),
+       sparql.round('"-INF"^^xsd:double');
+
 /* CEIL */
 SELECT sparql.ceil('"10.5"^^xsd:double');
 SELECT sparql.ceil('"-10.5"^^xsd:decimal');
