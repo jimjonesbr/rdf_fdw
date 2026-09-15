@@ -4737,12 +4737,8 @@ static size_t CURLHeaderCallback(char *contents, size_t size, size_t nmemb, void
 		}
 	}
 
+	/* repalloc() never returns NULL: it raises an error on failure */
 	ptr = repalloc(mem->memory, mem->size + realsize + 1);
-
-	if (!ptr)
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
-				 errmsg("[%s] out of memory (repalloc returned NULL)", __func__)));
 
 	mem->memory = ptr;
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
@@ -5149,6 +5145,11 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	state->curl = curl_easy_init();
 
+	if (!state->curl)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
+				 errmsg("could not initialize libcurl for server \"%s\"", state->server->servername)));
+
 	initStringInfo(&accept_header);
 	appendStringInfo(&accept_header, "Accept: %s", state->format);
 
@@ -5171,14 +5172,21 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		/* SPARQL SELECT/DESCRIBE: use URL-encoded form parameters */
 		char *escaped_url = curl_easy_escape(state->curl, state->sparql, 0);
 
+		if (!escaped_url)
+		{
+			curl_easy_cleanup(state->curl);
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
+					 errmsg("could not URL encode the SPARQL query for server \"%s\"", state->server->servername)));
+		}
+
 		initStringInfo(&url_buffer);
 		appendStringInfo(&url_buffer, "%s=%s", state->query_param, escaped_url);
 
 		if (state->custom_params)
 			appendStringInfo(&url_buffer, "&%s", state->custom_params);
 
-		if (escaped_url)
-			curl_free(escaped_url);
+		curl_free(escaped_url);
 
 		elog(DEBUG2, "  %s: url built > %s?%s", __func__, state->endpoint, url_buffer.data);
 	}
@@ -5537,7 +5545,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			/* cURL/network error */
 			size_t len = strlen(errbuf);
 			const char *curl_err = curl_easy_strerror(res);
-			fprintf(stderr, "\nlibcurl: (%d) ", res);
 
 			xmlFreeDoc(state->xmldoc);
 			curl_slist_free_all(headers);
