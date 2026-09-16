@@ -18,9 +18,20 @@ PG_CONFIG = pg_config
 
 SHLIB_LINK := $(shell $(CURL_CONFIG) --libs)
 
+# Build timestamp reported by rdf_fdw_version() and the rdf_fdw_settings view.
+# Package builds set SOURCE_DATE_EPOCH, and honouring it in place of the wall
+# clock is what keeps the resulting binary reproducible.
+ifdef SOURCE_DATE_EPOCH
+  BUILD_DATE := $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" +'%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || \
+                        date -u -r "$(SOURCE_DATE_EPOCH)" +'%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || \
+                        echo "$(SOURCE_DATE_EPOCH)")
+else
+  BUILD_DATE := $(shell date -u +'%Y-%m-%d %H:%M:%S UTC')
+endif
+
 PG_CPPFLAGS = $(shell $(XML2_CONFIG) --cflags) \
 	-DRDF_FDW_CC="\"$(CC)\"" \
-	-DRDF_FDW_BUILD_DATE="\"$(shell date -u +'%Y-%m-%d %H:%M:%S UTC')\""
+	-DRDF_FDW_BUILD_DATE="\"$(BUILD_DATE)\""
 
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 
