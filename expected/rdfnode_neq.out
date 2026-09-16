@@ -115,10 +115,10 @@ SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
  "\u12GZ"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed for \u)
-                        rdfnode                        
--------------------------------------------------------
- "\u123456"^^<http://www.w3.org/2001/XMLSchema#string>
+SELECT '"\u123456"^^xsd:string'::rdfnode;  -- four digits, then the text "56"
+                     rdfnode                      
+--------------------------------------------------
+ "ሴ56"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 -- Typed literals, same datatype IRI

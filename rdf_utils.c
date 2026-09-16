@@ -597,12 +597,17 @@ char *unescape_unicode(const char *input)
 
 	for (const char *p = input; *p;)
 	{
+		if (p[0] == '\\' && p[1] == '\\')
+		{
+			appendBinaryStringInfo(&buf, p, 2);
+			p += 2;
+			continue;
+		}
 		if (p[0] == '\\' && p[1] == 'u')
 		{
 			/* \uXXXX (exactly 4 hex digits) */
 			if (p[2] && p[3] && p[4] && p[5] &&
-				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
-				(!p[6] || !isxdigit(p[6])))
+				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]))
 			{
 				uint16_t codeunit;
 				char hex[5];
@@ -618,8 +623,7 @@ char *unescape_unicode(const char *input)
 				if (codeunit >= 0xD800 && codeunit <= 0xDBFF &&
 					p[6] == '\\' && p[7] == 'u' &&
 					p[8] && p[9] && p[10] && p[11] &&
-					isxdigit(p[8]) && isxdigit(p[9]) && isxdigit(p[10]) && isxdigit(p[11]) &&
-					(!p[12] || !isxdigit(p[12])))
+					isxdigit(p[8]) && isxdigit(p[9]) && isxdigit(p[10]) && isxdigit(p[11]))
 				{
 					uint16_t low;
 					char lowhex[5];
@@ -675,8 +679,7 @@ char *unescape_unicode(const char *input)
 			/* \UXXXXXXXX (exactly 8 hex digits) */
 			if (p[2] && p[3] && p[4] && p[5] && p[6] && p[7] && p[8] && p[9] &&
 				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
-				isxdigit(p[6]) && isxdigit(p[7]) && isxdigit(p[8]) && isxdigit(p[9]) &&
-				(!p[10] || !isxdigit(p[10])))
+				isxdigit(p[6]) && isxdigit(p[7]) && isxdigit(p[8]) && isxdigit(p[9]))
 			{
 				char hex[9];
 				uint32_t codepoint;

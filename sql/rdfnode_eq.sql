@@ -25,7 +25,17 @@ SELECT '"\uD834"^^xsd:string'::rdfnode;  -- Invalid alone
 SELECT '"\uDD1E"^^xsd:string'::rdfnode;  -- Invalid alone
 SELECT '"\u12"^^xsd:string'::rdfnode;  -- Too short
 SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
-SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed for \u)
+SELECT '"\u123456"^^xsd:string'::rdfnode;  -- four digits, then the text "56"
+
+/* An escape has a fixed width: four hex digits after \u, eight after \U. A hex
+ * digit beyond that width is ordinary text and must be left alone, and an
+ * escaped backslash does not begin an escape at all -- \\u0041 is a backslash
+ * followed by the characters u0041, which is a different value from A. */
+SELECT '"\u004142"^^xsd:string'::rdfnode;      -- four digits, then "42"
+SELECT '"\U0001F41842"^^xsd:string'::rdfnode;  -- eight digits, then "42"
+SELECT '"\uD83D\uDC1842"^^xsd:string'::rdfnode; -- surrogate pair, then "42"
+SELECT '"\\u0041"^^xsd:string'::rdfnode;       -- escaped backslash, not an escape
+SELECT '"\\\u0041"^^xsd:string'::rdfnode;      -- escaped backslash, then an escape
 
 -- Typed literals, same datatype IRI
 SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^<http://example.org/custom>'::rdfnode;

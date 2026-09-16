@@ -112,10 +112,44 @@ SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
  "\u12GZ"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
-SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed for \u)
-                        rdfnode                        
--------------------------------------------------------
- "\u123456"^^<http://www.w3.org/2001/XMLSchema#string>
+SELECT '"\u123456"^^xsd:string'::rdfnode;  -- four digits, then the text "56"
+                     rdfnode                      
+--------------------------------------------------
+ "ሴ56"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+/* An escape has a fixed width: four hex digits after \u, eight after \U. A hex
+ * digit beyond that width is ordinary text and must be left alone, and an
+ * escaped backslash does not begin an escape at all -- \\u0041 is a backslash
+ * followed by the characters u0041, which is a different value from A. */
+SELECT '"\u004142"^^xsd:string'::rdfnode;      -- four digits, then "42"
+                     rdfnode                      
+--------------------------------------------------
+ "A42"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\U0001F41842"^^xsd:string'::rdfnode;  -- eight digits, then "42"
+                      rdfnode                      
+---------------------------------------------------
+ "🐘42"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\uD83D\uDC1842"^^xsd:string'::rdfnode; -- surrogate pair, then "42"
+                      rdfnode                      
+---------------------------------------------------
+ "🐘42"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\\u0041"^^xsd:string'::rdfnode;       -- escaped backslash, not an escape
+                       rdfnode                        
+------------------------------------------------------
+ "\\u0041"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\\\u0041"^^xsd:string'::rdfnode;      -- escaped backslash, then an escape
+                     rdfnode                      
+--------------------------------------------------
+ "\\A"^^<http://www.w3.org/2001/XMLSchema#string>
 (1 row)
 
 -- Typed literals, same datatype IRI

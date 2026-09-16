@@ -27,7 +27,7 @@ SELECT '"\uD834"^^xsd:string'::rdfnode;  -- Invalid alone
 SELECT '"\uDD1E"^^xsd:string'::rdfnode;  -- Invalid alone
 SELECT '"\u12"^^xsd:string'::rdfnode;  -- Too short
 SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
-SELECT '"\u123456"^^xsd:string'::rdfnode;  -- Overflow (only 4 digits allowed for \u)
+SELECT '"\u123456"^^xsd:string'::rdfnode;  -- four digits, then the text "56"
 
 -- Typed literals, same datatype IRI
 SELECT '"foo"^^<http://example.org/custom>'::rdfnode <> '"foo"^^<http://example.org/custom>'::rdfnode;
