@@ -3089,6 +3089,47 @@ SELECT sparql.abs(CAST(-1 AS int));
  "1"^^<http://www.w3.org/2001/XMLSchema#int>
 (1 row)
 
+/* The exact numeric datatypes must stay exact. Computing them in floating
+ * point rounds large integers and small decimals, and prints the result in an
+ * exponent form that the lexical space of xsd:integer and xsd:decimal does not
+ * admit, so the value comes back both wrong and ill-typed. */
+SELECT sparql.abs('"-9007199254740993"^^xsd:integer');
+                              abs                               
+----------------------------------------------------------------
+ "9007199254740993"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT sparql.abs('"-0.000000000000001"^^xsd:decimal');
+                               abs                               
+-----------------------------------------------------------------
+ "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.abs('"-1.50"^^xsd:decimal');          -- trailing zero is part of the value
+                        abs                         
+----------------------------------------------------
+ "1.50"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT sparql.abs('"-42"^^xsd:int');                -- integer subtypes keep their datatype
+                     abs                      
+----------------------------------------------
+ "42"^^<http://www.w3.org/2001/XMLSchema#int>
+(1 row)
+
+/* the floating datatypes are still computed in floating arithmetic */
+SELECT sparql.abs('"-1.1234567"^^xsd:float'), sparql.abs('"-1.5"^^xsd:double');
+                          abs                          |                       abs                        
+-------------------------------------------------------+--------------------------------------------------
+ "1.1234567"^^<http://www.w3.org/2001/XMLSchema#float> | "1.5"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+SELECT sparql.abs('"NaN"^^xsd:double'), sparql.abs('"-INF"^^xsd:double');
+                       abs                        |                       abs                        
+--------------------------------------------------+--------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#double> | "INF"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
 /* ROUND */
 SELECT sparql.round('"2.4999"^^xsd:double');
                      round                      

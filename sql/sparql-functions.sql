@@ -634,6 +634,19 @@ SELECT sparql.abs(CAST(-1 AS bigint));
 SELECT sparql.abs(CAST(-1 AS smallint));
 SELECT sparql.abs(CAST(-1 AS int));
 
+/* The exact numeric datatypes must stay exact. Computing them in floating
+ * point rounds large integers and small decimals, and prints the result in an
+ * exponent form that the lexical space of xsd:integer and xsd:decimal does not
+ * admit, so the value comes back both wrong and ill-typed. */
+SELECT sparql.abs('"-9007199254740993"^^xsd:integer');
+SELECT sparql.abs('"-0.000000000000001"^^xsd:decimal');
+SELECT sparql.abs('"-1.50"^^xsd:decimal');          -- trailing zero is part of the value
+SELECT sparql.abs('"-42"^^xsd:int');                -- integer subtypes keep their datatype
+
+/* the floating datatypes are still computed in floating arithmetic */
+SELECT sparql.abs('"-1.1234567"^^xsd:float'), sparql.abs('"-1.5"^^xsd:double');
+SELECT sparql.abs('"NaN"^^xsd:double'), sparql.abs('"-INF"^^xsd:double');
+
 /* ROUND */
 SELECT sparql.round('"2.4999"^^xsd:double');
 SELECT sparql.round('"2.5"^^xsd:double');

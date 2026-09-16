@@ -2867,7 +2867,16 @@ BEGIN
 
   dt := sparql.datatype($1);
 
-  RETURN sparql.strdt(pg_catalog.abs(sparql.lex($1)::double precision)::@extschema@.rdfnode, dt);
+  /* Only the floating datatypes are computed in floating arithmetic. Every
+     other numeric datatype is exact, and routing it through double precision
+     both rounds the value and prints it in an exponent form that the lexical
+     space of xsd:integer and xsd:decimal does not admit. */
+  IF dt::text = '<http://www.w3.org/2001/XMLSchema#float>'
+     OR dt::text = '<http://www.w3.org/2001/XMLSchema#double>' THEN
+    RETURN sparql.strdt(pg_catalog.abs(sparql.lex($1)::double precision)::@extschema@.rdfnode, dt);
+  END IF;
+
+  RETURN sparql.strdt(pg_catalog.abs(sparql.lex($1)::numeric)::@extschema@.rdfnode, dt);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
