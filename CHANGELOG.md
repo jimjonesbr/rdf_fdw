@@ -24,6 +24,10 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **`REPLACE()` discarded the literal's language tag and datatype**: Replacing part of `"hello"@en` returned `"heLLo"` rather than `"heLLo"@en`, and a datatyped literal lost its datatype the same way, so a value that went through `REPLACE` came back as a different kind of RDF term than it started as. All three overloads now carry the first argument's language tag or datatype over to the result. An `xsd:string` input still yields a simple literal, since RDF 1.1 makes those the same thing.
+
+  The result is also built as a literal from lexical content rather than cast from text. A cast reads its input back as a serialised term, so a replacement that happened to look like `<...>` or to contain `"@` was taken for an IRI or an annotated literal instead of the string it was, and content ending in a backslash produced a literal whose closing quote was escaped away.
+
 * **An empty `GROUP_CONCAT()` did not return an RDF literal**: With nothing to concatenate the result was raw empty text rather than `""`, the serialisation of an empty string literal. The two print almost alike — a blank cell against an empty pair of quotes — but only one of them is an RDF term, so `sparql.isliteral()` on the result was false and any function expecting a literal was working on something that was not one. Both the wrapper and the aggregate's own final function now return the serialised form.
 
 * **Unicode escapes were decoded at the wrong width**: `\u` takes exactly four hex digits and `\U` exactly eight, but a hex digit *following* an escape was treated as though it belonged to it, and the whole sequence was then left undecoded — `"\u004142"` stayed as written instead of becoming `"A42"`, and a surrogate pair followed by a hex digit lost its first half to a replacement character. An escaped backslash was also read as the start of an escape: `"\\u0041"` is a backslash followed by the characters `u0041`, but it decoded to `\A`, which is a different value. Each escape now consumes exactly its own width, and an escaped backslash is passed through.

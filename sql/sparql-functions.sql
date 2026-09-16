@@ -605,6 +605,22 @@ SELECT sparql.replace('abcd', '(ab)', 'Z', 'g');      -- Group in regex pattern
 SELECT sparql.replace('abc.def', '[.]', 'X', 'g');   -- character class containing a literal dot, matches only the .
 SELECT sparql.replace('abc.def', '.', 'X', 'g');     -- regex wildcard, matches any character, so all 7 characters are replaced
 
+/* The result is built from lexical content, so it must be quoted as a literal
+ * rather than read back as a serialised term: a replacement that happens to
+ * look like an IRI or to carry a language tag is still just text. Content
+ * ending in a backslash needs the backslash protected, or it would escape the
+ * closing quote and the literal would not end where it appears to. */
+SELECT sparql.replace('"x"', 'x', '<http://example.org/a>') AS looks_like_iri;
+SELECT sparql.replace('"x"', 'x', 'y"@en')                  AS looks_like_lang_tag;
+SELECT sparql.replace('"x"', 'x', 'y"^^xsd:date')           AS looks_like_datatype;
+SELECT sparql.replace('"a"', 'a', 'b\\')                      AS trailing_backslash;
+
+/* the language tag and datatype of the first argument survive in every
+ * overload, including the four-argument one */
+SELECT sparql.replace('"HELLO"@en', 'hel', 'X', 'i')             AS four_arg_lang;
+SELECT sparql.replace('"ABCD"^^xsd:date', 'ab', 'Z', 'i')        AS four_arg_datatype;
+SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z')            AS xsd_string_becomes_simple;
+
 /* cstring_to_rdfliteral() ownership.
  *
  * concat(), lcase(), ucase(), substr() and strafter() all pfree() the buffer

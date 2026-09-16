@@ -247,6 +247,7 @@ extern Datum rdf_fdw_strlen(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_substr(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_concat(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lex(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_quote_literal(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_md5(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_bound(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS);
@@ -488,6 +489,7 @@ PG_FUNCTION_INFO_V1(rdf_fdw_strlen);
 PG_FUNCTION_INFO_V1(rdf_fdw_substr);
 PG_FUNCTION_INFO_V1(rdf_fdw_concat);
 PG_FUNCTION_INFO_V1(rdf_fdw_lex);
+PG_FUNCTION_INFO_V1(rdf_fdw_quote_literal);
 PG_FUNCTION_INFO_V1(rdf_fdw_md5);
 PG_FUNCTION_INFO_V1(rdf_fdw_bound);
 PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
@@ -1387,6 +1389,18 @@ Datum rdf_fdw_lex(PG_FUNCTION_ARGS)
 {
 	char *literal = text_to_cstring(PG_GETARG_TEXT_PP(0));
 	char *result = lex(literal);
+
+	PG_RETURN_TEXT_P(cstring_to_text(result));
+}
+
+/*
+ * Wrap lexical content in quotes to form a simple literal. Used by the SPARQL
+ * string functions, whose result is content rather than a serialised term.
+ */
+Datum rdf_fdw_quote_literal(PG_FUNCTION_ARGS)
+{
+	char *input = text_to_cstring(PG_GETARG_TEXT_PP(0));
+	char *result = QuoteRDFLiteral(unescape_unicode(input));
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }

@@ -327,6 +327,46 @@ AppendQuoteEscapedContent(StringInfoData *buf, const char *from, const char *to)
 }
 
 /*
+ * QuoteRDFLiteral
+ * ---------------
+ *
+ * Wraps lexical content in quotes to form a simple literal, escaping any
+ * unescaped '"' and leaving every other byte as it stands -- content arriving
+ * from lex() already carries RDF escape sequences such as \n or \uXXXX, and
+ * re-escaping them would change the value.
+ *
+ * Content ending in an odd number of backslashes needs one more, or the last
+ * of them would escape the closing quote and the literal would not terminate
+ * where it appears to.
+ *
+ * input: lexical content, not an annotated term
+ *
+ * returns: a palloc'd simple literal
+ */
+char *QuoteRDFLiteral(const char *input)
+{
+	StringInfoData buf;
+	const char *end = input + strlen(input);
+	const char *p = end;
+
+	Assert(input != NULL);
+
+	initStringInfo(&buf);
+	appendStringInfoChar(&buf, '"');
+	AppendQuoteEscapedContent(&buf, input, end);
+
+	while (p > input && *(p - 1) == '\\')
+		p--;
+
+	if ((end - p) % 2 != 0)
+		appendStringInfoChar(&buf, '\\');
+
+	appendStringInfoChar(&buf, '"');
+
+	return buf.data;
+}
+
+/*
  * cstring_to_rdfliteral
  * ---------------------
  *
@@ -349,9 +389,9 @@ AppendQuoteEscapedContent(StringInfoData *buf, const char *from, const char *to)
  */
 char *cstring_to_rdfliteral(char *input)
 {
-	StringInfoData buf;
 	const char *start;
 	const char *end;
+	char *result;
 	int len;
 
 	elog(DEBUG3, "%s called: input='%s'", __func__, input);
@@ -393,21 +433,15 @@ char *cstring_to_rdfliteral(char *input)
 		}
 	}
 
-	initStringInfo(&buf);
-
 	/*
 	 * Not recognized as a complete literal: treat the *entire* input
 	 * (including any leading/trailing quote bytes it happens to contain)
-	 * as raw content and escape it from scratch.
+	 * as raw content and quote it from scratch.
 	 */
-	end = start + len;
+	result = QuoteRDFLiteral(start);
 
-	appendStringInfoChar(&buf, '"');
-	AppendQuoteEscapedContent(&buf, start, end);
-	appendStringInfoChar(&buf, '"');
-
-	elog(DEBUG3, "%s exit: returning => '%s'", __func__, buf.data);
-	return buf.data;
+	elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
+	return result;
 }
 
 /*

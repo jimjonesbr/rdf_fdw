@@ -2670,9 +2670,9 @@ SELECT sparql.replace('"abab"', '"B."', '"Z"','"i"'), sparql.replace('abab', 'B.
 (1 row)
 
 SELECT sparql.replace('"abcd"@en', '"b"', '"Z"'), sparql.replace(sparql.strlang('abcd','en'), 'b', 'Z');
- replace | replace 
----------+---------
- "aZcd"  | "aZcd"
+  replace  |  replace  
+-----------+-----------
+ "aZcd"@en | "aZcd"@en
 (1 row)
 
 SELECT sparql.replace('"abab"^^xsd:string', '"B"', '"Z"','"i"'), sparql.replace(sparql.strdt('abab','xsd:string'), 'B', 'Z','i');
@@ -2880,9 +2880,9 @@ SELECT sparql.replace('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, n
 (1 row)
 
 SELECT sparql.replace('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
- replace 
----------
- "Zbcd"
+  replace  
+-----------
+ "Zbcd"@en
 (1 row)
 
 SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
@@ -2892,9 +2892,9 @@ SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:
 (1 row)
 
 SELECT sparql.replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)
- replace 
----------
- "Zbcd"
+                     replace                     
+-------------------------------------------------
+ "Zbcd"^^<http://www.w3.org/2001/XMLSchema#date>
 (1 row)
 
 SELECT sparql.replace('ababab', 'ab', 'XY', 'g');   -- Global replacement
@@ -2991,6 +2991,55 @@ SELECT sparql.replace('abc.def', '.', 'X', 'g');     -- regex wildcard, matches 
   replace  
 -----------
  "XXXXXXX"
+(1 row)
+
+/* The result is built from lexical content, so it must be quoted as a literal
+ * rather than read back as a serialised term: a replacement that happens to
+ * look like an IRI or to carry a language tag is still just text. Content
+ * ending in a backslash needs the backslash protected, or it would escape the
+ * closing quote and the literal would not end where it appears to. */
+SELECT sparql.replace('"x"', 'x', '<http://example.org/a>') AS looks_like_iri;
+      looks_like_iri      
+--------------------------
+ "<http://example.org/a>"
+(1 row)
+
+SELECT sparql.replace('"x"', 'x', 'y"@en')                  AS looks_like_lang_tag;
+ looks_like_lang_tag 
+---------------------
+ "y\"@en"
+(1 row)
+
+SELECT sparql.replace('"x"', 'x', 'y"^^xsd:date')           AS looks_like_datatype;
+ looks_like_datatype 
+---------------------
+ "y\"^^xsd:date"
+(1 row)
+
+SELECT sparql.replace('"a"', 'a', 'b\\')                      AS trailing_backslash;
+ trailing_backslash 
+--------------------
+ "b\\"
+(1 row)
+
+/* the language tag and datatype of the first argument survive in every
+ * overload, including the four-argument one */
+SELECT sparql.replace('"HELLO"@en', 'hel', 'X', 'i')             AS four_arg_lang;
+ four_arg_lang 
+---------------
+ "XLO"@en
+(1 row)
+
+SELECT sparql.replace('"ABCD"^^xsd:date', 'ab', 'Z', 'i')        AS four_arg_datatype;
+               four_arg_datatype                
+------------------------------------------------
+ "ZCD"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
+
+SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z')            AS xsd_string_becomes_simple;
+ xsd_string_becomes_simple 
+---------------------------
+ "Zbcd"
 (1 row)
 
 /* cstring_to_rdfliteral() ownership.

@@ -6,10 +6,18 @@ ALTER FUNCTION sparql.bnode() VOLATILE;
 ALTER FUNCTION sparql.uuid() VOLATILE;
 ALTER FUNCTION sparql.struuid() VOLATILE;
 
+/* New in 2.8: the SPARQL string functions build their result from lexical
+   content, which must not be read back as a serialised term. */
+CREATE FUNCTION sparql._quote_literal(text) RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdf_fdw_quote_literal'
+LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql._quote_literal(text) IS 'Internal: wraps lexical content in quotes to form a simple literal.';
+
 /* These bodies resolve the rdfnode type at call time, so they are replaced to
    name the schema the extension was installed into rather than relying on the
-   caller's search_path. The round() and abs() bodies additionally correct the
-   rounding rule and the loss of exact values; see the 2.8 notes. */
+   caller's search_path. The round(), abs() and replace() bodies additionally
+   correct the rounding rule, the loss of exact values and the loss of literal
+   metadata; see the 2.8 notes. */
 
 CREATE OR REPLACE FUNCTION sparql.bound(text) RETURNS boolean AS $$
 BEGIN
@@ -28,39 +36,93 @@ BEGIN
   RETURN sparql.strdt($1::@extschema@.rdfnode, $2::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+/* REPLACE operates on the lexical form and returns a literal carrying the same
+   language tag or datatype as its first argument: replacing part of a
+   language-tagged literal yields a literal in that language, not a bare string.
+   The result is built with _quote_literal() rather than cast from text, since a
+   cast reads its input as a serialised term -- content that happens to look
+   like <...> or to contain "@ would be taken for an IRI or an annotated
+   literal instead of the string it is. */
 CREATE OR REPLACE FUNCTION sparql.replace(text, text, text)
 RETURNS rdfnode AS $$
+DECLARE
+  input_lit @extschema@.rdfnode;
+  result_text text;
+  result_lit @extschema@.rdfnode;
+  lang_text text;
+  dt @extschema@.rdfnode;
 BEGIN
-  RETURN pg_catalog.regexp_replace(
-    CASE WHEN left($1, 1) = '"' THEN sparql.lex($1::@extschema@.rdfnode) ELSE $1 END,
-    CASE WHEN left($2, 1) = '"' THEN sparql.lex($2::@extschema@.rdfnode) ELSE $2 END,
-    CASE WHEN left($3, 1) = '"' THEN sparql.lex($3::@extschema@.rdfnode) ELSE $3 END,
-    'g'
-  )::@extschema@.rdfnode;
+  /* a bare string carries no metadata to preserve */
+  IF pg_catalog.left($1, 1) <> '"' THEN
+    RETURN sparql._quote_literal(pg_catalog.regexp_replace(
+      $1,
+      CASE WHEN pg_catalog.left($2, 1) = '"' THEN sparql.lex($2::@extschema@.rdfnode) ELSE $2 END,
+      CASE WHEN pg_catalog.left($3, 1) = '"' THEN sparql.lex($3::@extschema@.rdfnode) ELSE $3 END,
+      'g'
+    ));
+  END IF;
+
+  input_lit := $1::@extschema@.rdfnode;
+  RETURN sparql.replace(
+    input_lit,
+    CASE WHEN pg_catalog.left($2, 1) = '"' THEN $2::@extschema@.rdfnode ELSE sparql._quote_literal($2) END,
+    CASE WHEN pg_catalog.left($3, 1) = '"' THEN $3::@extschema@.rdfnode ELSE sparql._quote_literal($3) END);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode)
 RETURNS rdfnode AS $$
+DECLARE
+  result_lit @extschema@.rdfnode;
+  lang_text text;
+  dt @extschema@.rdfnode;
 BEGIN
-  RETURN pg_catalog.regexp_replace(
+  result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),
     sparql.lex($3),
     'g'
-  )::@extschema@.rdfnode;
+  ));
+
+  lang_text := sparql.lex(sparql.lang($1));
+  IF lang_text <> '' THEN
+    RETURN sparql.strlang(result_lit, lang_text::@extschema@.rdfnode);
+  END IF;
+
+  dt := sparql.datatype($1);
+  IF dt IS NOT NULL AND sparql.lex(dt) <> '' AND
+     dt::text <> '<http://www.w3.org/2001/XMLSchema#string>' THEN
+    RETURN sparql.strdt(result_lit, dt);
+  END IF;
+
+  RETURN result_lit;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION sparql.replace(rdfnode, rdfnode, rdfnode, rdfnode)
 RETURNS rdfnode AS $$
+DECLARE
+  result_lit @extschema@.rdfnode;
+  lang_text text;
+  dt @extschema@.rdfnode;
 BEGIN
-  RETURN sparql.str(
-    pg_catalog.regexp_replace(
-      sparql.lex($1),
-      sparql.lex($2),
-      sparql.lex($3),
-      sparql.lex($4) || 'g'
-    )::@extschema@.rdfnode
-  );
+  result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
+    sparql.lex($1),
+    sparql.lex($2),
+    sparql.lex($3),
+    sparql.lex($4) || 'g'
+  ));
+
+  lang_text := sparql.lex(sparql.lang($1));
+  IF lang_text <> '' THEN
+    RETURN sparql.strlang(result_lit, lang_text::@extschema@.rdfnode);
+  END IF;
+
+  dt := sparql.datatype($1);
+  IF dt IS NOT NULL AND sparql.lex(dt) <> '' AND
+     dt::text <> '<http://www.w3.org/2001/XMLSchema#string>' THEN
+    RETURN sparql.strdt(result_lit, dt);
+  END IF;
+
+  RETURN result_lit;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 /* SPARQL 17.4.4 Functions on Numerics */
