@@ -91,6 +91,21 @@ To run the predefined regression tests:
 $ make PGUSER=postgres installcheck
 ```
 
+This runs the tests that need nothing besides a PostgreSQL server. The remaining
+groups query triplestores, so they have to be requested explicitly:
+
+| Variable | Adds |
+|----------|------|
+| `INCLUDE_LOCAL_TESTS=1` | tests against the triplestores deployed by `scripts/postgres-env` (Virtuoso, QLever, Fuseki, GraphDB, and a proxy) |
+| `INCLUDE_EXTERNAL_TESTS=1` | tests against public SPARQL endpoints, such as Wikidata and Getty |
+| `INCLUDE_STRESS_TESTS=1` | long running stress tests - these need the local deployment as well |
+| `INCLUDE_DEBUG_TESTS=1` | tests that check debug output - these need the local deployment as well |
+| `INCLUDE_ALL_TESTS=1` | all of the above |
+
+```bash
+$ make PGUSER=postgres INCLUDE_LOCAL_TESTS=1 installcheck
+```
+
 > [!WARNING]  
 > `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory. When connecting to untrusted or public endpoints, consider setting `max_response_size` on the `SERVER` to cap the response body and prevent runaway allocations.
 

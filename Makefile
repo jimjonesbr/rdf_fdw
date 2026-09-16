@@ -49,7 +49,28 @@ REGRESS +=  create-extension \
 			pg_datatypes \
 			sparql-functions
 
-ifndef SKIP_UPDATE_TESTS
+#
+# The tests above need nothing but a PostgreSQL server, and are the ones that
+# run by default. Every group below needs a triplestore, so they are opt-in:
+#
+#   make installcheck INCLUDE_LOCAL_TESTS=1     the triplestores deployed by
+#                                               scripts/postgres-env (Virtuoso,
+#                                               QLever, Fuseki, GraphDB, proxy)
+#   make installcheck INCLUDE_EXTERNAL_TESTS=1  public SPARQL endpoints
+#   make installcheck INCLUDE_STRESS_TESTS=1    long running stress tests,
+#                                               local deployment as well
+#   make installcheck INCLUDE_DEBUG_TESTS=1     debug output, local deployment
+#                                               as well
+#   make installcheck INCLUDE_ALL_TESTS=1       all of the above
+#
+ifdef INCLUDE_ALL_TESTS
+  INCLUDE_LOCAL_TESTS = 1
+  INCLUDE_DEBUG_TESTS = 1
+  INCLUDE_STRESS_TESTS = 1
+  INCLUDE_EXTERNAL_TESTS = 1
+endif
+
+ifdef INCLUDE_LOCAL_TESTS
   REGRESS += virtuoso-delete \
 			 virtuoso-update \
   			 virtuoso-insert \
@@ -78,18 +99,18 @@ ifndef SKIP_UPDATE_TESTS
 			 proxy-auth
 endif
 
-ifndef SKIP_DEBUG_TESTS
+ifdef INCLUDE_DEBUG_TESTS
   REGRESS += debug
 endif
 
-ifndef SKIP_STRESS_TESTS
+ifdef INCLUDE_STRESS_TESTS
   REGRESS += fuseki-stress \
   		     graphdb-stress	\
 			 virtuoso-stress \
 			 qlever-stress
 endif
 
-ifndef SKIP_EXTERNAL_TESTS
+ifdef INCLUDE_EXTERNAL_TESTS
   REGRESS += table-clone \
 			 virtuoso-pgtypes-linkedgeodata \
 			 virtuoso-rdfnode-linkedgeodata \

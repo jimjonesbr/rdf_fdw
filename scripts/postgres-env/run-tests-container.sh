@@ -20,13 +20,15 @@ docker restart $CONTAINER_NAME
 docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
   -c "DROP EXTENSION IF EXISTS rdf_fdw CASCADE; CREATE EXTENSION rdf_fdw"
 
-# SKIP_STRESS_TESTS=1   - skip long running stress tests
-# SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
-# SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
-# SKIP_DEBUG_TESTS=1    - skip tests that need debug output (debug.out)
+# Tests that need a triplestore are opt-in:
+# INCLUDE_LOCAL_TESTS=1    - tests against locally deployed triplestores
+# INCLUDE_EXTERNAL_TESTS=1 - tests that need external network access
+# INCLUDE_STRESS_TESTS=1   - long running stress tests
+# INCLUDE_DEBUG_TESTS=1    - tests that need debug output (debug.out)
+# INCLUDE_ALL_TESTS=1      - all of the above
 
 docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
-    SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 \
+    INCLUDE_LOCAL_TESTS=1 \
     installcheck 
 
 echo -e "\n== Tests completed ==\n"

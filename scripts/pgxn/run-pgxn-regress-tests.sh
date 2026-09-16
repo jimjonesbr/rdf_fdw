@@ -28,18 +28,20 @@ do
     bash $TEST_ENV_PATH/qlever/deploy-qlever.sh
     bash $TEST_ENV_PATH/squid/deploy-proxy-env.sh
 
-    # SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
-    # SKIP_STRESS_TESTS=1   - skip long running stress tests
-    # SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
-    # SKIP_DEBUG_TESTS=1    - skip tests that need debug output (debug.out)
+    # Tests that need a triplestore are opt-in:
+    # INCLUDE_LOCAL_TESTS=1    - tests against locally deployed triplestores
+    # INCLUDE_EXTERNAL_TESTS=1 - tests that need external network access
+    # INCLUDE_STRESS_TESTS=1   - long running stress tests
+    # INCLUDE_DEBUG_TESTS=1    - tests that need debug output (debug.out)
+    # INCLUDE_ALL_TESTS=1      - all of the above
     #
-    # ex. "export SKIP_STRESS_TESTS=1 SKIP_EXTERNAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean"
+    # ex. "export INCLUDE_LOCAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean"
 
     podman run \
         --network $NETWORK_NAME \
         --no-hosts \
         -itw /ext --rm \
-        --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 SKIP_EXTERNAL_TESTS=1 SKIP_DEBUG_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
+        --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export INCLUDE_LOCAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
 
     
     echo -e "\n\n== Tests finished for PostgreSQL $pgv ==\n\n"    

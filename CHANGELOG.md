@@ -14,6 +14,10 @@ Release date: **unreleased**
 
   `request_redirect` is deprecated but still accepted, so existing servers and dumps continue to work: setting it raises a warning, and `request_redirect 'true'` without an explicit `request_max_redirect` follows up to 30 redirects, which is what libcurl would have done before. It will be removed in a future major release.
 
+## Minor Changes
+
+* **Regression tests that need a triplestore are now opt-in**: `make installcheck` used to run the full suite by default, including the tests that query locally deployed triplestores and public SPARQL endpoints, and four `SKIP_*` variables had to be set to get a run that needs nothing but PostgreSQL. That default made the extension awkward to test for anyone building it in a sandbox, such as a distribution packager. The polarity is now inverted: `make installcheck` runs only the tests that need no external service, and the groups that do are enabled with `INCLUDE_LOCAL_TESTS=1` (the triplestores deployed by `scripts/postgres-env`), `INCLUDE_EXTERNAL_TESTS=1` (public SPARQL endpoints), `INCLUDE_STRESS_TESTS=1`, `INCLUDE_DEBUG_TESTS=1`, or `INCLUDE_ALL_TESTS=1` for all of them.
+
 ## Bug Fixes
 
 * **Handle libcurl initialization failures, and stop writing to `stderr`**: A failure of `curl_easy_init()` or `curl_easy_escape()` went unnoticed: the request was quietly skipped and reported as an empty result set rather than as an error. Both are now checked and raise a proper error. On network failures the extension also wrote a partial `libcurl: (<code>)` line straight to the backend's `stderr`, bypassing the server log's formatting; that leftover has been removed, and the error code it printed was already part of the error message raised right after it.

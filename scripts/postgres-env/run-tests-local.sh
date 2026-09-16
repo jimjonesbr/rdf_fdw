@@ -24,10 +24,12 @@ make clean && \
 $PSQL_PATH postgres -c "DROP EXTENSION IF EXISTS rdf_fdw CASCADE; CREATE EXTENSION rdf_fdw"
 $PSQL_PATH postgres -c "SELECT * FROM rdf_fdw_settings;"
 $PSQL_PATH postgres -c "CREATE USER postgres SUPERUSER;"
-# SKIP_STRESS_TESTS=1   - skip long running stress tests
-# SKIP_UPDATE_TESTS=1   - skip tests that update data (INSERT/DELETE/UPDATE)
-# SKIP_EXTERNAL_TESTS=1 - skip tests that need external network access
-# SKIP_DEBUG_TESTS=1    - skip tests that need debug output (debug.out)
-make PG_CONFIG=$PG_CONFIG_PATH PGUSER=postgres SKIP_EXTERNAL_TESTS=1 SKIP_STRESS_TESTS=1 SKIP_DEBUG_TESTS=1 installcheck 
+# Tests that need a triplestore are opt-in:
+# INCLUDE_LOCAL_TESTS=1    - tests against locally deployed triplestores
+# INCLUDE_EXTERNAL_TESTS=1 - tests that need external network access
+# INCLUDE_STRESS_TESTS=1   - long running stress tests
+# INCLUDE_DEBUG_TESTS=1    - tests that need debug output (debug.out)
+# INCLUDE_ALL_TESTS=1      - all of the above
+make PG_CONFIG=$PG_CONFIG_PATH PGUSER=postgres INCLUDE_LOCAL_TESTS=1 installcheck 
 
 echo -e "\n== local deployment complete ==\n"
