@@ -24,11 +24,13 @@
 #include "fmgr.h"
 #include "access/htup_details.h"
 #include "access/reloptions.h"
+#include "access/genam.h"
 #include "access/sysattr.h"
 #include "access/xact.h"
 #include "catalog/indexing.h"
 #include "catalog/pg_attribute.h"
 #include "catalog/pg_cast.h"
+#include "catalog/pg_extension.h"
 #include "catalog/pg_collation.h"
 #include "catalog/pg_foreign_data_wrapper.h"
 #include "catalog/pg_foreign_server.h"
@@ -8191,13 +8193,62 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
  */
 static Oid GetRDFNodeOID(void)
 {
-	TypeName *typename = makeTypeNameFromNameList(list_make2(makeString("public"), makeString("rdfnode")));
-	Oid typoid = typenameTypeId(NULL, typename);
+	Oid nspoid = InvalidOid;
+	Relation rel;
+	SysScanDesc scandesc;
+	HeapTuple tuple;
+	ScanKeyData entry[1];
+	TypeName *typename;
 
-	if (!OidIsValid(typoid))
-		elog(ERROR, "could not find type \"rdfnode\"");
+	/*
+	 * The extension script creates rdfnode without naming a schema, so the type
+	 * lands in whichever schema the extension was installed into. CREATE
+	 * EXTENSION accepts a SCHEMA clause, so that need not be "public", and it
+	 * need not be on the caller's search_path either: neither a hardcoded name
+	 * nor an unqualified lookup finds the type reliably. Read the schema the
+	 * extension is recorded under instead.
+	 *
+	 * pg_extension is scanned by name rather than by OID: an extension's OID is
+	 * a system column before v12 and an ordinary one from v12 on, whereas the
+	 * name column and its index have not changed. get_extension_schema() does
+	 * exactly this, but only became available to extensions in v16.
+	 */
+#if PG_VERSION_NUM < 130000
+	rel = heap_open(ExtensionRelationId, AccessShareLock);
+#else
+	rel = table_open(ExtensionRelationId, AccessShareLock);
+#endif
 
-	return typoid;
+	ScanKeyInit(&entry[0],
+				Anum_pg_extension_extname,
+				BTEqualStrategyNumber, F_NAMEEQ,
+				CStringGetDatum(RDF_FDW_EXTENSION_NAME));
+
+	scandesc = systable_beginscan(rel, ExtensionNameIndexId, true, NULL, 1, entry);
+	tuple = systable_getnext(scandesc);
+
+	/* an extension name is unique, so at most one tuple can match */
+	if (HeapTupleIsValid(tuple))
+		nspoid = ((Form_pg_extension)GETSTRUCT(tuple))->extnamespace;
+
+	systable_endscan(scandesc);
+
+#if PG_VERSION_NUM < 130000
+	heap_close(rel, AccessShareLock);
+#else
+	table_close(rel, AccessShareLock);
+#endif
+
+	if (!OidIsValid(nspoid))
+		ereport(ERROR,
+				(errcode(ERRCODE_UNDEFINED_OBJECT),
+				 errmsg("extension \"%s\" is not installed in this database",
+						RDF_FDW_EXTENSION_NAME)));
+
+	typename = makeTypeNameFromNameList(
+		list_make2(makeString(get_namespace_name(nspoid)), makeString("rdfnode")));
+
+	return typenameTypeId(NULL, typename);
 }
 
 Datum rdfnode_in(PG_FUNCTION_ARGS)

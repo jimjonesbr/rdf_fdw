@@ -33,6 +33,7 @@
  * from misconfigured proxies) from flooding PostgreSQL logs.
  */
 #define RDF_FDW_MAX_ERROR_BODY 512
+#define RDF_FDW_EXTENSION_NAME "rdf_fdw"
 
 /* Table options */
 #define RDF_TABLE_OPTION_SPARQL "sparql"
