@@ -159,6 +159,16 @@ SELECT '-INF'::real::rdfnode::real;
 SELECT 'NaN'::real::rdfnode;
 SELECT 'NaN'::real::rdfnode::real;
 
+/* A float4 needs up to nine significant digits to survive a round trip, and
+ * the serialisation has to be able to produce them. Only the round trip is
+ * asserted here, not the text: the lexical form differs between servers that
+ * print the shortest exact representation and older ones that print a fixed
+ * number of digits, while the round trip holds on both. */
+SET extra_float_digits = 3;
+SELECT v AS input, v::real::rdfnode::real = v::real AS round_trips
+FROM (VALUES ('1.1234567'),('3.4028235e38'),('1.2345679e-5'),('16777217'),('0.1')) t(v);
+RESET extra_float_digits;
+
 SELECT 42::bigint::rdfnode;
 SELECT 42::bigint::rdfnode::bigint;
 SELECT (-42)::bigint::rdfnode;

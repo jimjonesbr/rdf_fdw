@@ -9012,7 +9012,10 @@ Datum float4_to_rdfnode(PG_FUNCTION_ARGS)
 	else if (isinf(val))
 		appendStringInfo(&buf, val < 0 ? "\"-INF\"^^%s" : "\"INF\"^^%s", RDF_XSD_FLOAT);
 	else
-		appendStringInfo(&buf, "\"%g\"^^%s", val, RDF_XSD_FLOAT);
+	{
+		char *valstr = DatumGetCString(DirectFunctionCall1(float4out, Float4GetDatum(val)));
+		appendStringInfo(&buf, "\"%s\"^^%s", valstr, RDF_XSD_FLOAT);
+	}
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
