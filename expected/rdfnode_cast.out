@@ -156,6 +156,47 @@ SELECT '18:30:25+02:00'::time with time zone::rdfnode;
  "18:30:25+02:00"^^<http://www.w3.org/2001/XMLSchema#time>
 (1 row)
 
+/* A time carries a fractional part, and 24:00:00 is a valid end-of-day value
+ * distinct from midnight. Converting through the timestamp representation
+ * discards the fraction and wraps the end of day round to 00:00:00, which is
+ * a different time: the last assertion is the one that matters, since the two
+ * values must not serialise to the same RDF literal. */
+SELECT '12:34:56.789'::time::rdfnode;
+                         rdfnode                         
+---------------------------------------------------------
+ "12:34:56.789"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '24:00:00'::time::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "24:00:00"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '00:00:00'::time::rdfnode;
+                       rdfnode                       
+-----------------------------------------------------
+ "00:00:00"^^<http://www.w3.org/2001/XMLSchema#time>
+(1 row)
+
+SELECT '12:34:56.789'::time::rdfnode::time = '12:34:56.789'::time AS round_trips;
+ round_trips 
+-------------
+ t
+(1 row)
+
+SELECT '24:00:00'::time::rdfnode::time = '24:00:00'::time AS end_of_day_round_trips;
+ end_of_day_round_trips 
+------------------------
+ t
+(1 row)
+
+SELECT '24:00:00'::time::rdfnode <> '00:00:00'::time::rdfnode AS distinguishable;
+ distinguishable 
+-----------------
+ t
+(1 row)
+
 SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;
                               rdfnode                               
 --------------------------------------------------------------------

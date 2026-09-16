@@ -10526,20 +10526,12 @@ Datum rdfnode_neq_time(PG_FUNCTION_ARGS)
 Datum time_to_rdfnode(PG_FUNCTION_ARGS)
 {
 	TimeADT t = PG_GETARG_TIMEADT(0);
-	struct pg_tm tt;
-	fsec_t fsec;
+	char *valstr;
 	StringInfoData buf;
 
-	if (timestamp2tm(t, NULL, &tt, &fsec, NULL, NULL) != 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
-				 errmsg("time out of range")));
-
+	valstr = DatumGetCString(DirectFunctionCall1(time_out, TimeADTGetDatum(t)));
 	initStringInfo(&buf);
-	appendStringInfo(&buf,
-					 "\"%02d:%02d:%02d\"^^%s",
-					 tt.tm_hour, tt.tm_min, tt.tm_sec,
-					 RDF_XSD_TIME);
+	appendStringInfo(&buf, "\"%s\"^^%s", valstr, RDF_XSD_TIME);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }

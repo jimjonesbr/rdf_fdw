@@ -27,6 +27,18 @@ SELECT '"rdf_fdw"@en'::rdfnode;
 SELECT '2025-01-01'::date::rdfnode;
 SELECT '18:30:25'::time without time zone::rdfnode;
 SELECT '18:30:25+02:00'::time with time zone::rdfnode;
+
+/* A time carries a fractional part, and 24:00:00 is a valid end-of-day value
+ * distinct from midnight. Converting through the timestamp representation
+ * discards the fraction and wraps the end of day round to 00:00:00, which is
+ * a different time: the last assertion is the one that matters, since the two
+ * values must not serialise to the same RDF literal. */
+SELECT '12:34:56.789'::time::rdfnode;
+SELECT '24:00:00'::time::rdfnode;
+SELECT '00:00:00'::time::rdfnode;
+SELECT '12:34:56.789'::time::rdfnode::time = '12:34:56.789'::time AS round_trips;
+SELECT '24:00:00'::time::rdfnode::time = '24:00:00'::time AS end_of_day_round_trips;
+SELECT '24:00:00'::time::rdfnode <> '00:00:00'::time::rdfnode AS distinguishable;
 SELECT '2025-01-01 18:30:25'::timestamp without time zone::rdfnode;
 SELECT '2025-01-01 18:30:25 UTC'::timestamp with time zone::rdfnode;
 SELECT '1 year 2 months 3 weeks 4 days 5 hours 6 minutes 7 seconds'::interval::rdfnode;
