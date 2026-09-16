@@ -11664,7 +11664,7 @@ Datum rdf_fdw_group_concat_finalfunc(PG_FUNCTION_ARGS)
 	 * string per SPARQL spec
 	 */
 	if (PG_ARGISNULL(0))
-		PG_RETURN_TEXT_P(cstring_to_text(""));
+		PG_RETURN_TEXT_P(cstring_to_text(cstring_to_rdfliteral("")));
 
 	/*
 	 * Delegate to the actual implementation in

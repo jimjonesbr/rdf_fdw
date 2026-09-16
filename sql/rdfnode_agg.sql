@@ -571,6 +571,12 @@ SELECT sparql.group_concat(val, ', ') FROM j;
 SELECT sparql.group_concat(val, ', ') 
 FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
 
+-- the empty result has to be a serialised empty literal, not raw empty text:
+-- the two print almost alike but only one of them is an RDF term
+SELECT sparql.isliteral(sparql.group_concat(val, ', ')) AS is_literal,
+       sparql.strlen(sparql.group_concat(val, ', '))    AS strlen
+FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
+
 -- Test 65: GROUP_CONCAT with single value
 WITH j (val) AS (
     VALUES

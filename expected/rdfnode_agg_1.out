@@ -813,7 +813,7 @@ WITH j (val) AS (
 SELECT sparql.group_concat(val, ', ') FROM j;
  group_concat 
 --------------
- 
+ ""
 (1 row)
 
 -- Test 64: GROUP_CONCAT with empty set
@@ -821,7 +821,17 @@ SELECT sparql.group_concat(val, ', ')
 FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
  group_concat 
 --------------
- 
+ ""
+(1 row)
+
+-- the empty result has to be a serialised empty literal, not raw empty text:
+-- the two print almost alike but only one of them is an RDF term
+SELECT sparql.isliteral(sparql.group_concat(val, ', ')) AS is_literal,
+       sparql.strlen(sparql.group_concat(val, ', '))    AS strlen
+FROM (SELECT NULL::rdfnode AS val WHERE false) AS j;
+ is_literal | strlen 
+------------+--------
+ t          |      0
 (1 row)
 
 -- Test 65: GROUP_CONCAT with single value

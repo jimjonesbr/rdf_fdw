@@ -2981,7 +2981,7 @@ Datum group_concat_finalfunc(PG_FUNCTION_ARGS)
     if (aggstate == NULL || aggstate->result_str == NULL)
     {
         /* No input values: return empty simple literal */
-        result = cstring_to_text("");
+        result = cstring_to_text(cstring_to_rdfliteral(""));
         PG_RETURN_TEXT_P(result);
     }
     /* Convert to simple literal (plain literal without datatype) */
