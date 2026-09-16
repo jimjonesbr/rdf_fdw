@@ -1317,8 +1317,8 @@ char *generate_uuid_v4(void)
  * Converts RDF literal or bare string into substring while preserving language/datatype tag.
  *
  * str     : Input RDF literal or bare string.
- * start   : 1-based index (inclusive).
- * length  : Optional substring length (0 or negative is invalid).
+ * start   : 1-based index (inclusive), following XPath rounding semantics.
+ * length  : Optional substring length.
  *
  * Returns a new RDF literal string with the appropriate tag preserved.
  */
@@ -1331,6 +1331,8 @@ char *substr_sparql(char *str, int start, int length)
     text *input_text;
     text *substr_text;
     int str_len;
+    int pg_start;
+    int pg_length;
 
     elog(DEBUG3, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
 
@@ -1338,11 +1340,6 @@ char *substr_sparql(char *str, int start, int length)
         ereport(ERROR,
                 (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
                  errmsg("SUBSTR cannot be NULL")));
-
-    if (start < 1)
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("SUBSTR start position must be >= 1")));
 
     if (isIRI(str) || isBlank(str))
         ereport(ERROR,
@@ -1356,9 +1353,22 @@ char *substr_sparql(char *str, int start, int length)
     elog(DEBUG3, "%s: lexical='%s', datatype='%s', language='%s'", __func__,
          lexical, str_datatype, str_language);
 
-    /* Check if start is beyond string length - return empty string */
     str_len = pg_mbstrlen(lexical);
-    if (start > str_len)
+
+    if (length >= 0)
+    {
+        int64 end_before = (int64) start + length;
+
+        pg_start = Max(start, 1);
+        pg_length = (int) Min(Max(end_before - pg_start, 0), str_len);
+    }
+    else
+    {
+        pg_start = Max(start, 1);
+        pg_length = str_len - pg_start + 1;
+    }
+
+    if (pg_start > str_len || pg_length <= 0)
     {
         if (strlen(str_language) > 0)
             return strlang("", str_language);
@@ -1371,24 +1381,11 @@ char *substr_sparql(char *str, int start, int length)
     /* Use PostgreSQL's text_substr which handles UTF-8 correctly */
     input_text = cstring_to_text(lexical);
 
-    if (length >= 0)
-    {
-        /* text_substr is 1-based and handles UTF-8 character boundaries */
-        substr_text = DatumGetTextP(DirectFunctionCall3(
-            text_substr,
-            PointerGetDatum(input_text),
-            Int32GetDatum(start),
-            Int32GetDatum(length)));
-    }
-    else
-    {
-        /* No length specified - take from start to end */
-        substr_text = DatumGetTextP(DirectFunctionCall3(
-            text_substr,
-            PointerGetDatum(input_text),
-            Int32GetDatum(start),
-            Int32GetDatum(str_len - start + 1)));
-    }
+    substr_text = DatumGetTextP(DirectFunctionCall3(
+        text_substr,
+        PointerGetDatum(input_text),
+        Int32GetDatum(pg_start),
+        Int32GetDatum(pg_length)));
 
     lexical = text_to_cstring(substr_text);
 

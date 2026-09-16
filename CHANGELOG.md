@@ -24,6 +24,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **`SUBSTR()` rejected valid starting positions**: A start below 1 raised `SUBSTR start position must be >= 1`. SPARQL follows XPath's `fn:substring`, which returns the characters whose position falls in the interval `[start, start + length)` and treats a start outside the string as ordinary — only the part of the interval that overlaps the string is returned, and nothing is an error. `SUBSTR("foobar", 0, 2)` is `"f"`, since the interval covers position 1 alone; `SUBSTR("foobar", -2, 3)` is the empty string; and a start at or before the first character with no length returns the whole string. All of these were refused. A negative length is likewise clipped to an empty result rather than misread as a large one.
+
 * **`float4` values were serialised with six significant digits**: A `real` was converted to RDF with `%g`, whose default precision is six significant digits, while a `float4` needs up to nine to survive a round trip. Values with more precision came back changed — `1.1234567` became `1.12346`, and `16777217` became `1.67772e+07` — so a column read from a triplestore and written back no longer held the value it started with. The type's own output function is used now.  (Tomas Vondra <tomas@vondra.me>)
 
   That function honours `extra_float_digits`, which `%g` ignored, so how many digits appear is a setting rather than something fixed in the conversion. On PostgreSQL 12 and later the default of `1` prints the shortest text that reads back exactly, and these values now round-trip out of the box. On earlier releases the default of `0` still asks for six digits; exact output is available there with `SET extra_float_digits = 3`, which `%g` gave no way to obtain at all.

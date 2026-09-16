@@ -1330,7 +1330,7 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
 	if (PG_NARGS() == 3 && !PG_ARGISNULL(2))
 	{
 		int32 length = PG_GETARG_INT32(2);
-		result = substr_sparql(str, start, length);
+		result = substr_sparql(str, start, Max(length, 0));
 	}
 	else
 		result = substr_sparql(str, start, -1);

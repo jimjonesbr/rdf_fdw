@@ -512,6 +512,19 @@ SELECT sparql.substr('"foobar"', 10);      -- beyond length -> ""
 SELECT sparql.substr('"foobar"', 2, 100);  -- length beyond string end -> "oobar"
 SELECT sparql.substr('"foobar"', NULL, 3); -- NULL arg
 
+/* XPath fn:substring, which SPARQL SUBSTR follows, selects the characters whose
+ * position falls in [start, start + length). A start below 1 is not an error:
+ * it simply places part of that interval before the string, and only the
+ * overlap is returned. Start 0 with length 2 therefore yields one character,
+ * not two, and a start far enough to the left yields nothing at all. */
+SELECT s AS start, l AS len, sparql.lex(sparql.substr('"foobar"', s, l)) AS result
+FROM (VALUES (0,2),(0,1),(0,0),(-1,3),(-2,3),(0,7),(-5,20),(1,2)) t(s,l);
+
+/* without a length the interval is unbounded to the right, so any start at or
+ * before the first character returns the whole string */
+SELECT s AS start, sparql.lex(sparql.substr('"foobar"', s)) AS result
+FROM (VALUES (0),(-3),(1),(7)) t(s);
+
 /* CONCAT */
 SELECT sparql.concat('"foo"', '"bar"'), sparql.concat('foo', 'bar');
 SELECT sparql.concat('"foo"@en', '"bar"@en'), sparql.concat(sparql.strlang('foo','en'), sparql.strlang('bar','en'));
