@@ -6770,6 +6770,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		rightargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprright;
 		ReleaseSysCache(tuple);
 
+		if (oprkind != 'b' || list_length(oper->args) != 2)
+			return NULL;
+
 		/* don't push condition down if the right argument can't be translated into a SPARQL value*/
 		if (!canHandleType(rightargtype))
 		{
@@ -6852,7 +6855,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (left_column && left_column->expression)
 				{
 					elog(DEBUG2, "%s [T_OpExpr]: adding expression '%s' for left expression", __func__, left_column->expression);
-					appendStringInfo(&left_filter_arg, "%s", left_column->expression);
+					appendStringInfo(&left_filter_arg, "(%s)", left_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
 				else if (IsStringDataType(leftargtype) && leftexpr->type == T_Const)
@@ -6927,7 +6930,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				if (right_column && right_column->expression)
 				{
 					elog(DEBUG2, "%s [T_OpExpr]: adding expression '%s' for left expression", __func__, right_column->expression);
-					appendStringInfo(&right_filter_arg, "%s", right_column->expression);
+					appendStringInfo(&right_filter_arg, "(%s)", right_column->expression);
 				}
 				/* check if the argument is a string (T_Const) */
 				else if (IsStringDataType(rightargtype) && rightexpr->type == T_Const)
@@ -7014,7 +7017,20 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				}
 				else
 				{
-					appendStringInfo(&result, "%s %s %s",
+					/*
+					 * An arithmetic operator can itself be an operand of another
+					 * one, and then only parentheses carry the shape of the SQL
+					 * expression tree across: SPARQL re-applies its own
+					 * precedence to whatever text it is given, so (n + 1) * 2
+					 * emitted as "?n + 1 * 2" comes back as ?n + (1 * 2) and
+					 * selects different rows. The comparison operators yield a
+					 * boolean that only ever reaches && or ||, which parenthesise
+					 * their own operands, so they need nothing here.
+					 */
+					bool nestable = strcmp(opername, "+") == 0 ||
+									strcmp(opername, "*") == 0;
+
+					appendStringInfo(&result, nestable ? "(%s %s %s)" : "%s %s %s",
 									 NameStr(left_filter_arg),
 									 opername,
 									 NameStr(right_filter_arg));

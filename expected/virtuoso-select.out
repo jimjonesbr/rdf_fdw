@@ -2799,7 +2799,7 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(YEAR(?o) + 1 = 2026)
+ FILTER((YEAR(?o) + 1) = 2026)
 }
 
 ERROR:  internal error on server "virtuoso" (HTTP 500)
@@ -2811,7 +2811,7 @@ define sql:big-data-const 0
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER(YEAR(?o) + 1 = 2026)
+ FILTER((YEAR(?o) + 1) = 2026)
 }
 /* SPARQL 17.4.5.3 - month */
 SELECT * FROM ft

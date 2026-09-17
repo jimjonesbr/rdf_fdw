@@ -1163,4 +1163,29 @@ EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, c FROM np_groupby
 WHERE c > 1;
 
+/* ================================================================
+ * Arithmetic grouping
+ * ================================================================ */
+
+/* The shape of the expression tree, not the textual order of the operators,
+ * decides what the filter means. SPARQL applies its own precedence to whatever
+ * it is handed, so an expression whose grouping departs from that precedence
+ * has to be parenthesised on the way out: (n + 1) * 2 and n + 1 * 2 select
+ * different rows, and both are written with the same three operands. */
+CREATE FOREIGN TABLE arith_ft (
+  n int      OPTIONS (variable '?n'),
+  o rdfnode  OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?n ?o WHERE {<http://example.org/s> ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT n FROM arith_ft WHERE (n + 1) * 2 = 10;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT n FROM arith_ft WHERE n + 1 * 2 = 10;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT n FROM arith_ft WHERE (n + 2) * (n + 3) = 20;
+
 DROP SERVER test_server CASCADE;

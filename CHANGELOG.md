@@ -24,6 +24,10 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **Arithmetic in a pushed-down filter lost its grouping**: The deparser wrote an expression's operands and operators out in order without parentheses, so the shape of the SQL expression tree was left for SPARQL to reconstruct from precedence alone. `WHERE (n + 1) * 2 = 10` was sent as `FILTER(?n + 1 * 2 = 10)`, which SPARQL reads as `?n + (1 * 2)`, and `WHERE (n + 2) * (n + 3) = 20` as `FILTER(?n + 2 * ?n + 3 = 20)` — different conditions selecting different rows, with no error anywhere. Arithmetic operators are now parenthesised so the grouping survives. Comparisons are not: their result only ever reaches `&&` or `||`, which already parenthesise their operands, so existing plans are unchanged.
+
+  A unary operator reaching the same code produced an empty string rather than declining, which made the condition look pushable and dropped it from the scan's local filter without putting anything in its place. Such an operator is now left to the executor.
+
 * **`REPLACE()` discarded the literal's language tag and datatype**: Replacing part of `"hello"@en` returned `"heLLo"` rather than `"heLLo"@en`, and a datatyped literal lost its datatype the same way, so a value that went through `REPLACE` came back as a different kind of RDF term than it started as. All three overloads now carry the first argument's language tag or datatype over to the result. An `xsd:string` input still yields a simple literal, since RDF 1.1 makes those the same thing.
 
   The result is also built as a literal from lexical content rather than cast from text. A cast reads its input back as a serialised term, so a replacement that happened to look like `<...>` or to contain `"@` was taken for an IRI or an annotated literal instead of the string it was, and content ending in a backslash produced a literal whose closing quote was escaped away.

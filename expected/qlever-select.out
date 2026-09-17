@@ -2495,7 +2495,7 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER(YEAR(?o) + 1 = 2026)
+ FILTER((YEAR(?o) + 1) = 2026)
 }
 
 INFO:  SPARQL returned 2 records.
