@@ -30,6 +30,10 @@ Release date: **unreleased**
 
   A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
 
+* **The HTTP header callback read and wrote past the buffer libcurl gave it**: libcurl hands a header callback a length and a pointer to that many bytes, and does not promise a terminator after them. The callback treated the pointer as a C string: it measured the header with `strlen()`, reading on past the end until it happened upon a zero byte, and then wrote a terminator of its own two bytes back from wherever that landed — into a buffer that belongs to libcurl and is not the callback's to modify. Headers are collected with the length libcurl supplies now, which is what the body callback already did, so one function serves both — headers and body stay apart because libcurl hands each callback its own buffer.
+
+  A header whose content type was not one of four recognised spellings used to be left out of the collected headers. Nothing reads those headers apart from the debug log — the response's content type is not inspected anywhere — so they are simply all collected now, and a debug log at `DEBUG3` shows the whole response header rather than part of it.
+
 * **A long prefix context name made every query against the server fail**: The lookup that reads a server's prefixes was assembled into a fixed 1024-byte buffer, and a `prefix_context` name too long to fit was cut off mid-statement rather than rejected. The result was not a shortened name but a malformed statement, so planning any scan on that server failed with `unterminated quoted string` and none of the context's prefixes could be reached. The name is passed as a query parameter now, so it is carried whole whatever its length.
 
   The name was escaped before being placed in the buffer, so a name could not alter the statement's meaning; the failure was the truncation alone.

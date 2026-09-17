@@ -4798,6 +4798,19 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	return state;
 }
 
+/*
+ * CURLWriteMemoryCallback
+ * -----------------------
+ * Appends a chunk of a libcurl transfer to the MemoryStruct libcurl was given
+ * for it. It serves both CURLOPT_WRITEFUNCTION and CURLOPT_HEADERFUNCTION:
+ * what separates the response body from the response headers is the buffer
+ * each is handed through CURLOPT_WRITEDATA and CURLOPT_HEADERDATA, not the
+ * function, so one implementation covers both and cannot mix them.
+ *
+ * Both callbacks receive a pointer and a count. libcurl does not promise a
+ * terminator after those bytes, so the chunk is copied by its count and the
+ * terminator is placed by this function, on its own buffer.
+ */
 static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
 	size_t realsize = size * nmemb;
@@ -4831,51 +4844,6 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 	mem->memory[mem->size] = 0;
 
 	elog(DEBUG3, "%s exit: returning '%lu' (realsize)", __func__, realsize);
-	return realsize;
-}
-
-static size_t CURLHeaderCallback(char *contents, size_t size, size_t nmemb, void *userp)
-{
-
-	size_t realsize = size * nmemb;
-	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
-	char *ptr;
-	char *sparqlxml = "content-type: application/sparql-results+xml";
-	char *sparqlxmlutf8 = "content-type: application/sparql-results+xml; charset=utf-8";
-	char *rdfxml = "content-type: application/rdf+xml";
-	char *rdfxmlutf8 = "content-type: application/rdf+xml;charset=utf-8";
-
-	elog(DEBUG3, "%s called", __func__);
-
-	Assert(contents);
-
-	/* is it a "content-type" entry? "*/
-	if (strncasecmp(contents, sparqlxml, 13) == 0)
-	{
-
-		if (strncasecmp(contents, sparqlxml, strlen(sparqlxml)) != 0 &&
-			strncasecmp(contents, sparqlxmlutf8, strlen(sparqlxmlutf8)) != 0 &&
-			strncasecmp(contents, rdfxml, strlen(rdfxml)) != 0 &&
-			strncasecmp(contents, rdfxmlutf8, strlen(rdfxmlutf8)) != 0)
-		{
-			/* remove crlf */
-			contents[strlen(contents) - 2] = '\0';
-			elog(DEBUG3, "%s: unsupported header entry: \"%s\"", __func__, contents);
-			elog(DEBUG3, "%s: %s", __func__, mem->memory);
-			return realsize;
-		}
-	}
-
-	/* repalloc() never returns NULL: it raises an error on failure */
-	ptr = repalloc(mem->memory, mem->size + realsize + 1);
-
-	mem->memory = ptr;
-	memcpy(&(mem->memory[mem->size]), contents, realsize);
-	mem->size += realsize;
-	mem->memory[mem->size] = 0;
-
-	elog(DEBUG4, "%s: realsize='%lu'", __func__, realsize);
-	elog(DEBUG3, "%s exit", __func__);
 	return realsize;
 }
 
@@ -5414,7 +5382,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, url_buffer.data);
 		}
 
-		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, CURLHeaderCallback);
+		curl_easy_setopt(state->curl, CURLOPT_HEADERFUNCTION, CURLWriteMemoryCallback);
 		curl_easy_setopt(state->curl, CURLOPT_HEADERDATA, (void *)&chunk_header);
 
 		/* For SPARQL UPDATE operations, collect the response body so that
