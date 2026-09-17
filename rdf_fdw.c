@@ -7203,6 +7203,11 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		/* the second (=last) argument can be Const, ArrayExpr or ArrayCoerceExpr */
 		rightexpr = (Expr *)llast(arrayoper->args);
 
+		/* These cases need SQL's NULL, coercion, or language-matching rules. */
+		if (!IsA(rightexpr, Const) ||
+			(col->language && strcmp(col->language, "*") == 0))
+			return NULL;
+
 		switch (rightexpr->type)
 		{
 		case T_Const:
@@ -7232,7 +7237,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					char *c;
 
 					if (isNull)
-						c = "NULL";
+					{
+						array_free_iterator(iterator);
+						return NULL;
+					}
 					else
 					{
 

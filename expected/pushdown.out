@@ -616,15 +616,16 @@ WHERE
   label NOT IN ('foo', 'bar');
 WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
 HINT:  Use the "rdfnode" type instead.
-                                                                    QUERY PLAN                                                                    
---------------------------------------------------------------------------------------------------------------------------------------------------
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.pgtypes_ft
    Output: label
+   Filter: ((pgtypes_ft.label = ANY ('{hello,world}'::text[])) AND (pgtypes_ft.label <> ALL ('{foo,bar}'::text[])))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?label 
-   Remote Filter: ((STR(?label) != "foo") && (?label IN ("hello"@*, "world"@*)) && (?label NOT IN ("foo"@*, "bar"@*)) && (STR(?label) = "hello"))
-(6 rows)
+   Remote Filter: ((STR(?label) != "foo") && (STR(?label) = "hello"))
+(7 rows)
 
 /* bigint: all operators */
 EXPLAIN (VERBOSE, COSTS OFF)
@@ -2097,6 +2098,53 @@ HINT:  Use the "rdfnode" type instead.
    Pushdown: enabled
    Remote Select: ?n 
    Remote Filter: ((((?n + 2) * (?n + 3)) = 20))
+(6 rows)
+
+/* ================================================================
+ * Array comparisons that cannot be translated
+ * ================================================================ */
+/* SQL's IN and NOT IN give NULL its own truth table, which SPARQL has no term
+ * for, and an array built at run time rather than folded to a constant carries
+ * elements this deparser renders as bare identifiers. Neither can be sent, so
+ * both stay with the executor -- a remote filter here would be a syntax error
+ * at the endpoint rather than a wrong answer. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o IN ('"hello"', NULL);
+                            QUERY PLAN                            
+------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o = ANY ('{"\"hello\"",NULL}'::rdfnode[]))
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = ANY(ARRAY[o, '"hello"'::rdfnode]);
+                                QUERY PLAN                                
+--------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o = ANY (ARRAY[rdfnode_ft.o, '"hello"'::rdfnode]))
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+/* a constant list of ordinary values is still pushed down */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o IN ('"hello"', '"world"');
+                  QUERY PLAN                   
+-----------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o IN ("hello", "world")))
 (6 rows)
 
 DROP SERVER test_server CASCADE;

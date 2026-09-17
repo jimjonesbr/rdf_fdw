@@ -1188,4 +1188,23 @@ SELECT n FROM arith_ft WHERE n + 1 * 2 = 10;
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT n FROM arith_ft WHERE (n + 2) * (n + 3) = 20;
 
+/* ================================================================
+ * Array comparisons that cannot be translated
+ * ================================================================ */
+
+/* SQL's IN and NOT IN give NULL its own truth table, which SPARQL has no term
+ * for, and an array built at run time rather than folded to a constant carries
+ * elements this deparser renders as bare identifiers. Neither can be sent, so
+ * both stay with the executor -- a remote filter here would be a syntax error
+ * at the endpoint rather than a wrong answer. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o IN ('"hello"', NULL);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = ANY(ARRAY[o, '"hello"'::rdfnode]);
+
+/* a constant list of ordinary values is still pushed down */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o IN ('"hello"', '"world"');
+
 DROP SERVER test_server CASCADE;
