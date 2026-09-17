@@ -399,15 +399,15 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 
 		if (has_tz1)
 		{
-			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode1.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode2.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			return timestamptz_cmp_internal(arg1, arg2) >= 0;
+			return timestamptz_cmp_internal(ts1, ts2) >= 0;
 		}
 		else
 		{
@@ -547,15 +547,15 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 
 		if (has_tz1)
 		{
-			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode1.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode2.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			return timestamptz_cmp_internal(arg1, arg2) <= 0;
+			return timestamptz_cmp_internal(ts1, ts2) <= 0;
 		}
 		else
 		{
@@ -697,15 +697,15 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 
 		if (has_tz1)
 		{
-			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode1.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode2.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			return timestamptz_cmp_internal(arg1, arg2) > 0;
+			return timestamptz_cmp_internal(ts1, ts2) > 0;
 		}
 		else
 		{
@@ -844,15 +844,15 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 
 		if (has_tz1)
 		{
-			arg1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts1 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode1.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			arg2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
+			TimestampTz ts2 = DatumGetTimestampTz(DirectFunctionCall3(timestamptz_in,
 														   CStringGetDatum(rdfnode2.lex),
 														   ObjectIdGetDatum(InvalidOid),
 														   Int32GetDatum(-1)));
-			return timestamptz_cmp_internal(arg1, arg2) < 0;
+			return timestamptz_cmp_internal(ts1, ts2) < 0;
 		}
 		else
 		{

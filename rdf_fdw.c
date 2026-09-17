@@ -9312,13 +9312,13 @@ Datum rdfnode_to_int4(PG_FUNCTION_ARGS)
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 	int32 result = DatumGetInt32(DirectFunctionCall1(int4in, CStringGetDatum(p.lex)));
 
-	PG_RETURN_INT64(result);
+	PG_RETURN_INT32(result);
 }
 
 Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT64(1);
+	int32 val = PG_GETARG_INT32(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9326,7 +9326,7 @@ Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, rdf_numeric, val_numeric));
 
@@ -9336,7 +9336,7 @@ Datum rdfnode_lt_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT64(1);
+	int32 val = PG_GETARG_INT32(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9344,7 +9344,7 @@ Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, rdf_numeric, val_numeric));
 
@@ -9354,7 +9354,7 @@ Datum rdfnode_le_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT64(1);
+	int32 val = PG_GETARG_INT32(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9362,7 +9362,7 @@ Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, rdf_numeric, val_numeric));
 
@@ -9372,7 +9372,7 @@ Datum rdfnode_gt_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT64(1);
+	int32 val = PG_GETARG_INT32(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9380,7 +9380,7 @@ Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, rdf_numeric, val_numeric));
 
@@ -9390,7 +9390,7 @@ Datum rdfnode_ge_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT64(1);
+	int32 val = PG_GETARG_INT32(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9398,7 +9398,7 @@ Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_numeric, val_numeric));
 
@@ -9408,7 +9408,7 @@ Datum rdfnode_eq_int4(PG_FUNCTION_ARGS)
 Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int32 val = PG_GETARG_INT64(1);
+	int32 val = PG_GETARG_INT32(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9416,7 +9416,7 @@ Datum rdfnode_neq_int4(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_numeric, val_numeric));
 
@@ -9435,7 +9435,7 @@ Datum int4_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT64(0);
+	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9444,7 +9444,7 @@ Datum int4_lt_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, val_numeric, rdf_numeric));
 
@@ -9453,7 +9453,7 @@ Datum int4_lt_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT64(0);
+	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9462,7 +9462,7 @@ Datum int4_le_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, val_numeric, rdf_numeric));
 
@@ -9471,7 +9471,7 @@ Datum int4_le_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT64(0);
+	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9480,7 +9480,7 @@ Datum int4_gt_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, val_numeric, rdf_numeric));
 
@@ -9489,7 +9489,7 @@ Datum int4_gt_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT64(0);
+	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9498,7 +9498,7 @@ Datum int4_ge_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, val_numeric, rdf_numeric));
 
@@ -9507,7 +9507,7 @@ Datum int4_ge_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT64(0);
+	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9516,7 +9516,7 @@ Datum int4_eq_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, val_numeric, rdf_numeric));
 
@@ -9525,7 +9525,7 @@ Datum int4_eq_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int32 val = PG_GETARG_INT64(0);
+	int32 val = PG_GETARG_INT32(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9534,7 +9534,7 @@ Datum int4_neq_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int4_numeric, Int32GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, val_numeric, rdf_numeric));
 
@@ -9546,15 +9546,15 @@ Datum rdfnode_to_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	int16 result = DatumGetInt32(DirectFunctionCall1(int2in, CStringGetDatum(p.lex)));
+	int16 result = DatumGetInt16(DirectFunctionCall1(int2in, CStringGetDatum(p.lex)));
 
-	PG_RETURN_INT64(result);
+	PG_RETURN_INT16(result);
 }
 
 Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT64(1);
+	int16 val = PG_GETARG_INT16(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9562,7 +9562,7 @@ Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, rdf_numeric, val_numeric));
 
@@ -9572,7 +9572,7 @@ Datum rdfnode_lt_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT64(1);
+	int16 val = PG_GETARG_INT16(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9580,7 +9580,7 @@ Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, rdf_numeric, val_numeric));
 
@@ -9590,7 +9590,7 @@ Datum rdfnode_le_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT64(1);
+	int16 val = PG_GETARG_INT16(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9598,7 +9598,7 @@ Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, rdf_numeric, val_numeric));
 
@@ -9608,7 +9608,7 @@ Datum rdfnode_gt_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT64(1);
+	int16 val = PG_GETARG_INT16(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9616,7 +9616,7 @@ Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, rdf_numeric, val_numeric));
 
@@ -9626,7 +9626,7 @@ Datum rdfnode_ge_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT64(1);
+	int16 val = PG_GETARG_INT16(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9634,7 +9634,7 @@ Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, rdf_numeric, val_numeric));
 
@@ -9644,7 +9644,7 @@ Datum rdfnode_eq_int2(PG_FUNCTION_ARGS)
 Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
-	int16 val = PG_GETARG_INT64(1);
+	int16 val = PG_GETARG_INT16(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
 	Datum rdf_numeric = DirectFunctionCall3(numeric_in,
@@ -9652,7 +9652,7 @@ Datum rdfnode_neq_int2(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, rdf_numeric, val_numeric));
 
@@ -9671,7 +9671,7 @@ Datum int2_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT64(0);
+	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9680,7 +9680,7 @@ Datum int2_lt_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_lt, val_numeric, rdf_numeric));
 
@@ -9689,7 +9689,7 @@ Datum int2_lt_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT64(0);
+	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9698,7 +9698,7 @@ Datum int2_le_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_le, val_numeric, rdf_numeric));
 
@@ -9707,7 +9707,7 @@ Datum int2_le_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT64(0);
+	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9716,7 +9716,7 @@ Datum int2_gt_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_gt, val_numeric, rdf_numeric));
 
@@ -9725,7 +9725,7 @@ Datum int2_gt_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT64(0);
+	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9734,7 +9734,7 @@ Datum int2_ge_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ge, val_numeric, rdf_numeric));
 
@@ -9743,7 +9743,7 @@ Datum int2_ge_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT64(0);
+	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9752,7 +9752,7 @@ Datum int2_eq_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_eq, val_numeric, rdf_numeric));
 
@@ -9761,7 +9761,7 @@ Datum int2_eq_rdfnode(PG_FUNCTION_ARGS)
 
 Datum int2_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	int16 val = PG_GETARG_INT64(0);
+	int16 val = PG_GETARG_INT16(0);
 	text *t = PG_GETARG_TEXT_PP(1);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
@@ -9770,7 +9770,7 @@ Datum int2_neq_rdfnode(PG_FUNCTION_ARGS)
 											ObjectIdGetDatum(InvalidOid),
 											Int32GetDatum(-1));
 
-	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int64GetDatum(val));
+	Datum val_numeric = DirectFunctionCall1(int2_numeric, Int16GetDatum(val));
 
 	bool result = DatumGetBool(DirectFunctionCall2(numeric_ne, val_numeric, rdf_numeric));
 
@@ -9888,10 +9888,10 @@ Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 	else
 		appendStringInfoString(&buf, p.lex);
 
-	result = DatumGetTimestamp(DirectFunctionCall3(timestamp_in,
-												   CStringGetDatum(buf.data),
-												   ObjectIdGetDatum(InvalidOid),
-												   Int32GetDatum(-1)));
+	result = DirectFunctionCall3(timestamp_in,
+								 CStringGetDatum(buf.data),
+								 ObjectIdGetDatum(InvalidOid),
+								 Int32GetDatum(-1));
 
 	PG_RETURN_DATUM(result);
 }
