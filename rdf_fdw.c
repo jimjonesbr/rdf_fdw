@@ -1629,8 +1629,13 @@ static List *DescribeIRI(RDFfdwState *state)
 			description_node->ns != NULL && xmlStrcmp(description_node->ns->href, rdf_ns) == 0)
 		{
 			xmlChar *subject_str = xmlGetProp(description_node, (const xmlChar *)RDF_SPARQL_RESULT_ABOUT);
+			bool blank_subject = false;
+
 			if (!subject_str)
+			{
 				subject_str = xmlGetProp(description_node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
+				blank_subject = true;
+			}
 
 			if (!subject_str)
 				continue;
@@ -1660,7 +1665,8 @@ static List *DescribeIRI(RDFfdwState *state)
 					else
 						predicate_str = pstrdup((char *)property_node->name);
 
-					triple->subject = iri((char *)subject_str);
+					triple->subject = blank_subject ?
+						psprintf("_:%s", (char *)subject_str) : iri((char *)subject_str);
 					triple->predicate = iri(predicate_str);
 
 					/* Determine object type and value */

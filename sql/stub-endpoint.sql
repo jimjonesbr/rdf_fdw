@@ -26,6 +26,12 @@ OPTIONS (
   endpoint 'http://stub-endpoint/split-text.xml',
   connect_timeout '5');
 
+CREATE SERVER stub_describe
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/describe-bnode.xml',
+  connect_timeout '5');
+
 CREATE FOREIGN TABLE ft_single (
   s rdfnode OPTIONS (variable '?s')
 ) SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
@@ -91,8 +97,20 @@ SELECT sparql.lex(tagged) AS lexical_form,
        sparql.isliteral(empty) AS empty_is_a_literal
 FROM ft_split;
 
+/*
+ * The subject of an rdf:Description is an IRI when the element carries
+ * rdf:about and a blank node when it carries rdf:nodeID, and the two are
+ * different kinds of term: <b1> names a resource, _:b1 names an unnamed one.
+ * Reading both as IRIs turns every statement a DESCRIBE makes about a blank
+ * node into a statement about an IRI that no store holds. The object side
+ * tells them apart already, so the same label has to come back the same way
+ * whether it stands as subject or object - here it appears as both.
+ */
+SELECT * FROM sparql.describe('stub_describe', 'DESCRIBE <http://example.org/s>');
+
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
 DROP SERVER stub_repeated CASCADE;
 DROP SERVER stub_split CASCADE;
+DROP SERVER stub_describe CASCADE;
