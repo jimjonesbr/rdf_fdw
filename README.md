@@ -1240,7 +1240,7 @@ The plan output includes FDW-specific lines for each Foreign Scan node:
 * `Remote Filter:` shows the SPARQL FILTER expression(s) generated from SQL WHERE clauses.  
   If the WHERE clause cannot be translated to SPARQL FILTER expressions, the plan will display `Remote Filter: not pushable` to indicate that filtering is performed locally in PostgreSQL.
 * `Remote Sort Key:` shows the SPARQL ORDER BY clause if sorting is pushed down.
-* `Remote Limit:` shows the SPARQL LIMIT clause if limiting is pushed down.
+* `Remote Limit:` shows the SPARQL LIMIT clause if limiting is pushed down. A `LIMIT` is only sent when it selects the same rows the SQL query asks for, which rules out a query that also sorts, joins, groups or aggregates. Sorting is the case worth explaining: a remote `LIMIT` under an `ORDER BY` would keep whichever rows come first in the *endpoint's* ordering, and SPARQL does not fully define that one. It fixes the order between kinds of term, and between literals whose values are comparable, but leaves the rest to the implementation — and implementations disagree. Asked to sort the same eight terms, Fuseki returns IRIs first, Virtuoso strings first, and QLever booleans first. There is therefore no ordering `rdf_fdw` could adopt locally that would match the store being queried, so `ORDER BY ... LIMIT n` fetches the result set and takes the first `n` here.
 * `Remote Select:` shows the SPARQL SELECT clause generated for the query.
 
 **Example:**

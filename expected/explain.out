@@ -65,8 +65,7 @@ LIMIT 3;
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
                Remote Sort Key:   DESC (?o)
-               Remote Limit: LIMIT 3
-(10 rows)
+(9 rows)
 
 EXPLAIN
 SELECT p, o FROM ft
@@ -191,8 +190,7 @@ LIMIT 3;
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 100))
                Remote Sort Key:   DESC (?o)
-               Remote Limit: LIMIT 3
-(13 rows)
+(12 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o, sparql.sum(o) FROM ft

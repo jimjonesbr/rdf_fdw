@@ -8150,9 +8150,23 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel)
 {
 	StringInfoData limit_clause;
-	char *limit_val, *offset_val = NULL;
+	Const *limit;
+	int64 limit_val;
+	int64 offset_val = 0;
 
 	elog(DEBUG1, "%s called ", __func__);
+
+	/* A base-scan bound is unsafe below joins, local sorting or row expansion. */
+	if (baserel->reloptkind != RELOPT_BASEREL ||
+		list_length(root->parse->jointree->fromlist) != 1 ||
+		!IsA(linitial(root->parse->jointree->fromlist), RangeTblRef) ||
+		((RangeTblRef *)linitial(root->parse->jointree->fromlist))->rtindex != baserel->relid ||
+		root->parse->sortClause != NIL ||
+		root->parse->hasWindowFuncs ||
+		root->parse->havingQual != NULL ||
+		root->parse->setOperations != NULL ||
+		expression_returns_set((Node *)root->parse->targetList))
+		return NULL;
 
 	/* don't push down LIMIT (OFFSET)  if the query has a GROUP BY clause or aggregates */
 	if (root->parse->groupClause != NULL || root->parse->hasAggs)
@@ -8178,45 +8192,33 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 		return NULL;
 	}
 
-	/* only push down constant LIMITs that are not NULL */
-	if (root->parse->limitCount != NULL && IsA(root->parse->limitCount, Const))
-	{
-		Const *limit = (Const *)root->parse->limitCount;
-
-		if (limit->constisnull)
-		{
-			elog(DEBUG1, "%s exit: returning NULL (limit->constisnull)", __func__);
-			return NULL;
-		}
-
-		limit_val = DatumToString(limit->constvalue, limit->consttype);
-	}
-	else
-	{
-		elog(DEBUG1, "%s exit: returning NULL (constant is NULL)", __func__);
+	if (root->parse->limitCount == NULL ||
+		!IsA(root->parse->limitCount, Const))
 		return NULL;
-	}
 
-	/* only consider OFFSETS that are non-NULL constants */
-	if (root->parse->limitOffset != NULL && IsA(root->parse->limitOffset, Const))
+	limit = (Const *)root->parse->limitCount;
+	if (limit->constisnull || limit->consttype != INT8OID)
+		return NULL;
+	limit_val = DatumGetInt64(limit->constvalue);
+
+	if (root->parse->limitOffset != NULL)
 	{
-		Const *offset = (Const *)root->parse->limitOffset;
+		Const *offset;
 
+		if (!IsA(root->parse->limitOffset, Const))
+			return NULL;
+		offset = (Const *)root->parse->limitOffset;
+		if (offset->consttype != INT8OID)
+			return NULL;
 		if (!offset->constisnull)
-			offset_val = DatumToString(offset->constvalue, offset->consttype);
+			offset_val = DatumGetInt64(offset->constvalue);
 	}
+
+	if (limit_val < 0 || offset_val < 0 || limit_val > PG_INT64_MAX - offset_val)
+		return NULL;
 
 	initStringInfo(&limit_clause);
-
-	if (offset_val)
-	{
-		int val_offset = DatumGetInt32(((Const *)root->parse->limitOffset)->constvalue);
-		int val_limit = DatumGetInt32(((Const *)root->parse->limitCount)->constvalue);
-		appendStringInfo(&limit_clause, "LIMIT %d", val_offset + val_limit);
-	}
-	else
-		appendStringInfo(&limit_clause, "LIMIT %s", limit_val);
-
+	appendStringInfo(&limit_clause, "LIMIT " INT64_FORMAT, limit_val + offset_val);
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, NameStr(limit_clause));
 	return NameStr(limit_clause);
 }

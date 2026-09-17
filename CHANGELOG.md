@@ -24,6 +24,14 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **`LIMIT` was pushed down where it changed the result**: A remote `LIMIT` decides which rows the endpoint sends, so it is only sound where those are the rows the query wants. It was being sent regardless of what sat above the scan.
+
+  Under an `ORDER BY` it keeps whichever rows come first in the endpoint's ordering, and SPARQL does not fully define that ordering. It fixes the order between kinds of term, and between literals whose values are comparable, but leaves the rest to the implementation — and implementations disagree: asked to sort the same eight terms, Fuseki returns IRIs first, Virtuoso strings first and QLever booleans first. No ordering `rdf_fdw` could adopt locally would match the store being queried, so the rows the endpoint kept are not reliably the rows the query wanted, and the local sort cannot recover one that was never fetched. Concretely, over three integers, `ORDER BY o LIMIT 1` returned a different row than the first row of the same query without the `LIMIT`.
+
+  The limit was also sent when the sort could not be pushed at all, handing back an arbitrary `n` rows to sort; applied to each side of a join independently, where the join decides how many rows survive; and applied beneath window functions, `HAVING` and set-returning functions. Such queries now fetch their rows and apply the limit locally. A `LIMIT` on a single scan with no sort above it is unaffected.
+
+  Separately, `LIMIT` and `OFFSET` are read as 64-bit values. Both are `bigint` in SQL, but the offset was taken through a 32-bit accessor, so `OFFSET 3000000000 LIMIT 10` was sent as `LIMIT -1294967286` — not merely the wrong count, but a negative one no endpoint will parse.
+
 * **Arithmetic in a pushed-down filter lost its grouping**: The deparser wrote an expression's operands and operators out in order without parentheses, so the shape of the SQL expression tree was left for SPARQL to reconstruct from precedence alone. `WHERE (n + 1) * 2 = 10` was sent as `FILTER(?n + 1 * 2 = 10)`, which SPARQL reads as `?n + (1 * 2)`, and `WHERE (n + 2) * (n + 3) = 20` as `FILTER(?n + 2 * ?n + 3 = 20)` — different conditions selecting different rows, with no error anywhere. Arithmetic operators are now parenthesised so the grouping survives. Comparisons are not: their result only ever reaches `&&` or `||`, which already parenthesise their operands, so existing plans are unchanged.
 
   A unary operator reaching the same code produced an empty string rather than declining, which made the condition look pushable and dropped it from the scan's local filter without putting anything in its place. Such an operator is now left to the executor.

@@ -450,15 +450,16 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 ORDER BY  ASC (?o)
-LIMIT 3
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 32 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "1e-15"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>  | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+            subject            |                   predicate                    |                    object                    
+-------------------------------+------------------------------------------------+----------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "                                           +
+                               |                                                |  <= salto de línea =>                       +
+                               |                                                | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
 (3 rows)
 
 SELECT * FROM ft
@@ -473,15 +474,14 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 ORDER BY  DESC (?o)
-LIMIT 3
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 32 records.
 
-            subject            |                    predicate                    |                               object                                
--------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+            subject            |                   predicate                    |                        object                        
+-------------------------------+------------------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>            | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>             | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "日本"@jp
 (3 rows)
 
 SELECT * FROM ft
@@ -496,15 +496,16 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 ORDER BY  ASC (?o)  ASC (?p)
-LIMIT 3
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 32 records.
 
-            subject            |                   predicate                    |                        object                        
--------------------------------+------------------------------------------------+------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>  | "1e-15"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long> | "7.6136"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>  | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
+            subject            |                   predicate                    |                    object                    
+-------------------------------+------------------------------------------------+----------------------------------------------
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "        <= Tabulatorzeichen =>         "@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "                                           +
+                               |                                                |  <= salto de línea =>                       +
+                               |                                                | "@es
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | ""
 (3 rows)
 
 SELECT * FROM ft
@@ -519,15 +520,14 @@ SELECT ?s ?p ?o
  FILTER(?s = <https://www.uni-muenster.de>)
 }
 ORDER BY  DESC (?o)  ASC (?p)
-LIMIT 3
 
-INFO:  SPARQL returned 3 records.
+INFO:  SPARQL returned 32 records.
 
-            subject            |                    predicate                    |                               object                                
--------------------------------+-------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+            subject            |                   predicate                    |                        object                        
+-------------------------------+------------------------------------------------+------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>            | <http://dbpedia.org/resource/North_Rhine-Westphalia>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>             | <http://dbpedia.org/resource/Münster>
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment> | "日本"@jp
 (3 rows)
 
 /* SPARQL 18.2.5.3 - DISTINCT */

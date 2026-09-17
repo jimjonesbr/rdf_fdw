@@ -1207,4 +1207,36 @@ SELECT o FROM rdfnode_ft WHERE o = ANY(ARRAY[o, '"hello"'::rdfnode]);
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft WHERE o IN ('"hello"', '"world"');
 
+/* ================================================================
+ * LIMIT pushdown boundaries
+ * ================================================================ */
+
+/* A remote LIMIT decides which rows the endpoint sends, so it may only be used
+ * where that is also the set the query wants. A sort is the case where it is
+ * not: SPARQL orders RDF terms by value, while PostgreSQL orders rdfnode by its
+ * stored representation, so the two disagree on ordinary data -- "9" sorts
+ * after "10" here and before it there. Whichever rows the endpoint kept, the
+ * local sort cannot recover the ones it dropped. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft ORDER BY o LIMIT 3;
+
+/* the same holds when the sort cannot be pushed at all, where a remote limit
+ * would hand back an arbitrary three rows for the executor to sort */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft ORDER BY o::text || 'x' LIMIT 3;
+
+/* a join decides which rows survive after the scan, so the limit cannot be
+ * applied to either side on its own */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT a.o FROM rdfnode_ft a, rdfnode_ft b WHERE a.o = b.o LIMIT 3;
+
+/* a plain limit on a single scan is still pushed down, and OFFSET is added to
+ * it in 64-bit arithmetic -- the sum of two values that each fit in an int32
+ * need not */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft LIMIT 3;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft OFFSET 3000000000 LIMIT 10;
+
 DROP SERVER test_server CASCADE;

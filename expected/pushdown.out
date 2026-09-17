@@ -131,8 +131,7 @@ LIMIT 3;
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Sort Key:   DESC (?p)
-               Remote Limit: LIMIT 3
-(12 rows)
+(11 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM rdfnode_ft
@@ -151,8 +150,7 @@ LIMIT 3;
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Sort Key:   ASC (?o)
-               Remote Limit: LIMIT 3
-(12 rows)
+(11 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM rdfnode_ft
@@ -171,8 +169,7 @@ LIMIT 3;
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Sort Key:   DESC (?p)  ASC (?o)
-               Remote Limit: LIMIT 3
-(12 rows)
+(11 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM rdfnode_ft
@@ -191,8 +188,7 @@ OFFSET 5 LIMIT 2;
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Sort Key:   DESC (?p)  ASC (?o)
-               Remote Limit: LIMIT 7
-(12 rows)
+(11 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM rdfnode_ft
@@ -211,8 +207,7 @@ OFFSET 5 LIMIT 10;
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Sort Key:   DESC (?p)  ASC (?o)
-               Remote Limit: LIMIT 15
-(12 rows)
+(11 rows)
 
 /* ================================================================
  * SPARQL 18.2.5.3 - DISTINCT
@@ -2146,6 +2141,106 @@ SELECT o FROM rdfnode_ft WHERE o IN ('"hello"', '"world"');
    Remote Select: ?o 
    Remote Filter: ((?o IN ("hello", "world")))
 (6 rows)
+
+/* ================================================================
+ * LIMIT pushdown boundaries
+ * ================================================================ */
+/* A remote LIMIT decides which rows the endpoint sends, so it may only be used
+ * where that is also the set the query wants. A sort is the case where it is
+ * not: SPARQL orders RDF terms by value, while PostgreSQL orders rdfnode by its
+ * stored representation, so the two disagree on ordinary data -- "9" sorts
+ * after "10" here and before it there. Whichever rows the endpoint kept, the
+ * local sort cannot recover the ones it dropped. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft ORDER BY o LIMIT 3;
+                  QUERY PLAN                   
+-----------------------------------------------
+ Limit
+   Output: o
+   ->  Sort
+         Output: o
+         Sort Key: rdfnode_ft.o
+         ->  Foreign Scan on public.rdfnode_ft
+               Output: o
+               Foreign Server: test_server
+               Pushdown: enabled
+               Remote Select: ?o 
+               Remote Sort Key:   ASC (?o)
+(11 rows)
+
+/* the same holds when the sort cannot be pushed at all, where a remote limit
+ * would hand back an arbitrary three rows for the executor to sort */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft ORDER BY o::text || 'x' LIMIT 3;
+                       QUERY PLAN                        
+---------------------------------------------------------
+ Limit
+   Output: o, (((o)::text || 'x'::text))
+   ->  Sort
+         Output: o, (((o)::text || 'x'::text))
+         Sort Key: (((rdfnode_ft.o)::text || 'x'::text))
+         ->  Foreign Scan on public.rdfnode_ft
+               Output: o, ((o)::text || 'x'::text)
+               Foreign Server: test_server
+               Pushdown: enabled
+               Remote Select: ?o 
+(10 rows)
+
+/* a join decides which rows survive after the scan, so the limit cannot be
+ * applied to either side on its own */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT a.o FROM rdfnode_ft a, rdfnode_ft b WHERE a.o = b.o LIMIT 3;
+                      QUERY PLAN                       
+-------------------------------------------------------
+ Limit
+   Output: a.o
+   ->  Nested Loop
+         Output: a.o
+         Join Filter: (a.o = b.o)
+         ->  Foreign Scan on public.rdfnode_ft a
+               Output: a.p, a.o
+               Foreign Server: test_server
+               Pushdown: enabled
+               Remote Select: ?o 
+         ->  Materialize
+               Output: b.o
+               ->  Foreign Scan on public.rdfnode_ft b
+                     Output: b.o
+                     Foreign Server: test_server
+                     Pushdown: enabled
+                     Remote Select: ?o 
+(17 rows)
+
+/* a plain limit on a single scan is still pushed down, and OFFSET is added to
+ * it in 64-bit arithmetic -- the sum of two values that each fit in an int32
+ * need not */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft LIMIT 3;
+               QUERY PLAN                
+-----------------------------------------
+ Limit
+   Output: o
+   ->  Foreign Scan on public.rdfnode_ft
+         Output: o
+         Foreign Server: test_server
+         Pushdown: enabled
+         Remote Select: ?o 
+         Remote Limit: LIMIT 3
+(8 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft OFFSET 3000000000 LIMIT 10;
+               QUERY PLAN                
+-----------------------------------------
+ Limit
+   Output: o
+   ->  Foreign Scan on public.rdfnode_ft
+         Output: o
+         Foreign Server: test_server
+         Pushdown: enabled
+         Remote Select: ?o 
+         Remote Limit: LIMIT 3000000010
+(8 rows)
 
 DROP SERVER test_server CASCADE;
 NOTICE:  drop cascades to 9 other objects
