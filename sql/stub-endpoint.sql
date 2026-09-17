@@ -20,9 +20,22 @@ OPTIONS (
   endpoint 'http://stub-endpoint/repeated-binding.xml',
   connect_timeout '5');
 
+CREATE SERVER stub_split
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/split-text.xml',
+  connect_timeout '5');
+
 CREATE FOREIGN TABLE ft_single (
   s rdfnode OPTIONS (variable '?s')
 ) SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+
+CREATE FOREIGN TABLE ft_split (
+  cdata     rdfnode OPTIONS (variable '?cdata'),
+  commented rdfnode OPTIONS (variable '?commented'),
+  empty     rdfnode OPTIONS (variable '?empty'),
+  tagged    rdfnode OPTIONS (variable '?tagged')
+) SERVER stub_split OPTIONS (sparql 'SELECT * WHERE {?s ?p ?o}');
 
 CREATE FOREIGN TABLE ft_repeated (
   s rdfnode OPTIONS (variable '?s')
@@ -63,7 +76,23 @@ SELECT count(*) AS rows_cloned, min(s::text) AS value FROM cloned_repeated;
  * path and was never affected */
 SELECT * FROM ft_repeated;
 
+/*
+ * A term's text is the whole of its element's character data. A CDATA section
+ * or a comment inside a <literal> splits that data into several child nodes,
+ * so a term read from the first child alone stops at the split: "abcdefghi"
+ * arrives as "abc", and a language tag survives while the text it belongs to
+ * does not. The empty literal is the control - it has no children at all, and
+ * is an empty term rather than an unbound variable either way.
+ */
+SELECT cdata, commented, empty, tagged FROM ft_split;
+
+SELECT sparql.lex(tagged) AS lexical_form,
+       sparql.lang(tagged) AS language_tag,
+       sparql.isliteral(empty) AS empty_is_a_literal
+FROM ft_split;
+
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
 DROP SERVER stub_repeated CASCADE;
+DROP SERVER stub_split CASCADE;

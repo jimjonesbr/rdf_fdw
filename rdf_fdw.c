@@ -6298,7 +6298,7 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					StringInfoData literal_value;
 					xmlChar *datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
 					xmlChar *lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
-					xmlChar *content = xmlNodeGetContent(value->children);
+					xmlChar *content = xmlNodeGetContent(value);
 					const xmlChar *node_type = value->name;
 					char *node_value;
 
@@ -6306,14 +6306,13 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					node_value = (char *)content;
 
 					/*
-					 * For empty RDF literals (like "" or ""@en or ""^^xsd:string),
-					 * xmlNodeGetContent may return NULL when the element is empty.
-					 * We need to distinguish between:
-					 * 1. Empty literal "" - a valid RDF value (empty string)
-					 * 2. Unbound variable - absence of binding (SQL NULL)
-					 *
-					 * If we're inside a <literal>, <uri>, or <bnode> element,
-					 * then NULL content means empty string, not unbound.
+					 * xmlNodeGetContent() gives an empty string for an element
+					 * that has no content, so NULL here means it could not
+					 * produce a value at all. The two cases still have to be
+					 * told apart: inside a <literal>, <uri> or <bnode> the
+					 * variable is bound and a missing value is the empty term
+					 * ("" or ""@en or ""^^xsd:string), while anything else is
+					 * an unbound variable and becomes SQL NULL.
 					 */
 					if (!node_value)
 					{

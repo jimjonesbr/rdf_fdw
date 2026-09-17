@@ -53,6 +53,20 @@ printf '%s<head><variable name="s"/></head><results><result>%s</result></results
 printf '%s<head><variable name="s"/></head><results><result>%s</result></results></sparql>' \
     "$XML_HEAD" "$BINDING" > /tmp/stub-single-binding.xml
 
+# A <literal> whose text is broken into several XML child nodes. A CDATA
+# section or a comment inside the element splits the character data around it,
+# so reading only the first child returns the text up to the split and drops
+# the rest. Endpoints in the wild answer with a single text node, which is why
+# no test against a real triplestore can produce this.
+SPLIT_TEXT='<head><variable name="cdata"/><variable name="commented"/><variable name="empty"/><variable name="tagged"/></head><results><result>'
+SPLIT_TEXT=$SPLIT_TEXT'<binding name="cdata"><literal>abc<![CDATA[def]]>ghi</literal></binding>'
+SPLIT_TEXT=$SPLIT_TEXT'<binding name="commented"><literal>abc<!--dropped-->def</literal></binding>'
+SPLIT_TEXT=$SPLIT_TEXT'<binding name="empty"><literal></literal></binding>'
+SPLIT_TEXT=$SPLIT_TEXT'<binding name="tagged"><literal xml:lang="en">one<![CDATA[ two]]></literal></binding>'
+SPLIT_TEXT=$SPLIT_TEXT'</result></results></sparql>'
+
+printf '%s%s' "$XML_HEAD" "$SPLIT_TEXT" > /tmp/stub-split-text.xml
+
 # One row exercising each RDF node type, to check that a clone preserves them.
 printf '%s<head><variable name="iri"/><variable name="bnode"/><variable name="tagged"/></head><results><result><binding name="iri"><uri>http://example.org/thing</uri></binding><binding name="bnode"><bnode>b1</bnode></binding><binding name="tagged"><literal xml:lang="en">hello</literal></binding></result></results></sparql>' \
     "$XML_HEAD" > /tmp/stub-node-types.xml
@@ -65,6 +79,7 @@ podman run -d --name $CONTAINER_NAME \
   -v /tmp/stub-repeated-binding.xml:/usr/share/nginx/html/repeated-binding.xml:ro,z \
   -v /tmp/stub-single-binding.xml:/usr/share/nginx/html/single-binding.xml:ro,z \
   -v /tmp/stub-node-types.xml:/usr/share/nginx/html/node-types.xml:ro,z \
+  -v /tmp/stub-split-text.xml:/usr/share/nginx/html/split-text.xml:ro,z \
   docker.io/library/nginx:alpine
 
 echo "Waiting for the stub endpoint to start..."
