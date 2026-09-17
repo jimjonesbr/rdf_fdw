@@ -4237,6 +4237,8 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 			state->log_sparql = defGetBoolean(def);
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 			state->enable_pushdown = defGetBoolean(def);
+		else if (strcmp(RDF_TABLE_OPTION_FETCH_SIZE, def->defname) == 0)
+			state->fetch_size = strtol(defGetString(def), NULL, 0);
 	}
 
 	elog(DEBUG1, "%s exit", __func__);

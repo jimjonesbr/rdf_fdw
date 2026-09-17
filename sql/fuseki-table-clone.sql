@@ -173,6 +173,55 @@ CALL
 
 SELECT * FROM public.t6 ORDER BY object::text COLLATE "C";
 
+/*
+ * fetch_size is read from the foreign table as well as from the server, and
+ * the table's value is the one that applies. The clone procedure takes its own
+ * fetch_size argument, which overrides both; leaving it at its default of 0 is
+ * what makes the option under test the one that decides the page size.
+ *
+ * The verbose output reports the size it settled on and one line per page, so
+ * both the value and the paging it produces are visible.
+ */
+ALTER SERVER fuseki OPTIONS (ADD fetch_size '10');
+CREATE FOREIGN TABLE ft_fetch (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  fetch_size '25'
+);
+
+/* the table's 25 applies, not the server's 10 */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft_fetch',
+        target_table  => 'public.t_fetch',
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+
+/* without the table option the server's 10 applies */
+ALTER FOREIGN TABLE ft_fetch OPTIONS (DROP fetch_size);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft_fetch',
+        target_table  => 'public.t_fetch2',
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+
+/* a page size is rejected when it is not a non-negative integer */
+ALTER FOREIGN TABLE ft_fetch OPTIONS (ADD fetch_size 'abc');
+
+DROP TABLE public.t_fetch;
+DROP TABLE public.t_fetch2;
+DROP FOREIGN TABLE ft_fetch;
+ALTER SERVER fuseki OPTIONS (DROP fetch_size);
+
 DELETE FROM ft;
 DROP TABLE public.t1;
 DROP TABLE public.t2;

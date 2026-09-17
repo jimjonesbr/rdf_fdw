@@ -385,6 +385,93 @@ SELECT * FROM public.t6 ORDER BY object::text COLLATE "C";
  https://www.uni-muenster.de | http://dbpedia.org/property/budget              | 803600000
 (2 rows)
 
+/*
+ * fetch_size is read from the foreign table as well as from the server, and
+ * the table's value is the one that applies. The clone procedure takes its own
+ * fetch_size argument, which overrides both; leaving it at its default of 0 is
+ * what makes the option under test the one that decides the page size.
+ *
+ * The verbose output reports the size it settled on and one line per page, so
+ * both the value and the paging it produces are visible.
+ */
+ALTER SERVER fuseki OPTIONS (ADD fetch_size '10');
+CREATE FOREIGN TABLE ft_fetch (
+  subject   rdfnode OPTIONS (variable '?s'),
+  predicate rdfnode OPTIONS (variable '?p'),
+  object    rdfnode OPTIONS (variable '?o')
+)
+SERVER fuseki OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  fetch_size '25'
+);
+/* the table's 25 applies, not the server's 10 */
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft_fetch',
+        target_table  => 'public.t_fetch',
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t_fetch" created based on FOREIGN TABLE "public.ft_fetch":
+
+  CREATE TABLE public.t_fetch AS SELECT * FROM public.ft_fetch WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft_fetch'
+target_table: 'public.t_fetch'
+create_table: 'true'
+fetch_size: 25
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 25]: 25 records inserted
+INFO:  [25 - 50]: 5 records inserted
+/* without the table option the server's 10 applies */
+ALTER FOREIGN TABLE ft_fetch OPTIONS (DROP fetch_size);
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft_fetch',
+        target_table  => 'public.t_fetch2',
+        verbose => true,
+        create_table => true,
+        commit_page => false
+    );
+INFO:  Target TABLE "public.t_fetch2" created based on FOREIGN TABLE "public.ft_fetch":
+
+  CREATE TABLE public.t_fetch2 AS SELECT * FROM public.ft_fetch WITH NO DATA;
+
+INFO:  
+
+== Parameters ==
+
+foreign_table: 'ft_fetch'
+target_table: 'public.t_fetch2'
+create_table: 'true'
+fetch_size: 10
+begin_offset: 0
+max_records: 0
+ordering_column: 'NOT SET'
+ordering sparql variable: '?s'
+sort_order: 'ASC'
+
+INFO:  [0 - 10]: 10 records inserted
+INFO:  [10 - 20]: 10 records inserted
+INFO:  [20 - 30]: 10 records inserted
+/* a page size is rejected when it is not a non-negative integer */
+ALTER FOREIGN TABLE ft_fetch OPTIONS (ADD fetch_size 'abc');
+ERROR:  invalid fetch_size: 'abc'
+HINT:  Expected values are positive integers.
+DROP TABLE public.t_fetch;
+DROP TABLE public.t_fetch2;
+DROP FOREIGN TABLE ft_fetch;
+ALTER SERVER fuseki OPTIONS (DROP fetch_size);
 DELETE FROM ft;
 DROP TABLE public.t1;
 DROP TABLE public.t2;
