@@ -3532,7 +3532,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 			continue;
 
 		/* Check if this SPARQL variable exists in the template */
-		if (strstr(sparql_insert.data, sparql_var) == NULL)
+		if (!SPARQLHasVariable(sparql_insert.data, sparql_var))
 		{
 			elog(DEBUG2, "%s: SPARQL variable '%s' not found in SPARQL template, skipping",
 				 __func__, sparql_var);
@@ -3576,7 +3576,7 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 			value_str = EscapeSPARQLLiteral(value_str);
 
 		/* Replace the variable placeholder with the actual value */
-		replaced = str_replace(sparql_insert.data, sparql_var, value_str);
+		replaced = ReplaceSPARQLVariable(sparql_insert.data, sparql_var, value_str);
 		resetStringInfo(&sparql_insert);
 		appendStringInfoString(&sparql_insert, replaced);
 	}
@@ -3678,7 +3678,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 		}
 
 		/* Check if this SPARQL variable exists in the template */
-		if (strstr(sparql_delete.data, sparql_var) == NULL)
+		if (!SPARQLHasVariable(sparql_delete.data, sparql_var))
 		{
 			elog(DEBUG3, "%s: SPARQL variable '%s' not found in SPARQL template '%s', skipping",
 				 __func__, sparql_var, sparql_delete.data);
@@ -3726,7 +3726,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 		elog(DEBUG3, "%s: column '%s' value: %s", __func__, col->name, value_str);
 
 		/* Replace the variable placeholder with the actual value */
-		replaced = str_replace(sparql_delete.data, sparql_var, value_str);
+		replaced = ReplaceSPARQLVariable(sparql_delete.data, sparql_var, value_str);
 		resetStringInfo(&sparql_delete);
 		appendStringInfoString(&sparql_delete, replaced);
 	}
@@ -3835,7 +3835,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		}
 
 		/* Check if this SPARQL variable exists in the template */
-		if (strstr(sparql_delete.data, sparql_var) == NULL)
+		if (!SPARQLHasVariable(sparql_delete.data, sparql_var))
 		{
 			elog(DEBUG2, "%s: DELETE: SPARQL variable '%s' not found in template '%s', skipping",
 				 __func__, sparql_var, sparql_delete.data);
@@ -3916,7 +3916,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		elog(DEBUG2, "%s: DELETE: column '%s' OLD value: %s", __func__, col->name, value_str);
 
 		/* Replace the variable placeholder with the actual OLD value */
-		replaced = str_replace(sparql_delete.data, sparql_var, value_str);
+		replaced = ReplaceSPARQLVariable(sparql_delete.data, sparql_var, value_str);
 		resetStringInfo(&sparql_delete);
 		appendStringInfoString(&sparql_delete, replaced);
 	}
@@ -3949,7 +3949,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 			continue;
 
 		/* Check if this SPARQL variable exists in the template */
-		if (strstr(sparql_insert.data, sparql_var) == NULL)
+		if (!SPARQLHasVariable(sparql_insert.data, sparql_var))
 		{
 			elog(DEBUG2, "%s: INSERT: SPARQL variable '%s' not found in template, skipping",
 				 __func__, sparql_var);
@@ -3995,7 +3995,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		elog(DEBUG2, "%s: INSERT: column '%s' NEW value: %s", __func__, col->name, value_str);
 
 		/* Replace the variable placeholder with the actual NEW value */
-		replaced = str_replace(sparql_insert.data, sparql_var, value_str);
+		replaced = ReplaceSPARQLVariable(sparql_insert.data, sparql_var, value_str);
 		resetStringInfo(&sparql_insert);
 		appendStringInfoString(&sparql_insert, replaced);
 	}

@@ -30,6 +30,14 @@ Release date: **unreleased**
 
   A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
 
+* **A variable in an update template was substituted as text rather than as a variable**: `INSERT`, `UPDATE` and `DELETE` fill a foreign table's `sparql_update_pattern` by replacing each mapped variable with a value, and both the test for whether a variable occurs and the replacement itself worked on characters. A variable therefore matched inside a longer one: given the template `?s <http://example.org/p> ?subject .`, substituting `?s` also rewrote the beginning of `?subject`, and the statement sent was
+
+  ```
+  INSERT DATA { <http://example.org/a> <http://example.org/p> <http://example.org/a>ubject };
+  ```
+
+  which the endpoint accepted, storing a term the query never described. A `?s` written inside a literal or a comment was rewritten too, and a value containing one was rewritten again by the next variable's turn. Variables are matched as whole tokens now, text inside literals, IRIs and comments is passed over, and a value once substituted is not searched again.
+
 * **Cloning a record left out the columns it did not bind**: `rdf_fdw_clone_table()` built its `INSERT` from the bindings a record happened to carry, naming only those columns. A variable the query selects but a particular record does not bind is not an absent column, though — it is a column whose value is unknown, and leaving it out of the statement handed the row to whatever default the target column carries instead of to NULL. A record binding nothing at all produced `INSERT INTO t () VALUES ()`, which is not a statement, and the clone stopped with a syntax error. Every column the query selects now takes a parameter, NULL unless the record binds it; a column the foreign table maps to no variable is still left out, so its default applies as before.
 
   The prepared statement built for each record was never freed, and neither was the buffer each value was built in.

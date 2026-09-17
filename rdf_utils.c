@@ -1357,10 +1357,113 @@ int CheckURL(char *url)
  * - The pattern is empty or contains no valid triple patterns
  * - A variable in the pattern has no matching column
  */
+/*
+ * SkipSPARQLQuoted
+ * ----------------
+ *
+ * Steps over one SPARQL construct whose contents are not query text: a
+ * comment, an IRI, or a string literal in any of its four quotings. A caller
+ * walking a query token by token uses this to avoid reading what is inside
+ * them, where a '?' begins no variable and a keyword names nothing.
+ *
+ * A literal ends at the first quote that is neither escaped nor, for the
+ * triple-quoted forms, short of the closing three. An IRI that runs to
+ * whitespace or to the end of the string was never an IRI, so the caller is
+ * left where it started rather than being carried past text it should read.
+ *
+ * p: the character to examine
+ *
+ * returns the first character after the construct, or p if none starts here
+ */
+static const char *
+SkipSPARQLQuoted(const char *p)
+{
+	const char *end;
+
+	if (*p == '#')
+		return p + strcspn(p, "\r\n");
+
+	if (*p == '<')
+	{
+		end = p + 1;
+		while (*end && *end != '>' && !isspace((unsigned char)*end))
+			end++;
+		return *end == '>' ? end + 1 : p;
+	}
+
+	if (*p == '"' || *p == '\'')
+	{
+		char quote = *p;
+		bool long_quote = p[1] == quote && p[2] == quote;
+
+		end = p + (long_quote ? 3 : 1);
+		while (*end)
+		{
+			if (*end == '\\' && end[1])
+				end += 2;
+			else if (*end == quote &&
+					 (!long_quote || (end[1] == quote && end[2] == quote)))
+				return end + (long_quote ? 3 : 1);
+			else
+				end++;
+		}
+		return end;
+	}
+
+	return p;
+}
+
+static const char *
+NextSPARQLVariable(const char *source, const char **end)
+{
+	const char *p = source;
+
+	while (*p)
+	{
+		const char *next = SkipSPARQLQuoted(p);
+
+		if (next != p)
+		{
+			p = next;
+			continue;
+		}
+		if (*p == '?' || *p == '$')
+		{
+			next = p + 1;
+			while (isalnum((unsigned char)*next) || *next == '_' ||
+				   (unsigned char)*next >= 0x80)
+				next++;
+			if (next > p + 1)
+			{
+				*end = next;
+				return p;
+			}
+		}
+		p++;
+	}
+	return NULL;
+}
+
+bool SPARQLHasVariable(const char *source, const char *variable)
+{
+	const char *found;
+	const char *end;
+	size_t len = strlen(variable);
+
+	while ((found = NextSPARQLVariable(source, &end)) != NULL)
+	{
+		if (end - found == len && memcmp(found + 1, variable + 1, len - 1) == 0)
+			return true;
+		source = end;
+	}
+	return false;
+}
+
 void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 {
 	const char *pos;
 	const char *pattern;
+	const char *end;
 	bool has_triple = false;
 
 	Assert(state != NULL);
@@ -1509,64 +1612,35 @@ void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 
 	/* Check that all variables in template have corresponding columns */
 	pos = pattern;
-	while ((pos = strchr(pos, '?')) != NULL)
+	while ((pos = NextSPARQLVariable(pos, &end)) != NULL)
 	{
-		StringInfoData var_name;
 		bool found = false;
-		int j = 0;
 
-		/* Extract variable name (alphanumeric after ?) */
-		initStringInfo(&var_name);
-		pos++; /* Skip the ? */
-		while (isalnum((unsigned char)pos[j]) || pos[j] == '_')
+		for (int k = 0; k < state->numcols; k++)
 		{
-			appendStringInfoChar(&var_name, pos[j]);
-			j++;
-		}
+			const char *variable = state->rdfTable->cols[k]->sparqlvar;
 
-		if (var_name.len > 0)
-		{
-			/* Check if a column maps to this variable */
-			for (int k = 0; k < state->numcols; k++)
+			if (variable && strlen(variable) == end - pos &&
+				memcmp(variable + 1, pos + 1, end - pos - 1) == 0)
 			{
-				if (state->rdfTable->cols[k]->sparqlvar)
-				{
-					/* Build the full variable name with ? prefix for comparison */
-					StringInfoData full_var;
-					initStringInfo(&full_var);
-					appendStringInfoString(&full_var, "?");
-					appendStringInfoString(&full_var, var_name.data);
-
-					if (strcmp(state->rdfTable->cols[k]->sparqlvar, full_var.data) == 0)
-					{
-						found = true;
-						pfree(full_var.data);
-						break;
-					}
-					pfree(full_var.data);
-				}
-			}
-
-			/* Report error immediately if variable not found */
-			if (!found)
-			{
-				ereport(ERROR,
-						(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-						 errmsg("SPARQL variable '?%s' in '%s' is not mapped to any table column",
-								var_name.data, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
+				found = true;
+				break;
 			}
 		}
-
-		pfree(var_name.data);
-		pos += j;
+		if (!found)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("SPARQL variable '%.*s' in '%s' is not mapped to any table column",
+							(int)(end - pos), pos, RDF_TABLE_OPTION_SPARQL_UPDATE_PATTERN)));
+		pos = end;
 	}
 }
 
 /*
- * str_replace
+ * ReplaceSPARQLVariable
  * -----------
- * Replace all occurrences of 'search' with 'replace' in 'source'.
- * Returns a newly allocated string.
+ * Replace complete variable tokens outside RDF terms and comments.
+ * Replacement text is never scanned again.
  *
  * source  : the original string
  * search  : the substring to search for
@@ -1574,11 +1648,13 @@ void ValidateSPARQLUpdatePattern(RDFfdwState *state)
  *
  * returns a new string with replacements made
  */
-char *str_replace(const char *source, const char *search, const char *replace)
+char *ReplaceSPARQLVariable(const char *source, const char *search, const char *replace)
 {
 	StringInfoData result;
 	const char *pos = source;
 	const char *found;
+	const char *scan = source;
+	const char *end;
 	size_t search_len;
 	size_t replace_len;
 
@@ -1591,16 +1667,16 @@ char *str_replace(const char *source, const char *search, const char *replace)
 
 	initStringInfo(&result);
 
-	while ((found = strstr(pos, search)) != NULL)
+	while ((found = NextSPARQLVariable(scan, &end)) != NULL)
 	{
-		/* Append everything before the match */
-		appendBinaryStringInfo(&result, pos, found - pos);
-
-		/* Append the replacement */
-		appendBinaryStringInfo(&result, replace, replace_len);
-
-		/* Move past the match */
-		pos = found + search_len;
+		if (end - found == search_len &&
+			memcmp(found + 1, search + 1, search_len - 1) == 0)
+		{
+			appendBinaryStringInfo(&result, pos, found - pos);
+			appendBinaryStringInfo(&result, replace, replace_len);
+			pos = end;
+		}
+		scan = end;
 	}
 
 	/* Append any remaining text */

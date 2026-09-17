@@ -46,7 +46,8 @@ extern bool IsStringDataType(Oid type);
 extern bool is_valid_language_tag(const char *lan);
 extern int CheckURL(char *url);
 extern void ValidateSPARQLUpdatePattern(RDFfdwState *state);
-extern char *str_replace(const char *source, const char *search, const char *replace);
+extern bool SPARQLHasVariable(const char *source, const char *variable);
+extern char *ReplaceSPARQLVariable(const char *source, const char *variable, const char *value);
 /* PostgreSQL to RDF Type Mapping */
 extern char *MapSPARQLDatatype(Oid pgtype);
 

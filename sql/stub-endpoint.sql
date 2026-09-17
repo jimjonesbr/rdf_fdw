@@ -168,6 +168,33 @@ INSERT INTO ft_redirect VALUES
 
 DROP FOREIGN TABLE ft_redirect;
 
+/*
+ * A variable in an update template is a token, not a piece of text. Replacing
+ * "?s" by matching characters also rewrites the "?s" that begins "?subject",
+ * leaving a statement built out of half a variable name - which an endpoint
+ * accepts as some other term and stores. A value is not template either: a
+ * "?s" written inside a literal stays in the literal.
+ */
+CREATE SERVER stub_tokens
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'http://stub-endpoint/single-binding.xml',
+  update_url 'http://stub-endpoint/single-binding.xml',
+  connect_timeout '5');
+
+CREATE FOREIGN TABLE ft_tokens (
+  s       rdfnode OPTIONS (variable '?s'),
+  subject rdfnode OPTIONS (variable '?subject')
+) SERVER stub_tokens OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * {?s ?p ?o}',
+  sparql_update_pattern '?s <http://example.org/p> ?subject .');
+
+INSERT INTO ft_tokens (s, subject)
+VALUES ('<http://example.org/a>', '"a literal holding ?s"');
+
+DROP FOREIGN TABLE ft_tokens;
+
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
@@ -176,3 +203,4 @@ DROP SERVER stub_split CASCADE;
 DROP SERVER stub_describe CASCADE;
 DROP SERVER stub_wide_limit CASCADE;
 DROP SERVER stub_redirect CASCADE;
+DROP SERVER stub_tokens CASCADE;
