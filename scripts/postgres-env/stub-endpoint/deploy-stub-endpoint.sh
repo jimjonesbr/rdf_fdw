@@ -31,6 +31,18 @@ server {
         # rdf_fdw sends SELECT queries as POST; serve the static file anyway
         error_page 405 =200 \$uri;
     }
+
+    # A redirect the client is not configured to follow. libcurl reports the
+    # transfer as successful and hands back the 302, which is not a result.
+    location = /redirect {
+        return 302 /single-binding.xml;
+    }
+
+    # A 3xx that carries no body at all, so nothing reaches the XML parser to
+    # fail on and the request looks like it succeeded.
+    location = /not-modified {
+        return 304;
+    }
 }
 EOF
 

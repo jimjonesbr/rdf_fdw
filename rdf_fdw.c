@@ -5628,6 +5628,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 						 errmsg("%s => (%u) '%s'\n", __func__, res, curl_err)));
 			}
 		}
+		else if (response_code < 200 || response_code >= 300)
+		{
+			curl_slist_free_all(headers);
+			curl_easy_cleanup(state->curl);
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("unexpected HTTP status %ld from server \"%s\"",
+							response_code, state->server->servername),
+					 errhint("Only HTTP 2xx responses indicate success. Check the endpoint and redirect settings.")));
+		}
 		else
 		{
 			/* Success - HTTP 2xx */

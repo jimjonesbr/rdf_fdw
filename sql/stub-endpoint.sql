@@ -41,6 +41,13 @@ OPTIONS (
   max_response_size '4294967396',
   connect_timeout '5');
 
+CREATE SERVER stub_redirect
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'http://stub-endpoint/redirect',
+  update_url 'http://stub-endpoint/not-modified',
+  connect_timeout '5');
+
 CREATE FOREIGN TABLE ft_single (
   s rdfnode OPTIONS (variable '?s')
 ) SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
@@ -133,6 +140,31 @@ SELECT * FROM ft_wide_limit;
 
 DROP FOREIGN TABLE ft_wide_limit;
 
+/*
+ * A transfer that completed is not a request that succeeded. With redirects
+ * refused, which is the default, an endpoint answering 3xx returns a status
+ * and no result, and libcurl reports the transfer as fine.
+ *
+ * A read notices eventually, because nothing it can parse comes back. A write
+ * does not: it sends its statement, reads no answer, and had nothing left to
+ * object to - so an INSERT against an endpoint that never performed it was
+ * reported as having inserted the row.
+ */
+CREATE FOREIGN TABLE ft_redirect (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+) SERVER stub_redirect OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .');
+
+SELECT * FROM ft_redirect;
+
+INSERT INTO ft_redirect VALUES
+  ('<http://example.org/s>', '<http://example.org/p>', '"v"');
+
+DROP FOREIGN TABLE ft_redirect;
+
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
@@ -140,3 +172,4 @@ DROP SERVER stub_repeated CASCADE;
 DROP SERVER stub_split CASCADE;
 DROP SERVER stub_describe CASCADE;
 DROP SERVER stub_wide_limit CASCADE;
+DROP SERVER stub_redirect CASCADE;
