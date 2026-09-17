@@ -145,6 +145,9 @@ bool LiteralsCompatible(char *literal1, char *literal2)
 
 	elog(DEBUG3, "%s called: literal1='%s', literal2='%s'", __func__, literal1, literal2);
 
+	if (isIRI(literal1) || isIRI(literal2) || isBlank(literal1) || isBlank(literal2))
+		return false;
+
 	lang1 = lang(literal1);
 	lang2 = lang(literal2);
 	dt1 = datatype(literal1);

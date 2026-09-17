@@ -28,6 +28,32 @@ SELECT sparql.rdf_fdw_arguments_compatible('"abc"@zh-Hant-TW','"b"@ZH-HANT-tw');
 /* a different tag is still a different tag */
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en-GB','"b"@en-US');
 
+/*
+ * The compatibility rule is about literals. An IRI and a blank node are not
+ * literals, so a string function has nothing to apply and answers with a type
+ * error. Neither carries a language tag or a datatype, which is what a rule
+ * written in terms of those alone reads as a simple literal.
+ */
+SELECT sparql.rdf_fdw_arguments_compatible('<http://example.org/a>','"a"');
+SELECT sparql.rdf_fdw_arguments_compatible('"a"','<http://example.org/a>');
+SELECT sparql.rdf_fdw_arguments_compatible('<http://example.org/a>','<http://example.org/a>');
+SELECT sparql.rdf_fdw_arguments_compatible('_:b1','"b"');
+SELECT sparql.rdf_fdw_arguments_compatible('"b"','_:b1');
+SELECT sparql.rdf_fdw_arguments_compatible('_:b1','_:b1');
+
+/*
+ * The functions themselves therefore return NULL. What they returned before
+ * was computed from the way the term is written: STRBEFORE cut an IRI at the
+ * first "/" and handed back a literal that began with the opening angle
+ * bracket.
+ */
+SELECT sparql.contains('<http://example.org/abc>','"abc"');
+SELECT sparql.strstarts('<http://example.org/abc>','"<ht"');
+SELECT sparql.strbefore('<http://example.org/abc>','"/"');
+SELECT sparql.strafter('<http://example.org/abc>','"org"');
+SELECT sparql.strends('<http://example.org/abc>','"abc>"');
+SELECT sparql.contains('_:b1','"b"');
+
 /* LEX */  
 SELECT sparql.lex('"foo"');
 SELECT sparql.lex('foo');
