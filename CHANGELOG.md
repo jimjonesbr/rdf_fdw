@@ -30,6 +30,10 @@ Release date: **unreleased**
 
   A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
 
+* **Cloning a record left out the columns it did not bind**: `rdf_fdw_clone_table()` built its `INSERT` from the bindings a record happened to carry, naming only those columns. A variable the query selects but a particular record does not bind is not an absent column, though — it is a column whose value is unknown, and leaving it out of the statement handed the row to whatever default the target column carries instead of to NULL. A record binding nothing at all produced `INSERT INTO t () VALUES ()`, which is not a statement, and the clone stopped with a syntax error. Every column the query selects now takes a parameter, NULL unless the record binds it; a column the foreign table maps to no variable is still left out, so its default applies as before.
+
+  The prepared statement built for each record was never freed, and neither was the buffer each value was built in.
+
 * **A response that was not a SPARQL result was read as an empty one**: The scan looked for an element named `results` anywhere under the root and took whatever `result` elements it found, without asking what document it had been given. Any XML at all therefore parsed as a result set, an unrelated one simply as an empty set, so a misdirected endpoint reported no rows rather than a problem. The response must now be a SPARQL results document in its own namespace and carry exactly one SELECT results element, and a record must bind each variable once and give each binding exactly one RDF term.
 
   Nodes that are not elements — the whitespace between them, a comment — were also read as though they were bindings. They are skipped now, in each of the three places that walk a record.

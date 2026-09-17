@@ -174,6 +174,66 @@ CALL
 SELECT * FROM public.t6 ORDER BY object::text COLLATE "C";
 
 /*
+ * A record need not bind every variable the query selects. A column with no
+ * binding in a given record is still a column of that record, and its value
+ * is unknown: it has to be inserted as NULL rather than left out of the
+ * statement, which hands the row to whatever default the target column
+ * carries. When no column of a record is bound there is nothing to leave in
+ * either, and the statement built from it is not a statement at all.
+ */
+CREATE FOREIGN TABLE ft_unbound (
+  subject rdfnode OPTIONS (variable '?subject'),
+  absent  rdfnode OPTIONS (variable '?absent')
+)
+SERVER fuseki OPTIONS (sparql $$
+  SELECT ?subject ?absent WHERE {
+    ?subject <http://dbpedia.org/property/rector> ?o .
+    OPTIONAL { ?subject <http://example.org/nonexistent> ?absent }
+  }
+$$);
+
+CREATE TABLE t_unbound (subject rdfnode, absent rdfnode DEFAULT '"a default"');
+
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft_unbound',
+        target_table  => 'public.t_unbound',
+        create_table  => false,
+        commit_page   => false
+    );
+
+/* the absent binding must be NULL, not the column's default */
+SELECT subject, absent IS NULL AS absent_is_null FROM t_unbound;
+
+/* and a record in which nothing at all is bound still makes a row */
+CREATE FOREIGN TABLE ft_nothing (
+  absent rdfnode OPTIONS (variable '?absent')
+)
+SERVER fuseki OPTIONS (sparql $$
+  SELECT ?absent WHERE {
+    ?subject <http://dbpedia.org/property/rector> ?o .
+    OPTIONAL { ?subject <http://example.org/nonexistent> ?absent }
+  }
+$$);
+
+CREATE TABLE t_nothing (absent rdfnode);
+
+CALL
+    rdf_fdw_clone_table(
+        foreign_table => 'public.ft_nothing',
+        target_table  => 'public.t_nothing',
+        create_table  => false,
+        commit_page   => false
+    );
+
+SELECT count(*) AS rows_cloned, count(absent) AS bound_values FROM t_nothing;
+
+DROP TABLE t_unbound;
+DROP TABLE t_nothing;
+DROP FOREIGN TABLE ft_unbound;
+DROP FOREIGN TABLE ft_nothing;
+
+/*
  * fetch_size is read from the foreign table as well as from the server, and
  * the table's value is the one that applies. The clone procedure takes its own
  * fetch_size argument, which overrides both; leaving it at its default of 0 is

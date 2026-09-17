@@ -2373,7 +2373,9 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 			textToQualifiedNameList(cstring_to_text(state->target_table_name)));
 	quoted_target = quote_qualified_identifier(rv->schemaname, rv->relname);
 
-	SPI_connect_ext(SPI_OPT_NONATOMIC);
+	if (SPI_connect_ext(SPI_OPT_NONATOMIC) != SPI_OK_CONNECT)
+		ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+						errmsg("could not connect to SPI for cloning")));
 
 	for (size_t rec = 0; rec < state->pagesize; rec++)
 	{
@@ -2401,6 +2403,16 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 			Oid pgtype = state->rdfTable->cols[i]->pgtype;
 			int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
 
+			if (!state->rdfTable->cols[i]->used || sparqlvar == NULL)
+				continue;
+			ctypes[colindex] = pgtype;
+			cvals[colindex] = (Datum) 0;
+			cnulls[colindex] = 'n';
+			appendStringInfo(&insert_cols, "%s%s",
+							 colindex > 0 ? ", " : "", quote_identifier(colname));
+			appendStringInfo(&insert_pidx, "%s$%d",
+							 colindex > 0 ? ", " : "", colindex + 1);
+
 			for (result = record->children; result != NULL; result = result->next)
 			{
 				StringInfoData name;
@@ -2413,7 +2425,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 				appendStringInfo(&name, "?%s", (char *)n);
 				xmlFree(n);
 
-				if (strcmp(sparqlvar, NameStr(name)) == 0 && state->rdfTable->cols[i]->used)
+				if (strcmp(sparqlvar, NameStr(name)) == 0)
 				{
 					if (colindex >= state->numcols)
 						ereport(ERROR,
@@ -2467,24 +2479,15 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						else
 							appendStringInfoString(&literal_value, (char *)content);
 
-						ctypes[colindex] = pgtype;
-						cnulls[colindex] = false;
+						cnulls[colindex] = ' ';
 
 						xmlFree(content);
 						xmlFree(lang);
 						xmlFree(datatype);
 
 						cvals[colindex] = CreateDatum(pgtype, pgtypmod, literal_value.data);
+						pfree(literal_value.data);
 					}
-					colindex++;
-
-					appendStringInfo(&insert_cols, "%s %s",
-									 colindex > 1 ? "," : "",
-									 quote_identifier(state->rdfTable->cols[i]->name));
-
-					appendStringInfo(&insert_pidx, "%s$%d",
-									 colindex > 1 ? "," : "",
-									 colindex);
 
 					pfree(name.data);
 
@@ -2503,6 +2506,8 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 
 				pfree(name.data);
 			}
+
+			colindex++;
 		}
 
 		state->rowcount++;
@@ -2514,18 +2519,23 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						 NameStr(insert_pidx));
 
 		pplan = SPI_prepare(NameStr(insert_stmt), colindex, ctypes);
+		if (pplan == NULL)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
+					 errmsg("could not prepare clone insertion")));
 
 		ret = SPI_execp(pplan, cvals, cnulls, 0);
 
-		if (ret < 0)
+		if (ret != SPI_OK_INSERT)
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 					 errmsg("SPI_execp returned %d. Unable to insert data into '%s'", ret, state->target_table_name)));
 
+		processed_records = processed_records + SPI_processed;
+		SPI_freeplan(pplan);
+
 		if (state->commit_page)
 			SPI_commit();
-
-		processed_records = processed_records + SPI_processed;
 	}
 
 	if (state->verbose)

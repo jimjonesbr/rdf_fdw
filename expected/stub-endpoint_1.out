@@ -35,6 +35,12 @@ OPTIONS (
   endpoint 'http://stub-endpoint/single-binding.xml',
   max_response_size '4294967396',
   connect_timeout '5');
+CREATE SERVER stub_redirect
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'http://stub-endpoint/redirect',
+  update_url 'http://stub-endpoint/not-modified',
+  connect_timeout '5');
 CREATE FOREIGN TABLE ft_single (
   s rdfnode OPTIONS (variable '?s')
 ) SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
@@ -67,8 +73,11 @@ SELECT * FROM ft_single;
  *
  *   ERROR:  repalloc called with invalid pointer 0x... (header 0x00007f...)
  *
- * A column takes its value from a single binding, so the scan stops at the
- * first match and the extra bindings are ignored.
+ * A <result> may bind a variable once, so a record that binds one twice is
+ * refused before any of it is read and the shape that overran the arrays
+ * cannot be built. The scan still stops at the first match for a column,
+ * which is what makes the overrun unreachable even where a record is not
+ * validated.
  */
 CREATE TABLE cloned_repeated (s rdfnode);
 CALL rdf_fdw_clone_table(
@@ -90,11 +99,7 @@ SELECT count(*) AS rows_cloned, min(s::text) AS value FROM cloned_repeated;
 /* the same response through an ordinary foreign scan, which takes a different
  * path and was never affected */
 SELECT * FROM ft_repeated;
-  s  
------
- "x"
-(1 row)
-
+ERROR:  duplicate variable binding in SPARQL result
 /*
  * A term's text is the whole of its element's character data. A CDATA section
  * or a comment inside a <literal> splits that data into several child nodes,
@@ -153,6 +158,31 @@ SELECT * FROM ft_wide_limit;
 (1 row)
 
 DROP FOREIGN TABLE ft_wide_limit;
+/*
+ * A transfer that completed is not a request that succeeded. With redirects
+ * refused, which is the default, an endpoint answering 3xx returns a status
+ * and no result, and libcurl reports the transfer as fine.
+ *
+ * A read notices eventually, because nothing it can parse comes back. A write
+ * does not: it sends its statement, reads no answer, and had nothing left to
+ * object to - so an INSERT against an endpoint that never performed it was
+ * reported as having inserted the row.
+ */
+CREATE FOREIGN TABLE ft_redirect (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+) SERVER stub_redirect OPTIONS (
+  sparql 'SELECT * WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .');
+SELECT * FROM ft_redirect;
+ERROR:  unexpected HTTP status 302 from server "stub_redirect"
+HINT:  Only HTTP 2xx responses indicate success. Check the endpoint and redirect settings.
+INSERT INTO ft_redirect VALUES
+  ('<http://example.org/s>', '<http://example.org/p>', '"v"');
+ERROR:  unexpected HTTP status 304 from server "stub_redirect"
+HINT:  Only HTTP 2xx responses indicate success. Check the endpoint and redirect settings.
+DROP FOREIGN TABLE ft_redirect;
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
@@ -163,3 +193,4 @@ DROP SERVER stub_split CASCADE;
 NOTICE:  drop cascades to foreign table ft_split
 DROP SERVER stub_describe CASCADE;
 DROP SERVER stub_wide_limit CASCADE;
+DROP SERVER stub_redirect CASCADE;
