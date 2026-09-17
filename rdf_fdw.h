@@ -241,6 +241,7 @@ typedef struct RDFfdwState
 	bool resources_registered;
 	RDFfdwQueryType sparql_query_type; /* SPARQL Query type: SELECT, DESCRIBE */
 	MemoryContext temp_cxt;			   /* Temporary memory context for per-row allocations during INSERT */
+	AttrNumber *junk_attnums;		   /* Plan positions for old column values */
 	/* exclusively for rdf_fdw_clone_table usage */
 	Relation target_table;
 	bool verbose;

@@ -63,6 +63,9 @@
 #include "optimizer/cost.h"
 #include "optimizer/pathnode.h"
 #include "optimizer/planmain.h"
+#if PG_VERSION_NUM >= 140000
+#include "optimizer/appendinfo.h"
+#endif
 #include "optimizer/restrictinfo.h"
 #include "optimizer/tlist.h"
 #include "parser/parse_relation.h"
@@ -750,6 +753,7 @@ static void rdfExplainForeignScan(ForeignScanState *node, ExplainState *es);
 static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node);
 static void rdfReScanForeignScan(ForeignScanState *node);
 static void rdfEndForeignScan(ForeignScanState *node);
+static char *OldRowAttributeName(Oid relation, AttrNumber attribute);
 static void rdfAddForeignUpdateTargets(
 #if PG_VERSION_NUM >= 140000
 	PlannerInfo *root,
@@ -3202,6 +3206,11 @@ static void rdfEndForeignScan(ForeignScanState *node)
 	elog(DEBUG1, "%s exit rdf_fdw: so long .. \n", __func__);
 }
 
+static char *OldRowAttributeName(Oid relation, AttrNumber attribute)
+{
+	return psprintf("rdf_fdw_old_%u_%d", relation, attribute);
+}
+
 /*
  * rdfAddForeignUpdateTargets
  * ------------------------------
@@ -3235,11 +3244,12 @@ static void rdfAddForeignUpdateTargets(
 	{
 		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
 		Var *var;
-		TargetEntry *tle;
+		char *junk_name;
 
 		/* Skip dropped columns */
 		if (attr->attisdropped)
 			continue;
+		junk_name = OldRowAttributeName(RelationGetRelid(target_relation), attr->attnum);
 
 		/* Create a Var for this column */
 #if PG_VERSION_NUM >= 140000
@@ -3253,20 +3263,12 @@ static void rdfAddForeignUpdateTargets(
 					  attr->attcollation,
 					  0);
 
-		/* Add it to the target list as a junk entry */
-		tle = makeTargetEntry((Expr *)var,
 #if PG_VERSION_NUM >= 140000
-							  list_length(root->processed_tlist) + 1,
+		add_row_identity_var(root, var, rtindex, junk_name);
 #else
-							  list_length(parsetree->targetList) + 1,
-#endif
-							  pstrdup(NameStr(attr->attname)),
-							  true); /* resjunk = true */
-
-#if PG_VERSION_NUM >= 140000
-		root->processed_tlist = lappend(root->processed_tlist, tle);
-#else
-		parsetree->targetList = lappend(parsetree->targetList, tle);
+		parsetree->targetList = lappend(parsetree->targetList,
+			makeTargetEntry((Expr *)var, list_length(parsetree->targetList) + 1,
+							junk_name, true));
 #endif
 
 		elog(DEBUG2, "%s: added junk attribute for column '%s' (attnum=%d)",
@@ -3385,6 +3387,31 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	LoadRDFServerInfo(state);
 	LoadRDFTableInfo(state);
 	LoadRDFUserMapping(state);
+
+	if (operation == CMD_UPDATE || operation == CMD_DELETE)
+	{
+		List *targetlist;
+
+#if PG_VERSION_NUM >= 140000
+		targetlist = outerPlanState(mtstate)->plan->targetlist;
+#else
+		targetlist = mtstate->mt_plans[subplan_index]->plan->targetlist;
+#endif
+		state->junk_attnums = palloc0(sizeof(AttrNumber) * state->numcols);
+		for (int i = 0; i < state->numcols; i++)
+		{
+			RDFfdwColumn *col = state->rdfTable->cols[i];
+			char *junk_name;
+
+			if (col->sparqlvar == NULL)
+				continue;
+			junk_name = OldRowAttributeName(state->foreigntableid, col->pgattnum);
+			state->junk_attnums[i] = ExecFindJunkAttributeInTlist(targetlist, junk_name);
+			if (state->junk_attnums[i] <= 0)
+				elog(ERROR, "could not find old-row attribute \"%s\"", junk_name);
+			pfree(junk_name);
+		}
+	}
 	LoadPrefixes(state);
 
 	if (CheckURL(state->endpoint) != REQUEST_SUCCESS)
@@ -3646,7 +3673,21 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 	MemoryContextReset(state->temp_cxt);
 	oldcontext = MemoryContextSwitchTo(state->temp_cxt);
 
-	/* Start building the SPARQL DELETE DATA query */
+	/* RETURNING needs the relation layout, not the plan's junk layout. */
+	ExecClearTuple(slot);
+	for (int i = 0; i < state->numcols; i++)
+	{
+		if (state->junk_attnums[i] > 0)
+			slot->tts_values[i] = ExecGetJunkAttribute(planSlot, state->junk_attnums[i],
+													 &slot->tts_isnull[i]);
+		else
+		{
+			slot->tts_values[i] = (Datum) 0;
+			slot->tts_isnull[i] = true;
+		}
+	}
+	ExecStoreVirtualTuple(slot);
+
 	initStringInfo(&sparql_delete);
 	appendStringInfoString(&sparql_delete, state->sparql_update_pattern);
 
@@ -3682,8 +3723,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 			continue;
 		}
 
-		/* Get the attribute value from junk attributes in planSlot */
-		datum = ExecGetJunkAttribute(planSlot, attnum, &isnull);
+		datum = slot_getattr(slot, attnum, &isnull);
 
 		/* Skip NULL values - this should not happen in normal operation */
 		if (isnull)
@@ -3761,8 +3801,7 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 
 	elog(DEBUG3, "%s exit", __func__);
 
-	/* Return planSlot (contains OLD values for RETURNING clause) */
-	return planSlot;
+	return slot;
 }
 
 static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
@@ -3816,7 +3855,6 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 		char *sparql_var = col->sparqlvar;
 		char *value_str;
 		char *replaced;
-		AttrNumber junk_attno;
 		bool needs_escaping = false;
 
 		elog(DEBUG2, "%s [%d] DELETE: column loaded: %s, sparql_var: %s",
@@ -3839,44 +3877,7 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 			continue;
 		}
 
-		/*
-		 * Find the junk attribute for this column by name.
-		 * The junk attributes were added by rdfAddForeignUpdateTargets and contain
-		 * the OLD values. We search planSlot's tuple descriptor for a resjunk
-		 * attribute with the same name as our column.
-		 */
-		junk_attno = 0;
-		{
-			TupleDesc planDesc = planSlot->tts_tupleDescriptor;
-			for (int j = 0; j < planDesc->natts; j++)
-			{
-				Form_pg_attribute attr = TupleDescAttr(planDesc, j);
-
-				/* Look for a junk attribute (attnum > numcols) with matching name */
-				if (!attr->attisdropped &&
-					attr->attnum > state->numcols &&
-					strcmp(NameStr(attr->attname), col->name) == 0)
-				{
-					junk_attno = attr->attnum;
-					break;
-				}
-			}
-		}
-
-		if (junk_attno > 0)
-		{
-			/* Get the OLD value from junk attribute (modified column) */
-			datum = ExecGetJunkAttribute(planSlot, junk_attno, &isnull);
-		}
-		else
-		{
-			/*
-			 * No junk attribute found - this is either the key column or an unmodified column.
-			 * Get the OLD value from the regular slot which contains current values for
-			 * unmodified columns.
-			 */
-			datum = slot_getattr(slot, col->pgattnum, &isnull);
-		}
+		datum = ExecGetJunkAttribute(planSlot, state->junk_attnums[i], &isnull);
 
 		if (isnull)
 			ereport(ERROR,
