@@ -145,4 +145,38 @@ WHERE sparql.isnumeric(o) AND o > 100
 ORDER BY o DESC
 LIMIT 3;
 
+/*
+ * A server's prefix context is looked up by name when a scan on it is
+ * planned, and the lookup has to carry the whole name however long it is. A
+ * name that does not survive the lookup intact leaves it malformed rather
+ * than merely short, so every query against the server fails and none of its
+ * prefixes are reachable. This one is long enough to outrun a lookup assembled
+ * in a fixed-size buffer.
+ */
+SELECT repeat('c', 980) AS long_context \gset
+
+SELECT sparql.add_context(:'long_context', 'name longer than a fixed-size buffer');
+INSERT INTO sparql.prefixes (prefix, uri, context)
+VALUES ('ex', 'http://example.org/', :'long_context');
+
+CREATE SERVER long_context_server
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://example.org/sparql',
+  prefix_context :'long_context'
+);
+
+CREATE FOREIGN TABLE long_context_ft (
+  s rdfnode OPTIONS (variable '?s')
+)
+SERVER long_context_server OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
+
+/* planning this reads the context, and must produce a plan rather than fail */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT s FROM long_context_ft;
+
+DROP SERVER long_context_server CASCADE;
+DELETE FROM sparql.prefixes WHERE context = :'long_context';
+DELETE FROM sparql.prefix_contexts WHERE context = :'long_context';
+
 DROP SERVER wikidata CASCADE;

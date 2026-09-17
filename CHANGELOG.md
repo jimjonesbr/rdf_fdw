@@ -30,6 +30,10 @@ Release date: **unreleased**
 
   A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
 
+* **A long prefix context name made every query against the server fail**: The lookup that reads a server's prefixes was assembled into a fixed 1024-byte buffer, and a `prefix_context` name too long to fit was cut off mid-statement rather than rejected. The result was not a shortened name but a malformed statement, so planning any scan on that server failed with `unterminated quoted string` and none of the context's prefixes could be reached. The name is passed as a query parameter now, so it is carried whole whatever its length.
+
+  The name was escaped before being placed in the buffer, so a name could not alter the statement's meaning; the failure was the truncation alone.
+
 * **Result values were converted without the type modifier or the I/O parameter their type needs**: A PostgreSQL input function takes three arguments — the text, an I/O parameter, and the type modifier — and `rdf_fdw` called them with one, from a call site with room for one. The other two were read from beyond the end of the argument array, so whatever happened to lie there became the type modifier and the I/O parameter.
 
   A type modifier was passed deliberately for six types (`real`, `double precision`, `numeric`, `timestamp`, `timestamptz` and `varchar`), and those behaved. Every other type modifier was read from that stale memory. A `char(5)` column came back blank-padded to whatever length was found there rather than to 5 — in one run, to 631056732 characters, having allocated the memory to hold it — and `time(n)`, `timetz(n)` and `interval(n)` columns kept the full precision of the value instead of the precision their column declared.

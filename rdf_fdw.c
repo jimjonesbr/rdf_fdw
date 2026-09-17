@@ -11391,7 +11391,7 @@ static void LoadPrefixes(RDFfdwState *state)
 {
 	int ret;
 	bool isnull;
-	char query[1024];
+	const char *query = "SELECT prefix, uri FROM sparql.prefixes WHERE context = $1";
 	ListCell *cell;
 	StringInfoData prefixes;
 
@@ -11402,15 +11402,14 @@ static void LoadPrefixes(RDFfdwState *state)
 	if (state->prefix_context)
 	{
 		MemoryContext oldcontext = CurrentMemoryContext;
+		Oid argtypes[1] = {TEXTOID};
+		Datum values[1];
 
 		if (SPI_connect() != SPI_OK_CONNECT)
 			elog(ERROR, "rdf_fdw: SPI_connect failed");
 
-		snprintf(query, sizeof(query),
-				 "SELECT prefix, uri FROM sparql.prefixes WHERE context = %s",
-				 quote_literal_cstr(state->prefix_context));
-
-		ret = SPI_execute(query, true, 0);
+		values[0] = CStringGetTextDatum(state->prefix_context);
+		ret = SPI_execute_with_args(query, 1, argtypes, values, NULL, true, 0);
 
 		if (ret != SPI_OK_SELECT)
 			elog(ERROR, "rdf_fdw: SPI_execute failed: %s", query);
@@ -11423,23 +11422,26 @@ static void LoadPrefixes(RDFfdwState *state)
 			HeapTuple tuple = SPI_tuptable->vals[i];
 			TupleDesc tupdesc = SPI_tuptable->tupdesc;
 			char *uri;
-			char *prefix = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 1, &isnull));
+			char *prefix;
+			Datum value;
 			RDFPrefix *entry;
 			MemoryContext spicontext;
 
+			value = SPI_getbinval(tuple, tupdesc, 1, &isnull);
 			if (isnull)
 			{
 				elog(WARNING, "%s: NULL prefix skipped", __func__);
 				continue;
 			}
+			prefix = TextDatumGetCString(value);
 
-			uri = TextDatumGetCString(SPI_getbinval(tuple, tupdesc, 2, &isnull));
-
+			value = SPI_getbinval(tuple, tupdesc, 2, &isnull);
 			if (isnull)
 			{
 				elog(WARNING, "%s: NULL URI skipped", __func__);
 				continue;
 			}
+			uri = TextDatumGetCString(value);
 
 			/* allocate the entry and list cell in the CALLER's context */
 			spicontext = MemoryContextSwitchTo(oldcontext);
