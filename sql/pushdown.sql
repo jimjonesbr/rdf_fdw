@@ -1239,4 +1239,33 @@ SELECT o FROM rdfnode_ft LIMIT 3;
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft OFFSET 3000000000 LIMIT 10;
 
+/* ================================================================
+ * Function identity and casts
+ * ================================================================ */
+
+/* Recognising a function by name alone means a user's own function is shipped
+ * as the SPARQL builtin that happens to share its name, and never runs. The
+ * one below returns false for every row; sent as SPARQL CONTAINS it would
+ * return whatever the endpoint decides. PL/pgSQL rather than SQL so that the
+ * planner cannot inline it away before the deparser sees it. */
+CREATE FUNCTION contains(rdfnode, rdfnode) RETURNS boolean
+AS $$ BEGIN RETURN false; END; $$ LANGUAGE plpgsql IMMUTABLE;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE contains(o, '"x"'::rdfnode);
+
+DROP FUNCTION contains(rdfnode, rdfnode);
+
+/* A comparison that reaches the column through a cast is not the comparison
+ * the endpoint would make. "o = timestamp" resolves to
+ * rdfnode_to_timestamp(o) = timestamp, which drops the term's timezone before
+ * comparing; sending it as "?o = dateTime" compares instants instead, so a
+ * term written with an offset matches locally and not remotely. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '2015-01-01 00:00:00'::timestamp;
+
+/* a comparison against a value of the column's own type is still pushed */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"x"'::rdfnode;
+
 DROP SERVER test_server CASCADE;

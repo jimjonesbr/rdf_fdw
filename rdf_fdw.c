@@ -28,6 +28,7 @@
 #include "access/sysattr.h"
 #include "access/xact.h"
 #include "catalog/indexing.h"
+#include "catalog/dependency.h"
 #include "catalog/pg_attribute.h"
 #include "catalog/pg_cast.h"
 #include "catalog/pg_extension.h"
@@ -42,6 +43,7 @@
 #include "catalog/pg_user_mapping.h"
 #include "catalog/pg_type.h"
 #include "commands/defrem.h"
+#include "commands/extension.h"
 #if PG_VERSION_NUM >= 180000
 #include "commands/explain_format.h"
 #include "commands/explain_state.h"
@@ -756,6 +758,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state);
 static char *DatumToString(Datum datum, Oid type);
+static bool IsShippableObject(Oid classid, Oid objectid, Oid namespace);
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
 static char *DeparseSPARQLFrom(char *raw_sparql);
@@ -6622,6 +6625,12 @@ static char *DatumToString(Datum datum, Oid type)
  *
  * returns a string containing a SPARQL expression or NULL if not parseable
  */
+static bool IsShippableObject(Oid classid, Oid objectid, Oid namespace)
+{
+	return namespace == PG_CATALOG_NAMESPACE ||
+		getExtensionOfObject(classid, objectid) == get_extension_oid("rdf_fdw", false);
+}
+
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *arg, *opername, *left, *right, oprkind;
@@ -6646,13 +6655,13 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	FuncExpr *func;
 	struct RDFfdwColumn *col = (struct RDFfdwColumn *)palloc0(sizeof(struct RDFfdwColumn));
 
-	elog(DEBUG2, "%s called:  expr->type='%u'", __func__, expr->type);
-
 	if (expr == NULL)
 	{
 		elog(DEBUG2, "%s: returning NULL (expr is NULL)", __func__);
 		return NULL;
 	}
+
+	elog(DEBUG2, "%s called:  expr->type='%u'", __func__, expr->type);
 
 	switch (nodeTag(expr))
 	{
@@ -6711,6 +6720,10 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		elog(DEBUG2, "%s [T_Var]: start (expr->type='%u')", __func__, expr->type);
 		variable = (Var *)expr;
 
+		if (variable->varno != foreignrel->relid || variable->varlevelsup != 0 ||
+			variable->varattno <= 0)
+			return NULL;
+
 		if (variable->vartype == BOOLOID)
 		{
 			elog(DEBUG2, "%s [T_Var]: returning NULL (variable type is a BOOLOID)", __func__);
@@ -6763,6 +6776,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (!HeapTupleIsValid(tuple))
 		{
 			elog(ERROR, "cache lookup failed for operator %u", oper->opno);
+		}
+		if (!IsShippableObject(OperatorRelationId, oper->opno,
+							  ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace))
+		{
+			ReleaseSysCache(tuple);
+			return NULL;
 		}
 		opername = pstrdup(((Form_pg_operator)GETSTRUCT(tuple))->oprname.data);
 		oprkind = ((Form_pg_operator)GETSTRUCT(tuple))->oprkind;
@@ -7135,6 +7154,12 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		{
 			elog(ERROR, "cache lookup failed for operator %u", arrayoper->opno);
 		}
+		if (!IsShippableObject(OperatorRelationId, arrayoper->opno,
+							  ((Form_pg_operator)GETSTRUCT(tuple))->oprnamespace))
+		{
+			ReleaseSysCache(tuple);
+			return NULL;
+		}
 		opername = pstrdup(((Form_pg_operator)GETSTRUCT(tuple))->oprname.data);
 		leftargtype = ((Form_pg_operator)GETSTRUCT(tuple))->oprleft;
 		ReleaseSysCache(tuple);
@@ -7361,13 +7386,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return NULL;
 		}
 
-		/* do nothing for implicit casts */
-		if (func->funcformat == COERCE_IMPLICIT_CAST)
-		{
-			char *impcast = DeparseExpr(state, foreignrel, linitial(func->args));
-			elog(DEBUG2, "%s exit [T_FuncExpr]: returning '%s' (implicit cast) ", __func__, impcast);
-			return impcast;
-		}
+		/* Casts may round, change timezones, or alter RDF term semantics. */
+		if (func->funcformat != COERCE_EXPLICIT_CALL)
+			return NULL;
 
 		/* get function name and schema */
 		tuple = SearchSysCache1(PROCOID, ObjectIdGetDatum(func->funcid));
@@ -7376,8 +7397,30 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			elog(ERROR, "%s [T_FuncExpr]: cache lookup failed for function %u", __func__, func->funcid);
 		}
 
+		if (!IsShippableObject(ProcedureRelationId, func->funcid,
+							  ((Form_pg_proc)GETSTRUCT(tuple))->pronamespace) ||
+			((Form_pg_proc)GETSTRUCT(tuple))->provolatile == PROVOLATILE_VOLATILE)
+		{
+			ReleaseSysCache(tuple);
+			return NULL;
+		}
+
 		opername = pstrdup(((Form_pg_proc)GETSTRUCT(tuple))->proname.data);
+		if (((Form_pg_proc)GETSTRUCT(tuple))->pronamespace == PG_CATALOG_NAMESPACE &&
+			(strcmp(opername, "round") == 0 || strcmp(opername, "replace") == 0 ||
+			 strcmp(opername, "concat") == 0 || strcmp(opername, "upper") == 0 ||
+			 strcmp(opername, "lower") == 0 || strcmp(opername, "extract") == 0 ||
+			 strcmp(opername, "date_part") == 0))
+		{
+			ReleaseSysCache(tuple);
+			return NULL;
+		}
 		ReleaseSysCache(tuple);
+
+		if (strncmp(opername, "rdfnode_to_", 11) == 0 ||
+			strcmp(opername, "boolean_to_rdfnode") == 0 ||
+			(strcmp(opername, "round") == 0 && list_length(func->args) != 1))
+			return NULL;
 
 		elog(DEBUG2, "  %s [T_FuncExpr]: opername = %s", __func__, opername);
 
