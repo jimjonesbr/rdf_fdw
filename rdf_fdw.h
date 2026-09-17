@@ -237,6 +237,8 @@ typedef struct RDFfdwState
 	UserMapping *mapping;			   /* USER MAPPING to enable http basic authentication for a given postgres user */
 	MemoryContext rdfctxt;			   /* Memory Context for data manipulation */
 	CURL *curl;						   /* CURL request handler */
+	struct curl_slist *curl_headers;
+	bool resources_registered;
 	RDFfdwQueryType sparql_query_type; /* SPARQL Query type: SELECT, DESCRIBE */
 	MemoryContext temp_cxt;			   /* Temporary memory context for per-row allocations during INSERT */
 	/* exclusively for rdf_fdw_clone_table usage */

@@ -772,6 +772,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */
 static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value);
+static void CleanupRDFResources(void *arg);
 static long ParseIntegerOption(DefElem *def);
 static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
@@ -1738,7 +1739,7 @@ static List *DescribeIRI(RDFfdwState *state)
  */
 Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 {
-	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
+	struct RDFfdwState *state;
 	text *srvname_arg = PG_GETARG_TEXT_P(0);
 	text *iri_arg = PG_GETARG_TEXT_P(1);
 	text *base_uri_arg = PG_GETARG_TEXT_P(2);
@@ -1759,6 +1760,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		List *triples;
 		funcctx = SRF_FIRSTCALL_INIT();
 		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+		state = palloc0(sizeof(RDFfdwState));
 
 		elog(DEBUG1, "%s called (SRF_IS_FIRSTCALL)", __func__);
 
@@ -1839,6 +1841,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		/* Use new implementation */
 		LoadRDFData(state);
 		triples = DescribeIRI(state);
+		CleanupRDFResources(state);
 		funcctx->user_fctx = triples;
 
 		if (triples)
@@ -3192,14 +3195,8 @@ static void rdfEndForeignScan(ForeignScanState *node)
 
 		state = (struct RDFfdwState *)node->fdw_state;
 
-		if (state->xmldoc)
-		{
-			elog(DEBUG2, "%s: freeing xmldoc", __func__);
-			xmlFreeDoc(state->xmldoc);
-		}
-
-		elog(DEBUG2, "%s: freeing rdf_fdw state", __func__);
-		pfree(state);
+		CleanupRDFResources(state);
+		node->fdw_state = NULL;
 	}
 
 	elog(DEBUG1, "%s exit rdf_fdw: so long .. \n", __func__);
@@ -4060,7 +4057,8 @@ static void rdfEndForeignModify(EState *estate, ResultRelInfo *rinfo)
 		if (state->batch_count > 0)
 			FlushSPARQLStatements(state);
 
-		pfree(state);
+		CleanupRDFResources(state);
+		rinfo->ri_FdwState = NULL;
 	}
 
 	elog(DEBUG1, "%s exit", __func__);
@@ -4784,6 +4782,104 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 }
 
 /*
+ * CleanupHTTPResources
+ * --------------------
+ *
+ * Releases the libcurl handle and the list of request headers held by a scan.
+ * Safe to call more than once, and on a scan that never opened either, which
+ * is what lets the same function serve both the ordinary end of a request and
+ * the cleanup that follows an error.
+ *
+ * state: the scan whose HTTP resources are to be released
+ */
+static void CleanupHTTPResources(RDFfdwState *state)
+{
+	if (state->curl)
+	{
+		curl_easy_setopt(state->curl, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 0L);
+		curl_easy_cleanup(state->curl);
+		state->curl = NULL;
+	}
+	if (state->curl_headers)
+	{
+		curl_slist_free_all(state->curl_headers);
+		state->curl_headers = NULL;
+	}
+}
+
+/*
+ * CleanupRDFResources
+ * -------------------
+ *
+ * Releases everything a scan holds outside PostgreSQL's memory contexts: the
+ * HTTP resources above, and the document libxml parsed from the response.
+ *
+ * Takes a void pointer because it is used as a memory context reset callback
+ * as well as being called directly, and is idempotent for the same reason --
+ * a scan that cleans up on its way out will be visited again when its context
+ * goes away.
+ *
+ * arg: the scan, as an RDFfdwState
+ */
+static void CleanupRDFResources(void *arg)
+{
+	RDFfdwState *state = arg;
+
+	CleanupHTTPResources(state);
+	if (state->xmldoc)
+	{
+		xmlFreeDoc(state->xmldoc);
+		state->xmldoc = NULL;
+	}
+}
+
+/*
+ * RegisterRDFResources
+ * --------------------
+ *
+ * Arranges for a scan's libcurl and libxml resources to be released when the
+ * memory context holding its state is reset. Neither library allocates inside
+ * a context, so nothing would otherwise reclaim them on a path that does not
+ * reach the end of the scan: a cancelled query, or an error raised beneath it.
+ *
+ * Registering once is enough, and the flag says whether that has happened --
+ * a scan executes more than one request when it pages through a result.
+ *
+ * state: the scan whose resources are to be tied to its context
+ */
+static void RegisterRDFResources(RDFfdwState *state)
+{
+	if (!state->resources_registered)
+	{
+		MemoryContext context = GetMemoryChunkContext(state);
+		MemoryContextCallback *callback = MemoryContextAlloc(context, sizeof(*callback));
+
+		callback->func = CleanupRDFResources;
+		callback->arg = state;
+		MemoryContextRegisterResetCallback(context, callback);
+		state->resources_registered = true;
+	}
+}
+
+/*
+ * AppendHTTPHeader
+ * ----------------
+ * Adds one header to the list the next request will carry, keeping the list on
+ * the scan's state so that the cleanup above can release it however the scan
+ * ends.
+ */
+static void AppendHTTPHeader(RDFfdwState *state, const char *header)
+{
+	struct curl_slist *headers = curl_slist_append(state->curl_headers, header);
+
+	if (headers == NULL)
+		ereport(ERROR, (errcode(ERRCODE_FDW_OUT_OF_MEMORY),
+						errmsg("could not allocate an HTTP request header")));
+	state->curl_headers = headers;
+}
+
+/*
  * CURLWriteMemoryCallback
  * -----------------------
  * Appends a chunk of a libcurl transfer to the MemoryStruct libcurl was given
@@ -4805,13 +4901,9 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 	elog(DEBUG3, "%s called", __func__);
 
 	/*
-	 * Never raise an error from within a libcurl callback: ereport() would
-	 * longjmp out of the middle of curl_easy_perform(), leaving the easy
-	 * handle and its header list - which libcurl allocates outside of
-	 * PostgreSQL's memory contexts - to leak. Flag the condition and abort
-	 * the transfer by returning a short write, so that curl_easy_perform()
-	 * fails with CURLE_WRITE_ERROR and the caller can report it after the
-	 * handle has been cleaned up.
+	 * Report configured size limits after curl_easy_perform() returns.
+	 * Unexpected allocation errors and interrupts are also covered by the
+	 * owning memory context's resource cleanup callback.
 	 */
 	if (mem->max_size > 0 && mem->size + realsize > mem->max_size)
 	{
@@ -5208,7 +5300,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	char errbuf[CURL_ERROR_SIZE];
 	struct MemoryStruct chunk;
 	struct MemoryStruct chunk_header;
-	struct curl_slist *headers = NULL;
 	long response_code;
 
 	chunk.memory = palloc0(1);
@@ -5225,6 +5316,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 															  : (state->sparql_query_type == SPARQL_UPDATE)	  ? "UPDATE"
 																											  : "SELECT/DESCRIBE");
 
+	RegisterRDFResources(state);
 	state->curl = curl_easy_init();
 
 	if (!state->curl)
@@ -5256,7 +5348,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if (!escaped_url)
 		{
-			curl_easy_cleanup(state->curl);
+			CleanupRDFResources(state);
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
 					 errmsg("could not URL encode the SPARQL query for server \"%s\"", state->server->servername)));
@@ -5415,13 +5507,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			state->sparql_query_type == SPARQL_UPDATE)
 		{
 			/* For SPARQL UPDATE: use application/sparql-update content type */
-			headers = curl_slist_append(headers, "Content-Type: application/sparql-update");
+			AppendHTTPHeader(state, "Content-Type: application/sparql-update");
 			elog(DEBUG1, "%s: setting Content-Type: application/sparql-update", __func__);
 		}
 		else
 		{
 			/* For SPARQL SELECT/DESCRIBE: use standard accept header */
-			headers = curl_slist_append(headers, accept_header.data);
+			AppendHTTPHeader(state, accept_header.data);
 		}
 
 		/*
@@ -5435,11 +5527,11 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			StringInfoData auth_header;
 			initStringInfo(&auth_header);
 			appendStringInfo(&auth_header, "Authorization: Bearer %s", state->token);
-			headers = curl_slist_append(headers, auth_header.data);
+			AppendHTTPHeader(state, auth_header.data);
 			elog(DEBUG2, "%s: setting Authorization: Bearer [REDACTED]", __func__);
 		}
 
-		curl_easy_setopt(state->curl, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(state->curl, CURLOPT_HTTPHEADER, state->curl_headers);
 
 		if (state->user && state->password)
 		{
@@ -5505,11 +5597,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		 */
 		if (chunk.size_exceeded)
 		{
-			if (state->xmldoc)
-				xmlFreeDoc(state->xmldoc);
-
-			curl_slist_free_all(headers);
-			curl_easy_cleanup(state->curl);
+			CleanupRDFResources(state);
 
 			ereport(ERROR,
 					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
@@ -5526,9 +5614,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 			if (chunk_header.size > 0 && chunk_header.memory)
 				elog(DEBUG2, "%s: response headers:\n%s", __func__, chunk_header.memory);
-
-			if (state->xmldoc)
-				xmlFreeDoc(state->xmldoc);
 
 			{
 				StringInfoData display_body;
@@ -5560,8 +5645,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 					elog(DEBUG1, "%s: no response body available for HTTP error %ld", __func__, response_code);
 				}
 
-				curl_slist_free_all(headers);
-				curl_easy_cleanup(state->curl);
+				CleanupRDFResources(state);
 
 				if (response_code == 400)
 					ereport(ERROR,
@@ -5630,9 +5714,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			size_t len = strlen(errbuf);
 			const char *curl_err = curl_easy_strerror(res);
 
-			xmlFreeDoc(state->xmldoc);
-			curl_slist_free_all(headers);
-			curl_easy_cleanup(state->curl);
+			CleanupRDFResources(state);
 
 			if (len)
 			{
@@ -5650,8 +5732,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		}
 		else if (response_code < 200 || response_code >= 300)
 		{
-			curl_slist_free_all(headers);
-			curl_easy_cleanup(state->curl);
+			CleanupRDFResources(state);
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_ERROR),
 					 errmsg("unexpected HTTP status %ld from server \"%s\"",
@@ -5670,10 +5751,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		}
 	}
 
+	CleanupHTTPResources(state);
 	pfree(chunk.memory);
 	pfree(chunk_header.memory);
-	curl_slist_free_all(headers);
-	curl_easy_cleanup(state->curl);
 
 	/*
 	 * We thrown an error in case the SPARQL endpoint returns an empty XML doc
@@ -5706,6 +5786,24 @@ static bool IsSPARQLResultNode(xmlNodePtr node, const char *name)
 		xmlStrEqual(node->name, BAD_CAST name);
 }
 
+/*
+ * ValidateSPARQLRecord
+ * --------------------
+ *
+ * Checks that one <result> of a SPARQL response has the shape the format
+ * describes, before any of it is read as data: every child is a <binding> in
+ * the SPARQL results namespace, each names a variable, no variable is bound
+ * twice, and each binding holds exactly one RDF term.
+ *
+ * A record is read by walking it once per column, so a record that binds a
+ * variable twice or holds a binding with no term is not a record the reader
+ * can make a row out of. Refusing it here keeps that reader dealing only with
+ * records it can describe.
+ *
+ * record: the <result> element to examine
+ *
+ * Raises an error if the record is not well formed; returns nothing otherwise.
+ */
 static void ValidateSPARQLRecord(xmlNodePtr record)
 {
 	xmlNodePtr binding;
@@ -5827,8 +5925,7 @@ static void LoadRDFData(RDFfdwState *state)
 		/* Execute the SPARQL query */
 		if (ExecuteSPARQL(state) != REQUEST_SUCCESS)
 		{
-			if (state->xmldoc)
-				xmlFreeDoc(state->xmldoc);
+			CleanupRDFResources(state);
 			elog(ERROR, "%s -> SPARQL failed: '%s'", __func__, state->endpoint);
 		}
 

@@ -1340,24 +1340,6 @@ int CheckURL(char *url)
 }
 
 /*
- * ValidateSPARQLUpdatePattern
- * ----------------------------
- *
- * Validates the sparql_update_pattern to ensure it is suitable
- * for INSERT operations:
- * 1. Contains at least one valid triple pattern (subject, predicate,
- *    and object)
- * 2. All SPARQL variables have corresponding table columns with
- *    matching variable options
- *
- * This prevents empty or invalid patterns from generating malformed
- * SPARQL UPDATE statements.
- *
- * Throws an ERROR if:
- * - The pattern is empty or contains no valid triple patterns
- * - A variable in the pattern has no matching column
- */
-/*
  * SkipSPARQLQuoted
  * ----------------
  *
@@ -1413,6 +1395,21 @@ SkipSPARQLQuoted(const char *p)
 	return p;
 }
 
+/*
+ * NextSPARQLVariable
+ * ------------------
+ *
+ * Finds the next variable in a SPARQL string, skipping whatever is not query
+ * text on the way: comments, IRIs and string literals, where a '?' or a '$'
+ * introduces nothing. A variable is a sigil followed by at least one name
+ * character, and the whole name is returned, so a caller cannot mistake the
+ * start of one variable for the whole of a shorter one.
+ *
+ * source : where to start looking
+ * end    : set to the first character after the variable that is returned
+ *
+ * returns the sigil of the next variable, or NULL if there is none
+ */
 static const char *
 NextSPARQLVariable(const char *source, const char **end)
 {
@@ -1444,6 +1441,20 @@ NextSPARQLVariable(const char *source, const char **end)
 	return NULL;
 }
 
+/*
+ * SPARQLHasVariable
+ * -----------------
+ *
+ * Reports whether a SPARQL string uses a given variable. The whole name has
+ * to match: "?s" is not found in "?subject", and neither is found inside a
+ * literal or a comment. The sigil is not compared, so "?s" and "$s" are one
+ * variable, as SPARQL defines them to be.
+ *
+ * source   : the SPARQL string to search
+ * variable : the variable to look for, sigil included
+ *
+ * returns true if the variable occurs as a variable
+ */
 bool SPARQLHasVariable(const char *source, const char *variable)
 {
 	const char *found;
@@ -1459,6 +1470,24 @@ bool SPARQLHasVariable(const char *source, const char *variable)
 	return false;
 }
 
+/*
+ * ValidateSPARQLUpdatePattern
+ * ----------------------------
+ *
+ * Validates the sparql_update_pattern to ensure it is suitable
+ * for INSERT operations:
+ * 1. Contains at least one valid triple pattern (subject, predicate,
+ *    and object)
+ * 2. All SPARQL variables have corresponding table columns with
+ *    matching variable options
+ *
+ * This prevents empty or invalid patterns from generating malformed
+ * SPARQL UPDATE statements.
+ *
+ * Throws an ERROR if:
+ * - The pattern is empty or contains no valid triple patterns
+ * - A variable in the pattern has no matching column
+ */
 void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 {
 	const char *pos;
@@ -1638,15 +1667,18 @@ void ValidateSPARQLUpdatePattern(RDFfdwState *state)
 
 /*
  * ReplaceSPARQLVariable
- * -----------
- * Replace complete variable tokens outside RDF terms and comments.
- * Replacement text is never scanned again.
+ * ---------------------
  *
- * source  : the original string
- * search  : the substring to search for
- * replace : the replacement string
+ * Substitutes a value for every occurrence of a variable, matching the whole
+ * name and only where a variable can stand: not inside a literal, an IRI or a
+ * comment. What has already been substituted is not searched again, so a value
+ * that happens to contain a sigil is left as the caller wrote it.
  *
- * returns a new string with replacements made
+ * source  : the SPARQL string to substitute into
+ * search  : the variable to replace, sigil included
+ * replace : the text to put in its place
+ *
+ * returns a newly allocated string with every occurrence replaced
  */
 char *ReplaceSPARQLVariable(const char *source, const char *search, const char *replace)
 {

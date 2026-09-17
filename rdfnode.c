@@ -30,12 +30,43 @@
 #include "nodes/makefuncs.h"
 #include <string.h>
 
+/*
+ * rdfnode_numeric_is_nan
+ * ----------------------
+ *
+ * Reports whether a numeric term is NaN. Every comparison has to ask, because
+ * XPath gives NaN no place in the ordering: op:numeric-equal and the rest are
+ * false whenever either side is NaN, including NaN against itself, so a
+ * comparison answers before reaching the arithmetic.
+ *
+ * node: the parsed term to examine
+ *
+ * returns true if the term is numeric and its lexical form is NaN
+ */
 static bool
 rdfnode_numeric_is_nan(const rdfnode_info *node)
 {
 	return node->isNumeric && pg_strcasecmp(node->lex, "NaN") == 0;
 }
 
+/*
+ * rdfnode_numeric_cmp_promoted
+ * ----------------------------
+ *
+ * Compares two numeric terms of any datatypes, in the wider of the two. XPath
+ * promotes xs:integer and xs:decimal to xs:float, and either of those to
+ * xs:double, so the arithmetic is decided by the pair rather than by whichever
+ * term is written first -- comparing in the narrower type, or in the type of
+ * the left operand alone, gives an answer that depends on how the comparison
+ * was written.
+ *
+ * A value the promoted type cannot represent compares as the value it becomes:
+ * against an xsd:float, 16777217 and 16777216 are one number.
+ *
+ * left, right : the terms to compare, both numeric
+ *
+ * returns -1, 0 or 1 as left orders before, with, or after right
+ */
 static int
 rdfnode_numeric_cmp_promoted(const rdfnode_info *left, const rdfnode_info *right)
 {

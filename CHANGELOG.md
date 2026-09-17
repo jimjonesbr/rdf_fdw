@@ -30,6 +30,8 @@ Release date: **unreleased**
 
   A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
 
+* **The HTTP handle and the parsed response were leaked when a query did not finish normally**: libcurl's handle, the list of request headers, and the parsed XML document are allocated outside PostgreSQL's memory contexts, so nothing reclaims them when a context is discarded. They were released at the points where a scan was expected to end, which covered the ordinary path and each error the extension raises itself, but not a cancelled query, an error raised beneath the scan, or any path that had not been given its own release. Each one is now tied to the context that owns the scan's state, so they are handed back however the query ends, and the release is safe to run more than once.
+
 * **A variable in an update template was substituted as text rather than as a variable**: `INSERT`, `UPDATE` and `DELETE` fill a foreign table's `sparql_update_pattern` by replacing each mapped variable with a value, and both the test for whether a variable occurs and the replacement itself worked on characters. A variable therefore matched inside a longer one: given the template `?s <http://example.org/p> ?subject .`, substituting `?s` also rewrote the beginning of `?subject`, and the statement sent was
 
   ```
