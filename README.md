@@ -719,6 +719,7 @@ A `WHERE` condition will not be pushed down if:
   * subqueries or federated queries
 * The condition includes an unsupported data type or operator.
 * The condition contains `OR` logical operators (not yet supported).
+* The condition compares an `rdfnode` with a `date`, `time`, `time with time zone`, `timestamp` or `timestamp with time zone`. SPARQL compares two temporal terms only when they carry the same datatype, and the timezone offset of an `xsd:dateTime` takes part in the comparison. The PostgreSQL operator has neither property: it reads the term's lexical form with the temporal type's input function, which accepts an `xsd:date` where an `xsd:dateTime` was asked for and discards the offset. Endpoints also differ over what to do with the terms that do not compare at all — some drop them, some order them against the constant anyway, and some reject the filter outright — so the same condition selects a different set of rows depending on which store answers it. Evaluating it in PostgreSQL is what makes the result the same everywhere. Comparisons between two `rdfnode`s, and between a column declared with a temporal type and a value of that type are pushed down.
 
 #### Pushdown Examples
 

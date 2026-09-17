@@ -1256,13 +1256,26 @@ SELECT o FROM rdfnode_ft WHERE contains(o, '"x"'::rdfnode);
 
 DROP FUNCTION contains(rdfnode, rdfnode);
 
-/* A comparison that reaches the column through a cast is not the comparison
- * the endpoint would make. "o = timestamp" resolves to
- * rdfnode_to_timestamp(o) = timestamp, which drops the term's timezone before
- * comparing; sending it as "?o = dateTime" compares instants instead, so a
- * term written with an offset matches locally and not remotely. */
+/* Comparing a term with a PostgreSQL temporal type is not the comparison the
+ * endpoint would make, so it stays local whichever temporal type and whichever
+ * operand order is used. The local operator reads the term's lexical form with
+ * the temporal type's input function, which discards the timezone offset of an
+ * xsd:dateTime and accepts an xsd:date where an xsd:dateTime was asked for;
+ * SPARQL compares instants and only between matching datatypes. */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft WHERE o = '2015-01-01 00:00:00'::timestamp;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE '2015-01-01 00:00:00'::timestamptz >= o;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '2015-01-01'::date;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o < '12:00:00'::time;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o > '12:00:00+00'::timetz;
 
 /* a comparison against a value of the column's own type is still pushed */
 EXPLAIN (VERBOSE, COSTS OFF)

@@ -142,6 +142,12 @@
  */
 #define canHandleType(x) ((x) == TEXTOID || (x) == CHAROID || (x) == BPCHAROID || (x) == VARCHAROID || (x) == NAMEOID || (x) == INT8OID || (x) == INT2OID || (x) == INT4OID || (x) == FLOAT4OID || (x) == FLOAT8OID || (x) == BOOLOID || (x) == NUMERICOID || (x) == DATEOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID || (x) == TIMEOID || (x) == TIMETZOID || (x) == RDFNODEOID)
 
+/*
+ * The PostgreSQL temporal types an rdfnode can be compared against. Such a
+ * comparison is never pushed down; see DeparseExpr.
+ */
+#define isTemporalType(x) ((x) == DATEOID || (x) == TIMEOID || (x) == TIMETZOID || (x) == TIMESTAMPOID || (x) == TIMESTAMPTZOID)
+
 /* list API has changed in v13 */
 #if PG_VERSION_NUM < 130000
 #define list_next(l, e) lnext((e))
@@ -367,6 +373,18 @@ extern Datum int2_ge_rdfnode(PG_FUNCTION_ARGS);
 
 /* timestamptz (timestamp with time zone) */
 extern Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS);
+extern Datum rdfnode_eq_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_eq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_neq_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_neq_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_lt_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_lt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_gt_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_gt_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_le_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_le_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_ge_timestamptz(PG_FUNCTION_ARGS);
+extern Datum timestamptz_ge_rdfnode(PG_FUNCTION_ARGS);
 extern Datum timestamptz_to_rdfnode(PG_FUNCTION_ARGS);
 
 /* timestamp (timestamp without time zone) */
@@ -620,6 +638,18 @@ PG_FUNCTION_INFO_V1(int2_ge_rdfnode);
 /* timestamptz (timestamp with time zone) */
 PG_FUNCTION_INFO_V1(timestamptz_to_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_to_timestamptz);
+PG_FUNCTION_INFO_V1(rdfnode_eq_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_eq_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_neq_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_neq_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_lt_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_lt_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_gt_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_gt_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_le_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_le_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_ge_timestamptz);
+PG_FUNCTION_INFO_V1(timestamptz_ge_rdfnode);
 
 /* timestamp (timestamp without time zone) */
 PG_FUNCTION_INFO_V1(rdfnode_to_timestamp);
@@ -6799,6 +6829,28 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return NULL;
 		}
 
+		/*
+		 * Comparisons between an rdfnode and a PostgreSQL temporal type are
+		 * evaluated locally.
+		 *
+		 * SPARQL compares two temporal terms only when they carry the same
+		 * datatype, and the timezone offset of an xsd:dateTime takes part in
+		 * the comparison. The PostgreSQL operator has neither property: it
+		 * hands the term's lexical form to the target type's input function,
+		 * which accepts an xsd:date where an xsd:dateTime was asked for and
+		 * discards the offset. So "2015-01-01T00:00:00+09:00"^^xsd:dateTime
+		 * equals timestamp '2015-01-01 00:00:00' here, while the endpoint
+		 * reports it as distinct. A FILTER built from such a comparison
+		 * selects a different set of rows than the operator itself does, and
+		 * the scan would drop rows it is meant to return.
+		 */
+		if ((leftargtype == RDFNODEOID && isTemporalType(rightargtype)) ||
+			(rightargtype == RDFNODEOID && isTemporalType(leftargtype)))
+		{
+			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: rdfnode compared with a temporal type", __func__);
+			return NULL;
+		}
+
 		/* the operators that we can translate */
 		if (strcmp(opername, "=") == 0 ||
 			(strcmp(opername, ">") == 0 && rightargtype != TEXTOID && rightargtype != BPCHAROID && rightargtype != NAMEOID && rightargtype != CHAROID) ||
@@ -10000,70 +10052,160 @@ Datum rdfnode_to_timestamp(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(result);
 }
 
+/* Which XSD datatypes a PostgreSQL temporal type can represent. */
+#define RDF_TEMPORAL_DATE     (1 << 0)
+#define RDF_TEMPORAL_TIME     (1 << 1)
+#define RDF_TEMPORAL_DATETIME (1 << 2)
+
+/*
+ * RDFNodeToTemporal
+ * -----------------
+ *
+ * Converts the lexical form of an RDF term into a PostgreSQL temporal value,
+ * reporting whether the term belongs in that type's value space at all.
+ *
+ * A term carrying a datatype the target type cannot represent has no position
+ * in its ordering, and neither has one whose lexical form the input function
+ * rejects. Either way the caller answers without comparing instead of raising.
+ * An ordinary filter over a graph is the reason: a predicate rarely carries a
+ * single datatype throughout, so a comparison that raises on the first term of
+ * another kind makes the whole query fail rather than return the rows that do
+ * match. A plain literal carries no datatype to judge, so it is offered to the
+ * input function and accepted if it parses.
+ *
+ * The input function is called with its full three-argument contract. Called
+ * with one argument it reads an uninitialised typmod, which for these types
+ * selects a fractional-digit precision and can silently truncate the value.
+ *
+ * t       : the RDF term
+ * accepts : the datatypes the target type can represent
+ * inputfn : the target type's input function
+ * result  : the converted value, set only when the term is convertible
+ *
+ * returns true when the term was converted
+ */
+static bool
+RDFNodeToTemporal(text *t, int accepts, PGFunction inputfn, Datum *result)
+{
+	rdfnode_info p = parse_rdfnode((rdfnode *)t);
+	MemoryContext oldcontext = CurrentMemoryContext;
+	volatile bool converted = false;
+
+	if (!(p.isPlainLiteral ||
+		  ((accepts & RDF_TEMPORAL_DATE) && p.isDate) ||
+		  ((accepts & RDF_TEMPORAL_TIME) && p.isTime) ||
+		  ((accepts & RDF_TEMPORAL_DATETIME) && p.isDateTime)))
+		return false;
+
+	PG_TRY();
+	{
+		*result = DirectFunctionCall3(inputfn,
+									  CStringGetDatum(p.lex),
+									  ObjectIdGetDatum(InvalidOid),
+									  Int32GetDatum(-1));
+		converted = true;
+	}
+	PG_CATCH();
+	{
+		ErrorData *edata;
+
+		/*
+		 * The handler runs in the error context, which is reset on the way
+		 * out, so switch back before copying anything that has to outlive it.
+		 */
+		MemoryContextSwitchTo(oldcontext);
+		edata = CopyErrorData();
+		FlushErrorState();
+
+		/*
+		 * Only a complaint about the lexical form means the term is outside
+		 * the type's value space. Anything else -- a statement timeout or an
+		 * interrupt raised while parsing, say -- has nothing to do with the
+		 * term, and reporting it as a non-matching row would hide it.
+		 */
+		if (edata->sqlerrcode != ERRCODE_INVALID_DATETIME_FORMAT &&
+			edata->sqlerrcode != ERRCODE_DATETIME_FIELD_OVERFLOW &&
+			edata->sqlerrcode != ERRCODE_DATETIME_VALUE_OUT_OF_RANGE &&
+			edata->sqlerrcode != ERRCODE_INVALID_TEXT_REPRESENTATION)
+			ReThrowError(edata);
+
+		FreeErrorData(edata);
+	}
+	PG_END_TRY();
+
+	return converted;
+}
+
 Datum rdfnode_eq_timestamp(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_eq, rdf_ts, TimestampGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_eq,
+													rdf_val, TimestampGetDatum(PG_GETARG_TIMESTAMP(1)))));
 }
 
 Datum rdfnode_neq_timestamp(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ne, rdf_ts, TimestampGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ne,
+													rdf_val, TimestampGetDatum(PG_GETARG_TIMESTAMP(1)))));
 }
 
 Datum rdfnode_lt_timestamp(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_lt, rdf_ts, TimestampGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_lt,
+													rdf_val, TimestampGetDatum(PG_GETARG_TIMESTAMP(1)))));
 }
 
 Datum rdfnode_gt_timestamp(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_gt, rdf_ts, TimestampGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_gt,
+													rdf_val, TimestampGetDatum(PG_GETARG_TIMESTAMP(1)))));
 }
 
 Datum rdfnode_le_timestamp(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_le, rdf_ts, TimestampGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_le,
+													rdf_val, TimestampGetDatum(PG_GETARG_TIMESTAMP(1)))));
 }
 
 Datum rdfnode_ge_timestamp(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	Timestamp val = PG_GETARG_TIMESTAMP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ge, rdf_ts, TimestampGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ge,
+													rdf_val, TimestampGetDatum(PG_GETARG_TIMESTAMP(1)))));
 }
 
 Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
@@ -10101,71 +10243,220 @@ Datum timestamp_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum timestamp_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	Timestamp val = PG_GETARG_TIMESTAMP(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_eq, TimestampGetDatum(val), rdf_ts));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_eq,
+													TimestampGetDatum(PG_GETARG_TIMESTAMP(0)), rdf_val)));
 }
 
 Datum timestamp_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	Timestamp val = PG_GETARG_TIMESTAMP(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ne, TimestampGetDatum(val), rdf_ts));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ne,
+													TimestampGetDatum(PG_GETARG_TIMESTAMP(0)), rdf_val)));
 }
 
 Datum timestamp_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	Timestamp val = PG_GETARG_TIMESTAMP(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_lt, TimestampGetDatum(val), rdf_ts));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_lt,
+													TimestampGetDatum(PG_GETARG_TIMESTAMP(0)), rdf_val)));
 }
 
 Datum timestamp_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	Timestamp val = PG_GETARG_TIMESTAMP(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_gt, TimestampGetDatum(val), rdf_ts));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_gt,
+													TimestampGetDatum(PG_GETARG_TIMESTAMP(0)), rdf_val)));
 }
 
 Datum timestamp_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	Timestamp val = PG_GETARG_TIMESTAMP(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_le, TimestampGetDatum(val), rdf_ts));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_le,
+													TimestampGetDatum(PG_GETARG_TIMESTAMP(0)), rdf_val)));
 }
 
 Datum timestamp_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	Timestamp val = PG_GETARG_TIMESTAMP(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_ts = DirectFunctionCall1(timestamp_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timestamp_ge, TimestampGetDatum(val), rdf_ts));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamp_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ge,
+													TimestampGetDatum(PG_GETARG_TIMESTAMP(0)), rdf_val)));
 }
 
 /* date */
+Datum rdfnode_eq_timestamptz(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_eq,
+													rdf_val, TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(1)))));
+}
+
+Datum timestamptz_eq_rdfnode(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_eq,
+													TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(0)), rdf_val)));
+}
+
+Datum rdfnode_neq_timestamptz(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ne,
+													rdf_val, TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(1)))));
+}
+
+Datum timestamptz_neq_rdfnode(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ne,
+													TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(0)), rdf_val)));
+}
+
+Datum rdfnode_lt_timestamptz(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_lt,
+													rdf_val, TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(1)))));
+}
+
+Datum timestamptz_lt_rdfnode(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_lt,
+													TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(0)), rdf_val)));
+}
+
+Datum rdfnode_gt_timestamptz(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_gt,
+													rdf_val, TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(1)))));
+}
+
+Datum timestamptz_gt_rdfnode(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_gt,
+													TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(0)), rdf_val)));
+}
+
+Datum rdfnode_le_timestamptz(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_le,
+													rdf_val, TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(1)))));
+}
+
+Datum timestamptz_le_rdfnode(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_le,
+													TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(0)), rdf_val)));
+}
+
+Datum rdfnode_ge_timestamptz(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ge,
+													rdf_val, TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(1)))));
+}
+
+Datum timestamptz_ge_rdfnode(PG_FUNCTION_ARGS)
+{
+	Datum rdf_val;
+
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   timestamptz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timestamp_ge,
+													TimestampTzGetDatum(PG_GETARG_TIMESTAMPTZ(0)), rdf_val)));
+}
 Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 {
 	text *t = PG_GETARG_TEXT_PP(0);
@@ -10210,152 +10501,74 @@ Datum rdfnode_to_date(PG_FUNCTION_ARGS)
 
 Datum rdfnode_lt_date(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_DATEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_lt, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_lt,
+													rdf_val, DateADTGetDatum(PG_GETARG_DATEADT(1)))));
 }
 
 Datum rdfnode_le_date(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_DATEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_le, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_le,
+													rdf_val, DateADTGetDatum(PG_GETARG_DATEADT(1)))));
 }
 
 Datum rdfnode_gt_date(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_DATEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_gt, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_gt,
+													rdf_val, DateADTGetDatum(PG_GETARG_DATEADT(1)))));
 }
 
 Datum rdfnode_ge_date(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_DATEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_ge, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_ge,
+													rdf_val, DateADTGetDatum(PG_GETARG_DATEADT(1)))));
 }
 
 Datum rdfnode_eq_date(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_DATEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_eq,
+													rdf_val, DateADTGetDatum(PG_GETARG_DATEADT(1)))));
 }
 
 Datum rdfnode_neq_date(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	DateADT val = PG_GETARG_DATEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return true (not equal) */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(true);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_ne,
+													rdf_val, DateADTGetDatum(PG_GETARG_DATEADT(1)))));
 }
 
 Datum date_to_rdfnode(PG_FUNCTION_ARGS)
@@ -10381,152 +10594,74 @@ Datum date_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum date_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_DATEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_lt, DateADTGetDatum(val), rdf_date));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_lt,
+													DateADTGetDatum(PG_GETARG_DATEADT(0)), rdf_val)));
 }
 
 Datum date_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_DATEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_le, DateADTGetDatum(val), rdf_date));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_le,
+													DateADTGetDatum(PG_GETARG_DATEADT(0)), rdf_val)));
 }
 
 Datum date_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_DATEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_gt, DateADTGetDatum(val), rdf_date));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_gt,
+													DateADTGetDatum(PG_GETARG_DATEADT(0)), rdf_val)));
 }
 
 Datum date_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_DATEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_ge, DateADTGetDatum(val), rdf_date));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_ge,
+													DateADTGetDatum(PG_GETARG_DATEADT(0)), rdf_val)));
 }
 
 Datum date_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_DATEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_eq, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return false */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(false);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_eq,
+													DateADTGetDatum(PG_GETARG_DATEADT(0)), rdf_val)));
 }
 
 Datum date_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	DateADT val = PG_GETARG_DATEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_date;
-	bool result;
+	Datum rdf_val;
 
-	/* Try to parse the lexical value as a date, even if not tagged as xsd:date */
-	PG_TRY();
-	{
-		rdf_date = DirectFunctionCall1(date_in, CStringGetDatum(p.lex));
-		result = DatumGetBool(DirectFunctionCall2(date_ne, rdf_date, DateADTGetDatum(val)));
-	}
-	PG_CATCH();
-	{
-		/* If parsing fails, the value is not a valid date - return true (not equal) */
-		FlushErrorState();
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_DATE | RDF_TEMPORAL_DATETIME,
+						   date_in, &rdf_val))
 		PG_RETURN_BOOL(true);
-	}
-	PG_END_TRY();
 
-	PG_RETURN_BOOL(result);
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(date_ne,
+													DateADTGetDatum(PG_GETARG_DATEADT(0)), rdf_val)));
 }
 
 /* time (without time zone) */
@@ -10545,68 +10680,74 @@ Datum rdfnode_to_time(PG_FUNCTION_ARGS)
 
 Datum rdfnode_lt_time(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeADT val = PG_GETARG_TIMEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_lt, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_lt,
+													rdf_val, TimeADTGetDatum(PG_GETARG_TIMEADT(1)))));
 }
 
 Datum rdfnode_le_time(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeADT val = PG_GETARG_TIMEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_le, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_le,
+													rdf_val, TimeADTGetDatum(PG_GETARG_TIMEADT(1)))));
 }
 
 Datum rdfnode_gt_time(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeADT val = PG_GETARG_TIMEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_gt, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_gt,
+													rdf_val, TimeADTGetDatum(PG_GETARG_TIMEADT(1)))));
 }
 
 Datum rdfnode_ge_time(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeADT val = PG_GETARG_TIMEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_ge, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_ge,
+													rdf_val, TimeADTGetDatum(PG_GETARG_TIMEADT(1)))));
 }
 
 Datum rdfnode_eq_time(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeADT val = PG_GETARG_TIMEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_eq, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_eq,
+													rdf_val, TimeADTGetDatum(PG_GETARG_TIMEADT(1)))));
 }
 
 Datum rdfnode_neq_time(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeADT val = PG_GETARG_TIMEADT(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_ne, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_ne,
+													rdf_val, TimeADTGetDatum(PG_GETARG_TIMEADT(1)))));
 }
 
 Datum time_to_rdfnode(PG_FUNCTION_ARGS)
@@ -10624,68 +10765,74 @@ Datum time_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum time_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeADT val = PG_GETARG_TIMEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_lt, TimeADTGetDatum(val), rdf_time));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_lt,
+													TimeADTGetDatum(PG_GETARG_TIMEADT(0)), rdf_val)));
 }
 
 Datum time_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeADT val = PG_GETARG_TIMEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_le, TimeADTGetDatum(val), rdf_time));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_le,
+													TimeADTGetDatum(PG_GETARG_TIMEADT(0)), rdf_val)));
 }
 
 Datum time_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeADT val = PG_GETARG_TIMEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_gt, TimeADTGetDatum(val), rdf_time));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_gt,
+													TimeADTGetDatum(PG_GETARG_TIMEADT(0)), rdf_val)));
 }
 
 Datum time_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeADT val = PG_GETARG_TIMEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_ge, TimeADTGetDatum(val), rdf_time));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_ge,
+													TimeADTGetDatum(PG_GETARG_TIMEADT(0)), rdf_val)));
 }
 
 Datum time_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeADT val = PG_GETARG_TIMEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_eq, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_eq,
+													TimeADTGetDatum(PG_GETARG_TIMEADT(0)), rdf_val)));
 }
 
 Datum time_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeADT val = PG_GETARG_TIMEADT(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_time = DirectFunctionCall1(time_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(time_ne, rdf_time, TimeADTGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   time_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(time_ne,
+													TimeADTGetDatum(PG_GETARG_TIMEADT(0)), rdf_val)));
 }
 
 /*  time with time zone (timetz) */
@@ -10703,86 +10850,74 @@ Datum rdfnode_to_timetz(PG_FUNCTION_ARGS)
 
 Datum rdfnode_lt_timetz(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
-										   CStringGetDatum(p.lex),
-										   ObjectIdGetDatum(InvalidOid),
-										   Int32GetDatum(-1));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_lt, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_lt,
+													rdf_val, TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(1)))));
 }
 
 Datum rdfnode_le_timetz(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
-										   CStringGetDatum(p.lex),
-										   ObjectIdGetDatum(InvalidOid),
-										   Int32GetDatum(-1));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_le, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_le,
+													rdf_val, TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(1)))));
 }
 
 Datum rdfnode_gt_timetz(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
-										   CStringGetDatum(p.lex),
-										   ObjectIdGetDatum(InvalidOid),
-										   Int32GetDatum(-1));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_gt, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_gt,
+													rdf_val, TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(1)))));
 }
 
 Datum rdfnode_ge_timetz(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
-										   CStringGetDatum(p.lex),
-										   ObjectIdGetDatum(InvalidOid),
-										   Int32GetDatum(-1));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_ge, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_ge,
+													rdf_val, TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(1)))));
 }
 
 Datum rdfnode_eq_timetz(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
-										   CStringGetDatum(p.lex),
-										   ObjectIdGetDatum(InvalidOid),
-										   Int32GetDatum(-1));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_eq, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_eq,
+													rdf_val, TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(1)))));
 }
 
 Datum rdfnode_neq_timetz(PG_FUNCTION_ARGS)
 {
-	text *t = PG_GETARG_TEXT_PP(0);
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall3(timetz_in,
-										   CStringGetDatum(p.lex),
-										   ObjectIdGetDatum(InvalidOid),
-										   Int32GetDatum(-1));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_ne, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(0), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_ne,
+													rdf_val, TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(1)))));
 }
 
 Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
@@ -10863,68 +10998,74 @@ Datum timetz_to_rdfnode(PG_FUNCTION_ARGS)
 
 Datum timetz_lt_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_lt, TimeTzADTPGetDatum(val), rdf_timetz));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_lt,
+													TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(0)), rdf_val)));
 }
 
 Datum timetz_le_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_le, TimeTzADTPGetDatum(val), rdf_timetz));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_le,
+													TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(0)), rdf_val)));
 }
 
 Datum timetz_gt_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_gt, TimeTzADTPGetDatum(val), rdf_timetz));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_gt,
+													TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(0)), rdf_val)));
 }
 
 Datum timetz_ge_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_ge, TimeTzADTPGetDatum(val), rdf_timetz));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_ge,
+													TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(0)), rdf_val)));
 }
 
 Datum timetz_eq_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_eq, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(false);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_eq,
+													TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(0)), rdf_val)));
 }
 
 Datum timetz_neq_rdfnode(PG_FUNCTION_ARGS)
 {
-	TimeTzADT *val = PG_GETARG_TIMETZADT_P(0);
-	text *t = PG_GETARG_TEXT_PP(1);
-	rdfnode_info p = parse_rdfnode((rdfnode *)t);
-	Datum rdf_timetz = DirectFunctionCall1(timetz_in, CStringGetDatum(p.lex));
-	bool result = DatumGetBool(DirectFunctionCall2(timetz_ne, rdf_timetz, TimeTzADTPGetDatum(val)));
+	Datum rdf_val;
 
-	PG_RETURN_BOOL(result);
+	if (!RDFNodeToTemporal(PG_GETARG_TEXT_PP(1), RDF_TEMPORAL_TIME,
+						   timetz_in, &rdf_val))
+		PG_RETURN_BOOL(true);
+
+	PG_RETURN_BOOL(DatumGetBool(DirectFunctionCall2(timetz_ne,
+													TimeTzADTPGetDatum(PG_GETARG_TIMETZADT_P(0)), rdf_val)));
 }
 
 /* boolean */

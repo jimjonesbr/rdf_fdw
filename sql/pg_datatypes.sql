@@ -366,6 +366,51 @@ SELECT '04:05:06-08:00'::timetz < '12:05:06-08:00'::timetz::rdfnode;
 SELECT '04:05:06-08:00'::timetz >= '12:05:06-08:00'::timetz::rdfnode;
 SELECT '04:05:06-08:00'::timetz <= '12:05:06-08:00'::timetz::rdfnode;
 
+/*
+ * A term whose datatype the temporal type cannot represent has no place in
+ * that type's ordering, so the comparison reports no match rather than
+ * failing: a filter over a predicate that carries more than one datatype has
+ * to return the rows that do match. Only <> answers true, so that each pair
+ * of operators stays each other's negation.
+ */
+SELECT '"42"^^xsd:integer'::rdfnode =  '2020-05-12 00:00:00'::timestamp;
+SELECT '"42"^^xsd:integer'::rdfnode <> '2020-05-12 00:00:00'::timestamp;
+SELECT '"42"^^xsd:integer'::rdfnode <  '2020-05-12 00:00:00'::timestamptz;
+SELECT '"abc"^^xsd:string'::rdfnode >= '18:44:38'::time;
+SELECT '"true"^^xsd:boolean'::rdfnode <= '04:05:06-08:00'::timetz;
+SELECT '<http://example.org/s>'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"2020-05-12T00:00:00"@en'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"P1Y"^^xsd:duration'::rdfnode > '2020-05-12 00:00:00'::timestamp;
+SELECT '2020-05-12 00:00:00'::timestamp = '"42"^^xsd:integer'::rdfnode;
+SELECT '2020-05-12 00:00:00'::timestamp <> '"42"^^xsd:integer'::rdfnode;
+
+/* the temporal datatypes each type does represent */
+SELECT '"2020-05-12T00:00:00"^^xsd:dateTime'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"2020-05-12"^^xsd:date'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '18:44:38'::time;
+
+/* and the ones they do not */
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"2020-05-12"^^xsd:date'::rdfnode = '00:00:00'::time;
+
+/* the date operators apply the same rule, so a literal that happens to read as
+ * a date is only treated as one when its datatype says it is */
+SELECT '"2020-05-12"^^xsd:string'::rdfnode =  '2020-05-12'::date;
+SELECT '"2020-05-12"^^xsd:string'::rdfnode <> '2020-05-12'::date;
+SELECT '"2020-05-12"'::rdfnode = '2020-05-12'::date;
+SELECT '"2020-05-12T10:00:00"^^xsd:dateTime'::rdfnode = '2020-05-12'::date;
+
+/* a plain literal carries no datatype to judge, so it is accepted when the
+ * input function can read it and reported as no match when it cannot */
+SELECT '"2020-05-12T00:00:00"'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"not a timestamp"'::rdfnode = '2020-05-12 00:00:00'::timestamp;
+SELECT '"not a timestamp"'::rdfnode <> '2020-05-12 00:00:00'::timestamp;
+
+/* the input functions are called with an unrestricted typmod, which keeps the
+ * fractional seconds the term was written with */
+SELECT '"18:44:38.123456"^^xsd:time'::rdfnode = '18:44:38.123456'::time;
+SELECT '"2020-05-12T00:00:00.5"^^xsd:dateTime'::rdfnode = '2020-05-12 00:00:00.5'::timestamp;
+
 /* boolean <-> rdfnode */
 SELECT true::rdfnode;
 SELECT false::rdfnode;

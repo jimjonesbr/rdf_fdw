@@ -512,11 +512,11 @@ WHERE
   o <= '2015-01-01 00:00:00'::timestamp AND
   o BETWEEN '2010-01-01 00:00:00'::timestamp AND '2020-01-01 00:00:00'::timestamp AND
   '2015-01-01 00:00:00'::timestamp = o;
-                                                                                                                                                                                                                                                                                                                                                                                                              QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                              
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                            QUERY PLAN                                                                                                                                                                                                                                                                                                                                                             
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o
-   Filter: ((rdfnode_to_timestamp(rdfnode_ft.o) <> 'Wed Jan 01 00:00:00 2020'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) > 'Fri Jan 01 00:00:00 2010'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) < 'Wed Jan 01 00:00:00 2020'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) >= 'Thu Jan 01 00:00:00 2015'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) <= 'Thu Jan 01 00:00:00 2015'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) >= 'Fri Jan 01 00:00:00 2010'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) <= 'Wed Jan 01 00:00:00 2020'::timestamp without time zone) AND (rdfnode_to_timestamp(rdfnode_ft.o) = 'Thu Jan 01 00:00:00 2015'::timestamp without time zone))
+   Filter: ((rdfnode_ft.o = 'Thu Jan 01 00:00:00 2015'::timestamp without time zone) AND (rdfnode_ft.o <> 'Wed Jan 01 00:00:00 2020'::timestamp without time zone) AND (rdfnode_ft.o > 'Fri Jan 01 00:00:00 2010'::timestamp without time zone) AND (rdfnode_ft.o < 'Wed Jan 01 00:00:00 2020'::timestamp without time zone) AND (rdfnode_ft.o >= 'Thu Jan 01 00:00:00 2015'::timestamp without time zone) AND (rdfnode_ft.o <= 'Thu Jan 01 00:00:00 2015'::timestamp without time zone) AND (rdfnode_ft.o >= 'Fri Jan 01 00:00:00 2010'::timestamp without time zone) AND (rdfnode_ft.o <= 'Wed Jan 01 00:00:00 2020'::timestamp without time zone) AND ('Thu Jan 01 00:00:00 2015'::timestamp without time zone = rdfnode_ft.o))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
@@ -536,11 +536,11 @@ WHERE
   o <= '2015-01-01 00:00:00'::timestamptz AND
   o BETWEEN '2010-01-01 00:00:00'::timestamptz AND '2020-01-01 00:00:00'::timestamptz AND
   '2015-01-01 00:00:00'::timestamptz = o;
-                                                                                                                                                                                                                                                                                                                                                                                                                          QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                                          
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                                                                                                                                                                                                                                                                 QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o
-   Filter: ((rdfnode_to_timestamptz(rdfnode_ft.o) <> 'Wed Jan 01 00:00:00 2020 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) > 'Fri Jan 01 00:00:00 2010 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) < 'Wed Jan 01 00:00:00 2020 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) >= 'Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) <= 'Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) >= 'Fri Jan 01 00:00:00 2010 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) <= 'Wed Jan 01 00:00:00 2020 UTC'::timestamp with time zone) AND (rdfnode_to_timestamptz(rdfnode_ft.o) = 'Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone))
+   Filter: ((rdfnode_ft.o = 'Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone) AND (rdfnode_ft.o <> 'Wed Jan 01 00:00:00 2020 UTC'::timestamp with time zone) AND (rdfnode_ft.o > 'Fri Jan 01 00:00:00 2010 UTC'::timestamp with time zone) AND (rdfnode_ft.o < 'Wed Jan 01 00:00:00 2020 UTC'::timestamp with time zone) AND (rdfnode_ft.o >= 'Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone) AND (rdfnode_ft.o <= 'Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone) AND (rdfnode_ft.o >= 'Fri Jan 01 00:00:00 2010 UTC'::timestamp with time zone) AND (rdfnode_ft.o <= 'Wed Jan 01 00:00:00 2020 UTC'::timestamp with time zone) AND ('Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone = rdfnode_ft.o))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
@@ -555,15 +555,16 @@ WHERE
   '2015-01-01'::date =  sparql.strdt(sparql.substr(sparql.str(o), 1, 10), 'xsd:date') AND
   '2015-01-01'::date >= sparql.strdt(sparql.substr(sparql.str(o), 1, 10), 'xsd:date') AND
   '2020-01-01'::date >  sparql.strdt(sparql.substr(sparql.str(o), 1, 10), 'xsd:date');
-                                                                                                                                                                                                                            QUERY PLAN                                                                                                                                                                                                                            
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                                                                      QUERY PLAN                                                                                                                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o
+   Filter: (('01-01-2015'::date = sparql.strdt(sparql.substr(sparql.str(rdfnode_ft.o), 1, 10), '"xsd:date"'::rdfnode)) AND ('01-01-2015'::date >= sparql.strdt(sparql.substr(sparql.str(rdfnode_ft.o), 1, 10), '"xsd:date"'::rdfnode)) AND ('01-01-2020'::date > sparql.strdt(sparql.substr(sparql.str(rdfnode_ft.o), 1, 10), '"xsd:date"'::rdfnode)))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/date>) && ("2015-01-01"^^<http://www.w3.org/2001/XMLSchema#date> = STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>)) && ("2015-01-01"^^<http://www.w3.org/2001/XMLSchema#date> >= STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>)) && ("2020-01-01"^^<http://www.w3.org/2001/XMLSchema#date> > STRDT(SUBSTR(STR(?o), 1, 10), <http://www.w3.org/2001/XMLSchema#date>)))
-(6 rows)
+   Remote Filter: ((?p = <http://example.org/date>))
+(7 rows)
 
 /* SPARQL 17.3 - Operator Mapping (timetz op rdfnode, via strdt/substr/str) */
 EXPLAIN (VERBOSE, COSTS OFF)
@@ -573,15 +574,16 @@ WHERE
   '12:00:00 UTC'::timetz =  sparql.strdt(sparql.substr(sparql.str(o), 12, 8), 'xsd:time') AND
   '12:00:00 UTC'::timetz >= sparql.strdt(sparql.substr(sparql.str(o), 12, 8), 'xsd:time') AND
   '23:00:00 UTC'::timetz >  sparql.strdt(sparql.substr(sparql.str(o), 12, 8), 'xsd:time');
-                                                                                                                                                                                                                                  QUERY PLAN                                                                                                                                                                                                                                  
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                                                                                              QUERY PLAN                                                                                                                                                                                               
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o
+   Filter: (('12:00:00+00'::time with time zone = sparql.strdt(sparql.substr(sparql.str(rdfnode_ft.o), 12, 8), '"xsd:time"'::rdfnode)) AND ('12:00:00+00'::time with time zone >= sparql.strdt(sparql.substr(sparql.str(rdfnode_ft.o), 12, 8), '"xsd:time"'::rdfnode)) AND ('23:00:00+00'::time with time zone > sparql.strdt(sparql.substr(sparql.str(rdfnode_ft.o), 12, 8), '"xsd:time"'::rdfnode)))
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/date>) && ("12:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#time> = STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>)) && ("12:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#time> >= STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>)) && ("23:00:00+00:00"^^<http://www.w3.org/2001/XMLSchema#time> > STRDT(SUBSTR(STR(?o), 12, 8), <http://www.w3.org/2001/XMLSchema#time>)))
-(6 rows)
+   Remote Filter: ((?p = <http://example.org/date>))
+(7 rows)
 
 /* SPARQL 17.3 - Operator Mapping (boolean op rdfnode) */
 EXPLAIN (VERBOSE, COSTS OFF)
@@ -2269,18 +2271,71 @@ SELECT o FROM rdfnode_ft WHERE contains(o, '"x"'::rdfnode);
 (7 rows)
 
 DROP FUNCTION contains(rdfnode, rdfnode);
-/* A comparison that reaches the column through a cast is not the comparison
- * the endpoint would make. "o = timestamp" resolves to
- * rdfnode_to_timestamp(o) = timestamp, which drops the term's timezone before
- * comparing; sending it as "?o = dateTime" compares instants instead, so a
- * term written with an offset matches locally and not remotely. */
+/* Comparing a term with a PostgreSQL temporal type is not the comparison the
+ * endpoint would make, so it stays local whichever temporal type and whichever
+ * operand order is used. The local operator reads the term's lexical form with
+ * the temporal type's input function, which discards the timezone offset of an
+ * xsd:dateTime and accepts an xsd:date where an xsd:dateTime was asked for;
+ * SPARQL compares instants and only between matching datatypes. */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft WHERE o = '2015-01-01 00:00:00'::timestamp;
-                                                QUERY PLAN                                                
-----------------------------------------------------------------------------------------------------------
+                                     QUERY PLAN                                     
+------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: o
-   Filter: (rdfnode_to_timestamp(rdfnode_ft.o) = 'Thu Jan 01 00:00:00 2015'::timestamp without time zone)
+   Filter: (rdfnode_ft.o = 'Thu Jan 01 00:00:00 2015'::timestamp without time zone)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE '2015-01-01 00:00:00'::timestamptz >= o;
+                                      QUERY PLAN                                      
+--------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: ('Thu Jan 01 00:00:00 2015 UTC'::timestamp with time zone >= rdfnode_ft.o)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '2015-01-01'::date;
+                   QUERY PLAN                   
+------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o <> '01-01-2015'::date)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o < '12:00:00'::time;
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o < '12:00:00'::time without time zone)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o > '12:00:00+00'::timetz;
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o > '12:00:00+00'::time with time zone)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?o 

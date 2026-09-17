@@ -1325,8 +1325,9 @@ CREATE CAST (rdfnode AS timestamptz)
 WITH FUNCTION rdfnode_to_timestamptz(rdfnode);
 
 CREATE FUNCTION rdfnode_lt_timestamptz(rdfnode, timestamptz)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamptz($1) < $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = rdfnode,
@@ -1338,8 +1339,9 @@ CREATE OPERATOR < (
 );
 
 CREATE FUNCTION rdfnode_gt_timestamptz(rdfnode, timestamptz)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamptz($1) > $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = rdfnode,
@@ -1351,8 +1353,9 @@ CREATE OPERATOR > (
 );
 
 CREATE FUNCTION rdfnode_le_timestamptz(rdfnode, timestamptz)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamptz($1) <= $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_le_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = rdfnode,
@@ -1364,8 +1367,9 @@ CREATE OPERATOR <= (
 );
 
 CREATE FUNCTION rdfnode_ge_timestamptz(rdfnode, timestamptz)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamptz($1) >= $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = rdfnode,
@@ -1377,8 +1381,9 @@ CREATE OPERATOR >= (
 );
 
 CREATE FUNCTION rdfnode_eq_timestamptz(rdfnode, timestamptz)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamptz($1) = $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = rdfnode,
@@ -1390,8 +1395,9 @@ CREATE OPERATOR = (
 );
 
 CREATE FUNCTION rdfnode_neq_timestamptz(rdfnode, timestamptz)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamptz($1) <> $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = rdfnode,
@@ -1413,8 +1419,9 @@ CREATE CAST (timestamptz AS rdfnode)
 WITH FUNCTION timestamptz_to_rdfnode(timestamptz);
 
 CREATE FUNCTION timestamptz_lt_rdfnode(timestamptz, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 < rdfnode_to_timestamptz($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_lt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = timestamptz,
@@ -1426,8 +1433,9 @@ CREATE OPERATOR < (
 );
 
 CREATE FUNCTION timestamptz_gt_rdfnode(timestamptz, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 > rdfnode_to_timestamptz($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_gt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = timestamptz,
@@ -1439,8 +1447,9 @@ CREATE OPERATOR > (
 );
 
 CREATE FUNCTION timestamptz_le_rdfnode(timestamptz, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 <= rdfnode_to_timestamptz($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_le_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = timestamptz,
@@ -1452,8 +1461,9 @@ CREATE OPERATOR <= (
 );
 
 CREATE FUNCTION timestamptz_ge_rdfnode(timestamptz, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 >= rdfnode_to_timestamptz($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_ge_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = timestamptz,
@@ -1465,8 +1475,9 @@ CREATE OPERATOR >= (
 );
 
 CREATE FUNCTION timestamptz_eq_rdfnode(timestamptz, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 = rdfnode_to_timestamptz($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_eq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = timestamptz,
@@ -1478,8 +1489,9 @@ CREATE OPERATOR = (
 );
 
 CREATE FUNCTION timestamptz_neq_rdfnode(timestamptz, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 <> rdfnode_to_timestamptz($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_neq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = timestamptz,
@@ -1500,14 +1512,10 @@ CREATE CAST (rdfnode AS timestamp)
 WITH FUNCTION rdfnode_to_timestamp(rdfnode) 
 AS IMPLICIT;
 
--- CREATE FUNCTION rdfnode_eq_timestamp(rdfnode, timestamp)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamp'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION rdfnode_eq_timestamp(rdfnode, timestamp)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamp($1) = $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = rdfnode,
@@ -1518,14 +1526,10 @@ CREATE OPERATOR = (
     RESTRICT = eqsel
 );
 
--- CREATE FUNCTION rdfnode_neq_timestamp(rdfnode, timestamp)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamp'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION rdfnode_neq_timestamp(rdfnode, timestamp)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamp($1) <> $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = rdfnode,
@@ -1536,14 +1540,10 @@ CREATE OPERATOR <> (
     RESTRICT = neqsel
 );
 
---CREATE FUNCTION rdfnode_lt_timestamp(rdfnode, timestamp)
---RETURNS boolean
---AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamp'
---LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION rdfnode_lt_timestamp(rdfnode, timestamp)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamp($1) < $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = rdfnode,
@@ -1554,14 +1554,10 @@ CREATE OPERATOR < (
     RESTRICT = scalarltsel
 );
 
--- CREATE FUNCTION rdfnode_gt_timestamp(rdfnode, timestamp)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamp'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION rdfnode_gt_timestamp(rdfnode, timestamp)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamp($1) > $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = rdfnode,
@@ -1572,14 +1568,10 @@ CREATE OPERATOR > (
     RESTRICT = scalargtsel
 );
 
--- CREATE FUNCTION rdfnode_le_timestamp(rdfnode, timestamp)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'rdfnode_le_timestamp'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION rdfnode_le_timestamp(rdfnode, timestamp)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamp($1) <= $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_le_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = rdfnode,
@@ -1590,14 +1582,10 @@ CREATE OPERATOR <= (
     RESTRICT = scalarltsel
 );
 
--- CREATE FUNCTION rdfnode_ge_timestamp(rdfnode, timestamp)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamp'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION rdfnode_ge_timestamp(rdfnode, timestamp)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT rdfnode_to_timestamp($1) >= $2; $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = rdfnode,
@@ -1618,14 +1606,10 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE CAST (timestamp AS rdfnode)
 WITH FUNCTION timestamp_to_rdfnode(timestamp);
 
--- CREATE FUNCTION timestamp_eq_rdfnode(timestamp, rdfnode)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'timestamp_eq_rdfnode'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION timestamp_eq_rdfnode(timestamp, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 = rdfnode_to_timestamp($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_eq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = timestamp,
@@ -1636,14 +1620,10 @@ CREATE OPERATOR = (
     RESTRICT = eqsel
 );
 
--- CREATE FUNCTION timestamp_neq_rdfnode(timestamp, rdfnode)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'timestamp_neq_rdfnode'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION timestamp_neq_rdfnode(timestamp, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 <> rdfnode_to_timestamp($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_neq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = timestamp,
@@ -1654,14 +1634,10 @@ CREATE OPERATOR <> (
     RESTRICT = neqsel
 );
 
--- CREATE FUNCTION timestamp_lt_rdfnode(timestamp, rdfnode)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'timestamp_lt_rdfnode'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION timestamp_lt_rdfnode(timestamp, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 < rdfnode_to_timestamp($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_lt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = timestamp,
@@ -1672,14 +1648,10 @@ CREATE OPERATOR < (
     RESTRICT = scalarltsel
 );
 
--- CREATE FUNCTION timestamp_gt_rdfnode(timestamp, rdfnode)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'timestamp_gt_rdfnode'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION timestamp_gt_rdfnode(timestamp, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 > rdfnode_to_timestamp($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_gt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = timestamp,
@@ -1690,14 +1662,10 @@ CREATE OPERATOR > (
     RESTRICT = scalargtsel
 );
 
--- CREATE FUNCTION timestamp_le_rdfnode(timestamp, rdfnode)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'timestamp_le_rdfnode'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION timestamp_le_rdfnode(timestamp, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 <= rdfnode_to_timestamp($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_le_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = timestamp,
@@ -1708,14 +1676,10 @@ CREATE OPERATOR <= (
     RESTRICT = scalarltsel
 );
 
--- CREATE FUNCTION timestamp_ge_rdfnode(timestamp, rdfnode)
--- RETURNS boolean
--- AS 'MODULE_PATHNAME', 'timestamp_ge_rdfnode'
--- LANGUAGE C IMMUTABLE STRICT;
-
 CREATE FUNCTION timestamp_ge_rdfnode(timestamp, rdfnode)
-RETURNS boolean LANGUAGE SQL IMMUTABLE AS
-$$ SELECT $1 >= rdfnode_to_timestamp($2); $$;
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_ge_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = timestamp,

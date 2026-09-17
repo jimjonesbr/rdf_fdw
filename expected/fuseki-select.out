@@ -1146,12 +1146,9 @@ WHERE object = '2025-12-24 18:30:42'::timestamp;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |               predicate                |                               object                               
 -------------------------------+----------------------------------------+--------------------------------------------------------------------
@@ -1163,12 +1160,9 @@ WHERE object > '2025-01-01 00:00:00'::timestamp;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "2025-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 32 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -1181,31 +1175,26 @@ WHERE object < '2025-12-31 23:59:59'::timestamp;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "2025-12-31T23:59:59"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 32 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
-(2 rows)
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+(4 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN '2025-01-01 00:00:00'::timestamp AND '2025-12-31 23:59:59'::timestamp;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "2025-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2025-12-31T23:59:59"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 32 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -1292,12 +1281,9 @@ WHERE object = '1780-04-16'::date;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                 predicate                 |                        object                         
 -------------------------------+-------------------------------------------+-------------------------------------------------------
@@ -1309,30 +1295,26 @@ WHERE object > '1780-01-01'::date;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 32 records.
 
-            subject            |                 predicate                 |                        object                         
--------------------------------+-------------------------------------------+-------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established> | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate> | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
-(2 rows)
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+(4 rows)
 
 SELECT * FROM ft
 WHERE object < '1780-12-31'::date;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                 predicate                 |                        object                         
 -------------------------------+-------------------------------------------+-------------------------------------------------------
@@ -1344,13 +1326,9 @@ WHERE object BETWEEN '1780-01-01'::date AND '1780-12-31'::date;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
- FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                 predicate                 |                        object                         
 -------------------------------+-------------------------------------------+-------------------------------------------------------
@@ -1363,12 +1341,9 @@ WHERE object = '18:18:42'::time;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                  predicate                  |                       object                        
 -------------------------------+---------------------------------------------+-----------------------------------------------------
@@ -1380,12 +1355,9 @@ WHERE object > '12:00:00'::time;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                  predicate                  |                       object                        
 -------------------------------+---------------------------------------------+-----------------------------------------------------
@@ -1397,12 +1369,9 @@ WHERE object < '23:59:59'::time;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                  predicate                  |                       object                        
 -------------------------------+---------------------------------------------+-----------------------------------------------------
@@ -1414,13 +1383,9 @@ WHERE object BETWEEN '12:00:00'::time AND '23:59:59'::time;
 INFO:  SPARQL query sent to 'fuseki':
 
 SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(?o <= "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{?s ?p ?o}
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 32 records.
 
             subject            |                  predicate                  |                       object                        
 -------------------------------+---------------------------------------------+-----------------------------------------------------
@@ -3041,7 +3006,6 @@ SELECT ?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://dbpedia.org/property/name>)
  FILTER(?o = "Westfälische Wilhelms-Universität Münster"@de)
- FILTER(ISNUMERIC(ROUND(STRLEN(SUBSTR(STR(?o), 1, 9)))))
 }
 
 INFO:  SPARQL returned 1 record.

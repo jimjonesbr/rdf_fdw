@@ -1344,12 +1344,9 @@ WHERE object = '2025-12-24 18:30:42'::timestamp;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 31 records.
 
             subject            |               predicate                |                               object                               
 -------------------------------+----------------------------------------+--------------------------------------------------------------------
@@ -1361,80 +1358,41 @@ WHERE object > '2025-01-01 00:00:00'::timestamp;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "2025-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 19 records.
+INFO:  SPARQL returned 31 records.
 
-            subject            |                    predicate                    |                                object                                
--------------------------------+-------------------------------------------------+----------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ""
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "Hello 👋 PostgreSQL 🐘"@en
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ". <= pontos => ."@pt
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "                                                                   +
-                               |                                                 |  <= salto de línea =>                                               +
-                               |                                                 | "@es
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "\" <= double-quotes => \""@en
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "        <= Tabulatorzeichen =>         "@de
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "日本"@jp
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "ישראל"@il
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Univerrrsity of Münsterrr"@en-us
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Univêrsity of Münsta"@en-gb
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>            | "Johannes Wessels"
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>             | <http://dbpedia.org/resource/North_Rhine-Westphalia>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>              | <http://dbpedia.org/resource/Münster>
-(19 rows)
+(2 rows)
 
 SELECT * FROM ft
 WHERE object < '2025-12-31 23:59:59'::timestamp;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "2025-12-31T23:59:59"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 14 records.
+INFO:  SPARQL returned 31 records.
 
-            subject            |                     predicate                     |                               object                                
--------------------------------+---------------------------------------------------+---------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>            | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted>   | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#integer>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0"^^<http://www.w3.org/2001/XMLSchema#double>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>         | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(14 rows)
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
+(4 rows)
 
 SELECT * FROM ft
 WHERE object BETWEEN '2025-01-01 00:00:00'::timestamp AND '2025-12-31 23:59:59'::timestamp;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "2025-01-01T00:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(?o <= "2025-12-31T23:59:59"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 31 records.
 
             subject            |                    predicate                    |                               object                                
 -------------------------------+-------------------------------------------------+---------------------------------------------------------------------
@@ -1552,12 +1510,9 @@ WHERE object = '1780-04-16'::date;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 31 records.
 
             subject            |                 predicate                 |                        object                         
 -------------------------------+-------------------------------------------+-------------------------------------------------------
@@ -1569,79 +1524,40 @@ WHERE object > '1780-01-01'::date;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 21 records.
+INFO:  SPARQL returned 31 records.
 
-            subject            |                    predicate                    |                                object                                
--------------------------------+-------------------------------------------------+----------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ""
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "Hello 👋 PostgreSQL 🐘"@en
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "explicit string literal"^^<http://www.w3.org/2001/XMLSchema#string>
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | ". <= pontos => ."@pt
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "                                                                   +
-                               |                                                 |  <= salto de línea =>                                               +
-                               |                                                 | "@es
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "\" <= double-quotes => \""@en
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "        <= Tabulatorzeichen =>         "@de
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "日本"@jp
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>  | "ישראל"@il
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Westfälische Wilhelms-Universität Münster"@de
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Univerrrsity of Münsterrr"@en-us
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>              | "Univêrsity of Münsta"@en-gb
+            subject            |                    predicate                    |                               object                                
+-------------------------------+-------------------------------------------------+---------------------------------------------------------------------
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>       | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/modified>          | "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/wikiPageExtracted> | "2025-12-24T13:00:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>            | "Johannes Wessels"
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/state>             | <http://dbpedia.org/resource/North_Rhine-Westphalia>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/city>              | <http://dbpedia.org/resource/Münster>
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/restingDate>       | "2024-02-29"^^<http://www.w3.org/2001/XMLSchema#date>
-(21 rows)
+(4 rows)
 
 SELECT * FROM ft
 WHERE object < '1780-12-31'::date;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 11 records.
+INFO:  SPARQL returned 31 records.
 
-            subject            |                     predicate                     |                              object                               
--------------------------------+---------------------------------------------------+-------------------------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/established>         | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#lat>     | "51.9636"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://www.w3.org/2003/01/geo/wgs84_pos#long>    | "7.6136"^^<http://www.w3.org/2001/XMLSchema#float>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/administrativeStaff> | "1924"^^<http://www.w3.org/2001/XMLSchema#short>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/students>            | "49098"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/academicStaff>       | "4956"^^<http://www.w3.org/2001/XMLSchema#int>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/budget>              | "803600000"^^<http://www.w3.org/2001/XMLSchema#integer>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/tuition>             | "1500.0"^^<http://www.w3.org/2001/XMLSchema#double>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
- <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
-(11 rows)
+            subject            |                 predicate                 |                        object                         
+-------------------------------+-------------------------------------------+-------------------------------------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/established> | "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date>
+(1 row)
 
 SELECT * FROM ft
 WHERE object BETWEEN '1780-01-01'::date AND '1780-12-31'::date;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
- FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-INFO:  SPARQL returned 1 record.
+INFO:  SPARQL returned 31 records.
 
             subject            |                 predicate                 |                        object                         
 -------------------------------+-------------------------------------------+-------------------------------------------------------
@@ -1654,87 +1570,53 @@ WHERE object = '18:18:42'::time;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-ERROR:  internal error on server "virtuoso" (HTTP 500)
-DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T18:18:42 to time : Incorrect hour field length
+INFO:  SPARQL returned 31 records.
 
-SPARQL query:
-define sql:big-data-const 0
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
-SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o = "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
 SELECT * FROM ft
 WHERE object > '12:00:00'::time;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-ERROR:  internal error on server "virtuoso" (HTTP 500)
-DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T12:00:00 to time : Incorrect hour field length
+INFO:  SPARQL returned 31 records.
 
-SPARQL query:
-define sql:big-data-const 0
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
-SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o > "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
 SELECT * FROM ft
 WHERE object < '23:59:59'::time;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-ERROR:  internal error on server "virtuoso" (HTTP 500)
-DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T23:59:59 to time : Incorrect hour field length
+INFO:  SPARQL returned 31 records.
 
-SPARQL query:
-define sql:big-data-const 0
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
-SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o < "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
 SELECT * FROM ft
 WHERE object BETWEEN '12:00:00'::time AND '23:59:59'::time;
 INFO:  SPARQL query sent to 'virtuoso':
 
 SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(?o <= "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
+{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} }
 
-ERROR:  internal error on server "virtuoso" (HTTP 500)
-DETAIL:  Virtuoso 22007 Error DT011: Cannot convert T23:59:59 to time : Incorrect hour field length
+INFO:  SPARQL returned 31 records.
 
-SPARQL query:
-define sql:big-data-const 0
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
 
-SELECT ?s ?p ?o 
-{ GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
- ## rdf_fdw pushdown conditions ##
- FILTER(?o >= "12:00:00"^^<http://www.w3.org/2001/XMLSchema#time>)
- FILTER(?o <= "23:59:59"^^<http://www.w3.org/2001/XMLSchema#time>)
-}
 /* SPARQL - 17.3 Operator Mapping (timetz) */
 /* SPARQL - 17.3 Operator Mapping (boolean) */
 SELECT * FROM ft
@@ -3423,7 +3305,6 @@ SELECT ?s ?p ?o
  ## rdf_fdw pushdown conditions ##
  FILTER(?p = <http://dbpedia.org/property/name>)
  FILTER(?o = "Westfälische Wilhelms-Universität Münster"@de)
- FILTER(ISNUMERIC(ROUND(STRLEN(SUBSTR(STR(?o), 1, 9)))))
 }
 
 INFO:  SPARQL returned 1 record.

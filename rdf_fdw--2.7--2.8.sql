@@ -354,3 +354,107 @@ BEGIN
   RETURN sparql.md5($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
+
+/* Comparisons between an rdfnode and timestamp or timestamptz were SQL
+   wrappers around the cast to that type. The cast rejects any term that is
+   neither xsd:dateTime nor xsd:date, so a filter over a predicate carrying
+   mixed datatypes failed instead of returning its matching rows, and the
+   planner inlined the wrapper into a cast expression that could not be
+   deparsed. The C implementations report such a term as non-matching and
+   leave the operator intact. */
+CREATE OR REPLACE FUNCTION rdfnode_eq_timestamp(rdfnode, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_neq_timestamp(rdfnode, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_lt_timestamp(rdfnode, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_gt_timestamp(rdfnode, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_le_timestamp(rdfnode, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_le_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_ge_timestamp(rdfnode, timestamp)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamp'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_eq_timestamptz(rdfnode, timestamptz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_neq_timestamptz(rdfnode, timestamptz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_lt_timestamptz(rdfnode, timestamptz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_gt_timestamptz(rdfnode, timestamptz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_le_timestamptz(rdfnode, timestamptz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_le_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION rdfnode_ge_timestamptz(rdfnode, timestamptz)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamptz'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamp_eq_rdfnode(timestamp, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_eq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamp_neq_rdfnode(timestamp, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_neq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamp_lt_rdfnode(timestamp, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_lt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamp_gt_rdfnode(timestamp, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_gt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamp_le_rdfnode(timestamp, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_le_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamp_ge_rdfnode(timestamp, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamp_ge_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamptz_eq_rdfnode(timestamptz, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_eq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamptz_neq_rdfnode(timestamptz, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_neq_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamptz_lt_rdfnode(timestamptz, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_lt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamptz_gt_rdfnode(timestamptz, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_gt_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamptz_le_rdfnode(timestamptz, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_le_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION timestamptz_ge_rdfnode(timestamptz, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'timestamptz_ge_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
