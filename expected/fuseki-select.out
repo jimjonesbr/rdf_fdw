@@ -3229,6 +3229,61 @@ SELECT ?s ?p ?o
 ERROR:  SPARQL response exceeds max_response_size limit of 10 bytes
 HINT:  Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.
 ALTER SERVER fuseki OPTIONS (SET max_response_size '0');
+/*
+ * Type modifiers are applied when a result is converted.
+ *
+ * The values are bound in the query rather than read from the graph, so this
+ * exercises the conversion alone and does not depend on what the store holds.
+ * A column type whose input function takes a type modifier has to receive it:
+ * char(n) blank-pads to n, time(n) keeps n fractional digits, numeric(p,s)
+ * rounds to s. A modifier that never reaches the input function leaves it
+ * reading one that was never set, so the second query converts the same
+ * values through PostgreSQL itself and the two rows must agree.
+ */
+CREATE FOREIGN TABLE ft_typmod (
+  c_char    char(5)      OPTIONS (variable '?o'),
+  c_varchar varchar(4)   OPTIONS (variable '?o'),
+  c_time    time(0)      OPTIONS (variable '?t'),
+  c_timetz  timetz(1)    OPTIONS (variable '?tz'),
+  c_numeric numeric(6,2) OPTIONS (variable '?n'),
+  c_ival    interval(0)  OPTIONS (variable '?i')
+)
+SERVER fuseki OPTIONS (sparql $$
+  SELECT ?o ?t ?tz ?n ?i WHERE {
+    BIND("ab" AS ?o)
+    BIND("12:34:56.789"^^<http://www.w3.org/2001/XMLSchema#time> AS ?t)
+    BIND("12:34:56.789+02:00"^^<http://www.w3.org/2001/XMLSchema#time> AS ?tz)
+    BIND("1.239"^^<http://www.w3.org/2001/XMLSchema#decimal> AS ?n)
+    BIND("PT1H2M3.456S"^^<http://www.w3.org/2001/XMLSchema#duration> AS ?i)
+  }
+$$);
+SELECT octet_length(c_char)    AS char5_is_padded_to_5,
+       octet_length(c_varchar) AS varchar4_fits,
+       c_time::text            AS time0,
+       c_timetz::text          AS timetz1,
+       c_numeric::text         AS numeric_6_2,
+       c_ival::text            AS interval0
+FROM ft_typmod;
+WARNING:  the rdf_fdw FOREIGN TABLE "ft_typmod" has columns using native PostgreSQL types which are deprecated: c_char, c_varchar, c_time, c_timetz, c_numeric, c_ival
+HINT:  Use the "rdfnode" type instead.
+ char5_is_padded_to_5 | varchar4_fits |  time0   |    timetz1    | numeric_6_2 |       interval0        
+----------------------+---------------+----------+---------------+-------------+------------------------
+                    5 |             2 | 12:34:57 | 12:34:56.8+02 | 1.24        | @ 1 hour 2 mins 3 secs
+(1 row)
+
+/* the same values converted by PostgreSQL itself, for comparison */
+SELECT octet_length('ab'::char(5))              AS char5_is_padded_to_5,
+       octet_length('ab'::varchar(4))           AS varchar4_fits,
+       ('12:34:56.789'::time(0))::text          AS time0,
+       ('12:34:56.789+02:00'::timetz(1))::text  AS timetz1,
+       ('1.239'::numeric(6,2))::text            AS numeric_6_2,
+       ('PT1H2M3.456S'::interval(0))::text      AS interval0;
+ char5_is_padded_to_5 | varchar4_fits |  time0   |    timetz1    | numeric_6_2 |       interval0        
+----------------------+---------------+----------+---------------+-------------+------------------------
+                    5 |             2 | 12:34:57 | 12:34:56.8+02 | 1.24        | @ 1 hour 2 mins 3 secs
+(1 row)
+
+DROP FOREIGN TABLE ft_typmod;
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':

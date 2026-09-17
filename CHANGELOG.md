@@ -30,6 +30,14 @@ Release date: **unreleased**
 
   A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
 
+* **Result values were converted without the type modifier or the I/O parameter their type needs**: A PostgreSQL input function takes three arguments — the text, an I/O parameter, and the type modifier — and `rdf_fdw` called them with one, from a call site with room for one. The other two were read from beyond the end of the argument array, so whatever happened to lie there became the type modifier and the I/O parameter.
+
+  A type modifier was passed deliberately for six types (`real`, `double precision`, `numeric`, `timestamp`, `timestamptz` and `varchar`), and those behaved. Every other type modifier was read from that stale memory. A `char(5)` column came back blank-padded to whatever length was found there rather than to 5 — in one run, to 631056732 characters, having allocated the memory to hold it — and `time(n)`, `timetz(n)` and `interval(n)` columns kept the full precision of the value instead of the precision their column declared.
+
+  The same read supplied the I/O parameter, which array and domain types need in order to know what they are converting. An array column therefore failed outright, with a `cache lookup failed for type` message naming whatever number had been read, and could not be used at all.
+
+  All three conversion sites now call `getTypeInputInfo()` and `OidInputFunctionCall()`, which is the contract PostgreSQL defines for this, so every type receives its own modifier and I/O parameter. Arrays and domains work; `char(n)`, `time(n)`, `timetz(n)` and `interval(n)` convert to the precision the column declares, matching what PostgreSQL produces for the same value.  (Tomas Vondra <tomas@vondra.me>)
+
 * **`LIKE` was translated into a regular expression that matched different strings**: A `LIKE` pattern and a regular expression do not mean the same thing, and the translation behind a pushed-down `LIKE` got several of the differences wrong.
 
   A `LIKE` pattern has to match the value end to end, so the regular expression needs anchoring at both ends — but the anchors were omitted whenever the pattern began or ended with a wildcard or a `^`. `LIKE '_foo'` became `.foo$`, which is unanchored at the front and matches `xafoo`; `LIKE 'foo_'` became `^foo.`, which matches `fooXbar`; and `LIKE '^foo'` became `\^foo$`, matching anything that ends in `^foo`. All three now anchor both ends.

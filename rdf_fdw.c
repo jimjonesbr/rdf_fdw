@@ -768,7 +768,7 @@ static void rdfEndForeignInsert(EState *estate, ResultRelInfo *rinfo);
 static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */
-static Datum CreateDatum(int pgtype, int pgtypmod, char *value);
+static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value);
 static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
@@ -1555,36 +1555,15 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
  *
  * returns Datum
  */
-static Datum CreateDatum(int pgtype, int pgtypmod, char *value)
+static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value)
 {
-	HeapTuple tuple;
-	regproc typinput;
+	Oid typinput;
+	Oid typioparam;
 
 	elog(DEBUG3, "%s called", __func__);
 
-	tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-
-	if (!HeapTupleIsValid(tuple))
-		ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-				 errmsg("unknown PostgreSQL type OID %u", pgtype)));
-
-	typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
-	ReleaseSysCache(tuple);
-
-	if (pgtype == FLOAT4OID ||
-		pgtype == FLOAT8OID ||
-		pgtype == NUMERICOID ||
-		pgtype == TIMESTAMPOID ||
-		pgtype == TIMESTAMPTZOID ||
-		pgtype == VARCHAROID)
-		return OidFunctionCall3(
-			typinput,
-			CStringGetDatum(value),
-			ObjectIdGetDatum(InvalidOid),
-			Int32GetDatum(pgtypmod));
-	else
-		return OidFunctionCall1(typinput, CStringGetDatum(value));
+	getTypeInputInfo(pgtype, &typinput, &typioparam);
+	return OidInputFunctionCall(typinput, value, typioparam, pgtypmod);
 }
 
 /*
@@ -2373,9 +2352,6 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	xmlNodePtr result;
 	xmlNodePtr value;
 	xmlNodePtr record;
-	regproc typinput;
-	HeapTuple tuple;
-	Datum datum;
 	RangeVar *rv;
 	int ret = -1;
 	int processed_records = 0;
@@ -2471,7 +2447,6 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						else
 							appendStringInfoString(&literal_value, (char *)content);
 
-						datum = CStringGetDatum(literal_value.data);
 						ctypes[colindex] = pgtype;
 						cnulls[colindex] = false;
 
@@ -2479,29 +2454,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 						xmlFree(lang);
 						xmlFree(datatype);
 
-						if (pgtype == RDFNODEOID)
-							cvals[colindex] = DirectFunctionCall1(rdfnode_in, datum);
-						else
-						{
-							tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-
-							if (!HeapTupleIsValid(tuple))
-								ereport(ERROR,
-										(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-										 errmsg("cache lookup failed for type %u > column '%s'", pgtype, colname)));
-
-							typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
-							ReleaseSysCache(tuple);
-
-							if (pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
-								cvals[colindex] = OidFunctionCall3(
-									typinput,
-									datum,
-									ObjectIdGetDatum(InvalidOid),
-									Int32GetDatum(pgtypmod));
-							else
-								cvals[colindex] = OidFunctionCall1(typinput, datum);
-						}
+						cvals[colindex] = CreateDatum(pgtype, pgtypmod, literal_value.data);
 					}
 					colindex++;
 
@@ -6333,7 +6286,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 {
 	xmlNodePtr record;
 	xmlNodePtr result;
-	regproc typinput;
 	/*
 		MemoryContext old_cxt, tmp_cxt;
 
@@ -6363,6 +6315,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 			initStringInfo(&name);
 			appendStringInfo(&name, "?%s", (char *)prop);
+			xmlFree(prop);
+			prop = NULL;
 
 			if (strcmp(sparqlvar, name.data) == 0)
 			{
@@ -6371,8 +6325,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 				for (value = result->children; value != NULL; value = value->next)
 				{
-					HeapTuple tuple;
-					Datum datum;
 					StringInfoData literal_value;
 					xmlChar *datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
 					xmlChar *lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
@@ -6467,7 +6419,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					else
 						appendStringInfo(&literal_value, "%s", node_value);
 
-					datum = CStringGetDatum(literal_value.data);
 					slot->tts_isnull[i] = false;
 
 					if (pgtype == RDFNODEOID)
@@ -6477,56 +6428,14 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 					elog(DEBUG3, "%s: value > '%s'", __func__, node_value);
 
-					/* find the appropriate conversion function */
-					tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(pgtype));
-
-					if (!HeapTupleIsValid(tuple))
-					{
-						/* Cleanup before error */
-						if (content)
-							xmlFree(content);
-						if (lang)
-							xmlFree(lang);
-						if (datatype)
-							xmlFree(datatype);
-						if (prop)
-							xmlFree(prop);
-						if (name.data)
-        					pfree(name.data);
-
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-								 errmsg("cache lookup failed for type %u > column '%s(%s)'", pgtype, sparqlvar, sparqlvar)));
-					}
-
-					typinput = ((Form_pg_type)GETSTRUCT(tuple))->typinput;
-					ReleaseSysCache(tuple);
-
-					if (pgtype == NUMERICOID || pgtype == TIMESTAMPOID || pgtype == TIMESTAMPTZOID || pgtype == VARCHAROID)
-					{
-
-						slot->tts_values[i] = OidFunctionCall3(
-							typinput,
-							datum,
-							ObjectIdGetDatum(InvalidOid),
-							Int32GetDatum(pgtypmod));
-					}
-					else if (pgtype == RDFNODEOID)
-					{
-						slot->tts_values[i] = DirectFunctionCall1(rdfnode_in, datum);
-					}
-					else
-					{
-						slot->tts_values[i] = OidFunctionCall1(typinput, datum);
-					}
-
-					/* Cleanup after successful processing */
 					if (content)
 						xmlFree(content);
 					if (lang)
 						xmlFree(lang);
 					if (datatype)
 						xmlFree(datatype);
+					slot->tts_values[i] = CreateDatum(pgtype, pgtypmod, literal_value.data);
+
 					if (literal_value.data)
 						pfree(literal_value.data);
 				}
