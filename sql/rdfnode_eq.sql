@@ -157,3 +157,27 @@ SELECT '_:b1'::rdfnode = '<_:b1>'::rdfnode;                                     
 SELECT '<http://example.org/v>'::rdfnode = '<http://example.org/v>'::rdfnode;     -- t
 SELECT '_:b1'::rdfnode = '_:b1'::rdfnode;                                         -- t
 SELECT '_:b1'::rdfnode = '_:b2'::rdfnode;                                         -- f
+
+/*
+ * Comparing two numeric literals of different datatypes promotes both to the
+ * wider of the two, so the answer cannot depend on which side each is written.
+ * 16777217 has no xsd:float representation and becomes 16777216, so against a
+ * float every operator must treat the two as the same number.
+ */
+SELECT '"16777217"^^xsd:float'::rdfnode =  '"16777216"^^xsd:float'::rdfnode;      -- t
+SELECT '"16777217"^^xsd:float'::rdfnode =  '"16777216"^^xsd:integer'::rdfnode;    -- t
+SELECT '"16777216"^^xsd:integer'::rdfnode = '"16777217"^^xsd:float'::rdfnode;     -- t
+SELECT '"16777217"^^xsd:float'::rdfnode >  '"16777216"^^xsd:integer'::rdfnode;    -- f
+SELECT '"16777216"^^xsd:integer'::rdfnode < '"16777217"^^xsd:float'::rdfnode;     -- f
+SELECT '"16777217"^^xsd:float'::rdfnode >= '"16777216"^^xsd:integer'::rdfnode;    -- t
+SELECT '"16777216"^^xsd:integer'::rdfnode <= '"16777217"^^xsd:float'::rdfnode;    -- t
+
+/* the same number reached from either side gives the same answer */
+SELECT ('"2.5"^^xsd:double'::rdfnode > '"2"^^xsd:integer'::rdfnode)
+     = ('"2"^^xsd:integer'::rdfnode < '"2.5"^^xsd:double'::rdfnode);              -- t
+SELECT ('"2"^^xsd:decimal'::rdfnode >= '"2"^^xsd:float'::rdfnode)
+     = ('"2"^^xsd:float'::rdfnode <= '"2"^^xsd:decimal'::rdfnode);                -- t
+
+/* xsd:integer and xsd:decimal promote to no floating type, so they stay exact */
+SELECT '"9007199254740993"^^xsd:integer'::rdfnode = '"9007199254740992"^^xsd:integer'::rdfnode; -- f
+SELECT '"9007199254740993"^^xsd:double'::rdfnode  = '"9007199254740992"^^xsd:integer'::rdfnode; -- t

@@ -30,6 +30,43 @@
 #include "nodes/makefuncs.h"
 #include <string.h>
 
+static bool
+rdfnode_numeric_is_nan(const rdfnode_info *node)
+{
+	return node->isNumeric && pg_strcasecmp(node->lex, "NaN") == 0;
+}
+
+static int
+rdfnode_numeric_cmp_promoted(const rdfnode_info *left, const rdfnode_info *right)
+{
+	XsdNumericType leftType = get_xsd_numeric_type(left->dtype);
+	XsdNumericType rightType = get_xsd_numeric_type(right->dtype);
+	XsdNumericType commonType = leftType > rightType ? leftType : rightType;
+
+	if (commonType == XSD_TYPE_DOUBLE)
+	{
+		float8 leftVal = DatumGetFloat8(DirectFunctionCall1(float8in, CStringGetDatum(left->lex)));
+		float8 rightVal = DatumGetFloat8(DirectFunctionCall1(float8in, CStringGetDatum(right->lex)));
+
+		return (leftVal < rightVal) ? -1 : (leftVal > rightVal) ? 1 : 0;
+	}
+
+	if (commonType == XSD_TYPE_FLOAT)
+	{
+		float4 leftVal = DatumGetFloat4(DirectFunctionCall1(float4in, CStringGetDatum(left->lex)));
+		float4 rightVal = DatumGetFloat4(DirectFunctionCall1(float4in, CStringGetDatum(right->lex)));
+
+		return (leftVal < rightVal) ? -1 : (leftVal > rightVal) ? 1 : 0;
+	}
+
+	return DatumGetInt32(DirectFunctionCall2(
+		numeric_cmp,
+		DirectFunctionCall3(numeric_in, CStringGetDatum(left->lex),
+							ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1)),
+		DirectFunctionCall3(numeric_in, CStringGetDatum(right->lex),
+							ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1))));
+}
+
 /*
  * time_has_tz
  * -----------
@@ -178,8 +215,6 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	/* === Value-space comparisons === */
 	if (a.isNumeric && b.isNumeric)
 	{
-		Datum a_val, b_val;
-
 		/*
 		 * SPARQL 1.1 (via IEEE 754) requires false for comparisons involving NaN,
 		 * as stated at 4.3.1 "If $arg1 or $arg2 is NaN, the function returns false."
@@ -187,29 +222,10 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 		 * 4.3.1 op:numeric-equal
 		 * https://www.w3.org/TR/xpath-functions/#func-numeric-equal
 		 */
-		if ((a.isNumeric && pg_strcasecmp(a.lex, "NaN") == 0) ||
-			(b.isNumeric && pg_strcasecmp(b.lex, "NaN") == 0))
+		if (rdfnode_numeric_is_nan(&a) || rdfnode_numeric_is_nan(&b))
 			return false;
 
-		if (strcmp(a.dtype, RDF_XSD_DOUBLE) == 0 ||
-			strcmp(b.dtype, RDF_XSD_DOUBLE) == 0 ||
-			strcmp(a.dtype, RDF_XSD_FLOAT) == 0 ||
-			strcmp(b.dtype, RDF_XSD_FLOAT) == 0)
-		{
-			a_val = DirectFunctionCall1(float8in, CStringGetDatum(a.lex));
-			b_val = DirectFunctionCall1(float8in, CStringGetDatum(b.lex));
-			return DatumGetBool(DirectFunctionCall2(float8eq, a_val, b_val));
-		}
-		else
-		{
-			a_val = DirectFunctionCall3(numeric_in, CStringGetDatum(a.lex),
-										ObjectIdGetDatum(InvalidOid),
-										Int32GetDatum(-1));
-			b_val = DirectFunctionCall3(numeric_in, CStringGetDatum(b.lex),
-										ObjectIdGetDatum(InvalidOid),
-										Int32GetDatum(-1));
-			return DatumGetBool(DirectFunctionCall2(numeric_eq, a_val, b_val));
-		}
+		return rdfnode_numeric_cmp_promoted(&a, &b) == 0;
 	}
 
 	if (a.isDate && b.isDate)
@@ -358,30 +374,10 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 		 * 4.3.1 op:numeric-equal
 		 * https://www.w3.org/TR/xpath-functions/#func-numeric-equal
 		 */
-		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		if (rdfnode_numeric_is_nan(&rdfnode1) || rdfnode_numeric_is_nan(&rdfnode2))
 			return false;
 
-		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
-		{
-			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
-			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
-
-			return DatumGetBool(DirectFunctionCall2(float8ge, arg1, arg2));
-		}
-		else
-		{
-			arg1 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode1.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-			arg2 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode2.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-
-			return DatumGetBool(DirectFunctionCall2(numeric_ge, arg1, arg2));
-		}
+		return rdfnode_numeric_cmp_promoted(&rdfnode1, &rdfnode2) >= 0;
 	}
 
 	/* xsd:date literals */
@@ -526,30 +522,10 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 		 * 4.3.1 op:numeric-equal
 		 * https://www.w3.org/TR/xpath-functions/#func-numeric-equal
 		 */
-		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		if (rdfnode_numeric_is_nan(&rdfnode1) || rdfnode_numeric_is_nan(&rdfnode2))
 			return false;
 
-		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
-		{
-			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
-			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
-
-			return DatumGetBool(DirectFunctionCall2(float8le, arg1, arg2));
-		}
-		else
-		{
-			arg1 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode1.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-			arg2 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode2.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-
-			return DatumGetBool(DirectFunctionCall2(numeric_le, arg1, arg2));
-		}
+		return rdfnode_numeric_cmp_promoted(&rdfnode1, &rdfnode2) <= 0;
 	}
 
 	/* xsd:date literals */
@@ -695,30 +671,10 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 		 * 4.3.2 op:numeric-less-than
 		 * https://www.w3.org/TR/xpath-functions/#func-numeric-less-than
 		 */
-		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		if (rdfnode_numeric_is_nan(&rdfnode1) || rdfnode_numeric_is_nan(&rdfnode2))
 			return false;
 
-		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
-		{
-			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
-			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
-
-			return DatumGetBool(DirectFunctionCall2(float8gt, arg1, arg2));
-		}
-		else
-		{
-			arg1 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode1.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-			arg2 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode2.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-
-			return DatumGetBool(DirectFunctionCall2(numeric_gt, arg1, arg2));
-		}
+		return rdfnode_numeric_cmp_promoted(&rdfnode1, &rdfnode2) > 0;
 	}
 
 	/* xsd:date literals */
@@ -862,30 +818,10 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 		 * 4.3.2 op:numeric-less-than
 		 * https://www.w3.org/TR/xpath-functions/#func-numeric-less-than
 		 */
-		if ((rdfnode1.isNumeric && pg_strcasecmp(rdfnode1.lex, "NaN") == 0) ||
-			(rdfnode2.isNumeric && pg_strcasecmp(rdfnode2.lex, "NaN") == 0))
+		if (rdfnode_numeric_is_nan(&rdfnode1) || rdfnode_numeric_is_nan(&rdfnode2))
 			return false;
 
-		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0)
-		{
-			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
-			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
-
-			return DatumGetBool(DirectFunctionCall2(float8lt, arg1, arg2));
-		}
-		else
-		{
-			arg1 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode1.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-			arg2 = DirectFunctionCall3(numeric_in,
-									   CStringGetDatum(rdfnode2.lex),
-									   ObjectIdGetDatum(InvalidOid),
-									   Int32GetDatum(-1));
-
-			return DatumGetBool(DirectFunctionCall2(numeric_lt, arg1, arg2));
-		}
+		return rdfnode_numeric_cmp_promoted(&rdfnode1, &rdfnode2) < 0;
 	}
 
 	/* xsd:date literals */
@@ -1124,42 +1060,7 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 	/* Numeric literals: use numeric comparison */
 	if (rdfnode1.isNumeric && rdfnode2.isNumeric)
 	{
-		Numeric num1, num2;
-		double d1, d2;
-		float f1, f2;
-
-		if (strcmp(rdfnode1.dtype, RDF_XSD_DOUBLE) == 0 && strcmp(rdfnode2.dtype, RDF_XSD_DOUBLE) == 0)
-		{
-			arg1 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode1.lex));
-			arg2 = DirectFunctionCall1(float8in, CStringGetDatum(rdfnode2.lex));
-			d1 = DatumGetFloat8(arg1);
-			d2 = DatumGetFloat8(arg2);
-			return (d1 < d2) ? -1 : (d1 > d2) ? 1
-											  : 0;
-		}
-		else if (strcmp(rdfnode1.dtype, RDF_XSD_FLOAT) == 0 && strcmp(rdfnode2.dtype, RDF_XSD_FLOAT) == 0)
-		{
-			arg1 = DirectFunctionCall1(float4in, CStringGetDatum(rdfnode1.lex));
-			arg2 = DirectFunctionCall1(float4in, CStringGetDatum(rdfnode2.lex));
-			f1 = DatumGetFloat4(arg1);
-			f2 = DatumGetFloat4(arg2);
-			return (f1 < f2) ? -1 : (f1 > f2) ? 1
-											  : 0;
-		}
-		else
-		{
-			num1 = DatumGetNumeric(DirectFunctionCall3(numeric_in,
-													   CStringGetDatum(rdfnode1.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-			num2 = DatumGetNumeric(DirectFunctionCall3(numeric_in,
-													   CStringGetDatum(rdfnode2.lex),
-													   ObjectIdGetDatum(InvalidOid),
-													   Int32GetDatum(-1)));
-			return DatumGetInt32(DirectFunctionCall2(numeric_cmp,
-													 NumericGetDatum(num1),
-													 NumericGetDatum(num2)));
-		}
+		return rdfnode_numeric_cmp_promoted(&rdfnode1, &rdfnode2);
 	}
 
 	/* xsd:date literals */

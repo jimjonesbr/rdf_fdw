@@ -822,3 +822,11 @@ WITH j(val) AS (
             ('_:b1'::rdfnode)
 )
 SELECT sparql.min(val), sparql.max(val) FROM j;
+
+/* the aggregate comparator promotes the same way the operators do: against an
+ * xsd:float, 16777217 and 16777216 are one number, so neither is the smaller */
+WITH j(val) AS (
+    VALUES  ('"16777217"^^xsd:float'::rdfnode),
+            ('"16777216"^^xsd:integer'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
