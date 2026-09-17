@@ -140,3 +140,20 @@ SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"-P2Y"^^xsd:duration'::rdfnode;
 SELECT '"P7D"^^xsd:duration'::rdfnode = '"P1W"^^xsd:duration'::rdfnode;
 SELECT '"P1M"^^xsd:duration'::rdfnode = '"P1M"^^xsd:duration'::rdfnode;
 SELECT '"PT0S"^^xsd:duration'::rdfnode = '"P0D"^^xsd:duration'::rdfnode;
+
+/*
+ * An IRI, a blank node and a literal are different kinds of term, and no two
+ * of them are equal however their text is written. The serialisation of an IRI
+ * is also the text a plain literal may hold, so these are the pairs where
+ * comparing the written form instead of the term says they match.
+ */
+SELECT '<http://example.org/v>'::rdfnode = '"<http://example.org/v>"'::rdfnode;   -- f
+SELECT '<http://example.org/v>'::rdfnode = '"http://example.org/v"'::rdfnode;     -- f
+SELECT '<http://example.org/v>'::rdfnode = '"<http://example.org/v>"^^xsd:string'::rdfnode; -- f
+SELECT '_:b1'::rdfnode = '"_:b1"'::rdfnode;                                       -- f
+SELECT '_:b1'::rdfnode = '<_:b1>'::rdfnode;                                       -- f
+
+/* and each kind still equals itself */
+SELECT '<http://example.org/v>'::rdfnode = '<http://example.org/v>'::rdfnode;     -- t
+SELECT '_:b1'::rdfnode = '_:b1'::rdfnode;                                         -- t
+SELECT '_:b1'::rdfnode = '_:b2'::rdfnode;                                         -- f

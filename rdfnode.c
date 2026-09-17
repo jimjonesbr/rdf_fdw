@@ -133,8 +133,11 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	elog(DEBUG4, "%s: b.lex='%s', b.dtype='%s', b.lang='%s', b.isNumeric='%d'", __func__,
 		 b.lex, b.dtype ? b.dtype : "(null)", b.lang ? b.lang : "(null)", b.isNumeric);
 
-	if (a.isIRI && b.isIRI)
-		return strcmp(a.raw, b.raw) == 0;
+	if (a.isIRI || b.isIRI)
+		return a.isIRI && b.isIRI && strcmp(a.raw, b.raw) == 0;
+
+	if (a.isBlank || b.isBlank)
+		return a.isBlank && b.isBlank && strcmp(a.raw, b.raw) == 0;
 
 	/*
 	 * Plain literals (no language or datatype) and xsd:string literals are
@@ -1030,25 +1033,27 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
  */
 static int getSparqlTermOrder(rdfnode_info *node)
 {
+	if (node->isBlank)
+		return 0; /* Blank nodes (SPARQL 1.1 Section 15.1 #2) */
 	if (node->isIRI)
-		return 0; /* IRIs (SPARQL 1.1 Section 15.1 #3) */
+		return 1; /* IRIs (SPARQL 1.1 Section 15.1 #3) */
 	if (strlen(node->lang) > 0)
-		return 1; /* Language-tagged literals (part of RDF literals) */
+		return 2; /* Language-tagged literals (part of RDF literals) */
 	if (node->isPlainLiteral)
-		return 2; /* Simple literals (SPARQL 1.1: lower than xsd:string) */
+		return 3; /* Simple literals (SPARQL 1.1: lower than xsd:string) */
 	if (node->isNumeric)
-		return 3; /* Numeric types (implementation choice: before temporal) */
+		return 4; /* Numeric types (implementation choice: before temporal) */
 	if (node->isDateTime)
-		return 4; /* xsd:dateTime (implementation choice: within temporal) */
+		return 5; /* xsd:dateTime (implementation choice: within temporal) */
 	if (node->isDate)
-		return 5; /* xsd:date (implementation choice: within temporal) */
+		return 6; /* xsd:date (implementation choice: within temporal) */
 	if (node->isTime)
-		return 6; /* xsd:time (implementation choice: within temporal) */
+		return 7; /* xsd:time (implementation choice: within temporal) */
 	if (node->isDuration)
-		return 7; /* xsd:duration (implementation choice: within temporal) */
+		return 8; /* xsd:duration (implementation choice: within temporal) */
 	if (node->isString)
-		return 8; /* xsd:string (SPARQL 1.1: higher than plain literals) */
-	return 9;	  /* Other typed literals (implementation choice: last) */
+		return 9; /* xsd:string (SPARQL 1.1: higher than plain literals) */
+	return 10;	  /* Other typed literals (implementation choice: last) */
 }
 
 /*
@@ -1096,6 +1101,10 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 
 	/* IRIs: lexical comparison */
 	if (rdfnode1.isIRI && rdfnode2.isIRI)
+		return strcmp(rdfnode1.raw, rdfnode2.raw);
+
+	/* Blank nodes: lexical comparison */
+	if (rdfnode1.isBlank && rdfnode2.isBlank)
 		return strcmp(rdfnode1.raw, rdfnode2.raw);
 
 	/* Language-tagged literals: compare by lang tag, then by lexical value */
@@ -1315,14 +1324,16 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 	result.isDuration = false;
 	result.isTime = false;
 	result.isIRI = false;
+	result.isBlank = false;
 	result.isBoolean = false;
-
-	/* flag the literal as simple if there is no language or data type*/
-	if (strlen(result.dtype) == 0 && strlen(result.lang) == 0)
-		result.isPlainLiteral = true;
 
 	if (isIRI(raw))
 		result.isIRI = true;
+	else if (isBlank(raw))
+		result.isBlank = true;
+	/* flag the literal as simple if there is no language or data type */
+	else if (strlen(result.dtype) == 0 && strlen(result.lang) == 0)
+		result.isPlainLiteral = true;
 	else if (strcmp(result.dtype, RDF_XSD_STRING) == 0)
 		result.isString = true;
 	else if ((result.isNumeric = isNumeric(raw)))

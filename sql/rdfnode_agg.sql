@@ -796,3 +796,29 @@ WITH j (val) AS (
         ('"a"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode)
 )
 SELECT sparql.min(val), sparql.max(val) FROM j;
+
+/*
+ * SPARQL orders blank nodes below IRIs and IRIs below every literal
+ * (SPARQL 1.1, 15.1), and MIN/MAX follow that order. A blank node and an IRI
+ * carry neither a language tag nor a datatype, so ranking a term by its
+ * literal properties alone files both of them among the plain literals.
+ */
+WITH j(val) AS (
+    VALUES  ('"literal"'::rdfnode),
+            ('<http://example.org/id>'::rdfnode),
+            ('_:b1'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+
+WITH j(val) AS (
+    VALUES  ('<http://example.org/id>'::rdfnode),
+            ('_:b1'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+
+/* within a kind, the order is lexical */
+WITH j(val) AS (
+    VALUES  ('_:b2'::rdfnode),
+            ('_:b1'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;

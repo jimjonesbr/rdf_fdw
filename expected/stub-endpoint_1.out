@@ -27,6 +27,14 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (
   endpoint 'http://stub-endpoint/describe-bnode.xml',
   connect_timeout '5');
+/* 4294967396 is 2^32 + 100: a limit that is nowhere near any response here,
+ * but whose low 32 bits are 100, which is smaller than every one of them */
+CREATE SERVER stub_wide_limit
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/single-binding.xml',
+  max_response_size '4294967396',
+  connect_timeout '5');
 CREATE FOREIGN TABLE ft_single (
   s rdfnode OPTIONS (variable '?s')
 ) SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
@@ -127,6 +135,24 @@ SELECT * FROM sparql.describe('stub_describe', 'DESCRIBE <http://example.org/s>'
  _:b1                   | <http://example.org/sameAs> | _:b1
 (3 rows)
 
+/*
+ * A server's settings have to survive being carried from planning to
+ * execution. The five that libcurl takes as a long are wider than an int, so
+ * one written out as an int arrives as its low 32 bits: a max_response_size of
+ * 2^32 + 100 becomes a limit of 100 bytes and refuses a response it was never
+ * meant to bound. The scan below returns its row when the whole value is
+ * carried, and fails with the size limit when it is not.
+ */
+CREATE FOREIGN TABLE ft_wide_limit (
+  s rdfnode OPTIONS (variable '?s')
+) SERVER stub_wide_limit OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+SELECT * FROM ft_wide_limit;
+  s  
+-----
+ "x"
+(1 row)
+
+DROP FOREIGN TABLE ft_wide_limit;
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
@@ -136,3 +162,4 @@ NOTICE:  drop cascades to foreign table ft_repeated
 DROP SERVER stub_split CASCADE;
 NOTICE:  drop cascades to foreign table ft_split
 DROP SERVER stub_describe CASCADE;
+DROP SERVER stub_wide_limit CASCADE;

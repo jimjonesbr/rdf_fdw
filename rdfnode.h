@@ -35,6 +35,7 @@ typedef struct
 	bool isTime;		 /* xsd:time */
 	bool isBoolean;		 /* xsd:boolean */
 	bool isIRI;			 /* RDF IRI */
+	bool isBlank;		 /* RDF blank node */
 } rdfnode_info;
 
 extern bool rdfnode_eq(rdfnode *n1, rdfnode *n2);

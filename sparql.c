@@ -2516,6 +2516,8 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
  * priority for MAX, higher priority for MIN.
  *
  * Category order (low → high):
+ *  -2: blank nodes
+ *  -1: IRIs
  *   0: string-like (plain literal, xsd:string, language-tagged)
  *   1: numeric (xsd:integer, xsd:decimal, xsd:float, etc.)
  *   2: dateTime
@@ -2527,6 +2529,10 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 static int
 get_rdfnode_category_rank(rdfnode_info parsed)
 {
+    if (parsed.isBlank)
+        return -2;
+    if (parsed.isIRI)
+        return -1;
     if (strlen(parsed.lang) > 0 || parsed.isPlainLiteral || parsed.isString)
         return 0;
     if (parsed.isNumeric)
