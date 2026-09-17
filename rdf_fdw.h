@@ -249,9 +249,9 @@ typedef struct RDFfdwState
 	char *target_table_name;
 	char *ordering_pgcolumn;
 	char *sort_order;
-	int offset;
+	int64 offset;
 	int fetch_size;
-	int inserted_records;
+	int64 inserted_records;
 	int batch_size; 				   /* Number of rows to batch for INSERT/UPDATE/DELETE */
 	int batch_count;				   /* Current number of rows in the batch buffer */
 	StringInfoData batch_statements;   /* Buffer for batched SPARQL statements */

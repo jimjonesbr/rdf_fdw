@@ -772,7 +772,7 @@ static int rdfIsForeignRelUpdatable(Relation rel);
 #if PG_VERSION_NUM >= 110000
 static void rdfBeginForeignInsert(ModifyTableState *mtstate, ResultRelInfo *rinfo);
 static void rdfEndForeignInsert(EState *estate, ResultRelInfo *rinfo);
-static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
+static int64 InsertRetrievedData(RDFfdwState *state, int64 offset, int64 end_offset);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */
 static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value);
@@ -2271,14 +2271,15 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	while (true)
 	{
-		int ret = 0;
+		int64 ret;
+		int64 next_offset;
 		int limit = fetch_size;
 		StringInfoData limit_clause;
 
 		/* stop iteration if the current offset is greater than max_records */
 		if (max_records != 0 && state->inserted_records >= max_records)
 		{
-			elog(DEBUG2, "%s: number of retrieved records reached the limit of %d.\n\n  records inserted: %d\n  fetch size: %d\n",
+			elog(DEBUG2, "%s: number of retrieved records reached the limit of %d.\n\n  records inserted: " INT64_FORMAT "\n  fetch size: %d\n",
 				 __func__,
 				 max_records,
 				 state->inserted_records,
@@ -2286,12 +2287,14 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			break;
 		}
 
-		/*
-		 * if the current offset + fetch_size exceed the set limit we change
-		 * the limit.
-		 */
-		if (max_records != 0 && state->inserted_records + fetch_size >= max_records)
+		if (max_records != 0 && max_records - state->inserted_records < limit)
 			limit = max_records - state->inserted_records;
+
+		if (state->offset > PG_INT64_MAX - limit)
+			ereport(ERROR,
+					(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					 errmsg("clone pagination offset is out of range")));
+		next_offset = state->offset + limit;
 
 		/*
 		 * pagesize and rowcount must be reset before every SPARQL query,
@@ -2308,14 +2311,14 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 */
 		initStringInfo(&limit_clause);
 		if (orderby_query)
-			appendStringInfo(&limit_clause, "ORDER BY %s(%s) \nOFFSET %d LIMIT %d",
+			appendStringInfo(&limit_clause, "ORDER BY %s(%s) \nOFFSET " INT64_FORMAT " LIMIT %d",
 							 state->sort_order,
 							 orderby_variable,
-							 state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
+							 state->offset,
 							 limit);
 		else
-			appendStringInfo(&limit_clause, "OFFSET %d LIMIT %d",
-							 state->inserted_records == 0 && begin_offset == 0 ? 0 : state->offset,
+			appendStringInfo(&limit_clause, "OFFSET " INT64_FORMAT " LIMIT %d",
+							 state->offset,
 							 limit);
 
 		state->sparql_limit = NameStr(limit_clause);
@@ -2338,13 +2341,17 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 			break;
 		}
 
-		ret = InsertRetrievedData(state, state->offset, state->offset + fetch_size);
+		ret = InsertRetrievedData(state, state->offset, next_offset);
 
-		elog(DEBUG2, "%s: InsertRetrievedData returned %d records", __func__, ret);
+		elog(DEBUG2, "%s: InsertRetrievedData returned " INT64_FORMAT " records", __func__, ret);
 
-		state->inserted_records = state->inserted_records + ret;
+		if (ret > PG_INT64_MAX - state->inserted_records)
+			ereport(ERROR,
+					(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					 errmsg("clone record count is out of range")));
+		state->inserted_records += ret;
 
-		state->offset = state->offset + fetch_size;
+		state->offset = next_offset;
 
 		pfree(limit_clause.data);
 	}
@@ -2362,16 +2369,16 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
  * state     : records retrieved from the triple store and SPARQL, SERVER and
  * 			   FOREIGN TABLE info.
  * offset    : current offset in the data harvesting set by the caller
- * fetch_size: fetch_size (page size) in the data harvesting set by the caller
+ * end_offset: exclusive end of the requested page
  */
-static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
+static int64 InsertRetrievedData(RDFfdwState *state, int64 offset, int64 end_offset)
 {
 	xmlNodePtr result;
 	xmlNodePtr value;
 	xmlNodePtr record;
 	RangeVar *rv;
 	int ret = -1;
-	int processed_records = 0;
+	int64 processed_records = 0;
 	char *quoted_target;
 
 	elog(DEBUG1, "%s called", __func__);
@@ -2538,7 +2545,11 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 					(errcode(ERRCODE_FDW_UNABLE_TO_CREATE_EXECUTION),
 					 errmsg("SPI_execp returned %d. Unable to insert data into '%s'", ret, state->target_table_name)));
 
-		processed_records = processed_records + SPI_processed;
+		if (SPI_processed > (uint64) (PG_INT64_MAX - processed_records))
+			ereport(ERROR,
+					(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+					 errmsg("clone page record count is out of range")));
+		processed_records += SPI_processed;
 		SPI_freeplan(pplan);
 
 		if (state->commit_page)
@@ -2546,11 +2557,12 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 	}
 
 	if (state->verbose)
-		elog(INFO, "[%d - %d]: %d records inserted", offset, fetch_size, processed_records);
+		elog(INFO, "[" INT64_FORMAT " - " INT64_FORMAT "]: " INT64_FORMAT " records inserted",
+			 offset, end_offset, processed_records);
 
 	SPI_finish();
 
-	elog(DEBUG1, "%s exit: returning '%d' (processed_records)", __func__, processed_records);
+	elog(DEBUG1, "%s exit: returning '" INT64_FORMAT "' (processed_records)", __func__, processed_records);
 	return processed_records;
 }
 
