@@ -341,6 +341,90 @@ WHERE
   label IN ('hello', 'world') AND
   label NOT IN ('foo', 'bar');
 
+/* ----------------------------------------------------------------
+ * LIKE / NOT LIKE -> REGEX / !REGEX
+ *
+ * A LIKE pattern and a regular expression do not mean the same thing,
+ * so CreateRegexString() has to translate rather than copy. These pin
+ * the translation; the rows they would match are not the point.
+ * ---------------------------------------------------------------- */
+
+/* the whole pattern is anchored, whichever wildcard sits at either end:
+ * LIKE matches the entire value, REGEX matches anywhere by default */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'foo';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE '%foo%';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE '_foo';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'foo_';
+
+/* a pattern that opens or closes with a regex anchor is still ordinary
+ * text to LIKE, so the anchor is escaped and the pattern anchored around it */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE '^foo';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'foo$';
+
+/* regex metacharacters are escaped */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a.b';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a(b)c';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a|b';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'C++';
+
+/* characters that are not metacharacters are left alone: XML Schema
+ * regular expressions reject an escape that has no meaning */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a-b';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a/b';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a:b';
+
+/* a backslash escapes the wildcard that follows it, which then stands for
+ * itself rather than becoming ".*" or "." */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a\%b';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a\_b';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a\\b';
+
+/* and a pattern may not end with one */
+SELECT label FROM pgtypes_ft WHERE label LIKE 'ab\';
+
+/* a double quote would close the SPARQL string literal, and a control
+ * character cannot appear in one at all */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'x"y';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE E'a\nb\tc\rd';
+
+/* NOT LIKE negates the whole match */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label NOT LIKE '%foo%';
+
+/* ILIKE is not pushed down. SPARQL's "i" flag folds case by Unicode rule,
+ * while ILIKE follows the database collation, and the two disagree: under a
+ * Turkish collation 'Istanbul' ILIKE 'i%' is false, where REGEX with "i"
+ * matches. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label ILIKE '%foo%';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label NOT ILIKE '%foo%';
+
+/* the pattern has to be a constant and the value a plain column, or the
+ * REGEX would be built from something other than what is being compared */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE label;
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE upper(label) LIKE '%foo%';
+
 /* bigint: all operators */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT version FROM pgtypes_ft

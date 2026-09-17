@@ -626,6 +626,362 @@ HINT:  Use the "rdfnode" type instead.
    Remote Filter: ((STR(?label) != "foo") && (STR(?label) = "hello"))
 (7 rows)
 
+/* ----------------------------------------------------------------
+ * LIKE / NOT LIKE -> REGEX / !REGEX
+ *
+ * A LIKE pattern and a regular expression do not mean the same thing,
+ * so CreateRegexString() has to translate rather than copy. These pin
+ * the translation; the rows they would match are not the point.
+ * ---------------------------------------------------------------- */
+/* the whole pattern is anchored, whichever wildcard sits at either end:
+ * LIKE matches the entire value, REGEX matches anywhere by default */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'foo';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^foo$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE '%foo%';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                       QUERY PLAN                        
+---------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^.*foo.*$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE '_foo';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                      QUERY PLAN                      
+------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^.foo$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'foo_';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                      QUERY PLAN                      
+------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^foo.$","s")))
+(6 rows)
+
+/* a pattern that opens or closes with a regex anchor is still ordinary
+ * text to LIKE, so the anchor is escaped and the pattern anchored around it */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE '^foo';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^\\^foo$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'foo$';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^foo\\$$","s")))
+(6 rows)
+
+/* regex metacharacters are escaped */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a.b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                      QUERY PLAN                       
+-------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a\\.b$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a(b)c';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                        QUERY PLAN                         
+-----------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a\\(b\\)c$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a|b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                      QUERY PLAN                       
+-------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a\\|b$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'C++';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                       QUERY PLAN                        
+---------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^C\\+\\+$","s")))
+(6 rows)
+
+/* characters that are not metacharacters are left alone: XML Schema
+ * regular expressions reject an escape that has no meaning */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a-b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a-b$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a/b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a/b$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a:b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a:b$","s")))
+(6 rows)
+
+/* a backslash escapes the wildcard that follows it, which then stands for
+ * itself rather than becoming ".*" or "." */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a\%b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a%b$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a\_b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a_b$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'a\\b';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a\\\\b$","s")))
+(6 rows)
+
+/* and a pattern may not end with one */
+SELECT label FROM pgtypes_ft WHERE label LIKE 'ab\';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+ERROR:  LIKE pattern must not end with escape character
+/* a double quote would close the SPARQL string literal, and a control
+ * character cannot appear in one at all */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE 'x"y';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                      QUERY PLAN                      
+------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^x\"y$","s")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE E'a\nb\tc\rd';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                         QUERY PLAN                         
+------------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((REGEX(STR(?label),"^a\nb\tc\rd$","s")))
+(6 rows)
+
+/* NOT LIKE negates the whole match */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label NOT LIKE '%foo%';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                        QUERY PLAN                        
+----------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((!REGEX(STR(?label),"^.*foo.*$","s")))
+(6 rows)
+
+/* ILIKE is not pushed down. SPARQL's "i" flag folds case by Unicode rule,
+ * while ILIKE follows the database collation, and the two disagree: under a
+ * Turkish collation 'Istanbul' ILIKE 'i%' is false, where REGEX with "i"
+ * matches. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label ILIKE '%foo%';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                   QUERY PLAN                   
+------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Filter: (pgtypes_ft.label ~~* '%foo%'::text)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label NOT ILIKE '%foo%';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                   QUERY PLAN                    
+-------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Filter: (pgtypes_ft.label !~~* '%foo%'::text)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: not pushable
+(7 rows)
+
+/* the pattern has to be a constant and the value a plain column, or the
+ * REGEX would be built from something other than what is being compared */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label LIKE label;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                    QUERY PLAN                    
+--------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Filter: (pgtypes_ft.label ~~ pgtypes_ft.label)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE upper(label) LIKE '%foo%';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                      QUERY PLAN                      
+------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Filter: (upper(pgtypes_ft.label) ~~ '%foo%'::text)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: not pushable
+(7 rows)
+
 /* bigint: all operators */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT version FROM pgtypes_ft

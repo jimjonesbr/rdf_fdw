@@ -890,29 +890,42 @@ char *CreateRegexString(char *str)
 	if (!str)
 		return NULL;
 
+	appendStringInfoChar(&res, '^');
 	for (int i = 0; str[i] != '\0'; i++)
 	{
 		char c = str[i];
+		bool escaped = false;
 
-		if (i == 0 && c != '%' && c != '_' && c != '^')
-			appendStringInfo(&res, "^");
+		if (c == '\\')
+		{
+			if (str[i + 1] == '\0')
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_ESCAPE_SEQUENCE),
+						 errmsg("LIKE pattern must not end with escape character")));
+			c = str[++i];
+			escaped = true;
+		}
 
-		if (strchr("/:=#@^()[]{}+-*$.?|", c) != NULL)
+		if (!escaped && c == '%')
+			appendStringInfoString(&res, ".*");
+		else if (!escaped && c == '_')
+			appendStringInfoChar(&res, '.');
+		else if (c == '\\')
+			appendStringInfoString(&res, "\\\\\\\\");
+		else if (strchr("^()[]{}+*$.?|", c) != NULL)
 			appendStringInfo(&res, "\\\\%c", c);
-		else if (c == '%')
-			appendStringInfo(&res, ".*");
-		else if (c == '_')
-			appendStringInfo(&res, ".");
 		else if (c == '"')
-			appendStringInfo(&res, "\\\"");
+			appendStringInfoString(&res, "\\\"");
+		else if (c == '\n')
+			appendStringInfoString(&res, "\\n");
+		else if (c == '\r')
+			appendStringInfoString(&res, "\\r");
+		else if (c == '\t')
+			appendStringInfoString(&res, "\\t");
 		else
-			appendStringInfo(&res, "%c", c);
-
-		if (i == strlen(str) - 1 && c != '%' && c != '_')
-			appendStringInfo(&res, "$");
-
-		elog(DEBUG2, "%s loop => %c res => %s", __func__, str[i], NameStr(res));
+			appendStringInfoChar(&res, c);
 	}
+	appendStringInfoChar(&res, '$');
 
 	elog(DEBUG3, "%s exit: returning '%s'", __func__, NameStr(res));
 

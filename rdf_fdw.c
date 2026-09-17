@@ -7074,17 +7074,18 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 * T_Const it is not safe to push down the REGEX FILTER. We then let
 					 * the client to deal with it.
 					 */
-					if (leftexpr->type != T_Var && rightexpr->type != T_Const)
+					if (leftexpr->type != T_Var || rightexpr->type != T_Const ||
+						strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0)
 					{
 						elog(DEBUG2, "%s [T_OpExpr]: returning NULL (type of left expression is not a T_Var and the right expression is not a T_Const)", __func__);
 						return NULL;
 					}
 
-					appendStringInfo(&result, "%s(%s,\"%s\"%s)",
+					appendStringInfo(&result, "%s(%s,\"%s\",\"s\")",
 									 opername[0] == '!' ? "!REGEX" : "REGEX",
 									 NameStr(left_filter_arg),
-									 CreateRegexString(right),
-									 strcmp(opername, "~~*") == 0 || strcmp(opername, "!~~*") == 0 ? ",\"i\"" : "");
+									 CreateRegexString(TextDatumGetCString(
+										 ((Const *)rightexpr)->constvalue)));
 				}
 				else
 				{
