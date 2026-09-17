@@ -73,8 +73,11 @@ SELECT * FROM ft_single;
  *
  *   ERROR:  repalloc called with invalid pointer 0x... (header 0x00007f...)
  *
- * A column takes its value from a single binding, so the scan stops at the
- * first match and the extra bindings are ignored.
+ * A <result> may bind a variable once, so a record that binds one twice is
+ * refused before any of it is read and the shape that overran the arrays
+ * cannot be built. The scan still stops at the first match for a column,
+ * which is what makes the overrun unreachable even where a record is not
+ * validated.
  */
 CREATE TABLE cloned_repeated (s rdfnode);
 CALL rdf_fdw_clone_table(
@@ -84,20 +87,17 @@ CALL rdf_fdw_clone_table(
   max_records   => 1,
   create_table  => false,
   verbose       => false);
+ERROR:  duplicate variable binding in SPARQL result
 SELECT count(*) AS rows_cloned, min(s::text) AS value FROM cloned_repeated;
  rows_cloned | value 
 -------------+-------
-           1 | "x"
+           0 | 
 (1 row)
 
 /* the same response through an ordinary foreign scan, which takes a different
  * path and was never affected */
 SELECT * FROM ft_repeated;
-  s  
------
- "x"
-(1 row)
-
+ERROR:  duplicate variable binding in SPARQL result
 /*
  * A term's text is the whole of its element's character data. A CDATA section
  * or a comment inside a <literal> splits that data into several child nodes,

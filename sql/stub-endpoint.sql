@@ -79,8 +79,11 @@ SELECT * FROM ft_single;
  *
  *   ERROR:  repalloc called with invalid pointer 0x... (header 0x00007f...)
  *
- * A column takes its value from a single binding, so the scan stops at the
- * first match and the extra bindings are ignored.
+ * A <result> may bind a variable once, so a record that binds one twice is
+ * refused before any of it is read and the shape that overran the arrays
+ * cannot be built. The scan still stops at the first match for a column,
+ * which is what makes the overrun unreachable even where a record is not
+ * validated.
  */
 CREATE TABLE cloned_repeated (s rdfnode);
 

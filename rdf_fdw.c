@@ -2404,7 +2404,11 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 			for (result = record->children; result != NULL; result = result->next)
 			{
 				StringInfoData name;
-				xmlChar *n = xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG);
+				xmlChar *n;
+
+				if (result->type != XML_ELEMENT_NODE)
+					continue;
+				n = xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG);
 				initStringInfo(&name);
 				appendStringInfo(&name, "?%s", (char *)n);
 				xmlFree(n);
@@ -2421,9 +2425,15 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size)
 					for (value = result->children; value != NULL; value = value->next)
 					{
 						StringInfoData literal_value;
-						xmlChar *datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
-						xmlChar *lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
-						xmlChar *content = xmlNodeGetContent(value);
+						xmlChar *datatype;
+						xmlChar *lang;
+						xmlChar *content;
+
+						if (value->type != XML_ELEMENT_NODE)
+							continue;
+						datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+						lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
+						content = xmlNodeGetContent(value);
 
 						initStringInfo(&literal_value);
 
@@ -5679,6 +5689,67 @@ static int ExecuteSPARQL(RDFfdwState *state)
  *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  */
+static bool IsSPARQLResultNode(xmlNodePtr node, const char *name)
+{
+	return node && node->type == XML_ELEMENT_NODE && node->ns &&
+		xmlStrEqual(node->ns->href, BAD_CAST "http://www.w3.org/2005/sparql-results#") &&
+		xmlStrEqual(node->name, BAD_CAST name);
+}
+
+static void ValidateSPARQLRecord(xmlNodePtr record)
+{
+	xmlNodePtr binding;
+	List *names = NIL;
+
+	for (binding = record->children; binding; binding = binding->next)
+	{
+		xmlChar *name;
+		xmlNodePtr value;
+		ListCell *cell;
+		int values = 0;
+
+		if (binding->type != XML_ELEMENT_NODE)
+			continue;
+		if (!IsSPARQLResultNode(binding, "binding"))
+			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+							errmsg("invalid element in SPARQL result record")));
+		name = xmlGetProp(binding, BAD_CAST "name");
+		if (name == NULL || name[0] == '\0')
+		{
+			xmlFree(name);
+			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+							errmsg("SPARQL binding has no variable name")));
+		}
+		foreach (cell, names)
+		{
+			if (strcmp((char *)lfirst(cell), (char *)name) == 0)
+			{
+				xmlFree(name);
+				ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+								errmsg("duplicate variable binding in SPARQL result")));
+			}
+		}
+		names = lappend(names, pstrdup((char *)name));
+		xmlFree(name);
+
+		for (value = binding->children; value; value = value->next)
+		{
+			if (value->type != XML_ELEMENT_NODE)
+				continue;
+			if (!IsSPARQLResultNode(value, "literal") &&
+				!IsSPARQLResultNode(value, "uri") &&
+				!IsSPARQLResultNode(value, "bnode"))
+				ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+								errmsg("invalid RDF term in SPARQL binding")));
+			values++;
+		}
+		if (values != 1)
+			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+							errmsg("SPARQL binding must contain exactly one RDF term")));
+	}
+	list_free_deep(names);
+}
+
 static void LoadRDFData(RDFfdwState *state)
 {
 	int options = XML_PARSE_NOBLANKS | XML_PARSE_NONET;
@@ -5736,8 +5807,11 @@ static void LoadRDFData(RDFfdwState *state)
 		/* Handle SELECT queries */
 		xmlNodePtr results;
 		xmlNodePtr root;
+		bool found_results = false;
 
 		state->rowcount = 0;
+		state->pagesize = 0;
+		list_free(state->records);
 		state->records = NIL;
 
 		/* Execute the SPARQL query */
@@ -5789,25 +5863,41 @@ static void LoadRDFData(RDFfdwState *state)
 			state->xmldoc = NULL;
 			elog(ERROR, "%s: SPARQL XML result has no root element", __func__);
 		}
+		if (!IsSPARQLResultNode(root, "sparql"))
+			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+							errmsg("response is not a SPARQL XML results document")));
 
 		for (results = root->children; results != NULL; results = results->next)
 		{
-			if (xmlStrcmp(results->name, (xmlChar *)"results") == 0)
+			if (IsSPARQLResultNode(results, "results"))
 			{
 				xmlNodePtr record;
 
+				if (found_results)
+					ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+									errmsg("duplicate results element in SPARQL response")));
+				found_results = true;
 				for (record = results->children; record != NULL; record = record->next)
 				{
-					if (xmlStrcmp(record->name, (xmlChar *)"result") == 0)
+					if (record->type != XML_ELEMENT_NODE)
+						continue;
+					if (IsSPARQLResultNode(record, "result"))
 					{
+						ValidateSPARQLRecord(record);
 						state->records = lappend(state->records, record);
 						state->pagesize++;
 
 						elog(DEBUG2, "  %s: appending record %d", __func__, state->pagesize);
 					}
+					else
+						ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+								errmsg("invalid record in SPARQL results")));
 				}
 			}
 		}
+		if (!found_results)
+			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
+							errmsg("SPARQL response has no SELECT results element")));
 
 		if (state->log_sparql)
 			elog(INFO, "SPARQL returned %d %s.\n", state->pagesize, state->pagesize == 1 ? "record" : "records");
@@ -6255,9 +6345,13 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 
 		for (result = record->children; result != NULL; result = result->next)
 		{
-			xmlChar *prop = xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG);
+			xmlChar *prop;
 			StringInfoData name;
 
+			if (result->type != XML_ELEMENT_NODE)
+				continue;
+
+			prop = xmlGetProp(result, (xmlChar *)RDF_XML_NAME_TAG);
 			initStringInfo(&name);
 			appendStringInfo(&name, "?%s", (char *)prop);
 			xmlFree(prop);
@@ -6271,12 +6365,18 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 				for (value = result->children; value != NULL; value = value->next)
 				{
 					StringInfoData literal_value;
-					xmlChar *datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
-					xmlChar *lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
-					xmlChar *content = xmlNodeGetContent(value);
+					xmlChar *datatype;
+					xmlChar *lang;
+					xmlChar *content;
 					const xmlChar *node_type = value->name;
 					char *node_value;
 
+					if (value->type != XML_ELEMENT_NODE)
+						continue;
+
+					datatype = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+					lang = xmlGetProp(value, (xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
+					content = xmlNodeGetContent(value);
 					initStringInfo(&literal_value);
 					node_value = (char *)content;
 
@@ -6314,9 +6414,6 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 								xmlFree(datatype);
 							if (literal_value.data)
 								pfree(literal_value.data);
-							if (name.data)
-								pfree(name.data);
-
 							slot->tts_isnull[i] = true;
 							continue;
 						}
