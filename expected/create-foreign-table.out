@@ -126,7 +126,7 @@ CREATE FOREIGN TABLE t15 (
   name text OPTIONS (variable '?s')
 ) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}', fetch_size '-1');
 ERROR:  invalid fetch_size: '-1'
-HINT:  Expected values are positive integers.
+HINT:  Expected an integer between 0 and 2147483647.
 /* invalid option for rdfnode column*/
 CREATE FOREIGN TABLE t16 (
   name rdfnode OPTIONS (variable '?s', expression 'STR(?s)')

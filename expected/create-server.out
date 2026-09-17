@@ -29,7 +29,7 @@ OPTIONS (
   fetch_size '-1'
 );
 ERROR:  invalid fetch_size: '-1'
-HINT:  Expected values are positive integers.
+HINT:  Expected an integer between 0 and 2147483647.
 /* invalid fetch_size - empty string */
 CREATE SERVER rdfserver_error5
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -38,6 +38,47 @@ OPTIONS (
   fetch_size ''
 );
 ERROR:  empty value in option 'fetch_size'
+/*
+ * A value the setting cannot hold is refused rather than wrapped. fetch_size
+ * and batch_size are kept in an int, so anything above 2147483647 would take
+ * effect as a different number and, past 2^31, as a negative one: a fetch_size
+ * of 3000000000 used to reach the endpoint as LIMIT -1294967296.
+ */
+CREATE SERVER rdfserver_fetch_overflow
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  fetch_size '3000000000'
+);
+ERROR:  invalid fetch_size: '3000000000'
+HINT:  Expected an integer between 0 and 2147483647.
+CREATE SERVER rdfserver_batch_overflow
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  batch_size '3000000000'
+);
+ERROR:  invalid batch_size: '3000000000'
+HINT:  Expected an integer between 0 and 2147483647.
+/* a value too large for any integer is refused as well, rather than read as
+ * whatever strtol() saturates to */
+CREATE SERVER rdfserver_timeout_overflow
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  connect_timeout '99999999999999999999999'
+);
+ERROR:  invalid connect_timeout: '99999999999999999999999'
+HINT:  Expected a non-negative integer: a timeout in seconds, 0 to disable it.
+/* the ceilings are per option: connect_timeout is held in a long, so a value
+ * that fetch_size would refuse is accepted here */
+CREATE SERVER rdfserver_timeout_large
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  connect_timeout '3000000000'
+);
+DROP SERVER rdfserver_timeout_large;
 /* invalid enable_xml_huge value */
 CREATE SERVER rdfserver_error6
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -55,7 +96,7 @@ OPTIONS (
   batch_size 'foo'
 );
 ERROR:  invalid batch_size: 'foo'
-HINT:  Expected values are positive integers (number of records).
+HINT:  Expected an integer between 0 and 2147483647.
 /* invalid batch_size - zero value */
 CREATE SERVER rdfserver_error8
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -71,7 +112,7 @@ OPTIONS (
   batch_size '-10'
 );
 ERROR:  invalid batch_size: '-10'
-HINT:  Expected values are positive integers (number of records).
+HINT:  Expected an integer between 0 and 2147483647.
 /* invalid batch_size - empty string */
 CREATE SERVER rdfserver_error10
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -88,7 +129,7 @@ OPTIONS (
   batch_size ' '
 );
 ERROR:  invalid batch_size: ' '
-HINT:  Expected values are positive integers (number of records).
+HINT:  Expected an integer between 0 and 2147483647.
 /* invalid request_timeout - negative value */
 CREATE SERVER rdfserver_error12
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -97,7 +138,7 @@ OPTIONS (
   request_timeout '-1'
 );
 ERROR:  invalid request_timeout: '-1'
-HINT:  Expected values are non-negative integers (timeout in seconds, 0 = disabled).
+HINT:  Expected a non-negative integer: a timeout in seconds, 0 to disable it.
 /* invalid request_timeout - empty string */
 CREATE SERVER rdfserver_error13
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -106,7 +147,7 @@ OPTIONS (
   request_timeout ' '
 );
 ERROR:  invalid request_timeout: ' '
-HINT:  Expected values are non-negative integers (timeout in seconds, 0 = disabled).
+HINT:  Expected a non-negative integer: a timeout in seconds, 0 to disable it.
 /* invalid readonly - empty string */
 CREATE SERVER rdfserver_error14
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -131,7 +172,7 @@ OPTIONS (
   max_response_size ' '
 );
 ERROR:  invalid max_response_size: ' '
-HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+HINT:  Expected a non-negative integer: a size in bytes, 0 for no limit.
 /* invalid max_response_size - negative value */
 CREATE SERVER rdfserver_error17
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -140,7 +181,7 @@ OPTIONS (
   max_response_size '-1'
 );
 ERROR:  invalid max_response_size: '-1'
-HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+HINT:  Expected a non-negative integer: a size in bytes, 0 for no limit.
 /* invalid max_response_size - non-numeric value */
 CREATE SERVER rdfserver_error18
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -149,7 +190,7 @@ OPTIONS (
   max_response_size 'foo'
 );
 ERROR:  invalid max_response_size: 'foo'
-HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+HINT:  Expected a non-negative integer: a size in bytes, 0 for no limit.
 /* invalid max_response_size - float value */
 CREATE SERVER rdfserver_error19
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -158,7 +199,7 @@ OPTIONS (
   max_response_size '1.5'
 );
 ERROR:  invalid max_response_size: '1.5'
-HINT:  Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).
+HINT:  Expected a non-negative integer: a size in bytes, 0 for no limit.
 /* invalid request_max_redirect - non-numeric value */
 CREATE SERVER rdfserver_error20
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -167,7 +208,7 @@ OPTIONS (
   request_max_redirect 'foo'
 );
 ERROR:  invalid request_max_redirect: 'foo'
-HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+HINT:  Expected a non-negative integer: how many redirects to follow, 0 to refuse any.
 /* invalid request_max_redirect - negative value */
 CREATE SERVER rdfserver_error21
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -176,7 +217,7 @@ OPTIONS (
   request_max_redirect '-1'
 );
 ERROR:  invalid request_max_redirect: '-1'
-HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+HINT:  Expected a non-negative integer: how many redirects to follow, 0 to refuse any.
 /* invalid request_max_redirect - white space */
 CREATE SERVER rdfserver_error22
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -185,7 +226,7 @@ OPTIONS (
   request_max_redirect ' '
 );
 ERROR:  invalid request_max_redirect: ' '
-HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+HINT:  Expected a non-negative integer: how many redirects to follow, 0 to refuse any.
 /* invalid request_max_redirect - float value */
 CREATE SERVER rdfserver_error23
 FOREIGN DATA WRAPPER rdf_fdw 
@@ -194,7 +235,7 @@ OPTIONS (
   request_max_redirect '1.5'
 );
 ERROR:  invalid request_max_redirect: '1.5'
-HINT:  Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).
+HINT:  Expected a non-negative integer: how many redirects to follow, 0 to refuse any.
 /* valid request_max_redirect - 0 refuses any redirect */
 CREATE SERVER rdfserver_maxredirect0
 FOREIGN DATA WRAPPER rdf_fdw 

@@ -36,6 +36,45 @@ OPTIONS (
   fetch_size ''
 );
 
+/*
+ * A value the setting cannot hold is refused rather than wrapped. fetch_size
+ * and batch_size are kept in an int, so anything above 2147483647 would take
+ * effect as a different number and, past 2^31, as a negative one: a fetch_size
+ * of 3000000000 used to reach the endpoint as LIMIT -1294967296.
+ */
+CREATE SERVER rdfserver_fetch_overflow
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  fetch_size '3000000000'
+);
+
+CREATE SERVER rdfserver_batch_overflow
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  batch_size '3000000000'
+);
+
+/* a value too large for any integer is refused as well, rather than read as
+ * whatever strtol() saturates to */
+CREATE SERVER rdfserver_timeout_overflow
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  connect_timeout '99999999999999999999999'
+);
+
+/* the ceilings are per option: connect_timeout is held in a long, so a value
+ * that fetch_size would refuse is accepted here */
+CREATE SERVER rdfserver_timeout_large
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'https://dbpedia.org/sparql',
+  connect_timeout '3000000000'
+);
+DROP SERVER rdfserver_timeout_large;
+
 /* invalid enable_xml_huge value */
 CREATE SERVER rdfserver_error6
 FOREIGN DATA WRAPPER rdf_fdw 

@@ -111,6 +111,8 @@
 #endif
 #include "mb/pg_wchar.h"
 #include <regex.h>
+#include <errno.h>
+#include <limits.h>
 #if PG_VERSION_NUM >= 190000
 #include <math.h>
 #endif
@@ -769,6 +771,7 @@ static int InsertRetrievedData(RDFfdwState *state, int offset, int fetch_size);
 static Oid GetRelOidFromName(char *relname, char *code);
 #endif /*PG_VERSION_NUM */
 static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value);
+static long ParseIntegerOption(DefElem *def);
 static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
@@ -2617,6 +2620,72 @@ static void CheckForeignServerUsage(ForeignServer *server)
 	}
 }
 
+/*
+ * ParseIntegerOption
+ * ------------------
+ * Reads an option whose value is a whole number, rejecting anything the
+ * setting cannot hold. Beyond the syntax, the bound matters: an option kept
+ * in an int accepts less than strtol() will return, and a value that passed
+ * validation only to be truncated on the way into its field would take effect
+ * as a different number, or as a negative one.
+ *
+ * def : the option being defined or read
+ *
+ * returns the value, which is non-negative and within the setting's range
+ */
+static long ParseIntegerOption(DefElem *def)
+{
+	char *input = defGetString(def);
+	char *end;
+	long value;
+	long maximum = LONG_MAX;
+	const char *unit = NULL;
+
+	/*
+	 * An option held in an int accepts less than strtol() will return, so it
+	 * carries the narrower ceiling. The rest are held in a long, whose
+	 * ceiling differs between builds and bounds nothing a user would reach,
+	 * so they say what the value means instead -- above all what 0 selects,
+	 * which is the part no one can guess.
+	 */
+	if (strcmp(def->defname, RDF_SERVER_OPTION_FETCH_SIZE) == 0 ||
+		strcmp(def->defname, RDF_SERVER_OPTION_BATCH_SIZE) == 0)
+		maximum = PG_INT32_MAX;
+	else if (strcmp(def->defname, RDF_SERVER_OPTION_CONNECTTIMEOUT) == 0 ||
+			 strcmp(def->defname, RDF_SERVER_OPTION_REQUEST_TIMEOUT) == 0)
+		unit = "a timeout in seconds, 0 to disable it";
+	else if (strcmp(def->defname, RDF_SERVER_OPTION_MAX_RESPONSE_SIZE) == 0)
+		unit = "a size in bytes, 0 for no limit";
+	else if (strcmp(def->defname, RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT) == 0)
+		unit = "how many redirects to follow, 0 to refuse any";
+	else if (strcmp(def->defname, RDF_SERVER_OPTION_CONNECTRETRY) == 0)
+		unit = "how many times to retry a failed request";
+
+	errno = 0;
+	value = strtol(input, &end, 0);
+
+	if (errno == ERANGE || end == input || *end != '\0' || value < 0 || value > maximum)
+	{
+		if (maximum != LONG_MAX)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("invalid %s: '%s'", def->defname, input),
+					 errhint("Expected an integer between 0 and %ld.", maximum)));
+		else if (unit)
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("invalid %s: '%s'", def->defname, input),
+					 errhint("Expected a non-negative integer: %s.", unit)));
+		else
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("invalid %s: '%s'", def->defname, input),
+					 errhint("Expected a non-negative integer.")));
+	}
+
+	return value;
+}
+
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 {
 	List *options_list = untransformRelOptions(PG_GETARG_DATUM(0));
@@ -2665,65 +2734,14 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 					}
 				}
 
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_CONNECTTIMEOUT) == 0)
-				{
-					char *endptr;
-					char *timeout_str = defGetString(def);
-					long timeout_val = strtol(timeout_str, &endptr, 0);
-
-					if (timeout_str[0] == '\0' || *endptr != '\0' || timeout_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
-								 errhint("Expected values are positive integers (timeout in seconds).")));
-					}
-				}
-
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_TIMEOUT) == 0)
-				{
-					char *endptr;
-					char *timeout_str = defGetString(def);
-					long timeout_val = strtol(timeout_str, &endptr, 0);
-
-					if (timeout_str[0] == '\0' || *endptr != '\0' || timeout_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, timeout_str),
-								 errhint("Expected values are non-negative integers (timeout in seconds, 0 = disabled).")));
-					}
-				}
-
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_FETCH_SIZE) == 0)
-				{
-					char *endptr;
-					char *fetch_size_str = defGetString(def);
-					long fetch_size_val = strtol(fetch_size_str, &endptr, 0);
-
-					if (fetch_size_str[0] == '\0' || *endptr != '\0' || fetch_size_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, fetch_size_str),
-								 errhint("Expected values are positive integers.")));
-					}
-				}
-
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_CONNECTRETRY) == 0)
-				{
-					char *endptr;
-					char *retry_str = defGetString(def);
-					long retry_val = strtol(retry_str, &endptr, 0);
-
-					if (retry_str[0] == '\0' || *endptr != '\0' || retry_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, retry_str),
-								 errhint("Expected values are positive integers (retry attempts in case of failure).")));
-					}
-				}
+				if (strcmp(opt->optname, RDF_SERVER_OPTION_CONNECTTIMEOUT) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_TIMEOUT) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_FETCH_SIZE) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_CONNECTRETRY) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_BATCH_SIZE) == 0 ||
+					strcmp(opt->optname, RDF_SERVER_OPTION_MAX_RESPONSE_SIZE) == 0)
+					(void) ParseIntegerOption(def);
 
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_REDIRECT) == 0)
 				{
@@ -2733,51 +2751,6 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 							 errhint("Use '%s' alone instead: '0' refuses any redirect, "
 									 "any higher value enables redirection and caps it.",
 									 RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT)));
-				}
-
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT) == 0)
-				{
-					char *endptr;
-					char *maxredirect_str = defGetString(def);
-					long maxredirect_val = strtol(maxredirect_str, &endptr, 0);
-
-					if (maxredirect_str[0] == '\0' || *endptr != '\0' || maxredirect_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, maxredirect_str),
-								 errhint("Expected a non-negative integer (maximum number of redirects to follow, 0 = refuse any redirect).")));
-					}
-				}
-
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_BATCH_SIZE) == 0)
-				{
-					char *endptr;
-					char *batch_size_str = defGetString(def);
-					long batch_size_val = strtol(batch_size_str, &endptr, 0);
-
-					if (batch_size_str[0] == '\0' || *endptr != '\0' || batch_size_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, batch_size_str),
-								 errhint("Expected values are positive integers (number of records).")));
-					}
-				}
-
-				if (strcmp(opt->optname, RDF_SERVER_OPTION_MAX_RESPONSE_SIZE) == 0)
-				{
-					char *endptr;
-					char *max_size_str = defGetString(def);
-					long max_size_val = strtol(max_size_str, &endptr, 0);
-
-					if (max_size_str[0] == '\0' || *endptr != '\0' || max_size_val < 0)
-					{
-						ereport(ERROR,
-								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-								 errmsg("invalid %s: '%s'", def->defname, max_size_str),
-								 errhint("Expected a non-negative integer (maximum response size in bytes, 0 = unlimited).")));
-					}
 				}
 
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_ENABLE_PUSHDOWN) == 0)
@@ -4244,7 +4217,7 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 		else if (strcmp(RDF_TABLE_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 			state->enable_pushdown = defGetBoolean(def);
 		else if (strcmp(RDF_TABLE_OPTION_FETCH_SIZE, def->defname) == 0)
-			state->fetch_size = strtol(defGetString(def), NULL, 0);
+			state->fetch_size = ParseIntegerOption(def);
 	}
 
 	elog(DEBUG1, "%s exit", __func__);
@@ -4352,29 +4325,13 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 
 			else if (strcmp(RDF_SERVER_OPTION_FETCH_SIZE, def->defname) == 0)
-			{
-				char *tailpt;
-				char *fetch_size_str = defGetString(def);
-				state->fetch_size = strtol(fetch_size_str, &tailpt, 0);
-			}
+				state->fetch_size = ParseIntegerOption(def);
 			else if (strcmp(RDF_SERVER_OPTION_BATCH_SIZE, def->defname) == 0)
-			{
-				char *tailpt;
-				char *batch_size_str = defGetString(def);
-				state->batch_size = strtol(batch_size_str, &tailpt, 0);
-			}
+				state->batch_size = ParseIntegerOption(def);
 			else if (strcmp(RDF_SERVER_OPTION_CONNECTRETRY, def->defname) == 0)
-			{
-				char *tailpt;
-				char *maxretry_str = defGetString(def);
-				state->max_retries = strtol(maxretry_str, &tailpt, 0);
-			}
+				state->max_retries = ParseIntegerOption(def);
 			else if (strcmp(RDF_SERVER_OPTION_MAX_RESPONSE_SIZE, def->defname) == 0)
-			{
-				char *tailpt;
-				char *max_size_str = defGetString(def);
-				state->max_response_size = strtol(max_size_str, &tailpt, 0);
-			}
+				state->max_response_size = ParseIntegerOption(def);
 			else if (strcmp(RDF_SERVER_OPTION_READONLY, def->defname) == 0)
 				state->readonly = defGetBoolean(def);
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_REDIRECT, def->defname) == 0)
@@ -4390,23 +4347,13 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 			}
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_MAX_REDIRECT, def->defname) == 0)
 			{
-				char *tailpt;
-				char *maxredirect_str = defGetString(def);
-				state->request_max_redirect = strtol(maxredirect_str, &tailpt, 0);
+				state->request_max_redirect = ParseIntegerOption(def);
 				max_redirect_set = true;
 			}
 			else if (strcmp(RDF_SERVER_OPTION_CONNECTTIMEOUT, def->defname) == 0)
-			{
-				char *tailpt;
-				char *timeout_str = defGetString(def);
-				state->connect_timeout = strtol(timeout_str, &tailpt, 0);
-			}
+				state->connect_timeout = ParseIntegerOption(def);
 			else if (strcmp(RDF_SERVER_OPTION_REQUEST_TIMEOUT, def->defname) == 0)
-			{
-				char *tailpt;
-				char *timeout_str = defGetString(def);
-				state->request_timeout = strtol(timeout_str, &tailpt, 0);
-			}
+				state->request_timeout = ParseIntegerOption(def);
 			else if (strcmp(RDF_SERVER_OPTION_ENABLE_PUSHDOWN, def->defname) == 0)
 				state->enable_pushdown = defGetBoolean(def);
 
@@ -5493,9 +5440,10 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		 */
 		if (res != CURLE_OK && response_code == 0 && !chunk.size_exceeded)
 		{
-			for (long i = 1; i <= state->max_retries; i++)
+			for (long i = 0; i < state->max_retries; i++)
 			{
-				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i);
+				CHECK_FOR_INTERRUPTS();
+				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i + 1);
 
 				/*
 				 * Discard whatever the failed attempt left behind *before*
@@ -5509,8 +5457,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				chunk_header.memory[0] = '\0';
 
 				res = curl_easy_perform(state->curl);
+				curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 
-				if (res == CURLE_OK || chunk.size_exceeded)
+				if (res == CURLE_OK || response_code != 0 || chunk.size_exceeded)
 					break;
 			}
 			/* Update response code after retries */

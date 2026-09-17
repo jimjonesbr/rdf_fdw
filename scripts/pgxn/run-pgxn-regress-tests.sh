@@ -37,11 +37,18 @@ do
     #
     # ex. "export INCLUDE_LOCAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean"
 
+    # Build from a clean tree. pg-build-test exits non-zero when a test fails,
+    # which skips the "make clean" at the end of the chain and leaves the object
+    # files behind; the next version then finds them newer than the sources and
+    # relinks them instead of recompiling, installing one version's build into
+    # another. That loads until the ABI actually differs - objects built for 10
+    # or earlier fail on 11 with "undefined symbol: AllocSetContextCreate", and
+    # every test then fails because the extension cannot be created at all.
     podman run \
         --network $NETWORK_NAME \
         --no-hosts \
         -itw /ext --rm \
-        --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export INCLUDE_LOCAL_TESTS=1 && pg-start $pgv && pg-build-test && make clean" &&
+        --volume "$CODEPATH:/ext:z" $IMAGENAME sh -c "export INCLUDE_LOCAL_TESTS=1 && pg-start $pgv && make clean && pg-build-test && make clean" &&
 
     
     echo -e "\n\n== Tests finished for PostgreSQL $pgv ==\n\n"    

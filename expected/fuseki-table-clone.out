@@ -467,7 +467,7 @@ INFO:  [20 - 30]: 10 records inserted
 /* a page size is rejected when it is not a non-negative integer */
 ALTER FOREIGN TABLE ft_fetch OPTIONS (ADD fetch_size 'abc');
 ERROR:  invalid fetch_size: 'abc'
-HINT:  Expected values are positive integers.
+HINT:  Expected an integer between 0 and 2147483647.
 DROP TABLE public.t_fetch;
 DROP TABLE public.t_fetch2;
 DROP FOREIGN TABLE ft_fetch;
