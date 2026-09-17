@@ -15,6 +15,19 @@ SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"@ja');
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"','"b"@en');
 SELECT sparql.rdf_fdw_arguments_compatible('"abc"^^xsd:string','"b"@en');
 
+/*
+ * A language tag is compared without regard to case (RDF 1.1 Concepts, 3.3),
+ * so two literals carrying one tag written differently are compatible. Only
+ * the part before the first hyphen is lowercased when a term is read, so a
+ * region subtag reaches the comparison as it was written.
+ */
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@EN','"b"@en');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en-GB','"b"@en-gb');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en-gb','"b"@en-GB');
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@zh-Hant-TW','"b"@ZH-HANT-tw');
+/* a different tag is still a different tag */
+SELECT sparql.rdf_fdw_arguments_compatible('"abc"@en-GB','"b"@en-US');
+
 /* LEX */  
 SELECT sparql.lex('"foo"');
 SELECT sparql.lex('foo');

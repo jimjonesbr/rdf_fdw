@@ -162,7 +162,7 @@ bool LiteralsCompatible(char *literal1, char *literal2)
 	}
 
 	/* both plain literals with identical language tags */
-	if (strlen(lang1) > 0 && strlen(lang2) > 0 && strcmp(lang1, lang2) == 0)
+	if (strlen(lang1) > 0 && strlen(lang2) > 0 && pg_strcasecmp(lang1, lang2) == 0)
 	{
 		elog(DEBUG3, "%s exit: returning 'true' (both plain literals with identical language tags)", __func__);
 		return true;
