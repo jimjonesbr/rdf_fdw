@@ -135,6 +135,7 @@
 #endif /* PG_VERSION_NUM */
 
 #define IntToConst(x) makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum((int32)(x)), false, true)
+#define Int64ToConst(x) makeConst(INT8OID, -1, InvalidOid, 8, Int64GetDatum((int64)(x)), false, FLOAT8PASSBYVAL)
 #define OidToConst(x) makeConst(OIDOID, -1, InvalidOid, 4, ObjectIdGetDatum(x), false, true)
 /* +1 for the null terminator required by C string functions (libxml, printf, etc.) */
 #define IRI_SIZE(len) (VARHDRSZ + (len) + 1)
@@ -4521,11 +4522,11 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, IntToConst((int)state->is_sparql_parsable));
 	result = lappend(result, IntToConst((int)state->log_sparql));
 	result = lappend(result, IntToConst((int)state->has_unparsable_conds));
-	result = lappend(result, IntToConst((int)state->request_max_redirect));
-	result = lappend(result, IntToConst((int)state->connect_timeout));
-	result = lappend(result, IntToConst((int)state->request_timeout));
-	result = lappend(result, IntToConst((int)state->max_retries));
-	result = lappend(result, IntToConst((int)state->max_response_size));
+	result = lappend(result, Int64ToConst(state->request_max_redirect));
+	result = lappend(result, Int64ToConst(state->connect_timeout));
+	result = lappend(result, Int64ToConst(state->request_timeout));
+	result = lappend(result, Int64ToConst(state->max_retries));
+	result = lappend(result, Int64ToConst(state->max_response_size));
 	result = lappend(result, OidToConst(state->foreigntableid));
 
 	elog(DEBUG2, "%s: serializing table with %d columns", __func__, state->numcols);
@@ -4573,6 +4574,9 @@ static List *SerializePlanData(RDFfdwState *state)
 
 	result = lappend(result, CStringToConst(state->server->servername));
 	result = lappend(result, IntToConst((int)state->batch_size));
+	result = lappend(result, IntToConst(state->enable_xml_huge));
+	result = lappend(result, CStringToConst(state->base_uri));
+	result = lappend(result, IntToConst(state->sparql_query_type));
 
 	elog(DEBUG1, "%s exit", __func__);
 	return result;
@@ -4678,19 +4682,19 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	state->has_unparsable_conds = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->request_max_redirect = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->request_max_redirect = (long)DatumGetInt64(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->connect_timeout = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->connect_timeout = (long)DatumGetInt64(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->request_timeout = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->request_timeout = (long)DatumGetInt64(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->max_retries = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->max_retries = (long)DatumGetInt64(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
-	state->max_response_size = (long)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	state->max_response_size = (long)DatumGetInt64(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
 
 	state->foreigntableid = DatumGetObjectId(((Const *)lfirst(cell))->constvalue);
@@ -4748,6 +4752,12 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 
 	state->batch_size = (int)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 	cell = list_next(list, cell);
+
+	state->enable_xml_huge = DatumGetInt32(((Const *)lfirst(cell))->constvalue);
+	cell = list_next(list, cell);
+	state->base_uri = ConstToCString(lfirst(cell));
+	cell = list_next(list, cell);
+	state->sparql_query_type = DatumGetInt32(((Const *)lfirst(cell))->constvalue);
 
 	elog(DEBUG1, "%s exit", __func__);
 	return state;
