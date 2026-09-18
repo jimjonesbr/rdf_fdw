@@ -286,6 +286,46 @@ ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 INSERT INTO ft (subject, predicate, object) VALUES ('<https://www.uni-muenster.de>', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', 'http://dbpedia.org/resource/University');
 ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE rdfnode;
 
+/*
+ * batch_size decides when a row reaches the endpoint, not just how many
+ * requests are made: a row inserted into a batch is not there until the batch
+ * is sent. An AFTER row trigger runs before that, and so sees nothing, unless
+ * each write is a request of its own.
+ */
+CREATE SERVER batching FOREIGN DATA WRAPPER rdf_fdw OPTIONS (
+  endpoint   'http://fuseki:3030/dt/sparql',
+  update_url 'http://fuseki:3030/dt/update',
+  batch_size '50');
+CREATE USER MAPPING FOR postgres SERVER batching OPTIONS (user 'admin', password 'secret');
+CREATE FOREIGN TABLE bt (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+) SERVER batching OPTIONS (
+  log_sparql 'false',
+  sparql 'SELECT * {?s ?p ?o}',
+  sparql_update_pattern '?s ?p ?o .');
+
+CREATE FUNCTION batch_probe() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE n bigint;
+BEGIN
+  SELECT count(*) INTO n FROM bt WHERE s = '<http://rdf-fdw.test/batch>'::rdfnode;
+  RAISE NOTICE 'trigger sees % row(s) at the endpoint', n;
+  RETURN NULL;
+END $$;
+CREATE TRIGGER batch_probe AFTER INSERT ON bt FOR EACH ROW EXECUTE PROCEDURE batch_probe();
+
+INSERT INTO bt VALUES ('<http://rdf-fdw.test/batch>', '<http://rdf-fdw.test/p>', '"batched"');
+DELETE FROM bt WHERE s = '<http://rdf-fdw.test/batch>'::rdfnode;
+
+ALTER SERVER batching OPTIONS (SET batch_size '1');
+INSERT INTO bt VALUES ('<http://rdf-fdw.test/batch>', '<http://rdf-fdw.test/p>', '"synchronous"');
+DELETE FROM bt WHERE s = '<http://rdf-fdw.test/batch>'::rdfnode;
+
+DROP TRIGGER batch_probe ON bt;
+DROP FUNCTION batch_probe();
+DROP SERVER batching CASCADE;
+
 /* cleanup */
 DELETE FROM ft;
 DELETE FROM rdbms_fuseki;    -- clear <http://www.uni-muenster.de/graph>

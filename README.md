@@ -185,7 +185,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | Server Option | Type | Description |
 |---------------|------|-------------|
 | `endpoint` | **required** | SPARQL endpoint URL (required). |
-| `batch_size` | optional | Number of rows to accumulate per SPARQL UPDATE request for DML operations (default `50`). Larger batches reduce network overhead but may exceed endpoint limits. |
+| `batch_size` | optional | Number of rows to accumulate per SPARQL UPDATE request for DML operations (default `50`). Larger batches reduce network overhead but may exceed endpoint limits. A row does not reach the endpoint until its batch is sent, so anything that reads the table back within the same statement — an `AFTER` row trigger, for instance — needs `batch_size '1'` to see it. |
 | `enable_pushdown` | optional | Enable translation of SQL clauses into SPARQL (default `true`). |
 | `format` | optional | Expected SPARQL result MIME type (default `application/sparql-results+xml`). Set if your endpoint requires a different value. |
 | `http_proxy` | optional | HTTP proxy URL (for authentication, specify `proxy_user` and `proxy_password` in `USER MAPPING`). |
