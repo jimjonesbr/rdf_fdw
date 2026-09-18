@@ -1248,6 +1248,83 @@ SELECT p, c FROM np_groupby
 WHERE c > 1;
 
 /* ================================================================
+ * Non-pushable tables
+ * (the supplied query says something a rewrite would not preserve)
+ * ================================================================ */
+
+/*
+ * A rewrite replaces the supplied SELECT clause with one of its own and
+ * appends its own solution modifiers. That is only faithful where the clause
+ * says nothing but which variables to project: a DISTINCT, a REDUCED or an
+ * expression alias is part of what the query asks for and would be dropped,
+ * and a BASE decides what the relative IRIs beneath it mean. A projection that
+ * does not carry a mapped column's variable cannot be rewritten to one that
+ * does, either - the variable is not bound. Such a query is sent as it was
+ * written and everything is applied locally.
+ */
+CREATE FOREIGN TABLE np_distinct (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT DISTINCT ?p WHERE {<http://example.org/s> ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_distinct
+WHERE p = '<http://example.org/p>';
+
+CREATE FOREIGN TABLE np_reduced (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT REDUCED ?p WHERE {<http://example.org/s> ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_reduced
+WHERE p = '<http://example.org/p>';
+
+CREATE FOREIGN TABLE np_alias (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT (?o AS ?p) WHERE {<http://example.org/s> ?x ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_alias
+WHERE p = '<http://example.org/p>';
+
+CREATE FOREIGN TABLE np_base (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'BASE <http://example.org/> SELECT ?p WHERE {<http://example.org/s> ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_base
+WHERE p = '<http://example.org/p>';
+
+/* the projection does not bind the variable the column is mapped to */
+CREATE FOREIGN TABLE np_unprojected (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?s WHERE {?s ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_unprojected
+WHERE p = '<http://example.org/p>';
+
+/* a plain projection naming the mapped variable is still rewritten */
+CREATE FOREIGN TABLE np_plain (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p WHERE {<http://example.org/s> ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_plain
+WHERE p = '<http://example.org/p>';
+
+/* ================================================================
  * Arithmetic grouping
  * ================================================================ */
 

@@ -2401,6 +2401,125 @@ HINT:  Use the "rdfnode" type instead.
 (5 rows)
 
 /* ================================================================
+ * Non-pushable tables
+ * (the supplied query says something a rewrite would not preserve)
+ * ================================================================ */
+/*
+ * A rewrite replaces the supplied SELECT clause with one of its own and
+ * appends its own solution modifiers. That is only faithful where the clause
+ * says nothing but which variables to project: a DISTINCT, a REDUCED or an
+ * expression alias is part of what the query asks for and would be dropped,
+ * and a BASE decides what the relative IRIs beneath it mean. A projection that
+ * does not carry a mapped column's variable cannot be rewritten to one that
+ * does, either - the variable is not bound. Such a query is sent as it was
+ * written and everything is applied locally.
+ */
+CREATE FOREIGN TABLE np_distinct (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT DISTINCT ?p WHERE {<http://example.org/s> ?p ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_distinct
+WHERE p = '<http://example.org/p>';
+                          QUERY PLAN                           
+---------------------------------------------------------------
+ Foreign Scan on public.np_distinct
+   Output: p
+   Filter: (np_distinct.p = '<http://example.org/p>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: unsupported SPARQL
+(5 rows)
+
+CREATE FOREIGN TABLE np_reduced (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT REDUCED ?p WHERE {<http://example.org/s> ?p ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_reduced
+WHERE p = '<http://example.org/p>';
+                          QUERY PLAN                          
+--------------------------------------------------------------
+ Foreign Scan on public.np_reduced
+   Output: p
+   Filter: (np_reduced.p = '<http://example.org/p>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: unsupported SPARQL
+(5 rows)
+
+CREATE FOREIGN TABLE np_alias (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT (?o AS ?p) WHERE {<http://example.org/s> ?x ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_alias
+WHERE p = '<http://example.org/p>';
+                         QUERY PLAN                         
+------------------------------------------------------------
+ Foreign Scan on public.np_alias
+   Output: p
+   Filter: (np_alias.p = '<http://example.org/p>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: unsupported SPARQL
+(5 rows)
+
+CREATE FOREIGN TABLE np_base (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'BASE <http://example.org/> SELECT ?p WHERE {<http://example.org/s> ?p ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_base
+WHERE p = '<http://example.org/p>';
+                        QUERY PLAN                         
+-----------------------------------------------------------
+ Foreign Scan on public.np_base
+   Output: p
+   Filter: (np_base.p = '<http://example.org/p>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: unsupported SPARQL
+(5 rows)
+
+/* the projection does not bind the variable the column is mapped to */
+CREATE FOREIGN TABLE np_unprojected (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?s WHERE {?s ?p ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_unprojected
+WHERE p = '<http://example.org/p>';
+                            QUERY PLAN                            
+------------------------------------------------------------------
+ Foreign Scan on public.np_unprojected
+   Output: p
+   Filter: (np_unprojected.p = '<http://example.org/p>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: unsupported SPARQL
+(5 rows)
+
+/* a plain projection naming the mapped variable is still rewritten */
+CREATE FOREIGN TABLE np_plain (
+  p rdfnode OPTIONS (variable '?p')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p WHERE {<http://example.org/s> ?p ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM np_plain
+WHERE p = '<http://example.org/p>';
+                    QUERY PLAN                    
+--------------------------------------------------
+ Foreign Scan on public.np_plain
+   Output: p
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?p 
+   Remote Filter: ((?p = <http://example.org/p>))
+(6 rows)
+
+/* ================================================================
  * Arithmetic grouping
  * ================================================================ */
 /* The shape of the expression tree, not the textual order of the operators,
@@ -2712,7 +2831,7 @@ SELECT o FROM rdfnode_ft WHERE o = '"x"'::rdfnode;
 (6 rows)
 
 DROP SERVER test_server CASCADE;
-NOTICE:  drop cascades to 9 other objects
+NOTICE:  drop cascades to 15 other objects
 DETAIL:  drop cascades to foreign table rdfnode_ft
 drop cascades to foreign table rdfnode_opt_ft
 drop cascades to foreign table pgtypes_ft
@@ -2721,4 +2840,10 @@ drop cascades to foreign table np_union
 drop cascades to foreign table np_limit
 drop cascades to foreign table np_orderby
 drop cascades to foreign table np_groupby
+drop cascades to foreign table np_distinct
+drop cascades to foreign table np_reduced
+drop cascades to foreign table np_alias
+drop cascades to foreign table np_base
+drop cascades to foreign table np_unprojected
+drop cascades to foreign table np_plain
 drop cascades to foreign table arith_ft

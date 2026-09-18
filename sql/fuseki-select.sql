@@ -849,6 +849,20 @@ SELECT octet_length('ab'::char(5))              AS char5_is_padded_to_5,
 
 DROP FOREIGN TABLE ft_typmod;
 
+/*
+ * A DISTINCT in the SQL query applies to what the query returns, which is not
+ * the same as what the scan reads. Under an aggregate it describes the single
+ * row the aggregate produces, so applying it to the scan instead removes rows
+ * the aggregate was meant to count: the count below is of every predicate in
+ * the graph, not of the distinct ones.
+ */
+SELECT count(predicate) AS every_predicate FROM ft;
+SELECT DISTINCT count(predicate) AS still_every_predicate FROM ft;
+SELECT count(DISTINCT predicate) AS distinct_predicates FROM ft;
+
+/* a grouping counts rows the same way an aggregate does */
+SELECT DISTINCT count(*) AS group_sizes FROM ft GROUP BY predicate ORDER BY 1;
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER server_invalid_url CASCADE;

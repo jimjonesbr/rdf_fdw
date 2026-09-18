@@ -1127,16 +1127,89 @@ bool IsSPARQLParsable(struct RDFfdwState *state)
 {
 	int keyword_count = 0;
 	bool result;
+	const char *projection;
+	const char *end;
+	int select_position;
+	List *variables = NIL;
+	bool wildcard = false;
 
 	Assert(state != NULL);
 	Assert(state->raw_sparql != NULL);
 
 	elog(DEBUG3, "%s called", __func__);
+
+	select_position = LocateKeyword(state->raw_sparql, "{\n\t> ", "SELECT",
+									 " *?$\n\t", NULL, 0);
+	if (select_position == RDF_KEYWORD_NOT_FOUND)
+		return false;
+	projection = state->raw_sparql + select_position;
+	if (pg_strncasecmp(projection, "SELECT", 6) != 0)
+		projection++;
+	projection += 6;
+	end = strrchr(projection, '}');
+	if (end == NULL)
+		return false;
+	for (end++; *end; end++)
+		if (!isspace((unsigned char)*end))
+			return false;
+
+	/* Replacing anything except a plain variable projection changes the query. */
+	while (*projection)
+	{
+		const char *start;
+
+		while (isspace((unsigned char)*projection))
+			projection++;
+		if (*projection == '*')
+		{
+			wildcard = true;
+			projection++;
+		}
+		else if (*projection == '?' || *projection == '$')
+		{
+			start = ++projection;
+			while (isalnum((unsigned char)*projection) || *projection == '_' ||
+				   (unsigned char)*projection >= 0x80)
+				projection++;
+			variables = lappend(variables, pnstrdup(start, projection - start));
+		}
+		else if (*projection == '{' ||
+				 pg_strncasecmp(projection, "WHERE", 5) == 0 ||
+				 pg_strncasecmp(projection, "FROM", 4) == 0)
+			break;
+		else
+			return false;
+	}
+
+	if (!wildcard)
+	{
+		for (int i = 0; i < state->numcols; i++)
+		{
+			ListCell *cell;
+			bool found = false;
+			char *variable = state->rdfTable->cols[i]->sparqlvar;
+
+			if (variable == NULL)
+				continue;
+			foreach (cell, variables)
+				if (strcmp(variable + 1, (char *)lfirst(cell)) == 0)
+					found = true;
+			if (!found)
+				return false;
+		}
+	}
+
+	projection = state->raw_sparql;
+	while (isspace((unsigned char)*projection))
+		projection++;
+	if (pg_strncasecmp(projection, "BASE", 4) == 0 ||
+		LocateKeyword(state->raw_sparql, " \n\t>", "BASE", " \n\t<", NULL, 0) != RDF_KEYWORD_NOT_FOUND)
+		return false;
 	/*
 	 * SPARQL Queries containing SUB SELECTS are not supported. So, if any number
 	 * other than 1 is returned from LocateKeyword, this query cannot be parsed.
 	 */
-	LocateKeyword(state->raw_sparql, "{\n\t> ", RDF_SPARQL_KEYWORD_SELECT, " *?\n\t", &keyword_count, 0);
+	LocateKeyword(state->raw_sparql, "{\n\t> ", RDF_SPARQL_KEYWORD_SELECT, " *?$\n\t", &keyword_count, 0);
 
 	elog(DEBUG2, "%s: SPARQL contains '%d' SELECT clauses.", __func__, keyword_count);
 

@@ -3284,6 +3284,70 @@ SELECT octet_length('ab'::char(5))              AS char5_is_padded_to_5,
 (1 row)
 
 DROP FOREIGN TABLE ft_typmod;
+/*
+ * A DISTINCT in the SQL query applies to what the query returns, which is not
+ * the same as what the scan reads. Under an aggregate it describes the single
+ * row the aggregate produces, so applying it to the scan instead removes rows
+ * the aggregate was meant to count: the count below is of every predicate in
+ * the graph, not of the distinct ones.
+ */
+SELECT count(predicate) AS every_predicate FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?p 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 32 records.
+
+ every_predicate 
+-----------------
+              32
+(1 row)
+
+SELECT DISTINCT count(predicate) AS still_every_predicate FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?p 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 32 records.
+
+ still_every_predicate 
+-----------------------
+                    32
+(1 row)
+
+SELECT count(DISTINCT predicate) AS distinct_predicates FROM ft;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?p 
+{?s ?p ?o}
+ORDER BY  ASC (?p)
+
+INFO:  SPARQL returned 32 records.
+
+ distinct_predicates 
+---------------------
+                  20
+(1 row)
+
+/* a grouping counts rows the same way an aggregate does */
+SELECT DISTINCT count(*) AS group_sizes FROM ft GROUP BY predicate ORDER BY 1;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?p 
+{?s ?p ?o}
+ORDER BY  ASC (?p)
+
+INFO:  SPARQL returned 32 records.
+
+ group_sizes 
+-------------
+           1
+           4
+          10
+(3 rows)
+
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':

@@ -6367,15 +6367,25 @@ static void CreateSPARQL(RDFfdwState *state, PlannerInfo *root)
 						 where_graph.data);
 	}
 	/*
-	 * if the raw SPARQL query does not contain a DISTINCT but the SQL query does,
-	 * this must be added into the new SELECT clause
+	 * A DISTINCT in the SQL statement describes what that statement returns.
+	 * Sending it to the endpoint makes the scan return distinct rows instead,
+	 * which is the same thing only while nothing between the two counts rows.
+	 * An aggregate does: removing duplicates before count() changes the count,
+	 * and so does a window function or a grouping. Where none of those stand
+	 * in between, the executor still applies the DISTINCT it was given, so
+	 * sending it can only reduce what crosses the network.
 	 */
 	else if (state->is_sparql_parsable &&
-			 root &&																						/* was the PlanerInfo provided? */
-			 root->parse->distinctClause != NULL &&															/* is there a DISTINCT clause in the PlanerInfo?*/
-			 !root->parse->hasDistinctOn &&																	/* does the DISTINCT clause have a DISTINCT ON?*/
-			 LocateKeyword(state->raw_sparql, " \n", "DISTINCT", " \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND) /* does the SPARQL have a DISTINCT clause?*/
+			 root &&
+			 root->parse->distinctClause != NULL &&
+			 !root->parse->hasDistinctOn &&
+			 !root->parse->hasAggs &&
+			 !root->parse->hasWindowFuncs &&
+			 root->parse->groupClause == NIL &&
+			 root->parse->havingQual == NULL &&
+			 LocateKeyword(state->raw_sparql, " \n", "DISTINCT", " \n?", NULL, 0) == RDF_KEYWORD_NOT_FOUND)
 	{
+		elog(DEBUG2, "  %s: SQL DISTINCT with nothing counting rows above the scan > pushing down DISTINCT", __func__);
 		appendStringInfo(&sparql, "%s\nSELECT DISTINCT %s\n%s%s",
 						 state->sparql_prefixes,
 						 strlen(state->sparql_select) == 0 ? " * " : state->sparql_select,
