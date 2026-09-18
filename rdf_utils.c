@@ -1258,161 +1258,6 @@ bool IsExpressionPushable(char *expression)
 }
 
 /*
- * LocateKeyword
- * -----------
- * This function locates the first occurrence of given 'keyword' within 'str'. The keywords
- * must be wrapped with one of the characters given in 'start_chars' and end_chars'. If
- * the parameter '*count' is used, this function will be called recursively to count how
- * many times the searched 'keyword' can be found in 'str'
- *
- * str             : string where 'keyword' will be searched
- * start_chars     : all possible chars that can preceed the searched 'keyword'
- * keyword         : the searched keyword (case insensitive)
- * end_chars       : all possible chars that can be found after the 'keyword'
- * count           : how many times 'keyword' was found in 'str' (nullable)
- * start_position  : position in 'str' where the function has to start looking for
- *                   'keyword'. Set it to '0' if the whole 'str' must be considered.
- *
- * returns         : position where 'keyword' was found, or RDF_KEYWORD_NOT_FOUND otherwise.
- */
-int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position)
-{
-	int keyword_position = RDF_KEYWORD_NOT_FOUND;
-	StringInfoData idt;
-	initStringInfo(&idt);
-
-	if (count)
-	{
-		for (size_t i = 0; i < *count; i++)
-		{
-			appendStringInfo(&idt, "  ");
-		}
-
-		if (*count > 0)
-			appendStringInfo(&idt, "├─ ");
-	}
-
-	elog(DEBUG2, "%s%s called: searching '%s' in start_position %d", NameStr(idt), __func__, keyword, start_position);
-
-	if (start_position < 0)
-		elog(ERROR, "%s%s: start_position cannot be negative.", NameStr(idt), __func__);
-
-	/*
-	 * Some SPARQL keywords can be placed in the very beginning of a query, so they not always
-	 * have a preceeding character. So here we first check if the searched keyword exists
-	 * in the beginning of the string.
-	 */
-	if (((strcasecmp(keyword, RDF_SPARQL_KEYWORD_SELECT) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_SELECT, strlen(RDF_SPARQL_KEYWORD_SELECT)) == 0) ||
-		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_PREFIX) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_PREFIX, strlen(RDF_SPARQL_KEYWORD_PREFIX)) == 0) ||
-		 (strcasecmp(keyword, RDF_SPARQL_KEYWORD_DESCRIBE) == 0 && strncasecmp(str, RDF_SPARQL_KEYWORD_DESCRIBE, strlen(RDF_SPARQL_KEYWORD_DESCRIBE)) == 0)) &&
-		start_position == 0)
-	{
-		elog(DEBUG2, "%s%s: nothing before SELECT. Setting keyword_position to 0.", NameStr(idt), __func__);
-		keyword_position = 0;
-	}
-	else
-	{
-
-		/*
-		 * The keyword is searched for once per combination of a preceding and
-		 * a following delimiter, since a caller accepts several of each. Those
-		 * combinations are tried in the order the caller happened to list its
-		 * delimiters, which says nothing about where in the string they occur:
-		 * "FROM<g1> FROM <g2>" matches " FROM " before it matches " FROM<".
-		 * Every combination therefore has to be considered, keeping whichever
-		 * match sits closest to the start of the string, rather than returning
-		 * the first one that happens to be found.
-		 */
-		for (int i = 0; i < strlen(start_chars); i++)
-		{
-
-			for (int j = 0; j < strlen(end_chars); j++)
-			{
-				char *el;
-				char *search_from = str + start_position;
-				StringInfoData eval_token;
-				initStringInfo(&eval_token);
-
-				appendStringInfo(&eval_token, "%c%s%c", start_chars[i], keyword, end_chars[j]);
-
-				while ((el = strcasestr(search_from, eval_token.data)) != NULL)
-				{
-					int position = el - str;
-					int nquotes = 0;
-
-					for (int k = 0; k <= position; k++)
-					{
-						if (str[k] == '\"')
-							nquotes++;
-					}
-
-					/*
-					 * If the keyword is located after an opening double-quote it is a literal and should
-					 * not be considered as a keyword. Carry on scanning instead of giving up on this
-					 * spelling: a keyword quoted once does not stop a later occurrence from being real.
-					 */
-					if (nquotes % 2 != 1)
-					{
-						if (keyword_position == RDF_KEYWORD_NOT_FOUND || position < keyword_position)
-							keyword_position = position;
-
-						break;
-					}
-
-					search_from = el + 1;
-				}
-			}
-		}
-	}
-
-	if ((count) && keyword_position != RDF_KEYWORD_NOT_FOUND)
-	{
-		(*count)++;
-		elog(DEBUG2, "%s%s (%d): keyword '%s' found in position %d. Recalling %s ... ", NameStr(idt), __func__, *count, keyword, keyword_position, __func__);
-		LocateKeyword(str, start_chars, keyword, end_chars, count, keyword_position + 1);
-
-		elog(DEBUG2, "%s%s: '%s' search returning postition %d for start position %d", NameStr(idt), __func__, keyword, keyword_position, start_position);
-	}
-
-	elog(DEBUG2, "%s exit: returning '%d' (keyword_position)", __func__, keyword_position);
-	return keyword_position;
-}
-
-/*
- * CheckURL
- * --------
- * CheckS if an URL is valid.
- *
- * url: URL to be validated.
- *
- * returns REQUEST_SUCCESS or REQUEST_FAIL
- */
-int CheckURL(char *url)
-{
-	CURLUcode code;
-	CURLU *handler = curl_url();
-
-	Assert(url != NULL);
-
-	elog(DEBUG3, "%s called: '%s'", __func__, url);
-
-	code = curl_url_set(handler, CURLUPART_URL, url, 0);
-
-	curl_url_cleanup(handler);
-
-	elog(DEBUG2, "  %s handler return code: %u", __func__, code);
-
-	if (code != 0)
-	{
-		elog(DEBUG2, "%s: invalid URL (%u) > '%s'", __func__, code, url);
-		return code;
-	}
-
-	elog(DEBUG3, "%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
-	return REQUEST_SUCCESS;
-}
-
-/*
  * SkipSPARQLQuoted
  * ----------------
  *
@@ -1466,6 +1311,147 @@ SkipSPARQLQuoted(const char *p)
 	}
 
 	return p;
+}
+
+/*
+ * LocateKeyword
+ * -----------
+ * This function locates the first occurrence of given 'keyword' within 'str'. The keywords
+ * must be wrapped with one of the characters given in 'start_chars' and end_chars'. If
+ * the parameter '*count' is used, this function will be called recursively to count how
+ * many times the searched 'keyword' can be found in 'str'
+ *
+ * str             : string where 'keyword' will be searched
+ * start_chars     : all possible chars that can preceed the searched 'keyword'
+ * keyword         : the searched keyword (case insensitive)
+ * end_chars       : all possible chars that can be found after the 'keyword'
+ * count           : how many times 'keyword' was found in 'str' (nullable)
+ * start_position  : position in 'str' where the function has to start looking for
+ *                   'keyword'. Set it to '0' if the whole 'str' must be considered.
+ *
+ * returns         : position where 'keyword' was found, or RDF_KEYWORD_NOT_FOUND otherwise.
+ */
+int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_chars, int *count, int start_position)
+{
+	const char *p = str;
+	int first = RDF_KEYWORD_NOT_FOUND;
+
+	elog(DEBUG2, "%s called: searching '%s' from position %d", __func__, keyword, start_position);
+
+	if (start_position < 0)
+		elog(ERROR, "%s: start_position cannot be negative.", __func__);
+
+	if (count)
+		*count = 0;
+
+	/*
+	 * The string is read once, from the left, so the first keyword found is
+	 * the first one there is. Looking for each spelling of the delimiters in
+	 * turn instead would find them in the order the caller happened to list
+	 * its delimiters, which says nothing about where they occur: given
+	 * "FROM<g1> FROM <g2>", " FROM " is found before " FROM<".
+	 *
+	 * Whatever is not query text is stepped over rather than searched, so a
+	 * keyword written inside a literal, an IRI or a comment is not one. It
+	 * also does not hide a real keyword after it, which is why the scan
+	 * continues past it rather than giving up.
+	 */
+	while (*p)
+	{
+		const char *next = SkipSPARQLQuoted(p);
+		const char *q = p;
+		const char *k = keyword;
+		int position = p == str ? 0 : p - str - 1;
+
+		if (next != p)
+		{
+			p = next;
+			continue;
+		}
+
+		/*
+		 * A keyword is preceded by one of the delimiters the caller accepts,
+		 * except at the very start of the string, where a query may open with
+		 * SELECT, PREFIX or DESCRIBE and there is nothing to precede it.
+		 */
+		if (position < start_position ||
+			(p != str && strchr(start_chars, p[-1]) == NULL))
+		{
+			p++;
+			continue;
+		}
+
+		/* a space in the keyword stands for any run of whitespace */
+		while (*k && *q)
+		{
+			if (isspace((unsigned char)*k) && isspace((unsigned char)*q))
+			{
+				while (isspace((unsigned char)*k))
+					k++;
+				while (isspace((unsigned char)*q))
+					q++;
+			}
+			else if (pg_tolower((unsigned char)*k) == pg_tolower((unsigned char)*q))
+			{
+				k++;
+				q++;
+			}
+			else
+				break;
+		}
+
+		if (*k == '\0' && (*q == '\0' || strchr(end_chars, *q)))
+		{
+			if (first == RDF_KEYWORD_NOT_FOUND)
+				first = position;
+			if (!count)
+			{
+				elog(DEBUG2, "%s exit: '%s' found at position %d", __func__, keyword, first);
+				return first;
+			}
+			(*count)++;
+			p = q;
+		}
+		else
+			p++;
+	}
+
+	elog(DEBUG2, "%s exit: returning '%d' (keyword_position)", __func__, first);
+	return first;
+}
+
+/*
+ * CheckURL
+ * --------
+ * CheckS if an URL is valid.
+ *
+ * url: URL to be validated.
+ *
+ * returns REQUEST_SUCCESS or REQUEST_FAIL
+ */
+int CheckURL(char *url)
+{
+	CURLUcode code;
+	CURLU *handler = curl_url();
+
+	Assert(url != NULL);
+
+	elog(DEBUG3, "%s called: '%s'", __func__, url);
+
+	code = curl_url_set(handler, CURLUPART_URL, url, 0);
+
+	curl_url_cleanup(handler);
+
+	elog(DEBUG2, "  %s handler return code: %u", __func__, code);
+
+	if (code != 0)
+	{
+		elog(DEBUG2, "%s: invalid URL (%u) > '%s'", __func__, code, url);
+		return code;
+	}
+
+	elog(DEBUG3, "%s exit: returning '%d' (REQUEST_SUCCESS)", __func__, REQUEST_SUCCESS);
+	return REQUEST_SUCCESS;
 }
 
 /*

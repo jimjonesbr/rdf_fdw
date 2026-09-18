@@ -1313,6 +1313,54 @@ EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p FROM np_unprojected
 WHERE p = '<http://example.org/p>';
 
+/*
+ * A keyword written inside a string is not a keyword, whichever of SPARQL's
+ * four quotings the string uses, and neither is one inside an IRI or a
+ * comment. A query carrying one is still rewritten: the text is read in order
+ * and what is not query text is stepped over, rather than the quoting being
+ * inferred from how many double quotes came before.
+ */
+CREATE FOREIGN TABLE kw_dquote (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p ?o WHERE {?s ?p ?o FILTER(?o != " SELECT ")}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_dquote WHERE p = '<http://example.org/p>';
+
+CREATE FOREIGN TABLE kw_squote (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql $$SELECT ?p ?o WHERE {?s ?p ?o FILTER(?o != ' SELECT ')}$$);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_squote WHERE p = '<http://example.org/p>';
+
+CREATE FOREIGN TABLE kw_tquote (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p ?o WHERE {?s ?p ?o FILTER(?o != """ SELECT """)}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_tquote WHERE p = '<http://example.org/p>';
+
+/* a real second SELECT is still a subquery, and still stops the rewrite */
+CREATE FOREIGN TABLE kw_subselect (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p ?o WHERE { SELECT ?p ?o WHERE {?s ?p ?o} }');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_subselect WHERE p = '<http://example.org/p>';
+
 /* a plain projection naming the mapped variable is still rewritten */
 CREATE FOREIGN TABLE np_plain (
   p rdfnode OPTIONS (variable '?p')

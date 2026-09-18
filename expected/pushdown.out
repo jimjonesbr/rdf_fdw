@@ -2500,6 +2500,85 @@ WHERE p = '<http://example.org/p>';
    Pushdown: unsupported SPARQL
 (5 rows)
 
+/*
+ * A keyword written inside a string is not a keyword, whichever of SPARQL's
+ * four quotings the string uses, and neither is one inside an IRI or a
+ * comment. A query carrying one is still rewritten: the text is read in order
+ * and what is not query text is stepped over, rather than the quoting being
+ * inferred from how many double quotes came before.
+ */
+CREATE FOREIGN TABLE kw_dquote (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p ?o WHERE {?s ?p ?o FILTER(?o != " SELECT ")}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_dquote WHERE p = '<http://example.org/p>';
+                    QUERY PLAN                    
+--------------------------------------------------
+ Foreign Scan on public.kw_dquote
+   Output: p
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?p 
+   Remote Filter: ((?p = <http://example.org/p>))
+(6 rows)
+
+CREATE FOREIGN TABLE kw_squote (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql $$SELECT ?p ?o WHERE {?s ?p ?o FILTER(?o != ' SELECT ')}$$);
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_squote WHERE p = '<http://example.org/p>';
+                    QUERY PLAN                    
+--------------------------------------------------
+ Foreign Scan on public.kw_squote
+   Output: p
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?p 
+   Remote Filter: ((?p = <http://example.org/p>))
+(6 rows)
+
+CREATE FOREIGN TABLE kw_tquote (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p ?o WHERE {?s ?p ?o FILTER(?o != """ SELECT """)}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_tquote WHERE p = '<http://example.org/p>';
+                    QUERY PLAN                    
+--------------------------------------------------
+ Foreign Scan on public.kw_tquote
+   Output: p
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?p 
+   Remote Filter: ((?p = <http://example.org/p>))
+(6 rows)
+
+/* a real second SELECT is still a subquery, and still stops the rewrite */
+CREATE FOREIGN TABLE kw_subselect (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT ?p ?o WHERE { SELECT ?p ?o WHERE {?s ?p ?o} }');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT p FROM kw_subselect WHERE p = '<http://example.org/p>';
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Foreign Scan on public.kw_subselect
+   Output: p
+   Filter: (kw_subselect.p = '<http://example.org/p>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: unsupported SPARQL
+(5 rows)
+
 /* a plain projection naming the mapped variable is still rewritten */
 CREATE FOREIGN TABLE np_plain (
   p rdfnode OPTIONS (variable '?p')
@@ -2831,7 +2910,7 @@ SELECT o FROM rdfnode_ft WHERE o = '"x"'::rdfnode;
 (6 rows)
 
 DROP SERVER test_server CASCADE;
-NOTICE:  drop cascades to 15 other objects
+NOTICE:  drop cascades to 19 other objects
 DETAIL:  drop cascades to foreign table rdfnode_ft
 drop cascades to foreign table rdfnode_opt_ft
 drop cascades to foreign table pgtypes_ft
@@ -2845,5 +2924,9 @@ drop cascades to foreign table np_reduced
 drop cascades to foreign table np_alias
 drop cascades to foreign table np_base
 drop cascades to foreign table np_unprojected
+drop cascades to foreign table kw_dquote
+drop cascades to foreign table kw_squote
+drop cascades to foreign table kw_tquote
+drop cascades to foreign table kw_subselect
 drop cascades to foreign table np_plain
 drop cascades to foreign table arith_ft
