@@ -216,6 +216,19 @@ SELECT sparql.iri('"a:b:c"'), sparql.iri('a:b:c'), sparql.iri('<a:b:c>');
 SELECT sparql.iri('"http:/not-a-scheme"'), sparql.iri('http:/not-a-scheme'), sparql.iri('<http:/not-a-scheme>');
 SELECT sparql.iri('"foo"@en');
 SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
+
+/* SPARQL 1.1 17.4.2.8 gives URI() as another name for IRI(), both returning an
+ * iri. They must therefore agree on every input and be usable in the same
+ * places -- uri() returned text, so its result went into nothing else. */
+SELECT sparql.uri('http://example/') AS uri,
+       sparql.uri('http://example/') = sparql.iri('http://example/') AS same_term,
+       pg_typeof(sparql.uri('http://example/')) = pg_typeof(sparql.iri('http://example/')) AS same_type;
+
+SELECT sparql.isiri(sparql.uri('http://example/')) AS composes;
+
+SELECT bool_and(sparql.uri(v) = sparql.iri(v)) AS agree_on_every_input
+FROM (VALUES ('"http://example/"'::rdfnode), ('http://example/'), ('<http://example/>'),
+             ('"foo"'), ('<foo>'), ('"a:b:c"'), ('"foo"@en')) t(v);
 SELECT sparql.iri('_:b1');
 SELECT sparql.iri('"<https://example/>"');
 

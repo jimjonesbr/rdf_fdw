@@ -2616,10 +2616,10 @@ AS 'MODULE_PATHNAME', 'rdf_fdw_arguments_compatible'
 LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.rdf_fdw_arguments_compatible(text, text) IS 'Checks if two arguments are compatible for RDF processing.';
 
-CREATE FUNCTION sparql.uri(rdfnode) RETURNS text
+CREATE FUNCTION sparql.uri(rdfnode) RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
 LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION sparql.uri(rdfnode) IS 'Converts the input text to a URI (alias for iri).';
+COMMENT ON FUNCTION sparql.uri(rdfnode) IS 'Constructs an IRI. SPARQL 1.1 17.4.2.8 makes URI() a synonym of IRI().';
 
 /* SPARQL 17.4.1 Functional Forms*/
 CREATE FUNCTION sparql.bound(rdfnode) RETURNS boolean

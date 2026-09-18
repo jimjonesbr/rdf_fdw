@@ -189,6 +189,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `enable_pushdown` | optional | Enable translation of SQL clauses into SPARQL (default `true`). |
 | `format` | optional | Expected SPARQL result MIME type (default `application/sparql-results+xml`). Set if your endpoint requires a different value. |
 | `http_proxy` | optional | HTTP proxy URL (for authentication, specify `proxy_user` and `proxy_password` in `USER MAPPING`). |
+| `https_proxy` | optional | Same as `http_proxy`, but the connection to the proxy itself is made over TLS. Set one or the other, not both. |
 | `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
 | `request_timeout` | optional | Maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer. |
 | `connect_retry` | optional | Number of retry attempts on failure (default `3`). |
@@ -200,6 +201,8 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `enable_xml_huge` | optional | Enable libxml2's `XML_PARSE_HUGE` to process very large or deeply nested responses (dangerous; default `false`). Use only for trusted endpoints. |
 | `readonly` | optional | Mark the server as read-only (default `false`). When `true`, all `INSERT`, `UPDATE`, and `DELETE` operations on any foreign table backed by this server are rejected before reaching the endpoint. Table-level `readonly` takes precedence over this setting. |
 | `max_response_size` | optional | Maximum allowed HTTP response body size in bytes (default `0` = unlimited). If the response exceeds this limit, the query is aborted with an error. Use this to protect against runaway result sets from untrusted or misbehaving endpoints. |
+| `base_uri` | optional | Base URI used to resolve relative URIs in the `RDF/XML` a `DESCRIBE` returns (default `http://rdf_fdw.postgresql.org/`). The `base_uri` argument of [sparql.describe](#sparql-describe) overrides it. |
+| `fetch_size` | optional | Default page size for [rdf_fdw_clone_table](#rdf_fdw_clone_table) (default `100`). It does not affect ordinary scans, which read a foreign table's result in one request. A `fetch_size` on the `FOREIGN TABLE` overrides it, and the procedure's own `fetch_size` argument overrides both. |
 
 > [!NOTE]
 > To view server options in `psql` use the meta-command `\des[+]`.
@@ -289,6 +292,7 @@ Table options:
 | `update_url` | optional | URL used for SPARQL UPDATE requests when different from the SELECT endpoint (e.g. Fuseki). |
 | `sparql_update_pattern` | optional | SPARQL triple pattern template used to build `INSERT DATA`, `DELETE DATA`, and `UPDATE` statements (required for DML). Each SPARQL variable in the pattern must be mapped to a table column. |
 | `readonly` | optional | Mark this foreign table as read-only (default `false`). When `true`, `INSERT`, `UPDATE`, and `DELETE` are rejected for this table regardless of the server-level `readonly` setting. When `false`, explicitly overrides a server-level `readonly 'true'`, allowing writes on this table even when the server is read-only. |
+| `fetch_size` | optional | Default page size for [rdf_fdw_clone_table](#rdf_fdw_clone_table) when cloning this table (default: the `SERVER` value, or `100`). It does not affect ordinary scans. The procedure's own `fetch_size` argument overrides it. |
 
 #### Column types
 
@@ -301,7 +305,7 @@ Columns must be declared as `rdfnode`. Support for native PostgreSQL types (e.g.
 | `variable` | **required** | SPARQL variable mapped to this column (e.g. `?name`). In `OPTIONS` write the variable with a leading `?` or `$`, but those characters are not part of the stored name. |
 | `expression` | optional | **Deprecated.** SPARQL expression to evaluate for this column. Only valid for native PostgreSQL type columns, which are deprecated. |
 | `language` | optional | **Deprecated.** Language tag to apply when comparing or formatting literals (e.g. `en`). Use `*` to ignore language. Only valid for native PostgreSQL type columns, which are deprecated. |
-| `literal_type` | optional | **Deprecated.** Expected XSD datatype for the literal (e.g. `xsd:date`). Use `*` to ignore type. Only valid for native PostgreSQL type columns, which are deprecated. |
+| `literal_type` | optional | **Deprecated.** Expected XSD datatype for the literal (e.g. `xsd:date`). Use `*` to ignore type. Only valid for native PostgreSQL type columns, which are deprecated. Also accepted spelled `literaltype`. |
 | `nodetype` | optional | **Deprecated.** Hint whether the value is `literal` or `iri` (default `literal`). Only valid for native PostgreSQL type columns, which are deprecated. |
 
 #### Examples
@@ -682,6 +686,8 @@ INFO:  SPARQL returned 5 records.
 
 `DISTINCT` is pushed down to the SPARQL `SELECT` when possible. If the foreign table's `sparql` option already contains `DISTINCT` or `REDUCED`, rdf_fdw will not push SQL `DISTINCT` again. There is no SPARQL equivalent of `DISTINCT ON`, so that PostgreSQL feature is always evaluated locally.
 
+A `DISTINCT` describes what the statement returns, which is not what the scan beneath it reads. It is therefore not sent when an aggregate, a window function, a `GROUP BY` or a `HAVING` sits in between and counts the rows: removing duplicates before counting them would change the count. `SELECT DISTINCT col FROM t` is pushed down as before.
+
 Example:
 
 ```sql
@@ -707,7 +713,7 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 ```
 
-### [WHERE](d#where)
+### [WHERE](#where)
 
 The `rdf_fdw` extension supports pushdown of many SQL expressions in the `WHERE` clause. When applicable, these expressions are translated into SPARQL `FILTER` clauses, allowing filtering to occur directly at the RDF data source. 
 
@@ -1408,7 +1414,7 @@ Computes the average (arithmetic mean) of numeric `rdfnode` values with XSD type
 > [!NOTE]
 > The `AVG` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)):
 >* NULL values (unbound variables) are skipped during aggregation
->* Returns NULL for empty sets or when all values are NULL (per spec: "The average of no bindings is an error")
+>* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: `Avg(M) = "0"^^xsd:integer`, where `Count(M) = 0`)
 >* If the input set contains any non-numeric values, the aggregate returns NULL
 >* The result type is always at least `xsd:decimal` (integer inputs produce a decimal average)
 >* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
@@ -1987,6 +1993,22 @@ Examples:
 ```sql
 SELECT sparql.iri('http://foo.bar');
        iri        
+------------------
+ <http://foo.bar>
+(1 row)
+```
+
+#### [URI](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#uri)
+
+```sql
+sparql.uri(value rdfnode) → rdfnode
+```
+
+A synonym of `sparql.iri()`. SPARQL 1.1 defines [URI()](https://www.w3.org/TR/sparql11-query/#func-iri) as another name for the same function, and the two behave identically here.
+
+```sql
+SELECT sparql.uri('http://foo.bar');
+       uri        
 ------------------
  <http://foo.bar>
 (1 row)

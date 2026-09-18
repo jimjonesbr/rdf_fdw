@@ -17,6 +17,11 @@ is not enough. Stored queries that only compare `rdfnode`s are unaffected.
 rejected; use a positive bound, or `0` to refuse redirects. `request_redirect`
 is deprecated but still works.
 
+**One function signature changed.** `sparql.uri()` returns `rdfnode` rather
+than `text`, which is what its synonym `sparql.iri()` always returned;
+assigning its result straight into a `text` column now needs an explicit
+`::text`.
+
 **Some queries return different answers**, because the old ones were wrong:
 
 * `GROUP BY`, `DISTINCT`, `UNION` and unique constraints on an `rdfnode` now
@@ -52,6 +57,8 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
   `request_redirect` is deprecated but still accepted, so existing servers and dumps continue to work: setting it raises a warning, and `request_redirect 'true'` without an explicit `request_max_redirect` follows up to 30 redirects, which is what libcurl would have done before. It will be removed in a future major release.
 
 ## Breaking Changes
+
+* **`sparql.uri()` returns `rdfnode`, not `text`**: SPARQL 1.1 §17.4.2.8 defines `URI()` as another name for `IRI()`, and both give back an IRI. `sparql.uri()` has declared a return type of `text` since 2.1, although it calls the same C function as `sparql.iri()` and produces the same term — so its result could not be given to any other `sparql` function without a cast, and `sparql.isiri(sparql.uri(...))` was an error where `sparql.isiri(sparql.iri(...))` was not. It now returns `rdfnode`, and the two are interchangeable as the specification says they are. A query that assigned its result straight into a `text` column will need an explicit `::text`; there is no implicit cast from `rdfnode` to `text`.
 
 * **`rdfnode`s are sorted and grouped by the stored term**: `ORDER BY`, `GROUP BY`, `SELECT DISTINCT`, `UNION` and unique constraints take their comparisons from the type's default B-tree operator class, not from the `=` and `<` operators directly. That class declared the RDF value operators but ordered terms by how they are written, and the two do not agree — which gave wrong answers, described in the bug fix below.
 

@@ -610,3 +610,16 @@ CREATE OR REPLACE FUNCTION timestamptz_ge_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_ge_rdfnode'
 LANGUAGE C IMMUTABLE STRICT;
+
+/* New in 2.8: sparql.uri() returns rdfnode, as sparql.iri() always did.
+   SPARQL 1.1 17.4.2.8 makes URI() a synonym of IRI() and gives both the return
+   type iri, and the two have always called the same C function -- only the
+   declared return type differed, which left uri()'s result unusable as an
+   argument to any other sparql function without a cast. A return type cannot
+   be changed in place, so the function is dropped and recreated. */
+DROP FUNCTION sparql.uri(rdfnode);
+
+CREATE FUNCTION sparql.uri(rdfnode) RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
+LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql.uri(rdfnode) IS 'Constructs an IRI. SPARQL 1.1 17.4.2.8 makes URI() a synonym of IRI().';

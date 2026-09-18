@@ -870,6 +870,31 @@ SELECT sparql.iri('"42"^^<http://www.w3.org/2001/XMLSchema#int>');
  <42>
 (1 row)
 
+/* SPARQL 1.1 17.4.2.8 gives URI() as another name for IRI(), both returning an
+ * iri. They must therefore agree on every input and be usable in the same
+ * places -- uri() returned text, so its result went into nothing else. */
+SELECT sparql.uri('http://example/') AS uri,
+       sparql.uri('http://example/') = sparql.iri('http://example/') AS same_term,
+       pg_typeof(sparql.uri('http://example/')) = pg_typeof(sparql.iri('http://example/')) AS same_type;
+        uri        | same_term | same_type 
+-------------------+-----------+-----------
+ <http://example/> | t         | t
+(1 row)
+
+SELECT sparql.isiri(sparql.uri('http://example/')) AS composes;
+ composes 
+----------
+ t
+(1 row)
+
+SELECT bool_and(sparql.uri(v) = sparql.iri(v)) AS agree_on_every_input
+FROM (VALUES ('"http://example/"'::rdfnode), ('http://example/'), ('<http://example/>'),
+             ('"foo"'), ('<foo>'), ('"a:b:c"'), ('"foo"@en')) t(v);
+ agree_on_every_input 
+----------------------
+ t
+(1 row)
+
 SELECT sparql.iri('_:b1');
 ERROR:  invalid argument: _:b1
 SELECT sparql.iri('"<https://example/>"');
