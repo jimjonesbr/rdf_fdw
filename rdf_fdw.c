@@ -3188,12 +3188,6 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 
 	elog(DEBUG3, "%s called", __func__);
 
-	if (state->numcols == 0)
-	{
-		elog(DEBUG3, "  %s: no foreign column available in this table.", __func__);
-		return NULL;
-	}
-
 	elog(DEBUG3, "  %s: rowcount = %d | pagesize = %d", __func__, state->rowcount, state->pagesize);
 
 	if (state->rowcount >= state->pagesize)

@@ -228,6 +228,20 @@ SELECT * FROM cloned_dropped;
 DROP FOREIGN TABLE ft_dropped;
 DROP TABLE cloned_dropped;
 
+/*
+ * A foreign table is allowed to have no columns, and a scan of one still has
+ * something to report: the request is made, the endpoint answers, and each
+ * record it returns is a row. count(*) is about the only question such a table
+ * can be asked, and it was answered with zero however many records came back,
+ * because the scan gave up before reading any of them.
+ */
+CREATE FOREIGN TABLE ft_columnless ()
+  SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+
+SELECT count(*) AS records_counted FROM ft_columnless;
+
+DROP FOREIGN TABLE ft_columnless;
+
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
