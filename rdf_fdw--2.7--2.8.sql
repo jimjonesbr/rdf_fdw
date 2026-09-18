@@ -204,6 +204,11 @@ DECLARE
   lang_text text;
   dt @extschema@.rdfnode;
 BEGIN
+  /* an angle-bracketed argument is an IRI whatever type it arrives as */
+  IF sparql.isIRI($1::@extschema@.rdfnode) THEN
+    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+  END IF;
+
   /* a bare string carries no metadata to preserve */
   IF pg_catalog.left($1, 1) <> '"' THEN
     RETURN sparql._quote_literal(pg_catalog.regexp_replace(
@@ -228,6 +233,16 @@ DECLARE
   lang_text text;
   dt @extschema@.rdfnode;
 BEGIN
+  /* REPLACE is defined over string literals: an IRI or a blank node has no
+     lexical form to rewrite, and rewriting its written shape would invent a
+     term nothing describes. */
+  IF sparql.isIRI($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+  END IF;
+  IF sparql.isblank($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow blank nodes: %', $1 USING ERRCODE = '22023';
+  END IF;
+
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),
@@ -256,6 +271,16 @@ DECLARE
   lang_text text;
   dt @extschema@.rdfnode;
 BEGIN
+  /* REPLACE is defined over string literals: an IRI or a blank node has no
+     lexical form to rewrite, and rewriting its written shape would invent a
+     term nothing describes. */
+  IF sparql.isIRI($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+  END IF;
+  IF sparql.isblank($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow blank nodes: %', $1 USING ERRCODE = '22023';
+  END IF;
+
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),
@@ -623,3 +648,12 @@ CREATE FUNCTION sparql.uri(rdfnode) RETURNS rdfnode
 AS 'MODULE_PATHNAME', 'rdf_fdw_iri'
 LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.uri(rdfnode) IS 'Constructs an IRI. SPARQL 1.1 17.4.2.8 makes URI() a synonym of IRI().';
+
+/* New in 2.8: STRLEN, LANG and REPLACE refuse an IRI and a blank node, as
+   UCASE, LCASE, SUBSTR and CONCAT already did. LANG is guarded in C, so it
+   needs nothing here. STRLEN was length(lex(...)), which counted an IRI's
+   angle brackets and accepted a literal of any datatype; it now calls the
+   implementation that was written for it and never wired up. */
+CREATE OR REPLACE FUNCTION sparql.strlen(rdfnode) RETURNS int
+AS 'MODULE_PATHNAME', 'rdf_fdw_strlen'
+LANGUAGE C IMMUTABLE STRICT;

@@ -924,7 +924,26 @@ Datum rdf_fdw_lang(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
 	char *literal = text_to_cstring(input_text);
-	char *result = lang(literal);
+	char *result;
+
+	/*
+	 * LANG is defined over literals. An IRI or a blank node has no language
+	 * tag to report and no lexical form to report one from, so asking is a
+	 * type error rather than a term with an empty tag -- which is what a
+	 * plain literal has. The guard is here rather than in lang(), which the
+	 * scan and the comparison operators call on terms of every kind.
+	 */
+	if (isIRI(literal))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("LANG does not allow IRIs: %s", literal)));
+
+	if (isBlank(literal))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("LANG does not allow blank nodes: %s", literal)));
+
+	result = lang(literal);
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }

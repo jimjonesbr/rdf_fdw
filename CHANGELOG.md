@@ -125,6 +125,10 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
 
 ### RDF values, literals and functions
 
+* **`STRLEN()`, `LANG()` and `REPLACE()` worked on an IRI's spelling**: All three are defined over literals, and an IRI or a blank node has no lexical form for them to work on — SPARQL leaves them unbound for one, and `UCASE()`, `LCASE()`, `SUBSTR()` and `CONCAT()` here already refuse it. These three operated on the term's written shape instead. `sparql.strlen()` counted the angle brackets, reporting 24 for an IRI 22 characters long; `sparql.replace()` rewrote the text inside the IRI and returned the result as a *literal*, inventing a term nothing describes; and `sparql.lang()` reported the empty language tag that belongs to a plain literal. All three now raise the same error the other string functions do. `sparql.str()` is unaffected and still takes an IRI, which is defined and returns its string form.
+
+  `sparql.strlen()` gains the rest of its contract with the guard. It was `length(lex(...))`, which also accepted a literal of any datatype — `sparql.strlen('"42"^^xsd:integer')` answered `2` where every store refuses it — and counted characters rather than the code points SPARQL specifies. The implementation written for it had been in the extension all along without anything calling it.
+
 * **`SELECT DISTINCT` over `rdfnode`s changed its answer when an unrelated row was inserted**: `rdfnode_ops` declared `=` as its equality and `<` as its ordering, and neither is what the class actually compared — its support function compares terms as they are written. Sorted grouping trusts that agreement, because it compares only the terms the sort placed next to each other, and there was none to trust. Two value-equal literals were one group; inserting a third, unrelated literal that sorts between them made them two:
 
   ```

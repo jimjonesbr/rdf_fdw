@@ -2783,11 +2783,12 @@ LANGUAGE C VOLATILE;
 COMMENT ON FUNCTION sparql.struuid() IS 'Generates a UUID string.';
 
 /* SPARQL 17.4.3  Functions on Strings */
-CREATE FUNCTION sparql.strlen(rdfnode) RETURNS int AS $$
-BEGIN
-  RETURN length(sparql.lex($1));
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+/* STRLEN is defined over string literals. rdf_fdw_strlen() refuses an IRI, a
+   blank node and a non-string literal, and counts code points rather than
+   bytes; length(lex(...)) did none of that. */
+CREATE FUNCTION sparql.strlen(rdfnode) RETURNS int
+AS 'MODULE_PATHNAME', 'rdf_fdw_strlen'
+LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION sparql.strlen(rdfnode) IS 'Returns the length of the literal text.';
 
 CREATE FUNCTION sparql.substr(rdfnode, int, int)
@@ -2876,6 +2877,11 @@ DECLARE
   lang_text text;
   dt @extschema@.rdfnode;
 BEGIN
+  /* an angle-bracketed argument is an IRI whatever type it arrives as */
+  IF sparql.isIRI($1::@extschema@.rdfnode) THEN
+    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+  END IF;
+
   /* a bare string carries no metadata to preserve */
   IF pg_catalog.left($1, 1) <> '"' THEN
     RETURN sparql._quote_literal(pg_catalog.regexp_replace(
@@ -2901,6 +2907,16 @@ DECLARE
   lang_text text;
   dt @extschema@.rdfnode;
 BEGIN
+  /* REPLACE is defined over string literals: an IRI or a blank node has no
+     lexical form to rewrite, and rewriting its written shape would invent a
+     term nothing describes. */
+  IF sparql.isIRI($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+  END IF;
+  IF sparql.isblank($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow blank nodes: %', $1 USING ERRCODE = '22023';
+  END IF;
+
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),
@@ -2930,6 +2946,16 @@ DECLARE
   lang_text text;
   dt @extschema@.rdfnode;
 BEGIN
+  /* REPLACE is defined over string literals: an IRI or a blank node has no
+     lexical form to rewrite, and rewriting its written shape would invent a
+     term nothing describes. */
+  IF sparql.isIRI($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+  END IF;
+  IF sparql.isblank($1) THEN
+    RAISE EXCEPTION 'REPLACE does not allow blank nodes: %', $1 USING ERRCODE = '22023';
+  END IF;
+
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),

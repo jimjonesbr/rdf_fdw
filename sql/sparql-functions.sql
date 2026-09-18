@@ -136,6 +136,32 @@ SELECT sparql.lang('"f"oo"@it');
 SELECT sparql.lang('');
 SELECT sparql.lang(' ');
 SELECT sparql.lang(NULL);
+/*
+ * STRLEN, LANG and REPLACE are defined over literals, and an IRI or a blank
+ * node has no lexical form for them to work on. They used to operate on the
+ * term's written shape instead: STRLEN counted the angle brackets, REPLACE
+ * rewrote the IRI and handed back a literal, and LANG reported the empty tag
+ * that belongs to a plain literal. Fuseki and GraphDB leave all three unbound
+ * for an IRI, and UCASE, LCASE, SUBSTR and CONCAT here already refuse one.
+ */
+SELECT sparql.strlen('<http://example.org/abc>');
+SELECT sparql.strlen('_:b1');
+SELECT sparql.replace('<http://example.org/abc>', 'a', 'Z');
+SELECT sparql.replace('<http://example.org/abc>'::rdfnode, 'a'::rdfnode, 'Z'::rdfnode);
+SELECT sparql.replace('_:b1'::rdfnode, 'b'::rdfnode, 'Z'::rdfnode);
+SELECT sparql.lang('_:b1');
+
+/* STR is the exception and must keep taking an IRI: STR of an IRI is defined
+ * and gives its string form. */
+SELECT sparql.str('<http://example.org/abc>');
+
+/* STRLEN counts code points of a string literal's lexical form, and refuses a
+ * literal that is not a string -- which is what every store does with it. */
+SELECT sparql.strlen('"hello"') AS plain,
+       sparql.strlen('"h\u00e9llo"@en') AS tagged,
+       sparql.strlen('"hello"^^xsd:string') AS typed;
+SELECT sparql.strlen('"42"^^xsd:integer');
+
 SELECT sparql.lang('<http://example.org>'); 
 
 /* a literal whose only inner quote is escaped has no closing quote, so it is
