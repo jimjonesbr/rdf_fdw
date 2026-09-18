@@ -260,6 +260,57 @@ SELECT count(*) AS records_counted FROM ft_columnless;
 (1 row)
 
 DROP FOREIGN TABLE ft_columnless;
+/*
+ * A clone commits each page as it goes, which ends the transaction that held
+ * the lock on the source and the moment its privileges were checked against.
+ * Every page after the first was therefore read without either: the caller
+ * could lose SELECT on the foreign table and the clone would carry on reading
+ * it. The check and the lock are taken again for each page.
+ *
+ * The revoke is issued from a trigger on the target so that it lands inside
+ * the first page's transaction and is committed with it, which is what a
+ * concurrent session would achieve without needing one here.
+ */
+CREATE SERVER stub_pages FOREIGN DATA WRAPPER rdf_fdw
+  OPTIONS (endpoint 'http://stub-endpoint/single-binding.xml', connect_timeout '5');
+CREATE FOREIGN TABLE ft_pages (s rdfnode OPTIONS (variable '?s'))
+  SERVER stub_pages OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE TABLE cloned_pages (s rdfnode);
+CREATE ROLE stub_cloner NOSUPERUSER;
+GRANT SELECT ON ft_pages TO stub_cloner;
+GRANT USAGE ON FOREIGN SERVER stub_pages TO stub_cloner;
+GRANT INSERT, SELECT ON cloned_pages TO stub_cloner;
+CREATE FUNCTION revoke_mid_clone() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  EXECUTE 'REVOKE SELECT ON ft_pages FROM stub_cloner';
+  RETURN NEW;
+END $$;
+CREATE TRIGGER revoke_mid_clone BEFORE INSERT ON cloned_pages
+  FOR EACH ROW EXECUTE PROCEDURE revoke_mid_clone();
+SET ROLE stub_cloner;
+CALL rdf_fdw_clone_table(
+  foreign_table => 'ft_pages',
+  target_table  => 'cloned_pages',
+  fetch_size    => 1,
+  max_records   => 3,
+  create_table  => false,
+  verbose       => false);
+ERROR:  permission denied for foreign table ft_pages
+RESET ROLE;
+/* the first page, and nothing after it */
+SELECT count(*) AS pages_cloned FROM cloned_pages;
+ pages_cloned 
+--------------
+            1
+(1 row)
+
+DROP TRIGGER revoke_mid_clone ON cloned_pages;
+DROP FUNCTION revoke_mid_clone();
+DROP TABLE cloned_pages;
+DROP SERVER stub_pages CASCADE;
+NOTICE:  drop cascades to foreign table ft_pages
+DROP ROLE stub_cloner;
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;

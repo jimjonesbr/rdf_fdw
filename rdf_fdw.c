@@ -88,6 +88,7 @@
 #include "utils/formatting.h"
 #include "utils/guc.h"
 #include "utils/lsyscache.h"
+#include "storage/lmgr.h"
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/resowner.h"
@@ -1921,6 +1922,34 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
  * Materializes the content of a foreign table into a heap table.
  */
 #if PG_VERSION_NUM >= 110000
+/*
+ * CheckCloneSourceAccess
+ * ----------------------
+ * Takes a lock on the foreign table a clone is reading and verifies that the
+ * current user may select from it.
+ *
+ * Both have to be done once per page rather than once per clone. The procedure
+ * commits each page as it goes -- 'commit_page' defaults to true -- and a
+ * commit ends the transaction that held the lock taken when the relation was
+ * looked up, and with it the point in time the privilege check was made
+ * against. Every page after the first would otherwise read a table that
+ * nothing is holding and that the caller may since have lost the right to
+ * read.
+ *
+ * relation: the OID of the foreign table being cloned
+ */
+static void CheckCloneSourceAccess(Oid relation)
+{
+	AclResult aclresult;
+
+	LockRelationOid(relation, AccessShareLock);
+
+	aclresult = pg_class_aclcheck(relation, GetUserId(), ACL_SELECT);
+
+	if (aclresult != ACLCHECK_OK)
+		aclcheck_error(aclresult, OBJECT_FOREIGN_TABLE, get_rel_name(relation));
+}
+
 Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 {
 	struct RDFfdwState *state = (struct RDFfdwState *)palloc0(sizeof(RDFfdwState));
@@ -1940,7 +1969,6 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 
 	char *orderby_variable = NULL;
 	StringInfoData select;
-	AclResult aclresult;
 
 	elog(DEBUG1, "%s called", __func__);
 
@@ -2064,11 +2092,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 * can happen: the procedure receives a relation name, not a relation, so
 	 * the executor never sees the foreign table and never checks anything.
 	 */
-	aclresult = pg_class_aclcheck(state->foreigntableid, GetUserId(), ACL_SELECT);
-
-	if (aclresult != ACLCHECK_OK)
-		aclcheck_error(aclresult, OBJECT_FOREIGN_TABLE,
-					   get_rel_name(state->foreigntableid));
+	CheckCloneSourceAccess(state->foreigntableid);
 
 	CheckForeignServerUsage(state->server);
 
@@ -2357,6 +2381,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 		 * execute the newly created SPARQL and load it in 'state'. It updates
 		 * state->pagesize!
 		 */
+		CheckCloneSourceAccess(state->foreigntableid);
 		LoadRDFData(state);
 
 		/* get out in case the SPARQL retrieves nothing */
