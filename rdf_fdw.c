@@ -2204,6 +2204,10 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	initStringInfo(&select);
 	for (int i = 0; i < state->numcols; i++)
 	{
+		/* a column mapped to no variable can be neither selected nor ordered by */
+		if (state->rdfTable->cols[i]->sparqlvar == NULL)
+			continue;
+
 		/*
 		 * Setting ORDER BY column for the SPARQL query. In case no column
 		 * is provided, we pick up the first 'iri' column in the table.
@@ -2236,10 +2240,21 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	 */
 	if (orderby_query)
 	{
-		if (orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0 && state->rdfTable->cols[0]->sparqlvar)
+		if (orderby_variable == NULL && strlen(state->ordering_pgcolumn) == 0)
 		{
-			elog(DEBUG2, "%s: setting ordering variable to '%s'", __func__, state->rdfTable->cols[0]->sparqlvar);
-			orderby_variable = pstrdup(state->rdfTable->cols[0]->sparqlvar);
+			/*
+			 * The first mapped column, which is the first column unless one
+			 * before it was dropped.
+			 */
+			for (int i = 0; i < state->numcols; i++)
+			{
+				if (state->rdfTable->cols[i]->sparqlvar == NULL)
+					continue;
+
+				elog(DEBUG2, "%s: setting ordering variable to '%s'", __func__, state->rdfTable->cols[i]->sparqlvar);
+				orderby_variable = pstrdup(state->rdfTable->cols[i]->sparqlvar);
+				break;
+			}
 		}
 
 		if (!orderby_variable && strlen(state->ordering_pgcolumn) != 0)
@@ -6494,6 +6509,19 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 		char *sparqlvar = state->rdfTable->cols[i]->sparqlvar;
 		char *colname = state->rdfTable->cols[i]->name;
 		int pgtypmod = state->rdfTable->cols[i]->pgtypmod;
+
+		/*
+		 * A column mapped to no SPARQL variable takes no part in the query, so
+		 * no binding in the response can be meant for it. A dropped column is
+		 * the case that arises: it keeps its place in the tuple descriptor,
+		 * which this loop is indexed by, and so has to be stepped over here
+		 * rather than left out of the loop. It reads back as NULL.
+		 */
+		if (sparqlvar == NULL)
+		{
+			slot->tts_isnull[i] = true;
+			continue;
+		}
 
 		for (result = record->children; result != NULL; result = result->next)
 		{

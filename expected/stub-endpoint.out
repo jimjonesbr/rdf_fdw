@@ -208,6 +208,42 @@ INSERT DATA { <http://example.org/a> <http://example.org/p> "a literal holding ?
 
 
 DROP FOREIGN TABLE ft_tokens;
+/*
+ * A dropped column keeps its place in the foreign table's tuple descriptor,
+ * which the scan and the clone are both indexed by, but it is mapped to no
+ * SPARQL variable. Both handed that absent mapping straight to strcmp() and
+ * pstrdup(), which is strlen(NULL), so any query returning a row terminated
+ * the backend and took the cluster into crash recovery with it. The dropped
+ * column here is the first one, which is also the one the clone reaches for
+ * when it has to pick something to order by.
+ */
+CREATE FOREIGN TABLE ft_dropped (
+  gone rdfnode OPTIONS (variable '?gone'),
+  s    rdfnode OPTIONS (variable '?s')
+) SERVER stub OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+ALTER FOREIGN TABLE ft_dropped DROP COLUMN gone;
+SELECT * FROM ft_dropped;
+  s  
+-----
+ "x"
+(1 row)
+
+CREATE TABLE cloned_dropped (s rdfnode);
+CALL rdf_fdw_clone_table(
+  foreign_table => 'ft_dropped',
+  target_table  => 'cloned_dropped',
+  fetch_size    => 1,
+  max_records   => 1,
+  create_table  => false,
+  verbose       => false);
+SELECT * FROM cloned_dropped;
+  s  
+-----
+ "x"
+(1 row)
+
+DROP FOREIGN TABLE ft_dropped;
+DROP TABLE cloned_dropped;
 /* clean up */
 DROP TABLE cloned_repeated;
 DROP SERVER stub CASCADE;
