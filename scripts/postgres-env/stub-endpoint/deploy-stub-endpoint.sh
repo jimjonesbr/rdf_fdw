@@ -99,6 +99,17 @@ cat > /tmp/stub-describe-bnode.xml <<'XMLEOF'
     <ex:name>a blank node</ex:name>
     <ex:sameAs rdf:nodeID="b1"/>
   </rdf:Description>
+  <rdf:Description>
+    <ex:name>a description of nothing named</ex:name>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/t">
+    <ex:editor>
+      <rdf:Description>
+        <ex:name>Alice</ex:name>
+        <ex:age>42</ex:age>
+      </rdf:Description>
+    </ex:editor>
+  </rdf:Description>
 </rdf:RDF>
 XMLEOF
 

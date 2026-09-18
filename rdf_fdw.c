@@ -1615,12 +1615,171 @@ static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value)
  *
  * state: SPARQL, SERVER and FOREIGN TABLE info
  */
+/*
+ * DescribeNodeSubject
+ * -------------------
+ * Gives the term an RDF/XML node element describes.
+ *
+ * rdf:about names an IRI and rdf:nodeID a blank node the document has labelled
+ * itself. A node element carrying neither describes a fresh blank node, so one
+ * is labelled here -- RDF/XML 7.2.16 asks for a generated identifier and
+ * requires it not to clash with one derived from an rdf:nodeID. Those are
+ * NCNames, which cannot begin with a digit, so a label that does cannot be a
+ * label the document wrote.
+ *
+ * node   : the node element to name
+ * counter: running count of generated labels, per response
+ *
+ * returns a palloc'd IRI or blank node term
+ */
+static char *DescribeNodeSubject(xmlNodePtr node, int *counter)
+{
+	xmlChar *about = xmlGetProp(node, (const xmlChar *)RDF_SPARQL_RESULT_ABOUT);
+	xmlChar *node_id;
+	char *result;
+
+	if (about)
+	{
+		result = iri((char *)about);
+		xmlFree(about);
+		return result;
+	}
+
+	node_id = xmlGetProp(node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
+
+	if (node_id)
+	{
+		result = psprintf("_:%s", (char *)node_id);
+		xmlFree(node_id);
+		return result;
+	}
+
+	return psprintf("_:%d", ++(*counter));
+}
+
+/*
+ * DescribeNodeElement
+ * -------------------
+ * Reads the statements an RDF/XML node element makes and appends them to
+ * 'triples'.
+ *
+ * A property element whose object is written out in place -- a node element
+ * nested inside it rather than named by rdf:resource or rdf:nodeID -- is
+ * followed, so the statements it makes are reported too. Reading its character
+ * data instead would turn a described node into a literal made of its own
+ * property values.
+ *
+ * node   : the node element to read
+ * triples: list to append to
+ * counter: running count of generated blank node labels
+ * subject: the term this element describes, or NULL to work it out here. A
+ *          caller that has already named the element -- because it needed the
+ *          term to record the statement pointing at it -- passes it in, so a
+ *          generated label is minted once and both statements agree on it.
+ *
+ * returns the list with this element's statements appended
+ */
+static List *DescribeNodeElement(xmlNodePtr node, List *triples, int *counter, char *subject)
+{
+	xmlNodePtr property_node;
+	const xmlChar *rdf_ns = (const xmlChar *)RDF_RDF_BASE_URI;
+
+	if (subject == NULL)
+		subject = DescribeNodeSubject(node, counter);
+
+	for (property_node = node->children; property_node; property_node = property_node->next)
+	{
+		RDFfdwTriple *triple;
+		char *predicate_str = NULL;
+		xmlChar *resource;
+		xmlChar *node_id;
+		xmlChar *literal_content;
+		xmlNodePtr nested = NULL;
+		xmlNodePtr child;
+
+		if (property_node->type != XML_ELEMENT_NODE)
+			continue;
+
+		triple = palloc0(sizeof(RDFfdwTriple));
+
+		/* Build predicate from namespace + local name */
+		if (property_node->ns && property_node->ns->href)
+		{
+			StringInfoData predicate_buf;
+			initStringInfo(&predicate_buf);
+			appendStringInfoString(&predicate_buf, (char *)property_node->ns->href);
+			appendStringInfoString(&predicate_buf, (char *)property_node->name);
+			predicate_str = predicate_buf.data;
+		}
+		else
+			predicate_str = pstrdup((char *)property_node->name);
+
+		triple->subject = subject;
+		triple->predicate = iri(predicate_str);
+
+		/* an object written out in place rather than referred to */
+		for (child = property_node->children; child; child = child->next)
+		{
+			if (child->type == XML_ELEMENT_NODE &&
+				xmlStrcmp(child->name, (const xmlChar *)RDF_SPARQL_RESULT_DESCRIPTION) == 0 &&
+				child->ns != NULL && xmlStrcmp(child->ns->href, rdf_ns) == 0)
+			{
+				nested = child;
+				break;
+			}
+		}
+
+		resource = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_RESOURCE);
+		node_id = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
+
+		if (resource)
+		{
+			triple->object = iri((char *)resource);
+			xmlFree(resource);
+			triples = lappend(triples, triple);
+		}
+		else if (node_id)
+		{
+			triple->object = psprintf("_:%s", (char *)node_id);
+			xmlFree(node_id);
+			triples = lappend(triples, triple);
+		}
+		else if (nested)
+		{
+			triple->object = DescribeNodeSubject(nested, counter);
+			triples = lappend(triples, triple);
+			triples = DescribeNodeElement(nested, triples, counter, triple->object);
+		}
+		else if ((literal_content = xmlNodeGetContent(property_node)) != NULL)
+		{
+			xmlChar *lang = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
+			xmlChar *datatype = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
+
+			if (lang)
+				triple->object = strlang((char *)literal_content, (char *)lang);
+			else if (datatype)
+				triple->object = strdt((char *)literal_content, (char *)datatype);
+			else
+				triple->object = cstring_to_rdfliteral((char *)literal_content);
+
+			if (lang)
+				xmlFree(lang);
+			if (datatype)
+				xmlFree(datatype);
+			xmlFree(literal_content);
+			triples = lappend(triples, triple);
+		}
+	}
+
+	return triples;
+}
+
 static List *DescribeIRI(RDFfdwState *state)
 {
 	List *triples = NIL;
 	xmlNodePtr root;
 	xmlNodePtr description_node;
-	xmlNodePtr property_node;
+	int generated_labels = 0;
 	const xmlChar *rdf_ns = (const xmlChar *)RDF_RDF_BASE_URI;
 
 	elog(DEBUG1, "%s called", __func__);
@@ -1666,96 +1825,7 @@ static List *DescribeIRI(RDFfdwState *state)
 		if (description_node->type == XML_ELEMENT_NODE &&
 			xmlStrcmp(description_node->name, (const xmlChar *)RDF_SPARQL_RESULT_DESCRIPTION) == 0 &&
 			description_node->ns != NULL && xmlStrcmp(description_node->ns->href, rdf_ns) == 0)
-		{
-			xmlChar *subject_str = xmlGetProp(description_node, (const xmlChar *)RDF_SPARQL_RESULT_ABOUT);
-			bool blank_subject = false;
-
-			if (!subject_str)
-			{
-				subject_str = xmlGetProp(description_node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
-				blank_subject = true;
-			}
-
-			if (!subject_str)
-				continue;
-
-			/* Iterate over property nodes */
-			for (property_node = description_node->children; property_node; property_node = property_node->next)
-			{
-				if (property_node->type == XML_ELEMENT_NODE)
-				{
-					RDFfdwTriple *triple = palloc0(sizeof(RDFfdwTriple));
-					char *predicate_str = NULL;
-					xmlChar *resource = NULL;
-					xmlChar *nodeID = NULL;
-					xmlChar *literal_content = NULL;
-					xmlChar *lang = NULL;
-					xmlChar *datatype = NULL;
-
-					/* Build predicate from namespace + local name */
-					if (property_node->ns && property_node->ns->href)
-					{
-						StringInfoData predicate_buf;
-						initStringInfo(&predicate_buf);
-						appendStringInfoString(&predicate_buf, (char *)property_node->ns->href);
-						appendStringInfoString(&predicate_buf, (char *)property_node->name);
-						predicate_str = predicate_buf.data;
-					}
-					else
-						predicate_str = pstrdup((char *)property_node->name);
-
-					triple->subject = blank_subject ?
-						psprintf("_:%s", (char *)subject_str) : iri((char *)subject_str);
-					triple->predicate = iri(predicate_str);
-
-					/* Determine object type and value */
-					resource = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_RESOURCE);
-					nodeID = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_NODEID);
-					literal_content = xmlNodeGetContent(property_node);
-
-					if (resource)
-					{
-						/* Object is an IRI */
-						triple->object = iri((char *)resource);
-						xmlFree(resource);
-					}
-					else if (nodeID)
-					{
-						/* Object is a blank node */
-						StringInfoData bnode;
-						initStringInfo(&bnode);
-						appendStringInfo(&bnode, "_:%s", (char *)nodeID);
-						triple->object = bnode.data;
-						xmlFree(nodeID);
-					}
-					else if (literal_content)
-					{
-						/* Object is a literal */
-						lang = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
-						datatype = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
-
-						/* Format value with language, datatype, or just a plain-literal */
-						if (lang)
-							triple->object = strlang((char *)literal_content, (char *)lang);
-						else if (datatype)
-							triple->object = strdt((char *)literal_content, (char *)datatype);
-						else
-							triple->object = cstring_to_rdfliteral((char *)literal_content);
-
-						if (lang)
-							xmlFree(lang);
-						if (datatype)
-							xmlFree(datatype);
-					}
-
-					if (literal_content)
-						xmlFree(literal_content);
-
-					triples = lappend(triples, triple);
-				}
-			}
-			xmlFree(subject_str);
-		}
+			triples = DescribeNodeElement(description_node, triples, &generated_labels, NULL);
 	}
 
 	elog(DEBUG1, "%s exit: parsed %d triples", __func__, list_length(triples));

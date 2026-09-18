@@ -124,6 +124,15 @@ FROM ft_split;
  * node into a statement about an IRI that no store holds. The object side
  * tells them apart already, so the same label has to come back the same way
  * whether it stands as subject or object - here it appears as both.
+ *
+ * A node element carrying neither attribute describes a blank node the
+ * document did not name, and RDF/XML 7.2.16 asks the reader to generate an
+ * identifier for it. One written at the top level was skipped whole, so its
+ * statements went missing; one written inside a property element -- the object
+ * spelled out in place rather than referred to -- was read as character data,
+ * so a described node arrived as a literal made of its own property values,
+ * "Alice42". Generated labels are numeric, which an rdf:nodeID cannot be, so
+ * they cannot collide with a label the document wrote.
  */
 SELECT * FROM sparql.describe('stub_describe', 'DESCRIBE <http://example.org/s>');
 
