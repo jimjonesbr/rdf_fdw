@@ -181,14 +181,93 @@ RETURNS integer
 AS 'MODULE_PATHNAME', 'rdfnode_cmp'
 LANGUAGE C IMMUTABLE STRICT;
 
+/*
+ * Comparison operators over the stored term, which is what rdfnode_cmp
+ * compares. The operators above compare RDF values, and RDF value equality
+ * is not an equivalence relation: numeric type promotion makes it
+ * intransitive, and terms of unlike kinds are incomparable rather than
+ * ordered. A B-tree needs a total order and an equality that is reflexive,
+ * symmetric and transitive, so the operator class below is built on these.
+ */
+CREATE FUNCTION rdfnode_storage_lt(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_lt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_le(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_le'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_eq(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_ge(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_ge'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_gt(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_gt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR ~<~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_lt,
+    COMMUTATOR = '~>~',
+    NEGATOR = '~>=~',
+    RESTRICT = scalarltsel
+);
+
+CREATE OPERATOR ~<=~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_le,
+    COMMUTATOR = '~>=~',
+    NEGATOR = '~>~',
+    RESTRICT = scalarltsel
+);
+
+CREATE OPERATOR ~= (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_eq,
+    COMMUTATOR = '~=',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel,
+    MERGES
+);
+
+CREATE OPERATOR ~>=~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_ge,
+    COMMUTATOR = '~<=~',
+    NEGATOR = '~<~',
+    RESTRICT = scalargtsel
+);
+
+CREATE OPERATOR ~>~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_gt,
+    COMMUTATOR = '~<~',
+    NEGATOR = '~<=~',
+    RESTRICT = scalargtsel
+);
+
 -- Create btree operator class for rdfnode
 CREATE OPERATOR CLASS rdfnode_ops
 DEFAULT FOR TYPE rdfnode USING btree AS
-    OPERATOR 1 <  (rdfnode, rdfnode),
-    OPERATOR 2 <= (rdfnode, rdfnode),
-    OPERATOR 3 =  (rdfnode, rdfnode),
-    OPERATOR 4 >= (rdfnode, rdfnode),
-    OPERATOR 5 >  (rdfnode, rdfnode),
+    OPERATOR 1 ~<~  (rdfnode, rdfnode),
+    OPERATOR 2 ~<=~ (rdfnode, rdfnode),
+    OPERATOR 3 ~=   (rdfnode, rdfnode),
+    OPERATOR 4 ~>=~ (rdfnode, rdfnode),
+    OPERATOR 5 ~>~  (rdfnode, rdfnode),
     FUNCTION 1 rdfnode_cmp(rdfnode, rdfnode);
 
 CREATE FUNCTION rdfnode_to_text(rdfnode)

@@ -96,27 +96,30 @@ SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T13:00:00"^
 SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode <> '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- The canonical mixed-tz case
 
 -- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
--- These all must return TRUE, not raise type errors.
-SELECT '"forty-two"^^xsd:int'::rdfnode <> '"forty-two"^^xsd:int'::rdfnode;        -- t
-SELECT '"2025-13-01"^^xsd:date'::rdfnode <> '"2025-13-01"^^xsd:date'::rdfnode;    -- t
-SELECT '"25:00:00"^^xsd:time'::rdfnode <> '"25:00:00"^^xsd:time'::rdfnode;        -- t
-SELECT '"nAn"^^xsd:double'::rdfnode <> '"nAn"^^xsd:double'::rdfnode;              -- t
-SELECT '""^^xsd:integer'::rdfnode <> '""^^xsd:integer'::rdfnode;                  -- t
-SELECT '"NaN"^^xsd:double'::rdfnode <> '"NaN"^^xsd:double'::rdfnode;              -- f
-SELECT '"NaN"^^xsd:double'::rdfnode <> '"4.2"^^xsd:double'::rdfnode;              -- f
-SELECT '"4.2"^^xsd:double'::rdfnode <> '"NaN"^^xsd:double'::rdfnode;              -- f
+-- An ill-typed literal has no value, so it is compared as a term and is equal
+-- to itself: <> must return FALSE for each of these, not raise a type error.
+-- "NaN" is not ill-typed, and no numeric comparison involving it holds, so it
+-- is the one literal that is not equal to itself.
+SELECT '"forty-two"^^xsd:int'::rdfnode <> '"forty-two"^^xsd:int'::rdfnode;        -- f
+SELECT '"2025-13-01"^^xsd:date'::rdfnode <> '"2025-13-01"^^xsd:date'::rdfnode;    -- f
+SELECT '"25:00:00"^^xsd:time'::rdfnode <> '"25:00:00"^^xsd:time'::rdfnode;        -- f
+SELECT '"nAn"^^xsd:double'::rdfnode <> '"nAn"^^xsd:double'::rdfnode;              -- f
+SELECT '""^^xsd:integer'::rdfnode <> '""^^xsd:integer'::rdfnode;                  -- f
+SELECT '"NaN"^^xsd:double'::rdfnode <> '"NaN"^^xsd:double'::rdfnode;              -- t
+SELECT '"NaN"^^xsd:double'::rdfnode <> '"4.2"^^xsd:double'::rdfnode;              -- t
+SELECT '"4.2"^^xsd:double'::rdfnode <> '"NaN"^^xsd:double'::rdfnode;              -- t
 
 -- Datatype prefix expansion: these are byte-equal after normalization
 SELECT '"42"^^xsd:int'::rdfnode 
-     <> '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                  -- t
+     <> '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                  -- f
 
 -- Different ill-typed literals: behavior depends on policy
 -- (currently raises ERROR; that's allowed per SPARQL §17.3.1)
 -- SELECT '"foo"^^xsd:int'::rdfnode <> '"bar"^^xsd:int'::rdfnode;
 
 -- Datatype mismatch with ill-typed values: should return f, not error
-SELECT '"42"^^xsd:int'::rdfnode <> '"42"^^xsd:date'::rdfnode;                     -- f
-SELECT '"invalid"^^xsd:dateTime'::rdfnode <> '"invalid"^^xsd:time'::rdfnode;      -- f
+SELECT '"42"^^xsd:int'::rdfnode <> '"42"^^xsd:date'::rdfnode;                     -- t
+SELECT '"invalid"^^xsd:dateTime'::rdfnode <> '"invalid"^^xsd:time'::rdfnode;      -- t
 
 -- Boolean comparisons
 SELECT '"true"^^xsd:boolean'::rdfnode <> '"false"^^xsd:boolean'::rdfnode;

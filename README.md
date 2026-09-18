@@ -17,6 +17,7 @@
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
     - [RDF Node Handling](#rdf-node-handling)
+      - [Comparing, sorting and grouping](#comparing-sorting-and-grouping)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
   - [Pushdown](#pushdown)
   - [Prefix Management](#prefix-management)
@@ -503,6 +504,33 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
  t
 (1 row)
 ```
+
+#### [Comparing, sorting and grouping](#comparing-sorting-and-grouping)
+
+`=`, `<>`, `<`, `<=`, `>=` and `>` compare the RDF **values** two terms denote,
+which is what a `WHERE` clause means by them.
+
+Sorting and grouping compare the terms as they are written, because a B-tree
+needs a total order and RDF value comparison is not one: terms of unlike kinds
+are incomparable, `NaN` is not equal to itself, and numeric type promotion makes
+equality intransitive. So `ORDER BY`, `GROUP BY`, `DISTINCT`, `UNION` and unique
+constraints treat `"1"^^xsd:integer` and `"01"^^xsd:integer` as two terms, where
+`=` reports one value:
+
+```sql
+SELECT '"01"^^xsd:integer'::rdfnode = '"1"^^xsd:integer'::rdfnode AS same_value;
+ same_value 
+------------
+ t
+(1 row)
+```
+
+Group or order by a cast where the value's ordering is the one wanted, for
+example `GROUP BY term::numeric`.
+
+An index on an `rdfnode` is ordered the same way, so it can answer a comparison
+written with one of the term operators — `~=`, `~<~`, `~<=~`, `~>=~`, `~>~` —
+while a value comparison is applied as a filter to the rows the scan returns.
 
 ## [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
 

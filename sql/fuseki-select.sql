@@ -858,7 +858,14 @@ DROP FOREIGN TABLE ft_typmod;
  */
 SELECT count(predicate) AS every_predicate FROM ft;
 SELECT DISTINCT count(predicate) AS still_every_predicate FROM ft;
+/* The contrast: what the count would be if the DISTINCT did apply to the scan's
+ * rows. Only the number is asserted here -- whether the aggregate asks the scan
+ * for sorted input, and so whether an ORDER BY is sent with it, is the
+ * planner's business and differs between PostgreSQL versions -- so the SPARQL
+ * is not logged. */
+ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'false');
 SELECT count(DISTINCT predicate) AS distinct_predicates FROM ft;
+ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'true');
 
 /* a grouping counts rows the same way an aggregate does */
 SELECT DISTINCT count(*) AS group_sizes FROM ft GROUP BY predicate ORDER BY 1;

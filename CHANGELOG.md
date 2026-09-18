@@ -14,6 +14,18 @@ Release date: **unreleased**
 
   `request_redirect` is deprecated but still accepted, so existing servers and dumps continue to work: setting it raises a warning, and `request_redirect 'true'` without an explicit `request_max_redirect` follows up to 30 redirects, which is what libcurl would have done before. It will be removed in a future major release.
 
+## Breaking Changes
+
+* **`rdfnode`s are sorted and grouped by the stored term**: `ORDER BY`, `GROUP BY`, `SELECT DISTINCT`, `UNION` and unique constraints take their comparisons from the type's default B-tree operator class, not from the `=` and `<` operators directly. That class declared the RDF value operators but ordered terms by how they are written, and the two do not agree — which gave wrong answers, described in the bug fix below.
+
+  The class now compares the stored term throughout. Two terms are the same to it when they are written the same way, so `"1"^^xsd:integer` and `"01"^^xsd:integer` are one value and two terms: they sort apart, and they are two groups rather than one. Group or order by a cast where the value's ordering is the one wanted — `GROUP BY term::numeric`.
+
+  `ORDER BY` itself is unchanged, since sorting already used this comparison. What changes is `GROUP BY`, `DISTINCT`, `UNION` and unique constraints, which previously merged value-equal spellings — but only sometimes, and never dependably.
+
+  The value operators `=`, `<>`, `<`, `<=`, `>=` and `>` are untouched and still mean what they meant, including in a `WHERE` clause. The class is built on five operators of its own, `~=`, `~<~`, `~<=~`, `~>=~` and `~>~`, named after PostgreSQL's `text_pattern_ops`. They are seldom written by hand; where they matter is an index, which can answer a condition written with one of them, while a value comparison is applied as a filter to the rows the scan returns.
+
+  **Upgrading from an earlier version requires manual steps.** Replacing an operator class does not rewrite what was built with it, so `ALTER EXTENSION rdf_fdw UPDATE TO '2.8'` refuses to run while any index on an `rdfnode` exists, or any view, materialized view or SQL-body function that sorts, groups or de-duplicates on one. Save their definitions, drop them, upgrade, and recreate them. `REINDEX` is not enough — an index belongs to the operator class it was created with. A stored query that only compares `rdfnode`s does not have to be touched. Nothing is dropped automatically.
+
 ## Minor Changes
 
 * **Reproducible builds**: The build timestamp reported by `rdf_fdw_version()` and the `rdf_fdw_settings` view was always taken from the wall clock, which meant that building the same source twice produced two different binaries — something distribution builds are expected to avoid. The `Makefile` now uses `SOURCE_DATE_EPOCH` for that timestamp whenever it is set, as it is by `dpkg-buildpackage` and `rpmbuild`, so a packaged binary reports the release date of the source it was built from. Builds that do not set the variable, which includes every ordinary `make`, keep reporting the time the build actually ran.
@@ -23,6 +35,23 @@ Release date: **unreleased**
 * **Regression tests that need a triplestore are now opt-in**: `make installcheck` used to run the full suite by default, including the tests that query locally deployed triplestores and public SPARQL endpoints, and four `SKIP_*` variables had to be set to get a run that needs nothing but PostgreSQL. That default made the extension awkward to test for anyone building it in a sandbox, such as a distribution packager. The polarity is now inverted: `make installcheck` runs only the tests that need no external service, and the groups that do are enabled with `INCLUDE_LOCAL_TESTS=1` (the triplestores deployed by `scripts/postgres-env`), `INCLUDE_EXTERNAL_TESTS=1` (public SPARQL endpoints), `INCLUDE_STRESS_TESTS=1`, `INCLUDE_DEBUG_TESTS=1`, or `INCLUDE_ALL_TESTS=1` for all of them.
 
 ## Bug Fixes
+
+* **`SELECT DISTINCT` over `rdfnode`s changed its answer when an unrelated row was inserted**: `rdfnode_ops` declared `=` as its equality and `<` as its ordering, and neither is what the class actually compared — its support function compares terms as they are written. Sorted grouping trusts that agreement, because it compares only the terms the sort placed next to each other, and there was none to trust. Two value-equal literals were one group; inserting a third, unrelated literal that sorts between them made them two:
+
+  ```
+  {"01"^^xsd:integer, "1"^^xsd:integer}                     DISTINCT -> 1 row
+  {"01"^^xsd:integer, "1"^^xsd:integer, "02"^^xsd:integer}  DISTINCT -> 3 rows
+  ```
+
+  The same disagreement let an index exclude rows a sequential scan returned. An index scan descended to where the searched-for term sorts and stopped, while the rows it should have found sat wherever their own spelling sorts, so the same `WHERE` clause answered differently depending on the plan.
+
+  RDF value comparison cannot be a B-tree's. A B-tree needs a total order and an equality that is reflexive, symmetric and transitive. Terms of unlike kinds are incomparable rather than ordered; `NaN` is not equal to itself, because no numeric comparison involving `NaN` holds; and equality is not transitive, since numeric literals are compared in the wider of their two datatypes and the wider type may carry fewer significant digits, which lets one `xsd:float` literal be equal to two `xsd:integer` literals that are not equal to each other.
+
+  The operator class is now built on operators that compare the stored term, which is what its support function has always done. See the breaking change above for what this means for existing databases.
+
+* **A dropped column cost a foreign table its pushdown**: A table's columns are read from the catalogue together with the options that map each one to a SPARQL variable, and a column removed with `ALTER FOREIGN TABLE ... DROP COLUMN` was read along with the rest. PostgreSQL clears a dropped column's foreign-data options from version 18 on and leaves them in place before that, so on 17 and earlier the removed column still looked mapped — to a variable the supplied query does not select, since it was dropped from the table. A query is only rewritten when its projection names every mapped column, so the table stopped being rewritable: `EXPLAIN` reported `Pushdown: unsupported SPARQL`, and every filter, ordering and limit was evaluated in PostgreSQL instead of at the endpoint. Dropped columns are now skipped where the mapping is read, so a table plans the same way on every version.
+
+* **`NaN` was equal to itself**: Comparing a term against a byte-identical copy of itself returned true without examining it. That is the rule for ill-typed literals, which have no value and so are compared as terms — `"25:00:00"^^xsd:time` is equal to itself. `"NaN"^^xsd:double` is not ill-typed, though: it has a value, and `op:numeric-equal` is false whenever either side is `NaN`, itself included. The shortcut now stands aside for a numeric term whose lexical form is exactly `NaN`, which is the only spelling XSD admits; any other spelling is ill-typed and stays equal to itself.
 
 * **Functions were shipped to the endpoint by name alone**: A SQL function was translated into the SPARQL builtin sharing its name, without checking that it was the function the name was meant to reach. A user's own `contains(rdfnode, rdfnode)` was therefore sent as SPARQL `CONTAINS` and never ran — the endpoint answered a different question, and because the condition counted as pushed down, nothing evaluated it locally either. A function or operator is now shipped only when it belongs to `pg_catalog` or to `rdf_fdw` itself.
 

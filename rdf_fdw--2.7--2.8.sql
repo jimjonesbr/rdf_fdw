@@ -1,3 +1,155 @@
+/* New in 2.8: the rdfnode B-tree operator class compares stored terms rather
+   than RDF values. The value operators =, <, <=, >= and > stay as they are,
+   but they leave the operator class, because RDF value equality is not an
+   equivalence relation and RDF value comparison is not a total order.
+
+   Replacing an operator class does not rewrite the indexes built with it, and
+   an index whose ordering no longer matches the class returns wrong answers
+   without reporting anything, so an upgrade that would leave such an index
+   behind is refused. */
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_index AS i
+    JOIN pg_catalog.pg_opclass AS c ON c.oid = ANY (i.indclass::oid[])
+    JOIN pg_catalog.pg_type AS t ON t.oid = c.opcintype
+    WHERE c.opcname = 'rdfnode_ops'
+      AND t.oid = pg_catalog.pg_typeof(NULL::@extschema@.rdfnode)
+      AND c.opcnamespace = t.typnamespace
+  ) THEN
+    RAISE EXCEPTION 'rdfnode indexes must be rebuilt for the new comparison operator class'
+      USING ERRCODE = '55006',
+            HINT = 'Save the definitions, drop the dependent indexes or the constraints that own them, upgrade, then recreate them. The new class compares stored terms, not RDF values, so REINDEX alone is not enough.';
+  END IF;
+END
+$$;
+
+/* A stored query that sorts, groups or de-duplicates on an rdfnode keeps the
+   ordering operator it was parsed with, and that operator no longer belongs to
+   any operator class once the class is replaced. The view still exists and
+   still dumps, but every use of it fails with "operator NNN is not a valid
+   ordering operator", naming an OID and nothing else. Refuse the upgrade while
+   one of those exists, so the failure happens now and says what to do about it.
+
+   Only the ordering operators are looked for, because only a sort, a grouping
+   or a DISTINCT holds one. A stored query that compares with = or <> is left
+   alone: the operators themselves are not touched and keep comparing RDF
+   values exactly as before, and equality by itself is never an ordering. A
+   WHERE clause written with <, <=, >= or > is refused even though nothing
+   would break it -- there is no way to tell it apart from a sort in the
+   catalogue, and refusing an upgrade is recoverable where a view that fails on
+   every use is not. */
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_opclass AS c
+    JOIN pg_catalog.pg_am AS am ON am.oid = c.opcmethod AND am.amname = 'btree'
+    JOIN pg_catalog.pg_type AS t ON t.oid = c.opcintype
+    JOIN pg_catalog.pg_amop AS a
+      ON a.amopfamily = c.opcfamily
+     AND a.amoplefttype = c.opcintype
+     AND a.amoprighttype = c.opcintype
+     AND a.amopstrategy <> 3
+    JOIN pg_catalog.pg_depend AS d
+      ON d.refclassid = 'pg_catalog.pg_operator'::regclass
+     AND d.refobjid = a.amopopr
+     AND d.classid IN ('pg_catalog.pg_rewrite'::regclass,
+                       'pg_catalog.pg_proc'::regclass)
+    WHERE c.opcname = 'rdfnode_ops'
+      AND t.oid = pg_catalog.pg_typeof(NULL::@extschema@.rdfnode)
+      AND c.opcnamespace = t.typnamespace
+  ) THEN
+    RAISE EXCEPTION 'rdfnode ordering in stored queries must be reparsed for the new comparison operator class'
+      USING ERRCODE = '55006',
+            HINT = 'Save the definitions, drop the views, materialized views and SQL-body functions that sort, group or de-duplicate on an rdfnode, upgrade, then recreate them so they bind the new ordering operators.';
+  END IF;
+END
+$$;
+
+CREATE FUNCTION rdfnode_storage_lt(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_lt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_le(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_le'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_eq(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_ge(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_ge'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_storage_gt(rdfnode, rdfnode)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'rdfnode_storage_gt'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR ~<~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_lt,
+    COMMUTATOR = '~>~',
+    NEGATOR = '~>=~',
+    RESTRICT = scalarltsel
+);
+
+CREATE OPERATOR ~<=~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_le,
+    COMMUTATOR = '~>=~',
+    NEGATOR = '~>~',
+    RESTRICT = scalarltsel
+);
+
+CREATE OPERATOR ~= (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_eq,
+    COMMUTATOR = '~=',
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel,
+    MERGES
+);
+
+CREATE OPERATOR ~>=~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_ge,
+    COMMUTATOR = '~<=~',
+    NEGATOR = '~<~',
+    RESTRICT = scalargtsel
+);
+
+CREATE OPERATOR ~>~ (
+    LEFTARG = rdfnode,
+    RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_storage_gt,
+    COMMUTATOR = '~<~',
+    NEGATOR = '~<=~',
+    RESTRICT = scalargtsel
+);
+
+DROP OPERATOR CLASS rdfnode_ops USING btree;
+
+CREATE OPERATOR CLASS rdfnode_ops
+DEFAULT FOR TYPE rdfnode USING btree AS
+    OPERATOR 1 ~<~  (rdfnode, rdfnode),
+    OPERATOR 2 ~<=~ (rdfnode, rdfnode),
+    OPERATOR 3 ~=   (rdfnode, rdfnode),
+    OPERATOR 4 ~>=~ (rdfnode, rdfnode),
+    OPERATOR 5 ~>~  (rdfnode, rdfnode),
+    FUNCTION 1 rdfnode_cmp(rdfnode, rdfnode);
+
 GRANT USAGE ON SCHEMA sparql TO PUBLIC;
 
 /* These generate a new value on every call, so constant folding must not

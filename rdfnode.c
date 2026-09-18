@@ -191,7 +191,26 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 	 */
 	if (VARSIZE_ANY_EXHDR(n1) == VARSIZE_ANY_EXHDR(n2) &&
 		memcmp(VARDATA_ANY(n1), VARDATA_ANY(n2), VARSIZE_ANY_EXHDR(n1)) == 0)
+	{
+		/*
+		 * One term is not equal to itself: a numeric NaN. op:numeric-equal
+		 * is false whenever either side is NaN, itself included, so the
+		 * shortcut has to stand aside for it.
+		 *
+		 * The lexical form is matched exactly, unlike rdfnode_numeric_is_nan()
+		 * below. Only "NaN" is in the lexical space of xsd:float and
+		 * xsd:double; a literal spelled any other way is ill-typed, has no
+		 * value, and is therefore governed by RDFterm-equal rather than by
+		 * op:numeric-equal -- which is what this shortcut implements, and
+		 * which makes it equal to itself.
+		 */
+		a = parse_rdfnode(n1);
+
+		if (a.isNumeric && strcmp(a.lex, "NaN") == 0)
+			return false;
+
 		return true;
+	}
 
 	a = parse_rdfnode(n1);
 	b = parse_rdfnode(n2);

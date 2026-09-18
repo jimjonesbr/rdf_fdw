@@ -134,8 +134,10 @@ CREATE FOREIGN TABLE t18 (
 ) SERVER testserver OPTIONS (sparql 'SELECT ?s {?s ?p ?o}');
 EXPLAIN (COSTS OFF) SELECT name FROM t18;
 
-/* dropped columns are exempt: they carry no options by construction and are
- * never mapped to a SPARQL variable */
+/* A dropped column is not mapped to anything, whatever the catalogue still
+ * says. ALTER FOREIGN TABLE ... DROP COLUMN clears the column's options from
+ * PostgreSQL 18 on and leaves them in place before that, so a table that had a
+ * mapped column removed must plan the same way on either. */
 CREATE FOREIGN TABLE t19 (
   name rdfnode OPTIONS (variable '?s'),
   gone rdfnode OPTIONS (variable '?g')

@@ -53,6 +53,7 @@ REGRESS +=  create-extension \
 			rdfnode_gt \
 			rdfnode_le \
 			rdfnode_ge \
+			rdfnode_opclass \
 			rdfnode_agg \
 			rdfnode_cast \
 			explain \

@@ -493,7 +493,7 @@ SELECT '""^^xsd:integer'::rdfnode = '""^^xsd:integer'::rdfnode;                 
 SELECT '"NaN"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
  ?column? 
 ----------
- t
+ f
 (1 row)
 
 SELECT '"NaN"^^xsd:double'::rdfnode = '"4.2"^^xsd:double'::rdfnode;              -- f

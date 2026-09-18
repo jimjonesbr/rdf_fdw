@@ -3317,20 +3317,19 @@ INFO:  SPARQL returned 32 records.
                     32
 (1 row)
 
+/* The contrast: what the count would be if the DISTINCT did apply to the scan's
+ * rows. Only the number is asserted here -- whether the aggregate asks the scan
+ * for sorted input, and so whether an ORDER BY is sent with it, is the
+ * planner's business and differs between PostgreSQL versions -- so the SPARQL
+ * is not logged. */
+ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'false');
 SELECT count(DISTINCT predicate) AS distinct_predicates FROM ft;
-INFO:  SPARQL query sent to 'fuseki':
-
-SELECT ?p 
-{?s ?p ?o}
-ORDER BY  ASC (?p)
-
-INFO:  SPARQL returned 32 records.
-
  distinct_predicates 
 ---------------------
                   20
 (1 row)
 
+ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'true');
 /* a grouping counts rows the same way an aggregate does */
 SELECT DISTINCT count(*) AS group_sizes FROM ft GROUP BY predicate ORDER BY 1;
 INFO:  SPARQL query sent to 'fuseki':

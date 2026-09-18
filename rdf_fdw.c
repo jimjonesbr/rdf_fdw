@@ -272,6 +272,11 @@ extern Datum rdfnode_in(PG_FUNCTION_ARGS);
 extern Datum rdfnode_out(PG_FUNCTION_ARGS);
 extern Datum rdfnode_to_text(PG_FUNCTION_ARGS);
 extern Datum rdfnode_cmp(PG_FUNCTION_ARGS);
+extern Datum rdfnode_storage_lt(PG_FUNCTION_ARGS);
+extern Datum rdfnode_storage_le(PG_FUNCTION_ARGS);
+extern Datum rdfnode_storage_eq(PG_FUNCTION_ARGS);
+extern Datum rdfnode_storage_ge(PG_FUNCTION_ARGS);
+extern Datum rdfnode_storage_gt(PG_FUNCTION_ARGS);
 
 /* rdfnode (custom data type)*/
 extern Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS);
@@ -538,6 +543,11 @@ PG_FUNCTION_INFO_V1(rdfnode_in);
 PG_FUNCTION_INFO_V1(rdfnode_out);
 PG_FUNCTION_INFO_V1(rdfnode_to_text);
 PG_FUNCTION_INFO_V1(rdfnode_cmp);
+PG_FUNCTION_INFO_V1(rdfnode_storage_lt);
+PG_FUNCTION_INFO_V1(rdfnode_storage_le);
+PG_FUNCTION_INFO_V1(rdfnode_storage_eq);
+PG_FUNCTION_INFO_V1(rdfnode_storage_ge);
+PG_FUNCTION_INFO_V1(rdfnode_storage_gt);
 PG_FUNCTION_INFO_V1(rdfnode_eq_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_neq_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_lt_rdfnode);
@@ -4151,6 +4161,18 @@ static void LoadRDFTableInfo(RDFfdwState *state)
 
 			appendStringInfoString(&deprecated_cols, NameStr(attr->attname));
 		}
+
+		/*
+		 * A dropped column is not part of the table any more, so whatever it
+		 * was mapped to is not part of the query either. Its options are not
+		 * reliably gone: ALTER TABLE ... DROP COLUMN clears attfdwoptions from
+		 * PostgreSQL 18 on, and leaves it in place before that, so reading
+		 * them here would map a column that no longer exists on the older half
+		 * of the supported range and not on the newer one. Leaving sparqlvar
+		 * NULL is what every consumer below already treats as "not mapped".
+		 */
+		if (attr->attisdropped)
+			continue;
 
 		foreach (lc, options)
 		{
@@ -8642,13 +8664,59 @@ Datum rdfnode_out(PG_FUNCTION_ARGS)
 	PG_RETURN_CSTRING(out);
 }
 
+/*
+ * rdfnode_storage_cmp
+ * -------------------
+ *
+ * Orders two terms by how they are written, which is the order the rdfnode
+ * B-tree operator class is built on. Both terms are stored as text, so this
+ * is the comparison text itself uses in the C locale: the common prefix
+ * decides, and where one term is a prefix of the other the shorter one comes
+ * first.
+ *
+ * This is deliberately not the RDF value comparison the =, <, <=, >= and >
+ * operators implement. A B-tree needs a total order over every pair of
+ * values and an equality that is reflexive, symmetric and transitive; RDF
+ * value comparison leaves terms of unlike kinds unordered, does not hold
+ * between NaN and itself, and is not transitive across numeric datatypes of
+ * different precision.
+ *
+ * ta, tb: the terms to compare
+ *
+ * returns a negative value, zero or a positive value as ta sorts before, with
+ * or after tb
+ */
+static int
+rdfnode_storage_cmp(text *ta, text *tb)
+{
+	int len1 = VARSIZE_ANY_EXHDR(ta);
+	int len2 = VARSIZE_ANY_EXHDR(tb);
+	int result = memcmp(VARDATA_ANY(ta), VARDATA_ANY(tb), Min(len1, len2));
+
+	if (result == 0)
+		result = (len1 > len2) - (len1 < len2);
+
+	return result;
+}
+
+/*
+ * rdfnode_cmp
+ * -----------
+ *
+ * Support function 1 of the rdfnode B-tree operator class, and what decides
+ * the order of an rdfnode column in ORDER BY, in a sort-based GROUP BY or
+ * DISTINCT, and in an index.
+ *
+ * returns -1, 0 or 1
+ */
 Datum rdfnode_cmp(PG_FUNCTION_ARGS)
 {
 	text *ta = PG_GETARG_TEXT_PP(0);
 	text *tb = PG_GETARG_TEXT_PP(1);
-	const char *node1 = text_to_cstring(ta);
-	const char *node2 = text_to_cstring(tb);
-	int result = strcmp(node1, node2);
+	int result = rdfnode_storage_cmp(ta, tb);
+
+	PG_FREE_IF_COPY(ta, 0);
+	PG_FREE_IF_COPY(tb, 1);
 
 	if (result < 0)
 		PG_RETURN_INT32(-1);
@@ -8656,6 +8724,82 @@ Datum rdfnode_cmp(PG_FUNCTION_ARGS)
 		PG_RETURN_INT32(1);
 	else
 		PG_RETURN_INT32(0);
+}
+
+/*
+ * rdfnode_storage_lt / le / eq / ge / gt
+ * --------------------------------------
+ *
+ * The operators ~<~, ~<=~, ~=, ~>=~ and ~>~, which are strategies 1 to 5 of
+ * the rdfnode B-tree operator class. They ask whether one term sorts before
+ * or after another, or is written the same way -- not whether the two denote
+ * the same RDF value, which is what =, <, <=, >= and > answer.
+ *
+ * An index search condition has to be one of these. The value operators are
+ * still usable anywhere, but as a filter over the rows a scan returns rather
+ * than as a bound on which rows it visits, because the index is ordered by
+ * rdfnode_cmp and the value operators do not agree with that order.
+ *
+ * returns whether the comparison holds
+ */
+Datum rdfnode_storage_lt(PG_FUNCTION_ARGS)
+{
+	text *ta = PG_GETARG_TEXT_PP(0);
+	text *tb = PG_GETARG_TEXT_PP(1);
+	bool result = rdfnode_storage_cmp(ta, tb) < 0;
+
+	PG_FREE_IF_COPY(ta, 0);
+	PG_FREE_IF_COPY(tb, 1);
+	PG_RETURN_BOOL(result);
+}
+
+Datum rdfnode_storage_le(PG_FUNCTION_ARGS)
+{
+	text *ta = PG_GETARG_TEXT_PP(0);
+	text *tb = PG_GETARG_TEXT_PP(1);
+	bool result = rdfnode_storage_cmp(ta, tb) <= 0;
+
+	PG_FREE_IF_COPY(ta, 0);
+	PG_FREE_IF_COPY(tb, 1);
+	PG_RETURN_BOOL(result);
+}
+
+Datum rdfnode_storage_eq(PG_FUNCTION_ARGS)
+{
+	text *ta = PG_GETARG_TEXT_PP(0);
+	text *tb = PG_GETARG_TEXT_PP(1);
+	int len1 = VARSIZE_ANY_EXHDR(ta);
+	int len2 = VARSIZE_ANY_EXHDR(tb);
+	/* two terms written the same way are the same length, so checking that
+	 * first settles most unequal pairs without reading either term */
+	bool result = len1 == len2 &&
+				  memcmp(VARDATA_ANY(ta), VARDATA_ANY(tb), len1) == 0;
+
+	PG_FREE_IF_COPY(ta, 0);
+	PG_FREE_IF_COPY(tb, 1);
+	PG_RETURN_BOOL(result);
+}
+
+Datum rdfnode_storage_ge(PG_FUNCTION_ARGS)
+{
+	text *ta = PG_GETARG_TEXT_PP(0);
+	text *tb = PG_GETARG_TEXT_PP(1);
+	bool result = rdfnode_storage_cmp(ta, tb) >= 0;
+
+	PG_FREE_IF_COPY(ta, 0);
+	PG_FREE_IF_COPY(tb, 1);
+	PG_RETURN_BOOL(result);
+}
+
+Datum rdfnode_storage_gt(PG_FUNCTION_ARGS)
+{
+	text *ta = PG_GETARG_TEXT_PP(0);
+	text *tb = PG_GETARG_TEXT_PP(1);
+	bool result = rdfnode_storage_cmp(ta, tb) > 0;
+
+	PG_FREE_IF_COPY(ta, 0);
+	PG_FREE_IF_COPY(tb, 1);
+	PG_RETURN_BOOL(result);
 }
 
 Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS)
