@@ -33,7 +33,22 @@ SELECT '"foo"@'::rdfnode;                       -- invalid: empty tag
 SELECT '"foo"@en-US'::rdfnode;                  -- valid
 SELECT '"foo"@en-Latn-US-valencia'::rdfnode;    -- valid extended BCP 47
 SELECT '"foo"@123'::rdfnode;                    -- invalid: must start with letter
-SELECT '"foo"@EN'::rdfnode;                     -- valid; canonical form lowercases primary tag
+SELECT '"foo"@EN'::rdfnode;                     -- valid; the tag is lowercased
+
+/*
+ * The whole tag is lowercased, not just the primary subtag. RDF 1.1 Concepts
+ * 3.3 puts the value space of language tags in lower case and allows the
+ * lexical form to be converted to it. Lowering only the part before the first
+ * hyphen left one tag reaching storage as several terms, which value equality
+ * called equal and the operator class -- which compares the stored term -- did
+ * not, and which gave LANG two strings for one tag.
+ */
+SELECT '"foo"@EN-GB'::rdfnode, '"foo"@en-gb'::rdfnode, '"foo"@ZH-Hant-TW'::rdfnode;
+
+SELECT ('"x"@en-GB'::rdfnode =  '"x"@en-gb'::rdfnode)          AS same_value,
+       ('"x"@en-GB'::rdfnode ~= '"x"@en-gb'::rdfnode)          AS same_term,
+       rdfnode_cmp('"x"@en-GB', '"x"@en-gb')                   AS term_order,
+       (sparql.lang('"x"@en-GB') = sparql.lang('"x"@en-gb'))   AS one_tag_one_string;
 SELECT '"foo"@en-us'::rdfnode;                  -- subtags after the primary are stored as-is (no region canonicalization)
 SELECT '"foo"@en-'::rdfnode;                    -- invalid trailing hyphen
 

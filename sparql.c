@@ -299,7 +299,6 @@ char *strlang(char *literal, char *language)
     char *lex_language;
     char *lex_literal;
     char *tag;
-    char *dash;
 
     /*
      * STRICT: Executor handles NULL from SQL but
@@ -329,11 +328,18 @@ char *strlang(char *literal, char *language)
                  errmsg("language tag cannot be empty")));
 
 
-    /* primary language subtags are always lowercase */
+    /*
+     * A language tag is case-insensitive, and RDF 1.1 Concepts 3.3 puts its
+     * value space in lower case: "Lexical representations of language tags MAY
+     * be converted to lower case. The value space of language tags is always
+     * in lower case." So the whole tag is lowered, not just the primary
+     * subtag. Lowering part of it left one tag reaching storage as several
+     * terms -- @EN-GB as en-GB, @en-gb as en-gb -- which value equality called
+     * equal and the operator class, which compares the stored term, did not.
+     */
     tag = pstrdup(lex_language);
-    dash = strchr(tag, '-');
 
-    for (char *p = tag; *p && p != dash; p++)
+    for (char *p = tag; *p; p++)
         *p = pg_tolower((unsigned char)*p);
 
     initStringInfo(&buf);

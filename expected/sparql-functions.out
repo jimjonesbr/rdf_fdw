@@ -427,7 +427,7 @@ SELECT sparql.strlang('foo', 'EN');
 SELECT sparql.strlang('foo', 'EN-GB');
    strlang   
 -------------
- "foo"@en-GB
+ "foo"@en-gb
 (1 row)
 
 SELECT sparql.strlang('foo', 'eN-gb');
@@ -439,7 +439,7 @@ SELECT sparql.strlang('foo', 'eN-gb');
 SELECT sparql.strlang('foo', 'EN-Latn-US-valencia');
           strlang          
 ---------------------------
- "foo"@en-Latn-US-valencia
+ "foo"@en-latn-us-valencia
 (1 row)
 
 SELECT sparql.strlang('_:b1', 'en');

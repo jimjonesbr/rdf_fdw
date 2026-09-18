@@ -53,8 +53,8 @@ VALUES  ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', 
 INFO:  SPARQL query sent to 'graphdb':
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
-INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
-INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-us };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-gb };
 INSERT DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/modified> "2025-12-24T18:30:42"^^<http://www.w3.org/2001/XMLSchema#dateTime> };
@@ -114,9 +114,9 @@ ORDER BY object::text COLLATE "C";
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/veryLargeNumber>     | "9999999999999999999"^^<http://www.w3.org/2001/XMLSchema#decimal>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "Hello 👋 PostgreSQL 🐘"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-us
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
@@ -229,18 +229,18 @@ ORDER BY object::text COLLATE "C";
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/rector>              | "Johannes Wessels"
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-us
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-us
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-us
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univerrrsity of Münsterrr"@en-us
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
@@ -276,9 +276,9 @@ WHERE predicate IN ('<http://dbpedia.org/property/name>','<http://schema.org/dat
 ORDER BY object::text COLLATE "C";
             subject            |             predicate              |                     object                     
 -------------------------------+------------------------------------+------------------------------------------------
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-US
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univerrrsity of Münsterrr"@en-us
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "University of Münster"@en
- <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univêrsity of Münsta"@en-GB
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Univêrsity of Münsta"@en-gb
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
 (4 rows)
 
@@ -525,8 +525,8 @@ DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "7.6136"^^<http://www.w3.org/2001/XMLSchema#float> };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
-DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US };
-DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-us };
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-gb };
 DELETE DATA { <http://dbpedia.org/resource/North_Rhine-Westphalia> <http://dbpedia.org/property/name> "Nordrhein-Westfalen"@de };
 DELETE DATA { <http://dbpedia.org/resource/Münster> <http://dbpedia.org/property/name> "Münster"@de };
 DELETE DATA { <https://www.uni-muenster.de> <http://www.w3.org/2000/01/rdf-schema#time> "18:18:42"^^<http://www.w3.org/2001/XMLSchema#time> };

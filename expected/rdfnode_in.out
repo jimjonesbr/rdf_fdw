@@ -156,23 +156,46 @@ LINE 2: SELECT '"foo"@'::rdfnode;
 SELECT '"foo"@en-US'::rdfnode;                  -- valid
    rdfnode   
 -------------
- "foo"@en-US
+ "foo"@en-us
 (1 row)
 
 SELECT '"foo"@en-Latn-US-valencia'::rdfnode;    -- valid extended BCP 47
           rdfnode          
 ---------------------------
- "foo"@en-Latn-US-valencia
+ "foo"@en-latn-us-valencia
 (1 row)
 
 SELECT '"foo"@123'::rdfnode;                    -- invalid: must start with letter
 ERROR:  invalid language tag: "123"
 LINE 1: SELECT '"foo"@123'::rdfnode;
                ^
-SELECT '"foo"@EN'::rdfnode;                     -- valid; canonical form lowercases primary tag
+SELECT '"foo"@EN'::rdfnode;                     -- valid; the tag is lowercased
  rdfnode  
 ----------
  "foo"@en
+(1 row)
+
+/*
+ * The whole tag is lowercased, not just the primary subtag. RDF 1.1 Concepts
+ * 3.3 puts the value space of language tags in lower case and allows the
+ * lexical form to be converted to it. Lowering only the part before the first
+ * hyphen left one tag reaching storage as several terms, which value equality
+ * called equal and the operator class -- which compares the stored term -- did
+ * not, and which gave LANG two strings for one tag.
+ */
+SELECT '"foo"@EN-GB'::rdfnode, '"foo"@en-gb'::rdfnode, '"foo"@ZH-Hant-TW'::rdfnode;
+   rdfnode   |   rdfnode   |     rdfnode      
+-------------+-------------+------------------
+ "foo"@en-gb | "foo"@en-gb | "foo"@zh-hant-tw
+(1 row)
+
+SELECT ('"x"@en-GB'::rdfnode =  '"x"@en-gb'::rdfnode)          AS same_value,
+       ('"x"@en-GB'::rdfnode ~= '"x"@en-gb'::rdfnode)          AS same_term,
+       rdfnode_cmp('"x"@en-GB', '"x"@en-gb')                   AS term_order,
+       (sparql.lang('"x"@en-GB') = sparql.lang('"x"@en-gb'))   AS one_tag_one_string;
+ same_value | same_term | term_order | one_tag_one_string 
+------------+-----------+------------+--------------------
+ t          | t         |          0 | t
 (1 row)
 
 SELECT '"foo"@en-us'::rdfnode;                  -- subtags after the primary are stored as-is (no region canonicalization)

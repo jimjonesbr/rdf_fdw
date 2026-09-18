@@ -196,11 +196,11 @@ PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-CN .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br .
     } };
 INSERT DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
@@ -305,7 +305,7 @@ INFO:  SPARQL returned 19 records.
 
                     s                     |                       p                        |                 o                 
 ------------------------------------------+------------------------------------------------+-----------------------------------
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PG"@zh-CN
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PG"@zh-cn
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "POSTGRE SQL"@vi
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PgSQL"@pl
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgre SQL"@sr
@@ -315,7 +315,7 @@ INFO:  SPARQL returned 19 records.
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "PostgreSQL, слободни софтвер"@sr
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgres"@mul
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "Postgresql"@sr
- <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "pgsql"@pt-BR
+ <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "pgsql"@pt-br
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "postgres"@nl
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "پست گر اس کیوال"@fa
  <http://www.wikidata.org/entity/Q192490> | <http://www.w3.org/2004/02/skos/core#altLabel> | "پستگر اسکیوال"@fa
@@ -345,7 +345,7 @@ SELECT ?s ?p ?o
 
 INFO:  SPARQL returned 19 records.
 
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-CN
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "POSTGRE\ SQL"@vi
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PgSQL"@pl
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgre\ SQL"@sr
@@ -355,7 +355,7 @@ INFO:  SPARQL returned 19 records.
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PostgreSQL,\ слободни\ софтвер"@sr
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgres"@mul
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "Postgresql"@sr
-<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR
+<http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "postgres"@nl
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پست\ گر\ اس\ کیوال"@fa
 <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "پستگر\ اسکیوال"@fa
@@ -504,11 +504,11 @@ PREFIX rdf: <http://www.w3.org/2000/01/rdf-schema#>
 
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-CN .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "PG"@zh-cn .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {
-      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-BR .
+      <http://www.wikidata.org/entity/Q192490> <http://www.w3.org/2004/02/skos/core#altLabel> "pgsql"@pt-br .
     } };
 DELETE DATA { 
     GRAPH <http://www.uni-muenster.de/graph> {

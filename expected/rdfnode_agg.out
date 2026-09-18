@@ -1113,7 +1113,7 @@ WITH j (val) AS (
 SELECT sparql.min(val), sparql.max(val) FROM j;
     min     |      max      
 ------------+---------------
- "hello"@en | "hello"@en-US
+ "hello"@en | "hello"@en-us
 (1 row)
 
 -- Test 87: GROUP_CONCAT with quotes, separators in values

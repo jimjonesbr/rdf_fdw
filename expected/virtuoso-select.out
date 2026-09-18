@@ -58,10 +58,10 @@ INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
        <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en .
      } };
 INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
-       <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-US .
+       <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univerrrsity of Münsterrr"@en-us .
      } };
 INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
-       <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-GB .
+       <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Univêrsity of Münsta"@en-gb .
      } };
 INSERT DATA { GRAPH <http://rdf-fdw.test/default> {
        <https://www.uni-muenster.de> <http://dbpedia.org/property/established> "1780-04-16"^^<http://www.w3.org/2001/XMLSchema#date> .
