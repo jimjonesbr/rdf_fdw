@@ -830,3 +830,37 @@ WITH j(val) AS (
             ('"16777216"^^xsd:integer'::rdfnode)
 )
 SELECT sparql.min(val), sparql.max(val) FROM j;
+
+/*
+ * The empty multiset has a value of its own in SPARQL, not an unbound one:
+ * §18.5.1.3 gives Sum({}) = "0"^^xsd:integer, §18.5.1.4 gives Avg the same
+ * where the count is zero, and §18.5.1.7 gives GroupConcat the empty string.
+ * MIN, MAX and SAMPLE have nothing defined for them and stay unbound.
+ *
+ * A group of unbound values is an empty multiset too. §18.5.1.2 counts only
+ * bound values, so an unbound one never enters the multiset -- which is why a
+ * NULL among real values is passed over rather than poisoning the result.
+ */
+WITH empty(val) AS (SELECT NULL::rdfnode WHERE false)
+SELECT sparql.sum(val)               AS sum,
+       sparql.avg(val)               AS avg,
+       sparql.group_concat(val, ',') AS group_concat,
+       sparql.min(val)               AS min,
+       sparql.max(val)               AS max,
+       sparql.sample(val)            AS sample
+FROM empty;
+
+WITH all_unbound(val) AS (VALUES (NULL::rdfnode), (NULL::rdfnode))
+SELECT sparql.sum(val) AS sum, sparql.avg(val) AS avg FROM all_unbound;
+
+WITH some_unbound(val) AS (
+    VALUES  ('"1"^^xsd:integer'::rdfnode),
+            (NULL::rdfnode),
+            ('"2"^^xsd:integer'::rdfnode)
+)
+SELECT sparql.sum(val) AS sum, sparql.avg(val) AS avg FROM some_unbound;
+
+/* values that are present but not numeric are not an empty multiset: there is
+ * something to sum and it cannot be summed, which is unbound rather than zero */
+WITH not_numeric(val) AS (VALUES ('"abc"'::rdfnode))
+SELECT sparql.sum(val) AS sum, sparql.avg(val) AS avg FROM not_numeric;

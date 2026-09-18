@@ -2276,9 +2276,9 @@ Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     /* Get the state (already validated as non-NULL by wrapper) */
     aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-    /* If state is NULL (no rows), return NULL per SPARQL (unbound) */
+    /* If state is NULL (no rows), return zero per SPARQL Sum({}). */
     if (aggstate == NULL)
-        PG_RETURN_NULL();
+        PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
     /* If no numeric values were summed, return NULL (unbound per SPARQL) */
     if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)
@@ -2427,9 +2427,9 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     /* Get the state (already validated as non-NULL by wrapper) */
     aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-    /* If state is NULL (no rows), return NULL per SPARQL (unbound) */
+    /* If state is NULL (no rows), return zero per SPARQL Avg({}). */
     if (aggstate == NULL)
-        PG_RETURN_NULL();
+        PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
     /* If no numeric values were aggregated, return NULL (unbound per SPARQL) */
     if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)

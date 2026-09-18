@@ -11825,20 +11825,16 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 {
 	RdfnodeAggState *aggstate;
 
-	/*
-	 * If called with NULL state (empty set or all-NULL inputs),
-	 * return SQL NULL to match SPARQL 1.1 semantics for unbound
-	 * results.
-	 */
+	/* If called with NULL state, return zero per SPARQL Sum({}). */
 	if (PG_ARGISNULL(0))
-		PG_RETURN_NULL();
+		PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
 	/* Extract state pointer */
 	aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-	/* If state pointer is NULL, treat as empty and return NULL */
+	/* If state pointer is NULL, treat as empty. */
 	if (aggstate == NULL)
-		PG_RETURN_NULL();
+		PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
 	/*
 	 * If we saw input values but none were numeric, return NULL
@@ -11847,9 +11843,9 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 	if (aggstate->has_input && aggstate->numeric_value == NULL)
 		PG_RETURN_NULL();
 
-	/* If no input was recorded, return NULL (empty group) */
+	/* If no input was recorded, return zero per SPARQL Sum({}). */
 	if (!aggstate->has_input)
-		PG_RETURN_NULL();
+		PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
 	/* Have numeric result - delegate to actual implementation */
 	return sum_rdfnode_finalfunc(fcinfo);
@@ -11893,26 +11889,34 @@ Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
 	RdfnodeAggState *aggstate;
 
 	/*
-	 * If called with NULL aggstate (empty set or all-NULL
-	 * inputs), return SQL NULL to match SPARQL 1.1 semantics
-	 * for unbound results. */
+	 * An empty group averages to zero, not to unbound: SPARQL 1.1 §18.5.1.4
+	 * defines Avg(M) = "0"^^xsd:integer where Count(M) = 0, the same rule
+	 * that gives Sum({}) its value. An unbound value is not in the multiset
+	 * to begin with -- §18.5.1.2 counts only bound, non-error values, and
+	 * the transition function skips NULL inputs for that reason -- so a
+	 * group whose every row is NULL has an empty multiset and averages to
+	 * zero as well.
+	 */
 	if (PG_ARGISNULL(0))
-		PG_RETURN_NULL();
+		PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
 	/* Extract state pointer */
 	aggstate = (RdfnodeAggState *)PG_GETARG_POINTER(0);
 
-	/* If state pointer is NULL, treat as empty and return NULL */
+	/* If state pointer is NULL, treat as empty. */
 	if (aggstate == NULL)
-		PG_RETURN_NULL();
+		PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
-	/* If we saw input values but none were numeric, return NULL */
+	/*
+	 * Values were seen but none of them were numeric. The multiset is not
+	 * empty, it is one an average is not defined over, so this is unbound.
+	 */
 	if (aggstate->has_input && aggstate->numeric_value == NULL)
 		PG_RETURN_NULL();
 
-	/* If no input was recorded, return NULL (empty group) */
+	/* If no input was recorded, the multiset is empty. */
 	if (!aggstate->has_input)
-		PG_RETURN_NULL();
+		PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
 	return avg_rdfnode_finalfunc(fcinfo);
 }
