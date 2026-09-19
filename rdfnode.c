@@ -280,8 +280,10 @@ bool rdfnode_eq(rdfnode *n1, rdfnode *n2)
 
 	if (a.isDate && b.isDate)
 	{
-		Datum a_val = DirectFunctionCall1(date_in, CStringGetDatum(a.lex));
-		Datum b_val = DirectFunctionCall1(date_in, CStringGetDatum(b.lex));
+		Datum a_val = DirectFunctionCall3(date_in, CStringGetDatum(a.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		Datum b_val = DirectFunctionCall3(date_in, CStringGetDatum(b.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(date_eq, a_val, b_val));
 	}
 
@@ -433,8 +435,10 @@ bool rdfnode_ge(rdfnode *n1, rdfnode *n2)
 	/* xsd:date literals */
 	if (rdfnode1.isDate && rdfnode2.isDate)
 	{
-		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
-		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		arg1 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode1.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode2.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(date_ge, arg1, arg2));
 	}
 
@@ -581,8 +585,10 @@ bool rdfnode_le(rdfnode *n1, rdfnode *n2)
 	/* xsd:date literals */
 	if (rdfnode1.isDate && rdfnode2.isDate)
 	{
-		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
-		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		arg1 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode1.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode2.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(date_le, arg1, arg2));
 	}
 
@@ -730,8 +736,10 @@ bool rdfnode_gt(rdfnode *n1, rdfnode *n2)
 	/* xsd:date literals */
 	if (rdfnode1.isDate && rdfnode2.isDate)
 	{
-		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
-		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		arg1 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode1.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode2.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(date_gt, arg1, arg2));
 	}
 
@@ -877,8 +885,10 @@ bool rdfnode_lt(rdfnode *n1, rdfnode *n2)
 	/* xsd:date literals */
 	if (rdfnode1.isDate && rdfnode2.isDate)
 	{
-		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
-		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		arg1 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode1.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode2.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 		return DatumGetBool(DirectFunctionCall2(date_lt, arg1, arg2));
 	}
 
@@ -1118,8 +1128,10 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 	{
 		DateADT date1, date2;
 
-		arg1 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode1.lex));
-		arg2 = DirectFunctionCall1(date_in, CStringGetDatum(rdfnode2.lex));
+		arg1 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode1.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		arg2 = DirectFunctionCall3(date_in, CStringGetDatum(rdfnode2.lex),
+										  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
 		date1 = DatumGetDateADT(arg1);
 		date2 = DatumGetDateADT(arg2);
 		return (date1 < date2) ? -1 : (date1 > date2) ? 1
