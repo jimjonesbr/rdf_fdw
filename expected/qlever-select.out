@@ -2593,6 +2593,21 @@ INFO:  SPARQL returned 1 record.
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Westfälische Wilhelms-Universität Münster"@de
 (1 row)
 
+/* SPARQL Aggregates.
+ *
+ * QLever stores this graph's smallest xsd:decimal and hands it back as
+ * "1e-15"^^xsd:decimal. Exponent notation is not in xsd:decimal's lexical
+ * space (XSD 1.1 Part 2 3.3.3), so that literal is ill-typed and carries no
+ * value; rdf_fdw treats it accordingly, while QLever treats it as a number.
+ *
+ * The isnumeric() filter below is pushed into the query, so QLever decides
+ * which rows it admits and lets that literal through, and the aggregate then
+ * runs here over a term that has no value. SUM and AVG therefore report the
+ * type error SPARQL 18.5.1.3 calls for, which surfaces as unbound, and MIN and
+ * MAX order the literal as a plain term rather than as a number. Against a
+ * store that reads xsd:decimal as the standard defines it the two sides agree
+ * and the aggregates return numbers.
+ */
 /* SPARQL Aggregate SUM */
 SELECT sparql.sum(object) AS obj_count
 FROM ft
@@ -2607,9 +2622,9 @@ SELECT ?o
 
 INFO:  SPARQL returned 9 records.
 
-                                     obj_count                                      
-------------------------------------------------------------------------------------
- "10000000000803657537.577200000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ obj_count 
+-----------
+ (null)
 (1 row)
 
 /* SPARQL Aggregate AVG */
@@ -2626,9 +2641,9 @@ SELECT ?o
 
 INFO:  SPARQL returned 9 records.
 
-                                      obj_avg                                      
------------------------------------------------------------------------------------
- "1111111111200406393.064133333333333"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ obj_avg 
+---------
+ (null)
 (1 row)
 
 /* SPARQL Aggregate MIN */
@@ -2645,9 +2660,9 @@ SELECT ?o
 
 INFO:  SPARQL returned 9 records.
 
-                       obj_min                       
------------------------------------------------------
- "1e-15"^^<http://www.w3.org/2001/XMLSchema#decimal>
+                       obj_min                        
+------------------------------------------------------
+ "7.6136"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 /* SPARQL Aggregate MAX */
@@ -2664,9 +2679,9 @@ SELECT ?o
 
 INFO:  SPARQL returned 9 records.
 
-                               obj_max                                
-----------------------------------------------------------------------
- "10000000000000000000.0"^^<http://www.w3.org/2001/XMLSchema#decimal>
+                       obj_max                       
+-----------------------------------------------------
+ "1e-15"^^<http://www.w3.org/2001/XMLSchema#decimal>
 (1 row)
 
 /* SPARQL Aggregate GROUP_CONCAT */

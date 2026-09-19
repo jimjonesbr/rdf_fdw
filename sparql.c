@@ -1660,12 +1660,262 @@ char *ucase(char *str)
  *
  * returns: Boolean indicating if the term is numeric
  */
+/*
+ * The lexical spaces of the XSD numeric datatypes, as SPARQL 1.1 needs them to
+ * decide isNumeric() and how a literal orders. These validate the lexical form
+ * only; they do not range-check a subtype such as xsd:byte.
+ *
+ * strtod(), which this code used before, is the wrong tool: it also accepts
+ * spellings that are in no XSD numeric lexical space -- "0x10" (hex), "nan",
+ * "inf"/"infinity", and a leading run of whitespace -- so an ill-typed literal
+ * such as "0x10"^^xsd:integer was treated as the number 16.
+ */
+
+/* xsd:integer and its subtypes: [+-]? [0-9]+ */
+static bool
+is_xsd_integer_lexical(const char *s)
+{
+    bool digits = false;
+
+    if (s == NULL)
+        return false;
+    if (*s == '+' || *s == '-')
+        s++;
+    while (isdigit((unsigned char) *s))
+    {
+        s++;
+        digits = true;
+    }
+    return digits && *s == '\0';
+}
+
+/* xsd:decimal: [+-]? ( [0-9]+ ('.' [0-9]*)? | '.' [0-9]+ ) */
+static bool
+is_xsd_decimal_lexical(const char *s)
+{
+    bool digits = false;
+
+    if (s == NULL)
+        return false;
+    if (*s == '+' || *s == '-')
+        s++;
+    while (isdigit((unsigned char) *s))
+    {
+        s++;
+        digits = true;
+    }
+    if (*s == '.')
+    {
+        s++;
+        while (isdigit((unsigned char) *s))
+        {
+            s++;
+            digits = true;
+        }
+    }
+    return digits && *s == '\0';
+}
+
+/*
+ * The numeral part of the xsd:double / xsd:float lexical space, without the
+ * special representations:
+ *   [+-]? ( [0-9]+ ('.' [0-9]*)? | '.' [0-9]+ ) ([eE] [+-]? [0-9]+)?
+ *
+ * Kept separate from is_xsd_double_lexical() because xsd:decimal borrows the
+ * exponent form from it (see isNumeric) but has no INF or NaN in its value
+ * space at all.
+ */
+static bool
+is_xsd_double_numeral(const char *s)
+{
+    bool digits = false;
+
+    if (s == NULL)
+        return false;
+
+    if (*s == '+' || *s == '-')
+        s++;
+    while (isdigit((unsigned char) *s))
+    {
+        s++;
+        digits = true;
+    }
+    if (*s == '.')
+    {
+        s++;
+        while (isdigit((unsigned char) *s))
+        {
+            s++;
+            digits = true;
+        }
+    }
+    if (!digits)
+        return false;
+    if (*s == 'e' || *s == 'E')
+    {
+        s++;
+        if (*s == '+' || *s == '-')
+            s++;
+        if (!isdigit((unsigned char) *s))
+            return false;
+        while (isdigit((unsigned char) *s))
+            s++;
+    }
+    return *s == '\0';
+}
+
+/* the full xsd:double / xsd:float lexical space, specials included */
+static bool
+is_xsd_double_lexical(const char *s)
+{
+    if (s == NULL)
+        return false;
+    if (strcmp(s, "NaN") == 0 || strcmp(s, "INF") == 0 ||
+        strcmp(s, "+INF") == 0 || strcmp(s, "-INF") == 0)
+        return true;
+    return is_xsd_double_numeral(s);
+}
+
+/*
+ * xsd_collapse
+ * ------------
+ *
+ * XSD fixes whiteSpace="collapse" on every numeric datatype, so the lexical
+ * form is trimmed before it is matched against the lexical space: "  12" is a
+ * valid xsd:integer whose value is 12. Fuseki and Virtuoso both read it that
+ * way -- each answers true for isNumeric("  12"^^xsd:integer) and makes it
+ * equal to "12"^^xsd:integer -- so trimming here is what keeps such a literal
+ * numeric.
+ *
+ * Returns a palloc'd copy without leading or trailing whitespace. Whitespace
+ * left inside still fails the validators, which is correct: collapsing cannot
+ * join two numerals into one.
+ */
+static char *
+xsd_collapse(const char *s)
+{
+    const char *start = s;
+    const char *end;
+    char *out;
+    size_t len;
+
+    while (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')
+        start++;
+
+    end = start + strlen(start);
+    while (end > start &&
+           (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r'))
+        end--;
+
+    len = (size_t) (end - start);
+    out = palloc(len + 1);
+    memcpy(out, start, len);
+    out[len] = '\0';
+
+    return out;
+}
+
+/*
+ * xsd_integer_in_range
+ * --------------------
+ *
+ * The integer subtypes share xsd:integer's lexical space but each restricts
+ * its value space, and a literal outside that space is ill-typed rather than
+ * numeric. XSD 1.1 Part 2 bounds xsd:byte at -128..127, xsd:unsignedByte at
+ * 0..255 and so on, while xsd:nonNegativeInteger and its three siblings
+ * constrain only the sign and stay unbounded. Fuseki and Virtuoso both report
+ * a literal outside the range as non-numeric.
+ *
+ * s     : the collapsed lexical form, already known to match [+-]?[0-9]+
+ * dtype : the literal's datatype URI
+ */
+static bool
+xsd_integer_in_range(const char *s, const char *dtype)
+{
+    bool negative = (*s == '-');
+    const char *digits = s + ((*s == '+' || *s == '-') ? 1 : 0);
+    bool all_zero = true;
+    const char *d;
+
+    for (d = digits; *d != '\0'; d++)
+    {
+        if (*d != '0')
+        {
+            all_zero = false;
+            break;
+        }
+    }
+
+    /* sign-constrained, but unbounded in the other direction */
+    if (strcmp(dtype, RDF_XSD_NONNEGATIVEINTEGER) == 0)
+        return !negative || all_zero;
+    if (strcmp(dtype, RDF_XSD_POSITIVEINTEGER) == 0)
+        return !negative && !all_zero;
+    if (strcmp(dtype, RDF_XSD_NONPOSITIVEINTEGER) == 0)
+        return negative || all_zero;
+    if (strcmp(dtype, RDF_XSD_NEGATIVEINTEGER) == 0)
+        return negative && !all_zero;
+
+    /* the signed, bounded types */
+    if (strcmp(dtype, RDF_XSD_BYTE) == 0 ||
+        strcmp(dtype, RDF_XSD_SHORT) == 0 ||
+        strcmp(dtype, RDF_XSD_INT) == 0 ||
+        strcmp(dtype, RDF_XSD_LONG) == 0)
+    {
+        long long v;
+        char *end;
+
+        errno = 0;
+        v = strtoll(s, &end, 10);
+        if (errno == ERANGE || *end != '\0')
+            return false; /* past xsd:long, so past every one of them */
+
+        if (strcmp(dtype, RDF_XSD_BYTE) == 0)
+            return v >= -128LL && v <= 127LL;
+        if (strcmp(dtype, RDF_XSD_SHORT) == 0)
+            return v >= -32768LL && v <= 32767LL;
+        if (strcmp(dtype, RDF_XSD_INT) == 0)
+            return v >= -2147483648LL && v <= 2147483647LL;
+
+        return true; /* xsd:long: strtoll already bounded it */
+    }
+
+    /* the unsigned, bounded types */
+    if (strcmp(dtype, RDF_XSD_UNSIGNEDBYTE) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDSHORT) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDINT) == 0 ||
+        strcmp(dtype, RDF_XSD_UNSIGNEDLONG) == 0)
+    {
+        unsigned long long v;
+        char *end;
+
+        /* "-0" is in the lexical space of the non-negative types */
+        if (negative && !all_zero)
+            return false;
+
+        errno = 0;
+        v = strtoull(digits, &end, 10);
+        if (errno == ERANGE || *end != '\0')
+            return false;
+
+        if (strcmp(dtype, RDF_XSD_UNSIGNEDBYTE) == 0)
+            return v <= 255ULL;
+        if (strcmp(dtype, RDF_XSD_UNSIGNEDSHORT) == 0)
+            return v <= 65535ULL;
+        if (strcmp(dtype, RDF_XSD_UNSIGNEDINT) == 0)
+            return v <= 4294967295ULL;
+
+        return true; /* xsd:unsignedLong: strtoull already bounded it */
+    }
+
+    return true; /* xsd:integer is unbounded */
+}
+
 bool isNumeric(char *term)
 {
     char *lexical;
     char *datatype_uri;
     bool is_bare_number = false;
-    char *endptr;
 
     elog(DEBUG3, "%s called: term='%s'", __func__, term);
 
@@ -1687,25 +1937,33 @@ bool isNumeric(char *term)
         lexical = lex(term); /* From datatype/strdt codebase */
     }
 
-    /* Validate lexical form as numeric (integers, decimals, or scientific notation) */
     if (!lexical || strlen(lexical) == 0)
     {
         elog(DEBUG3, "%s exit: returning 'false' (lexical value either NULL or an empty string)", __func__);
         return false;
     }
 
-    strtod(lexical, &endptr);
-    if (*endptr != '\0') /* not a valid number, e.g., "abc" */
+    /* every XSD numeric datatype fixes whiteSpace="collapse" */
+    lexical = xsd_collapse(lexical);
+
+    if (*lexical == '\0')
     {
-        elog(DEBUG3, "%s exit: returning 'false' (not a valid number)", __func__);
+        elog(DEBUG3, "%s exit: returning 'false' (lexical value is only whitespace)", __func__);
         return false;
     }
 
-    /* Bare numbers are numeric */
+    /*
+     * A bare number carries no datatype, so accept any of the three numeric
+     * lexical spaces (integer, decimal or double).
+     */
     if (is_bare_number)
     {
-        elog(DEBUG3, "%s exit: returning 'true' (bare numbers are numeric)", __func__);
-        return true;
+        bool numeric = is_xsd_integer_lexical(lexical) ||
+                       is_xsd_decimal_lexical(lexical) ||
+                       is_xsd_double_lexical(lexical);
+
+        elog(DEBUG3, "%s exit: returning '%s' (bare number)", __func__, numeric ? "true" : "false");
+        return numeric;
     }
 
     /* Get datatype using datatype function */
@@ -1716,7 +1974,12 @@ bool isNumeric(char *term)
         return false;
     } /* No datatype or invalid literal (e.g., "12") */
 
-    /* Check for numeric datatypes */
+    /*
+     * The literal is numeric only if its lexical form is valid for its own
+     * numeric datatype, and -- for the integer subtypes, which share one
+     * lexical space but not one value space -- its value lies in that
+     * datatype's range.
+     */
     if (strcmp(datatype_uri, RDF_XSD_INTEGER) == 0 ||
         strcmp(datatype_uri, RDF_XSD_NONNEGATIVEINTEGER) == 0 ||
         strcmp(datatype_uri, RDF_XSD_POSITIVEINTEGER) == 0 ||
@@ -1729,32 +1992,34 @@ bool isNumeric(char *term)
         strcmp(datatype_uri, RDF_XSD_UNSIGNEDLONG) == 0 ||
         strcmp(datatype_uri, RDF_XSD_UNSIGNEDINT) == 0 ||
         strcmp(datatype_uri, RDF_XSD_UNSIGNEDSHORT) == 0 ||
-        strcmp(datatype_uri, RDF_XSD_UNSIGNEDBYTE) == 0 ||
-        strcmp(datatype_uri, RDF_XSD_DOUBLE) == 0 ||
-        strcmp(datatype_uri, RDF_XSD_FLOAT) == 0 ||
-        strcmp(datatype_uri, RDF_XSD_DECIMAL) == 0)
+        strcmp(datatype_uri, RDF_XSD_UNSIGNEDBYTE) == 0)
     {
-        /* Special case for xsd:byte: SPARQL requires values to be integers between -128 and 127.
-         * For example, isNumeric("1200"^^xsd:byte) returns false because 1200 exceeds 127.
-         * We parse the lexical value to ensure it’s a valid integer and check its range. */
-        if (strcmp(datatype_uri, RDF_XSD_BYTE) == 0)
-        {
-            /* Ensure the entire string is a valid integer and within xsd:byte range */
-            if (*endptr != '\0') /* Not a pure integer, e.g., "12.34" */
-            {
-                elog(DEBUG3, "%s exit: returning 'false' (not a pure integer)", __func__);
-                return false;
-            }
+        bool ok = is_xsd_integer_lexical(lexical) &&
+                  xsd_integer_in_range(lexical, datatype_uri);
 
-            elog(DEBUG3, "%s exit: returning 'true' (valid xsd:byte)", __func__);
-            return true; /* Valid xsd:byte, e.g., "100" */
-        }
-        /* Other numeric datatypes (e.g., xsd:integer, xsd:double) have no strict range
-         * limits in SPARQL’s isNumeric, and we’ve already validated the lexical form.
-         * Accept them as numeric. */
+        elog(DEBUG3, "%s exit: returning '%s' (integer family)", __func__, ok ? "true" : "false");
+        return ok;
+    }
+    else if (strcmp(datatype_uri, RDF_XSD_DECIMAL) == 0)
+    {
+        /*
+         * xsd:decimal's lexical space has no exponent and no INF or NaN: XSD
+         * 1.1 Part 2 3.3.3 admits only an optional sign, digits and at most one
+         * '.'. A literal written any other way is ill-typed and has no value,
+         * whatever produced it.
+         */
+        bool ok = is_xsd_decimal_lexical(lexical);
 
-        elog(DEBUG3, "%s exit: returning 'true'", __func__);
-        return true;
+        elog(DEBUG3, "%s exit: returning '%s' (decimal)", __func__, ok ? "true" : "false");
+        return ok;
+    }
+    else if (strcmp(datatype_uri, RDF_XSD_DOUBLE) == 0 ||
+             strcmp(datatype_uri, RDF_XSD_FLOAT) == 0)
+    {
+        bool ok = is_xsd_double_lexical(lexical);
+
+        elog(DEBUG3, "%s exit: returning '%s' (double/float)", __func__, ok ? "true" : "false");
+        return ok;
     }
 
     elog(DEBUG3, "%s exit: returning 'false'", __func__);

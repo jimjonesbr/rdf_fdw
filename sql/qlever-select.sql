@@ -568,6 +568,22 @@ WHERE sparql.tz(object) = 'Z'::rdfnode;
 SELECT * FROM ft
 WHERE sparql.md5(sparql.str(object)) = '6c0bdbd38fc0772abda6fa1c98b74990'::rdfnode;
 
+/* SPARQL Aggregates.
+ *
+ * QLever stores this graph's smallest xsd:decimal and hands it back as
+ * "1e-15"^^xsd:decimal. Exponent notation is not in xsd:decimal's lexical
+ * space (XSD 1.1 Part 2 3.3.3), so that literal is ill-typed and carries no
+ * value; rdf_fdw treats it accordingly, while QLever treats it as a number.
+ *
+ * The isnumeric() filter below is pushed into the query, so QLever decides
+ * which rows it admits and lets that literal through, and the aggregate then
+ * runs here over a term that has no value. SUM and AVG therefore report the
+ * type error SPARQL 18.5.1.3 calls for, which surfaces as unbound, and MIN and
+ * MAX order the literal as a plain term rather than as a number. Against a
+ * store that reads xsd:decimal as the standard defines it the two sides agree
+ * and the aggregates return numbers.
+ */
+
 /* SPARQL Aggregate SUM */
 SELECT sparql.sum(object) AS obj_count
 FROM ft

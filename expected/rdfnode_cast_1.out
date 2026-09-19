@@ -254,9 +254,9 @@ SELECT '"42.123456650"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode::flo
 (1 row)
 
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
-ERROR:  invalid input syntax for type numeric: "INF"
+ERROR:  cannot cast non-numeric RDF literal to numeric
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
-ERROR:  invalid input syntax for type numeric: "-INF"
+ERROR:  cannot cast non-numeric RDF literal to numeric
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float4;
   float4  
 ----------
@@ -270,29 +270,13 @@ SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float4;
 (1 row)
 
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float8;
-  float8  
-----------
- Infinity
-(1 row)
-
+ERROR:  cannot cast non-numeric RDF literal to double precision
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float8;
-  float8   
------------
- -Infinity
-(1 row)
-
+ERROR:  cannot cast non-numeric RDF literal to double precision
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::double precision;
-  float8  
-----------
- Infinity
-(1 row)
-
+ERROR:  cannot cast non-numeric RDF literal to double precision
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::double precision;
-  float8   
------------
- -Infinity
-(1 row)
-
+ERROR:  cannot cast non-numeric RDF literal to double precision
 SELECT '"NaN"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode::numeric;
  numeric 
 ---------

@@ -352,3 +352,70 @@ SELECT '"x"@en } ; INSERT DATA { <http://evil/p> <http://evil/p> <http://evil/p>
 
 /* already-escaped text must still not be double-escaped */
 SELECT 'x\"y'::rdfnode;
+/* ------------------------------------------------------------------ *
+ * Malformed IRIs and blank node labels are not classified as such, so
+ * a term whose body could break out of its SPARQL token is stored as a
+ * quoted literal instead (grammar rules [139] and [142]).
+ * ------------------------------------------------------------------ */
+SELECT t AS input,
+       t::rdfnode::text     AS stored,
+       sparql.isiri(t::rdfnode)   AS is_iri,
+       sparql.isblank(t::rdfnode) AS is_blank
+FROM (VALUES ('<http://e.org/a>.<http://e.org/b>'),
+             ('<http://e.org/{x}>'),
+             ('<http://e.org/|>'),
+             ('_:b1 x'),
+             ('_:.b1'),
+             ('_:b1.')) v(t)
+ORDER BY input;
+
+/* well-formed IRIs and blank nodes are unaffected */
+SELECT '<http://e.org/ok>'::rdfnode::text  AS good_iri,
+       '_:b1'::rdfnode::text               AS good_blank,
+       sparql.isiri('<http://e.org/ok>'::rdfnode)   AS iri_ok,
+       sparql.isblank('_:abc.def'::rdfnode)         AS blank_ok;
+
+/* ------------------------------------------------------------------ *
+ * isNumeric() validates the lexical form against the datatype, so a
+ * value that is not in the datatype's XSD lexical space is not numeric.
+ * Surrounding whitespace is not such a value: every XSD numeric datatype
+ * fixes whiteSpace="collapse", so "  12" is a valid xsd:integer.
+ * ------------------------------------------------------------------ */
+SELECT t AS term, sparql.isnumeric(t::rdfnode) AS is_numeric
+FROM (VALUES ('"0x10"^^xsd:integer'),
+             ('"1.5"^^xsd:integer'),
+             ('"nan"^^xsd:integer'),
+             ('"  12"^^xsd:integer'),
+             ('" 1.5 "^^xsd:decimal'),
+             ('"42"^^xsd:integer'),
+             ('"-3.14"^^xsd:decimal'),
+             ('"1.5e10"^^xsd:double'),
+             ('"INF"^^xsd:double'),
+             ('"+INF"^^xsd:double'),
+             ('"INF"^^xsd:decimal'),
+             ('"NaN"^^xsd:float')) v(t)
+ORDER BY term COLLATE "C";
+
+/* a collapsed lexical form is a number, and behaves as one */
+SELECT '"  12"^^xsd:integer'::rdfnode + '"1"^^xsd:integer'::rdfnode AS ws_arith,
+       '"  12"^^xsd:integer'::rdfnode = '"12"^^xsd:integer'::rdfnode AS ws_equals;
+
+/* ------------------------------------------------------------------ *
+ * The integer subtypes share one lexical space but not one value space,
+ * so a value outside the subtype's range is ill-typed, not numeric.
+ * ------------------------------------------------------------------ */
+SELECT t AS term, sparql.isnumeric(t::rdfnode) AS is_numeric
+FROM (VALUES ('"1200"^^xsd:byte'),
+             ('"100"^^xsd:byte'),
+             ('"99999"^^xsd:short'),
+             ('"-5"^^xsd:nonNegativeInteger'),
+             ('"0"^^xsd:nonNegativeInteger'),
+             ('"0"^^xsd:positiveInteger'),
+             ('"1"^^xsd:positiveInteger'),
+             ('"5"^^xsd:negativeInteger'),
+             ('"-1"^^xsd:unsignedByte'),
+             ('"-0"^^xsd:unsignedByte'),
+             ('"300"^^xsd:unsignedByte'),
+             ('"255"^^xsd:unsignedByte'),
+             ('"99999999999999999999999"^^xsd:integer')) v(t)
+ORDER BY term COLLATE "C";

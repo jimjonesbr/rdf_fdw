@@ -1997,7 +1997,7 @@ SELECT sparql.isnumeric('"12"^^xsd:nonNegativeInteger');
 SELECT sparql.isnumeric('"1200"^^xsd:byte');
  isnumeric 
 -----------
- t
+ f
 (1 row)
 
 SELECT sparql.isnumeric('<http://example/>');
@@ -2021,13 +2021,13 @@ SELECT sparql.isnumeric('"12"^^xsd:positiveInteger');
 SELECT sparql.isnumeric('"12"^^xsd:negativeInteger');
  isnumeric 
 -----------
- t
+ f
 (1 row)
 
 SELECT sparql.isnumeric('"12"^^xsd:nonPositiveInteger');
  isnumeric 
 -----------
- t
+ f
 (1 row)
 
 SELECT sparql.isnumeric('"12"^^xsd:long');
