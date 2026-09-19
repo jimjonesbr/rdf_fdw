@@ -2826,6 +2826,7 @@ static long ParseIntegerOption(DefElem *def)
 	char *end;
 	long value;
 	long maximum = LONG_MAX;
+	bool bounded = false;
 	const char *unit = NULL;
 
 	/*
@@ -2834,10 +2835,18 @@ static long ParseIntegerOption(DefElem *def)
 	 * ceiling differs between builds and bounds nothing a user would reach,
 	 * so they say what the value means instead -- above all what 0 selects,
 	 * which is the part no one can guess.
+	 *
+	 * Which of the two an option is has to be recorded rather than worked out
+	 * from the ceiling afterwards: where long is 32 bits, PG_INT32_MAX and
+	 * LONG_MAX are the same number, and a bounded option would be described as
+	 * an unbounded one.
 	 */
 	if (strcmp(def->defname, RDF_SERVER_OPTION_FETCH_SIZE) == 0 ||
 		strcmp(def->defname, RDF_SERVER_OPTION_BATCH_SIZE) == 0)
+	{
 		maximum = PG_INT32_MAX;
+		bounded = true;
+	}
 	else if (strcmp(def->defname, RDF_SERVER_OPTION_CONNECTTIMEOUT) == 0 ||
 			 strcmp(def->defname, RDF_SERVER_OPTION_REQUEST_TIMEOUT) == 0)
 		unit = "a timeout in seconds, 0 to disable it";
@@ -2853,7 +2862,7 @@ static long ParseIntegerOption(DefElem *def)
 
 	if (errno == ERANGE || end == input || *end != '\0' || value < 0 || value > maximum)
 	{
-		if (maximum != LONG_MAX)
+		if (bounded)
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 					 errmsg("invalid %s: '%s'", def->defname, input),
@@ -5927,7 +5936,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			elog(DEBUG4, "%s: http response header = \n%s", __func__, chunk_header.memory);
 			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);
 			elog(DEBUG2, "%s: http response code = %ld", __func__, response_code);
-			elog(DEBUG2, "%s: http response size = %ld", __func__, chunk.size);
+			elog(DEBUG2, "%s: http response size = %zu", __func__, chunk.size);
 		}
 	}
 
@@ -9763,7 +9772,12 @@ Datum int8_to_rdfnode(PG_FUNCTION_ARGS)
 	int64 val = PG_GETARG_INT64(0);
 	StringInfoData buf;
 	initStringInfo(&buf);
-	appendStringInfo(&buf, "\"%ld\"^^%s", val, RDF_XSD_LONG);
+	/*
+	 * INT64_FORMAT, not %ld: long is 32 bits where int64 is 64, so %ld reads
+	 * half the argument and every conversion after it takes the wrong one --
+	 * the datatype IRI below came out as (null) on such a build.
+	 */
+	appendStringInfo(&buf, "\"" INT64_FORMAT "\"^^%s", val, RDF_XSD_LONG);
 
 	PG_RETURN_TEXT_P(cstring_to_text(buf.data));
 }
