@@ -934,11 +934,7 @@ FROM (VALUES ('"http://example/"'::rdfnode), ('http://example/'), ('<http://exam
 SELECT sparql.iri('_:b1');
 ERROR:  invalid argument: _:b1
 SELECT sparql.iri('"<https://example/>"');
-         iri          
-----------------------
- <<https://example/>>
-(1 row)
-
+ERROR:  invalid IRI: <<https://example/>>
   /* isIRI / isURI */
 SELECT sparql.isIRI('<https://example/>'); 
  isiri 
@@ -4248,3 +4244,39 @@ SELECT sparql.year('"2025-04-16"^^xsd:date'), sparql.md5('"x"');
 (1 row)
 
 RESET search_path;
+/* IRI() builds a term that is asked for as an IRI, so a body that the SPARQL
+ * grammar (rule [139]) forbids is a type error rather than a malformed term.
+ * STRDT() routes a non-IRI datatype through the same constructor. */
+SELECT sparql.iri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
+ERROR:  invalid IRI: <http://e.org/a>.<http://e.org/b>
+SELECT sparql.uri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
+ERROR:  invalid IRI: <http://e.org/a>.<http://e.org/b>
+SELECT sparql.iri('"http://e.org/{x}"'::rdfnode);
+ERROR:  invalid IRI: <http://e.org/{x}>
+SELECT sparql.strdt('"v"'::rdfnode, '"http://e.org/t>x"'::rdfnode);
+ERROR:  invalid IRI: <http://e.org/t>x>
+/* well-formed constructions are unaffected */
+SELECT sparql.iri('"http://e.org/ok"'::rdfnode);
+        iri        
+-------------------
+ <http://e.org/ok>
+(1 row)
+
+SELECT sparql.iri('<http://e.org/already>'::rdfnode);
+          iri           
+------------------------
+ <http://e.org/already>
+(1 row)
+
+SELECT sparql.strdt('"v"'::rdfnode, '"xsd:integer"'::rdfnode);
+                      strdt                      
+-------------------------------------------------
+ "v"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT sparql.strdt('"v"'::rdfnode, '<http://e.org/t>'::rdfnode);
+         strdt         
+-----------------------
+ "v"^^<http://e.org/t>
+(1 row)
+

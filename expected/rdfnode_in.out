@@ -483,9 +483,10 @@ ERROR:  invalid input syntax for type rdfnode: ""abc"^^<>"
 LINE 2: SELECT '"abc"^^<>'::rdfnode;
                ^
 SELECT '"abc"^^<not an uri>'::rdfnode;           -- invalid IRI
-ERROR:  datatype IRI cannot contain whitespaces
+ERROR:  invalid IRI: <not an uri>
 LINE 1: SELECT '"abc"^^<not an uri>'::rdfnode;
                ^
+DETAIL:  An IRI cannot contain <, >, ", {, }, |, ^, `, \ or a character in #x00-#x20.
 SELECT '"abc"^^xsd:'::rdfnode;                   -- empty local part
     rdfnode    
 ---------------

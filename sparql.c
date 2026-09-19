@@ -644,6 +644,25 @@ char *iri(char *input)
     lexical = lex(input);
     appendStringInfo(&buf, "<%s>", lexical);
 
+    /*
+     * Wrapping a lexical form in angle brackets does not make it an IRI: the
+     * body may still carry a character grammar rule [139] excludes, and '>' in
+     * particular would close the IRI early and leave the rest of the body as
+     * further tokens in whatever query the term reaches. Unlike a term that
+     * arrives through rdfnode_in(), which falls back to a quoted literal, one
+     * built here has been asked for as an IRI, so an invalid body is a type
+     * error -- which is what SPARQL 1.1 17.4.2.8 specifies for IRI().
+     *
+     * "<>" is the empty relative IRI and is allowed, matching the empty-input
+     * case handled above.
+     */
+    if (strcmp(buf.data, "<>") != 0 && !isIRI(buf.data))
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("invalid IRI: %s", buf.data),
+                 errdetail("An IRI cannot contain <, >, \", {, }, |, ^, `, \\ "
+                           "or a character in #x00-#x20.")));
+
     elog(DEBUG3, "%s exit: returning wrapped IRI '%s'", __func__, buf.data);
     return pstrdup(buf.data);
 }
@@ -858,9 +877,20 @@ char *concat(char *left, char *right)
  * -----
  *
  * Checks if a string is an RDF IRI. A valid IRI must start with '<' and end
- * with '>', and must not contain spaces or quote characters. Both absolute
- * (e.g., <http://example.org/foo>) and relative (e.g., <foo>) IRIs are
- * accepted per SPARQL 1.1.
+ * with '>', and its body must satisfy the SPARQL 1.1 grammar rule [139]:
+ *
+ *     IRIREF ::= '<' ([^<>"{}|^`\] - [#x00-#x20])* '>'
+ *
+ * so the characters '<', '>', '"', '{', '}', '|', '^', '`', '\' and every
+ * character in #x00-#x20 (the ASCII controls and the space) are forbidden
+ * inside it. Both absolute (e.g., <http://example.org/foo>) and relative
+ * (e.g., <foo>) IRIs are accepted.
+ *
+ * Rejecting these matters beyond classification: the deparser and the
+ * SPARQL Update builder copy an IRI term into the query verbatim, trusting it
+ * to be a single token. A body carrying '>' would close the IRI early and turn
+ * the trailing bytes into further tokens, so a value that fails this test is
+ * treated by rdfnode_in() as a plain string literal instead, which quotes it.
  *
  * input: Null-terminated C string representing an RDF term
  * (e.g., "<http://example.org>", "\"hello\"", "_:b1")
@@ -879,11 +909,12 @@ bool isIRI(char *input)
     if (input[0] != '<' || input[len - 1] != '>')
         return false;
 
-    /* Check for illegal characters inside the IRI */
+    /* Reject every character grammar rule [139] excludes from an IRIREF. */
     for (i = 1; i < len - 1; i++)
     {
-        char c = input[i];
-        if (c == '"' || c == ' ' || c == '\n' || c == '\r' || c == '\t')
+        unsigned char c = (unsigned char) input[i];
+        if (c <= 0x20 || c == '<' || c == '>' || c == '"' || c == '{' ||
+            c == '}' || c == '|' || c == '^' || c == '`' || c == '\\')
             return false;
     }
 
@@ -895,8 +926,21 @@ bool isIRI(char *input)
  * isBlank
  * -------
  *
- * Mimics SPARQL's isBlank function. Checks if the input is a blank node.
- * Returns true if the term starts with "_:", false otherwise.
+ * Mimics SPARQL's isBlank function. Checks if the input is a blank node label:
+ * "_:" followed by a label that conforms to the SPARQL 1.1 grammar rule [142]:
+ *
+ *     BLANK_NODE_LABEL ::= '_:' (PN_CHARS_U | [0-9])
+ *                          ((PN_CHARS | '.')* PN_CHARS)?
+ *
+ * The label must be non-empty, may not begin or end with '.', and may contain
+ * only PN_CHARS: ASCII letters, digits, '_', '-', '.', and (as the rest of the
+ * extension treats UTF-8) any byte at or above 0x80. Everything else -- in
+ * particular whitespace, '<', '>', '"' and the ASCII controls -- is rejected.
+ *
+ * As with isIRI(), this is not only classification: a blank node label is
+ * copied into a generated FILTER verbatim, so a label carrying such a character
+ * would break out of the token. A term that fails this test is handled by
+ * rdfnode_in() as a plain string literal, which quotes it.
  *
  * term: Null-terminated C string, an RDF term (e.g., "_:b1", "<http://ex.com>", "\"hello\"")
  *
@@ -904,21 +948,38 @@ bool isIRI(char *input)
  */
 bool isBlank(char *term)
 {
-    bool result;
-    elog(DEBUG3, "%s called: term='%s'", __func__, term);
+    size_t len;
+    size_t i;
 
-    /* Handle NULL or empty input */
-    if (!term || strlen(term) == 0)
+    elog(DEBUG3, "%s called: term='%s'", __func__, term ? term : "(null)");
+
+    /* Must start with "_:" and carry a non-empty label. */
+    if (!term || strncmp(term, "_:", 2) != 0 || (len = strlen(term)) <= 2)
     {
         elog(DEBUG3, "%s exit: returning 'false' (invalid input)", __func__);
         return false;
     }
 
-    /* Check if term starts with "_:" and has at least 3 characters */
-    result = (strncmp(term, "_:", 2) == 0) && strlen(term) > 2;
+    /* The label may not begin or end with '.' (rule [142]). */
+    if (term[2] == '.' || term[len - 1] == '.')
+    {
+        elog(DEBUG3, "%s exit: returning 'false' (label starts or ends with '.')", __func__);
+        return false;
+    }
 
-    elog(DEBUG3, "%s exit: returning '%s'", __func__, result ? "true" : "false");
-    return result;
+    /* Every label character must be PN_CHARS or '.'. */
+    for (i = 2; i < len; i++)
+    {
+        unsigned char c = (unsigned char) term[i];
+        if (isalnum(c) || c == '_' || c == '-' || c == '.' || c >= 0x80)
+            continue;
+
+        elog(DEBUG3, "%s exit: returning 'false' (illegal character in label)", __func__);
+        return false;
+    }
+
+    elog(DEBUG3, "%s exit: returning 'true'", __func__);
+    return true;
 }
 
 /*

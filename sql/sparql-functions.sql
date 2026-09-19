@@ -960,3 +960,17 @@ SELECT sparql.round('"1.5"^^xsd:decimal'), sparql.abs('"-3"^^xsd:integer'),
        sparql.ceil('"1.2"^^xsd:decimal'), sparql.floor('"1.8"^^xsd:decimal');
 SELECT sparql.year('"2025-04-16"^^xsd:date'), sparql.md5('"x"');
 RESET search_path;
+
+/* IRI() builds a term that is asked for as an IRI, so a body that the SPARQL
+ * grammar (rule [139]) forbids is a type error rather than a malformed term.
+ * STRDT() routes a non-IRI datatype through the same constructor. */
+SELECT sparql.iri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
+SELECT sparql.uri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
+SELECT sparql.iri('"http://e.org/{x}"'::rdfnode);
+SELECT sparql.strdt('"v"'::rdfnode, '"http://e.org/t>x"'::rdfnode);
+
+/* well-formed constructions are unaffected */
+SELECT sparql.iri('"http://e.org/ok"'::rdfnode);
+SELECT sparql.iri('<http://e.org/already>'::rdfnode);
+SELECT sparql.strdt('"v"'::rdfnode, '"xsd:integer"'::rdfnode);
+SELECT sparql.strdt('"v"'::rdfnode, '<http://e.org/t>'::rdfnode);
