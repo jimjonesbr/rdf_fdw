@@ -29,7 +29,7 @@ docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
 # INCLUDE_ALL_TESTS=1      - all of the above
 
 docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
-    INCLUDE_LOCAL_TESTS=1 \
+    INCLUDE_LOCAL_TESTS=1 INCLUDE_DEBUG_TESTS=1\
     installcheck 
 
 echo -e "\n== Tests completed ==\n"

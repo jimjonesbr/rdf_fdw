@@ -5086,7 +5086,14 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
 
-	elog(DEBUG3, "%s exit: returning '%lu' (realsize)", __func__, realsize);
+	/*
+	 * DEBUG5, with libcurl's own trace: how many bytes arrive in a call is
+	 * decided by how the body is chunked on the way, not by what the body
+	 * says, so the same response logs different sizes from one run to the
+	 * next. The size that can be compared is the total, which is reported
+	 * once the transfer is done.
+	 */
+	elog(DEBUG5, "%s exit: returning '%lu' (realsize)", __func__, realsize);
 	return realsize;
 }
 
@@ -5177,9 +5184,9 @@ CURLDebugCallback(CURL *handle, curl_infotype type, char *data, size_t size, voi
 			{
 				match = IsSensitiveHeader(pos);
 				if (match)
-					elog(DEBUG3, "[curl] > %s [REDACTED]", match);
+					elog(DEBUG5, "[curl] > %s [REDACTED]", match);
 				else
-					elog(DEBUG3, "[curl] > %s", pos);
+					elog(DEBUG5, "[curl] > %s", pos);
 			}
 
 			*eol = saved;
@@ -5204,9 +5211,9 @@ CURLDebugCallback(CURL *handle, curl_infotype type, char *data, size_t size, voi
 		 */
 		match = (type == CURLINFO_HEADER_IN) ? IsSensitiveHeader(buf.data) : NULL;
 		if (match)
-			elog(DEBUG3, "[curl] %s%s [REDACTED]", prefix, match);
+			elog(DEBUG5, "[curl] %s%s [REDACTED]", prefix, match);
 		else
-			elog(DEBUG3, "[curl] %s%s", prefix, buf.data);
+			elog(DEBUG5, "[curl] %s%s", prefix, buf.data);
 	}
 
 	pfree(buf.data);
@@ -5646,9 +5653,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		/*
 		 * Enable libcurl verbose output, but route it exclusively through
-		 * CURLDebugCallback instead of stderr. The callback emits at DEBUG3
+		 * CURLDebugCallback instead of stderr. The callback emits at DEBUG5
 		 * (gated by log_min_messages) and redacts Authorization headers so
 		 * credentials are never written to server logs.
+		 *
+		 * DEBUG5 rather than DEBUG3 because this is libcurl's trace, not the
+		 * extension's, and none of it repeats: it carries the response Date,
+		 * whatever session cookie the server issues, the address the host
+		 * resolved to and the server's own request counter. Sharing a level
+		 * with the extension's tracing made DEBUG3 unusable for anything that
+		 * compares two runs, which is what sql/debug.sql does.
 		 */
 		curl_easy_setopt(state->curl, CURLOPT_VERBOSE, 1L);
 		curl_easy_setopt(state->curl, CURLOPT_DEBUGFUNCTION, CURLDebugCallback);

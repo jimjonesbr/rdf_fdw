@@ -77,8 +77,8 @@ DEBUG:  ExtractSPARQLPrefixes called
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
+DEBUG:    DeparseSQLWhereConditions: condition cannot be pushed down.
 DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
- FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
 '
 DEBUG:  DeparseSQLOrderBy called
@@ -87,7 +87,6 @@ DEBUG:    DeparseSQLOrderBy: can push down > 1
 DEBUG:    DeparseSQLOrderBy: can push down > 1
 DEBUG:  DeparseSQLOrderBy exit: returning '  ASC (?o)  DESC (?p)  ASC (?s)'
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)
 DEBUG:  DeparseSPARQLFrom called
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
@@ -134,7 +133,6 @@ DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
@@ -201,7 +199,6 @@ DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
@@ -267,9 +264,8 @@ SERVER fuseki OPTIONS (
   sparql_update_pattern '?s ?p ?o .'
 );
 DEBUG:  rdf_fdw_validator called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  rdf_fdw_validator exit
 DEBUG:  rdf_fdw_validator called
 DEBUG:  rdf_fdw_validator exit
@@ -307,25 +303,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
@@ -335,9 +330,8 @@ DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
 DEBUG:  rdfExecForeignInsert called
@@ -353,6 +347,7 @@ DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
 
@@ -393,25 +388,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
@@ -459,9 +453,8 @@ DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
@@ -494,31 +487,8 @@ DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
 
 DEBUG:  DeparseExpr called:  expr->type='17'
 DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
-DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
-DEBUG:  DeparseExpr called:  expr->type='6'
-DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
-DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
-DEBUG:  DeparseExpr exit: returning 'object'
-
-DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => object
-DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
-DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
-DEBUG:  DeparseExpr called:  expr->type='7'
-DEBUG:  DeparseExpr [T_Const] called: expr->type=7
-DEBUG:  DeparseExpr [T_Const]: reached end of block with result='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  DeparseExpr exit: returning '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-
-DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>] right type 7
-DEBUG:  GetRDFColumn called: column='object'
-DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
-DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
-DEBUG:  GetRDFColumn called: column='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>')
-DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
-DEBUG:    DeparseExpr [T_OpExpr]: oper  => '>='
-DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  DeparseExpr exit: returning '?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-
+DEBUG:  DeparseExpr [T_OpExpr]: returning NULL: rdfnode compared with a temporal type
+DEBUG:    DeparseSQLWhereConditions: condition cannot be pushed down.
 DEBUG:  DeparseExpr called:  expr->type='17'
 DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
 DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
@@ -547,7 +517,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-12-31"^^<http
 DEBUG:  DeparseExpr exit: returning '?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 
 DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
- FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
 '
 DEBUG:  DeparseSQLOrderBy called
@@ -577,29 +546,29 @@ DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseSQLOrderBy exit: returning '  ASC (?o)  DESC (?p)  ASC (?s)'
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
 DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
 DEBUG:  CreateSPARQL called
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword called: searching 'REDUCED' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:    CreateSPARQL: SQL DISTINCT with nothing counting rows above the scan > pushing down DISTINCT
 DEBUG:    CreateSPARQL: pushing down ORDER BY clause > 'ORDER BY   ASC (?o)  DESC (?p)  ASC (?s)'
 DEBUG:  CreateSPARQL exit
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
 DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
-DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: added condition to local_exprs
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
 DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
-DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 3 total)
+DEBUG:  rdfGetForeignPlan: 1 conditions to evaluate locally (out of 3 total)
 DEBUG:  SerializePlanData called
 DEBUG:  SerializePlanData: serializing table with 3 columns
 DEBUG:  SerializePlanData: column name 'subject'
@@ -649,10 +618,11 @@ DEBUG:  DeserializePlanData exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3E%3D%20%221780-01-01%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
 DEBUG:  ExecuteSPARQL: http response code = 200
@@ -664,9 +634,9 @@ DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  strdt: data type not an IRI
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  unescape_unicode: Input='1780-10-02'
+DEBUG:  unescape_unicode: Output='1780-10-02'
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
             subject            |               predicate               |                        object                         
@@ -703,25 +673,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
@@ -743,6 +712,7 @@ DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: whole-row reference, marking all 3 columns as required
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
 DEBUG:  SetUsedColumns called: expression='318'
@@ -764,9 +734,8 @@ DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
@@ -830,17 +799,16 @@ DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
 DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
 DEBUG:  CreateSPARQL called
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword called: searching 'REDUCED' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  CreateSPARQL exit
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
@@ -906,6 +874,7 @@ DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELEC
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
 DEBUG:  ExecuteSPARQL: http response code = 200
@@ -924,25 +893,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
@@ -952,9 +920,8 @@ DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
 DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
@@ -978,6 +945,7 @@ DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 
@@ -990,8 +958,6 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:  FlushSPARQLStatements: batch flushed successfully
 DEBUG:  rdfEndForeignModify exit
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
 DELETE FROM ft
@@ -1014,25 +980,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
@@ -1062,9 +1027,8 @@ DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
@@ -1100,17 +1064,16 @@ DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
 DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
 DEBUG:  CreateSPARQL called
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword called: searching 'REDUCED' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  CreateSPARQL exit
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
@@ -1174,6 +1137,7 @@ DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELEC
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
 DEBUG:  ExecuteSPARQL: http response code = 200
@@ -1193,25 +1157,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
@@ -1221,9 +1184,8 @@ DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
 DEBUG:  unescape_unicode: Input='University of Münster'
@@ -1238,6 +1200,7 @@ DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
 
@@ -1250,8 +1213,6 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:  FlushSPARQLStatements: batch flushed successfully
 DEBUG:  rdfEndForeignModify exit
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
 DROP SERVER fuseki CASCADE;
@@ -1282,9 +1243,8 @@ SERVER fuseki OPTIONS (
   sparql_update_pattern '?s ?p ?o .'
 );
 DEBUG:  rdf_fdw_validator called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  rdf_fdw_validator exit
 DEBUG:  rdf_fdw_validator called
 DEBUG:  IsSPARQLVariableValid called: str='?s'
@@ -1345,9 +1305,6 @@ DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
 DEBUG:  lang called: input='"Westfälische Wilhelms-Universität Münster"@de'
-LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
-                                                             ^
-DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
 DEBUG:  lang exit: returning => 'de'
@@ -1446,9 +1403,6 @@ LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
 DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
-DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
-                                                             ^
 DEBUG:  lang exit: returning empty string
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
@@ -1533,25 +1487,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
@@ -1562,9 +1515,8 @@ DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  CheckURL called: 'http://fuseki:3030/dt/update'
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
@@ -1606,54 +1558,21 @@ DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] * Server auth using Basic with user 'admin'
-DEBUG:  [curl] > POST /dt/update HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: */*
-DEBUG:  [curl] > Content-Type: application/sparql-update
-DEBUG:  [curl] > Content-Length: 271
-DEBUG:  [curl] * upload completely sent off: 271 bytes
-DEBUG:  [curl] < HTTP/1.1 204 No Content
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Set-Cookie: JSESSIONID=node01kxg9t6d85hnn1073lbsh6cd8a122.node0; Path=/
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Mon, 22-Jun-2026 07:13:31 GMT; SameSite=lax
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 407
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -1743,25 +1662,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
@@ -1810,9 +1728,8 @@ DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
@@ -1859,66 +1776,8 @@ DEBUG:  DeparseExpr exit: returning '?s = <https://www.uni-muenster.de>'
 
 DEBUG:  DeparseExpr called:  expr->type='17'
 DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
-DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
-DEBUG:  DeparseExpr called:  expr->type='6'
-DEBUG:  DeparseExpr [T_Var]: start (expr->type='6')
-DEBUG:    DeparseExpr [T_Var]: index='2', result='object'
-DEBUG:  DeparseExpr exit: returning 'object'
-
-DEBUG:  DeparseExpr [T_OpExpr]: left operand returned => object
-DEBUG:    DeparseExpr [T_OpExpr]: deparsing left and right expressions
-DEBUG:    DeparseExpr [T_OpExpr]: deparsing operand of right expression, type 7
-DEBUG:  DeparseExpr called:  expr->type='7'
-DEBUG:  DeparseExpr [T_Const] called: expr->type=7
-DEBUG:  DatumToString called: type='1082' 
-DEBUG:  DatumToString exit: returning '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lang called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lex called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lang exit: returning empty string
-DEBUG:  datatype called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
-DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lex called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank called: term='1780-01-01'
-DEBUG:  isBlank exit: returning 'false'
-DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  strdt called: literal='1780-01-01', datatype='<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  ContainsWhitespaces exit: returning 'false'
-DEBUG:  str called: input='1780-01-01'
-DEBUG:  lex called: input='1780-01-01'
-DEBUG:  cstring_to_rdfliteral called: input='1780-01-01'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"'
-DEBUG:  str exit: returning literal '"1780-01-01"'
-DEBUG:  strdt exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  DeparseExpr [T_Const]: reached end of block with result='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  DeparseExpr exit: returning '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-
-DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>] right type 7
-DEBUG:  GetRDFColumn called: column='object'
-DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
-DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
-DEBUG:  GetRDFColumn called: column='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>')
-DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
-DEBUG:  IsStringDataType exit: returning 'true'
-DEBUG:  IsStringDataType called: type='1082'
-DEBUG:  IsStringDataType exit: returning 'true'
-DEBUG:  isBlank called: term='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
-DEBUG:  cstring_to_rdfliteral called: input='"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
-DEBUG:    DeparseExpr [T_OpExpr]: oper  => '>='
-DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  DeparseExpr exit: returning '?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>'
-
+DEBUG:  DeparseExpr [T_OpExpr]: returning NULL: rdfnode compared with a temporal type
+DEBUG:    DeparseSQLWhereConditions: condition cannot be pushed down.
 DEBUG:  DeparseExpr called:  expr->type='17'
 DEBUG:  DeparseExpr [T_OpExpr]: start (expr->type='17')
 DEBUG:  DeparseExpr [T_OpExpr]: deparsing operand of left expression
@@ -1935,7 +1794,6 @@ DEBUG:  DeparseExpr [T_Const] called: expr->type=7
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lex called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
@@ -1982,7 +1840,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-12-31"^^<http
 DEBUG:  DeparseExpr exit: returning '?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 
 DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni-muenster.de>)
- FILTER(?o >= "1780-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER(?o <= "1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
 '
 DEBUG:  DeparseSQLOrderBy called
@@ -2012,29 +1869,29 @@ DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseSQLOrderBy exit: returning '  ASC (?o)  DESC (?p)  ASC (?s)'
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (LIMIT won't be pushed down, as SQL query contains DISTINCT)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
 DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
 DEBUG:  CreateSPARQL called
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword called: searching 'REDUCED' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
+DEBUG:    CreateSPARQL: SQL DISTINCT with nothing counting rows above the scan > pushing down DISTINCT
 DEBUG:    CreateSPARQL: pushing down ORDER BY clause > 'ORDER BY   ASC (?o)  DESC (?p)  ASC (?s)'
 DEBUG:  CreateSPARQL exit
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
 DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
-DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
+DEBUG:  rdfGetForeignPlan: added condition to local_exprs
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
 DEBUG:  rdfGetForeignPlan: skipped condition (was pushed down)
-DEBUG:  rdfGetForeignPlan: 0 conditions to evaluate locally (out of 3 total)
+DEBUG:  rdfGetForeignPlan: 1 conditions to evaluate locally (out of 3 total)
 DEBUG:  SerializePlanData called
 DEBUG:  SerializePlanData: serializing table with 3 columns
 DEBUG:  SerializePlanData: column name 'subject'
@@ -2084,59 +1941,23 @@ DEBUG:  DeserializePlanData exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3E%3D%20%221780-01-01%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] * Server auth using Basic with user 'admin'
-DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: application/sparql-results+xml
-DEBUG:  [curl] > Content-Length: 507
-DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
-DEBUG:  [curl] * upload completely sent off: 507 bytes
-DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 408
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
 DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback exit: returning '549' (realsize)
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 549
@@ -2157,6 +1978,7 @@ DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
@@ -2167,6 +1989,7 @@ DEBUG:  lex called: input='http://dbpedia.org/property/founded'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.org/2001/XMLSchema#date', node_type='literal'
@@ -2194,6 +2017,7 @@ DEBUG:  str exit: returning literal '"1780-10-02"'
 DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > '1780-10-02'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank exit: returning 'false'
@@ -2204,7 +2028,6 @@ DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/20
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
@@ -2232,11 +2055,30 @@ DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchem
 DEBUG:  CreateTuple exit
 DEBUG:  rdfIterateForeignScan: virtual tuple stored (0/1)
 DEBUG:  rdfIterateForeignScan: valid slots = 3
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  parse_rdfnode called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  unescape_unicode: Input='1780-10-02'
+DEBUG:  unescape_unicode: Output='1780-10-02'
+DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lang exit: returning empty string
+DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isNumeric called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isNumeric exit: returning 'false' (not a valid number)
+DEBUG:  parse_rdfnode exit
 DEBUG:  rdfIterateForeignScan called
 DEBUG:    rdfIterateForeignScan: rowcount = 1 | pagesize = 1
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
             subject            |               predicate               |                        object                         
@@ -2288,9 +2130,6 @@ DEBUG:  lex called: input='"University of Münster"@en'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
 DEBUG:  lang called: input='"University of Münster"@en'
-LINE 2: SET object = '"University of Münster"@en'
-                     ^
-DEBUG:  lex called: input='"University of Münster"@en'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
 DEBUG:  lang exit: returning => 'en'
@@ -2367,25 +2206,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
@@ -2408,6 +2246,7 @@ DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns: whole-row reference, marking all 3 columns as required
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
 DEBUG:  SetUsedColumns called: expression='318'
@@ -2429,9 +2268,8 @@ DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
@@ -2523,17 +2361,16 @@ DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
 DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
 DEBUG:  CreateSPARQL called
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword called: searching 'REDUCED' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  CreateSPARQL exit
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
@@ -2599,55 +2436,19 @@ DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELEC
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] * Server auth using Basic with user 'admin'
-DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: application/sparql-results+xml
-DEBUG:  [curl] > Content-Length: 273
-DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
-DEBUG:  [curl] * upload completely sent off: 273 bytes
-DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 409
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
 DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback exit: returning '545' (realsize)
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 545
@@ -2666,25 +2467,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
@@ -2695,9 +2495,8 @@ DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  CheckURL called: 'http://fuseki:3030/dt/update'
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
@@ -2715,6 +2514,7 @@ DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
@@ -2725,6 +2525,7 @@ DEBUG:  lex called: input='http://dbpedia.org/property/name'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='Westfälische Wilhelms-Universität Münster', lang='de', datatye='(null)', node_type='literal'
@@ -2743,6 +2544,7 @@ DEBUG:  str exit: returning literal '"Westfälische Wilhelms-Universität Münst
 DEBUG:  strlang exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > 'Westfälische Wilhelms-Universität Münster'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  isBlank exit: returning 'false'
@@ -2753,7 +2555,6 @@ DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universitä
 DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  lang called: input='"Westfälische Wilhelms-Universität Münster"@de'
-DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  lang exit: returning => 'de'
 DEBUG:  datatype called: input='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
@@ -2820,54 +2621,21 @@ DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Westfälische Wilhelms-Universität Münster"@de };
 INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] * Server auth using Basic with user 'admin'
-DEBUG:  [curl] > POST /dt/update HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: */*
-DEBUG:  [curl] > Content-Type: application/sparql-update
-DEBUG:  [curl] > Content-Length: 242
-DEBUG:  [curl] * upload completely sent off: 242 bytes
-DEBUG:  [curl] < HTTP/1.1 204 No Content
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Set-Cookie: JSESSIONID=node010csbn6on0l9bpy4hiy4yerua123.node0; Path=/
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Mon, 22-Jun-2026 07:13:31 GMT; SameSite=lax
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 410
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -2875,8 +2643,6 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:  FlushSPARQLStatements: batch flushed successfully
 DEBUG:  rdfEndForeignModify exit
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
 DELETE FROM ft
@@ -2906,25 +2672,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
@@ -2955,9 +2720,8 @@ DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  DeparseSQLWhereConditions called
@@ -3007,17 +2771,16 @@ DEBUG:  DeparseSQLWhereConditions exit: returning ' FILTER(?s = <https://www.uni
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
 DEBUG:    rdfGetForeignPlan: SPARQL is parsable, calling CreateSPARQL()
 DEBUG:  CreateSPARQL called
-DEBUG:  LocateKeyword called: searching 'DISTINCT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'DISTINCT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'REDUCED' in start_position 0
+DEBUG:  LocateKeyword called: searching 'REDUCED' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  CreateSPARQL exit
 DEBUG:  rdfGetForeignPlan: examining condition, remote_conds=NOT_NULL
@@ -3081,55 +2844,19 @@ DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELEC
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] * Server auth using Basic with user 'admin'
-DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: application/sparql-results+xml
-DEBUG:  [curl] > Content-Length: 194
-DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
-DEBUG:  [curl] * upload completely sent off: 194 bytes
-DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 411
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
 DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback exit: returning '865' (realsize)
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 865
@@ -3149,25 +2876,24 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
+DEBUG:  LocateKeyword called: searching 'BASE' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
+DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
+DEBUG:  LocateKeyword called: searching 'LIMIT' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'MINUS' in start_position 0
+DEBUG:  LocateKeyword called: searching 'MINUS' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'UNION' in start_position 0
+DEBUG:  LocateKeyword called: searching 'UNION' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'HAVING' in start_position 0
+DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
@@ -3178,9 +2904,8 @@ DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  CheckURL called: 'http://fuseki:3030/dt/update'
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
@@ -3198,6 +2923,7 @@ DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
@@ -3208,6 +2934,7 @@ DEBUG:  lex called: input='http://dbpedia.org/property/name'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/name>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='University of Münster', lang='en', datatye='(null)', node_type='literal'
@@ -3226,6 +2953,7 @@ DEBUG:  str exit: returning literal '"University of Münster"'
 DEBUG:  strlang exit: returning => '"University of Münster"@en'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > 'University of Münster'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"University of Münster"@en'
 DEBUG:  isBlank called: term='"University of Münster"@en'
 DEBUG:  isBlank exit: returning 'false'
@@ -3236,7 +2964,6 @@ DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
 DEBUG:  lex called: input='"University of Münster"@en'
 DEBUG:  lang called: input='"University of Münster"@en'
-DEBUG:  lex called: input='"University of Münster"@en'
 DEBUG:  lang exit: returning => 'en'
 DEBUG:  datatype called: input='"University of Münster"@en'
 DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
@@ -3292,6 +3019,7 @@ DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
@@ -3302,6 +3030,7 @@ DEBUG:  lex called: input='http://dbpedia.org/property/founded'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<http://dbpedia.org/property/founded>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.org/2001/XMLSchema#date', node_type='literal'
@@ -3329,6 +3058,7 @@ DEBUG:  str exit: returning literal '"1780-10-02"'
 DEBUG:  strdt exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  CreateTuple: setting pg column > 'object' (type > '(RDFNODEOID)'), sparqlvar > '?o'
 DEBUG:  CreateTuple: value > '1780-10-02'
+DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank exit: returning 'false'
@@ -3339,7 +3069,6 @@ DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/20
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
@@ -3397,54 +3126,21 @@ DEBUG:  ExecuteSPARQL: using SPARQL UPDATE protocol
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting SPARQL UPDATE body: DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
 DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded> "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date> };
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] * Server auth using Basic with user 'admin'
-DEBUG:  [curl] > POST /dt/update HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: */*
-DEBUG:  [curl] > Content-Type: application/sparql-update
-DEBUG:  [curl] > Content-Length: 249
-DEBUG:  [curl] * upload completely sent off: 249 bytes
-DEBUG:  [curl] < HTTP/1.1 204 No Content
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Set-Cookie: JSESSIONID=node07fgylnavi1ao2klnyir2wyzd124.node0; Path=/
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Expires: Thu, 01 Jan 1970 00:00:00 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Set-Cookie: rememberMe=deleteMe; Path=/; Max-Age=0; Expires=Mon, 22-Jun-2026 07:13:31 GMT; SameSite=lax
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 412
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -3452,8 +3148,6 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:  FlushSPARQLStatements: batch flushed successfully
 DEBUG:  rdfEndForeignModify exit
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
 DROP SERVER fuseki CASCADE;
@@ -3487,9 +3181,8 @@ SERVER fuseki OPTIONS (
   sparql 'SELECT * WHERE {?s ?p ?o} LIMIT 1'
 );
 DEBUG:  rdf_fdw_validator called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  rdf_fdw_validator exit
 DEBUG:  rdf_fdw_validator called
 DEBUG:  IsSPARQLVariableValid called: str='?s'
@@ -3521,21 +3214,8 @@ DEBUG:    LoadRDFTableInfo: (1) adding sparql variable > '?p'
 DEBUG:    LoadRDFTableInfo: (2) adding data type RDFNODEOID
 DEBUG:    LoadRDFTableInfo: (2) adding sparql variable > '?o'
 DEBUG:  IsSPARQLParsable called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword (1): keyword 'SELECT' found in position 0. Recalling LocateKeyword ... 
-DEBUG:    ├─ LocateKeyword called: searching 'SELECT' in start_position 1
-DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword: 'SELECT' search returning postition 0 for start position 0
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
-DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
-DEBUG:  LocateKeyword called: searching 'GROUP BY' in start_position 0
-DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'ORDER BY' in start_position 0
-DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
-DEBUG:  LocateKeyword called: searching 'LIMIT' in start_position 0
-DEBUG:  LocateKeyword exit: returning '25' (keyword_position)
-DEBUG:  IsSPARQLParsable exit: returning 'false'
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  LoadRDFUserMapping called
 DEBUG:  LoadRDFUserMapping: setting UserMapping
@@ -3554,18 +3234,16 @@ DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
 DEBUG:  ExtractSPARQLPrefixes called
-DEBUG:  LocateKeyword called: searching 'SELECT' in start_position 0
-DEBUG:  LocateKeyword: nothing before SELECT. Setting keyword_position to 0.
-DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
+DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
+DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
 DEBUG:  InitSession: skipping WHERE condition parsing for non-parsable query
 DEBUG:  DeparseSQLOrderBy called
 DEBUG:  DeparseSQLOrderBy exit: returning NULL (unable to deparse ORDER BY clause)
 DEBUG:  DeparseSQLLimit called 
-DEBUG:  DeparseSQLLimit exit: returning NULL (constant is NULL)
 DEBUG:  DeparseSPARQLFrom called
-DEBUG:  LocateKeyword called: searching 'FROM' in start_position 0
+DEBUG:  LocateKeyword called: searching 'FROM' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  DeparseSPARQLFrom exit: returning ''
 DEBUG:  InitSession exit
@@ -3624,55 +3302,20 @@ DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=SELECT%2
 DEBUG:    ExecuteSPARQL: connect_timeout > 300
 DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting Authorization: Bearer [REDACTED]
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  [curl] * Host fuseki:3030 was resolved.
-DEBUG:  [curl] * IPv6: (none)
-DEBUG:  [curl] * IPv4: 172.19.42.160
-DEBUG:  [curl] *   Trying 172.19.42.160:3030...
-DEBUG:  [curl] * Connected to fuseki (172.19.42.160) port 3030
-DEBUG:  [curl] * using HTTP/1.x
-DEBUG:  [curl] > POST /dt/sparql HTTP/1.1
-DEBUG:  [curl] > Host: fuseki:3030
-DEBUG:  [curl] > User-Agent: PostgreSQL/18.3 (Debian 18.3-1.pgdg13+1) rdf_fdw/2.7-dev libxml2/2.9.14 libcurl/8.14.1 GnuTLS/3.8.9 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 ngtcp2/1.11.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10
-DEBUG:  [curl] > Accept: application/sparql-results+xml
-DEBUG:  [curl] > Authorization: [REDACTED]
-DEBUG:  [curl] > Content-Length: 65
-DEBUG:  [curl] > Content-Type: application/x-www-form-urlencoded
-DEBUG:  [curl] * upload completely sent off: 65 bytes
-DEBUG:  [curl] < HTTP/1.1 200 OK
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Date: Tue, 23 Jun 2026 07:13:31 GMT
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Accept-Encoding
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Vary: Origin
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Fuseki-Request-Id: 413
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Cache-Control: must-revalidate,no-cache,no-store
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Pragma: no-cache
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Content-Type: application/sparql-results+xml
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < Transfer-Encoding: chunked
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
-DEBUG:  [curl] < 
-DEBUG:  CURLHeaderCallback called
-DEBUG:  CURLHeaderCallback exit
 DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback exit: returning '207' (realsize)
-DEBUG:  [curl] * Connection #0 to host fuseki left intact
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
+DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=207
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 207
@@ -3682,8 +3325,6 @@ DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfIterateForeignScan called
 DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 0
 DEBUG:  rdfEndForeignScan: called 
-DEBUG:  rdfEndForeignScan: freeing xmldoc
-DEBUG:  rdfEndForeignScan: freeing rdf_fdw state
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 
 
  subject | predicate | object 
