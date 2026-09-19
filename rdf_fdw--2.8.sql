@@ -175,6 +175,48 @@ CREATE OPERATOR >= (
     RESTRICT = scalargtsel
 );
 
+
+/* SPARQL 1.1 §17.3 maps +, -, * and / over two numerics onto op:numeric-add
+   and its siblings. The result takes the wider of the two datatypes, except
+   that dividing two xsd:integers gives an xsd:decimal. Without these the type
+   had no arithmetic at all, and PostgreSQL resolved 1::rdfnode + 1::rdfnode
+   through its casts instead, where several candidates tie. */
+CREATE FUNCTION rdfnode_add_rdfnode(rdfnode, rdfnode)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdfnode_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_sub_rdfnode(rdfnode, rdfnode)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdfnode_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_mul_rdfnode(rdfnode, rdfnode)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdfnode_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rdfnode_div_rdfnode(rdfnode, rdfnode)
+RETURNS rdfnode AS 'MODULE_PATHNAME', 'rdfnode_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode, RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_add_rdfnode, COMMUTATOR = '+'
+);
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode, RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_sub_rdfnode
+);
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode, RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_mul_rdfnode, COMMUTATOR = '*'
+);
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode, RIGHTARG = rdfnode,
+    PROCEDURE = rdfnode_div_rdfnode
+);
+
 -- Create comparison function for rdfnode
 CREATE FUNCTION rdfnode_cmp(rdfnode, rdfnode)
 RETURNS integer

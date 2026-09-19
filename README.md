@@ -17,6 +17,7 @@
   - [CREATE SERVER](#create-server)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
     - [RDF Node Handling](#rdf-node-handling)
+      - [Arithmetic](#arithmetic)
       - [Comparing, sorting and grouping](#comparing-sorting-and-grouping)
   - [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
   - [Pushdown](#pushdown)
@@ -508,6 +509,33 @@ SELECT '"2025-05-19T10:45:42Z"^^xsd:dateTime'::rdfnode = '2025-05-19 10:45:42'::
  t
 (1 row)
 ```
+
+#### [Arithmetic](#arithmetic)
+
+`+`, `-`, `*` and `/` combine two numeric `rdfnode`s, following the SPARQL 1.1
+[operator mapping](https://www.w3.org/TR/sparql11-query/#OperatorMapping). The
+result takes the wider of the two datatypes — `xsd:integer` < `xsd:decimal` <
+`xsd:float` < `xsd:double` — except that dividing two `xsd:integer`s gives an
+`xsd:decimal`, since the quotient of two integers need not be one.
+
+```sql
+SELECT '"1"^^xsd:integer'::rdfnode + '"2.5"^^xsd:decimal'::rdfnode;
+                     ?column?                      
+---------------------------------------------------
+ "3.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+SELECT '"1"^^xsd:integer'::rdfnode / '"2"^^xsd:integer'::rdfnode;
+                     ?column?                      
+---------------------------------------------------
+ "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+```
+
+A term that is not a numeric literal has no number to combine, so it raises an
+error rather than producing one. Mixing an `rdfnode` with a PostgreSQL number
+needs a cast on one side; the comparison operators accept both types directly,
+arithmetic does not.
 
 #### [Comparing, sorting and grouping](#comparing-sorting-and-grouping)
 

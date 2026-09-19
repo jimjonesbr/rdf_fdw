@@ -280,6 +280,10 @@ extern Datum rdfnode_storage_ge(PG_FUNCTION_ARGS);
 extern Datum rdfnode_storage_gt(PG_FUNCTION_ARGS);
 
 /* rdfnode (custom data type)*/
+extern Datum rdfnode_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_rdfnode(PG_FUNCTION_ARGS);
 extern Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS);
 extern Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS);
 extern Datum rdfnode_lt_rdfnode(PG_FUNCTION_ARGS);
@@ -549,6 +553,10 @@ PG_FUNCTION_INFO_V1(rdfnode_storage_le);
 PG_FUNCTION_INFO_V1(rdfnode_storage_eq);
 PG_FUNCTION_INFO_V1(rdfnode_storage_ge);
 PG_FUNCTION_INFO_V1(rdfnode_storage_gt);
+PG_FUNCTION_INFO_V1(rdfnode_add_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_sub_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_mul_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_div_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_eq_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_neq_rdfnode);
 PG_FUNCTION_INFO_V1(rdfnode_lt_rdfnode);
@@ -8944,6 +8952,38 @@ Datum rdfnode_neq_rdfnode(PG_FUNCTION_ARGS)
 	text *node2 = PG_GETARG_TEXT_PP(1);
 
 	PG_RETURN_BOOL(!rdfnode_eq((rdfnode *)node1, (rdfnode *)node2));
+}
+
+Datum rdfnode_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(cstring_to_text(rdfnode_arith((rdfnode *)node1, (rdfnode *)node2, '+')));
+}
+
+Datum rdfnode_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(cstring_to_text(rdfnode_arith((rdfnode *)node1, (rdfnode *)node2, '-')));
+}
+
+Datum rdfnode_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(cstring_to_text(rdfnode_arith((rdfnode *)node1, (rdfnode *)node2, '*')));
+}
+
+Datum rdfnode_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node1 = PG_GETARG_TEXT_PP(0);
+	text *node2 = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(cstring_to_text(rdfnode_arith((rdfnode *)node1, (rdfnode *)node2, '/')));
 }
 
 Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS)

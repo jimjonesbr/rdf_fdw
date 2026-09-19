@@ -45,6 +45,8 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
 
 ## Enhancements
 
+* **Arithmetic on `rdfnode`**: `+`, `-`, `*` and `/` now combine two numeric `rdfnode`s, following the SPARQL 1.1 §17.3 operator mapping: the result takes the wider of the two datatypes, and dividing two `xsd:integer`s gives an `xsd:decimal`. The type had no arithmetic operators at all before, so `1::rdfnode + 1::rdfnode` did not fail for want of a definition — PostgreSQL fell back to resolving it through the type's casts, four of which are implicit, and reported that several candidates tied. The same gap left the extension recommending `rdfnode` while only the deprecated native-typed columns could reach the arithmetic the deparser pushes into a SPARQL `FILTER`. A term that is not a numeric literal raises an error rather than producing a number.
+
 * **`request_max_redirect` is now the single option controlling HTTP redirects**: Redirection used to be governed by two options that had to agree with each other — `request_redirect` switched it on, and `request_max_redirect` bounded it — which made it possible to write server definitions whose two halves contradicted each other, and one of those combinations was silently broken (see the bug fix below). `request_max_redirect` now carries both meanings on its own: `0` (the default) refuses any redirect, and any higher value enables redirection and caps it at that many hops. The `-1` (unlimited) value has been dropped, since an unbounded redirect chain has no practical use against a SPARQL endpoint and invites never-ending redirect loops.
 
   ```sql

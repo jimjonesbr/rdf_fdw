@@ -1,0 +1,108 @@
+\pset null NULL
+\set VERBOSITY terse
+/*
+ * Arithmetic on rdfnode.
+ *
+ * SPARQL 1.1 §17.3 maps +, -, * and / over two numerics onto op:numeric-add
+ * and its siblings. They compute in the wider of the two datatypes, the same
+ * XPath promotion the comparison operators use, with one exception the table
+ * calls out: dividing two xsd:integers gives an xsd:decimal, because the
+ * quotient of two integers need not be one.
+ *
+ * The type had no arithmetic operators at all before this, so PostgreSQL tried
+ * to resolve 1::rdfnode + 1::rdfnode through the type's casts, of which four
+ * are implicit, and reported that several candidates tied.
+ */
+SELECT '"1"^^xsd:integer'::rdfnode + '"2"^^xsd:integer'::rdfnode AS int_add,
+       '"7"^^xsd:integer'::rdfnode - '"2"^^xsd:integer'::rdfnode AS int_sub,
+       '"3"^^xsd:integer'::rdfnode * '"4"^^xsd:integer'::rdfnode AS int_mul;
+                     int_add                     |                     int_sub                     |                     int_mul                      
+-------------------------------------------------+-------------------------------------------------+--------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#integer> | "5"^^<http://www.w3.org/2001/XMLSchema#integer> | "12"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* the result takes the wider of the two datatypes */
+SELECT '"1"^^xsd:integer'::rdfnode + '"2.5"^^xsd:decimal'::rdfnode AS integer_and_decimal,
+       '"1"^^xsd:integer'::rdfnode + '"2.5"^^xsd:double'::rdfnode  AS integer_and_double,
+       '"1"^^xsd:float'::rdfnode   + '"2"^^xsd:float'::rdfnode     AS float_and_float;
+                integer_and_decimal                |                integer_and_double                |                float_and_float                
+---------------------------------------------------+--------------------------------------------------+-----------------------------------------------
+ "3.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "3.5"^^<http://www.w3.org/2001/XMLSchema#double> | "3"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+/* and the promotion does not depend on which side each term is written */
+SELECT ('"1"^^xsd:integer'::rdfnode + '"2.5"^^xsd:decimal'::rdfnode)
+     = ('"2.5"^^xsd:decimal'::rdfnode + '"1"^^xsd:integer'::rdfnode) AS symmetric;
+ symmetric 
+-----------
+ t
+(1 row)
+
+/* two integers divide into a decimal, with no trailing zeros to make one
+ * number into two terms */
+SELECT '"1"^^xsd:integer'::rdfnode / '"2"^^xsd:integer'::rdfnode  AS half,
+       '"10"^^xsd:integer'::rdfnode / '"5"^^xsd:integer'::rdfnode AS exact,
+       '"1"^^xsd:integer'::rdfnode / '"3"^^xsd:integer'::rdfnode  AS repeating;
+                       half                        |                      exact                      |                              repeating                               
+---------------------------------------------------+-------------------------------------------------+----------------------------------------------------------------------
+ "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "2"^^<http://www.w3.org/2001/XMLSchema#decimal> | "0.33333333333333333333"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* every numeric datatype, and the subtypes that promote to xsd:integer */
+SELECT '"1"^^xsd:int'::rdfnode   + '"2"^^xsd:short'::rdfnode    AS int_subtypes,
+       '"1"^^xsd:long'::rdfnode  + '"2"^^xsd:byte'::rdfnode     AS long_and_byte,
+       '"1.5"^^xsd:decimal'::rdfnode * '"2"^^xsd:double'::rdfnode AS decimal_and_double;
+                  int_subtypes                   |                  long_and_byte                  |               decimal_and_double               
+-------------------------------------------------+-------------------------------------------------+------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#integer> | "3"^^<http://www.w3.org/2001/XMLSchema#integer> | "3"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* negatives, and an integer wider than any machine integer -- xsd:integer has
+ * no bound, and the arithmetic must not acquire one */
+SELECT '"-5"^^xsd:integer'::rdfnode * '"3"^^xsd:integer'::rdfnode AS negative,
+       '"9223372036854775807"^^xsd:integer'::rdfnode + '"1"^^xsd:integer'::rdfnode AS past_int64;
+                     negative                      |                            past_int64                             
+---------------------------------------------------+-------------------------------------------------------------------
+ "-15"^^<http://www.w3.org/2001/XMLSchema#integer> | "9223372036854775808"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* IEEE values travel through xsd:double as IEEE says they should */
+SELECT '"NaN"^^xsd:double'::rdfnode + '"1"^^xsd:double'::rdfnode   AS nan_stays_nan,
+       '"INF"^^xsd:double'::rdfnode + '"1"^^xsd:double'::rdfnode   AS inf_stays_inf,
+       '"INF"^^xsd:double'::rdfnode - '"INF"^^xsd:double'::rdfnode AS inf_minus_inf;
+                  nan_stays_nan                   |                     inf_stays_inf                     |                  inf_minus_inf                   
+--------------------------------------------------+-------------------------------------------------------+--------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#double> | "Infinity"^^<http://www.w3.org/2001/XMLSchema#double> | "NaN"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* a decimal result carries no trailing zeros, which is the canonical XSD form
+ * and what Fuseki and Virtuoso answer with; one number must not reach storage
+ * as two terms */
+SELECT '"1.10"^^xsd:decimal'::rdfnode + '"2.20"^^xsd:decimal'::rdfnode AS trailing_zeros,
+       '"2.50"^^xsd:decimal'::rdfnode * '"2"^^xsd:integer'::rdfnode     AS exact_result;
+                  trailing_zeros                   |                  exact_result                   
+---------------------------------------------------+-------------------------------------------------
+ "3.3"^^<http://www.w3.org/2001/XMLSchema#decimal> | "5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* an xsd:float keeps the precision its value space has: 16777217 is not one of
+ * its values, so adding 1 to 16777216 changes nothing */
+SELECT '"16777216"^^xsd:float'::rdfnode + '"1"^^xsd:float'::rdfnode
+     = '"16777216"^^xsd:float'::rdfnode AS float_precision_kept;
+ float_precision_kept 
+----------------------
+ t
+(1 row)
+
+/* arithmetic is defined over numerics: anything else is a type error */
+SELECT '"abc"'::rdfnode + '"1"^^xsd:integer'::rdfnode;
+ERROR:  arithmetic is not defined for the term: "abc"
+SELECT '<http://example.org/s>'::rdfnode + '"1"^^xsd:integer'::rdfnode;
+ERROR:  arithmetic is not defined for the term: <http://example.org/s>
+SELECT '"1"^^xsd:integer'::rdfnode + '"2025-01-01"^^xsd:date'::rdfnode;
+ERROR:  arithmetic is not defined for the term: "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+SELECT '"1"^^xsd:integer'::rdfnode / '"0"^^xsd:integer'::rdfnode;
+ERROR:  division by zero
+/* a plain literal is not a numeric literal, whatever it looks like */
+SELECT '"1"'::rdfnode + '"2"'::rdfnode;
+ERROR:  arithmetic is not defined for the term: "1"

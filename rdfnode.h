@@ -49,3 +49,4 @@ extern int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2);
 extern rdfnode_info parse_rdfnode(rdfnode *node);
 
 #endif /* RDFNODE_H */
+extern char *rdfnode_arith(rdfnode *n1, rdfnode *n2, char op);

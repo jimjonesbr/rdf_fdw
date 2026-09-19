@@ -50,6 +50,142 @@ rdfnode_numeric_is_nan(const rdfnode_info *node)
 }
 
 /*
+ * rdfnode_numeric_arith
+ * ---------------------
+ *
+ * Applies a SPARQL arithmetic operator to two numeric terms.
+ *
+ * SPARQL 1.1 §17.3 maps +, -, * and / over two numerics onto op:numeric-add
+ * and its siblings, which compute in the wider of the two datatypes -- the
+ * same XPath promotion the comparison operators use, so that the answer is
+ * decided by the pair rather than by whichever term is written first.
+ *
+ * Division is the exception the table calls out: two xsd:integers give an
+ * xsd:decimal, because the quotient of two integers need not be one.
+ *
+ * left, right: the terms to combine, both numeric
+ * op         : one of '+', '-', '*', '/'
+ *
+ * returns a palloc'd typed literal carrying the result and its datatype
+ */
+static char *
+rdfnode_numeric_arith(const rdfnode_info *left, const rdfnode_info *right, char op)
+{
+	XsdNumericType leftType = get_xsd_numeric_type(left->dtype);
+	XsdNumericType rightType = get_xsd_numeric_type(right->dtype);
+	XsdNumericType commonType = leftType > rightType ? leftType : rightType;
+	char *value;
+
+	if (commonType == XSD_TYPE_DOUBLE || commonType == XSD_TYPE_FLOAT)
+	{
+		float8 l = DatumGetFloat8(DirectFunctionCall1(float8in, CStringGetDatum(left->lex)));
+		float8 r = DatumGetFloat8(DirectFunctionCall1(float8in, CStringGetDatum(right->lex)));
+		float8 result;
+
+		switch (op)
+		{
+			case '+': result = l + r; break;
+			case '-': result = l - r; break;
+			case '*': result = l * r; break;
+			default:
+				if (r == 0.0)
+					ereport(ERROR,
+							(errcode(ERRCODE_DIVISION_BY_ZERO),
+							 errmsg("division by zero")));
+				result = l / r;
+				break;
+		}
+
+		/*
+		 * Back through the type's own output, so an xsd:float keeps the digits
+		 * its value space holds rather than the ones a double would print.
+		 */
+		if (commonType == XSD_TYPE_FLOAT)
+			value = DatumGetCString(DirectFunctionCall1(float4out, Float4GetDatum((float4) result)));
+		else
+			value = DatumGetCString(DirectFunctionCall1(float8out, Float8GetDatum(result)));
+	}
+	else
+	{
+		Datum l = DirectFunctionCall3(numeric_in, CStringGetDatum(left->lex),
+									  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		Datum r = DirectFunctionCall3(numeric_in, CStringGetDatum(right->lex),
+									  ObjectIdGetDatum(InvalidOid), Int32GetDatum(-1));
+		Datum result;
+
+		switch (op)
+		{
+			case '+': result = DirectFunctionCall2(numeric_add, l, r); break;
+			case '-': result = DirectFunctionCall2(numeric_sub, l, r); break;
+			case '*': result = DirectFunctionCall2(numeric_mul, l, r); break;
+			default:
+				result = DirectFunctionCall2(numeric_div, l, r);
+				/* two integers divide into a decimal, per the operator table */
+				commonType = XSD_TYPE_DECIMAL;
+				break;
+		}
+
+		value = DatumGetCString(DirectFunctionCall1(numeric_out, result));
+
+		/*
+		 * numeric_div picks its own scale, so 1 / 2 comes back as
+		 * 0.50000000000000000000. That is the same number as 0.5 but not the
+		 * same term, and the operator class compares terms. XSD's canonical
+		 * decimal keeps no trailing zeros, and it is what Fuseki and GraphDB
+		 * answer with, so the fraction is trimmed back to it.
+		 */
+		if (strchr(value, '.') != NULL)
+		{
+			char *end = value + strlen(value) - 1;
+
+			while (end > value && *end == '0')
+				*end-- = '\0';
+
+			if (end > value && *end == '.')
+				*end = '\0';
+		}
+	}
+
+	return strdt(value, (char *) get_xsd_datatype_uri(commonType));
+}
+
+/*
+ * rdfnode_arith
+ * -------------
+ *
+ * Shared body of the rdfnode arithmetic operators.
+ *
+ * Arithmetic is defined over numerics only. A term that is not a numeric
+ * literal -- an IRI, a blank node, a string, an ill-typed literal -- has no
+ * number to combine, which SPARQL reports as a type error and which is raised
+ * here, as the string functions do for the same reason.
+ *
+ * n1, n2: the terms to combine
+ * op    : one of '+', '-', '*', '/'
+ *
+ * returns the resulting term
+ */
+char *rdfnode_arith(rdfnode *n1, rdfnode *n2, char op)
+{
+	rdfnode_info a = parse_rdfnode(n1);
+	rdfnode_info b = parse_rdfnode(n2);
+
+	if (!a.isNumeric)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("arithmetic is not defined for the term: %s", a.raw),
+				 errdetail("SPARQL defines %c over numeric literals.", op)));
+
+	if (!b.isNumeric)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("arithmetic is not defined for the term: %s", b.raw),
+				 errdetail("SPARQL defines %c over numeric literals.", op)));
+
+	return rdfnode_numeric_arith(&a, &b, op);
+}
+
+/*
  * rdfnode_numeric_cmp_promoted
  * ----------------------------
  *
