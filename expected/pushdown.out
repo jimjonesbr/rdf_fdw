@@ -499,6 +499,100 @@ WHERE
    Remote Filter: ((?p = <http://example.org/measure>) && (?o = 1.5) && (?o != 9.9) && (?o > 1.0) && (?o < 9.9) && (?o >= 1.5) && (?o <= 1.5) && (?o >= 1.0) && (?o <= 2.0) && (1.5 = ?o))
 (6 rows)
 
+/* SPARQL 17.3 - Operator Mapping (arithmetic between rdfnode and a
+   PostgreSQL number). An integer constant reaches the endpoint as an
+   xsd:integer and a numeric one as an xsd:decimal, which is what the operator
+   here computes with, so the FILTER and the operator agree. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE
+  o + 1 > '"10"^^xsd:integer'::rdfnode AND
+  o * 2 < '"99"^^xsd:integer'::rdfnode AND
+  2 * o < '"99"^^xsd:integer'::rdfnode AND
+  o + 1.5 > '"10"^^xsd:decimal'::rdfnode;
+                                                                                                                                      QUERY PLAN                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: (((?o + 1) > "10"^^<http://www.w3.org/2001/XMLSchema#integer>) && ((?o * 2) < "99"^^<http://www.w3.org/2001/XMLSchema#integer>) && ((2 * ?o) < "99"^^<http://www.w3.org/2001/XMLSchema#integer>) && ((?o + 1.5) > "10"^^<http://www.w3.org/2001/XMLSchema#decimal>))
+(6 rows)
+
+/* an arithmetic operand is parenthesised, whichever side the number is on */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE (o + 1) * 2 > '"10"^^xsd:integer'::rdfnode;
+                                       QUERY PLAN                                       
+----------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((((?o + 1) * 2) > "10"^^<http://www.w3.org/2001/XMLSchema#integer>))
+(6 rows)
+
+/* a float constant is not pushed down: SPARQL reads 2.5 as an xsd:decimal, and
+   the endpoint would then compute in a different datatype than the operator */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o * 2.5::double precision > '"10"^^xsd:double'::rdfnode;
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: ((rdfnode_ft.o * '2.5'::double precision) > '"10"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o + 2.5::real > '"10"^^xsd:float'::rdfnode;
+                                              QUERY PLAN                                              
+------------------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: ((rdfnode_ft.o + '2.5'::real) > '"10"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+/* SPARQL has no FILTER form for - and /, so both stay local */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o - 1 > '"10"^^xsd:integer'::rdfnode;
+                                          QUERY PLAN                                          
+----------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: ((rdfnode_ft.o - 1) > '"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o / 2 > '"10"^^xsd:integer'::rdfnode;
+                                          QUERY PLAN                                          
+----------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: ((rdfnode_ft.o / 2) > '"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
 /* SPARQL 17.3 - Operator Mapping (timestamp op rdfnode) */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT p, o FROM rdfnode_ft

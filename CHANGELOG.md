@@ -35,6 +35,11 @@ assigning its result straight into a `text` column now needs an explicit
 * `ROUND()`, `ABS()`, `REPLACE()`, `GROUP_CONCAT()`, `SUBSTR()` and `float4`
   output all produce corrected values, and `LIKE` translates to a regular
   expression that matches what SQL matched.
+* Arithmetic between an `rdfnode` and a PostgreSQL number answers an
+  `rdfnode` and computes in RDF datatypes. It used to resolve through the
+  type's implicit casts, so `'"0.1"^^xsd:decimal'::rdfnode * 3.0` answered
+  `0.30000000447034836` as a `double precision`; it now answers
+  `"0.3"^^xsd:decimal`.
 
 **Some queries get slower**, because conditions that were sent to the endpoint
 are now evaluated in PostgreSQL — where sending them returned the wrong rows.
@@ -46,6 +51,10 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
 ## Enhancements
 
 * **Arithmetic on `rdfnode`**: `+`, `-`, `*` and `/` now combine two numeric `rdfnode`s, following the SPARQL 1.1 §17.3 operator mapping: the result takes the wider of the two datatypes, and dividing two `xsd:integer`s gives an `xsd:decimal`. The type had no arithmetic operators at all before, so `1::rdfnode + 1::rdfnode` did not fail for want of a definition — PostgreSQL fell back to resolving it through the type's casts, four of which are implicit, and reported that several candidates tied. The same gap left the extension recommending `rdfnode` while only the deprecated native-typed columns could reach the arithmetic the deparser pushes into a SPARQL `FILTER`. A term that is not a numeric literal raises an error rather than producing a number.
+
+  The same four operators also combine an `rdfnode` with a PostgreSQL `smallint`, `int`, `bigint`, `real`, `double precision` or `numeric`, written on either side — the coverage the comparison operators already had. The PostgreSQL operand stands for the term its cast to `rdfnode` produces, so an `int` is an `xsd:int`, a `numeric` an `xsd:decimal` and a `double precision` an `xsd:double`, and the promotion and the result's datatype follow from the pair exactly as they do between two terms. Without these, PostgreSQL resolved such an expression through the type's implicit casts, which either tied — `'"1"^^xsd:integer'::rdfnode + 1` reported that the operator was not unique — or settled on the implicit `rdfnode` → `real` cast and did IEEE arithmetic, leaving RDF without saying so: `'"0.1"^^xsd:decimal'::rdfnode * 3.0` answered `0.30000000447034836` as a `double precision` where `xsd:decimal` arithmetic is exact and SPARQL answers `"0.3"^^xsd:decimal`. Such an expression could not be pushed down either, since the cast stood between the column and the operator.
+
+  Arithmetic that mixes an `rdfnode` with a `real` or a `double precision` is evaluated in PostgreSQL rather than sent to the endpoint. SPARQL's bare numeric literals are `xsd:integer` and `xsd:decimal` — a double needs the exponent form, `2.5e0` — so the constant would arrive as an `xsd:decimal` and the endpoint would compute in a different datatype than the operator does. Integer and `numeric` operands are unaffected and still push down. Comparisons are unaffected as well: XPath promotes the decimal to the double before comparing, so the literal's datatype cannot change the answer there.
 
 * **`request_max_redirect` is now the single option controlling HTTP redirects**: Redirection used to be governed by two options that had to agree with each other — `request_redirect` switched it on, and `request_max_redirect` bounded it — which made it possible to write server definitions whose two halves contradicted each other, and one of those combinations was silently broken (see the bug fix below). `request_max_redirect` now carries both meanings on its own: `0` (the default) refuses any redirect, and any higher value enables redirection and caps it at that many hops. The `-1` (unlimited) value has been dropped, since an unbounded redirect chain has no practical use against a SPARQL endpoint and invites never-ending redirect loops.
 

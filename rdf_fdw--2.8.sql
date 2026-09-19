@@ -217,6 +217,592 @@ CREATE OPERATOR / (
     PROCEDURE = rdfnode_div_rdfnode
 );
 
+/*
+ * Arithmetic between an rdfnode and a PostgreSQL number.
+ *
+ * Without these, PostgreSQL resolves such an expression through the type's
+ * implicit casts: it either finds several candidates and reports that the
+ * operator is not unique, or it settles on one and leaves RDF altogether,
+ * so that "0.1"^^xsd:decimal * 3.0 answers 0.30000000447034836 as a float
+ * rather than "0.3"^^xsd:decimal as a term. The operators below give each
+ * combination an exact match, which resolution prefers over any cast, and
+ * the answer is then the one SPARQL 1.1 17.3 defines.
+ *
+ * The PostgreSQL operand stands for the term its cast to rdfnode produces,
+ * so an int is an xsd:int, a numeric an xsd:decimal, and a double precision
+ * an xsd:double; the result's datatype follows from the promotion of the
+ * pair, exactly as it does between two rdfnodes.
+ */
+
+/* rdfnode OP numeric */
+CREATE FUNCTION rdfnode_add_numeric(rdfnode, numeric)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_add_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode,
+    RIGHTARG = numeric,
+    PROCEDURE = rdfnode_add_numeric,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION rdfnode_sub_numeric(rdfnode, numeric)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_sub_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode,
+    RIGHTARG = numeric,
+    PROCEDURE = rdfnode_sub_numeric
+);
+
+CREATE FUNCTION rdfnode_mul_numeric(rdfnode, numeric)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_mul_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode,
+    RIGHTARG = numeric,
+    PROCEDURE = rdfnode_mul_numeric,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION rdfnode_div_numeric(rdfnode, numeric)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_div_numeric'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode,
+    RIGHTARG = numeric,
+    PROCEDURE = rdfnode_div_numeric
+);
+
+/* numeric OP rdfnode */
+CREATE FUNCTION numeric_add_rdfnode(numeric, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'numeric_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = numeric,
+    RIGHTARG = rdfnode,
+    PROCEDURE = numeric_add_rdfnode,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION numeric_sub_rdfnode(numeric, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'numeric_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = numeric,
+    RIGHTARG = rdfnode,
+    PROCEDURE = numeric_sub_rdfnode
+);
+
+CREATE FUNCTION numeric_mul_rdfnode(numeric, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'numeric_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = numeric,
+    RIGHTARG = rdfnode,
+    PROCEDURE = numeric_mul_rdfnode,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION numeric_div_rdfnode(numeric, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'numeric_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = numeric,
+    RIGHTARG = rdfnode,
+    PROCEDURE = numeric_div_rdfnode
+);
+
+
+/* rdfnode OP float8 */
+CREATE FUNCTION rdfnode_add_float8(rdfnode, float8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_add_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode,
+    RIGHTARG = float8,
+    PROCEDURE = rdfnode_add_float8,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION rdfnode_sub_float8(rdfnode, float8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_sub_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode,
+    RIGHTARG = float8,
+    PROCEDURE = rdfnode_sub_float8
+);
+
+CREATE FUNCTION rdfnode_mul_float8(rdfnode, float8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_mul_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode,
+    RIGHTARG = float8,
+    PROCEDURE = rdfnode_mul_float8,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION rdfnode_div_float8(rdfnode, float8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_div_float8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode,
+    RIGHTARG = float8,
+    PROCEDURE = rdfnode_div_float8
+);
+
+/* float8 OP rdfnode */
+CREATE FUNCTION float8_add_rdfnode(float8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float8_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = float8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float8_add_rdfnode,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION float8_sub_rdfnode(float8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float8_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = float8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float8_sub_rdfnode
+);
+
+CREATE FUNCTION float8_mul_rdfnode(float8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float8_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = float8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float8_mul_rdfnode,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION float8_div_rdfnode(float8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float8_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = float8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float8_div_rdfnode
+);
+
+
+/* rdfnode OP float4 */
+CREATE FUNCTION rdfnode_add_float4(rdfnode, float4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_add_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode,
+    RIGHTARG = float4,
+    PROCEDURE = rdfnode_add_float4,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION rdfnode_sub_float4(rdfnode, float4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_sub_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode,
+    RIGHTARG = float4,
+    PROCEDURE = rdfnode_sub_float4
+);
+
+CREATE FUNCTION rdfnode_mul_float4(rdfnode, float4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_mul_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode,
+    RIGHTARG = float4,
+    PROCEDURE = rdfnode_mul_float4,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION rdfnode_div_float4(rdfnode, float4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_div_float4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode,
+    RIGHTARG = float4,
+    PROCEDURE = rdfnode_div_float4
+);
+
+/* float4 OP rdfnode */
+CREATE FUNCTION float4_add_rdfnode(float4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float4_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = float4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float4_add_rdfnode,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION float4_sub_rdfnode(float4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float4_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = float4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float4_sub_rdfnode
+);
+
+CREATE FUNCTION float4_mul_rdfnode(float4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float4_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = float4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float4_mul_rdfnode,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION float4_div_rdfnode(float4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'float4_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = float4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = float4_div_rdfnode
+);
+
+
+/* rdfnode OP int8 */
+CREATE FUNCTION rdfnode_add_int8(rdfnode, int8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_add_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode,
+    RIGHTARG = int8,
+    PROCEDURE = rdfnode_add_int8,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION rdfnode_sub_int8(rdfnode, int8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_sub_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode,
+    RIGHTARG = int8,
+    PROCEDURE = rdfnode_sub_int8
+);
+
+CREATE FUNCTION rdfnode_mul_int8(rdfnode, int8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_mul_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode,
+    RIGHTARG = int8,
+    PROCEDURE = rdfnode_mul_int8,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION rdfnode_div_int8(rdfnode, int8)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_div_int8'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode,
+    RIGHTARG = int8,
+    PROCEDURE = rdfnode_div_int8
+);
+
+/* int8 OP rdfnode */
+CREATE FUNCTION int8_add_rdfnode(int8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int8_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = int8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int8_add_rdfnode,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION int8_sub_rdfnode(int8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int8_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = int8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int8_sub_rdfnode
+);
+
+CREATE FUNCTION int8_mul_rdfnode(int8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int8_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = int8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int8_mul_rdfnode,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION int8_div_rdfnode(int8, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int8_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = int8,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int8_div_rdfnode
+);
+
+
+/* rdfnode OP int4 */
+CREATE FUNCTION rdfnode_add_int4(rdfnode, int4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_add_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode,
+    RIGHTARG = int4,
+    PROCEDURE = rdfnode_add_int4,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION rdfnode_sub_int4(rdfnode, int4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_sub_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode,
+    RIGHTARG = int4,
+    PROCEDURE = rdfnode_sub_int4
+);
+
+CREATE FUNCTION rdfnode_mul_int4(rdfnode, int4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_mul_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode,
+    RIGHTARG = int4,
+    PROCEDURE = rdfnode_mul_int4,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION rdfnode_div_int4(rdfnode, int4)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_div_int4'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode,
+    RIGHTARG = int4,
+    PROCEDURE = rdfnode_div_int4
+);
+
+/* int4 OP rdfnode */
+CREATE FUNCTION int4_add_rdfnode(int4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int4_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = int4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int4_add_rdfnode,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION int4_sub_rdfnode(int4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int4_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = int4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int4_sub_rdfnode
+);
+
+CREATE FUNCTION int4_mul_rdfnode(int4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int4_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = int4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int4_mul_rdfnode,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION int4_div_rdfnode(int4, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int4_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = int4,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int4_div_rdfnode
+);
+
+
+/* rdfnode OP int2 */
+CREATE FUNCTION rdfnode_add_int2(rdfnode, int2)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_add_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = rdfnode,
+    RIGHTARG = int2,
+    PROCEDURE = rdfnode_add_int2,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION rdfnode_sub_int2(rdfnode, int2)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_sub_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = rdfnode,
+    RIGHTARG = int2,
+    PROCEDURE = rdfnode_sub_int2
+);
+
+CREATE FUNCTION rdfnode_mul_int2(rdfnode, int2)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_mul_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = rdfnode,
+    RIGHTARG = int2,
+    PROCEDURE = rdfnode_mul_int2,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION rdfnode_div_int2(rdfnode, int2)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'rdfnode_div_int2'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = rdfnode,
+    RIGHTARG = int2,
+    PROCEDURE = rdfnode_div_int2
+);
+
+/* int2 OP rdfnode */
+CREATE FUNCTION int2_add_rdfnode(int2, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int2_add_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+    LEFTARG = int2,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int2_add_rdfnode,
+    COMMUTATOR = '+'
+);
+
+CREATE FUNCTION int2_sub_rdfnode(int2, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int2_sub_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+    LEFTARG = int2,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int2_sub_rdfnode
+);
+
+CREATE FUNCTION int2_mul_rdfnode(int2, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int2_mul_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+    LEFTARG = int2,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int2_mul_rdfnode,
+    COMMUTATOR = '*'
+);
+
+CREATE FUNCTION int2_div_rdfnode(int2, rdfnode)
+RETURNS rdfnode
+AS 'MODULE_PATHNAME', 'int2_div_rdfnode'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+    LEFTARG = int2,
+    RIGHTARG = rdfnode,
+    PROCEDURE = int2_div_rdfnode
+);
+
 -- Create comparison function for rdfnode
 CREATE FUNCTION rdfnode_cmp(rdfnode, rdfnode)
 RETURNS integer

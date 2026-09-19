@@ -306,6 +306,14 @@ extern Datum numeric_lt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum numeric_gt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum numeric_le_rdfnode(PG_FUNCTION_ARGS);
 extern Datum numeric_ge_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_add_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_numeric(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_numeric(PG_FUNCTION_ARGS);
+extern Datum numeric_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum numeric_div_rdfnode(PG_FUNCTION_ARGS);
 
 /* float8 (double precision) data type */
 extern Datum rdfnode_eq_float8(PG_FUNCTION_ARGS);
@@ -322,6 +330,14 @@ extern Datum float8_gt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum float8_le_rdfnode(PG_FUNCTION_ARGS);
 extern Datum float8_ge_rdfnode(PG_FUNCTION_ARGS);
 extern Datum float8_to_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_add_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_float8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_float8(PG_FUNCTION_ARGS);
+extern Datum float8_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float8_div_rdfnode(PG_FUNCTION_ARGS);
 
 /* float4 (real) data type */
 extern Datum rdfnode_to_float4(PG_FUNCTION_ARGS);
@@ -338,6 +354,14 @@ extern Datum float4_lt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum float4_gt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum float4_le_rdfnode(PG_FUNCTION_ARGS);
 extern Datum float4_ge_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_add_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_float4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_float4(PG_FUNCTION_ARGS);
+extern Datum float4_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum float4_div_rdfnode(PG_FUNCTION_ARGS);
 
 /* int8 (bigint) data type*/
 extern Datum rdfnode_to_int8(PG_FUNCTION_ARGS);
@@ -354,6 +378,14 @@ extern Datum int8_lt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int8_gt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int8_le_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int8_ge_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_add_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_int8(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_int8(PG_FUNCTION_ARGS);
+extern Datum int8_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int8_div_rdfnode(PG_FUNCTION_ARGS);
 
 /* int4 (int) data type */
 extern Datum rdfnode_to_int4(PG_FUNCTION_ARGS);
@@ -370,6 +402,14 @@ extern Datum int4_lt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int4_gt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int4_le_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int4_ge_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_add_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_int4(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_int4(PG_FUNCTION_ARGS);
+extern Datum int4_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int4_div_rdfnode(PG_FUNCTION_ARGS);
 
 /* int2 (smallint) data type */
 extern Datum rdfnode_to_int2(PG_FUNCTION_ARGS);
@@ -386,6 +426,14 @@ extern Datum int2_lt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int2_gt_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int2_le_rdfnode(PG_FUNCTION_ARGS);
 extern Datum int2_ge_rdfnode(PG_FUNCTION_ARGS);
+extern Datum rdfnode_add_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_sub_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_mul_int2(PG_FUNCTION_ARGS);
+extern Datum rdfnode_div_int2(PG_FUNCTION_ARGS);
+extern Datum int2_add_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_sub_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_mul_rdfnode(PG_FUNCTION_ARGS);
+extern Datum int2_div_rdfnode(PG_FUNCTION_ARGS);
 
 /* timestamptz (timestamp with time zone) */
 extern Datum rdfnode_to_timestamptz(PG_FUNCTION_ARGS);
@@ -579,6 +627,14 @@ PG_FUNCTION_INFO_V1(numeric_lt_rdfnode);
 PG_FUNCTION_INFO_V1(numeric_gt_rdfnode);
 PG_FUNCTION_INFO_V1(numeric_le_rdfnode);
 PG_FUNCTION_INFO_V1(numeric_ge_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_add_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_sub_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_mul_numeric);
+PG_FUNCTION_INFO_V1(rdfnode_div_numeric);
+PG_FUNCTION_INFO_V1(numeric_add_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_sub_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_mul_rdfnode);
+PG_FUNCTION_INFO_V1(numeric_div_rdfnode);
 
 /* float8 (double precision) data type */
 PG_FUNCTION_INFO_V1(rdfnode_neq_float8);
@@ -595,6 +651,14 @@ PG_FUNCTION_INFO_V1(float8_gt_rdfnode);
 PG_FUNCTION_INFO_V1(float8_le_rdfnode);
 PG_FUNCTION_INFO_V1(float8_ge_rdfnode);
 PG_FUNCTION_INFO_V1(float8_to_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_add_float8);
+PG_FUNCTION_INFO_V1(rdfnode_sub_float8);
+PG_FUNCTION_INFO_V1(rdfnode_mul_float8);
+PG_FUNCTION_INFO_V1(rdfnode_div_float8);
+PG_FUNCTION_INFO_V1(float8_add_rdfnode);
+PG_FUNCTION_INFO_V1(float8_sub_rdfnode);
+PG_FUNCTION_INFO_V1(float8_mul_rdfnode);
+PG_FUNCTION_INFO_V1(float8_div_rdfnode);
 
 /* float4 (real) data type */
 PG_FUNCTION_INFO_V1(rdfnode_to_float4);
@@ -611,6 +675,14 @@ PG_FUNCTION_INFO_V1(float4_lt_rdfnode);
 PG_FUNCTION_INFO_V1(float4_gt_rdfnode);
 PG_FUNCTION_INFO_V1(float4_le_rdfnode);
 PG_FUNCTION_INFO_V1(float4_ge_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_add_float4);
+PG_FUNCTION_INFO_V1(rdfnode_sub_float4);
+PG_FUNCTION_INFO_V1(rdfnode_mul_float4);
+PG_FUNCTION_INFO_V1(rdfnode_div_float4);
+PG_FUNCTION_INFO_V1(float4_add_rdfnode);
+PG_FUNCTION_INFO_V1(float4_sub_rdfnode);
+PG_FUNCTION_INFO_V1(float4_mul_rdfnode);
+PG_FUNCTION_INFO_V1(float4_div_rdfnode);
 
 /* int8 (bigint) data type */
 PG_FUNCTION_INFO_V1(rdfnode_to_int8);
@@ -627,6 +699,14 @@ PG_FUNCTION_INFO_V1(int8_lt_rdfnode);
 PG_FUNCTION_INFO_V1(int8_gt_rdfnode);
 PG_FUNCTION_INFO_V1(int8_le_rdfnode);
 PG_FUNCTION_INFO_V1(int8_ge_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_add_int8);
+PG_FUNCTION_INFO_V1(rdfnode_sub_int8);
+PG_FUNCTION_INFO_V1(rdfnode_mul_int8);
+PG_FUNCTION_INFO_V1(rdfnode_div_int8);
+PG_FUNCTION_INFO_V1(int8_add_rdfnode);
+PG_FUNCTION_INFO_V1(int8_sub_rdfnode);
+PG_FUNCTION_INFO_V1(int8_mul_rdfnode);
+PG_FUNCTION_INFO_V1(int8_div_rdfnode);
 
 /* int4 (int) data type */
 PG_FUNCTION_INFO_V1(rdfnode_to_int4);
@@ -643,6 +723,14 @@ PG_FUNCTION_INFO_V1(int4_lt_rdfnode);
 PG_FUNCTION_INFO_V1(int4_gt_rdfnode);
 PG_FUNCTION_INFO_V1(int4_le_rdfnode);
 PG_FUNCTION_INFO_V1(int4_ge_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_add_int4);
+PG_FUNCTION_INFO_V1(rdfnode_sub_int4);
+PG_FUNCTION_INFO_V1(rdfnode_mul_int4);
+PG_FUNCTION_INFO_V1(rdfnode_div_int4);
+PG_FUNCTION_INFO_V1(int4_add_rdfnode);
+PG_FUNCTION_INFO_V1(int4_sub_rdfnode);
+PG_FUNCTION_INFO_V1(int4_mul_rdfnode);
+PG_FUNCTION_INFO_V1(int4_div_rdfnode);
 
 /* int2 (smallint) data type */
 PG_FUNCTION_INFO_V1(rdfnode_to_int2);
@@ -659,6 +747,14 @@ PG_FUNCTION_INFO_V1(int2_lt_rdfnode);
 PG_FUNCTION_INFO_V1(int2_gt_rdfnode);
 PG_FUNCTION_INFO_V1(int2_le_rdfnode);
 PG_FUNCTION_INFO_V1(int2_ge_rdfnode);
+PG_FUNCTION_INFO_V1(rdfnode_add_int2);
+PG_FUNCTION_INFO_V1(rdfnode_sub_int2);
+PG_FUNCTION_INFO_V1(rdfnode_mul_int2);
+PG_FUNCTION_INFO_V1(rdfnode_div_int2);
+PG_FUNCTION_INFO_V1(int2_add_rdfnode);
+PG_FUNCTION_INFO_V1(int2_sub_rdfnode);
+PG_FUNCTION_INFO_V1(int2_mul_rdfnode);
+PG_FUNCTION_INFO_V1(int2_div_rdfnode);
 
 /* timestamptz (timestamp with time zone) */
 PG_FUNCTION_INFO_V1(timestamptz_to_rdfnode);
@@ -7120,6 +7216,32 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return NULL;
 		}
 
+		/*
+		 * Arithmetic between an rdfnode and a PostgreSQL float is evaluated
+		 * locally.
+		 *
+		 * SPARQL's bare numeric literals are xsd:integer and xsd:decimal, and
+		 * a double needs the exponent form -- 2.5 is a decimal, 2.5e0 a
+		 * double. A float constant is deparsed by its own output function, so
+		 * it reaches the endpoint as 2.5, and arithmetic computes in the wider
+		 * of the two datatypes: against an xsd:integer term the endpoint then
+		 * works in xsd:decimal where the operator here worked in xsd:double.
+		 * Fuseki, GraphDB and Virtuoso all answer 0.3 for 3 * 0.1 and
+		 * 0.30000000000000004 for 3 * 0.1e0, so a FILTER built from such an
+		 * expression selects a different set of rows than the operator does.
+		 *
+		 * Comparisons are unaffected: XPath promotes the decimal to the
+		 * double before comparing, so the literal's datatype cannot change
+		 * the answer there.
+		 */
+		if ((strcmp(opername, "+") == 0 || strcmp(opername, "*") == 0) &&
+			((leftargtype == RDFNODEOID && (rightargtype == FLOAT4OID || rightargtype == FLOAT8OID)) ||
+			 (rightargtype == RDFNODEOID && (leftargtype == FLOAT4OID || leftargtype == FLOAT8OID))))
+		{
+			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: rdfnode arithmetic with a float", __func__);
+			return NULL;
+		}
+
 		/* the operators that we can translate */
 		if (strcmp(opername, "=") == 0 ||
 			(strcmp(opername, ">") == 0 && rightargtype != TEXTOID && rightargtype != BPCHAROID && rightargtype != NAMEOID && rightargtype != CHAROID) ||
@@ -9007,6 +9129,382 @@ Datum rdfnode_div_rdfnode(PG_FUNCTION_ARGS)
 	text *node2 = PG_GETARG_TEXT_PP(1);
 
 	PG_RETURN_TEXT_P(cstring_to_text(rdfnode_arith((rdfnode *)node1, (rdfnode *)node2, '/')));
+}
+
+/*
+ * rdfnode_arith_pg
+ * ----------------
+ *
+ * Shared body of the arithmetic operators that take an rdfnode on one side and
+ * a PostgreSQL number on the other.
+ *
+ * The PostgreSQL operand is first turned into the term it stands for, by the
+ * very function that implements its cast to rdfnode -- an int4 arrives as an
+ * xsd:int, a numeric as an xsd:decimal, a float8 as an xsd:double -- and the
+ * pair is then combined by rdfnode_arith(). Neither the XPath promotion nor the
+ * datatype of the result is decided here: both follow from the two terms, so
+ * these operators cannot drift from the (rdfnode, rdfnode) ones.
+ *
+ * node      : the rdfnode operand
+ * value     : the PostgreSQL operand, as its own type's Datum
+ * to_rdfnode: the function implementing that type's cast to rdfnode
+ * op        : one of '+', '-', '*', '/'
+ * node_first: true when the rdfnode was written on the left
+ *
+ * returns the resulting term
+ */
+static text *
+rdfnode_arith_pg(text *node, Datum value, PGFunction to_rdfnode, char op, bool node_first)
+{
+	text *term = DatumGetTextP(DirectFunctionCall1(to_rdfnode, value));
+
+	/* subtraction and division are not commutative, so the operands go to
+	 * rdfnode_arith() in the order they were written */
+	return cstring_to_text(node_first
+						   ? rdfnode_arith((rdfnode *) node, (rdfnode *) term, op)
+						   : rdfnode_arith((rdfnode *) term, (rdfnode *) node, op));
+}
+
+/* numeric */
+Datum rdfnode_add_numeric(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), numeric_to_rdfnode, '+', true));
+}
+
+Datum rdfnode_sub_numeric(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), numeric_to_rdfnode, '-', true));
+}
+
+Datum rdfnode_mul_numeric(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), numeric_to_rdfnode, '*', true));
+}
+
+Datum rdfnode_div_numeric(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), numeric_to_rdfnode, '/', true));
+}
+
+Datum numeric_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), numeric_to_rdfnode, '+', false));
+}
+
+Datum numeric_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), numeric_to_rdfnode, '-', false));
+}
+
+Datum numeric_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), numeric_to_rdfnode, '*', false));
+}
+
+Datum numeric_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), numeric_to_rdfnode, '/', false));
+}
+
+/* float8 (double precision) */
+Datum rdfnode_add_float8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float8_to_rdfnode, '+', true));
+}
+
+Datum rdfnode_sub_float8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float8_to_rdfnode, '-', true));
+}
+
+Datum rdfnode_mul_float8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float8_to_rdfnode, '*', true));
+}
+
+Datum rdfnode_div_float8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float8_to_rdfnode, '/', true));
+}
+
+Datum float8_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float8_to_rdfnode, '+', false));
+}
+
+Datum float8_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float8_to_rdfnode, '-', false));
+}
+
+Datum float8_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float8_to_rdfnode, '*', false));
+}
+
+Datum float8_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float8_to_rdfnode, '/', false));
+}
+
+/* float4 (real) */
+Datum rdfnode_add_float4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float4_to_rdfnode, '+', true));
+}
+
+Datum rdfnode_sub_float4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float4_to_rdfnode, '-', true));
+}
+
+Datum rdfnode_mul_float4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float4_to_rdfnode, '*', true));
+}
+
+Datum rdfnode_div_float4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), float4_to_rdfnode, '/', true));
+}
+
+Datum float4_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float4_to_rdfnode, '+', false));
+}
+
+Datum float4_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float4_to_rdfnode, '-', false));
+}
+
+Datum float4_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float4_to_rdfnode, '*', false));
+}
+
+Datum float4_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), float4_to_rdfnode, '/', false));
+}
+
+/* int8 (bigint) */
+Datum rdfnode_add_int8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int8_to_rdfnode, '+', true));
+}
+
+Datum rdfnode_sub_int8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int8_to_rdfnode, '-', true));
+}
+
+Datum rdfnode_mul_int8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int8_to_rdfnode, '*', true));
+}
+
+Datum rdfnode_div_int8(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int8_to_rdfnode, '/', true));
+}
+
+Datum int8_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int8_to_rdfnode, '+', false));
+}
+
+Datum int8_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int8_to_rdfnode, '-', false));
+}
+
+Datum int8_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int8_to_rdfnode, '*', false));
+}
+
+Datum int8_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int8_to_rdfnode, '/', false));
+}
+
+/* int4 (int) */
+Datum rdfnode_add_int4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int4_to_rdfnode, '+', true));
+}
+
+Datum rdfnode_sub_int4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int4_to_rdfnode, '-', true));
+}
+
+Datum rdfnode_mul_int4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int4_to_rdfnode, '*', true));
+}
+
+Datum rdfnode_div_int4(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int4_to_rdfnode, '/', true));
+}
+
+Datum int4_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int4_to_rdfnode, '+', false));
+}
+
+Datum int4_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int4_to_rdfnode, '-', false));
+}
+
+Datum int4_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int4_to_rdfnode, '*', false));
+}
+
+Datum int4_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int4_to_rdfnode, '/', false));
+}
+
+/* int2 (smallint) */
+Datum rdfnode_add_int2(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int2_to_rdfnode, '+', true));
+}
+
+Datum rdfnode_sub_int2(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int2_to_rdfnode, '-', true));
+}
+
+Datum rdfnode_mul_int2(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int2_to_rdfnode, '*', true));
+}
+
+Datum rdfnode_div_int2(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(0);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(1), int2_to_rdfnode, '/', true));
+}
+
+Datum int2_add_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int2_to_rdfnode, '+', false));
+}
+
+Datum int2_sub_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int2_to_rdfnode, '-', false));
+}
+
+Datum int2_mul_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int2_to_rdfnode, '*', false));
+}
+
+Datum int2_div_rdfnode(PG_FUNCTION_ARGS)
+{
+	text *node = PG_GETARG_TEXT_PP(1);
+
+	PG_RETURN_TEXT_P(rdfnode_arith_pg(node, PG_GETARG_DATUM(0), int2_to_rdfnode, '/', false));
 }
 
 Datum rdfnode_eq_rdfnode(PG_FUNCTION_ARGS)

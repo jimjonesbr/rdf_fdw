@@ -66,3 +66,70 @@ SELECT '"1"^^xsd:integer'::rdfnode / '"0"^^xsd:integer'::rdfnode;
 
 /* a plain literal is not a numeric literal, whatever it looks like */
 SELECT '"1"'::rdfnode + '"2"'::rdfnode;
+
+/*
+ * The same four operators with a PostgreSQL number on one side.
+ *
+ * The PostgreSQL operand stands for the term its cast to rdfnode produces --
+ * an int for an xsd:int, a numeric for an xsd:decimal, a double precision for
+ * an xsd:double -- so the promotion and the datatype of the result are decided
+ * exactly as they are between two terms.
+ *
+ * Without these operators PostgreSQL resolved such an expression through the
+ * type's implicit casts, which either tied, so that rdfnode + integer reported
+ * the operator was not unique, or settled on one and left RDF for float
+ * arithmetic.
+ */
+SELECT '"1"^^xsd:integer'::rdfnode + 1           AS with_int,
+       '"1"^^xsd:integer'::rdfnode + 1::smallint AS with_smallint,
+       '"1"^^xsd:integer'::rdfnode + 1::bigint   AS with_bigint;
+
+/* the PostgreSQL type decides the datatype it brings to the promotion */
+SELECT '"1"^^xsd:integer'::rdfnode + 2.5         AS with_numeric,
+       '"1"^^xsd:integer'::rdfnode + 2.5::float4 AS with_real,
+       '"1"^^xsd:integer'::rdfnode + 2.5::float8 AS with_double;
+
+/* the number may be written on either side */
+SELECT 1 + '"2"^^xsd:integer'::rdfnode   AS pg_left_add,
+       2.5 * '"2"^^xsd:integer'::rdfnode AS pg_left_mul;
+
+/* subtraction and division are not commutative, and take the operands in the
+ * order they were written */
+SELECT 10 - '"3"^^xsd:integer'::rdfnode AS pg_minus_term,
+       '"3"^^xsd:integer'::rdfnode - 10 AS term_minus_pg,
+       10 / '"4"^^xsd:integer'::rdfnode AS pg_over_term,
+       '"4"^^xsd:integer'::rdfnode / 10 AS term_over_pg;
+
+/* + and * name their commutators, so the two spellings are one expression */
+SELECT (2 + '"3"^^xsd:integer'::rdfnode) = ('"3"^^xsd:integer'::rdfnode + 2) AS add_commutes,
+       (2 * '"3"^^xsd:integer'::rdfnode) = ('"3"^^xsd:integer'::rdfnode * 2) AS mul_commutes;
+
+/* an xsd:decimal keeps the exact arithmetic its value space has. Resolved
+ * through the implicit rdfnode -> real cast, as this was before, the same
+ * expression answered 0.30000000447034836 as a double precision */
+SELECT '"0.1"^^xsd:decimal'::rdfnode * 3.0             AS exact_decimal,
+       pg_typeof('"0.1"^^xsd:decimal'::rdfnode * 3.0)  AS result_type;
+
+/* two integers still divide into a decimal when one of them is a PostgreSQL
+ * integer */
+SELECT '"1"^^xsd:integer'::rdfnode / 2 AS half,
+       1 / '"2"^^xsd:integer'::rdfnode AS half_other_way;
+
+/* xsd:integer has no bound, and a bigint operand must not give it one */
+SELECT '"9223372036854775807"^^xsd:integer'::rdfnode + 9223372036854775807::bigint AS past_int64;
+
+/* the term still has to be a numeric literal */
+SELECT '"abc"'::rdfnode + 1;
+SELECT '<http://example.org/s>'::rdfnode * 2.5;
+SELECT 1 - '"2025-01-01"^^xsd:date'::rdfnode;
+SELECT '"1"^^xsd:integer'::rdfnode / 0;
+SELECT 1 / '"0"^^xsd:decimal'::rdfnode;
+
+/* the whole matrix: four operators over six PostgreSQL numeric types, with the
+ * term on either side, plus the rdfnode/rdfnode form */
+SELECT oprname, count(*)
+FROM pg_operator
+WHERE oprname IN ('+', '-', '*', '/')
+  AND 'rdfnode'::regtype IN (oprleft, oprright)
+GROUP BY oprname
+ORDER BY oprname;

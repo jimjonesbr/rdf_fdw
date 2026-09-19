@@ -269,6 +269,46 @@ WHERE
   o BETWEEN 1.0::numeric AND 2.0::numeric AND
   1.5::numeric = o;
 
+/* SPARQL 17.3 - Operator Mapping (arithmetic between rdfnode and a
+   PostgreSQL number). An integer constant reaches the endpoint as an
+   xsd:integer and a numeric one as an xsd:decimal, which is what the operator
+   here computes with, so the FILTER and the operator agree. */
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE
+  o + 1 > '"10"^^xsd:integer'::rdfnode AND
+  o * 2 < '"99"^^xsd:integer'::rdfnode AND
+  2 * o < '"99"^^xsd:integer'::rdfnode AND
+  o + 1.5 > '"10"^^xsd:decimal'::rdfnode;
+
+/* an arithmetic operand is parenthesised, whichever side the number is on */
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE (o + 1) * 2 > '"10"^^xsd:integer'::rdfnode;
+
+/* a float constant is not pushed down: SPARQL reads 2.5 as an xsd:decimal, and
+   the endpoint would then compute in a different datatype than the operator */
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o * 2.5::double precision > '"10"^^xsd:double'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o + 2.5::real > '"10"^^xsd:float'::rdfnode;
+
+/* SPARQL has no FILTER form for - and /, so both stay local */
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o - 1 > '"10"^^xsd:integer'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE o / 2 > '"10"^^xsd:integer'::rdfnode;
+
 /* SPARQL 17.3 - Operator Mapping (timestamp op rdfnode) */
 
 EXPLAIN (VERBOSE, COSTS OFF)

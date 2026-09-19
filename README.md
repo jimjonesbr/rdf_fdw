@@ -533,9 +533,35 @@ SELECT '"1"^^xsd:integer'::rdfnode / '"2"^^xsd:integer'::rdfnode;
 ```
 
 A term that is not a numeric literal has no number to combine, so it raises an
-error rather than producing one. Mixing an `rdfnode` with a PostgreSQL number
-needs a cast on one side; the comparison operators accept both types directly,
-arithmetic does not.
+error rather than producing one.
+
+The same operators take a PostgreSQL `smallint`, `int`, `bigint`, `real`,
+`double precision` or `numeric` on either side, as the comparison operators do.
+The PostgreSQL operand stands for the term its cast to `rdfnode` produces — an
+`int` for an `xsd:int`, a `numeric` for an `xsd:decimal`, a `double precision`
+for an `xsd:double` — so the promotion and the datatype of the result are
+decided exactly as they are between two terms, and the answer stays an
+`rdfnode`.
+
+```sql
+SELECT '"1"^^xsd:integer'::rdfnode + 1;
+                     ?column?                    
+-------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+SELECT '"0.1"^^xsd:decimal'::rdfnode * 3.0;
+                     ?column?                      
+---------------------------------------------------
+ "0.3"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+```
+
+Arithmetic mixing an `rdfnode` with a `real` or a `double precision` is
+evaluated in PostgreSQL rather than pushed into a `FILTER`: SPARQL's bare
+numeric literals are `xsd:integer` and `xsd:decimal`, so the constant would
+reach the endpoint as an `xsd:decimal` and be computed with in a datatype the
+operator did not use. Integer and `numeric` operands push down as usual.
 
 #### [Comparing, sorting and grouping](#comparing-sorting-and-grouping)
 

@@ -106,3 +106,113 @@ ERROR:  division by zero
 /* a plain literal is not a numeric literal, whatever it looks like */
 SELECT '"1"'::rdfnode + '"2"'::rdfnode;
 ERROR:  arithmetic is not defined for the term: "1"
+/*
+ * The same four operators with a PostgreSQL number on one side.
+ *
+ * The PostgreSQL operand stands for the term its cast to rdfnode produces --
+ * an int for an xsd:int, a numeric for an xsd:decimal, a double precision for
+ * an xsd:double -- so the promotion and the datatype of the result are decided
+ * exactly as they are between two terms.
+ *
+ * Without these operators PostgreSQL resolved such an expression through the
+ * type's implicit casts, which either tied, so that rdfnode + integer reported
+ * the operator was not unique, or settled on one and left RDF for float
+ * arithmetic.
+ */
+SELECT '"1"^^xsd:integer'::rdfnode + 1           AS with_int,
+       '"1"^^xsd:integer'::rdfnode + 1::smallint AS with_smallint,
+       '"1"^^xsd:integer'::rdfnode + 1::bigint   AS with_bigint;
+                    with_int                     |                  with_smallint                  |                   with_bigint                   
+-------------------------------------------------+-------------------------------------------------+-------------------------------------------------
+ "2"^^<http://www.w3.org/2001/XMLSchema#integer> | "2"^^<http://www.w3.org/2001/XMLSchema#integer> | "2"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* the PostgreSQL type decides the datatype it brings to the promotion */
+SELECT '"1"^^xsd:integer'::rdfnode + 2.5         AS with_numeric,
+       '"1"^^xsd:integer'::rdfnode + 2.5::float4 AS with_real,
+       '"1"^^xsd:integer'::rdfnode + 2.5::float8 AS with_double;
+                   with_numeric                    |                    with_real                    |                   with_double                    
+---------------------------------------------------+-------------------------------------------------+--------------------------------------------------
+ "3.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "3.5"^^<http://www.w3.org/2001/XMLSchema#float> | "3.5"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* the number may be written on either side */
+SELECT 1 + '"2"^^xsd:integer'::rdfnode   AS pg_left_add,
+       2.5 * '"2"^^xsd:integer'::rdfnode AS pg_left_mul;
+                   pg_left_add                   |                   pg_left_mul                   
+-------------------------------------------------+-------------------------------------------------
+ "3"^^<http://www.w3.org/2001/XMLSchema#integer> | "5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* subtraction and division are not commutative, and take the operands in the
+ * order they were written */
+SELECT 10 - '"3"^^xsd:integer'::rdfnode AS pg_minus_term,
+       '"3"^^xsd:integer'::rdfnode - 10 AS term_minus_pg,
+       10 / '"4"^^xsd:integer'::rdfnode AS pg_over_term,
+       '"4"^^xsd:integer'::rdfnode / 10 AS term_over_pg;
+                  pg_minus_term                  |                  term_minus_pg                   |                   pg_over_term                    |                   term_over_pg                    
+-------------------------------------------------+--------------------------------------------------+---------------------------------------------------+---------------------------------------------------
+ "7"^^<http://www.w3.org/2001/XMLSchema#integer> | "-7"^^<http://www.w3.org/2001/XMLSchema#integer> | "2.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "0.4"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* + and * name their commutators, so the two spellings are one expression */
+SELECT (2 + '"3"^^xsd:integer'::rdfnode) = ('"3"^^xsd:integer'::rdfnode + 2) AS add_commutes,
+       (2 * '"3"^^xsd:integer'::rdfnode) = ('"3"^^xsd:integer'::rdfnode * 2) AS mul_commutes;
+ add_commutes | mul_commutes 
+--------------+--------------
+ t            | t
+(1 row)
+
+/* an xsd:decimal keeps the exact arithmetic its value space has. Resolved
+ * through the implicit rdfnode -> real cast, as this was before, the same
+ * expression answered 0.30000000447034836 as a double precision */
+SELECT '"0.1"^^xsd:decimal'::rdfnode * 3.0             AS exact_decimal,
+       pg_typeof('"0.1"^^xsd:decimal'::rdfnode * 3.0)  AS result_type;
+                   exact_decimal                   | result_type 
+---------------------------------------------------+-------------
+ "0.3"^^<http://www.w3.org/2001/XMLSchema#decimal> | rdfnode
+(1 row)
+
+/* two integers still divide into a decimal when one of them is a PostgreSQL
+ * integer */
+SELECT '"1"^^xsd:integer'::rdfnode / 2 AS half,
+       1 / '"2"^^xsd:integer'::rdfnode AS half_other_way;
+                       half                        |                  half_other_way                   
+---------------------------------------------------+---------------------------------------------------
+ "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal>
+(1 row)
+
+/* xsd:integer has no bound, and a bigint operand must not give it one */
+SELECT '"9223372036854775807"^^xsd:integer'::rdfnode + 9223372036854775807::bigint AS past_int64;
+                             past_int64                             
+--------------------------------------------------------------------
+ "18446744073709551614"^^<http://www.w3.org/2001/XMLSchema#integer>
+(1 row)
+
+/* the term still has to be a numeric literal */
+SELECT '"abc"'::rdfnode + 1;
+ERROR:  arithmetic is not defined for the term: "abc"
+SELECT '<http://example.org/s>'::rdfnode * 2.5;
+ERROR:  arithmetic is not defined for the term: <http://example.org/s>
+SELECT 1 - '"2025-01-01"^^xsd:date'::rdfnode;
+ERROR:  arithmetic is not defined for the term: "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date>
+SELECT '"1"^^xsd:integer'::rdfnode / 0;
+ERROR:  division by zero
+SELECT 1 / '"0"^^xsd:decimal'::rdfnode;
+ERROR:  division by zero
+/* the whole matrix: four operators over six PostgreSQL numeric types, with the
+ * term on either side, plus the rdfnode/rdfnode form */
+SELECT oprname, count(*)
+FROM pg_operator
+WHERE oprname IN ('+', '-', '*', '/')
+  AND 'rdfnode'::regtype IN (oprleft, oprright)
+GROUP BY oprname
+ORDER BY oprname;
+ oprname | count 
+---------+-------
+ *       |    13
+ +       |    13
+ -       |    13
+ /       |    13
+(4 rows)
+
