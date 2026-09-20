@@ -258,17 +258,9 @@ ERROR:  cannot cast non-numeric RDF literal to numeric
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::numeric;
 ERROR:  cannot cast non-numeric RDF literal to numeric
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float4;
-  float4  
-----------
- Infinity
-(1 row)
-
+ERROR:  cannot cast non-numeric RDF literal to real
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float4;
-  float4   
------------
- -Infinity
-(1 row)
-
+ERROR:  cannot cast non-numeric RDF literal to real
 SELECT '"INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float8;
 ERROR:  cannot cast non-numeric RDF literal to double precision
 SELECT '"-INF"^^<http://www.w3.org/2001/XMLSchema#decimal>'::rdfnode::float8;
@@ -419,5 +411,18 @@ SELECT '"-P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnod
                      interval                      
 ---------------------------------------------------
  @ 1 year 2 mons 25 days 5 hours 6 mins 7 secs ago
+(1 row)
+
+/* the three numeric casts reject a non-numeric term with the same message */
+SELECT '"abc"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode::real;
+ERROR:  cannot cast non-numeric RDF literal to real
+SELECT '"abc"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode::float8;
+ERROR:  cannot cast non-numeric RDF literal to double precision
+SELECT '"abc"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode::numeric;
+ERROR:  cannot cast non-numeric RDF literal to numeric
+SELECT '"3.5"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode::real;
+ float4 
+--------
+    3.5
 (1 row)
 

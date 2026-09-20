@@ -82,3 +82,8 @@ SELECT '"2025-01-01T18:30:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdf
 SELECT '"2025-01-01T18:30:25Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode::timestamp with time zone;
 SELECT '"P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode::interval;
 SELECT '"-P1Y2M25DT5H6M7S"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode::interval;
+/* the three numeric casts reject a non-numeric term with the same message */
+SELECT '"abc"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode::real;
+SELECT '"abc"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode::float8;
+SELECT '"abc"^^<http://www.w3.org/2001/XMLSchema#string>'::rdfnode::numeric;
+SELECT '"3.5"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode::real;

@@ -9984,6 +9984,11 @@ Datum rdfnode_to_float4(PG_FUNCTION_ARGS)
 	text *t = PG_GETARG_TEXT_PP(0);
 	rdfnode_info p = parse_rdfnode((rdfnode *)t);
 
+	if (!p.isNumeric)
+		ereport(ERROR,
+				(errcode(ERRCODE_CANNOT_COERCE),
+				 errmsg("cannot cast non-numeric RDF literal to real")));
+
 	PG_RETURN_DATUM(DirectFunctionCall1(float4in, CStringGetDatum(p.lex)));
 }
 
