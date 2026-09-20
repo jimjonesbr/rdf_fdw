@@ -1595,16 +1595,15 @@ FROM (VALUES ('<http://e.org/a>.<http://e.org/b>'),
              ('<http://e.org/|>'),
              ('_:b1 x'),
              ('_:.b1'),
-             ('_:b1.')) v(t)
-ORDER BY input;
+             ('_:b1.')) v(t);
                input               |               stored                | is_iri | is_blank 
 -----------------------------------+-------------------------------------+--------+----------
- _:.b1                             | "_:.b1"                             | f      | f
- _:b1.                             | "_:b1."                             | f      | f
- _:b1 x                            | "_:b1 x"                            | f      | f
- <http://e.org/|>                  | "<http://e.org/|>"                  | f      | f
  <http://e.org/a>.<http://e.org/b> | "<http://e.org/a>.<http://e.org/b>" | f      | f
  <http://e.org/{x}>                | "<http://e.org/{x}>"                | f      | f
+ <http://e.org/|>                  | "<http://e.org/|>"                  | f      | f
+ _:b1 x                            | "_:b1 x"                            | f      | f
+ _:.b1                             | "_:.b1"                             | f      | f
+ _:b1.                             | "_:b1."                             | f      | f
 (6 rows)
 
 /* well-formed IRIs and blank nodes are unaffected */

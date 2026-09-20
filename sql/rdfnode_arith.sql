@@ -47,6 +47,12 @@ SELECT '"NaN"^^xsd:double'::rdfnode + '"1"^^xsd:double'::rdfnode   AS nan_stays_
        '"INF"^^xsd:double'::rdfnode + '"1"^^xsd:double'::rdfnode   AS inf_stays_inf,
        '"INF"^^xsd:double'::rdfnode - '"INF"^^xsd:double'::rdfnode AS inf_minus_inf;
 
+/* an overflow to infinity uses the XSD lexical form "INF"/"-INF", not
+ * PostgreSQL's "Infinity", on both xsd:double and xsd:float */
+SELECT '"1e308"^^xsd:double'::rdfnode * '"10"^^xsd:double'::rdfnode   AS double_overflow,
+       '"-1e308"^^xsd:double'::rdfnode * '"10"^^xsd:double'::rdfnode  AS double_neg_overflow,
+       '"1e38"^^xsd:float'::rdfnode * '"10"^^xsd:float'::rdfnode      AS float_overflow;
+
 /* a decimal result carries no trailing zeros, which is the canonical XSD form
  * and what Fuseki and Virtuoso answer with; one number must not reach storage
  * as two terms */

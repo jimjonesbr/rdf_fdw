@@ -366,8 +366,7 @@ FROM (VALUES ('<http://e.org/a>.<http://e.org/b>'),
              ('<http://e.org/|>'),
              ('_:b1 x'),
              ('_:.b1'),
-             ('_:b1.')) v(t)
-ORDER BY input;
+             ('_:b1.')) v(t);
 
 /* well-formed IRIs and blank nodes are unaffected */
 SELECT '<http://e.org/ok>'::rdfnode::text  AS good_iri,

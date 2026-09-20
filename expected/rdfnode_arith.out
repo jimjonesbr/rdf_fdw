@@ -70,9 +70,19 @@ SELECT '"-5"^^xsd:integer'::rdfnode * '"3"^^xsd:integer'::rdfnode AS negative,
 SELECT '"NaN"^^xsd:double'::rdfnode + '"1"^^xsd:double'::rdfnode   AS nan_stays_nan,
        '"INF"^^xsd:double'::rdfnode + '"1"^^xsd:double'::rdfnode   AS inf_stays_inf,
        '"INF"^^xsd:double'::rdfnode - '"INF"^^xsd:double'::rdfnode AS inf_minus_inf;
-                  nan_stays_nan                   |                     inf_stays_inf                     |                  inf_minus_inf                   
---------------------------------------------------+-------------------------------------------------------+--------------------------------------------------
- "NaN"^^<http://www.w3.org/2001/XMLSchema#double> | "Infinity"^^<http://www.w3.org/2001/XMLSchema#double> | "NaN"^^<http://www.w3.org/2001/XMLSchema#double>
+                  nan_stays_nan                   |                  inf_stays_inf                   |                  inf_minus_inf                   
+--------------------------------------------------+--------------------------------------------------+--------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#double> | "INF"^^<http://www.w3.org/2001/XMLSchema#double> | "NaN"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+/* an overflow to infinity uses the XSD lexical form "INF"/"-INF", not
+ * PostgreSQL's "Infinity", on both xsd:double and xsd:float */
+SELECT '"1e308"^^xsd:double'::rdfnode * '"10"^^xsd:double'::rdfnode   AS double_overflow,
+       '"-1e308"^^xsd:double'::rdfnode * '"10"^^xsd:double'::rdfnode  AS double_neg_overflow,
+       '"1e38"^^xsd:float'::rdfnode * '"10"^^xsd:float'::rdfnode      AS float_overflow;
+                 double_overflow                  |                double_neg_overflow                |                 float_overflow                  
+--------------------------------------------------+---------------------------------------------------+-------------------------------------------------
+ "INF"^^<http://www.w3.org/2001/XMLSchema#double> | "-INF"^^<http://www.w3.org/2001/XMLSchema#double> | "INF"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 /* a decimal result carries no trailing zeros, which is the canonical XSD form

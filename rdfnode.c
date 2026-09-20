@@ -104,6 +104,18 @@ rdfnode_numeric_arith(const rdfnode_info *left, const rdfnode_info *right, char 
 			value = DatumGetCString(DirectFunctionCall1(float4out, Float4GetDatum((float4) result)));
 		else
 			value = DatumGetCString(DirectFunctionCall1(float8out, Float8GetDatum(result)));
+
+		/*
+		 * PostgreSQL's float output spells the infinities "Infinity" and
+		 * "-Infinity", which are not in the xsd:double / xsd:float lexical
+		 * space: XSD 1.1 Part 2 3.3.5 fixes them as "INF" and "-INF". The cast
+		 * from a PostgreSQL float (float8_to_rdfnode) already normalises to
+		 * these, and arithmetic must agree. "NaN" already coincides.
+		 */
+		if (strcmp(value, "Infinity") == 0)
+			value = "INF";
+		else if (strcmp(value, "-Infinity") == 0)
+			value = "-INF";
 	}
 	else
 	{
