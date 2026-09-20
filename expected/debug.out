@@ -1283,7 +1283,7 @@ LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
 DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
 DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
@@ -1331,7 +1331,7 @@ LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
 DEBUG:  isBlank called: term='Westfälische Wilhelms-Universität Münster'
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 2: ...nster.de>', '<http://dbpedia.org/property/name>', '"Westfäli...
                                                              ^
 DEBUG:  lex called: input='de'
@@ -1379,7 +1379,7 @@ LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
 DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
@@ -1421,7 +1421,7 @@ LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
@@ -1442,7 +1442,7 @@ LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
 DEBUG:  isBlank called: term='1780-10-02'
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 3: ...er.de>', '<http://dbpedia.org/property/founded>', '"1780-10-...
                                                              ^
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
@@ -1525,30 +1525,30 @@ DEBUG:  rdfExecForeignInsert called
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
 DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignInsert: added row to batch (1/50)
 DEBUG:  rdfExecForeignInsert exit
 DEBUG:  rdfExecForeignInsert called
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/founded>'
 DEBUG:  isBlank called: term='<http://dbpedia.org/property/founded>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignInsert: added row to batch (2/50)
 DEBUG:  rdfExecForeignInsert exit
 DEBUG:  rdfEndForeignModify called
@@ -1591,7 +1591,7 @@ LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
 DEBUG:  isBlank called: term='https://www.uni-muenster.de'
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
 DEBUG:  cstring_to_rdfliteral called: input='https://www.uni-muenster.de'
@@ -1617,13 +1617,13 @@ LINE 3:   subject = sparql.iri('https://www.uni-muenster.de') AND
                                ^
 DEBUG:  iri called: input='"https://www.uni-muenster.de"'
 DEBUG:  isBlank called: term='"https://www.uni-muenster.de"'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='"https://www.uni-muenster.de"'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  rdf_fdw_iri called
 DEBUG:  isLiteral called: term='1780-12-31'
 DEBUG:  isBlank called: term='1780-12-31'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  cstring_to_rdfliteral called: input='1780-12-31'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"'
 DEBUG:  isLiteral exit: returning 'true' (simple literal - no ^^ or @)
@@ -1635,7 +1635,7 @@ DEBUG:  isLiteral called: term='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  rdf_fdw_strdt called
 DEBUG:  isBlank called: term='"1780-12-31"'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='"1780-12-31"', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -1800,13 +1800,13 @@ DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"^^<http://www.w3.org/20
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lex called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='1780-12-31'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-12-31', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -1831,7 +1831,7 @@ DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
 DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  isBlank called: term='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  cstring_to_rdfliteral called: input='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
@@ -1973,7 +1973,7 @@ DEBUG:  CreateTuple called
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
 DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
@@ -1984,7 +1984,7 @@ DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/founded'
 DEBUG:  isBlank called: term='http://dbpedia.org/property/founded'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://dbpedia.org/property/founded'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
@@ -1996,7 +1996,7 @@ DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.o
 DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
 DEBUG:  isBlank called: term='"1780-10-02"'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  strdt called: literal='"1780-10-02"', datatype='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  ContainsWhitespaces called: str='http://www.w3.org/2001/XMLSchema#date'
@@ -2006,7 +2006,7 @@ DEBUG:  ExpandDatatypePrefix called: str='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  ExpandDatatypePrefix exit: returning 'http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  str called: input='"1780-10-02"'
@@ -2020,7 +2020,7 @@ DEBUG:  CreateTuple: value > '1780-10-02'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isLiteral exit: returning 'true' (valid datatype)
@@ -2034,14 +2034,14 @@ DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/20
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
 DEBUG:  isBlank called: term='1780-10-02'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -2064,17 +2064,26 @@ DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/20
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lang exit: returning empty string
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  isNumeric called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  lex called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isNumeric exit: returning 'false' (not a valid number)
+DEBUG:  datatype called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
+DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
+DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
+DEBUG:  isNumeric exit: returning 'false'
 DEBUG:  parse_rdfnode exit
 DEBUG:  rdfIterateForeignScan called
 DEBUG:    rdfIterateForeignScan: rowcount = 1 | pagesize = 1
@@ -2108,7 +2117,7 @@ LINE 2: SET object = '"University of Münster"@en'
 DEBUG:  isBlank called: term='"University of Münster"@en'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 2: SET object = '"University of Münster"@en'
                      ^
 DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
@@ -2156,7 +2165,7 @@ LINE 2: SET object = '"University of Münster"@en'
 DEBUG:  isBlank called: term='University of Münster'
 LINE 2: SET object = '"University of Münster"@en'
                      ^
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 LINE 2: SET object = '"University of Münster"@en'
                      ^
 DEBUG:  lex called: input='en'
@@ -2509,7 +2518,7 @@ DEBUG:  CreateTuple called
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
 DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
@@ -2520,7 +2529,7 @@ DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/name'
 DEBUG:  isBlank called: term='http://dbpedia.org/property/name'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://dbpedia.org/property/name'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
@@ -2532,7 +2541,7 @@ DEBUG:  CreateTuple: value='Westfälische Wilhelms-Universität Münster', lang=
 DEBUG:  cstring_to_rdfliteral called: input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"'
 DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='de'
 DEBUG:  lex called: input='"Westfälische Wilhelms-Universität Münster"'
 DEBUG:  strlang called: literal='"Westfälische Wilhelms-Universität Münster"', language='de'
@@ -2547,7 +2556,7 @@ DEBUG:  CreateTuple: value > 'Westfälische Wilhelms-Universität Münster'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  cstring_to_rdfliteral called: input='"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  isLiteral exit: returning 'true' (literal has a language tag)
@@ -2563,7 +2572,7 @@ DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
 DEBUG:  isBlank called: term='Westfälische Wilhelms-Universität Münster'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='de'
 DEBUG:  lex called: input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  strlang called: literal='Westfälische Wilhelms-Universität Münster', language='de'
@@ -2581,34 +2590,34 @@ DEBUG:  rdfExecForeignUpdate [0] DELETE: column loaded: subject, sparql_var: ?s
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignUpdate: DELETE: column 'subject' OLD value: <https://www.uni-muenster.de>
 DEBUG:  rdfExecForeignUpdate [1] DELETE: column loaded: predicate, sparql_var: ?p
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
 DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignUpdate: DELETE: column 'predicate' OLD value: <http://dbpedia.org/property/name>
 DEBUG:  rdfExecForeignUpdate [2] DELETE: column loaded: object, sparql_var: ?o
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"Westfälische Wilhelms-Universität Münster"@de'
 DEBUG:  isBlank called: term='"Westfälische Wilhelms-Universität Münster"@de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignUpdate: DELETE: column 'object' OLD value: "Westfälische Wilhelms-Universität Münster"@de
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignUpdate: INSERT: column 'subject' NEW value: <https://www.uni-muenster.de>
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
 DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignUpdate: INSERT: column 'predicate' NEW value: <http://dbpedia.org/property/name>
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"University of Münster"@en'
 DEBUG:  isBlank called: term='"University of Münster"@en'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignUpdate: INSERT: column 'object' NEW value: "University of Münster"@en
 DEBUG:  rdfExecForeignUpdate: added row to batch (1/50)
 DEBUG:  rdfExecForeignUpdate exit
@@ -2918,7 +2927,7 @@ DEBUG:  CreateTuple called
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
 DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
@@ -2929,7 +2938,7 @@ DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/name'
 DEBUG:  isBlank called: term='http://dbpedia.org/property/name'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://dbpedia.org/property/name'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
@@ -2941,7 +2950,7 @@ DEBUG:  CreateTuple: value='University of Münster', lang='en', datatye='(null)'
 DEBUG:  cstring_to_rdfliteral called: input='University of Münster'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"'
 DEBUG:  isBlank called: term='"University of Münster"'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='en'
 DEBUG:  lex called: input='"University of Münster"'
 DEBUG:  strlang called: literal='"University of Münster"', language='en'
@@ -2956,7 +2965,7 @@ DEBUG:  CreateTuple: value > 'University of Münster'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"University of Münster"@en'
 DEBUG:  isBlank called: term='"University of Münster"@en'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  cstring_to_rdfliteral called: input='"University of Münster"@en'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"University of Münster"@en'
 DEBUG:  isLiteral exit: returning 'true' (literal has a language tag)
@@ -2972,7 +2981,7 @@ DEBUG:  datatype exit: returning empty string (simple/language-tagged literal)
 DEBUG:  unescape_unicode: Input='University of Münster'
 DEBUG:  unescape_unicode: Output='University of Münster'
 DEBUG:  isBlank called: term='University of Münster'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='en'
 DEBUG:  lex called: input='University of Münster'
 DEBUG:  strlang called: literal='University of Münster', language='en'
@@ -2990,19 +2999,19 @@ DEBUG:  rdfExecForeignDelete [0] column loaded: subject, sparql_var: ?s, attnum:
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignDelete: column 'subject' value: <https://www.uni-muenster.de>
 DEBUG:  rdfExecForeignDelete [1] column loaded: predicate, sparql_var: ?p, attnum: 2
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
 DEBUG:  isBlank called: term='<http://dbpedia.org/property/name>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignDelete: column 'predicate' value: <http://dbpedia.org/property/name>
 DEBUG:  rdfExecForeignDelete [2] column loaded: object, sparql_var: ?o, attnum: 3
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"University of Münster"@en'
 DEBUG:  isBlank called: term='"University of Münster"@en'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignDelete: column 'object' value: "University of Münster"@en
 DEBUG:  rdfExecForeignDelete: added row to batch (1/50)
 DEBUG:  rdfExecForeignDelete exit
@@ -3014,7 +3023,7 @@ DEBUG:  CreateTuple called
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='https://www.uni-muenster.de'
 DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='https://www.uni-muenster.de'
 DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
@@ -3025,7 +3034,7 @@ DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
 DEBUG:  iri called: input='http://dbpedia.org/property/founded'
 DEBUG:  isBlank called: term='http://dbpedia.org/property/founded'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://dbpedia.org/property/founded'
 DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
@@ -3037,7 +3046,7 @@ DEBUG:  CreateTuple: value='1780-10-02', lang='(null)', datatye='http://www.w3.o
 DEBUG:  cstring_to_rdfliteral called: input='1780-10-02'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"'
 DEBUG:  isBlank called: term='"1780-10-02"'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  strdt called: literal='"1780-10-02"', datatype='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  ContainsWhitespaces called: str='http://www.w3.org/2001/XMLSchema#date'
@@ -3047,7 +3056,7 @@ DEBUG:  ExpandDatatypePrefix called: str='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  ExpandDatatypePrefix exit: returning 'http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  str called: input='"1780-10-02"'
@@ -3061,7 +3070,7 @@ DEBUG:  CreateTuple: value > '1780-10-02'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isLiteral exit: returning 'true' (valid datatype)
@@ -3075,14 +3084,14 @@ DEBUG:  cstring_to_rdfliteral called: input='"1780-10-02"^^<http://www.w3.org/20
 DEBUG:  cstring_to_rdfliteral exit: returning => '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  iri called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  isBlank called: term='http://www.w3.org/2001/XMLSchema#date'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='http://www.w3.org/2001/XMLSchema#date'
 DEBUG:  iri exit: returning wrapped IRI '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  datatype exit: returning '<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  unescape_unicode: Input='1780-10-02'
 DEBUG:  unescape_unicode: Output='1780-10-02'
 DEBUG:  isBlank called: term='1780-10-02'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  lex called: input='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  strdt called: literal='1780-10-02', datatype='<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  ContainsWhitespaces called: str='<http://www.w3.org/2001/XMLSchema#date>'
@@ -3101,19 +3110,19 @@ DEBUG:  rdfExecForeignDelete [0] column loaded: subject, sparql_var: ?s, attnum:
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  isBlank called: term='<https://www.uni-muenster.de>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignDelete: column 'subject' value: <https://www.uni-muenster.de>
 DEBUG:  rdfExecForeignDelete [1] column loaded: predicate, sparql_var: ?p, attnum: 2
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/founded>'
 DEBUG:  isBlank called: term='<http://dbpedia.org/property/founded>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignDelete: column 'predicate' value: <http://dbpedia.org/property/founded>
 DEBUG:  rdfExecForeignDelete [2] column loaded: object, sparql_var: ?o, attnum: 3
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  isBlank called: term='"1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  isBlank exit: returning 'false'
+DEBUG:  isBlank exit: returning 'false' (invalid input)
 DEBUG:  rdfExecForeignDelete: column 'object' value: "1780-10-02"^^<http://www.w3.org/2001/XMLSchema#date>
 DEBUG:  rdfExecForeignDelete: added row to batch (2/50)
 DEBUG:  rdfExecForeignDelete exit
