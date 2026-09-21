@@ -32,7 +32,7 @@ ALTER EXTENSION rdf_fdw UPDATE TO '2.7';
 SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
 
 /*
- * 2.8 replaces the rdfnode B-tree operator class, and replacing an operator
+ * 3.0 replaces the rdfnode B-tree operator class, and replacing an operator
  * class does not rewrite what was built with it. An index keeps the order it
  * was written in, and a stored query keeps the ordering operator it was parsed
  * with; neither is reported, and both give wrong answers or unhelpful errors
