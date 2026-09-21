@@ -1,4 +1,4 @@
-# 2.8
+# 3.0
 Release date: **unreleased**
 
 ## Before you upgrade

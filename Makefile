@@ -2,8 +2,8 @@ MODULE_big = rdf_fdw
 OBJS = rdf_fdw.o rdf_utils.o sparql.o rdfnode.o
 EXTENSION = rdf_fdw
 DOCS = README.md
-DATA = rdf_fdw--2.8.sql \
-       rdf_fdw--2.7--2.8.sql \
+DATA = rdf_fdw--3.0.sql \
+       rdf_fdw--2.7--3.0.sql \
        rdf_fdw--2.6--2.7.sql \
        rdf_fdw--2.5--2.6.sql \
        rdf_fdw--2.4--2.5.sql \
