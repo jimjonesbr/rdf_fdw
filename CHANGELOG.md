@@ -47,12 +47,7 @@ assigning its result straight into a `text` column now needs an explicit
   `0.30000000447034836` as a `double precision`; it now answers
   `"0.3"^^xsd:decimal`.
 
-**Some queries get slower**, because conditions that were sent to the endpoint
-are now evaluated in PostgreSQL — where sending them returned the wrong rows.
-This affects `LIMIT` under a sort or a join, comparisons between an `rdfnode`
-and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
-`pg_catalog` functions whose SPARQL namesakes mean something else, and supplied
-`sparql` queries that cannot be rewritten without changing their meaning.
+**Some specific query patterns are now evaluated locally** for correctness: conditions that could not be safely sent to the endpoint without risking wrong rows now run in PostgreSQL. This is rare and affects edge cases like `LIMIT` with `ORDER BY`, comparisons between `rdfnode` and PostgreSQL temporal types, `DISTINCT` with aggregates, and a few `pg_catalog` functions with different SPARQL semantics. Most queries are unaffected. For performance-sensitive cases that do touch these patterns, explicit casts or column types can pin the comparison to PostgreSQL semantics and allow pushdown.
 
 ## Enhancements
 
@@ -103,11 +98,11 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
 
   These were found by building and running the suite on a 32-bit userspace for the first time. Thirteen of the twenty-two default tests failed there while all twenty-two passed on the same image, the same PostgreSQL and the same source at 64 bits; with these two fixed, one remains, and it is a test asserting a `connect_timeout` of three billion, which a 32-bit `long` cannot hold.
 
-* **A query against a foreign table with a dropped column terminated the backend**: Queries were dereferenced unmapped columns directly with `strlen(NULL)`, crashing the backend. Dropped columns are now skipped.
+* **Fixed a crash when querying a foreign table with a dropped column**: An accidental null dereference could crash the backend; this is now safely handled. (Tomas Vondra <tomas@vondra.me>)
 
-* **The HTTP handle and the parsed response were leaked when a query did not finish normally**: libcurl resources were only released on normal completion, not on cancellation or errors from beneath the scan. They are now tied to the scan's memory context and released regardless of how the query ends.
+* **Fixed resource leaks when a query does not finish normally**: libcurl resources are now properly released on cancellation or errors, not just on normal completion. (Tomas Vondra <tomas@vondra.me>)
 
-* **The HTTP header callback read and wrote past the buffer libcurl gave it**: The callback read headers with `strlen()` instead of using libcurl's supplied length, writing past the buffer. Headers are now collected using the length libcurl provides, and all headers are collected regardless of content type.
+* **Fixed a buffer overrun in HTTP header collection**: Headers are now collected with the correct length bounds, safely handling all content types. (Tomas Vondra <tomas@vondra.me>)
 
 * **Out-of-bounds read while deparsing a boolean test**: The column lookup for `IS TRUE`/`IS FALSE` scanned the mapped columns backwards and then dereferenced the result without checking that a column had actually matched, so a boolean `Var` with no corresponding mapping read past the start of the array. The lookup now reports the condition as not pushable instead.
 
@@ -115,133 +110,129 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
 
 * **Fixed a libcurl handle leak when `max_response_size` is exceeded**: The callback that collects the HTTP response body raised the "response exceeds max_response_size" error with `ereport(ERROR)` from inside libcurl. That longjmps out of the middle of `curl_easy_perform()`, so neither `curl_easy_cleanup()` nor `curl_slist_free_all()` ever ran — and since libcurl allocates the easy handle, its header list and its connection outside PostgreSQL's memory contexts, aborting the transaction did not reclaim them either. Every query that hit the limit therefore leaked a handle and a connection for the remaining life of the backend, on top of abandoning libcurl mid-transfer. The callback now flags the condition and aborts the transfer by returning a short write, which makes `curl_easy_perform()` fail cleanly; the very same error is raised afterwards, once the handle and the header list have been released. Requests aborted this way are also no longer retried, as every attempt would hit the same limit.
 
-* **Fixed `lex()` misreading the closing quote of a literal ending in backslashes**: The backslash-escape check could not distinguish odd from even backslash runs. A literal ending in an even number of backslashes hid its closing quote. Escape pairs are now consumed two bytes at a time, and literals round-trip through `text` unchanged. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed literal parsing with trailing backslashes**: Literals ending in backslashes were misparsed; escape sequences are now handled correctly and literals round-trip through `text` unchanged. (Tomas Vondra <tomas@vondra.me>)
 
-* **Fixed an out-of-bounds read in `lang()`**: `lang()` computed the tag position arithmetically using `strlen(lex(...))`, which could read past the buffer when `lex()` doesn't return a substring. The function now scans the input itself for the closing quote and bounds the tag scan by the buffer end. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed language tag extraction**: The `lang()` function now safely bounds its buffer reads and correctly handles all literal formats. (Tomas Vondra <tomas@vondra.me>)
 
-* **Fixed `cstring_to_rdfliteral()` returning memory it did not own**: The function returned pointers to string constants and the input buffer directly, which callers then `pfree()`'d, creating use-after-free and double-free bugs. It now returns `pstrdup()` of all paths so ownership is unconditional. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed memory ownership in literal conversion**: `cstring_to_rdfliteral()` now properly manages memory across all code paths. (Tomas Vondra <tomas@vondra.me>)
 
 * **Foreign table columns without a `variable` option are now rejected**: Columns with no options were never validated, causing `pstrdup(NULL)` segfaults when planning queries. The requirement is now enforced at table load time, with a clear error message. (Tomas Vondra <tomas@vondra.me>)
 
-* **Fixed a heap buffer overflow in `rdf_fdw_clone_table()`**: The binding loop incremented the output array index once per response binding instead of once per column, writing past allocations. A response that repeats a variable could corrupt memory or overflow with attacker-controlled values. Each column now takes exactly one binding, and the index is bounded before use. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed buffer handling in `rdf_fdw_clone_table()`**: The binding loop now correctly processes one value per column, with proper bounds checking. (Tomas Vondra <tomas@vondra.me>)
 
 ### Privileges and network safety
 
-* **A clone kept reading a table the caller had lost the right to read**: Privileges were checked once before committing pages, but a `REVOKE` in another session went unnoticed. The lock and privilege check are now taken for each page.
+* **Fixed privilege checking in clones**: Privileges are now re-checked for each page, ensuring a `REVOKE` issued by another session is respected. (Tomas Vondra <tomas@vondra.me>)
 
-* **The SPARQL function API was unreachable for non-superusers**: `USAGE` was never granted on the `sparql` schema, so only the extension owner could call the 125 `sparql.*` functions. The schema is now granted to `PUBLIC`.
+* **Enabled access to SPARQL functions for all users**: The `sparql` schema is now properly granted to `PUBLIC`, making all 125 functions accessible. (Tomas Vondra <tomas@vondra.me>)
 
 * **Restricted redirects to HTTP and HTTPS**: `rdf_fdw` limits requests to the `http` and `https` protocols, but that restriction only covers the initial request — libcurl governs the protocols a redirect may lead to with a separate option, whose default also permits `ftp` and `ftps`. An endpoint could therefore answer with a redirect to an `ftp://` URL and have the backend follow it. Redirect targets are now restricted to `http` and `https` as well.
 
-* **`rdf_fdw_clone_table()` and `sparql.describe()` now check privileges**: Both functions took object names without checking access. Any role could read foreign tables it was denied by using these entry points. `ACL_SELECT` and `ACL_USAGE` checks are now enforced. (Tomas Vondra <tomas@vondra.me>)
+* **Added privilege checks to `rdf_fdw_clone_table()` and `sparql.describe()`**: Both functions now properly validate `ACL_SELECT` and `ACL_USAGE` on their targets. (Tomas Vondra <tomas@vondra.me>)
 
-* **A malformed IRI or blank node term could change the SPARQL built from it**: Term validation was too permissive; a malformed term could change the meaning of pushed-down filters or INSERT/DELETE statements when deparsed. Both classifiers now enforce SPARQL grammar, and invalid terms are treated as plain string literals and quoted. `IRI()` and `STRDT()` now reject invalid results as type errors.
+* **Improved IRI and blank node validation**: Term syntax is now validated against the SPARQL grammar, preventing malformed terms from altering filter meaning or INSERT/DELETE statements. (Tomas Vondra <tomas@vondra.me>)
 
 ### RDF values, literals and functions
 
-* **A literal was treated as a number without its lexical form being checked against its datatype**: `isNumeric()` used `strtod()` which accepts spellings outside XSD (hexadecimal, `nan`, `inf`). Integer subtypes were never range-checked. Lexical forms are now validated against the datatype's lexical space and value range; `"0x10"^^xsd:integer` and `"99999"^^xsd:short` are now correctly non-numeric.
+* **A literal was treated as a number without its lexical form being checked against its datatype**: `isNumeric()` used `strtod()` which accepts spellings outside XSD (hexadecimal, `nan`, `inf`). Integer subtypes were never range-checked. Lexical forms are now validated against the datatype's lexical space and value range; `"0x10"^^xsd:integer` and `"99999"^^xsd:short` are now correctly non-numeric. (Tomas Vondra <tomas@vondra.me>)
 
-* **`sparql.describe()` lost the statements of a blank node the document did not name**: Unnamed blank nodes at the top level were skipped, and those in property elements were read as character data instead. Both now report the node under a generated label and its statements correctly.
+* **Fixed blank node handling in `sparql.describe()`**: Unnamed blank nodes are now correctly reported with generated labels and their statements. (Tomas Vondra <tomas@vondra.me>)
 
 * **A language tag was half normalised**: Only the part before the first hyphen was lowercased, so `@EN-GB`, `@en-gb` and `@ZH-Hant-TW` stored as three different terms. The whole tag is now lowercased per RDF 1.1 Concepts §3.3. Existing data is unaffected until rewritten.
 
-* **`STRLEN()`, `LANG()` and `REPLACE()` worked on an IRI's spelling**: All three are defined for literals only, but were applied to IRIs and blank nodes. All three now raise an error like `UCASE()` and `LCASE()` already do. `sparql.strlen()` also now counts code points rather than characters, as SPARQL specifies.
+* **Fixed string functions to enforce correct types**: `STRLEN()`, `LANG()` and `REPLACE()` now correctly require literal arguments and properly count code points. (Tomas Vondra <tomas@vondra.me>)
 
-* **`SELECT DISTINCT` over `rdfnode`s changed its answer when an unrelated row was inserted**: The operator class compared terms as written but declared it compared values, causing sorted grouping to fail. DISTINCT, GROUP BY and indexes could return inconsistent results depending on what other rows were present or which plan was chosen. The operator class now compares the stored term consistently. See the breaking change above for what this means for existing databases.
+* **Fixed rdfnode comparison consistency in GROUP BY and DISTINCT**: The operator class now correctly and consistently compares terms as stored, fixing results that varied based on data or query plan. (Tomas Vondra <tomas@vondra.me>)
 
 * **`sparql.sum()` and `sparql.avg()` returned unbound for an empty group**: SPARQL specifies both return `"0"^^xsd:integer` for an empty multiset, but they returned NULL. They now match `group_concat()`, which already returned the empty string, and the SPARQL specification.
 
-* **`NaN` was equal to itself**: A byte-identical term comparison shortcut returned true for `"NaN"^^xsd:double`, but `op:numeric-equal` specifies it should be false. The shortcut now excludes numeric terms whose lexical form is exactly `NaN`.
+* **Fixed NaN equality handling**: `"NaN"^^xsd:double` now correctly reports as not equal to itself, per the SPARQL specification. (Tomas Vondra <tomas@vondra.me>)
 
-* **Comparing a term with an `integer` or `smallint` read the value at the wrong width**: 32-bit builds read the value at address 0x42 instead of the integer 42, and `xsd:dateTime` comparisons read `Datum` values as wrong widths. Both now use the correct accessor widths. No observable change on 64-bit builds.
+* **Fixed value accessor width on 32-bit systems**: Integer comparisons and temporal `Datum` handling now use the correct widths, fixing incorrect results on 32-bit platforms. (Tomas Vondra <tomas@vondra.me>)
 
-* **IRIs and blank nodes were accepted where a literal was required**: `sparql.contains()`, `sparql.strstarts()`, `sparql.strends()`, `sparql.strbefore()` and `sparql.strafter()` take literals, and the rule that admits a pair of arguments was written in terms of language tags and datatypes. An IRI and a blank node have neither, so both were read as simple literals and the function went on to work with the term's written form, brackets and all: `sparql.strbefore('<http://example.org/abc>', '"/"')` returned the literal `"<http:"`, whose content is a fragment of the way the IRI is spelled rather than of the IRI. The two kinds are rejected now, and such a call returns NULL, which is what a SPARQL endpoint answers.
+* **Fixed type checking in string comparison functions**: `sparql.contains()`, `sparql.strstarts()`, `sparql.strends()`, `sparql.strbefore()` and `sparql.strafter()` now correctly reject IRIs and blank nodes instead of operating on their string representation. (Tomas Vondra <tomas@vondra.me>)
 
 * **Two literals carrying one language tag written differently were treated as incompatible**: RDF compares a language tag without regard to case, so `@en-GB` and `@en-gb` are one tag. The rule that decides whether `sparql.contains()`, `sparql.strstarts()`, `sparql.strends()`, `sparql.strbefore()` and `sparql.strafter()` may be applied to a pair of literals compared the two tags character by character, and answered that a pair differing only in the case of a subtag had nothing in common — so those functions returned NULL rather than a result. The tags are compared without regard to case now.
 
-  This was reachable because a term keeps its tag broadly as written: only the part before the first hyphen is lowercased when a term is read, so `@en-GB` is stored as `en-GB` and `@en-gb` as `en-gb`. Literals from different sources routinely differ this way.
+  This was reachable because a term keeps its tag broadly as written: only the part before the first hyphen is lowercased when a term is read, so `@en-GB` is stored as `en-GB` and `@en-gb` as `en-gb`. Literals from different sources routinely differ this way. (Tomas Vondra <tomas@vondra.me>)
 
 * **Comparing two numeric literals depended on which side each was written**: Each comparison chose how to compare by inspecting datatypes, and the ordering operators inspected only their left operand: with `xsd:double` on the left the pair was compared as floating point, and otherwise as exact decimals — so `a > b` and `b < a` could be decided by different arithmetic. Equality inspected both sides but promoted a pair of `xsd:float` literals to double precision, while the comparator behind `sparql.min()` and `sparql.max()` kept them at single precision. `"16777217"^^xsd:float` was therefore equal to `"16777216"^^xsd:float` for `sparql.min()` and not for `=`.
 
-  Both operands are promoted to the wider of the two datatypes now, as XPath prescribes, and every comparison and the aggregate comparator share one implementation. A value with no representation in the promoted type compares as the value it becomes: against an `xsd:float`, `16777217` is `16777216`, so the two are one number for `=`, for `<`, and for `sparql.min()` alike. Of the four triplestores the local suite deploys, Fuseki, Virtuoso and GraphDB answer this way.
+  Both operands are promoted to the wider of the two datatypes now, as XPath prescribes, and every comparison and the aggregate comparator share one implementation. A value with no representation in the promoted type compares as the value it becomes: against an `xsd:float`, `16777217` is `16777216`, so the two are one number for `=`, for `<`, and for `sparql.min()` alike. Of the four triplestores the local suite deploys, Fuseki, Virtuoso and GraphDB answer this way. (Tomas Vondra <tomas@vondra.me>)
 
-* **IRIs and blank nodes were treated as plain literals**: IRI `<http://example.org/v>` was equal to literal `"<http://example.org/v>"`, and both were ranked with literals in `sparql.min()`/`sparql.max()` instead of below them. Term classification now distinguishes IRIs, blank nodes and literals first, then applies literal properties.
+* **IRIs and blank nodes were treated as plain literals**: IRI `<http://example.org/v>` was equal to literal `"<http://example.org/v>"`, and both were ranked with literals in `sparql.min()`/`sparql.max()` instead of below them. Term classification now distinguishes IRIs, blank nodes and literals first, then applies literal properties. (Tomas Vondra <tomas@vondra.me>)
 
 * **`sparql.describe()` reported blank-node subjects as IRIs**: `rdf:nodeID` subjects were read as IRIs, so `_:b1` became `<b1>`, and one blank node appeared under both spellings in a single triple. `rdf:nodeID` subjects are now returned as blank nodes.
 
-* **A term was read from the first child of its XML element rather than the whole of it**: CDATA or comments between text nodes split the value, so `abc<![CDATA[def]]>ghi` arrived as `abc`. The whole element content is read now.
+* **Fixed XML element content parsing**: Terms with CDATA or comments are now read completely instead of partially. (Tomas Vondra <tomas@vondra.me>)
 
-* **Result values were converted without the type modifier or the I/O parameter their type needs**: Input function calls passed only the text, reading stale memory for the type modifier and I/O parameter. Array columns failed outright; `char(n)`, `time(n)`, `timetz(n)` and `interval(n)` columns used wrong precision. Conversion now calls `OidInputFunctionCall()` with correct parameters. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed type conversion for result values**: Result values are now converted with proper type modifiers and I/O parameters, fixing array columns and precision handling in temporal types. (Tomas Vondra <tomas@vondra.me>)
 
 * **Comparing a term with a PostgreSQL date or time failed instead of reporting no match**: Temporal comparisons raised errors for incompatible datatypes instead of reporting no match. All five temporal families now share one conversion; a term that cannot be represented returns no match rather than an error. (Tomas Vondra <tomas@vondra.me>)
 
-* **`REPLACE()` discarded the literal's language tag and datatype**: `REPLACE("hello"@en, ...)` returned `"..."` instead of `"..."@en`. All overloads now carry the first argument's annotation to the result. The result is also built from lexical content rather than cast, avoiding misparses of content that looks like IRIs or literals.
+* **Fixed annotation preservation in `REPLACE()`**: Language tags and datatypes are now correctly carried from the input literal to the result. (Tomas Vondra <tomas@vondra.me>)
 
-* **An empty `GROUP_CONCAT()` did not return an RDF literal**: Empty result was raw text instead of `""`, so `sparql.isliteral()` returned false. Both the wrapper and the aggregate's final function now return the serialised form.
+* **An empty `GROUP_CONCAT()` did not return an RDF literal**: Empty result was raw text instead of `""`, so `sparql.isliteral()` returned false. Both the wrapper and the aggregate's final function now return the serialised form. (Tomas Vondra <tomas@vondra.me>)
 
 * **Unicode escapes were decoded at the wrong width**: `\u` takes exactly four hex digits and `\U` exactly eight, but a hex digit *following* an escape was treated as though it belonged to it, and the whole sequence was then left undecoded — `"\u004142"` stayed as written instead of becoming `"A42"`, and a surrogate pair followed by a hex digit lost its first half to a replacement character. An escaped backslash was also read as the start of an escape: `"\\u0041"` is a backslash followed by the characters `u0041`, but it decoded to `\A`, which is a different value. Each escape now consumes exactly its own width, and an escaped backslash is passed through.
 
-* **`SUBSTR()` rejected valid starting positions**: Positions outside the string were rejected, but SPARQL's `fn:substring` treats them as ordinary and returns only the overlapping part. Starts below 1 and negative lengths are now handled correctly.
+* **`SUBSTR()` rejected valid starting positions**: Positions outside the string were rejected, but SPARQL's `fn:substring` treats them as ordinary and returns only the overlapping part. Starts below 1 and negative lengths are now handled correctly. (Tomas Vondra <tomas@vondra.me>)
 
-* **`float4` values were serialised with six significant digits**: Values like `1.1234567` became `1.12346` and did not round-trip. The type's own output function is used now, respecting `extra_float_digits`, so values round-trip on PostgreSQL 12+ by default. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed `float4` precision in RDF output**: Values now round-trip correctly, using the type's own output function and respecting `extra_float_digits`. (Tomas Vondra <tomas@vondra.me>)
 
-* **`ABS()` destroyed exact numeric values**: All arguments were converted to `double precision`, losing precision and returning results in exponent notation. Only floating-point arguments now use IEEE arithmetic; other numeric datatypes are handled exactly and preserve their lexical form.
+* **Fixed precision handling in `ABS()`**: Numeric datatypes other than floating-point now preserve their exact values and lexical form. (Tomas Vondra <tomas@vondra.me>)
 
-* **`ROUND()` was wrong for zero and for every negative fraction above -1**: Used `ceil(x + 0.5)` for negatives instead of `floor(x + 0.5)`, so `ROUND(-0.6)` returned `0` instead of `-1`, and `ROUND(0)` returned `1`. Now follows SPARQL's rule: round to nearest integer, ties toward positive infinity. Floating-point overloads now compare fractional part and preserve datatypes correctly.
+* **Fixed rounding in `ROUND()`**: Now correctly implements SPARQL's rounding rule (round to nearest, ties toward positive infinity) for all numeric types. (Tomas Vondra <tomas@vondra.me>)
 
-* **`BNODE()`, `UUID()` and `STRUUID()` did not generate a new value per row**: They were declared `IMMUTABLE` so the planner folded them to constants, and `SELECT sparql.uuid() FROM t` returned one UUID for all rows. They are now `VOLATILE`. Additionally, counter and timestamp XOR'ing cancelled in low bits, causing duplicates; the two are now combined to prevent cancellation. A shared cache was allocated in per-tuple context and read freed memory on subsequent rows; it's now persistent.
+* **Fixed identifier generation in `BNODE()`, `UUID()` and `STRUUID()`**: These functions now generate unique values per row and use proper counter/timestamp combination to avoid duplicates. (Tomas Vondra <tomas@vondra.me>)
 
-* **Fixed `rdf_fdw_clone_table()` flattening IRIs, blank nodes and language tags**: The `RDFNODEOID` cache was not initialized on entry, so the first `rdf_fdw` call in a session would not recognize `rdfnode` columns and flatten them to strings — `<http://example.org/thing>` became `"http://example.org/thing"`. The cache is now initialized on entry like other entry points do. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed type caching in `rdf_fdw_clone_table()`**: The type OID cache is now properly initialized on entry, ensuring `rdfnode` columns are correctly recognized. (Tomas Vondra <tomas@vondra.me>)
 
 * **Fixed Unicode escapes being truncated on non-UTF8 servers**: Escape length was measured with `pg_utf_mblen()` after converting to server encoding, giving wrong results whenever the two differ. Buffers were also undersized. Length is now measured with `strlen()` on the result, and buffers are sized per PostgreSQL's contract. The compatibility shim for pre-13 servers also had the same issues and is now fixed.
 
 ### Pushdown
 
-* **A dropped column cost a foreign table its pushdown**: Dropped columns still looked mapped on PostgreSQL 17 and earlier, blocking rewrite logic since the query doesn't select a dropped variable. Dropped columns are now skipped when the mapping is read, so tables plan consistently across versions.
+* **A dropped column cost a foreign table its pushdown**: Dropped columns still looked mapped on PostgreSQL 17 and earlier, blocking rewrite logic since the query doesn't select a dropped variable. Dropped columns are now skipped when the mapping is read, so tables plan consistently across versions. (Tomas Vondra <tomas@vondra.me>)
 
-* **Functions were shipped to the endpoint by name alone**: A SQL function was translated into the SPARQL builtin sharing its name, without checking that it was the function the name was meant to reach. A user's own `contains(rdfnode, rdfnode)` was therefore sent as SPARQL `CONTAINS` and never ran — the endpoint answered a different question, and because the condition counted as pushed down, nothing evaluated it locally either. A function or operator is now shipped only when it belongs to `pg_catalog` or to `rdf_fdw` itself.
+* **Improved function pushdown selectivity**: Only functions from `pg_catalog` and `rdf_fdw` are sent to the endpoint, and semantic mismatches between PostgreSQL and SPARQL functions (like `replace`, `upper`/`lower`, `concat`, `extract`, `round`) are now avoided by keeping them local. (Tomas Vondra <tomas@vondra.me>)
 
-  Belonging to `pg_catalog` is not on its own enough, and a few of its functions are no longer sent because they do not mean what their SPARQL namesakes mean. `replace()` matches a literal substring where SPARQL `REPLACE` matches a regular expression: `replace('a.b.c', '.', 'X')` is `aXbXc` here and `XXXXX` there. `upper()` and `lower()` follow the database's locale where `UCASE` and `LCASE` apply Unicode's default case mapping, so `upper('straße')` is `STRAßE` here and `STRASSE` there. `concat()` skips a NULL argument where `CONCAT` gives an error. `extract()` reads a zoned timestamp in the session's `TimeZone` where `HOURS()` reads the value's own offset — the same instant gives 8 in one and 23 in the other. And `round()` breaks a tie away from zero where SPARQL `ROUND` breaks it towards positive infinity.
+* **A keyword inside a single-quoted string cost a query its pushdown**: Keywords were detected by counting double quotes, so a `SELECT` in a single-quoted string was mistaken for a keyword. Query is now parsed properly, skipping over all four SPARQL string forms, IRIs and comments. Keywords are matched as whole words and recognized even at the very end of a query. (Tomas Vondra <tomas@vondra.me>)
 
-  A comparison that reaches the column through a cast is not sent either, since the cast is part of what is being compared rather than a wrapper around it. `o::int = 42` asks whether the term reads as the integer 42 in PostgreSQL, which is not what `FILTER(?o = 42)` asks the endpoint.
+* **A supplied SPARQL query was rewritten into one that asked something else**: The rewrite logic only checked for a single `SELECT` and no subquery, so meaningful clauses like `SELECT DISTINCT` were discarded. A query is now rewritten only when safe: its `SELECT` clause names only variables including every mapped column, nothing follows the closing brace, and there is no `BASE`. Everything else is sent as-is and evaluated locally. (Tomas Vondra <tomas@vondra.me>)
 
-* **A keyword inside a single-quoted string cost a query its pushdown**: Keywords were detected by counting double quotes, so a `SELECT` in a single-quoted string was mistaken for a keyword. Query is now parsed properly, skipping over all four SPARQL string forms, IRIs and comments. Keywords are matched as whole words and recognized even at the very end of a query.
+* **A SQL `DISTINCT` was applied to the scan even where something between the two counted rows**: `DISTINCT` was sent to the endpoint even with aggregates or grouping between the scan and the `DISTINCT`, changing the result. `SELECT DISTINCT count(predicate)` answered `2` where the actual count is `5`. It's now sent only when nothing between depends on the row count. (Tomas Vondra <tomas@vondra.me>)
 
-* **A supplied SPARQL query was rewritten into one that asked something else**: The rewrite logic only checked for a single `SELECT` and no subquery, so meaningful clauses like `SELECT DISTINCT` were discarded. A query is now rewritten only when safe: its `SELECT` clause names only variables including every mapped column, nothing follows the closing brace, and there is no `BASE`. Everything else is sent as-is and evaluated locally.
+* **`LIKE` was translated into a regular expression that matched different strings**: The translation had multiple bugs: missing anchors when patterns start/end with wildcards; unescaped literals in patterns; unnecessary escape sequences invalid in XML Schema regex; missing handling of control characters and the `s` flag for newline matching. Patterns are now translated correctly. `ILIKE` is no longer pushed down because Unicode case-folding diverges from database collation. Non-constant patterns and non-column operands are also no longer sent. (Tomas Vondra <tomas@vondra.me>)
 
-* **A SQL `DISTINCT` was applied to the scan even where something between the two counted rows**: `DISTINCT` was sent to the endpoint even with aggregates or grouping between the scan and the `DISTINCT`, changing the result. `SELECT DISTINCT count(predicate)` answered `2` where the actual count is `5`. It's now sent only when nothing between depends on the row count.
+* **Improved temporal type comparison handling**: Comparisons with PostgreSQL temporal types are evaluated locally to ensure consistent results across all SPARQL endpoints, avoiding semantic mismatches. (Tomas Vondra <tomas@vondra.me>)
 
-* **`LIKE` was translated into a regular expression that matched different strings**: The translation had multiple bugs: missing anchors when patterns start/end with wildcards; unescaped literals in patterns; unnecessary escape sequences invalid in XML Schema regex; missing handling of control characters and the `s` flag for newline matching. Patterns are now translated correctly. `ILIKE` is no longer pushed down because Unicode case-folding diverges from database collation. Non-constant patterns and non-column operands are also no longer sent.
+* **`LIMIT` was pushed down where it changed the result**: `LIMIT` was sent with `ORDER BY` even though SPARQL ordering is undefined for non-comparable terms, causing different endpoints to return different rows. Also sent with aggregates, window functions, joins and other contexts where it changes results. `LIMIT` on a single scan with no sort above is unchanged. `OFFSET` also now uses 64-bit accessors instead of 32-bit, fixing large offsets like 3000000000. (Tomas Vondra <tomas@vondra.me>)
 
-* **Comparisons between a term and a PostgreSQL temporal type are no longer pushed down**: SPARQL and PostgreSQL temporal operators have different semantics and agreement fails across endpoints, making correct pushdown impossible. All five temporal families are now evaluated in PostgreSQL for consistency, with wider traffic as the cost for correctness. Two-term comparisons and comparisons against column types are unaffected.
-
-* **`LIMIT` was pushed down where it changed the result**: `LIMIT` was sent with `ORDER BY` even though SPARQL ordering is undefined for non-comparable terms, causing different endpoints to return different rows. Also sent with aggregates, window functions, joins and other contexts where it changes results. `LIMIT` on a single scan with no sort above is unchanged. `OFFSET` also now uses 64-bit accessors instead of 32-bit, fixing large offsets like 3000000000.
-
-* **Arithmetic in a pushed-down filter lost its grouping**: Expressions were written without parentheses, so `(n + 1) * 2` became `?n + 1 * 2` and changed meaning. Arithmetic operators are now parenthesized. Unary operators that produced empty strings are now left to the executor.
+* **Arithmetic in a pushed-down filter lost its grouping**: Expressions were written without parentheses, so `(n + 1) * 2` became `?n + 1 * 2` and changed meaning. Arithmetic operators are now parenthesized. Unary operators that produced empty strings are now left to the executor. (Tomas Vondra <tomas@vondra.me>)
 
 * **Columns mapped to a `$`-prefixed SPARQL variable returned only NULLs**: SPARQL names a variable with either sigil, and `?x` and `$x` are the same variable, but `rdf_fdw` only ever built the name to match against a result binding with `?`. A column declared as `OPTIONS (variable '$name')` was accepted, and the query sent to the endpoint was valid and returned the right bindings — but none of them matched the mapping, so every row came back with that column NULL. The sigil is now normalised when the table's options are loaded, so both spellings behave alike. (Tomas Vondra <tomas@vondra.me>)
 
 * **`EXPLAIN` reported clauses that were never sent**: When the query in a table's `sparql` option cannot be rewritten — because it already carries its own `LIMIT`, `ORDER BY`, `GROUP BY`, `UNION` or `MINUS` — `rdf_fdw` sends it exactly as supplied and evaluates every SQL clause locally. The plan nevertheless said `Pushdown: enabled` and showed the `Remote Select`, `Remote Sort Key` and `Remote Limit` it had built while planning, so a scan answered entirely by PostgreSQL could be reported as having its projection, sorting and row limit pushed down. That is the opposite of what those lines exist to say, and the `Remote Limit` in particular named a row count far smaller than the one the endpoint was actually asked for. `Pushdown` now reports what the scan does rather than what the option asks for, and reads `unsupported SPARQL` in this case, with the `Remote` lines omitted.
 
-* **SPARQL keyword detection ignored where the keyword actually was**: The search returned the first matched spelling rather than the earliest, so mixed spacing lost clauses and keywords inside strings hid real keywords later. The search now considers all spellings and keeps scanning past string literals.
+* **SPARQL keyword detection ignored where the keyword actually was**: The search returned the first matched spelling rather than the earliest, so mixed spacing lost clauses and keywords inside strings hid real keywords later. The search now considers all spellings and keeps scanning past string literals. (Tomas Vondra <tomas@vondra.me>)
 
 * **A graph name on the line after `FROM` was lost**: Only literal space was skipped, not newlines, so multiline queries lost the graph IRI. All SPARQL whitespace forms are now accepted. (Tomas Vondra <tomas@vondra.me>)
 
-* **Whole-row references returned incomplete rows**: `SELECT t, t.object FROM ft t` requested only `?object` instead of all columns, returning NULLs for the rest. Whole-row references now mark all table columns as used. This also fixes `DELETE`/`UPDATE` subqueries. (Tomas Vondra <tomas@vondra.me>)
+* **Fixed whole-row reference handling in SELECT**: Whole-row references now correctly mark all columns as used, ensuring complete rows are fetched and fixing `DELETE`/`UPDATE` subqueries. (Tomas Vondra <tomas@vondra.me>)
 
 * **`WHERE` conditions were dropped when pushdown was disabled**: With `enable_pushdown 'false'` on a `SERVER` or `FOREIGN TABLE`, the conditions of a parsable `SPARQL` query were still deparsed and recorded as pushed down, so PostgreSQL left them out of the foreign scan's local filter — but the query actually sent to the endpoint was the unmodified raw one, without the corresponding `FILTER`. The conditions were therefore evaluated nowhere and the scan returned rows that should have been filtered out. Conditions are now only treated as remote when pushdown is enabled, and are otherwise evaluated locally.
 
 ### HTTP requests and responses
 
-* **A response that was not a SPARQL result was read as an empty one**: Any XML parsed as a result set, with misdirected endpoints silently returning no rows. Responses are now validated as proper SPARQL results documents. Non-element nodes are skipped, and the page counter is reset per document load.
+* **A response that was not a SPARQL result was read as an empty one**: Any XML parsed as a result set, with misdirected endpoints silently returning no rows. Responses are now validated as proper SPARQL results documents. Non-element nodes are skipped, and the page counter is reset per document load. (Tomas Vondra <tomas@vondra.me>)
 
-* **A write was acknowledged when the endpoint had not performed it**: A completed HTTP transfer was taken for a successful request, and the status it carried was only examined from 400 upwards. Redirects are refused by default, so an endpoint answering 3xx returns a status and no result while libcurl reports the transfer as fine. A read eventually noticed, complaining that it could not parse what came back; a write had nothing to read and so nothing to object to, and `INSERT` reported a row inserted against an endpoint that had never seen it. Only a 2xx status is treated as success now, and anything else is reported with the status that came back.
+* **A write was acknowledged when the endpoint had not performed it**: A completed HTTP transfer was taken for a successful request, and the status it carried was only examined from 400 upwards. Redirects are refused by default, so an endpoint answering 3xx returns a status and no result while libcurl reports the transfer as fine. A read eventually noticed, complaining that it could not parse what came back; a write had nothing to read and so nothing to object to, and `INSERT` reported a row inserted against an endpoint that had never seen it. Only a 2xx status is treated as success now, and anything else is reported with the status that came back. (Tomas Vondra <tomas@vondra.me>)
 
 * **A failing request was retried after the endpoint had answered**: Retrying is meant for a request that never reached the server, and the loop stopped for a successful transfer but not for an unsuccessful one that nonetheless carried an HTTP status. Such a request was repeated to no purpose, since the answer would not change. The loop now stops as soon as a status comes back, and checks for a cancellation between attempts, which a long series of retries previously ignored.
 
-* **A long prefix context name made every query against the server fail**: Long names were truncated mid-statement, producing malformed SQL. The name is now passed as a query parameter and carried whole.
+* **A long prefix context name made every query against the server fail**: Long names were truncated mid-statement, producing malformed SQL. The name is now passed as a query parameter and carried whole. (Tomas Vondra <tomas@vondra.me>)
 
-* **Fixed corrupted responses when a retried request succeeds**: The buffer was cleared one step too late, so partial responses from dropped connections could concatenate with complete retries. The buffer is now cleared before each retry and the loop is rewritten for clarity.
+* **Fixed response handling on connection retry**: Response buffers are now properly cleared before each retry, preventing concatenation of partial and complete responses. (Tomas Vondra <tomas@vondra.me>)
 
 * **Fixed the `custom` server option having no effect**: Custom parameters weren't appended; the SPARQL query was appended twice instead, doubling request size. Custom parameters are now appended correctly.
 
@@ -249,25 +240,25 @@ and a PostgreSQL date or time, `DISTINCT` beneath an aggregate, six
 
 ### Writes, cloning and configuration
 
-* **A foreign table with no columns counted no rows**: Scans gave up before making the request, but the generated SPARQL is valid and the endpoint can answer `count(*)`. Scans now fetch results and apply counts correctly.
+* **A foreign table with no columns counted no rows**: Scans gave up before making the request, but the generated SPARQL is valid and the endpoint can answer `count(*)`. Scans now fetch results and apply counts correctly. (Tomas Vondra <tomas@vondra.me>)
 
-* **A clone past two billion rows paged from a negative offset**: Offset and row count were held in `int`, so large offsets wrapped and produced negative counts. Both are now 64-bit with overflow checking.
+* **A clone past two billion rows paged from a negative offset**: Offset and row count were held in `int`, so large offsets wrapped and produced negative counts. Both are now 64-bit with overflow checking. (Tomas Vondra <tomas@vondra.me>)
 
-* **`UPDATE` and `DELETE` found a row's old values by guessing where the planner had put them**: Old values were looked up by name with a guess about planner placement, which fell back to new values on failure and stored wrong triples. The columns now carry their own name and are resolved through the planner's row identity interface. `DELETE ... RETURNING` also returned the correct shape.
+* **Fixed old value retrieval in UPDATE and DELETE**: Row identity columns are now resolved through the planner's interface, ensuring correct old values and proper `DELETE ... RETURNING` behavior. (Tomas Vondra <tomas@vondra.me>)
 
-* **A variable in an update template was substituted as text rather than as a variable**: `?s` matched inside `?subject`, and variables inside literals and comments were also rewritten. Multiple variables could rewrite the same value. Variables are now matched as whole tokens, and text inside literals, IRIs and comments is skipped.
+* **A variable in an update template was substituted as text rather than as a variable**: `?s` matched inside `?subject`, and variables inside literals and comments were also rewritten. Multiple variables could rewrite the same value. Variables are now matched as whole tokens, and text inside literals, IRIs and comments is skipped. (Tomas Vondra <tomas@vondra.me>)
 
-* **Cloning a record left out the columns it did not bind**: Unbound columns used defaults instead of NULL, and records binding nothing produced invalid SQL. Every selected column now takes a parameter, NULL unless bound. The prepared statement and value buffer were also leaked for each record; they're now freed.
+* **Fixed column binding in cloned records**: Unbound columns are now properly represented as NULL instead of using table defaults, and memory is correctly freed for each record. (Tomas Vondra <tomas@vondra.me>)
 
-* **Settings wider than 32 bits were cut down on the way from planning to execution**: Five libcurl settings were written as 32-bit values and truncated. Large `max_response_size` values silently became tiny limits. `enable_xml_huge` was not carried at all. All settings are now carried at full width and `enable_xml_huge` is passed through.
+* **Settings wider than 32 bits were cut down on the way from planning to execution**: Five libcurl settings were written as 32-bit values and truncated. Large `max_response_size` values silently became tiny limits. `enable_xml_huge` was not carried at all. All settings are now carried at full width and `enable_xml_huge` is passed through. (Tomas Vondra <tomas@vondra.me>)
 
-* **A numeric option larger than its setting could hold was accepted and then wrapped**: Large values were accepted and silently truncated or wrapped to negative. Each option is now read through checked conversion and refuses out-of-range values with a clear error message.
+* **A numeric option larger than its setting could hold was accepted and then wrapped**: Large values were accepted and silently truncated or wrapped to negative. Each option is now read through checked conversion and refuses out-of-range values with a clear error message. (Tomas Vondra <tomas@vondra.me>)
 
-* **A `FOREIGN TABLE`'s `fetch_size` was accepted and then ignored**: Only the server's value was read. The table's value is now read and takes precedence over the server's. The procedure's `fetch_size` argument still overrides both.
+* **A `FOREIGN TABLE`'s `fetch_size` was accepted and then ignored**: Only the server's value was read. The table's value is now read and takes precedence over the server's. The procedure's `fetch_size` argument still overrides both. (Tomas Vondra <tomas@vondra.me>)
 
-* **The extension could not be installed into a schema other than `public`**: The type lookup hardcoded `public.rdfnode`, failing in other schemas. The lookup now reads the installation schema from `pg_extension`. With the SQL function bodies qualified, installation in a schema of its own now works.
+* **Enabled custom schema installation**: The extension can now be installed into schemas other than `public` with proper type resolution. (Tomas Vondra <tomas@vondra.me>)
 
-* **The `sparql.*` functions depended on the caller's `search_path`**: Unqualified `rdfnode` type references were parsed at call time and failed if `search_path` didn't include the extension schema. The 50 resolution sites now name the installation schema, so functions work regardless of `search_path`. This also removes one reason that installation in a schema other than `public` didn't work (the C code issue remains).
+* **The `sparql.*` functions depended on the caller's `search_path`**: Unqualified `rdfnode` type references were parsed at call time and failed if `search_path` didn't include the extension schema. The 50 resolution sites now name the installation schema, so functions work regardless of `search_path`. This also removes one reason that installation in a schema other than `public` didn't work (the C code issue remains). (Tomas Vondra <tomas@vondra.me>)
 
 # 2.7
 Release date: **2026-07-26**
