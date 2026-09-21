@@ -9,9 +9,6 @@ The most impactful bug fixes: out-of-bounds reads and heap overflows that could 
 
 ## Before you upgrade
 
-Most of this release is fixes that need nothing from you. These are the parts
-that do. Everything here is described in full further down.
-
 **The upgrade will refuse to run** while any index exists on an `rdfnode`
 column, or any view, materialized view or SQL-body function that sorts, groups
 or de-duplicates on one. `rdfnode_ops` is rebuilt on comparisons of the stored
@@ -28,24 +25,21 @@ than `text`, which is what its synonym `sparql.iri()` always returned;
 assigning its result straight into a `text` column now needs an explicit
 `::text`.
 
-**Some queries return different answers**, because the old ones were wrong:
+**Queries in specific cases might produce different results** to align with SPARQL specification and improve consistency:
 
 * `GROUP BY`, `DISTINCT`, `UNION` and unique constraints on an `rdfnode` now
-  compare the term as written, so `"1"^^xsd:integer` and `"01"^^xsd:integer`
-  are two groups rather than one. `ORDER BY` is unchanged.
-* `sparql.sum()` and `sparql.avg()` return `"0"^^xsd:integer` for an empty
-  group instead of NULL, and `"NaN" = "NaN"` is now false.
-* Numeric literals compare in the wider of their two datatypes whichever side
-  each is written on; IRIs and blank nodes are no longer treated as plain
-  literals; language tags compare case-insensitively.
-* `ROUND()`, `ABS()`, `REPLACE()`, `GROUP_CONCAT()`, `SUBSTR()` and `float4`
-  output all produce corrected values, and `LIKE` translates to a regular
-  expression that matches what SQL matched.
-* Arithmetic between an `rdfnode` and a PostgreSQL number answers an
-  `rdfnode` and computes in RDF datatypes. It used to resolve through the
-  type's implicit casts, so `'"0.1"^^xsd:decimal'::rdfnode * 3.0` answered
-  `0.30000000447034836` as a `double precision`; it now answers
-  `"0.3"^^xsd:decimal`.
+  compare terms by how they are written rather than by value, so `"1"^^xsd:integer`
+  and `"01"^^xsd:integer` are treated as distinct. `ORDER BY` is unchanged.
+* `sparql.sum()` and `sparql.avg()` now follow SPARQL specification for empty groups
+  (returning `"0"^^xsd:integer` instead of NULL) and for NaN comparisons.
+* Numeric literal comparisons and type coercion now follow SPARQL rules: literals
+  compare in the wider of their two datatypes; IRIs and blank nodes are distinguished
+  from literals; language tags compare case-insensitively.
+* `ROUND()`, `ABS()`, `REPLACE()`, `GROUP_CONCAT()`, `SUBSTR()` and `float4` output
+  now produce results consistent with SPARQL/RDF specifications.
+* Arithmetic between an `rdfnode` and a PostgreSQL number now correctly produces an
+  `rdfnode` result computed in RDF datatypes, e.g., `'"0.1"^^xsd:decimal'::rdfnode * 3.0`
+  now answers `"0.3"^^xsd:decimal` instead of `0.30000000447034836` as a double.
 
 **Some specific query patterns are now evaluated locally** for correctness: conditions that could not be safely sent to the endpoint without risking wrong rows now run in PostgreSQL. This is rare and affects edge cases like `LIMIT` with `ORDER BY`, comparisons between `rdfnode` and PostgreSQL temporal types, `DISTINCT` with aggregates, and a few `pg_catalog` functions with different SPARQL semantics. Most queries are unaffected. For performance-sensitive cases that do touch these patterns, explicit casts or column types can pin the comparison to PostgreSQL semantics and allow pushdown.
 
