@@ -11,7 +11,7 @@ podman run -d --name virtuoso \
   --network $NETWORK_NAME \
   -p 8890:8890 \
   -e DBA_PASSWORD=$DBA_PASSWORD \
-  tenforce/virtuoso
+  docker.io/tenforce/virtuoso
 
 echo "Waiting for Virtuoso to start..."
 for i in {1..60}; do

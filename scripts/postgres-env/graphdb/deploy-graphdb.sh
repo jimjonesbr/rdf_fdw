@@ -13,7 +13,7 @@ podman run -d --name graphdb \
   -p 7200:7200 \
   -e GRAPHDB_HOME=/opt/graphdb/home \
   -e JAVA_OPTS="-Xms2g -Xmx8g" \
-  ontotext/graphdb:10.4.2
+docker.io/ontotext/graphdb:10.4.2
 
 echo "Waiting for GraphDB to start..."
 for i in {1..60}; do

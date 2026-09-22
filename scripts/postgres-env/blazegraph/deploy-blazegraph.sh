@@ -10,7 +10,7 @@ podman run -d --name blazegraph \
   --network $NETWORK_NAME \
   -p 9999:9999 \
   -e JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8" \
-  nawer/blazegraph:2.1.5
+  docker.io/nawer/blazegraph:2.1.5
 
 echo "Waiting for Blazegraph to start..."
 for i in {1..60}; do

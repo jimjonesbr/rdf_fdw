@@ -12,7 +12,7 @@ podman run -d --name fuseki \
   -p 3030:3030 \
   -e ADMIN_PASSWORD=secret \
   -e FUSEKI_DATASET_1=$FUSEKI_DATASET \
-  stain/jena-fuseki
+docker.io/stain/jena-fuseki
 
 echo "Waiting for Fuseki to start..."
 for i in {1..60}; do

@@ -23,7 +23,7 @@ podman run -d --name squid-no-auth \
   --ip 172.19.42.100 \
   --no-hosts \
   -v /tmp/squid-no-auth.conf:/etc/squid/squid.conf:ro,z \
-  ubuntu/squid:latest
+  docker.io/ubuntu/squid:latest
 
 echo "Waiting for Squid (no auth) to start..."
 sleep 1

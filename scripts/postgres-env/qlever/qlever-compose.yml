@@ -1,7 +1,7 @@
 services:
 
   qlever-index:
-    image: adfreiburg/qlever:latest
+    image: docker.io/adfreiburg/qlever:latest
     user: "${QLEVER_UID}:${QLEVER_GID}"
     entrypoint: bash
     command: >

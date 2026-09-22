@@ -13,12 +13,12 @@ bash $TEST_ENV_PATH/stub-endpoint/deploy-stub-endpoint.sh
 # Build and install rdf_fdw
 echo -e "\n== Building and Installing rdf_fdw on PostgreSQL 18 ==\n"
 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make uninstall 2>/dev/null || true
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make clean
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make CFLAGS="-DUSE_ASSERT_CHECKING -O0 -g" 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make install
-docker restart $CONTAINER_NAME
-docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
+podman exec -itw /rdf_fdw/ $CONTAINER_NAME make uninstall 2>/dev/null || true
+podman exec -itw /rdf_fdw/ $CONTAINER_NAME make clean
+podman exec -itw /rdf_fdw/ $CONTAINER_NAME make CFLAGS="-DUSE_ASSERT_CHECKING -O0 -g" 
+podman exec -itw /rdf_fdw/ $CONTAINER_NAME make install
+podman restart $CONTAINER_NAME
+podman exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
   -c "DROP EXTENSION IF EXISTS rdf_fdw CASCADE; CREATE EXTENSION rdf_fdw"
 
 # Tests that need a triplestore are opt-in:
@@ -28,7 +28,7 @@ docker exec -itw /rdf_fdw/ -u postgres $CONTAINER_NAME psql -d postgres \
 # INCLUDE_DEBUG_TESTS=1    - tests that need debug output (debug.out)
 # INCLUDE_ALL_TESTS=1      - all of the above
 
-docker exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
+podman exec -itw /rdf_fdw/ $CONTAINER_NAME make PGUSER=postgres \
     INCLUDE_LOCAL_TESTS=1 INCLUDE_DEBUG_TESTS=1\
     installcheck 
 
