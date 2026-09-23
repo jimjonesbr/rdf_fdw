@@ -789,6 +789,39 @@ WITH j (val) AS (
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
 
+-- Test 83d: infinities of both signs sum to NaN, as IEEE 754 asks and as
+-- Fuseki, GraphDB, Virtuoso and QLever all answer
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"-INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
+-- Test 83e: a group of nothing but an infinity is still a numeric group
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
+-- Test 83f: an infinity carries its datatype into the promotion, so a group
+-- holding one and an xsd:integer answers as an xsd:double
+WITH j (val) AS (
+    VALUES
+        ('"+INF"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
+        ('"1"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
+-- Test 83g: a non-numeric term still makes the whole group unbound
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"abc"'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
 -- Test 84: sum/avg with NaN
 WITH j (val) AS (
     VALUES

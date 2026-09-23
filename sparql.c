@@ -2472,6 +2472,72 @@ const char *get_xsd_datatype_uri(XsdNumericType type)
 }
 
 /*
+ * rdfnode_lexical_is_infinity
+ * ---------------------------
+ *
+ * Reports whether a numeric term's lexical form is one of the infinities, and
+ * through 'negative' which one.
+ *
+ * XSD 1.1 Part 2 3.3.5 admits exactly "INF", "+INF" and "-INF", and
+ * isNumeric() has already refused any other spelling, so an exact match is
+ * enough. "NaN" is not among them: numeric carries it on every supported
+ * version, and numeric_add() propagates it as IEEE asks.
+ *
+ * lex     : the collapsed lexical form
+ * negative: set to true for "-INF"
+ *
+ * returns true if the term is an infinity
+ */
+static bool
+rdfnode_lexical_is_infinity(const char *lex, bool *negative)
+{
+    if (strcmp(lex, "INF") == 0 || strcmp(lex, "+INF") == 0)
+    {
+        *negative = false;
+        return true;
+    }
+
+    if (strcmp(lex, "-INF") == 0)
+    {
+        *negative = true;
+        return true;
+    }
+
+    return false;
+}
+
+/*
+ * rdfnode_infinite_sum_lexical
+ * ----------------------------
+ *
+ * Gives the lexical form of a sum that has an infinity in it, or NULL if it
+ * has none.
+ *
+ * IEEE 754 makes the sum of +INF and -INF a NaN, and an infinity of either
+ * sign swallows every finite value, so the accumulated numeric does not enter
+ * into it. This is kept out of that accumulator because numeric has no
+ * infinity before PostgreSQL 14: numeric_in() refuses "INF" there, and a
+ * group holding one failed outright rather than summing to the INF every
+ * endpoint answers.
+ *
+ * state: the aggregate state
+ *
+ * returns "INF", "-INF", "NaN", or NULL when no infinity was seen
+ */
+static const char *
+rdfnode_infinite_sum_lexical(const RdfnodeAggState *state)
+{
+    if (state->has_pos_inf && state->has_neg_inf)
+        return "NaN";
+    if (state->has_pos_inf)
+        return "INF";
+    if (state->has_neg_inf)
+        return "-INF";
+
+    return NULL;
+}
+
+/*
  * sum_rdfnode_sfunc
  * -----------------
  * Aggregate transition function for SUM(rdfnode).
@@ -2555,6 +2621,33 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
     /* Determine the XSD type of this input */
     inputType = get_xsd_numeric_type(parsed.dtype);
 
+    /*
+     * An infinity is recorded beside the accumulator rather than in it.
+     * numeric has none before PostgreSQL 14, so numeric_in() refuses "INF"
+     * there and the whole group failed; and from 14 on it would still have to
+     * be taken back out, since the datatype's own output spells it a way XSD
+     * does not admit. Either way the finite terms make no difference to the
+     * answer once one is present.
+     */
+    {
+        bool negative;
+
+        if (rdfnode_lexical_is_infinity(parsed.lex, &negative))
+        {
+            if (negative)
+                aggstate->has_neg_inf = true;
+            else
+                aggstate->has_pos_inf = true;
+
+            aggstate->count++;
+
+            if (inputType > aggstate->maxType)
+                aggstate->maxType = inputType;
+
+            PG_RETURN_POINTER(aggstate);
+        }
+    }
+
     /* Convert rdfnode lexical value to numeric */
     rdf_numeric = DirectFunctionCall3(numeric_in,
                                       CStringGetDatum(parsed.lex),
@@ -2564,11 +2657,17 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
     /* Initialize or update numeric accumulator */
     if (aggstate->numeric_value == NULL)
     {
-        /* First numeric value */
+        /*
+         * First finite value. The promoted type is merged rather than
+         * assigned: an infinity may have come before this one and carries it.
+         * maxType starts at XSD_TYPE_INTEGER, the lowest, so the merge is
+         * also right when nothing came before.
+         */
         oldcontext = MemoryContextSwitchTo(aggcontext);
         aggstate->numeric_value = DatumGetNumeric(
             DirectFunctionCall1(numeric_uplus, rdf_numeric));
-        aggstate->maxType = inputType;
+        if (inputType > aggstate->maxType)
+            aggstate->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
     }
     else
@@ -2675,8 +2774,19 @@ Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
         PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
     /* If no numeric values were summed, return NULL (unbound per SPARQL) */
-    if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)
+    if (aggstate->has_non_numeric ||
+        (aggstate->numeric_value == NULL && !aggstate->has_pos_inf && !aggstate->has_neg_inf))
         PG_RETURN_NULL();
+
+    /* an infinity among the inputs decides the sum on its own */
+    {
+        const char *infinite = rdfnode_infinite_sum_lexical(aggstate);
+
+        if (infinite != NULL)
+            PG_RETURN_TEXT_P(cstring_to_text(
+                strdt((char *) infinite,
+                      (char *) get_xsd_datatype_uri(aggstate->maxType))));
+    }
 
     /*
      * A sum promoted to xsd:double or xsd:float is an IEEE value and has to
@@ -2772,6 +2882,33 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
     /* Determine the XSD type of this input */
     inputType = get_xsd_numeric_type(parsed.dtype);
 
+    /*
+     * An infinity is recorded beside the accumulator rather than in it.
+     * numeric has none before PostgreSQL 14, so numeric_in() refuses "INF"
+     * there and the whole group failed; and from 14 on it would still have to
+     * be taken back out, since the datatype's own output spells it a way XSD
+     * does not admit. Either way the finite terms make no difference to the
+     * answer once one is present.
+     */
+    {
+        bool negative;
+
+        if (rdfnode_lexical_is_infinity(parsed.lex, &negative))
+        {
+            if (negative)
+                aggstate->has_neg_inf = true;
+            else
+                aggstate->has_pos_inf = true;
+
+            aggstate->count++;
+
+            if (inputType > aggstate->maxType)
+                aggstate->maxType = inputType;
+
+            PG_RETURN_POINTER(aggstate);
+        }
+    }
+
     /* Convert rdfnode lexical value to numeric */
     rdf_numeric = DirectFunctionCall3(numeric_in,
                                       CStringGetDatum(parsed.lex),
@@ -2781,11 +2918,17 @@ Datum avg_rdfnode_sfunc(PG_FUNCTION_ARGS)
     /* Initialize or update numeric accumulator */
     if (aggstate->numeric_value == NULL)
     {
-        /* First numeric value */
+        /*
+         * First finite value. The count and the promoted type are merged rather
+         * than assigned: an infinity may have come before this one and carries it.
+         * maxType starts at XSD_TYPE_INTEGER, the lowest, so the merge is
+         * also right when nothing came before.
+         */
         oldcontext = MemoryContextSwitchTo(aggcontext);
         aggstate->numeric_value = DatumGetNumeric(DirectFunctionCall1(numeric_uplus, rdf_numeric));
-        aggstate->count = 1;
-        aggstate->maxType = inputType;
+        aggstate->count++;
+        if (inputType > aggstate->maxType)
+            aggstate->maxType = inputType;
         MemoryContextSwitchTo(oldcontext);
     }
     else
@@ -2833,8 +2976,22 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
         PG_RETURN_TEXT_P(cstring_to_text(strdt("0", RDF_XSD_INTEGER)));
 
     /* If no numeric values were aggregated, return NULL (unbound per SPARQL) */
-    if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)
+    if (aggstate->has_non_numeric ||
+        (aggstate->numeric_value == NULL && !aggstate->has_pos_inf && !aggstate->has_neg_inf))
         PG_RETURN_NULL();
+
+    /*
+     * 18.5.1.4 divides the Sum by the count, and an infinity or a NaN divided
+     * by a positive integer is itself, so the Sum's own answer stands.
+     */
+    {
+        const char *infinite = rdfnode_infinite_sum_lexical(aggstate);
+
+        if (infinite != NULL)
+            PG_RETURN_TEXT_P(cstring_to_text(
+                strdt((char *) infinite,
+                      (char *) get_xsd_datatype_uri(aggstate->maxType))));
+    }
 
     /* Convert count to numeric for division */
     count_numeric = DatumGetNumeric(DirectFunctionCall1(int8_numeric, Int64GetDatum(aggstate->count)));

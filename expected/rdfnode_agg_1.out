@@ -49,9 +49,9 @@ WITH j (val) AS (
         ('"5"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
-                       sum                        |                          avg                          
---------------------------------------------------+-------------------------------------------------------
- "35.8"^^<http://www.w3.org/2001/XMLSchema#float> | "11.933333"^^<http://www.w3.org/2001/XMLSchema#float>
+                       sum                        |                         avg                         
+--------------------------------------------------+-----------------------------------------------------
+ "35.8"^^<http://www.w3.org/2001/XMLSchema#float> | "11.9333"^^<http://www.w3.org/2001/XMLSchema#float>
 (1 row)
 
 -- Test 5: sum/avg of integer + decimal + double
@@ -62,9 +62,9 @@ WITH j (val) AS (
         ('"30.4"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
-                        sum                        |                               avg                               
----------------------------------------------------+-----------------------------------------------------------------
- "60.8"^^<http://www.w3.org/2001/XMLSchema#double> | "20.266666666666666"^^<http://www.w3.org/2001/XMLSchema#double>
+                        sum                        |                              avg                              
+---------------------------------------------------+---------------------------------------------------------------
+ "60.8"^^<http://www.w3.org/2001/XMLSchema#double> | "20.2666666666667"^^<http://www.w3.org/2001/XMLSchema#double>
 (1 row)
 
 -- Test 6: sum/avg of single value
@@ -1099,7 +1099,11 @@ WITH j (val) AS (
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
-ERROR:  invalid input syntax for type numeric: "INF"
+                       sum                        |                       avg                        
+--------------------------------------------------+--------------------------------------------------
+ "INF"^^<http://www.w3.org/2001/XMLSchema#double> | "INF"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
 -- Test 83a: a sum promoted to xsd:double is an IEEE value, and leaving the
 -- datatype's range is what IEEE calls INF rather than a 309-digit integer.
 -- The average follows: 18.5.1.4 divides the Sum, which is already INF.
@@ -1133,7 +1137,60 @@ WITH j (val) AS (
         ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
-ERROR:  invalid input syntax for type numeric: "-INF"
+                        sum                        |                        avg                        
+---------------------------------------------------+---------------------------------------------------
+ "-INF"^^<http://www.w3.org/2001/XMLSchema#double> | "-INF"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 83d: infinities of both signs sum to NaN, as IEEE 754 asks and as
+-- Fuseki, GraphDB, Virtuoso and QLever all answer
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"-INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                       avg                        
+--------------------------------------------------+--------------------------------------------------
+ "NaN"^^<http://www.w3.org/2001/XMLSchema#double> | "NaN"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 83e: a group of nothing but an infinity is still a numeric group
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                        |                       avg                        
+--------------------------------------------------+--------------------------------------------------
+ "INF"^^<http://www.w3.org/2001/XMLSchema#double> | "INF"^^<http://www.w3.org/2001/XMLSchema#double>
+(1 row)
+
+-- Test 83f: an infinity carries its datatype into the promotion, so a group
+-- holding one and an xsd:integer answers as an xsd:double
+WITH j (val) AS (
+    VALUES
+        ('"+INF"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
+        ('"1"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+                       sum                       |                       avg                       
+-------------------------------------------------+-------------------------------------------------
+ "INF"^^<http://www.w3.org/2001/XMLSchema#float> | "INF"^^<http://www.w3.org/2001/XMLSchema#float>
+(1 row)
+
+-- Test 83g: a non-numeric term still makes the whole group unbound
+WITH j (val) AS (
+    VALUES
+        ('"INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"abc"'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+ sum  | avg  
+------+------
+ NULL | NULL
+(1 row)
+
 -- Test 84: sum/avg with NaN
 WITH j (val) AS (
     VALUES

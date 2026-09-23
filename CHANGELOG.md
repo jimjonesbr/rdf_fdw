@@ -128,6 +128,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### RDF values, literals and functions
 
+* **`sparql.sum()` and `sparql.avg()` failed on an infinity before PostgreSQL 14**: `numeric` has no infinity there, so the accumulator refused `"INF"^^xsd:double` outright and the whole group raised `invalid input syntax for type numeric: "INF"` where PostgreSQL 14 and later answered `INF`. An infinity is now recorded beside the accumulator rather than in it, which also lets IEEE 754's own rules decide the answer: an infinity swallows every finite value, and one of each sign gives `NaN`. Every supported version now answers what Fuseki, GraphDB, Virtuoso and QLever answer.
+
 * **An ordering comparison of two literals sharing an unsupported datatype reported them as having different datatypes**: `"http://a"^^xsd:anyURI < "http://b"^^xsd:anyURI` raised `cannot compare literals of different datatypes`, which describes neither the operands nor the reason — the two datatypes are the same one, and what is missing is an ordering for it. The message now names the datatype and says which ones SPARQL 1.1 does define the ordering operators over. A pair whose datatypes genuinely differ reports that as before.
 
 * **`sparql.min()` and `sparql.max()` raised on a negative `xsd:duration`**: a group holding a term such as `"-P1D"^^xsd:duration` failed with `invalid input syntax for type interval`, although `<`, `<=`, `>`, `>=` and `=` all compare the same pair. XSD 1.1 Part 2 §3.3.6 admits the leading `-`, and PostgreSQL's `interval_in()` does not; the comparison operators strip it and negate afterwards, and the aggregate comparator now does the same.

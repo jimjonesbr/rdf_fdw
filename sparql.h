@@ -53,6 +53,8 @@ typedef struct
     XsdNumericType maxType; /* highest numeric type seen (for type promotion in SUM/AVG) */
     bool has_input;         /* true if any input values were processed (SUM/AVG/GROUP_CONCAT) */
     bool has_non_numeric;   /* true if any non-numeric values were encountered (SUM/AVG) */
+    bool has_pos_inf;       /* a "INF" or "+INF" among the inputs (SUM/AVG) */
+    bool has_neg_inf;       /* a "-INF" among the inputs (SUM/AVG) */
 } RdfnodeAggState;
 
 /* 17.4.2 Functions on RDF Terms */

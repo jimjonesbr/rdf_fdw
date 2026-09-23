@@ -12628,9 +12628,12 @@ Datum rdf_fdw_sum_finalfunc(PG_FUNCTION_ARGS)
 
 	/*
 	 * If we saw input values but none were numeric, return NULL
-	 * (type errors)
+	 * (type errors).
+	 * A group of nothing but infinities is numeric all the same: they are
+	 * recorded beside the accumulator rather than in it, so it stays NULL.
 	 */
-	if (aggstate->has_input && aggstate->numeric_value == NULL)
+	if (aggstate->has_input && aggstate->numeric_value == NULL &&
+		!aggstate->has_pos_inf && !aggstate->has_neg_inf)
 		PG_RETURN_NULL();
 
 	/* If no input was recorded, return zero per SPARQL Sum({}). */
@@ -12700,8 +12703,11 @@ Datum rdf_fdw_avg_finalfunc(PG_FUNCTION_ARGS)
 	/*
 	 * Values were seen but none of them were numeric. The multiset is not
 	 * empty, it is one an average is not defined over, so this is unbound.
+	 * A group of nothing but infinities is numeric all the same: they are
+	 * recorded beside the accumulator rather than in it, so it stays NULL.
 	 */
-	if (aggstate->has_input && aggstate->numeric_value == NULL)
+	if (aggstate->has_input && aggstate->numeric_value == NULL &&
+		!aggstate->has_pos_inf && !aggstate->has_neg_inf)
 		PG_RETURN_NULL();
 
 	/* If no input was recorded, the multiset is empty. */
