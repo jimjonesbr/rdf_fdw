@@ -310,6 +310,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -395,6 +397,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -680,6 +684,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -900,6 +906,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -987,6 +995,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -1164,6 +1174,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -1494,6 +1506,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -1669,6 +1683,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -2222,6 +2238,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -2483,6 +2501,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -2688,6 +2708,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0
@@ -2892,6 +2914,8 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: returning '0' (keyword_position)
 DEBUG:  IsSPARQLParsable: SPARQL contains '1' SELECT clauses.
+DEBUG:  LocateKeyword called: searching 'VALUES' from position 0
+DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'GROUP BY' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'ORDER BY' from position 0

@@ -136,6 +136,26 @@ EXPLAIN (VERBOSE, COSTS OFF)
 SELECT s, o FROM ft_plain
 WHERE o = 100;
 
+/*
+ * A trailing VALUES clause is part of a well-formed SELECT (SPARQL 1.1 rule
+ * [7]), and its data block ends in '}', so the check that nothing follows the
+ * graph pattern does not catch it. Rewriting such a query puts the VALUES
+ * clause inside the graph pattern and the pushed-down FILTER inside the data
+ * block, which the endpoint cannot parse, so the query is left alone and the
+ * condition is evaluated locally.
+ */
+CREATE FOREIGN TABLE ft_values (
+  s rdfnode OPTIONS (variable '?s'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 'SELECT * WHERE { ?s ?p ?o } VALUES ?p { <http://example.org/p> }'
+);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT s, o FROM ft_values
+WHERE o = 100;
+
 /* EXPLAIN (VERBOSE) with pushdown disabled */
 ALTER FOREIGN TABLE ft OPTIONS (enable_pushdown 'false');
 

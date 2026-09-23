@@ -340,6 +340,33 @@ WHERE o = 100;
    Remote Filter: ((?o = 100))
 (6 rows)
 
+/*
+ * A trailing VALUES clause is part of a well-formed SELECT (SPARQL 1.1 rule
+ * [7]), and its data block ends in '}', so the check that nothing follows the
+ * graph pattern does not catch it. Rewriting such a query puts the VALUES
+ * clause inside the graph pattern and the pushed-down FILTER inside the data
+ * block, which the endpoint cannot parse, so the query is left alone and the
+ * condition is evaluated locally.
+ */
+CREATE FOREIGN TABLE ft_values (
+  s rdfnode OPTIONS (variable '?s'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 'SELECT * WHERE { ?s ?p ?o } VALUES ?p { <http://example.org/p> }'
+);
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT s, o FROM ft_values
+WHERE o = 100;
+            QUERY PLAN            
+----------------------------------
+ Foreign Scan on public.ft_values
+   Output: s, o
+   Filter: (ft_values.o = 100)
+   Foreign Server: wikidata
+   Pushdown: unsupported SPARQL
+(5 rows)
+
 /* EXPLAIN (VERBOSE) with pushdown disabled */
 ALTER FOREIGN TABLE ft OPTIONS (enable_pushdown 'false');
 EXPLAIN (VERBOSE, COSTS OFF)
@@ -405,7 +432,8 @@ NOTICE:  drop cascades to foreign table long_context_ft
 DELETE FROM sparql.prefixes WHERE context = :'long_context';
 DELETE FROM sparql.prefix_contexts WHERE context = :'long_context';
 DROP SERVER wikidata CASCADE;
-NOTICE:  drop cascades to 3 other objects
+NOTICE:  drop cascades to 4 other objects
 DETAIL:  drop cascades to foreign table ft
 drop cascades to foreign table ft_quoted_limit
 drop cascades to foreign table ft_plain
+drop cascades to foreign table ft_values

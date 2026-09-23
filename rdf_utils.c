@@ -1286,7 +1286,24 @@ bool IsSPARQLParsable(struct RDFfdwState *state)
 
 	elog(DEBUG2, "%s: SPARQL contains '%d' SELECT clauses.", __func__, keyword_count);
 
-	result = LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_GROUPBY, " \n\t?", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+	/*
+	 * A VALUES clause is refused for a reason the other keywords here do not
+	 * share. SPARQL 1.1 rule [7] puts it after the solution modifiers, and a
+	 * data block ends in '}', so the trailing-content check above -- which
+	 * measures from the last '}' in the query -- does not see it, and the
+	 * query is declared parsable. DeparseSPARQLWhereGraphPattern() then reads
+	 * the graph pattern up to that same last '}', taking the VALUES clause
+	 * into it, and CreateSPARQL() appends the pushed-down FILTER after that,
+	 * inside the data block. The result is not a SPARQL query, and the scan
+	 * fails outright.
+	 *
+	 * This also turns off pushdown for a VALUES used as inline data inside
+	 * the graph pattern, where the rewrite is in fact sound. LocateKeyword()
+	 * matches a keyword by its delimiters and cannot tell the two positions
+	 * apart, and a table that loses a FILTER still answers correctly.
+	 */
+	result = LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_VALUES, " \n\t?$", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
+			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_GROUPBY, " \n\t?", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_ORDERBY, " \n\t?DA", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_LIMIT, " \n\t", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
 			 LocateKeyword(state->raw_sparql, " \n\t}", RDF_SPARQL_KEYWORD_MINUS, " \n\t{", NULL, 0) == RDF_KEYWORD_NOT_FOUND &&
