@@ -1346,14 +1346,31 @@ int rdfnode_cmp_for_aggregate(rdfnode *n1, rdfnode *n2)
 	/* xsd:duration literals */
 	if (rdfnode1.isDuration && rdfnode2.isDuration)
 	{
+		/*
+		 * XSD 1.1 Part 2 3.3.6 admits a leading '-', and PostgreSQL's
+		 * interval_in() does not: it is stripped and the value negated
+		 * afterwards, exactly as the comparison operators above do. Handing
+		 * "-P1D" straight to interval_in() raised "invalid input syntax",
+		 * so a MIN or MAX over a group holding one negative duration failed
+		 * although every operator on the same pair answers.
+		 */
+		bool neg1 = (rdfnode1.lex[0] == '-');
+		bool neg2 = (rdfnode2.lex[0] == '-');
+
 		arg1 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode1.lex),
+								   CStringGetDatum(neg1 ? rdfnode1.lex + 1 : rdfnode1.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
 		arg2 = DirectFunctionCall3(interval_in,
-								   CStringGetDatum(rdfnode2.lex),
+								   CStringGetDatum(neg2 ? rdfnode2.lex + 1 : rdfnode2.lex),
 								   ObjectIdGetDatum(InvalidOid),
 								   Int32GetDatum(-1));
+
+		if (neg1)
+			arg1 = DirectFunctionCall1(interval_um, arg1);
+		if (neg2)
+			arg2 = DirectFunctionCall1(interval_um, arg2);
+
 		return DatumGetInt32(DirectFunctionCall2(interval_cmp, arg1, arg2));
 	}
 

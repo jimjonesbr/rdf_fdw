@@ -128,6 +128,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### RDF values, literals and functions
 
+* **`sparql.min()` and `sparql.max()` raised on a negative `xsd:duration`**: a group holding a term such as `"-P1D"^^xsd:duration` failed with `invalid input syntax for type interval`, although `<`, `<=`, `>`, `>=` and `=` all compare the same pair. XSD 1.1 Part 2 §3.3.6 admits the leading `-`, and PostgreSQL's `interval_in()` does not; the comparison operators strip it and negate afterwards, and the aggregate comparator now does the same.
+
 * **An `xsd:anyURI` literal was treated as a plain literal**: `"http://a"^^xsd:anyURI` compared equal to `"http://a"` and to `"http://a"^^xsd:string`, and two `xsd:anyURI` terms could be ordered against each other. SPARQL has no rule making `xsd:anyURI` an `xsd:string`: RDF 1.1 Concepts §3.3 makes two literals the same term only when lexical form, datatype IRI and language tag all agree, and SPARQL 1.1 §17.3 does not list `xsd:anyURI` among the datatypes `=` and the ordering operators are defined over. The datatype now behaves like any other unrecognised one — equal to a term written exactly as it is, unequal to one with a different datatype, and not ordered against anything. Fuseki and GraphDB report the same pairs as type errors.
 
   The mismatch was visible in a single query: a condition comparing an `xsd:anyURI` column to a plain literal answered differently depending on whether it was pushed down to the endpoint or evaluated in PostgreSQL.

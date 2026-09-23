@@ -448,6 +448,24 @@ WITH j (val) AS (
 )
 SELECT sparql.min(val), sparql.max(val) FROM j;
 
+-- Test 51a: min/max over a negative xsd:duration. XSD 1.1 Part 2 3.3.6 admits
+-- the leading '-', and the comparison operators handle it, so the aggregates
+-- have to as well. Fuseki, GraphDB and QLever answer -P1D and P2D.
+WITH j (val) AS (
+    VALUES
+        ('"-P1D"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
+        ('"P2D"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+
+-- Test 51b: two negative durations, where the sign decides the order
+WITH j (val) AS (
+    VALUES
+        ('"-P1D"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode),
+        ('"-P2D"^^<http://www.w3.org/2001/XMLSchema#duration>'::rdfnode)
+)
+SELECT sparql.min(val), sparql.max(val) FROM j;
+
 -- Test 52: min/max with comprehensive mix (IRI, lang, plain, numeric, temporal, string)
 WITH j (val) AS (
     VALUES
