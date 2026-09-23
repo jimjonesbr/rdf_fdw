@@ -1911,6 +1911,92 @@ AppendControlEscapedLiteralContent(StringInfoData *buf, const char *from, const 
 }
 
 /*
+ * XPathReplacementToPG
+ * --------------------
+ *
+ * Rewrites an XPath fn:replace replacement string as the replacement string
+ * regexp_replace() expects.
+ *
+ * SPARQL 1.1 17.4.3.15 defines REPLACE as fn:replace, whose replacement
+ * syntax is fixed by XPath and XQuery Functions and Operators 7.6.3: "$N"
+ * stands for the substring captured by the Nth group, a literal dollar is
+ * written "\$", and a literal backslash "\\". PostgreSQL spells the same
+ * things with a backslash instead -- "\1" to "\9" for a captured substring
+ * and "\\" for a literal backslash -- so handing the one string to the other
+ * reads every marker in it wrongly: "$1" comes out as the two characters
+ * "$1", and "\1", which XPath does not define, inserts a group.
+ *
+ * A backslash in front of anything but a backslash is ill-formed in XPath.
+ * Fuseki, GraphDB and Virtuoso all answer for it by dropping the backslash
+ * and keeping the character, so REPLACE("aXb", "(X)", "\1") gives "a1b"
+ * there, and that is what is done here.
+ *
+ * The rewrite is one pass, so a marker it produces is never read again: the
+ * "\" written out for a "$1" is not a candidate for the backslash rule, which
+ * only the input's own backslashes reach.
+ *
+ * Only one digit follows a "$". XPath allows more, but PostgreSQL has no
+ * notation for a group past the ninth, and both syntaxes read "$10" as group
+ * one followed by a "0", so nothing is lost by stopping at one digit.
+ *
+ * "&" is left alone. It is ordinary in both: PostgreSQL's whole-match marker
+ * is the pair "\&", which cannot arise here.
+ *
+ * replacement: the replacement string as SPARQL spells it
+ *
+ * returns a palloc'd replacement string as regexp_replace() spells it
+ */
+char *
+XPathReplacementToPG(const char *replacement)
+{
+	StringInfoData buf;
+	const char *p = replacement;
+
+	Assert(replacement != NULL);
+
+	initStringInfo(&buf);
+
+	while (*p)
+	{
+		if (p[0] == '\\')
+		{
+			if (p[1] == '\0')
+			{
+				/* a trailing backslash escapes nothing: keep it as one */
+				appendStringInfoString(&buf, "\\\\");
+				p++;
+				continue;
+			}
+
+			/*
+			 * An escaped backslash is a backslash, which PostgreSQL wants as
+			 * a pair. Every other escape yields the character itself, and
+			 * none of those is special to PostgreSQL on its own.
+			 */
+			if (p[1] == '\\')
+				appendStringInfoString(&buf, "\\\\");
+			else
+				appendStringInfoChar(&buf, p[1]);
+			p += 2;
+			continue;
+		}
+
+		if (p[0] == '$' && isdigit((unsigned char) p[1]))
+		{
+			appendStringInfoChar(&buf, '\\');
+			appendStringInfoChar(&buf, p[1]);
+			p += 2;
+			continue;
+		}
+
+		appendStringInfoChar(&buf, *p);
+		p++;
+	}
+
+	return buf.data;
+}
+
+/*
  * EscapeSPARQLLiteral
  * -------------------
  *

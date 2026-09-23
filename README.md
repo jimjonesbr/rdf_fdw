@@ -2556,6 +2556,7 @@ Replaces parts of the **lexical form** using a regular expression. Implements th
 
 * Supports `i`, `m`, and `s` flags.
 * An empty pattern matches at every position in the string, inserting the replacement between each character and at both ends.
+* The replacement string uses the XPath syntax the spec asks for: `$1` to `$9` insert what the matching group captured, `\$` a literal dollar and `\\` a literal backslash.
 
 ```sql
 SELECT sparql.replace('"foo bar foo"', 'foo', 'baz');
@@ -2569,10 +2570,16 @@ SELECT sparql.replace('"abc"', '', 'Z');
 -------------
  "ZaZbZcZ"
 (1 row)
+
+SELECT sparql.replace('"2025-01-02"', '"([0-9]{4})-([0-9]{2})-([0-9]{2})"', '"$3/$2/$1"');
+   replace    
+--------------
+ "02/01/2025"
+(1 row)
 ```
 
 > [!NOTE]
-> The regex engine follows PostgreSQL's POSIX ERE dialect rather than the XPath regex dialect required by the SPARQL 1.1 spec. For most common patterns these are equivalent, but Unicode category escapes (`\p{L}`, `\p{N}`, etc.) and XPath-style backreferences (`$1`, `$2`) in replacement strings are not supported.
+> The regex engine follows PostgreSQL's POSIX ERE dialect rather than the XPath regex dialect required by the SPARQL 1.1 spec. For most common patterns these are equivalent, but Unicode category escapes (`\p{L}`, `\p{N}`, etc.) are not supported.
 
 ### [Functions on Numerics](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-numerics)
 

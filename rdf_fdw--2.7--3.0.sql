@@ -188,6 +188,11 @@ BEGIN
   RETURN sparql.strdt($1::@extschema@.rdfnode, $2::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION sparql._xpath_replacement(text) RETURNS text
+AS 'MODULE_PATHNAME', 'rdf_fdw_xpath_replacement'
+LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION sparql._xpath_replacement(text) IS 'Internal: rewrites an XPath fn:replace replacement string ($1, \$) as a regexp_replace() one (\1, $).';
+
 /* REPLACE operates on the lexical form and returns a literal carrying the same
    language tag or datatype as its first argument: replacing part of a
    language-tagged literal yields a literal in that language, not a bare string.
@@ -214,7 +219,8 @@ BEGIN
     RETURN sparql._quote_literal(pg_catalog.regexp_replace(
       $1,
       CASE WHEN pg_catalog.left($2, 1) = '"' THEN sparql.lex($2::@extschema@.rdfnode) ELSE $2 END,
-      CASE WHEN pg_catalog.left($3, 1) = '"' THEN sparql.lex($3::@extschema@.rdfnode) ELSE $3 END,
+      sparql._xpath_replacement(
+        CASE WHEN pg_catalog.left($3, 1) = '"' THEN sparql.lex($3::@extschema@.rdfnode) ELSE $3 END),
       'g'
     ));
   END IF;
@@ -246,7 +252,7 @@ BEGIN
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),
-    sparql.lex($3),
+    sparql._xpath_replacement(sparql.lex($3)),
     'g'
   ));
 
@@ -284,7 +290,7 @@ BEGIN
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
     sparql.lex($1),
     sparql.lex($2),
-    sparql.lex($3),
+    sparql._xpath_replacement(sparql.lex($3)),
     sparql.lex($4) || 'g'
   ));
 

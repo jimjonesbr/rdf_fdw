@@ -663,6 +663,24 @@ SELECT sparql.replace('abcd', 'a', NULL);           -- Replacement is NULL
 SELECT sparql.replace(NULL, NULL, NULL);             -- All NULLs
 SELECT sparql.replace('"ab\"cd"', '"b"', '"Z"');    -- Escaped double quotes
 SELECT sparql.replace('"ab\"cd"', 'b', 'Z');         -- Escaped double quotes, no pattern
+
+/*
+ * SPARQL 1.1 17.4.3.15 defines REPLACE as fn:replace, whose replacement
+ * syntax (XPath F&O 7.6.3) writes a captured group "$N" and a literal dollar
+ * "\$". PostgreSQL's regexp_replace writes the group "\N" instead, and reads
+ * a bare "$" as itself, so the replacement has to be rewritten between the
+ * two. Fuseki, GraphDB and Virtuoso agree on every case below.
+ */
+SELECT sparql.replace('"abab"', '"a(b)"', '"[$1]"');            -- captured group
+SELECT sparql.replace('"2025-01-02"',
+                      '"([0-9]{4})-([0-9]{2})-([0-9]{2})"',
+                      '"$3/$2/$1"');                            -- several groups, reordered
+SELECT sparql.replace('"aXb"', '"X"', '"\$"');                  -- escaped dollar is a dollar
+SELECT sparql.replace('"aXb"', '"X"', '"\\"');                  -- escaped backslash is a backslash
+SELECT sparql.replace('"aXb"', '"(X)"', '"\1"');                -- "\1" is no group reference
+SELECT sparql.replace('"aXb"', '"X"', '"&"');                   -- "&" is an ordinary character
+SELECT sparql.replace('"abab"', '"a(b)"', '"[$1]"', '"i"');     -- the four-argument form
+SELECT sparql.replace('abab', 'a(b)', '[$1]');                  -- and the text overload
 SELECT sparql.replace('"abcd"@en', 'a', 'Z');       -- Language-tagged literal
 SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z'); -- Datatype-literal (xsd:string)
 SELECT sparql.replace('"abcd"^^xsd:date', 'a', 'Z'); -- Datatype-literal (xsd:date)

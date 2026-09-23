@@ -263,6 +263,7 @@ extern Datum rdf_fdw_substr(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_concat(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_lex(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_quote_literal(PG_FUNCTION_ARGS);
+extern Datum rdf_fdw_xpath_replacement(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_md5(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_bound(PG_FUNCTION_ARGS);
 extern Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS);
@@ -574,6 +575,7 @@ PG_FUNCTION_INFO_V1(rdf_fdw_substr);
 PG_FUNCTION_INFO_V1(rdf_fdw_concat);
 PG_FUNCTION_INFO_V1(rdf_fdw_lex);
 PG_FUNCTION_INFO_V1(rdf_fdw_quote_literal);
+PG_FUNCTION_INFO_V1(rdf_fdw_xpath_replacement);
 PG_FUNCTION_INFO_V1(rdf_fdw_md5);
 PG_FUNCTION_INFO_V1(rdf_fdw_bound);
 PG_FUNCTION_INFO_V1(rdf_fdw_sameterm);
@@ -1579,6 +1581,17 @@ Datum rdf_fdw_quote_literal(PG_FUNCTION_ARGS)
 	char *result = QuoteRDFLiteral(unescape_unicode(input));
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
+}
+
+/*
+ * Rewrites the replacement string of a SPARQL REPLACE into the one
+ * regexp_replace() reads. See XPathReplacementToPG() for why the two differ.
+ */
+Datum rdf_fdw_xpath_replacement(PG_FUNCTION_ARGS)
+{
+	char *input = text_to_cstring(PG_GETARG_TEXT_PP(0));
+
+	PG_RETURN_TEXT_P(cstring_to_text(XPathReplacementToPG(input)));
 }
 
 /* MD5 produces a 16-byte (128-bit) hash; hex-encoded that is 32 characters (2 per byte) */
