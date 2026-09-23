@@ -7039,6 +7039,51 @@ static bool IsShippableObject(Oid classid, Oid objectid, Oid namespace)
 		getExtensionOfObject(classid, objectid) == get_extension_oid("rdf_fdw", false);
 }
 
+/*
+ * ConstIsUncomparableLiteral
+ * --------------------------
+ *
+ * Reports whether an expression is a constant RDF literal that SPARQL has no
+ * value comparison for -- one carrying a datatype outside the operator table
+ * of SPARQL 1.1 17.3, such as xsd:anyURI or a datatype of the application's
+ * own. A pair involving one of those falls to RDFterm-equal in 17.4.1.7,
+ * which answers TRUE only for the very same term and raises a type error for
+ * any other literal.
+ *
+ * A language-tagged literal is not one of these, although it is not in the
+ * table either: it is never the same term as a literal without a tag, and is
+ * known to be different rather than incomparable, so RDFterm-equal answers
+ * FALSE for it instead of raising. Fuseki and GraphDB both answer every
+ * row for a FILTER comparing against one.
+ *
+ * expr: the operand to examine
+ *
+ * returns true if the operand is such a literal
+ */
+static bool
+ConstIsUncomparableLiteral(Expr *expr)
+{
+	Const *constant;
+	rdfnode_info info;
+
+	if (expr == NULL || !IsA(expr, Const))
+		return false;
+
+	constant = (Const *) expr;
+
+	if (constant->constisnull || constant->consttype != RDFNODEOID)
+		return false;
+
+	info = parse_rdfnode((rdfnode *) PG_DETOAST_DATUM(constant->constvalue));
+
+	if (info.isIRI || info.isBlank || strlen(info.lang) != 0)
+		return false;
+
+	return !(info.isNumeric || info.isString || info.isPlainLiteral ||
+			 info.isBoolean || info.isDate || info.isDateTime ||
+			 info.isTime || info.isDuration);
+}
+
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *arg, *opername, *left, *right, oprkind;
@@ -7206,6 +7251,29 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (!canHandleType(rightargtype))
 		{
 			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: cannot handle data type", __func__);
+			return NULL;
+		}
+
+		/*
+		 * '!=' against a literal whose datatype SPARQL cannot compare is
+		 * evaluated locally.
+		 *
+		 * Such a pair falls to RDFterm-equal (17.4.1.7), which raises a type
+		 * error for two literals that are not the same term. A FILTER drops
+		 * the row an error comes from, so '?o != C' keeps nothing at the
+		 * endpoint, while the operator here answers true for every term that
+		 * is not C and keeps them all. The scan would then return fewer rows
+		 * than the query asks for.
+		 *
+		 * '=' is left pushable: there the endpoint's TRUE and type error fall
+		 * out exactly as the operator's true and false do, so the two select
+		 * the same rows.
+		 */
+		if ((strcmp(opername, "!=") == 0 || strcmp(opername, "<>") == 0) &&
+			(ConstIsUncomparableLiteral(linitial(oper->args)) ||
+			 ConstIsUncomparableLiteral(lsecond(oper->args))))
+		{
+			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: '!=' against a literal SPARQL cannot compare", __func__);
 			return NULL;
 		}
 

@@ -200,6 +200,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### Pushdown
 
+* **`!=` against a literal SPARQL cannot compare was sent to the endpoint**: a literal carrying a datatype outside the operator table of SPARQL 1.1 §17.3 — `xsd:anyURI`, or one of the application's own — falls to RDFterm-equal in §17.4.1.7, which raises a type error for two literals that are not the same term. A `FILTER` drops the row an error comes from, so `?o != C` keeps nothing at the endpoint, while the operator in PostgreSQL answers true for every term that is not `C`. A scan carrying such a condition returned fewer rows than the query asked for. It is now evaluated locally. `=` is unaffected and still pushes down, since there the endpoint's TRUE and type error select the same rows as the operator's true and false; so are language-tagged literals, IRIs, and every datatype the table does cover.
+
 * **A dropped column cost a foreign table its pushdown**: Dropped columns still looked mapped on PostgreSQL 17 and earlier, blocking rewrite logic since the query doesn't select a dropped variable. Dropped columns are now skipped when the mapping is read, so tables plan consistently across versions. (Tomas Vondra <tomas@vondra.me>)
 
 * **Improved function pushdown selectivity**: Only functions from `pg_catalog` and `rdf_fdw` are sent to the endpoint, and semantic mismatches between PostgreSQL and SPARQL functions (like `replace`, `upper`/`lower`, `concat`, `extract`, `round`) are now avoided by keeping them local. (Tomas Vondra <tomas@vondra.me>)

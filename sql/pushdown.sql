@@ -368,6 +368,45 @@ WHERE
   true <> o AND
   false <> o;
 
+/*
+ * A literal whose datatype is outside the operator table of SPARQL 17.3 falls
+ * to RDFterm-equal (17.4.1.7), which raises a type error for two literals that
+ * are not the same term. A FILTER drops the row an error comes from, so
+ * '?o != C' keeps nothing at the endpoint while the operator here keeps every
+ * term that is not C: '!=' against such a literal stays local. '=' does not
+ * have to, since the endpoint's TRUE and type error select the same rows as
+ * the operator's true and false.
+ */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"http://a"^^xsd:anyURI'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o != '"a"^^<http://example.org/foo>'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE '"http://a"^^xsd:anyURI'::rdfnode <> o;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"http://a"^^xsd:anyURI'::rdfnode;
+
+/* the datatypes the table does cover are unaffected, and so is a
+   language-tagged literal, which RDFterm-equal answers FALSE for rather than
+   raising, and an IRI */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"a"'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"a"^^xsd:string'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"1"^^xsd:integer'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"a"@en'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '<http://example.org/x>'::rdfnode;
+
 /* ================================================================
  * SPARQL 17.3 - Operator Mapping (pg-typed columns)
  * ================================================================ */

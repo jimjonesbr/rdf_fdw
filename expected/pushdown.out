@@ -696,6 +696,129 @@ WHERE
    Remote Filter: ((?p = <http://example.org/flag>) && ("true"^^<http://www.w3.org/2001/XMLSchema#boolean> != ?o) && ("false"^^<http://www.w3.org/2001/XMLSchema#boolean> != ?o))
 (6 rows)
 
+/*
+ * A literal whose datatype is outside the operator table of SPARQL 17.3 falls
+ * to RDFterm-equal (17.4.1.7), which raises a type error for two literals that
+ * are not the same term. A FILTER drops the row an error comes from, so
+ * '?o != C' keeps nothing at the endpoint while the operator here keeps every
+ * term that is not C: '!=' against such a literal stays local. '=' does not
+ * have to, since the endpoint's TRUE and type error select the same rows as
+ * the operator's true and false.
+ */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"http://a"^^xsd:anyURI'::rdfnode;
+                                          QUERY PLAN                                          
+----------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o <> '"http://a"^^<http://www.w3.org/2001/XMLSchema#anyURI>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o != '"a"^^<http://example.org/foo>'::rdfnode;
+                              QUERY PLAN                              
+----------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: (rdfnode_ft.o <> '"a"^^<http://example.org/foo>'::rdfnode)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE '"http://a"^^xsd:anyURI'::rdfnode <> o;
+                                          QUERY PLAN                                          
+----------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Filter: ('"http://a"^^<http://www.w3.org/2001/XMLSchema#anyURI>'::rdfnode <> rdfnode_ft.o)
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: not pushable
+(7 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"http://a"^^xsd:anyURI'::rdfnode;
+                                   QUERY PLAN                                    
+---------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o = "http://a"^^<http://www.w3.org/2001/XMLSchema#anyURI>))
+(6 rows)
+
+/* the datatypes the table does cover are unaffected, and so is a
+   language-tagged literal, which RDFterm-equal answers FALSE for rather than
+   raising, and an IRI */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"a"'::rdfnode;
+            QUERY PLAN             
+-----------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o != "a"))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"a"^^xsd:string'::rdfnode;
+                                QUERY PLAN                                 
+---------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o != "a"^^<http://www.w3.org/2001/XMLSchema#string>))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"1"^^xsd:integer'::rdfnode;
+                                 QUERY PLAN                                 
+----------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o != "1"^^<http://www.w3.org/2001/XMLSchema#integer>))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '"a"@en'::rdfnode;
+            QUERY PLAN             
+-----------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o != "a"@en))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o <> '<http://example.org/x>'::rdfnode;
+                    QUERY PLAN                     
+---------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o != <http://example.org/x>))
+(6 rows)
+
 /* ================================================================
  * SPARQL 17.3 - Operator Mapping (pg-typed columns)
  * ================================================================ */
