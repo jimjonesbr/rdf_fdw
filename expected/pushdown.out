@@ -1382,6 +1382,226 @@ HINT:  Use the "rdfnode" type instead.
    Remote Filter: ((?type = IRI("http://example.org/SomeType")))
 (6 rows)
 
+/* iri column: the value is written into a SPARQL string, so a '"' in it must
+   be escaped rather than ending the string and letting the rest be read as
+   query text. The constant on the right and the constant on the left are two
+   separate branches of the deparser, so both are covered. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE type = 'http://example.org/a") || isLiteral("x';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                                  QUERY PLAN                                  
+------------------------------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: type
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?type 
+   Remote Filter: ((?type = IRI("http://example.org/a\") || isLiteral(\"x")))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE 'http://example.org/a") || isLiteral("x' = type;
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                                  QUERY PLAN                                  
+------------------------------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: type
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?type 
+   Remote Filter: ((IRI("http://example.org/a\") || isLiteral(\"x") = ?type))
+(6 rows)
+
+/* a backslash already in the value must not be joined to the escape added
+   for the quote that follows it */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE type = 'http://example.org/a\") || isLiteral("x';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                                   QUERY PLAN                                   
+--------------------------------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: type
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?type 
+   Remote Filter: ((?type = IRI("http://example.org/a\\\") || isLiteral(\"x")))
+(6 rows)
+
+/* a newline cannot stand inside a SPARQL string literal either */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE type = E'http://example.org/a\nb';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                         QUERY PLAN                          
+-------------------------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: type
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?type 
+   Remote Filter: ((?type = IRI("http://example.org/a\nb")))
+(6 rows)
+
+/* The escaping happens once, where the constant is read, so every other
+   column option gets it too: a line break in the value used to reach the
+   endpoint as a line break, and the request was refused. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label = E'a\nb';          -- language '*'
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                QUERY PLAN                 
+-------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((STR(?label) = "a\nb"))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label = E'a\tb';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                QUERY PLAN                 
+-------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((STR(?label) = "a\tb"))
+(6 rows)
+
+/* the literaltype branch needs a text column carrying the option */
+CREATE FOREIGN TABLE escaping_ft (
+  typed  text OPTIONS (variable '?typed', literaltype 'xsd:string'),
+  tagged text OPTIONS (variable '?tagged', language 'en'),
+  plain  text OPTIONS (variable '?plain')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT * WHERE {<http://example.org/s> ?p ?o}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT typed  FROM escaping_ft WHERE typed  = E'a\nb';
+WARNING:  the rdf_fdw FOREIGN TABLE "escaping_ft" has columns using native PostgreSQL types which are deprecated: typed, tagged, plain
+HINT:  Use the "rdfnode" type instead.
+                                   QUERY PLAN                                    
+---------------------------------------------------------------------------------
+ Foreign Scan on public.escaping_ft
+   Output: typed
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?typed 
+   Remote Filter: ((?typed = "a\nb"^^<http://www.w3.org/2001/XMLSchema#string>))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT tagged FROM escaping_ft WHERE tagged = E'a\nb';
+WARNING:  the rdf_fdw FOREIGN TABLE "escaping_ft" has columns using native PostgreSQL types which are deprecated: typed, tagged, plain
+HINT:  Use the "rdfnode" type instead.
+                QUERY PLAN                
+------------------------------------------
+ Foreign Scan on public.escaping_ft
+   Output: tagged
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?tagged 
+   Remote Filter: ((?tagged = "a\nb"@en))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT plain  FROM escaping_ft WHERE plain  = E'a\nb';
+WARNING:  the rdf_fdw FOREIGN TABLE "escaping_ft" has columns using native PostgreSQL types which are deprecated: typed, tagged, plain
+HINT:  Use the "rdfnode" type instead.
+              QUERY PLAN              
+--------------------------------------
+ Foreign Scan on public.escaping_ft
+   Output: plain
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?plain 
+   Remote Filter: ((?plain = "a\nb"))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT plain  FROM escaping_ft WHERE plain  = 'a\nb';
+WARNING:  the rdf_fdw FOREIGN TABLE "escaping_ft" has columns using native PostgreSQL types which are deprecated: typed, tagged, plain
+HINT:  Use the "rdfnode" type instead.
+              QUERY PLAN               
+---------------------------------------
+ Foreign Scan on public.escaping_ft
+   Output: plain
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?plain 
+   Remote Filter: ((?plain = "a\\nb"))
+(6 rows)
+
+/* A backslash in a native datum is a backslash, not the start of an escape.
+   It used to be handed over as written, so "a\nb" arrived at the endpoint
+   meaning a line break. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label = 'a\nb';
+WARNING:  the rdf_fdw FOREIGN TABLE "pgtypes_ft" has columns using native PostgreSQL types which are deprecated: label, version, num_smallint, num_int, num_real, num_double, num_numeric, modified, tstz, dt, ttz, bl, type
+HINT:  Use the "rdfnode" type instead.
+                 QUERY PLAN                 
+--------------------------------------------
+ Foreign Scan on public.pgtypes_ft
+   Output: label
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?label 
+   Remote Filter: ((STR(?label) = "a\\nb"))
+(6 rows)
+
+/* An rdfnode's lexical form already carries its escapes, so they must not be
+   escaped a second time: both of these mean one line break, not a backslash
+   followed by an n. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"a\nb"@en'::rdfnode;
+             QUERY PLAN              
+-------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o = "a\nb"@en))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = (E'"a\nb"@en')::rdfnode;
+             QUERY PLAN              
+-------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o = "a\nb"@en))
+(6 rows)
+
+/* and a plain rdfnode constant carrying a raw tab used to be wrapped twice,
+   so the term became the string '"a<tab>b"', quotes included */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = (E'a\tb')::rdfnode;
+            QUERY PLAN             
+-----------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o = "a\tb"))
+(6 rows)
+
 /* ================================================================
  * pg function pushdown (length, abs, round, ceil, floor,
  *                        substring, md5)
@@ -3004,10 +3224,11 @@ SELECT o FROM rdfnode_ft WHERE o = '"x"'::rdfnode;
 (6 rows)
 
 DROP SERVER test_server CASCADE;
-NOTICE:  drop cascades to 19 other objects
+NOTICE:  drop cascades to 20 other objects
 DETAIL:  drop cascades to foreign table rdfnode_ft
 drop cascades to foreign table rdfnode_opt_ft
 drop cascades to foreign table pgtypes_ft
+drop cascades to foreign table escaping_ft
 drop cascades to foreign table np_minus
 drop cascades to foreign table np_union
 drop cascades to foreign table np_limit

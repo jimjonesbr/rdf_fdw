@@ -614,6 +614,76 @@ EXPLAIN (VERBOSE, COSTS OFF)
 SELECT type FROM pgtypes_ft
 WHERE type = 'http://example.org/SomeType';
 
+/* iri column: the value is written into a SPARQL string, so a '"' in it must
+   be escaped rather than ending the string and letting the rest be read as
+   query text. The constant on the right and the constant on the left are two
+   separate branches of the deparser, so both are covered. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE type = 'http://example.org/a") || isLiteral("x';
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE 'http://example.org/a") || isLiteral("x' = type;
+
+/* a backslash already in the value must not be joined to the escape added
+   for the quote that follows it */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE type = 'http://example.org/a\") || isLiteral("x';
+
+/* a newline cannot stand inside a SPARQL string literal either */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT type FROM pgtypes_ft
+WHERE type = E'http://example.org/a\nb';
+
+/* The escaping happens once, where the constant is read, so every other
+   column option gets it too: a line break in the value used to reach the
+   endpoint as a line break, and the request was refused. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label = E'a\nb';          -- language '*'
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label = E'a\tb';
+
+/* the literaltype branch needs a text column carrying the option */
+CREATE FOREIGN TABLE escaping_ft (
+  typed  text OPTIONS (variable '?typed', literaltype 'xsd:string'),
+  tagged text OPTIONS (variable '?tagged', language 'en'),
+  plain  text OPTIONS (variable '?plain')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT * WHERE {<http://example.org/s> ?p ?o}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT typed  FROM escaping_ft WHERE typed  = E'a\nb';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT tagged FROM escaping_ft WHERE tagged = E'a\nb';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT plain  FROM escaping_ft WHERE plain  = E'a\nb';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT plain  FROM escaping_ft WHERE plain  = 'a\nb';
+
+/* A backslash in a native datum is a backslash, not the start of an escape.
+   It used to be handed over as written, so "a\nb" arrived at the endpoint
+   meaning a line break. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT label FROM pgtypes_ft WHERE label = 'a\nb';
+
+/* An rdfnode's lexical form already carries its escapes, so they must not be
+   escaped a second time: both of these mean one line break, not a backslash
+   followed by an n. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"a\nb"@en'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = (E'"a\nb"@en')::rdfnode;
+
+/* and a plain rdfnode constant carrying a raw tab used to be wrapped twice,
+   so the term became the string '"a<tab>b"', quotes included */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = (E'a\tb')::rdfnode;
+
 /* ================================================================
  * pg function pushdown (length, abs, round, ceil, floor,
  *                        substring, md5)

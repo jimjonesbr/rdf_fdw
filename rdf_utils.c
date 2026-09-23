@@ -370,6 +370,79 @@ char *QuoteRDFLiteral(const char *input)
 }
 
 /*
+ * EscapeSPARQLStringContent
+ * -------------------------
+ *
+ * Escapes a lexical value so that it can stand inside a SPARQL string
+ * literal. SPARQL 1.1 rule [156] STRING_LITERAL2 excludes the double quote,
+ * the backslash and the two line-break characters from the body of a literal,
+ * and rule [160] ECHAR gives the escapes written here. The quotes themselves
+ * are not added: the caller decides whether the result becomes a plain
+ * literal, a language-tagged one or the argument of IRI().
+ *
+ * escape_backslash says whether the value carries escapes already. A native
+ * PostgreSQL datum carries none -- a backslash in it is a backslash and a
+ * quote is a quote, and both have to be written out -- while an rdfnode's
+ * lexical form carries them, since rdfnode_in() escapes a quote and leaves a
+ * sequence such as \n or \uXXXX as it was written. Escaping those a second
+ * time would change the value. A raw line break is in neither form and is
+ * escaped for both.
+ *
+ * This is why QuoteRDFLiteral() cannot serve here: it is written for the
+ * second kind of input, so it leaves a backslash where it stands and escapes
+ * only a quote that is not already protected, and it passes a raw line break
+ * through into the middle of a literal, which no endpoint parses.
+ *
+ * str             : the lexical value
+ * escape_backslash: true when the value carries no escapes of its own
+ *
+ * returns a palloc'd copy, ready to be wrapped in quotes
+ */
+char *
+EscapeSPARQLStringContent(const char *str, bool escape_backslash)
+{
+	StringInfoData buf;
+	const char *p;
+
+	Assert(str != NULL);
+
+	initStringInfo(&buf);
+
+	for (p = str; *p; p++)
+	{
+		switch (*p)
+		{
+			case '\\':
+				if (escape_backslash)
+					appendStringInfoString(&buf, "\\\\");
+				else
+					appendStringInfoChar(&buf, *p);
+				break;
+			case '"':
+				if (escape_backslash)
+					appendStringInfoString(&buf, "\\\"");
+				else
+					appendStringInfoChar(&buf, *p);
+				break;
+			case '\n':
+				appendStringInfoString(&buf, "\\n");
+				break;
+			case '\r':
+				appendStringInfoString(&buf, "\\r");
+				break;
+			case '\t':
+				appendStringInfoString(&buf, "\\t");
+				break;
+			default:
+				appendStringInfoChar(&buf, *p);
+				break;
+		}
+	}
+
+	return buf.data;
+}
+
+/*
  * cstring_to_rdfliteral
  * ---------------------
  *

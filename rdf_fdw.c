@@ -7082,21 +7082,23 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				char *l = lang(c);
 				char *dt = datatype(c);
 				char *lex_str = lex(c);
-				bool needs_escaping = false;
 
-				/* Check if the lexical value contains control characters that need escaping */
-				for (const char *p = lex_str; *p; p++)
-				{
-					if (*p == '\n' || *p == '\r' || *p == '\t')
-					{
-						needs_escaping = true;
-						break;
-					}
-				}
-
-				/* Escape control characters in the lexical value if needed */
-				if (needs_escaping)
-					lex_str = EscapeSPARQLLiteral(c);
+				/*
+				 * The lexical value is going to be written into a SPARQL
+				 * string literal -- by one of the branches below, or by the
+				 * operator deparser that consumes the result -- so the
+				 * characters that cannot stand inside one are escaped here,
+				 * once, while the constant's own type still says which of
+				 * them are content and which are already escapes.
+				 *
+				 * A native PostgreSQL datum carries no escapes: a backslash
+				 * in it is a backslash and a quote is a quote. An rdfnode's
+				 * lexical form carries them, since rdfnode_in() escapes a
+				 * quote and leaves a sequence such as \n as it was written.
+				 * A raw line break is in neither, and is escaped for both.
+				 */
+				lex_str = EscapeSPARQLStringContent(lex_str,
+													constant->consttype != RDFNODEOID);
 
 				initStringInfo(&result);
 

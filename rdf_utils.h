@@ -29,6 +29,7 @@ extern int LocateKeyword(char *str, char *start_chars, char *keyword, char *end_
 /* RDF Literal Construction */
 extern char *rdfnode_to_cstring(rdfnode *node);
 extern char *QuoteRDFLiteral(const char *input);
+extern char *EscapeSPARQLStringContent(const char *str, bool escape_backslash);
 extern char *cstring_to_rdfliteral(char *input);
 extern char *EscapeSPARQLLiteral(const char *input);
 extern char *ExpandDatatypePrefix(char *str);
