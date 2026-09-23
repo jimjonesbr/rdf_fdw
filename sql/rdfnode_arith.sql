@@ -70,6 +70,20 @@ SELECT '<http://example.org/s>'::rdfnode + '"1"^^xsd:integer'::rdfnode;
 SELECT '"1"^^xsd:integer'::rdfnode + '"2025-01-01"^^xsd:date'::rdfnode;
 SELECT '"1"^^xsd:integer'::rdfnode / '"0"^^xsd:integer'::rdfnode;
 
+/*
+ * Division by zero is a type error only for the exact datatypes. XPath 4.3.6
+ * raises FOAR0001 when both operands are xs:decimal or xs:integer, and asks
+ * for IEEE 754 division otherwise, so a double or a float answers with an
+ * infinity or, for 0/0, with NaN. One double operand is enough, since
+ * promotion decides the datatype of the operation.
+ */
+SELECT '"1"^^xsd:decimal'::rdfnode / '"0"^^xsd:decimal'::rdfnode;
+SELECT '"1"^^xsd:double'::rdfnode / '"0"^^xsd:double'::rdfnode    AS double_inf,
+       '"-1"^^xsd:double'::rdfnode / '"0"^^xsd:double'::rdfnode   AS double_neg_inf,
+       '"0"^^xsd:double'::rdfnode / '"0"^^xsd:double'::rdfnode    AS double_nan,
+       '"1"^^xsd:float'::rdfnode / '"0"^^xsd:float'::rdfnode      AS float_inf,
+       '"1"^^xsd:integer'::rdfnode / '"0"^^xsd:double'::rdfnode   AS promoted_inf;
+
 /* a plain literal is not a numeric literal, whatever it looks like */
 SELECT '"1"'::rdfnode + '"2"'::rdfnode;
 

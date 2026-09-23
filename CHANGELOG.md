@@ -128,6 +128,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### RDF values, literals and functions
 
+* **Dividing two floating-point terms by zero raised an error**: `/` reported `division by zero` for every datatype. XPath 4.3.6 `op:numeric-divide`, which SPARQL 1.1 §17.3 maps `/` onto, raises only when both operands are `xs:decimal` or `xs:integer`; for `xsd:float` and `xsd:double` it asks for IEEE 754 division, so `"1"^^xsd:double / "0"^^xsd:double` is `"INF"^^xsd:double` and `"0"^^xsd:double / "0"^^xsd:double` is `"NaN"^^xsd:double`. The exact datatypes still raise.
+
 * **A literal was treated as a number without its lexical form being checked against its datatype**: `isNumeric()` used `strtod()` which accepts spellings outside XSD (hexadecimal, `nan`, `inf`). Integer subtypes were never range-checked. Lexical forms are now validated against the datatype's lexical space and value range; `"0x10"^^xsd:integer` and `"99999"^^xsd:short` are now correctly non-numeric. (Tomas Vondra <tomas@vondra.me>)
 
 * **Fixed blank node handling in `sparql.describe()`**: Unnamed blank nodes are now correctly reported with generated labels and their statements. (Tomas Vondra <tomas@vondra.me>)

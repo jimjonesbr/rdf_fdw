@@ -88,10 +88,15 @@ rdfnode_numeric_arith(const rdfnode_info *left, const rdfnode_info *right, char 
 			case '-': result = l - r; break;
 			case '*': result = l * r; break;
 			default:
-				if (r == 0.0)
-					ereport(ERROR,
-							(errcode(ERRCODE_DIVISION_BY_ZERO),
-							 errmsg("division by zero")));
+				/*
+				 * Division by zero is not an error here. XPath 4.3.6
+				 * op:numeric-divide raises FOAR0001 only when both operands
+				 * are xs:decimal or xs:integer; for xs:float and xs:double it
+				 * asks for IEEE 754 division, which answers INF, -INF or NaN
+				 * according to the signs of the two zeros. Fuseki and GraphDB
+				 * both answer INF for 1.0e0 / 0.0e0. The numeric branch below
+				 * keeps raising, which is the decimal and integer case.
+				 */
 				result = l / r;
 				break;
 		}
