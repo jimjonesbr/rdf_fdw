@@ -1420,6 +1420,23 @@ bool LiteralsComparable(rdfnode *n1, rdfnode *n2)
 	if (bothNumeric || bothDate || bothDateTime || bothDuration || bothString || bothTime || bothBoolean)
 		return true;
 
+	/*
+	 * Two literals can be incomparable for either of two reasons, and saying
+	 * "different datatypes" for both of them describes only the first. A pair
+	 * that shares a datatype the operator table of SPARQL 1.1 17.3 does not
+	 * list -- xsd:anyURI, or a datatype of the application's own -- has no
+	 * ordering defined for it at all, and reporting that as a difference
+	 * between the two sends the reader looking for one that is not there.
+	 */
+	if (strlen(rdfnode1.dtype) != 0 &&
+		strcmp(rdfnode1.dtype, rdfnode2.dtype) == 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("cannot compare literals of datatype %s", rdfnode1.dtype),
+				 errdetail("SPARQL 1.1 defines the ordering operators over numeric, "
+						   "boolean, string, date, dateTime, time and duration "
+						   "literals.")));
+
 	ereport(ERROR,
 			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 			 errmsg("cannot compare literals of different datatypes")));

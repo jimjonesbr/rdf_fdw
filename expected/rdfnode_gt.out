@@ -158,13 +158,17 @@ ERROR:  cannot compare language-tagged literals
 -- datatypes the ordering operators are defined over, so each of these is a
 -- type error -- which is what Fuseki and GraphDB report for them too.
 SELECT '"http://a"^^xsd:anyURI'::rdfnode > '"http://b"^^xsd:anyURI'::rdfnode;
-ERROR:  cannot compare literals of different datatypes
+ERROR:  cannot compare literals of datatype <http://www.w3.org/2001/XMLSchema#anyURI>
+DETAIL:  SPARQL 1.1 defines the ordering operators over numeric, boolean, string, date, dateTime, time and duration literals.
 SELECT '"http://a"^^xsd:anyURI'::rdfnode > '"http://a"^^xsd:anyURI'::rdfnode;
-ERROR:  cannot compare literals of different datatypes
+ERROR:  cannot compare literals of datatype <http://www.w3.org/2001/XMLSchema#anyURI>
+DETAIL:  SPARQL 1.1 defines the ordering operators over numeric, boolean, string, date, dateTime, time and duration literals.
 SELECT '""^^xsd:anyURI'::rdfnode > '"http://b"^^xsd:anyURI'::rdfnode;
-ERROR:  cannot compare literals of different datatypes
+ERROR:  cannot compare literals of datatype <http://www.w3.org/2001/XMLSchema#anyURI>
+DETAIL:  SPARQL 1.1 defines the ordering operators over numeric, boolean, string, date, dateTime, time and duration literals.
 SELECT '"http://\u00E9"^^xsd:anyURI'::rdfnode > '"http://\u00EA"^^xsd:anyURI'::rdfnode;
-ERROR:  cannot compare literals of different datatypes
+ERROR:  cannot compare literals of datatype <http://www.w3.org/2001/XMLSchema#anyURI>
+DETAIL:  SPARQL 1.1 defines the ordering operators over numeric, boolean, string, date, dateTime, time and duration literals.
 -- Incompatible datatype comparisons
 SELECT '"41"'::rdfnode > '"42"^^xsd:int'::rdfnode; -- ERROR: cannot compare literals of different datatypes
 ERROR:  cannot compare literals of different datatypes
