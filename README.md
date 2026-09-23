@@ -2821,7 +2821,7 @@ SELECT sparql.timezone('"2025-05-17T10:00:00+02:00"^^xsd:dateTime');
 sparql.tz(datetime rdfnode) → rdfnode
 ```
 
-Returns the timezone offset as a string (e.g., `+02:00` or `Z`). Implements the SPARQL 1.1 [TZ()](https://www.w3.org/TR/sparql11-query/#func-tz) function.
+Returns the timezone offset as a string (e.g., `+02:00` or `Z`), or the empty string if the literal carries no timezone. Implements the SPARQL 1.1 [TZ()](https://www.w3.org/TR/sparql11-query/#func-tz) function.
 
 Examples:
 
@@ -2836,6 +2836,12 @@ SELECT sparql.tz('"2025-05-17T08:00:00Z"^^xsd:dateTime');
  tz  
 -----
  "Z"
+(1 row)
+
+SELECT sparql.tz('"2025-05-17T08:00:00"^^xsd:dateTime');
+ tz 
+----
+ ""
 (1 row)
 ```
 

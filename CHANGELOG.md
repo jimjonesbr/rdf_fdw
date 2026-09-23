@@ -128,6 +128,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### RDF values, literals and functions
 
+* **`sparql.tz()` raised for a literal with no timezone**: SPARQL 1.1 §17.4.5.8 says TZ "[r]eturns the empty string if there is no timezone", and gives `tz("2011-01-10T14:45:13.815"^^xsd:dateTime)` the value `""`. It raised `TZ(): datetime has no timezone` instead, which is what `sparql.timezone()` is meant to do and still does. Fuseki, GraphDB and QLever all return the empty string.
+
 * **`sparql.sum()` and `sparql.avg()` over `xsd:double` or `xsd:float` did not compute in that datatype**: both accumulate in PostgreSQL's `numeric`, which is neither bounded by IEEE 754 nor spelled the way XSD spells its special values. A sum that ran past the largest finite double came back as a 309-digit integer, which no `xsd:double` holds, and one whose value was an infinity came back as `"Infinity"`, a lexical form XSD 1.1 Part 2 §3.3.5 does not admit. The result of a promoted sum or average is now written as the IEEE value it stands for, with the infinities spelled `INF` and `-INF`, matching what Fuseki and GraphDB answer.
 
 * **Dividing two floating-point terms by zero raised an error**: `/` reported `division by zero` for every datatype. XPath 4.3.6 `op:numeric-divide`, which SPARQL 1.1 §17.3 maps `/` onto, raises only when both operands are `xs:decimal` or `xs:integer`; for `xsd:float` and `xsd:double` it asks for IEEE 754 division, so `"1"^^xsd:double / "0"^^xsd:double` is `"INF"^^xsd:double` and `"0"^^xsd:double / "0"^^xsd:double` is `"NaN"^^xsd:double`. The exact datatypes still raise.

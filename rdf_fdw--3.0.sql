@@ -4056,8 +4056,11 @@ BEGIN
 
   tz_offset := substring(lexical from '([-+]\d{2}:\d{2}|Z)$');
 
+  -- SPARQL 1.1 17.4.5.8: "Returns the timezone part of arg as a simple
+  -- literal. Returns the empty string if there is no timezone." TZ is the
+  -- total function of the pair; TIMEZONE, in 17.4.5.7, is the one that raises.
   IF tz_offset IS NULL THEN
-    RAISE EXCEPTION 'TZ(): datetime has no timezone';
+    RETURN '""';
   END IF;
 
   IF tz_offset = 'Z' THEN

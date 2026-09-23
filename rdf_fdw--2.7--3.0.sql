@@ -519,6 +519,50 @@ BEGIN
   RETURN sparql.timezone($1::@extschema@.rdfnode);
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION sparql.tz(lit rdfnode)
+RETURNS rdfnode AS $$
+DECLARE
+  lexical    text := sparql.lex(lit);
+  tz_offset  text;
+  hh         int;
+  mm         int;
+  dt         text := sparql.datatype($1);
+BEGIN
+
+  -- Validate input
+  IF dt <> '<http://www.w3.org/2001/XMLSchema#dateTime>' THEN
+    RAISE EXCEPTION 'TZ(): argument must be xsd:dateTime, got %', dt;
+  END IF;
+
+  -- Basic xsd:dateTime format validation
+  IF NOT lexical ~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.\d+)?([+-]\d{2}:\d{2}|Z)?$' THEN
+    RAISE EXCEPTION 'TZ(): invalid xsd:dateTime format: %', lexical;
+  END IF;
+
+  tz_offset := substring(lexical from '([-+]\d{2}:\d{2}|Z)$');
+
+  -- SPARQL 1.1 17.4.5.8: "Returns the timezone part of arg as a simple
+  -- literal. Returns the empty string if there is no timezone." TZ is the
+  -- total function of the pair; TIMEZONE, in 17.4.5.7, is the one that raises.
+  IF tz_offset IS NULL THEN
+    RETURN '""';
+  END IF;
+
+  IF tz_offset = 'Z' THEN
+    RETURN '"Z"';
+  END IF;
+
+  hh := abs(substring(tz_offset from 2 for 2)::int);
+  mm := substring(tz_offset from 5 for 2)::int;
+
+  IF hh > 14 OR mm > 59 OR (hh = 14 AND mm > 0) THEN
+    RAISE EXCEPTION 'TZ(): invalid timezone offset: %', tz_offset;
+  END IF;
+
+  RETURN '"' || tz_offset || '"';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
 CREATE OR REPLACE FUNCTION sparql.tz(text)
 RETURNS rdfnode AS $$
 BEGIN

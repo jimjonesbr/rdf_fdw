@@ -883,7 +883,11 @@ SELECT sparql.timezone('"not a date"^^xsd:string');
 /* TZ */
 SELECT sparql.tz('"2011-01-10T14:45:13.815-05:00"^^xsd:dateTime');
 SELECT sparql.tz('"2011-01-10T14:45:13.815Z"^^xsd:dateTime');
+/* SPARQL 1.1 17.4.5.8 gives this one the empty string, not an error: TZ is
+   the total function of the pair, and TIMEZONE is the one that raises. The
+   second form shows the result is a term a caller can go on using. */
 SELECT sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime');
+SELECT sparql.concat('"["', sparql.tz('"2011-01-10T14:45:13.815"^^xsd:dateTime'), '"]"');
 SELECT sparql.tz('"2020-12-01T08:00:00-05:00"^^xsd:dateTime');
 SELECT sparql.tz('"2020-12-01T08:00:00+02:30"^^xsd:dateTime');
 SELECT sparql.tz('"2020-12-01T08:00:00Z"^^xsd:dateTime');
