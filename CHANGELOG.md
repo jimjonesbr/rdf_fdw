@@ -128,6 +128,10 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### RDF values, literals and functions
 
+* **An `xsd:anyURI` literal was treated as a plain literal**: `"http://a"^^xsd:anyURI` compared equal to `"http://a"` and to `"http://a"^^xsd:string`, and two `xsd:anyURI` terms could be ordered against each other. SPARQL has no rule making `xsd:anyURI` an `xsd:string`: RDF 1.1 Concepts §3.3 makes two literals the same term only when lexical form, datatype IRI and language tag all agree, and SPARQL 1.1 §17.3 does not list `xsd:anyURI` among the datatypes `=` and the ordering operators are defined over. The datatype now behaves like any other unrecognised one — equal to a term written exactly as it is, unequal to one with a different datatype, and not ordered against anything. Fuseki and GraphDB report the same pairs as type errors.
+
+  The mismatch was visible in a single query: a condition comparing an `xsd:anyURI` column to a plain literal answered differently depending on whether it was pushed down to the endpoint or evaluated in PostgreSQL.
+
 * **`sparql.replace()` did not understand capture-group references**: SPARQL 1.1 §17.4.3.15 defines REPLACE as XPath's `fn:replace`, whose replacement string writes a captured group as `$1` to `$9`, a literal dollar as `\$` and a literal backslash as `\\`. The replacement was handed to PostgreSQL's `regexp_replace`, which spells a group `\1` instead, so `REPLACE("abab", "a(b)", "[$1]")` answered `"[$1][$1]"` where every endpoint answers `"[b][b]"`, and a `\1` in the replacement inserted a group rather than the digit. The replacement is now rewritten between the two syntaxes.
 
 * **`sparql.tz()` raised for a literal with no timezone**: SPARQL 1.1 §17.4.5.8 says TZ "[r]eturns the empty string if there is no timezone", and gives `tz("2011-01-10T14:45:13.815"^^xsd:dateTime)` the value `""`. It raised `TZ(): datetime has no timezone` instead, which is what `sparql.timezone()` is meant to do and still does. Fuseki, GraphDB and QLever all return the empty string.

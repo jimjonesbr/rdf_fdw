@@ -154,31 +154,17 @@ SELECT '"abc"@de'::rdfnode > '"abc"@en'::rdfnode; -- ERROR: cannot compare langu
 ERROR:  cannot compare language-tagged literals
 SELECT '"abc"@en'::rdfnode > '"abc"@EN'::rdfnode; -- ERROR: cannot compare language-tagged literals
 ERROR:  cannot compare language-tagged literals
--- xsd:anyURI comparisons
-SELECT '"http://a"^^xsd:anyURI'::rdfnode > '"http://b"^^xsd:anyURI'::rdfnode; -- Returns t
- ?column? 
-----------
- f
-(1 row)
-
-SELECT '"http://a"^^xsd:anyURI'::rdfnode > '"http://a"^^xsd:anyURI'::rdfnode; -- Returns t
- ?column? 
-----------
- f
-(1 row)
-
-SELECT '""^^xsd:anyURI'::rdfnode > '"http://b"^^xsd:anyURI'::rdfnode; -- Returns t
- ?column? 
-----------
- f
-(1 row)
-
-SELECT '"http://\u00E9"^^xsd:anyURI'::rdfnode > '"http://\u00EA"^^xsd:anyURI'::rdfnode; -- Returns t
- ?column? 
-----------
- f
-(1 row)
-
+-- xsd:anyURI comparisons. SPARQL 1.1 17.3 does not list xsd:anyURI among the
+-- datatypes the ordering operators are defined over, so each of these is a
+-- type error -- which is what Fuseki and GraphDB report for them too.
+SELECT '"http://a"^^xsd:anyURI'::rdfnode > '"http://b"^^xsd:anyURI'::rdfnode;
+ERROR:  cannot compare literals of different datatypes
+SELECT '"http://a"^^xsd:anyURI'::rdfnode > '"http://a"^^xsd:anyURI'::rdfnode;
+ERROR:  cannot compare literals of different datatypes
+SELECT '""^^xsd:anyURI'::rdfnode > '"http://b"^^xsd:anyURI'::rdfnode;
+ERROR:  cannot compare literals of different datatypes
+SELECT '"http://\u00E9"^^xsd:anyURI'::rdfnode > '"http://\u00EA"^^xsd:anyURI'::rdfnode;
+ERROR:  cannot compare literals of different datatypes
 -- Incompatible datatype comparisons
 SELECT '"41"'::rdfnode > '"42"^^xsd:int'::rdfnode; -- ERROR: cannot compare literals of different datatypes
 ERROR:  cannot compare literals of different datatypes

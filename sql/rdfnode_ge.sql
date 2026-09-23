@@ -42,7 +42,9 @@ SELECT '"chat"@en'::rdfnode >= '"chat"@fr'::rdfnode;
 SELECT '"abc"@de'::rdfnode >= '"abc"@en'::rdfnode;
 SELECT '"abc"@en'::rdfnode >= '"abc"@EN'::rdfnode;
 
--- xsd:anyURI comparisons
+-- xsd:anyURI comparisons. SPARQL 1.1 17.3 does not list xsd:anyURI among the
+-- datatypes the ordering operators are defined over, so each of these is a
+-- type error -- which is what Fuseki and GraphDB report for them too.
 SELECT '"http://a"^^xsd:anyURI'::rdfnode >= '"http://b"^^xsd:anyURI'::rdfnode;
 SELECT '"http://a"^^xsd:anyURI'::rdfnode >= '"http://a"^^xsd:anyURI'::rdfnode;
 SELECT '""^^xsd:anyURI'::rdfnode >= '"http://b"^^xsd:anyURI'::rdfnode;

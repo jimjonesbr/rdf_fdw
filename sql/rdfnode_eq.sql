@@ -181,3 +181,17 @@ SELECT ('"2"^^xsd:decimal'::rdfnode >= '"2"^^xsd:float'::rdfnode)
 /* xsd:integer and xsd:decimal promote to no floating type, so they stay exact */
 SELECT '"9007199254740993"^^xsd:integer'::rdfnode = '"9007199254740992"^^xsd:integer'::rdfnode; -- f
 SELECT '"9007199254740993"^^xsd:double'::rdfnode  = '"9007199254740992"^^xsd:integer'::rdfnode; -- t
+
+/*
+ * xsd:anyURI is a datatype of its own. RDF 1.1 Concepts 3.3 makes two literals
+ * the same term only when their lexical form, datatype IRI and language tag
+ * all agree, and SPARQL 1.1 17.3 does not list xsd:anyURI among the datatypes
+ * '=' is defined over, so a pair carrying it falls to RDFterm-equal in
+ * 17.4.1.7. Fuseki and GraphDB report the mixed pairs as type errors and the
+ * identical pair as true.
+ */
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://a"'::rdfnode;               -- f
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://a"^^xsd:string'::rdfnode;   -- f
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://a"^^xsd:anyURI'::rdfnode;   -- t
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://b"^^xsd:anyURI'::rdfnode;   -- f
+SELECT sparql.sameterm('"http://a"^^xsd:anyURI'::rdfnode, '"http://a"'::rdfnode);  -- f

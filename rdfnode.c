@@ -1465,11 +1465,19 @@ rdfnode_info parse_rdfnode(rdfnode *node)
 	else if (strcmp(result.dtype, RDF_XSD_BOOLEAN) == 0)
 		result.isBoolean = true;
 	/*
-	 * allow lexicographic comparison for xsd:anyURI literals, aligning with
-	 * SPARQL 1.1’s treatment of xsd:anyURI as xsd:string.
+	 * An xsd:anyURI literal used to be flagged as a plain literal, on the
+	 * grounds that SPARQL treats it as an xsd:string. It does not. RDF 1.1
+	 * Concepts 3.3 makes two literals the same term only when their lexical
+	 * form, datatype IRI and language tag all agree, and SPARQL 1.1 17.3 does
+	 * not list xsd:anyURI among the datatypes '=' and the ordering operators
+	 * are defined over, so a pair carrying it falls to RDFterm-equal in
+	 * 17.4.1.7. Fuseki and GraphDB report both '=' against an xsd:string and
+	 * '<' between two xsd:anyURIs as type errors.
+	 *
+	 * Left unflagged, the term reaches the same paths as any other typed
+	 * literal: equal to a term written exactly as it is, unequal to one
+	 * carrying a different datatype, and not ordered against anything.
 	 */
-	else if (strcmp(result.dtype, RDF_XSD_ANYURI) == 0)
-		result.isPlainLiteral = true;
 
 	elog(DEBUG4, "literal '%s' is %s ", result.raw, result.dtype);
 
