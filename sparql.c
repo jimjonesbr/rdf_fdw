@@ -25,6 +25,7 @@
 #include "utils/timestamp.h"
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 /*
  * lex
@@ -2598,6 +2599,67 @@ Datum sum_rdfnode_sfunc(PG_FUNCTION_ARGS)
  *
  * Note: NULL state handling is done by the wrapper in rdf_fdw.c
  */
+/*
+ * rdfnode_numeric_to_float8
+ * -------------------------
+ *
+ * Reads a numeric accumulator as the IEEE double it stands for.
+ *
+ * strtod() is what carries the value across, because it answers with an
+ * infinity for an accumulator that has run past the largest finite double --
+ * the answer IEEE gives -- where numeric's own conversion raises "out of
+ * range" instead. It also reads back the "Infinity" and "NaN" that numeric_out
+ * writes.
+ *
+ * n: the accumulated value
+ *
+ * returns its value as a double
+ */
+static double
+rdfnode_numeric_to_float8(Numeric n)
+{
+    char *str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(n)));
+    double val = strtod(str, NULL);
+
+    pfree(str);
+
+    return val;
+}
+
+/*
+ * rdfnode_float_lexical
+ * ---------------------
+ *
+ * Writes a double as the lexical form of an xsd:double or an xsd:float.
+ *
+ * PostgreSQL spells the infinities "Infinity" and "-Infinity", which are in
+ * neither datatype's lexical space: XSD 1.1 Part 2 3.3.5 fixes them as "INF"
+ * and "-INF". This is the normalisation rdfnode_numeric_arith() already
+ * applies to the result of an arithmetic operator, for the same reason.
+ *
+ * val   : the value to write
+ * single: true for xsd:float, false for xsd:double
+ *
+ * returns a palloc'd lexical form
+ */
+static char *
+rdfnode_float_lexical(double val, bool single)
+{
+    char *result;
+
+    if (single)
+        result = DatumGetCString(DirectFunctionCall1(float4out, Float4GetDatum((float4) val)));
+    else
+        result = DatumGetCString(DirectFunctionCall1(float8out, Float8GetDatum(val)));
+
+    if (strcmp(result, "Infinity") == 0)
+        return pstrdup("INF");
+    if (strcmp(result, "-Infinity") == 0)
+        return pstrdup("-INF");
+
+    return result;
+}
+
 Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
 {
     RdfnodeAggState *aggstate;
@@ -2616,8 +2678,15 @@ Datum sum_rdfnode_finalfunc(PG_FUNCTION_ARGS)
     if (aggstate->numeric_value == NULL || aggstate->has_non_numeric)
         PG_RETURN_NULL();
 
-    /* Convert numeric to string */
-    sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(aggstate->numeric_value)));
+    /*
+     * A sum promoted to xsd:double or xsd:float is an IEEE value and has to
+     * be written as one; the exact datatypes keep numeric's own output.
+     */
+    if (aggstate->maxType == XSD_TYPE_DOUBLE || aggstate->maxType == XSD_TYPE_FLOAT)
+        sum_str = rdfnode_float_lexical(rdfnode_numeric_to_float8(aggstate->numeric_value),
+                                        aggstate->maxType == XSD_TYPE_FLOAT);
+    else
+        sum_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(aggstate->numeric_value)));
 
     /* Get the appropriate XSD datatype based on type promotion */
     datatype_uri = get_xsd_datatype_uri(aggstate->maxType);
@@ -2823,10 +2892,26 @@ Datum avg_rdfnode_finalfunc(PG_FUNCTION_ARGS)
             avg_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_numeric)));
         }
     }
+    else if (outType == XSD_TYPE_FLOAT)
+    {
+        /* the Sum is an xsd:float, so the division happens at that width */
+        float4 sum = (float4) rdfnode_numeric_to_float8(aggstate->numeric_value);
+
+        avg_str = rdfnode_float_lexical((double) (sum / (float4) aggstate->count), true);
+    }
     else
     {
-        /* float/double: use native textual form */
-        avg_str = DatumGetCString(DirectFunctionCall1(numeric_out, NumericGetDatum(avg_numeric)));
+        /*
+         * 18.5.1.4 makes Avg the Sum divided by the count, and a Sum promoted
+         * to xsd:double or xsd:float is an IEEE value: the division has to
+         * happen there too. Dividing the numeric accumulator and converting
+         * afterwards gives a different answer whenever the sum itself is not
+         * representable -- two values just under the datatype's maximum
+         * average back to one of them, where Fuseki and GraphDB answer INF.
+         */
+        avg_str = rdfnode_float_lexical(rdfnode_numeric_to_float8(aggstate->numeric_value) /
+                                        (double) aggstate->count,
+                                        false);
     }
 
     /* Map chosen type to XSD URI */

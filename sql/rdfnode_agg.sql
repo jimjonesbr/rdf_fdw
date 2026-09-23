@@ -745,6 +745,32 @@ WITH j (val) AS (
 )
 SELECT sparql.sum(val), sparql.avg(val) FROM j;
 
+-- Test 83a: a sum promoted to xsd:double is an IEEE value, and leaving the
+-- datatype's range is what IEEE calls INF rather than a 309-digit integer.
+-- The average follows: 18.5.1.4 divides the Sum, which is already INF.
+WITH j (val) AS (
+    VALUES
+        ('"1e308"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"1e308"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
+-- Test 83b: the same for xsd:float, whose range is much smaller
+WITH j (val) AS (
+    VALUES
+        ('"3e38"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode),
+        ('"3e38"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
+-- Test 83c: -INF keeps its sign
+WITH j (val) AS (
+    VALUES
+        ('"-INF"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode),
+        ('"10"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode)
+)
+SELECT sparql.sum(val), sparql.avg(val) FROM j;
+
 -- Test 84: sum/avg with NaN
 WITH j (val) AS (
     VALUES
