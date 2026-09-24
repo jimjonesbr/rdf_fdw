@@ -4846,22 +4846,27 @@ static List *SerializePlanData(RDFfdwState *state)
 		elog(DEBUG2, "%s: column name '%s'", __func__, state->rdfTable->cols[i]->name);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->name));
 
-		elog(DEBUG2, "%s: sparqlvar '%s'", __func__, state->rdfTable->cols[i]->sparqlvar);
+		elog(DEBUG2, "%s: sparqlvar '%s'", __func__,
+			 state->rdfTable->cols[i]->sparqlvar ? state->rdfTable->cols[i]->sparqlvar : "(null)");
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->sparqlvar));
 
-		elog(DEBUG2, "%s: expression '%s'", __func__, state->rdfTable->cols[i]->expression);
+		elog(DEBUG2, "%s: expression '%s'", __func__,
+			 state->rdfTable->cols[i]->expression ? state->rdfTable->cols[i]->expression : "(null)");
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->expression));
 
-		elog(DEBUG2, "%s: literaltype '%s'", __func__, state->rdfTable->cols[i]->literaltype);
+		elog(DEBUG2, "%s: literaltype '%s'", __func__,
+			 state->rdfTable->cols[i]->literaltype ? state->rdfTable->cols[i]->literaltype : "(null)");
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literaltype));
 
-		elog(DEBUG2, "%s: literal_format '%s'", __func__, state->rdfTable->cols[i]->literal_fomat);
+		elog(DEBUG2, "%s: literal_format '%s'", __func__,
+			 state->rdfTable->cols[i]->literal_fomat ? state->rdfTable->cols[i]->literal_fomat : "(null)");
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->literal_fomat));
 
 		elog(DEBUG2, "%s: nodetype '%s'", __func__, state->rdfTable->cols[i]->nodetype);
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->nodetype));
 
-		elog(DEBUG2, "%s: language '%s'", __func__, state->rdfTable->cols[i]->language);
+		elog(DEBUG2, "%s: language '%s'", __func__,
+			 state->rdfTable->cols[i]->language ? state->rdfTable->cols[i]->language : "(null)");
 		result = lappend(result, CStringToConst(state->rdfTable->cols[i]->language));
 
 		if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
@@ -5383,7 +5388,7 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
 static struct RDFfdwColumn *GetRDFColumn(struct RDFfdwState *state, char *columnname)
 {
 
-	elog(DEBUG2, "%s called: column='%s'", __func__, columnname);
+	elog(DEBUG2, "%s called: column='%s'", __func__, columnname ? columnname : "(null)");
 
 	if (!columnname)
 	{
@@ -7368,7 +7373,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 			elog(DEBUG2, "%s [T_OpExpr]: deparsing operand of left expression", __func__);
 			left = DeparseExpr(state, foreignrel, linitial(oper->args));
-			elog(DEBUG2, "%s [T_OpExpr]: left operand returned => %s", __func__, left);
+			elog(DEBUG2, "%s [T_OpExpr]: left operand returned => %s", __func__, left ? left : "(null)");
 
 			if (left == NULL)
 			{
@@ -7390,7 +7395,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				elog(DEBUG2, "  %s [T_OpExpr]: deparsing operand of right expression, type %u", __func__, rightexpr->type);
 				right = DeparseExpr(state, foreignrel, rightexpr);
 
-				elog(DEBUG2, "  %s [T_OpExpr]: [%s] left type %u, [%s] right type %u", __func__, left, leftexpr->type, right, rightexpr->type);
+				elog(DEBUG2, "  %s [T_OpExpr]: [%s] left type %u, [%s] right type %u", __func__, left, leftexpr->type, right ? right : "(null)", rightexpr->type);
 
 				if (right == NULL)
 				{

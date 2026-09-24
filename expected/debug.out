@@ -482,8 +482,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muens
 DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
-DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
 DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
 DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
 DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
@@ -513,8 +511,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-12-31"^^<http://w
 DEBUG:  GetRDFColumn called: column='object'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
-DEBUG:  GetRDFColumn called: column='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>')
 DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'object' => '?o'
 DEBUG:    DeparseExpr [T_OpExpr]: oper  => '<='
 DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
@@ -765,8 +761,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muens
 DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
-DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
 DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
 DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
 DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
@@ -792,8 +786,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [predicate] left type 6, [<http://dbpedia.org/
 DEBUG:  GetRDFColumn called: column='predicate'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'predicate'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<http://dbpedia.org/property/name>' ... 
-DEBUG:  GetRDFColumn called: column='<http://dbpedia.org/property/name>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<http://dbpedia.org/property/name>')
 DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'predicate' => '?p'
 DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
 DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<http://dbpedia.org/property/name>' => '<http://dbpedia.org/property/name>'
@@ -1062,8 +1054,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muens
 DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
-DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
 DEBUG:    DeparseExpr [T_OpExpr]: left argument converted: 'subject' => '?s'
 DEBUG:    DeparseExpr [T_OpExpr]: oper  => '='
 DEBUG:    DeparseExpr [T_OpExpr]: right argument converted: '<https://www.uni-muenster.de>' => '<https://www.uni-muenster.de>'
@@ -1779,8 +1769,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muens
 DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
-DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
 DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
@@ -1840,8 +1828,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [object] left type 6, ["1780-12-31"^^<http://w
 DEBUG:  GetRDFColumn called: column='object'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'object'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>' ... 
-DEBUG:  GetRDFColumn called: column='"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>')
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
 DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
@@ -2330,8 +2316,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muens
 DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
-DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
 DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
@@ -2371,8 +2355,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [predicate] left type 6, [<http://dbpedia.org/
 DEBUG:  GetRDFColumn called: column='predicate'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'predicate'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<http://dbpedia.org/property/name>' ... 
-DEBUG:  GetRDFColumn called: column='<http://dbpedia.org/property/name>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<http://dbpedia.org/property/name>')
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
 DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
@@ -2786,8 +2768,6 @@ DEBUG:    DeparseExpr [T_OpExpr]: [subject] left type 6, [<https://www.uni-muens
 DEBUG:  GetRDFColumn called: column='subject'
 DEBUG:  GetRDFColumn exit: rerurning match for columname 'subject'
 DEBUG:  DeparseExpr [T_OpExpr]: getting right column based on '<https://www.uni-muenster.de>' ... 
-DEBUG:  GetRDFColumn called: column='<https://www.uni-muenster.de>'
-DEBUG:  GetRDFColumn exit: rerurning NULL (no match found for '<https://www.uni-muenster.de>')
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'
 DEBUG:  IsStringDataType exit: returning 'true'
 DEBUG:  IsStringDataType called: type='(RDFNODEOID)'

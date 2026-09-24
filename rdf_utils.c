@@ -470,7 +470,7 @@ char *cstring_to_rdfliteral(char *input)
 	char *result;
 	int len;
 
-	elog(DEBUG3, "%s called: input='%s'", __func__, input);
+	elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
 	if (!input || strlen(input) == 0)
 	{
@@ -540,7 +540,7 @@ char *ExpandDatatypePrefix(char *str)
 	char *stripped_str = str;
 	size_t len;
 
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str ? str : "(null)");
 
 	if (!str || strlen(str) == 0)
 		return ""; /* Empty input returns empty string */
@@ -929,7 +929,7 @@ bool IsFunctionPushable(char *funcname)
  */
 bool IsRDFStringLiteral(char *str)
 {
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str ? str : "(null)");
 
 	if (str == NULL)
 	{
@@ -965,7 +965,7 @@ char *CreateRegexString(char *str)
 	StringInfoData res;
 	initStringInfo(&res);
 
-	elog(DEBUG3, "%s called: str='%s'", __func__, str);
+	elog(DEBUG3, "%s called: str='%s'", __func__, str ? str : "(null)");
 
 	if (!str)
 		return NULL;

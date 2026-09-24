@@ -194,7 +194,7 @@ char *lang(char *input)
     const char *ptr;
     const char *end;
 
-    elog(DEBUG3, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
     if (!input || strlen(input) == 0)
         return "";
@@ -583,7 +583,7 @@ char *str(char *input)
     StringInfoData buf;
     char *result;
 
-    elog(DEBUG3, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
     if (!input || input[0] == '\0')
     {
@@ -689,7 +689,7 @@ char *bnode(char *input)
     StringInfoData buf;
     static uint64 counter = 0; /* Ensure uniqueness for BNODE() */
 
-    elog(DEBUG3, "%s called: input='%s'", __func__, input);
+    elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
     initStringInfo(&buf);
 
@@ -804,7 +804,7 @@ char *concat(char *left, char *right)
     char *result;
     StringInfoData buf;
 
-    elog(DEBUG3, "%s called: left='%s', right='%s'", __func__, left, right);
+    elog(DEBUG3, "%s called: left='%s', right='%s'", __func__, left ? left : "(null)", right ? right : "(null)");
 
     if (!left || !right)
         ereport(ERROR,
@@ -1002,7 +1002,7 @@ bool isLiteral(char *term)
     const char *ptr;
     int len;
 
-    elog(DEBUG3, "%s called: term='%s'", __func__, term);
+    elog(DEBUG3, "%s called: term='%s'", __func__, term ? term : "(null)");
 
     if (!term || *term == '\0')
     {
@@ -1086,7 +1086,7 @@ bool langmatches(char *lang_tag, char *pattern)
     char *pat;
     bool  result;
 
-    elog(DEBUG3, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag, pattern);
+    elog(DEBUG3, "%s called: lang_tag='%s', pattern='%s'", __func__, lang_tag ? lang_tag : "(null)", pattern ? pattern : "(null)");
 
     if (!lang_tag || !pattern)
     {
@@ -1402,7 +1402,7 @@ char *substr_sparql(char *str, int start, int length)
     int pg_start;
     int pg_length;
 
-    elog(DEBUG3, "%s called: str='%s', start=%d, length=%d", __func__, str, start, length);
+    elog(DEBUG3, "%s called: str='%s', start=%d, length=%d", __func__, str ? str : "(null)", start, length);
 
     if (!str)
         ereport(ERROR,
@@ -1491,7 +1491,7 @@ char *lcase(char *str)
     char *str_language;
     char *result;
 
-    elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str ? str : "(null)");
 
     if (!str)
         ereport(ERROR,
@@ -1580,7 +1580,7 @@ char *ucase(char *str)
     char *str_language;
     char *result;
 
-    elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str ? str : "(null)");
 
     if (!str)
         ereport(ERROR,
@@ -1918,7 +1918,7 @@ bool isNumeric(char *term)
     char *datatype_uri;
     bool is_bare_number = false;
 
-    elog(DEBUG3, "%s called: term='%s'", __func__, term);
+    elog(DEBUG3, "%s called: term='%s'", __func__, term ? term : "(null)");
 
     if (!term || strlen(term) == 0)
     {
@@ -2048,7 +2048,7 @@ bool contains(char *str_in, char *substr_in)
     char *lang_str;
     bool result;
 
-    elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str_in, substr_in);
+    elog(DEBUG3, "%s called: str='%s', substr='%s'", __func__, str_in ? str_in : "(null)", substr_in ? substr_in : "(null)");
 
     /* handle NULL or empty inputs */
     if (!str_in || !substr_in || strlen(str_in) == 0 || strlen(substr_in) == 0)
@@ -2359,7 +2359,7 @@ int strlen_rdf(char *str)
     char *dt;
     int result;
 
-    elog(DEBUG3, "%s called: str='%s'", __func__, str);
+    elog(DEBUG3, "%s called: str='%s'", __func__, str ? str : "(null)");
 
     if (!str)
         ereport(ERROR,
