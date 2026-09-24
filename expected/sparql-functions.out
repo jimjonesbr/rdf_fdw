@@ -444,6 +444,16 @@ SELECT sparql.strlang('foo', 'EN-Latn-US-valencia');
 
 SELECT sparql.strlang('_:b1', 'en');
 ERROR:  invalid argument: _:b1
+/* a malformed tag is rejected, as rdfnode input rejects it: the value built
+ * with one used to be stored, but could not be read back */
+SELECT sparql.strlang('"hello"', 'bad tag');
+ERROR:  invalid language tag: "bad tag"
+SELECT sparql.strlang('"hello"', 'en;DROP');
+ERROR:  invalid language tag: "en;DROP"
+SELECT sparql.strlang('"hello"', 'toolongtag');
+ERROR:  invalid language tag: "toolongtag"
+SELECT sparql.strlang('"hello"', 'en-');
+ERROR:  invalid language tag: "en-"
 /* STR */
 SELECT sparql.str('foo');
   str  

@@ -1058,10 +1058,22 @@ Datum rdf_fdw_strlang(PG_FUNCTION_ARGS)
 {
 	text *input_text = PG_GETARG_TEXT_PP(0);
 	text *lang_tag = PG_GETARG_TEXT_PP(1);
+	char *language = text_to_cstring(lang_tag);
+	char *tag = lex(language);
+	char *literal;
 
-	char *literal = strlang(
-		text_to_cstring(input_text),
-		text_to_cstring(lang_tag));
+	/*
+	 * rdfnode_in() rejects a malformed language tag, so no function may build
+	 * a value carrying one: it could be stored, but not read back, which
+	 * breaks a dump and restore of any table holding it. An empty tag is left
+	 * to strlang(), which has an error of its own for it.
+	 */
+	if (strlen(tag) != 0 && !is_valid_language_tag(tag))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("invalid language tag: \"%s\"", tag)));
+
+	literal = strlang(text_to_cstring(input_text), language);
 
 	PG_RETURN_TEXT_P(cstring_to_text(literal));
 }
