@@ -3095,20 +3095,15 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 				if (strcmp(opt->optname, RDF_TABLE_OPTION_SPARQL) == 0)
 				{
 					char *sparql = defGetString(def);
-					int where_position = -1;
-					int where_size = -1;
+					char *open = strchr(sparql, '{');
+					char *close = strrchr(sparql, '}');
 
-					for (int i = 0; sparql[i] != '\0'; i++)
-					{
-						if (sparql[i] == '{' && where_position == -1)
-							where_position = i;
-
-						if (sparql[i] == '}')
-							where_size = i - where_position;
-					}
-
-					/* report ERROR if the SPARQL does not contain the opening and closing braces {} */
-					if (where_size == -1 || where_position == -1)
+					/*
+					 * report ERROR if the SPARQL does not contain the opening and
+					 * closing braces {}, in this order: the graph pattern is what
+					 * lies between the first '{' and the last '}'
+					 */
+					if (open == NULL || close == NULL || close < open)
 						ereport(ERROR,
 								(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 								 errmsg("unable to parse SPARQL WHERE clause:\n%s", sparql),
@@ -8383,27 +8378,29 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
  */
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state)
 {
-	int where_position = -1;
-	int where_size = -1;
+	char *open = strchr(state->raw_sparql, '{');
+	char *close = strrchr(state->raw_sparql, '}');
 	char *result;
 
 	elog(DEBUG1, "%s called", __func__);
 
 	/*
-	 * Deparsing SPARQL WHERE clause
-	 *   'where_position = i + 1' to remove the surrounging curly braces {} as we are
-	 *   interested only in WHERE clause's graph pattern
+	 * The graph pattern is what lies between the first '{' and the last '}'.
+	 * The validator requires both, in this order, but it did not always check
+	 * the order, so a table defined earlier may still have a query with the
+	 * braces reversed. There is no pattern to extract then, so reject it the
+	 * way the validator now does, rather than computing a length from it --
+	 * on PostgreSQL 10 and older, pnstrdup() copies the full length it is
+	 * given, even past the end of the string.
 	 */
-	for (int i = 0; state->raw_sparql[i] != '\0'; i++)
-	{
-		if (state->raw_sparql[i] == '{' && where_position == -1)
-			where_position = i + 1;
+	if (open == NULL || close == NULL || close < open)
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+				 errmsg("unable to parse SPARQL WHERE clause:\n%s", state->raw_sparql),
+				 errhint("The WHERE clause expects at least one triple pattern wrapped by curly braces, e.g. '{?s ?p ?o}'.")));
 
-		if (state->raw_sparql[i] == '}')
-			where_size = i - where_position;
-	}
-
-	result = pnstrdup(state->raw_sparql + where_position, where_size);
+	/* strip the surrounding curly braces, only the graph pattern is wanted */
+	result = pnstrdup(open + 1, close - open - 1);
 
 	elog(DEBUG1, "%s exit: returning '%s'", __func__, result);
 	return result;
