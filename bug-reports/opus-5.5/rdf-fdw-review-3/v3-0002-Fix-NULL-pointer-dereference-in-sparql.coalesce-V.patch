@@ -1,0 +1,117 @@
+From 0b5a2bbac219dbb2fa1d7a44a8fa982319a33c79 Mon Sep 17 00:00:00 2001
+From: test <test>
+Date: Wed, 23 Sep 2026 10:29:51 -0400
+Subject: [PATCH v3 2/9] Fix NULL pointer dereference in
+ sparql.coalesce(VARIADIC NULL)
+
+sparql.coalesce() is not STRICT, so that a NULL among its arguments is
+skipped rather than making the whole result NULL. Being non-STRICT also
+means it is called when the variadic array itself is NULL, which is
+what VARIADIC NULL::rdfnode[] passes, and rdf_fdw_coalesce() read that
+array with PG_GETARG_ARRAYTYPE_P() without checking PG_ARGISNULL()
+first. Detoasting a NULL Datum dereferences a NULL pointer.
+
+Any role can call the function, so any role could terminate its backend
+with a single SELECT, and take every other session into crash recovery
+with it.
+
+A NULL array holds no argument that could be returned, so return NULL,
+just as for an array with no elements.
+
+The regression test calls the function with an empty array and with a
+NULL one. The second terminates the backend without the fix; so does
+repro/01-coalesce-variadic-null.sql.
+---
+ CHANGELOG.md                  |  2 ++
+ expected/sparql-functions.out | 13 +++++++++++++
+ rdf_fdw.c                     | 18 ++++++++++++++++--
+ sql/sparql-functions.sql      |  3 +++
+ 4 files changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 9bb6fe0..76abf24 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -88,6 +88,8 @@ assigning its result straight into a `text` column now needs an explicit
+ 
+ ### Crashes, memory safety and leaks
+ 
++* **`sparql.coalesce(VARIADIC NULL)` terminated the backend**: `sparql.coalesce()` is not `STRICT`, so that a NULL argument is skipped instead of making the whole result NULL, and so it is also called when the variadic array itself is NULL — which is what `VARIADIC NULL::rdfnode[]` passes. The array was read without checking for that, a NULL pointer dereference, and any user could take every other session into crash recovery with a single `SELECT`. It now returns NULL, as it already did for an array with no elements.
++
+ * **A `bigint` cast to `rdfnode` lost its datatype on 32-bit builds**: `int8_to_rdfnode()` formatted the value with `%ld`. Where `long` is 32 bits and `int64` is 64 — which is every `i386` and `armhf` build, both of which PGDG produces — that conversion reads half the argument, and every conversion after it takes the wrong one: `42::bigint::rdfnode` came back as `"42"^^(null)` instead of `"42"^^xsd:long`. It uses `INT64_FORMAT` now. The same build also described a bounded option as an unbounded one, because the check distinguishing them compared the option's ceiling against `LONG_MAX`, and where `long` is 32 bits `PG_INT32_MAX` *is* `LONG_MAX`; which of the two an option is, is now recorded rather than inferred.
+ 
+   These were found by building and running the suite on a 32-bit userspace for the first time. Thirteen of the twenty-two default tests failed there while all twenty-two passed on the same image, the same PostgreSQL and the same source at 64 bits; with these two fixed, one remains, and it is a test asserting a `connect_timeout` of three billion, which a 32-bit `long` cannot hold.
+diff --git a/expected/sparql-functions.out b/expected/sparql-functions.out
+index a2e2efd..d62ba7c 100644
+--- a/expected/sparql-functions.out
++++ b/expected/sparql-functions.out
+@@ -4163,6 +4163,19 @@ SELECT sparql.coalesce(NULL, NULL, sparql.bnode('foo'));
+  _:foo
+ (1 row)
+ 
++/* no argument at all: an empty array, and no array */
++SELECT sparql.coalesce(VARIADIC '{}'::rdfnode[]) IS NULL;
++ ?column? 
++----------
++ t
++(1 row)
++
++SELECT sparql.coalesce(VARIADIC NULL::rdfnode[]) IS NULL;
++ ?column? 
++----------
++ t
++(1 row)
++
+ /* MD5 */
+ SELECT sparql.md5('abc');
+                 md5                 
+diff --git a/rdf_fdw.c b/rdf_fdw.c
+index 54f8486..a597d92 100644
+--- a/rdf_fdw.c
++++ b/rdf_fdw.c
+@@ -1651,12 +1651,26 @@ Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS)
+ 
+ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
+ {
+-	ArrayType *arr = PG_GETARG_ARRAYTYPE_P(0);
+-	Oid element_type = ARR_ELEMTYPE(arr);
++	ArrayType *arr;
++	Oid element_type;
+ 	int nelems;
+ 	Datum *elems;
+ 	bool *nulls;
+ 
++	/*
++	 * The function is not STRICT, so that NULL arguments are skipped instead
++	 * of making the result NULL, but that also lets VARIADIC NULL through as
++	 * a NULL array. There is no argument to return then.
++	 */
++	if (PG_ARGISNULL(0))
++	{
++		elog(DEBUG1, "%s exit: returning NULL (NULL argument array)", __func__);
++		PG_RETURN_NULL();
++	}
++
++	arr = PG_GETARG_ARRAYTYPE_P(0);
++	element_type = ARR_ELEMTYPE(arr);
++
+ 	/* deconstruct the array into individual elements */
+ 	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);
+ 
+diff --git a/sql/sparql-functions.sql b/sql/sparql-functions.sql
+index 8177805..cea6d2e 100644
+--- a/sql/sparql-functions.sql
++++ b/sql/sparql-functions.sql
+@@ -943,6 +943,9 @@ SELECT sparql.coalesce(NULL, NULL, '"foo"@fr');
+ SELECT sparql.coalesce(NULL, NULL, '<http://example/>');
+ SELECT sparql.coalesce(NULL, NULL, sparql.iri('"http://example/"'));
+ SELECT sparql.coalesce(NULL, NULL, sparql.bnode('foo'));
++/* no argument at all: an empty array, and no array */
++SELECT sparql.coalesce(VARIADIC '{}'::rdfnode[]) IS NULL;
++SELECT sparql.coalesce(VARIADIC NULL::rdfnode[]) IS NULL;
+ 
+ /* MD5 */
+ SELECT sparql.md5('abc');
+-- 
+2.47.3
+

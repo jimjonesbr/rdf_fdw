@@ -4163,6 +4163,19 @@ SELECT sparql.coalesce(NULL, NULL, sparql.bnode('foo'));
  _:foo
 (1 row)
 
+/* no argument at all: an empty array, and no array */
+SELECT sparql.coalesce(VARIADIC '{}'::rdfnode[]) IS NULL;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT sparql.coalesce(VARIADIC NULL::rdfnode[]) IS NULL;
+ ?column? 
+----------
+ t
+(1 row)
+
 /* MD5 */
 SELECT sparql.md5('abc');
                 md5                 

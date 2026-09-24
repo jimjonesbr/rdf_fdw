@@ -1651,11 +1651,25 @@ Datum rdf_fdw_sameterm(PG_FUNCTION_ARGS)
 
 Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
 {
-	ArrayType *arr = PG_GETARG_ARRAYTYPE_P(0);
-	Oid element_type = ARR_ELEMTYPE(arr);
+	ArrayType *arr;
+	Oid element_type;
 	int nelems;
 	Datum *elems;
 	bool *nulls;
+
+	/*
+	 * The function is not STRICT, so that NULL arguments are skipped instead
+	 * of making the result NULL, but that also lets VARIADIC NULL through as
+	 * a NULL array. There is no argument to return then.
+	 */
+	if (PG_ARGISNULL(0))
+	{
+		elog(DEBUG1, "%s exit: returning NULL (NULL argument array)", __func__);
+		PG_RETURN_NULL();
+	}
+
+	arr = PG_GETARG_ARRAYTYPE_P(0);
+	element_type = ARR_ELEMTYPE(arr);
 
 	/* deconstruct the array into individual elements */
 	deconstruct_array(arr, element_type, -1, false, 'i', &elems, &nulls, &nelems);

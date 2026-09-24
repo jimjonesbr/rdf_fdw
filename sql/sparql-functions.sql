@@ -943,6 +943,9 @@ SELECT sparql.coalesce(NULL, NULL, '"foo"@fr');
 SELECT sparql.coalesce(NULL, NULL, '<http://example/>');
 SELECT sparql.coalesce(NULL, NULL, sparql.iri('"http://example/"'));
 SELECT sparql.coalesce(NULL, NULL, sparql.bnode('foo'));
+/* no argument at all: an empty array, and no array */
+SELECT sparql.coalesce(VARIADIC '{}'::rdfnode[]) IS NULL;
+SELECT sparql.coalesce(VARIADIC NULL::rdfnode[]) IS NULL;
 
 /* MD5 */
 SELECT sparql.md5('abc');

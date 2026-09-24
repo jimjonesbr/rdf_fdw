@@ -112,6 +112,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 * **Fixed buffer handling in `rdf_fdw_clone_table()`**: The binding loop now correctly processes one value per column, with proper bounds checking. (Tomas Vondra <tomas@vondra.me>)
 
+* **`sparql.coalesce(VARIADIC NULL)` terminated the backend**: `sparql.coalesce()` is not `STRICT`, so that a NULL argument is skipped instead of making the whole result NULL, and so it is also called when the variadic array itself is NULL — which is what `VARIADIC NULL::rdfnode[]` passes. The array was read without checking for that, a NULL pointer dereference, and any user could take every other session into crash recovery with a single `SELECT`. It now returns NULL, as it already did for an array with no elements.
+
 ### Privileges and network safety
 
 * **Fixed privilege checking in clones**: Privileges are now re-checked for each page, ensuring a `REVOKE` issued by another session is respected. (Tomas Vondra <tomas@vondra.me>)
