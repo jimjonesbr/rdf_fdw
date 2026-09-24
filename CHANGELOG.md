@@ -198,6 +198,8 @@ assigning its result straight into a `text` column now needs an explicit
 
 ### Pushdown
 
+* **A string constant spelled like a column name was pushed down as that column**: The arguments of pushed-down functions and comparisons were recognised as columns by comparing their deparsed text with the column names, so a constant whose value equals a column's name was sent as that column's variable or `expression`. The endpoint then evaluated a different `FILTER` than the one written, and could return wrong results. A constant matching a dropped column also put a NULL pointer into the query, which some older PostgreSQL releases dereference, terminating the backend. Only column references are treated as columns now; constants are always sent as literals.
+
 * **Fixed `!=` pushdown to avoid SPARQL type errors on unsupported datatypes**: Inequality comparisons against literals with unsupported datatypes (e.g., `xsd:anyURI`) are now evaluated locally instead of being sent to the endpoint. SPARQL raises a type error for such comparisons, which filters out matching rows, whereas PostgreSQL returns true for any non-matching term — causing queries to return fewer rows than expected. Equality (`=`) remains pushed down since both approaches select the same rows. Language-tagged literals and all supported datatypes continue to be pushed down. (Tomas Vondra <tomas@vondra.me>)
 
 * **Fixed table planning to correctly handle dropped columns**: Dropped columns are now properly skipped when reading the mapping, ensuring consistent query planning across PostgreSQL versions. Previously, dropped columns on PostgreSQL 17 and earlier appeared as still mapped, blocking rewrite logic and breaking pushdown. (Tomas Vondra <tomas@vondra.me>)

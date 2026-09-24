@@ -5370,6 +5370,11 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
  * -------------
  * Returns the RDFfdwColumn mapped to the table column in `columname`
  *
+ * Only look up a string that DeparseExpr() made of a T_Var. A constant
+ * deparses to its bare value, and a value that happens to spell a column's
+ * name -- or the "........pg.dropped.N........" name of a dropped column,
+ * which has no variable at all -- would otherwise be taken for that column.
+ *
  * state    : SPARQL, SERVER and FOREIGN TABLE info
  * columname: name of the FOREIGN TABLE column
  *
@@ -7396,7 +7401,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				initStringInfo(&left_filter_arg);
 				initStringInfo(&right_filter_arg);
 
-				left_column = GetRDFColumn(state, left);
+				left_column = leftexpr->type == T_Var ? GetRDFColumn(state, left) : NULL;
 
 				if (leftexpr->type == T_Var && (!left_column || !left_column->pushable))
 				{
@@ -7405,7 +7410,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				}
 
 				elog(DEBUG2, "%s [T_OpExpr]: getting right column based on '%s' ... ", __func__, right);
-				right_column = GetRDFColumn(state, right);
+				right_column = rightexpr->type == T_Var ? GetRDFColumn(state, right) : NULL;
 
 				if (rightexpr->type == T_Var && (!right_column || !right_column->pushable))
 				{
@@ -7473,16 +7478,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 						appendStringInfo(&left_filter_arg, "%s", left_column->sparqlvar);
 				}
-				else if (leftexpr->type == T_FuncExpr)
-				{
-					/* We try to resolve the column name <-> sparql variable one last time */
-					left_column = GetRDFColumn(state, left);
-
-					if (left_column)
-						appendStringInfo(&left_filter_arg, "%s", left_column->sparqlvar);
-					else
-						appendStringInfo(&left_filter_arg, "%s", left);
-				}
 				else
 				{
 					appendStringInfo(&left_filter_arg, "%s", left);
@@ -7540,16 +7535,6 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						appendStringInfo(&right_filter_arg, "STR(%s)", right_column->sparqlvar);
 					else
 						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
-				}
-				else if (rightexpr->type == T_FuncExpr)
-				{
-					/* We try to resolve the column name <-> sparql variable one last time */
-					right_column = GetRDFColumn(state, right);
-
-					if (right_column)
-						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
-					else
-						appendStringInfo(&right_filter_arg, "%s", right);
 				}
 				else
 					appendStringInfo(&right_filter_arg, "%s", right);
@@ -8007,7 +7992,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 						appendStringInfo(&args, "%s", ", ");
 				}
 
-				col = GetRDFColumn(state, arg);
+				col = ex->type == T_Var ? GetRDFColumn(state, arg) : NULL;
 
 				if (col)
 				{
@@ -8191,7 +8176,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				elog(DEBUG2, "%s [T_FuncExpr]: deparsing VALUE for '%s'", __func__, opername);
 
 				val = DeparseExpr(state, foreignrel, lsecond(func->args));
-				col = GetRDFColumn(state, val);
+				col = ((Expr *)lsecond(func->args))->type == T_Var ? GetRDFColumn(state, val) : NULL;
 
 				initStringInfo(&result);
 
@@ -8253,7 +8238,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 				return NULL;
 			}
 
-			col = GetRDFColumn(state, element);
+			col = element_expr->type == T_Var ? GetRDFColumn(state, element) : NULL;
 
 			if (col)
 				appendStringInfo(&result, "%s%s", first_arg ? "" : ", ", col->sparqlvar);

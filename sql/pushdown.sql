@@ -1639,4 +1639,45 @@ SELECT o FROM rdfnode_ft WHERE o > '12:00:00+00'::timetz;
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft WHERE o = '"x"'::rdfnode;
 
+/* A string constant is never a column, even when its value spells the name of
+ * one. A column used to be recognised by comparing the deparsed argument with
+ * the column names, so 'p' was sent as ?p, 'len' as the expression of the len
+ * column, and the name of a dropped column as that column's variable, which it
+ * does not have: a NULL pointer, printed as "(null)" or terminating the
+ * backend, depending on the snprintf() doing the printing. */
+CREATE FOREIGN TABLE colname_ft (
+  p    rdfnode OPTIONS (variable '?p'),
+  o    rdfnode OPTIONS (variable '?o'),
+  gone rdfnode OPTIONS (variable '?g'),
+  label text    OPTIONS (variable '?label'),
+  len  int     OPTIONS (variable '?len', expression 'STRLEN(?o)')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT * WHERE {<http://example.org/s> ?p ?o}');
+ALTER FOREIGN TABLE colname_ft DROP COLUMN gone;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE sparql.contains(o, 'p');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE sparql.coalesce(o, 'p') = '"x"';
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE label = 'len';
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE sparql.contains(o, '........pg.dropped.3........');
+
+/* a column is still recognised as one */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE sparql.contains(o, p);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE sparql.coalesce(o, p) = '"x"';
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM colname_ft WHERE length(label) = len;
+
+DROP FOREIGN TABLE colname_ft;
+
 DROP SERVER test_server CASCADE;
