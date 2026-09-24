@@ -1685,3 +1685,49 @@ SELECT '"a@b"@en'::rdfnode                           AS at_in_tagged,
  "a@b"@en     | "a@b.org"^^<http://example.org/dt> | "foo^^bar"@en   | "^^b"@en    | "@en"@de
 (1 row)
 
+/* ------------------------------------------------------------------ *
+ * A dateTime or time without an offset is read in the session's
+ * TimeZone when it is cast to, or compared with, timestamptz or
+ * timetz, so the result changes with that setting ...
+ * ------------------------------------------------------------------ */
+SET timezone = 'UTC';
+SELECT '"2020-01-01T00:00:00"^^xsd:dateTime'::rdfnode = '2020-01-01 00:00:00+00'::timestamptz AS eq_in_utc,
+       '"12:00:00"^^xsd:time'::rdfnode = '12:00:00+00'::timetz AS time_eq_in_utc;
+ eq_in_utc | time_eq_in_utc 
+-----------+----------------
+ t         | t
+(1 row)
+
+SET timezone = 'Asia/Tokyo';
+SELECT '"2020-01-01T00:00:00"^^xsd:dateTime'::rdfnode = '2020-01-01 00:00:00+00'::timestamptz AS eq_in_tokyo,
+       '"12:00:00"^^xsd:time'::rdfnode = '12:00:00+00'::timetz AS time_eq_in_tokyo;
+ eq_in_tokyo | time_eq_in_tokyo 
+-------------+------------------
+ f           | f
+(1 row)
+
+SET timezone = 'UTC';
+/* ... and those functions are STABLE, as PostgreSQL's own timestamp ->
+ * timestamptz cast is: they used to be IMMUTABLE, which let them into
+ * generated columns and index expressions. Only the conversions to rdfnode,
+ * which write the offset out, and sparql.datatype() do not depend on it.
+ * sparql.describe() returns what the endpoint holds, so it is VOLATILE. */
+SELECT p.oid::regprocedure AS function, p.provolatile AS volatility
+FROM pg_proc AS p
+JOIN pg_depend AS d ON d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e'
+JOIN pg_extension AS e ON e.oid = d.refobjid AND e.extname = 'rdf_fdw'
+WHERE (p.prorettype IN ('timestamptz'::regtype, 'timetz'::regtype) OR
+       'timestamptz'::regtype = ANY (p.proargtypes::oid[]) OR
+       'timetz'::regtype = ANY (p.proargtypes::oid[]) OR
+       p.proname = 'describe')
+  AND p.provolatile <> 's'
+ORDER BY p.oid::regprocedure::text COLLATE "C";
+                     function                     | volatility 
+--------------------------------------------------+------------
+ sparql.datatype(time with time zone)             | i
+ sparql.datatype(timestamp with time zone)        | i
+ sparql.describe(text,text,text)                  | v
+ timestamptz_to_rdfnode(timestamp with time zone) | i
+ timetz_to_rdfnode(time with time zone)           | i
+(5 rows)
+

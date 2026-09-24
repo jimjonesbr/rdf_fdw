@@ -588,7 +588,8 @@ $$ LANGUAGE plpgsql STABLE STRICT;
    mixed datatypes failed instead of returning its matching rows, and the
    planner inlined the wrapper into a cast expression that could not be
    deparsed. The C implementations report such a term as non-matching and
-   leave the operator intact. */
+   leave the operator intact. The ones involving timestamptz are STABLE, see
+   below. */
 CREATE OR REPLACE FUNCTION rdfnode_eq_timestamp(rdfnode, timestamp)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamp'
@@ -616,27 +617,27 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION rdfnode_eq_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION rdfnode_neq_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION rdfnode_lt_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION rdfnode_gt_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION rdfnode_le_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_le_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION rdfnode_ge_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamp_eq_rdfnode(timestamp, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamp_eq_rdfnode'
@@ -664,27 +665,51 @@ LANGUAGE C IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamptz_eq_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_eq_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamptz_neq_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_neq_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamptz_lt_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_lt_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamptz_gt_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_gt_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamptz_le_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_le_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 CREATE OR REPLACE FUNCTION timestamptz_ge_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_ge_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
+
+/* A value without a time zone offset is read in the session's TimeZone when
+   it is converted to timestamptz or timetz, so the conversions and the
+   comparisons built on them give different answers under different settings,
+   as PostgreSQL's own timestamp -> timestamptz cast does. They were IMMUTABLE,
+   which let them into generated columns and index expressions, where the
+   stored result then depended on the TimeZone of whoever wrote the row.
+   sparql.describe() returns whatever the endpoint holds at the time, so it is
+   VOLATILE. */
+ALTER FUNCTION rdfnode_to_timestamptz(rdfnode) STABLE;
+ALTER FUNCTION rdfnode_to_timetz(rdfnode) STABLE;
+ALTER FUNCTION rdfnode_eq_timetz(rdfnode, timetz) STABLE;
+ALTER FUNCTION rdfnode_neq_timetz(rdfnode, timetz) STABLE;
+ALTER FUNCTION rdfnode_lt_timetz(rdfnode, timetz) STABLE;
+ALTER FUNCTION rdfnode_gt_timetz(rdfnode, timetz) STABLE;
+ALTER FUNCTION rdfnode_le_timetz(rdfnode, timetz) STABLE;
+ALTER FUNCTION rdfnode_ge_timetz(rdfnode, timetz) STABLE;
+ALTER FUNCTION timetz_eq_rdfnode(timetz, rdfnode) STABLE;
+ALTER FUNCTION timetz_neq_rdfnode(timetz, rdfnode) STABLE;
+ALTER FUNCTION timetz_lt_rdfnode(timetz, rdfnode) STABLE;
+ALTER FUNCTION timetz_gt_rdfnode(timetz, rdfnode) STABLE;
+ALTER FUNCTION timetz_le_rdfnode(timetz, rdfnode) STABLE;
+ALTER FUNCTION timetz_ge_rdfnode(timetz, rdfnode) STABLE;
+ALTER FUNCTION sparql.describe(text, text, text) VOLATILE;
 
 /* New in 2.8: sparql.uri() returns rdfnode, as sparql.iri() always did.
    SPARQL 1.1 17.4.2.8 makes URI() a synonym of IRI() and gives both the return

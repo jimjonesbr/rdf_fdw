@@ -2026,7 +2026,7 @@ CREATE OPERATOR >= (
 CREATE FUNCTION rdfnode_to_timestamptz(rdfnode)
 RETURNS timestamptz
 AS 'MODULE_PATHNAME', 'rdfnode_to_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE CAST (rdfnode AS timestamptz)
 WITH FUNCTION rdfnode_to_timestamptz(rdfnode);
@@ -2034,7 +2034,7 @@ WITH FUNCTION rdfnode_to_timestamptz(rdfnode);
 CREATE FUNCTION rdfnode_lt_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_lt_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = rdfnode,
@@ -2048,7 +2048,7 @@ CREATE OPERATOR < (
 CREATE FUNCTION rdfnode_gt_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_gt_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = rdfnode,
@@ -2062,7 +2062,7 @@ CREATE OPERATOR > (
 CREATE FUNCTION rdfnode_le_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_le_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = rdfnode,
@@ -2076,7 +2076,7 @@ CREATE OPERATOR <= (
 CREATE FUNCTION rdfnode_ge_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_ge_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = rdfnode,
@@ -2090,7 +2090,7 @@ CREATE OPERATOR >= (
 CREATE FUNCTION rdfnode_eq_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_eq_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = rdfnode,
@@ -2104,7 +2104,7 @@ CREATE OPERATOR = (
 CREATE FUNCTION rdfnode_neq_timestamptz(rdfnode, timestamptz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_neq_timestamptz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = rdfnode,
@@ -2128,7 +2128,7 @@ WITH FUNCTION timestamptz_to_rdfnode(timestamptz);
 CREATE FUNCTION timestamptz_lt_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_lt_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = timestamptz,
@@ -2142,7 +2142,7 @@ CREATE OPERATOR < (
 CREATE FUNCTION timestamptz_gt_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_gt_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = timestamptz,
@@ -2156,7 +2156,7 @@ CREATE OPERATOR > (
 CREATE FUNCTION timestamptz_le_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_le_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = timestamptz,
@@ -2170,7 +2170,7 @@ CREATE OPERATOR <= (
 CREATE FUNCTION timestamptz_ge_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_ge_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = timestamptz,
@@ -2184,7 +2184,7 @@ CREATE OPERATOR >= (
 CREATE FUNCTION timestamptz_eq_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_eq_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = timestamptz,
@@ -2198,7 +2198,7 @@ CREATE OPERATOR = (
 CREATE FUNCTION timestamptz_neq_rdfnode(timestamptz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timestamptz_neq_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = timestamptz,
@@ -2778,7 +2778,7 @@ CREATE OPERATOR >= (
 CREATE FUNCTION rdfnode_to_timetz(rdfnode)
 RETURNS timetz
 AS 'MODULE_PATHNAME', 'rdfnode_to_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE CAST (rdfnode AS timetz)
 WITH FUNCTION rdfnode_to_timetz(rdfnode);
@@ -2786,7 +2786,7 @@ WITH FUNCTION rdfnode_to_timetz(rdfnode);
 CREATE FUNCTION rdfnode_eq_timetz(rdfnode, timetz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_eq_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = rdfnode,
@@ -2800,7 +2800,7 @@ CREATE OPERATOR = (
 CREATE FUNCTION rdfnode_neq_timetz(rdfnode, timetz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_neq_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = rdfnode,
@@ -2814,7 +2814,7 @@ CREATE OPERATOR <> (
 CREATE FUNCTION rdfnode_lt_timetz(rdfnode, timetz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_lt_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = rdfnode,
@@ -2828,7 +2828,7 @@ CREATE OPERATOR < (
 CREATE FUNCTION rdfnode_gt_timetz(rdfnode, timetz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_gt_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = rdfnode,
@@ -2842,7 +2842,7 @@ CREATE OPERATOR > (
 CREATE FUNCTION rdfnode_le_timetz(rdfnode, timetz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_le_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = rdfnode,
@@ -2856,7 +2856,7 @@ CREATE OPERATOR <= (
 CREATE FUNCTION rdfnode_ge_timetz(rdfnode, timetz)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'rdfnode_ge_timetz'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = rdfnode,
@@ -2879,7 +2879,7 @@ WITH FUNCTION timetz_to_rdfnode(timetz);
 CREATE FUNCTION timetz_eq_rdfnode(timetz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timetz_eq_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR = (
     LEFTARG = timetz,
@@ -2893,7 +2893,7 @@ CREATE OPERATOR = (
 CREATE FUNCTION timetz_neq_rdfnode(timetz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timetz_neq_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <> (
     LEFTARG = timetz,
@@ -2907,7 +2907,7 @@ CREATE OPERATOR <> (
 CREATE FUNCTION timetz_lt_rdfnode(timetz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timetz_lt_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR < (
     LEFTARG = timetz,
@@ -2921,7 +2921,7 @@ CREATE OPERATOR < (
 CREATE FUNCTION timetz_gt_rdfnode(timetz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timetz_gt_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR > (
     LEFTARG = timetz,
@@ -2935,7 +2935,7 @@ CREATE OPERATOR > (
 CREATE FUNCTION timetz_le_rdfnode(timetz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timetz_le_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR <= (
     LEFTARG = timetz,
@@ -2949,7 +2949,7 @@ CREATE OPERATOR <= (
 CREATE FUNCTION timetz_ge_rdfnode(timetz, rdfnode)
 RETURNS boolean
 AS 'MODULE_PATHNAME', 'timetz_ge_rdfnode'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C STABLE STRICT;
 
 CREATE OPERATOR >= (
     LEFTARG = timetz,
@@ -4111,7 +4111,7 @@ CREATE TYPE triple AS (
 
 CREATE FUNCTION sparql.describe(server text, query text, base_uri text DEFAULT '')
 RETURNS SETOF triple AS 'MODULE_PATHNAME', 'rdf_fdw_describe'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C VOLATILE STRICT;
 
 COMMENT ON FUNCTION sparql.describe(text,text,text) IS 'Gateway for DESCRIBE SPARQL queries';
 
