@@ -717,7 +717,8 @@ char *unescape_unicode(const char *input)
 		{
 			/* \uXXXX (exactly 4 hex digits) */
 			if (p[2] && p[3] && p[4] && p[5] &&
-				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]))
+				isxdigit((unsigned char)p[2]) && isxdigit((unsigned char)p[3]) &&
+				isxdigit((unsigned char)p[4]) && isxdigit((unsigned char)p[5]))
 			{
 				uint16_t codeunit;
 				char hex[5];
@@ -733,7 +734,8 @@ char *unescape_unicode(const char *input)
 				if (codeunit >= 0xD800 && codeunit <= 0xDBFF &&
 					p[6] == '\\' && p[7] == 'u' &&
 					p[8] && p[9] && p[10] && p[11] &&
-					isxdigit(p[8]) && isxdigit(p[9]) && isxdigit(p[10]) && isxdigit(p[11]))
+					isxdigit((unsigned char)p[8]) && isxdigit((unsigned char)p[9]) &&
+					isxdigit((unsigned char)p[10]) && isxdigit((unsigned char)p[11]))
 				{
 					uint16_t low;
 					char lowhex[5];
@@ -779,7 +781,7 @@ char *unescape_unicode(const char *input)
 				elog(DEBUG2, "%s: Invalid \\u sequence at '%s' -> literal", __func__, p);
 				appendStringInfoString(&buf, "\\u");
 				p += 2;
-				for (int i = 0; i < 4 && p[0] && isxdigit(p[0]); i++)
+				for (int i = 0; i < 4 && p[0] && isxdigit((unsigned char)p[0]); i++)
 					appendStringInfoChar(&buf, *p++);
 				continue;
 			}
@@ -788,8 +790,10 @@ char *unescape_unicode(const char *input)
 		{
 			/* \UXXXXXXXX (exactly 8 hex digits) */
 			if (p[2] && p[3] && p[4] && p[5] && p[6] && p[7] && p[8] && p[9] &&
-				isxdigit(p[2]) && isxdigit(p[3]) && isxdigit(p[4]) && isxdigit(p[5]) &&
-				isxdigit(p[6]) && isxdigit(p[7]) && isxdigit(p[8]) && isxdigit(p[9]))
+				isxdigit((unsigned char)p[2]) && isxdigit((unsigned char)p[3]) &&
+				isxdigit((unsigned char)p[4]) && isxdigit((unsigned char)p[5]) &&
+				isxdigit((unsigned char)p[6]) && isxdigit((unsigned char)p[7]) &&
+				isxdigit((unsigned char)p[8]) && isxdigit((unsigned char)p[9]))
 			{
 				char hex[9];
 				uint32_t codepoint;
@@ -819,7 +823,7 @@ char *unescape_unicode(const char *input)
 				elog(DEBUG2, "%s: Invalid \\U sequence at '%s' -> literal", __func__, p);
 				appendStringInfoString(&buf, "\\U");
 				p += 2;
-				for (int i = 0; i < 8 && p[0] && isxdigit(p[0]); i++)
+				for (int i = 0; i < 8 && p[0] && isxdigit((unsigned char)p[0]); i++)
 					appendStringInfoChar(&buf, *p++);
 				continue;
 			}
@@ -1174,7 +1178,7 @@ bool IsSPARQLVariableValid(const char *str)
 	}
 
 	for (int i = 1; str[i] != '\0'; i++)
-		if (!isalnum(str[i]) && str[i] != '_')
+		if (!isalnum((unsigned char)str[i]) && str[i] != '_')
 		{
 			elog(DEBUG3, "%s exit: returning 'false' (invalid variable name)", __func__);
 			return false;

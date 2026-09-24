@@ -8657,7 +8657,7 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 	while (p < end_prefixes)
 	{
 		/* Skip whitespace */
-		while (p < end_prefixes && isspace(sparql[p]))
+		while (p < end_prefixes && isspace((unsigned char)sparql[p]))
 			p++;
 
 		/* Look for a PREFIX declaration */
@@ -8668,12 +8668,12 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 			p += strlen(RDF_SPARQL_KEYWORD_PREFIX);
 
 			/* Skip whitespace after "PREFIX" */
-			while (p < end_prefixes && isspace(sparql[p]))
+			while (p < end_prefixes && isspace((unsigned char)sparql[p]))
 				p++;
 
 			/* Read prefix name (up to ':') */
 			resetStringInfo(&prefix_str);
-			while (p < end_prefixes && !isspace(sparql[p]) && sparql[p] != ':')
+			while (p < end_prefixes && !isspace((unsigned char)sparql[p]) && sparql[p] != ':')
 			{
 				appendStringInfoChar(&prefix_str, sparql[p]);
 				p++;
@@ -8686,7 +8686,7 @@ static void ExtractSPARQLPrefixes(struct RDFfdwState *state)
 			p++;
 
 			/* Skip whitespace after ':' */
-			while (p < end_prefixes && isspace(sparql[p]))
+			while (p < end_prefixes && isspace((unsigned char)sparql[p]))
 				p++;
 
 			/* Expect '<' */

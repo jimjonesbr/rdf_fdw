@@ -125,10 +125,10 @@ char *lex(char *input)
             const char *p = NULL;
             int is_lang_tag = 0;
 
-            if (*tag && isalpha(*tag))
+            if (*tag && isalpha((unsigned char)*tag))
             {
                 p = tag;
-                while (*p && isalpha(*p) && letter_count < 8)
+                while (*p && isalpha((unsigned char)*p) && letter_count < 8)
                 {
                     letter_count++;
                     p++;
@@ -139,7 +139,7 @@ char *lex(char *input)
                     if (*p == '-')
                     {
                         p++;
-                        while (*p && (isalnum(*p) || *p == '-'))
+                        while (*p && (isalnum((unsigned char)*p) || *p == '-'))
                         {
                             p++;
                         }
