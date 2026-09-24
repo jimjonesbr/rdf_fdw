@@ -145,6 +145,12 @@ CREATE FOREIGN TABLE t19 (
 ALTER FOREIGN TABLE t19 DROP COLUMN gone;
 EXPLAIN (COSTS OFF) SELECT name FROM t19;
 
+/* a whole-row reference asks for every column of the row, and the dropped one
+ * still has its place in it; there is no variable to ask the endpoint for, and
+ * handing its absent one to pstrdup() terminated the backend while planning */
+EXPLAIN (VERBOSE, COSTS OFF) SELECT t19 FROM t19;
+EXPLAIN (VERBOSE, COSTS OFF) SELECT t19, name FROM t19;
+
 /* nor may a dropped column be named by the deprecated-types warning, which
  * used to report "........pg.dropped.N........" as a column using a
  * deprecated native PostgreSQL type */

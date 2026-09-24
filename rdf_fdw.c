@@ -6396,6 +6396,11 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 		 * planner adds them on its own, for instance as the row identity of
 		 * a semi-join, which is why a DELETE or UPDATE whose subquery reads
 		 * the same foreign table asks for every mapped variable.
+		 *
+		 * Only the mapped columns can be asked for, though. A dropped column
+		 * keeps its place in the row but is mapped to no variable, and the
+		 * SELECT clause is built from the variables of the columns marked
+		 * here, so it is left unused and its slot NULL, as in any other query.
 		 */
 		if (variable->varattno == 0)
 		{
@@ -6403,7 +6408,10 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 				 __func__, state->numcols);
 
 			for (int i = 0; i < state->numcols; i++)
-				state->rdfTable->cols[i]->used = true;
+			{
+				if (state->rdfTable->cols[i]->sparqlvar != NULL)
+					state->rdfTable->cols[i]->used = true;
+			}
 
 			break;
 		}
