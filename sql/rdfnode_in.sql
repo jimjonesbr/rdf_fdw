@@ -418,3 +418,15 @@ FROM (VALUES ('"1200"^^xsd:byte'),
              ('"255"^^xsd:unsignedByte'),
              ('"99999999999999999999999"^^xsd:integer')) v(t)
 ORDER BY term COLLATE "C";
+
+/* ------------------------------------------------------------------ *
+ * A lexical form may contain '@' and '^^'. The annotation is what
+ * follows the closing quote, so neither may be taken for its start: the
+ * first two used to lose their language tag or datatype, the others
+ * were cut at the '^^'.
+ * ------------------------------------------------------------------ */
+SELECT '"a@b"@en'::rdfnode                           AS at_in_tagged,
+       '"a@b.org"^^<http://example.org/dt>'::rdfnode AS at_in_typed,
+       '"foo^^bar"@en'::rdfnode                      AS caret_in_tagged,
+       '"^^b"@en'::rdfnode                           AS caret_first,
+       '"@en"@de'::rdfnode                           AS tag_as_content;

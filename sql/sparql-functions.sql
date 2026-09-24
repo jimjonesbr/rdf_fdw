@@ -69,8 +69,8 @@ SELECT sparql.lex(NULL);
  * literal is well formed and lex() must return the run itself, with no quotes
  * folded into it, and the plain and language-tagged forms must agree. An
  * odd-length run does escape the closing quote, leaving the literal
- * unterminated: lex() then returns the whole input, and lang() must find no
- * tag rather than reading past it. */
+ * unterminated: the whole input is then read as content, quotes and all, and
+ * lang() must find no tag rather than reading past it. */
 SELECT n,
        sparql.lex(('"' || repeat('\', n) || '"')::rdfnode)    AS plain,
        sparql.lex(('"' || repeat('\', n) || '"@en')::rdfnode) AS tagged,
@@ -174,20 +174,36 @@ SELECT sparql.lang('"abc\"@en'::rdfnode) AS unterminated_has_no_tag;
 
 /* the same read, swept across every lexical length so it is not left to one
  * allocation size to expose it: no tag may be recovered from any of them, and
- * the stored value may never grow beyond what was supplied */
+ * the stored value must be the input quoted whole, with nothing read past its
+ * end */
 SELECT count(*) AS tags_recovered_from_past_the_end
 FROM generate_series(1, 255) AS k
 WHERE sparql.lang(('"' || repeat('a', k) || '\"@en')::rdfnode)::text <> '';
 
-SELECT count(*) AS values_that_grew
+SELECT count(*) AS values_not_quoted_whole
 FROM generate_series(1, 255) AS k
-WHERE length(('"' || repeat('a', k) || '\"@en')::rdfnode::text)
-        <> length('"' || repeat('a', k) || '\"@en');
+WHERE ('"' || repeat('a', k) || '\"@en')::rdfnode::text
+        <> '"\"' || repeat('a', k) || '\"@en"';
 
 /* a doubled quote is an escaped quote, not the end of the lexical form, so
  * the tag after the real closing quote is still found */
 SELECT sparql.lex('"a""b"@en'::rdfnode) AS doubled_quote_lex,
        sparql.lang('"a""b"@en'::rdfnode) AS doubled_quote_lang;
+
+/* '@' and '^^' inside the lexical form are content: the annotation is what
+ * follows the closing quote. Each of these used to be cut at the first '@' or
+ * '^^', or to lose its tag or datatype. */
+SELECT sparql.lang('"a@b"@en'::rdfnode)                                AS at_lang,
+       sparql.datatype('"a@b.org"^^<http://example.org/dt>'::rdfnode)  AS at_datatype,
+       sparql.isliteral('"a@b.org"^^<http://example.org/dt>'::rdfnode) AS at_isliteral,
+       sparql.lex('"x^^y"@en'::rdfnode)                                AS caret_lex;
+SELECT sparql.concat('"a"@en', '"^^b"@en')                          AS concat_tagged,
+       sparql.concat('"a"^^xsd:string', '"^^b"^^xsd:string')        AS concat_typed,
+       sparql.ucase('"x^^y"@en')                                    AS ucase,
+       sparql.substr('"a^^bc"@en', 1, 3)                            AS substr,
+       sparql.strlang('"user@host"', 'en')                          AS strlang;
+/* a datatype IRI is not a literal, and has no language tag to cut off */
+SELECT sparql.strdt('"x"', 'http://example.org/dt@v1')              AS strdt_iri_at;
 
 /* DATATYPE */
 SELECT sparql.datatype('foo');
@@ -726,11 +742,12 @@ SELECT sparql.replace('"abcd"^^xsd:string', 'a', 'Z')            AS xsd_string_b
  * looked like a complete literal was returned as-is, so those callers freed
  * the very chunk they were about to return.
  *
- * The two inputs below take those two paths. Both lexical forms being empty
+ * The two inputs below took those two paths. Both lexical forms being empty
  * builds "" and used to reach the string-constant return, which pfree() then
- * read as a chunk header; '"a""@en' has no closing quote, so lex() returns
- * the whole input, which still looks like a complete literal and used to be
- * returned aliasing the buffer freed underneath it. */
+ * read as a chunk header; '"a""@en' has no closing quote, but used to be taken
+ * for a complete literal all the same, since a quote comes right before its
+ * first '@', and was returned aliasing the buffer freed underneath it. Now that
+ * the closing quote is looked for, it is read as content, quotes and all. */
 SELECT sparql.concat(''::rdfnode, ''::rdfnode, 'x'::rdfnode)                 AS constant_freed;
 SELECT sparql.concat(''::rdfnode, ''::rdfnode, 'x'::rdfnode, 'y'::rdfnode)   AS constant_freed_twice;
 SELECT sparql.lcase('"a""@en'::rdfnode)                                      AS aliased_lcase;

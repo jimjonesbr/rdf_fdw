@@ -195,15 +195,18 @@ bool LiteralsCompatible(char *literal1, char *literal2)
  * closes the literal, or NULL if the string ends before such a quote is
  * found.
  *
- * This deliberately replaces two previous ad-hoc heuristics (a substring
- * search for '@'/'^^' in cstring_to_rdfliteral(), and a single-character
- * lookbehind in EscapeSPARQLLiteral()) that could both be confused by a
+ * This deliberately replaces a previous ad-hoc heuristic (a single-character
+ * lookbehind in EscapeSPARQLLiteral()) that could be confused by a
  * lexical value containing a run of backslashes of the "wrong" parity,
  * causing a quote to be mis-classified as escaped/unescaped and letting
  * attacker-controlled content break out of the intended SPARQL string
  * literal once the value was serialized into a request. Walking forward
  * and consuming escape pairs as they're found is unambiguous regardless
  * of how many backslashes precede a quote.
+ *
+ * A doubled quote is not treated as an escaped quote here, which is what
+ * the serializer needs; code that takes a literal apart the way lex() does
+ * uses LiteralSuffix() instead.
  *
  * input: pointer to the opening '"' of a candidate literal
  *
@@ -224,6 +227,47 @@ FindLiteralClosingQuote(const char *input)
 		if (*p == '"')
 			return p; /* unescaped closing quote */
 		p++;
+	}
+
+	return NULL;
+}
+
+/*
+ * LiteralSuffix
+ * -------------
+ *
+ * Given a string whose first character is '"', returns a pointer to the byte
+ * after the quote that closes the literal -- where its language tag or
+ * datatype annotation starts, if it has one -- or NULL if the literal is
+ * never closed.
+ *
+ * The closing quote is found the way lex() and lang() find it: a backslash
+ * escapes the byte that follows it, and a doubled quote stands for a quote.
+ * It must not be found by searching for the first '@' or '^^' instead, since
+ * a lexical form is free to contain either: "a@b.org"^^<dt> would lose its
+ * datatype, and "x^^y"@de would be cut short at the '^^'.
+ *
+ * input: pointer to the opening '"' of a literal
+ *
+ * returns: pointer to the byte after the closing quote, or NULL
+ */
+const char *
+LiteralSuffix(const char *input)
+{
+	const char *p;
+
+	Assert(input != NULL && *input == '"');
+
+	for (p = input + 1; *p; p++)
+	{
+		if (*p == '\\' && *(p + 1))
+			p++;				/* skip the escaped byte */
+		else if (*p == '"')
+		{
+			if (*(p + 1) != '"')
+				return p + 1;
+			p++;				/* a doubled quote is a quote */
+		}
 	}
 
 	return NULL;
@@ -466,9 +510,7 @@ EscapeSPARQLStringContent(const char *str, bool escape_backslash)
 char *cstring_to_rdfliteral(char *input)
 {
 	const char *start;
-	const char *end;
 	char *result;
-	int len;
 
 	elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
@@ -479,33 +521,25 @@ char *cstring_to_rdfliteral(char *input)
 	}
 
 	start = input;
-	len = strlen(start);
 
 	/*
-	 * Check if it's already a complete RDF literal. Several call
-	 * sites (in particular rdfnode_in()'s own literal parser) rely
-	 * on its existing, deliberately permissive behavior to let a later
-	 * call to lang()/datatype() perform proper validation (e.g. to
-	 * reject an empty language tag or a malformed datatype IRI) on
-	 * whatever follows the quote -- tightening this check here would
-	 * silently change those validation/error paths instead of fixing the
-	 * actual bug, which is in the escaping loop below.
+	 * Check if it's already a complete RDF literal: one whose closing quote
+	 * is followed by a language tag or a datatype annotation. What follows
+	 * the quote is deliberately not validated here. Several call sites (in
+	 * particular rdfnode_in()'s own literal parser) rely on a later call to
+	 * lang()/datatype() to do that (e.g. to reject an empty language tag or a
+	 * malformed datatype IRI), and tightening this check would silently
+	 * change those validation/error paths.
 	 */
 	if (*start == '"')
 	{
-		end = start + len - 1; /* last character */
-		if (end > start)
-		{
-			const char *tag = strstr(start, "@");
-			if (!tag)
-				tag = strstr(start, "^^");
+		const char *suffix = LiteralSuffix(start);
 
-			if (tag && tag > start + 1 && *(tag - 1) == '"')
-			{
-				elog(DEBUG3, "%s exit: returning => '%s'", __func__, input);
-				/* complete literal with lang or type, return a copy */
-				return pstrdup(input);
-			}
+		if (suffix && (*suffix == '@' || (suffix[0] == '^' && suffix[1] == '^')))
+		{
+			elog(DEBUG3, "%s exit: returning => '%s'", __func__, input);
+			/* complete literal with lang or type, return a copy */
+			return pstrdup(input);
 		}
 	}
 

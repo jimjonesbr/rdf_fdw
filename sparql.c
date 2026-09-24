@@ -31,7 +31,8 @@
  * lex
  * ---
  *
- * Extracts the lexical value of a given RDF literal.
+ * Extracts the lexical value of a given RDF literal. Input that is not a
+ * quoted literal is returned unchanged.
  *
  * input: RDF literal
  *
@@ -105,72 +106,16 @@ char *lex(char *input)
         return output.data;
     }
 
-    /* Handle IRI */
-    if (start[0] == '<')
-    {
-        appendStringInfoString(&output, start);
-        return output.data;
-    }
-
-    /* Unquoted: trim at @ or ^^ only if they indicate language tag or datatype */
-    {
-        const char *at = strchr(start, '@');
-        const char *dt = strstr(start, "^^");
-        const char *cut = NULL;
-
-        if (at && (!dt || at < dt))
-        {
-            const char *tag = at + 1;
-            int letter_count = 0;
-            const char *p = NULL;
-            int is_lang_tag = 0;
-
-            if (*tag && isalpha((unsigned char)*tag))
-            {
-                p = tag;
-                while (*p && isalpha((unsigned char)*p) && letter_count < 8)
-                {
-                    letter_count++;
-                    p++;
-                }
-
-                if (letter_count >= 1 && (!*p || *p == '-' || (*p != '.' && *p != '@')))
-                {
-                    if (*p == '-')
-                    {
-                        p++;
-                        while (*p && (isalnum((unsigned char)*p) || *p == '-'))
-                        {
-                            p++;
-                        }
-                    }
-
-                    if (!*p || (*p != '.' && *p != '@'))
-                    {
-                        is_lang_tag = 1;
-                    }
-                }
-            }
-
-            if (is_lang_tag)
-            {
-                cut = at;
-            }
-        }
-        else if (dt)
-        {
-            cut = dt;
-        }
-
-        if (cut)
-        {
-            appendBinaryStringInfo(&output, start, cut - start);
-        }
-        else
-        {
-            appendStringInfoString(&output, start);
-        }
-    }
+    /*
+     * Anything else -- an IRI, a blank node, or the bare lexical content that
+     * strlang(), strdt(), iri() and the string functions pass around -- is
+     * returned as it stands, the way rdfnode_in() reads an unquoted string:
+     * only a quoted literal carries an annotation. Cutting an unquoted string
+     * at the first '@' or '^^' that could start one mangled content that
+     * merely contains either -- 'x^^y' became "x", and the IRI body
+     * https://foo/@bar became <https://foo/>.
+     */
+    appendStringInfoString(&output, start);
 
     return output.data;
 }
@@ -246,17 +191,11 @@ char *lang(char *input)
     else
     {
         /*
-         * Unquoted: here lex() does return a prefix of the input (it cuts at
-         * a well-formed '@lang' or '^^datatype' and otherwise keeps
-         * everything), so its length is a valid offset. Clamp anyway so the
-         * two can never drift apart again.
+         * Unquoted: an IRI, a blank node or bare lexical content, none of
+         * which carries a language tag -- lex() returns all of it.
          */
-        char *lexical_form = lex(input);
-        size_t lexical_len = strlen(lexical_form);
-
-        Assert(lexical_form != NULL);
-
-        ptr = (lexical_len < (size_t)(end - ptr)) ? ptr + lexical_len : end;
+        elog(DEBUG3, "%s exit: returning empty string (not a quoted literal)", __func__);
+        return "";
     }
 
     /* check for language tag */
@@ -1000,7 +939,7 @@ bool isBlank(char *term)
 bool isLiteral(char *term)
 {
     const char *ptr;
-    int len;
+    const char *suffix;
 
     elog(DEBUG3, "%s called: term='%s'", __func__, term ? term : "(null)");
 
@@ -1019,45 +958,38 @@ bool isLiteral(char *term)
 
     /* Normalize input */
     ptr = cstring_to_rdfliteral(term);
-    len = strlen(ptr);
 
-    /* Check for valid quoted literal */
-    if (*ptr == '"')
+    /*
+     * What kind of literal this is depends on what follows its closing quote,
+     * not on where the first '@' or '^^' is: the lexical form may contain
+     * either.
+     */
+    suffix = LiteralSuffix(ptr);
+
+    if (suffix != NULL)
     {
-        if (len >= 2)
+        /* Simple literal: nothing after the closing quote */
+        if (*suffix == '\0')
         {
-            const char *tag = strstr(ptr, "^^");
-            const char *lang_tag = strstr(ptr, "@");
-
-            /* Typed literal: has ^^ followed by datatype */
-            if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
-                (!lang_tag || lang_tag > tag))
-            {
-                const char *dt_start = tag + 2;
-                if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
-                {
-                    elog(DEBUG3, "%s exit: returning 'true' (valid datatype)", __func__);
-                    return true;
-                } /* Valid datatype */
-            }
-            /* Language-tagged literal: has @ with language tag */
-            else if (lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"' &&
-                     *(lang_tag + 1) != '\0')
-            {
-                elog(DEBUG3, "%s exit: returning 'true' (literal has a language tag)", __func__);
-                return true;
-            }
-            /* Simple literal: quoted string, no ^^ or @ */
-            else if (ptr[len - 1] == '"')
-            {
-                elog(DEBUG3, "%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
-                return true;
-            }
+            elog(DEBUG3, "%s exit: returning 'true' (simple literal - no ^^ or @)", __func__);
+            return true;
         }
-        else if (len == 1)
+
+        /* Typed literal: has ^^ followed by datatype */
+        if (suffix[0] == '^' && suffix[1] == '^')
         {
-            /* Empty quoted literal "" */
-            elog(DEBUG3, "%s exit: returning 'true' (empty quoted literal)", __func__);
+            const char *dt_start = suffix + 2;
+
+            if (*dt_start != '\0' && (*dt_start != '<' || *(dt_start + 1) != '>'))
+            {
+                elog(DEBUG3, "%s exit: returning 'true' (valid datatype)", __func__);
+                return true;
+            } /* Valid datatype */
+        }
+        /* Language-tagged literal: has @ with language tag */
+        else if (*suffix == '@' && *(suffix + 1) != '\0')
+        {
+            elog(DEBUG3, "%s exit: returning 'true' (literal has a language tag)", __func__);
             return true;
         }
     }
@@ -1172,7 +1104,7 @@ char *datatype(char *input)
 {
     StringInfoData buf;
     const char *ptr;
-    int len;
+    const char *suffix;
 
     elog(DEBUG3, "%s called: input='%s'", __func__, input ? input : "(null)");
 
@@ -1187,20 +1119,21 @@ char *datatype(char *input)
 
     Assert(ptr != NULL);
 
-    len = strlen(ptr);
-
     initStringInfo(&buf);
 
-    if (*ptr == '"')
-    {
-        const char *tag = strstr(ptr, "^^");
-        const char *lang_tag = strstr(ptr, "@");
+    /*
+     * The datatype annotation is whatever follows the closing quote, so that
+     * is where "^^" has to be, not merely somewhere in the input: the lexical
+     * form may contain '@' and '^^' as well.
+     */
+    suffix = LiteralSuffix(ptr);
 
+    if (suffix != NULL)
+    {
         /* check for datatype first */
-        if (tag && tag > ptr + 1 && *(tag - 1) == '"' &&
-            (!lang_tag || lang_tag > tag)) /* datatype takes precedence */
+        if (suffix[0] == '^' && suffix[1] == '^')
         {
-            const char *dt_start = tag + 2; /* skip ^^ */
+            const char *dt_start = suffix + 2; /* skip ^^ */
             const char *dt_end = dt_start;
 
             /* find the end of the datatype */
@@ -1259,8 +1192,7 @@ char *datatype(char *input)
             }
         }
         /* simple or language-tagged literal */
-        if ((lang_tag && lang_tag > ptr + 1 && *(lang_tag - 1) == '"') ||
-            (len >= 1 && (ptr[len - 1] == '"' || len == 1)))
+        if (*suffix == '\0' || *suffix == '@')
         {
             elog(DEBUG3, "%s exit: returning empty string (simple/language-tagged literal)", __func__);
             return "";

@@ -703,6 +703,16 @@ SELECT plain  FROM escaping_ft WHERE plain  = E'a\nb';
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT plain  FROM escaping_ft WHERE plain  = 'a\nb';
 
+/* A value may contain '@' and '^^'. A native constant carries no annotation,
+   and an rdfnode's annotation is what follows its closing quote: these used
+   to be pushed down as "x"@en, "user"@en and "a"@en. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT tagged FROM escaping_ft WHERE tagged = 'x^^y';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT tagged FROM escaping_ft WHERE tagged = 'user@host';
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"a@b"@en'::rdfnode;
+
 /* A backslash in a native datum is a backslash, not the start of an escape.
    It used to be handed over as written, so "a\nb" arrived at the endpoint
    meaning a line break. */

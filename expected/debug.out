@@ -1755,8 +1755,7 @@ DEBUG:  DeparseExpr [T_Const] called: expr->type=7
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  lang called: input='<https://www.uni-muenster.de>'
-DEBUG:  lex called: input='<https://www.uni-muenster.de>'
-DEBUG:  lang exit: returning empty string
+DEBUG:  lang exit: returning empty string (not a quoted literal)
 DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"<https://www.uni-muenster.de>"'
@@ -2302,8 +2301,7 @@ DEBUG:  DeparseExpr [T_Const] called: expr->type=7
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  lang called: input='<https://www.uni-muenster.de>'
-DEBUG:  lex called: input='<https://www.uni-muenster.de>'
-DEBUG:  lang exit: returning empty string
+DEBUG:  lang exit: returning empty string (not a quoted literal)
 DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"<https://www.uni-muenster.de>"'
@@ -2341,8 +2339,7 @@ DEBUG:  DeparseExpr [T_Const] called: expr->type=7
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<http://dbpedia.org/property/name>'
 DEBUG:  lang called: input='<http://dbpedia.org/property/name>'
-DEBUG:  lex called: input='<http://dbpedia.org/property/name>'
-DEBUG:  lang exit: returning empty string
+DEBUG:  lang exit: returning empty string (not a quoted literal)
 DEBUG:  datatype called: input='<http://dbpedia.org/property/name>'
 DEBUG:  cstring_to_rdfliteral called: input='<http://dbpedia.org/property/name>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"<http://dbpedia.org/property/name>"'
@@ -2754,8 +2751,7 @@ DEBUG:  DeparseExpr [T_Const] called: expr->type=7
 DEBUG:  DatumToString called: type='(RDFNODEOID)' 
 DEBUG:  DatumToString exit: returning '<https://www.uni-muenster.de>'
 DEBUG:  lang called: input='<https://www.uni-muenster.de>'
-DEBUG:  lex called: input='<https://www.uni-muenster.de>'
-DEBUG:  lang exit: returning empty string
+DEBUG:  lang exit: returning empty string (not a quoted literal)
 DEBUG:  datatype called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral called: input='<https://www.uni-muenster.de>'
 DEBUG:  cstring_to_rdfliteral exit: returning => '"<https://www.uni-muenster.de>"'

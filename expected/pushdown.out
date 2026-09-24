@@ -1667,6 +1667,49 @@ HINT:  Use the "rdfnode" type instead.
    Remote Filter: ((?plain = "a\\nb"))
 (6 rows)
 
+/* A value may contain '@' and '^^'. A native constant carries no annotation,
+   and an rdfnode's annotation is what follows its closing quote: these used
+   to be pushed down as "x"@en, "user"@en and "a"@en. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT tagged FROM escaping_ft WHERE tagged = 'x^^y';
+WARNING:  the rdf_fdw FOREIGN TABLE "escaping_ft" has columns using native PostgreSQL types which are deprecated: typed, tagged, plain
+HINT:  Use the "rdfnode" type instead.
+                QUERY PLAN                
+------------------------------------------
+ Foreign Scan on public.escaping_ft
+   Output: tagged
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?tagged 
+   Remote Filter: ((?tagged = "x^^y"@en))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT tagged FROM escaping_ft WHERE tagged = 'user@host';
+WARNING:  the rdf_fdw FOREIGN TABLE "escaping_ft" has columns using native PostgreSQL types which are deprecated: typed, tagged, plain
+HINT:  Use the "rdfnode" type instead.
+                  QUERY PLAN                   
+-----------------------------------------------
+ Foreign Scan on public.escaping_ft
+   Output: tagged
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?tagged 
+   Remote Filter: ((?tagged = "user@host"@en))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft WHERE o = '"a@b"@en'::rdfnode;
+             QUERY PLAN             
+------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((?o = "a@b"@en))
+(6 rows)
+
 /* A backslash in a native datum is a backslash, not the start of an escape.
    It used to be handed over as written, so "a\nb" arrived at the endpoint
    meaning a line break. */

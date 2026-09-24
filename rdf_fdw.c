@@ -7198,7 +7198,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 
 				if (strlen(l) != 0)
 					appendStringInfo(&result, "%s", strlang(lex_str, l));
-				else if (strstr(c, "\"^^"))
+				else if (strlen(dt) != 0)
 					appendStringInfo(&result, "%s", strdt(lex_str, dt));
 				else
 					appendStringInfo(&result, "%s", lex_str);
