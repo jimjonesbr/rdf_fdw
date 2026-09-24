@@ -1815,6 +1815,13 @@ static List *DescribeNodeElement(xmlNodePtr node, List *triples, int *counter, c
 	xmlNodePtr property_node;
 	const xmlChar *rdf_ns = (const xmlChar *)RDF_RDF_BASE_URI;
 
+	/*
+	 * Nested node elements are followed by recursion, as deep as the response
+	 * nests them, and with XML_PARSE_HUGE (enable_xml_huge) libxml2 does not
+	 * bound that depth before version 2.13.
+	 */
+	check_stack_depth();
+
 	if (subject == NULL)
 		subject = DescribeNodeSubject(node, counter);
 
