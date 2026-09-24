@@ -6882,7 +6882,9 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					}
 
 					elog(DEBUG3, "%s: value='%s', lang='%s', datatye='%s', node_type='%s'",
-						 __func__, node_value, (char *)lang, (char *)datatype, node_type);
+						 __func__, node_value,
+						 lang ? (char *)lang : "(null)",
+						 datatype ? (char *)datatype : "(null)", node_type);
 
 					/*
 					 * If the column is an RDFNode, we need to check if it has a
