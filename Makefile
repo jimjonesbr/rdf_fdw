@@ -123,8 +123,7 @@ endif
 ifdef INCLUDE_STRESS_TESTS
   REGRESS += fuseki-stress \
   		     graphdb-stress	\
-			 virtuoso-stress \
-			 qlever-stress
+			 virtuoso-stress
 endif
 
 ifdef INCLUDE_EXTERNAL_TESTS
