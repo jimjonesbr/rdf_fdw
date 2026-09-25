@@ -7132,6 +7132,33 @@ ConstIsUncomparableLiteral(Expr *expr)
 			 info.isTime || info.isDuration);
 }
 
+/*
+ * FloatConstToRDFLiteral
+ * ----------------------
+ *
+ * Returns a float4 or float8 constant as the typed literal that the rdfnode
+ * arithmetic operators convert it to -- "2.5"^^xsd:double, "NaN"^^xsd:float --
+ * so that the endpoint computes in the same datatype as the operator.
+ *
+ * c: a non-NULL Const of type float4 or float8
+ *
+ * returns the SPARQL literal
+ */
+static char *FloatConstToRDFLiteral(Const *c)
+{
+	Datum node;
+
+	Assert(!c->constisnull);
+	Assert(c->consttype == FLOAT4OID || c->consttype == FLOAT8OID);
+
+	if (c->consttype == FLOAT4OID)
+		node = DirectFunctionCall1(float4_to_rdfnode, c->constvalue);
+	else
+		node = DirectFunctionCall1(float8_to_rdfnode, c->constvalue);
+
+	return text_to_cstring(DatumGetTextPP(node));
+}
+
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr)
 {
 	char *arg, *opername, *left, *right, oprkind;
@@ -7148,6 +7175,7 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 	Expr *rightexpr;
 	Expr *leftexpr;
 	bool first_arg, isNull;
+	bool float_arith;
 	ArrayIterator iterator;
 	Datum datum;
 	ListCell *cell;
@@ -7348,28 +7376,37 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		}
 
 		/*
-		 * Arithmetic between an rdfnode and a PostgreSQL float is evaluated
-		 * locally.
+		 * Arithmetic between an rdfnode and a PostgreSQL float has to reach
+		 * the endpoint as a typed literal.
 		 *
 		 * SPARQL's bare numeric literals are xsd:integer and xsd:decimal, and
 		 * a double needs the exponent form -- 2.5 is a decimal, 2.5e0 a
-		 * double. A float constant is deparsed by its own output function, so
-		 * it reaches the endpoint as 2.5, and arithmetic computes in the wider
-		 * of the two datatypes: against an xsd:integer term the endpoint then
-		 * works in xsd:decimal where the operator here worked in xsd:double.
-		 * Fuseki, GraphDB and Virtuoso all answer 0.3 for 3 * 0.1 and
-		 * 0.30000000000000004 for 3 * 0.1e0, so a FILTER built from such an
-		 * expression selects a different set of rows than the operator does.
+		 * double. A float constant deparsed by its own output function would
+		 * reach the endpoint as 2.5, and arithmetic computes in the wider of
+		 * the two datatypes: against an xsd:integer term the endpoint would
+		 * then work in xsd:decimal where the operator here works in
+		 * xsd:double. Fuseki, GraphDB and Virtuoso all answer 0.3 for 3 * 0.1
+		 * and 0.30000000000000004 for 3 * 0.1e0, so a FILTER built that way
+		 * would select a different set of rows than the operator does.
+		 *
+		 * The operator converts the float with float8_to_rdfnode() or
+		 * float4_to_rdfnode() before computing, so a constant is sent as the
+		 * literal those produce, and the endpoint computes in the same
+		 * datatype. Anything else of a float type has no such literal and is
+		 * evaluated locally.
 		 *
 		 * Comparisons are unaffected: XPath promotes the decimal to the
 		 * double before comparing, so the literal's datatype cannot change
 		 * the answer there.
 		 */
-		if ((strcmp(opername, "+") == 0 || strcmp(opername, "*") == 0) &&
+		float_arith = (strcmp(opername, "+") == 0 || strcmp(opername, "*") == 0) &&
 			((leftargtype == RDFNODEOID && (rightargtype == FLOAT4OID || rightargtype == FLOAT8OID)) ||
-			 (rightargtype == RDFNODEOID && (leftargtype == FLOAT4OID || leftargtype == FLOAT8OID))))
+			 (rightargtype == RDFNODEOID && (leftargtype == FLOAT4OID || leftargtype == FLOAT8OID)));
+
+		if (float_arith &&
+			!IsA(leftargtype == RDFNODEOID ? lsecond(oper->args) : linitial(oper->args), Const))
 		{
-			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: rdfnode arithmetic with a float", __func__);
+			elog(DEBUG2, "%s [T_OpExpr]: returning NULL: rdfnode arithmetic with a float that is not a constant", __func__);
 			return NULL;
 		}
 
@@ -7504,6 +7541,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 						appendStringInfo(&left_filter_arg, "%s", left_column->sparqlvar);
 				}
+				/* a float constant in arithmetic, as the operator reads it */
+				else if (float_arith && leftargtype != RDFNODEOID)
+					appendStringInfoString(&left_filter_arg, FloatConstToRDFLiteral((Const *) leftexpr));
 				else
 				{
 					appendStringInfo(&left_filter_arg, "%s", left);
@@ -7562,6 +7602,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					else
 						appendStringInfo(&right_filter_arg, "%s", right_column->sparqlvar);
 				}
+				/* a float constant in arithmetic, as the operator reads it */
+				else if (float_arith && rightargtype != RDFNODEOID)
+					appendStringInfoString(&right_filter_arg, FloatConstToRDFLiteral((Const *) rightexpr));
 				else
 					appendStringInfo(&right_filter_arg, "%s", right);
 

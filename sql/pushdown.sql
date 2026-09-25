@@ -288,8 +288,10 @@ EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft
 WHERE (o + 1) * 2 > '"10"^^xsd:integer'::rdfnode;
 
-/* a float constant is not pushed down: SPARQL reads 2.5 as an xsd:decimal, and
-   the endpoint would then compute in a different datatype than the operator */
+/* a float constant is sent as the typed literal the operator converts it to:
+   SPARQL reads a bare 2.5 as an xsd:decimal, and the endpoint would then
+   compute in a different datatype than the operator. NaN and infinity have no
+   bare spelling at all. */
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft
@@ -298,6 +300,10 @@ WHERE o * 2.5::double precision > '"10"^^xsd:double'::rdfnode;
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft
 WHERE o + 2.5::real > '"10"^^xsd:float'::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE 'NaN'::double precision * o = o AND o + '-Infinity'::real < o;
 
 /* SPARQL has no FILTER form for - and /, so both stay local */
 

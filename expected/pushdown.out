@@ -534,35 +534,48 @@ WHERE (o + 1) * 2 > '"10"^^xsd:integer'::rdfnode;
    Remote Filter: ((((?o + 1) * 2) > "10"^^<http://www.w3.org/2001/XMLSchema#integer>))
 (6 rows)
 
-/* a float constant is not pushed down: SPARQL reads 2.5 as an xsd:decimal, and
-   the endpoint would then compute in a different datatype than the operator */
+/* a float constant is sent as the typed literal the operator converts it to:
+   SPARQL reads a bare 2.5 as an xsd:decimal, and the endpoint would then
+   compute in a different datatype than the operator. NaN and infinity have no
+   bare spelling at all. */
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft
 WHERE o * 2.5::double precision > '"10"^^xsd:double'::rdfnode;
-                                                    QUERY PLAN                                                     
--------------------------------------------------------------------------------------------------------------------
+                                                           QUERY PLAN                                                           
+--------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: o
-   Filter: ((rdfnode_ft.o * '2.5'::double precision) > '"10"^^<http://www.w3.org/2001/XMLSchema#double>'::rdfnode)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?o 
-   Remote Filter: not pushable
-(7 rows)
+   Remote Filter: (((?o * "2.5"^^<http://www.w3.org/2001/XMLSchema#double>) > "10"^^<http://www.w3.org/2001/XMLSchema#double>))
+(6 rows)
 
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT o FROM rdfnode_ft
 WHERE o + 2.5::real > '"10"^^xsd:float'::rdfnode;
-                                              QUERY PLAN                                              
-------------------------------------------------------------------------------------------------------
+                                                          QUERY PLAN                                                          
+------------------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: o
-   Filter: ((rdfnode_ft.o + '2.5'::real) > '"10"^^<http://www.w3.org/2001/XMLSchema#float>'::rdfnode)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?o 
-   Remote Filter: not pushable
-(7 rows)
+   Remote Filter: (((?o + "2.5"^^<http://www.w3.org/2001/XMLSchema#float>) > "10"^^<http://www.w3.org/2001/XMLSchema#float>))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM rdfnode_ft
+WHERE 'NaN'::double precision * o = o AND o + '-Infinity'::real < o;
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Foreign Scan on public.rdfnode_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: ((("NaN"^^<http://www.w3.org/2001/XMLSchema#double> * ?o) = ?o) && ((?o + "-INF"^^<http://www.w3.org/2001/XMLSchema#float>) < ?o))
+(6 rows)
 
 /* SPARQL has no FILTER form for - and /, so both stay local */
 EXPLAIN (VERBOSE, COSTS OFF)
