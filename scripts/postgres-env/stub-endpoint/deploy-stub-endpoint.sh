@@ -83,6 +83,31 @@ printf '%s%s' "$XML_HEAD" "$SPLIT_TEXT" > /tmp/stub-split-text.xml
 printf '%s<head><variable name="iri"/><variable name="bnode"/><variable name="tagged"/></head><results><result><binding name="iri"><uri>http://example.org/thing</uri></binding><binding name="bnode"><bnode>b1</bnode></binding><binding name="tagged"><literal xml:lang="en">hello</literal></binding></result></results></sparql>' \
     "$XML_HEAD" > /tmp/stub-node-types.xml
 
+# Literals holding a backslash and quotes. The XML carries the value itself --
+# a backslash in it is a character, not the start of an escape -- which a store
+# that holds C:\temp answers with exactly as written here.
+BACKSLASH='<head><variable name="plain"/><variable name="tagged"/><variable name="typed"/><variable name="quoted"/></head><results><result>'
+BACKSLASH=$BACKSLASH'<binding name="plain"><literal>C:\temp</literal></binding>'
+BACKSLASH=$BACKSLASH'<binding name="tagged"><literal xml:lang="en">a\nb</literal></binding>'
+BACKSLASH=$BACKSLASH'<binding name="typed"><literal datatype="http://www.w3.org/2001/XMLSchema#string">back\\slash</literal></binding>'
+BACKSLASH=$BACKSLASH'<binding name="quoted"><literal>"said" \ done</literal></binding>'
+BACKSLASH=$BACKSLASH'</result></results></sparql>'
+
+printf '%s%s' "$XML_HEAD" "$BACKSLASH" > /tmp/stub-backslash.xml
+
+# The same values in a DESCRIBE answer.
+cat > /tmp/stub-describe-backslash.xml <<'XMLEOF'
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:ex="http://example.org/">
+  <rdf:Description rdf:about="http://example.org/s">
+    <ex:path>C:\temp</ex:path>
+    <ex:tagged xml:lang="en">a\nb</ex:tagged>
+    <ex:quoted>"said" \ done</ex:quoted>
+  </rdf:Description>
+</rdf:RDF>
+XMLEOF
+
 # A DESCRIBE answer, which is RDF/XML rather than SPARQL results XML. The
 # subject of an rdf:Description is an IRI when it carries rdf:about and a blank
 # node when it carries rdf:nodeID; a store only emits the second when the
@@ -123,6 +148,8 @@ podman run -d --name $CONTAINER_NAME \
   -v /tmp/stub-node-types.xml:/usr/share/nginx/html/node-types.xml:ro,z \
   -v /tmp/stub-split-text.xml:/usr/share/nginx/html/split-text.xml:ro,z \
   -v /tmp/stub-describe-bnode.xml:/usr/share/nginx/html/describe-bnode.xml:ro,z \
+  -v /tmp/stub-backslash.xml:/usr/share/nginx/html/backslash.xml:ro,z \
+  -v /tmp/stub-describe-backslash.xml:/usr/share/nginx/html/describe-backslash.xml:ro,z \
   docker.io/library/nginx:alpine
 
 echo "Waiting for the stub endpoint to start..."

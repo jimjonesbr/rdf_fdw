@@ -310,3 +310,46 @@ DROP SERVER stub_describe CASCADE;
 DROP SERVER stub_wide_limit CASCADE;
 DROP SERVER stub_redirect CASCADE;
 DROP SERVER stub_tokens CASCADE;
+
+/*
+ * The XML of a result carries a literal's value, in which a backslash is a
+ * character like any other. A term is kept with its lexical form escaped, so
+ * the value has to be escaped on its way in: read as it stands, C:\temp came
+ * back as C:<tab>emp, and an UPDATE or DELETE of that term no longer matched
+ * the triple the endpoint holds. The same goes for a DESCRIBE answer, where a
+ * value starting with a quote was also taken for a quoted literal.
+ */
+CREATE SERVER stub_backslash
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/backslash.xml',
+  connect_timeout '5');
+
+CREATE SERVER stub_describe_backslash
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/describe-backslash.xml',
+  connect_timeout '5');
+
+CREATE FOREIGN TABLE ft_backslash (
+  plain  rdfnode OPTIONS (variable '?plain'),
+  tagged rdfnode OPTIONS (variable '?tagged'),
+  typed  rdfnode OPTIONS (variable '?typed'),
+  quoted rdfnode OPTIONS (variable '?quoted')
+) SERVER stub_backslash OPTIONS (sparql 'SELECT * WHERE {?s ?p ?o}');
+
+SELECT plain, tagged, typed, quoted FROM ft_backslash;
+SELECT sparql.strlen(plain)  AS plain_length,
+       sparql.strlen(tagged) AS tagged_length,
+       sparql.strlen(typed)  AS typed_length,
+       sparql.strlen(quoted) AS quoted_length,
+       plain = '"C:\\temp"'::rdfnode AS plain_is_the_value
+FROM ft_backslash;
+
+SELECT predicate, object, sparql.strlen(object) AS length
+FROM sparql.describe('stub_describe_backslash', 'DESCRIBE <http://example.org/s>')
+ORDER BY predicate;
+
+DROP FOREIGN TABLE ft_backslash;
+DROP SERVER stub_backslash CASCADE;
+DROP SERVER stub_describe_backslash CASCADE;

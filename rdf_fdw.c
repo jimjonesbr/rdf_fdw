@@ -1906,12 +1906,20 @@ static List *DescribeNodeElement(xmlNodePtr node, List *triples, int *counter, c
 			xmlChar *lang = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_LANG);
 			xmlChar *datatype = xmlGetProp(property_node, (const xmlChar *)RDF_SPARQL_RESULT_LITERAL_DATATYPE);
 
+			/*
+			 * literal_content is the value from the XML, not a lexical form:
+			 * escape it as an rdfnode keeps it (see CreateTuple()), or a
+			 * backslash in it would be read as an escape, and a value that
+			 * starts with a quote as a quoted literal
+			 */
+			char *escaped = EncodeLexicalForm((char *)literal_content);
+
 			if (lang)
-				triple->object = strlang((char *)literal_content, (char *)lang);
+				triple->object = strlang(escaped, (char *)lang);
 			else if (datatype)
-				triple->object = strdt((char *)literal_content, (char *)datatype);
+				triple->object = strdt(escaped, (char *)datatype);
 			else
-				triple->object = cstring_to_rdfliteral((char *)literal_content);
+				triple->object = cstring_to_rdfliteral(escaped);
 
 			if (lang)
 				xmlFree(lang);
@@ -2769,8 +2777,11 @@ static int64 InsertRetrievedData(RDFfdwState *state, int64 offset, int64 end_off
 								appendStringInfo(&literal_value, "_:%s", (char *)content);
 							else
 							{
-								/* Build literal with proper quote escaping */
-								char *escaped = cstring_to_rdfliteral((char *)content);
+								/*
+								 * content is the value from the XML, not a lexical form:
+								 * escape it as an rdfnode keeps it (see CreateTuple())
+								 */
+								char *escaped = cstring_to_rdfliteral(EncodeLexicalForm((char *)content));
 
 								if (datatype)
 									appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
@@ -6904,11 +6915,16 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					 * datatype or a language tag. If it does, we need to format
 					 * it accordingly.
 					 *
-					 * IMPORTANT: node_value at this point is raw lexical content from
+					 * IMPORTANT: node_value at this point is the value itself, from
 					 * xmlNodeGetContent(), which has already unescaped XML entities
-					 * (e.g., &quot; becomes "). We must NOT pass it through lex()
-					 * which would misinterpret quote characters as RDF syntax.
-					 * Instead, construct the rdfnode directly from the raw content.
+					 * (e.g., &quot; becomes "). It carries no RDF escapes, so a
+					 * backslash or a quote in it is a character of the value. An
+					 * rdfnode keeps its lexical form escaped, and strlang(), strdt()
+					 * and cstring_to_rdfliteral() read a backslash as the start of
+					 * an escape, so the value goes through EncodeLexicalForm()
+					 * first: C:\temp would otherwise be read back as C:<tab>emp,
+					 * and an UPDATE or DELETE of the term would no longer match the
+					 * triple the endpoint holds.
 					 */
 					if (state->rdfTable->cols[i]->pgtype == RDFNODEOID)
 					{
@@ -6923,8 +6939,8 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 						}
 						else
 						{
-							/* Build literal with proper quote escaping */
-							char *escaped = cstring_to_rdfliteral(node_value);
+							/* the value, escaped as an rdfnode keeps it (see above) */
+							char *escaped = cstring_to_rdfliteral(EncodeLexicalForm(node_value));
 
 							if (datatype)
 								appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));

@@ -94,7 +94,6 @@ ORDER BY object::text COLLATE "C";
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
                                |                                                   |  <= salto de línea =>                                              +
                                |                                                   | "@es
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
@@ -117,6 +116,7 @@ ORDER BY object::text COLLATE "C";
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
@@ -140,7 +140,6 @@ ORDER BY object::text COLLATE "C";
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "                                                                  +
                                |                                                   |  <= salto de línea =>                                              +
                                |                                                   | "@es
- <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | " <= double-quotes => "@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ""
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | ". <= pontos => ."@pt
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/verySmallNumber>     | "0.000000000000001"^^<http://www.w3.org/2001/XMLSchema#decimal>
@@ -163,6 +162,7 @@ ORDER BY object::text COLLATE "C";
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "University of Münster"@en
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Univêrsity of Münsta"@en-gb
  <https://www.uni-muenster.de> | <http://dbpedia.org/property/name>                | "Westfälische Wilhelms-Universität Münster"@de
+ <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "\" <= double-quotes => \""@en
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "explicit string literal"
  <https://www.uni-muenster.de> | <http://dbpedia.org/ontology/internationally>     | "true"^^<http://www.w3.org/2001/XMLSchema#boolean>
  <https://www.uni-muenster.de> | <http://www.w3.org/2000/01/rdf-schema#comment>    | "unknown literal type"^^<http://www.w3.org/2001/XMLSchema#UNKNOWN>
