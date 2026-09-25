@@ -74,7 +74,7 @@ assigning its result straight into a `text` column now needs an explicit
 
   The value operators `=`, `<>`, `<`, `<=`, `>=` and `>` are untouched and still mean what they meant, including in a `WHERE` clause. The class is built on five operators of its own, `~=`, `~<~`, `~<=~`, `~>=~` and `~>~`, named after PostgreSQL's `text_pattern_ops`. They are seldom written by hand; where they matter is an index, which can answer a condition written with one of them, while a value comparison is applied as a filter to the rows the scan returns.
 
-  **Upgrading from an earlier version requires manual steps.** Replacing an operator class does not rewrite what was built with it, so `ALTER EXTENSION rdf_fdw UPDATE TO '2.8'` refuses to run while any index on an `rdfnode` exists, or any view, materialized view or SQL-body function that sorts, groups or de-duplicates on one. Save their definitions, drop them, upgrade, and recreate them. `REINDEX` is not enough — an index belongs to the operator class it was created with. A stored query that only compares `rdfnode`s does not have to be touched. Nothing is dropped automatically.
+  **Upgrading from an earlier version requires manual steps.** Replacing an operator class does not rewrite what was built with it, so `ALTER EXTENSION rdf_fdw UPDATE TO '3.0'` refuses to run while any index on an `rdfnode` exists, or any view, materialized view or SQL-body function that sorts, groups or de-duplicates on one. Save their definitions, drop them, upgrade, and recreate them. `REINDEX` is not enough — an index belongs to the operator class it was created with. A stored query that only compares `rdfnode`s does not have to be touched. Nothing is dropped automatically.
 
 ## Minor Changes
 
@@ -127,6 +127,8 @@ assigning its result straight into a `text` column now needs an explicit
 * **Improved IRI and blank node validation**: Term syntax is now validated against the SPARQL grammar, preventing malformed terms from altering filter meaning or INSERT/DELETE statements. (Tomas Vondra <tomas@vondra.me>)
 
 ### RDF values, literals and functions
+
+* **String functions counted, cased and hashed the escapes of a literal**: An `rdfnode` keeps a lexical form as it was written, so `'"a\"b"'` holds a backslash before the quote, and a line break typed as `\n` stays two characters, while the same value read from an endpoint carries the characters themselves. `sparql.strlen()` counted the escapes (4 for `"a\"b"`, where the endpoint answers 3), `sparql.md5()` and `sparql.encode_for_uri()` hashed and encoded the backslash, `sparql.ucase()` turned `\n` into the invalid escape `\N`, and `sparql.substr()`, `sparql.contains()`, `sparql.strstarts()`, `sparql.strends()`, `sparql.strbefore()` and `sparql.strafter()` counted positions in, or searched, the escaped text. They now read the value the escapes stand for, so a typed and a received spelling of the same string give the same answer, and the one the endpoint gives.
 
 * **Fixed `sparql.sum()` and `sparql.avg()` to correctly handle infinity on all PostgreSQL versions**: On PostgreSQL versions before 14, `numeric` lacks infinity support, so the accumulator would reject `"INF"^^xsd:double` and raise an error. An infinity is now recorded separately from the accumulator, letting IEEE 754 rules govern the answer: an infinity absorbs any finite value, and opposing infinities produce `NaN`. All versions now return results consistent with Fuseki, GraphDB, Virtuoso and QLever.
 

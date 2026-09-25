@@ -4383,6 +4383,32 @@ SELECT sparql.iri('"http://e.org/{x}"'::rdfnode);
 ERROR:  invalid IRI: <http://e.org/{x}>
 SELECT sparql.strdt('"v"'::rdfnode, '"http://e.org/t>x"'::rdfnode);
 ERROR:  invalid IRI: <http://e.org/t>x>
+/* A lexical form keeps its escapes as written, while a term read from an
+ * endpoint carries the characters themselves. Both spell one value, and the
+ * functions defined over the value -- length, case, position, hash -- read the
+ * characters, as the endpoint does: "a\"b" has three of them. */
+SELECT sparql.strlen('"a\"b"'::rdfnode)       AS quote,
+       sparql.strlen('"a\\b"'::rdfnode)       AS backslash,
+       sparql.strlen('"a\nb"'::rdfnode)       AS escaped_newline,
+       sparql.strlen(E'"a\nb"'::rdfnode)      AS raw_newline,
+       sparql.strlen('"x\"\"y"@en'::rdfnode)  AS two_quotes;
+ quote | backslash | escaped_newline | raw_newline | two_quotes 
+-------+-----------+-----------------+-------------+------------
+     3 |         3 |               3 |           3 |          4
+(1 row)
+
+SELECT sparql.ucase('"a\tb"'::rdfnode) = sparql.ucase(E'"a\tb"'::rdfnode) AS ucase_keeps_the_tab,
+       sparql.substr('"a\"bc"'::rdfnode, 2, 2) AS substr_from_the_quote,
+       sparql.md5('"a\"b"'::rdfnode) = sparql.md5(E'"a\\"b"'::rdfnode) AS md5_of_the_value,
+       sparql.encode_for_uri('"a\"b"'::rdfnode) AS encoded,
+       sparql.strstarts('"\"quoted\""'::rdfnode, '"\""'::rdfnode) AS starts_with_quote,
+       sparql.strbefore('"a\\b"'::rdfnode, '"b"'::rdfnode) AS before_b,
+       sparql.strafter('"a\nb"'::rdfnode, E'"\n"'::rdfnode) AS after_newline;
+ ucase_keeps_the_tab | substr_from_the_quote | md5_of_the_value | encoded | starts_with_quote | before_b | after_newline 
+---------------------+-----------------------+------------------+---------+-------------------+----------+---------------
+ t                   | "\"b"                 | t                | "a%22b" | t                 | "a\\"    | "b"
+(1 row)
+
 /* well-formed constructions are unaffected */
 SELECT sparql.iri('"http://e.org/ok"'::rdfnode);
         iri        

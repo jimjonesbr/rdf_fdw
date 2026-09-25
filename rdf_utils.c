@@ -414,6 +414,97 @@ char *QuoteRDFLiteral(const char *input)
 }
 
 /*
+ * DecodeLexicalForm
+ * -----------------
+ *
+ * Returns the value a lexical form stands for. An rdfnode keeps its lexical
+ * form as written, escapes included: rdfnode_in() escapes a quote and leaves a
+ * sequence such as \n or \t as it was typed, while a term read from an
+ * endpoint carries the characters themselves. Both spell the same value, and a
+ * function defined over the value -- a length, a case mapping, a position, a
+ * hash -- has to see the characters, not the escapes: STRLEN("a\"b") is 3.
+ *
+ * The escapes resolved are those of SPARQL 1.1 rule [160] ECHAR -- \t \b \n
+ * \r \f \" \' and \\ -- and any \uXXXX or \UXXXXXXXX of rule [UCHAR] still
+ * left, although rdfnode_in() resolves those on input. A backslash before any
+ * other character is kept as it stands.
+ *
+ * lexical: the lexical form, as lex() returns it
+ *
+ * returns a palloc'd string holding the value
+ */
+char *DecodeLexicalForm(const char *lexical)
+{
+	StringInfoData buf;
+	const char *p;
+
+	Assert(lexical != NULL);
+
+	p = unescape_unicode(lexical);
+	initStringInfo(&buf);
+
+	for (; *p; p++)
+	{
+		if (*p != '\\' || *(p + 1) == '\0')
+		{
+			appendStringInfoChar(&buf, *p);
+			continue;
+		}
+
+		switch (*(p + 1))
+		{
+			case 't': appendStringInfoChar(&buf, '\t'); break;
+			case 'b': appendStringInfoChar(&buf, '\b'); break;
+			case 'n': appendStringInfoChar(&buf, '\n'); break;
+			case 'r': appendStringInfoChar(&buf, '\r'); break;
+			case 'f': appendStringInfoChar(&buf, '\f'); break;
+			case '"': appendStringInfoChar(&buf, '"'); break;
+			case '\'': appendStringInfoChar(&buf, '\''); break;
+			case '\\': appendStringInfoChar(&buf, '\\'); break;
+			default:
+				/* not an escape: the backslash is part of the value */
+				appendStringInfoChar(&buf, '\\');
+				continue;
+		}
+		p++;
+	}
+
+	return buf.data;
+}
+
+/*
+ * EncodeLexicalForm
+ * -----------------
+ *
+ * Returns the lexical form for a value, in the form an rdfnode keeps it: a
+ * backslash and a quote escaped, every other character as it stands. This is
+ * the inverse of DecodeLexicalForm() for the form strlang(), strdt() and
+ * cstring_to_rdfliteral() expect, which read a backslash as the start of an
+ * escape.
+ *
+ * value: the value, as DecodeLexicalForm() returns it
+ *
+ * returns a palloc'd lexical form
+ */
+char *EncodeLexicalForm(const char *value)
+{
+	StringInfoData buf;
+
+	Assert(value != NULL);
+
+	initStringInfo(&buf);
+
+	for (const char *p = value; *p; p++)
+	{
+		if (*p == '\\' || *p == '"')
+			appendStringInfoChar(&buf, '\\');
+		appendStringInfoChar(&buf, *p);
+	}
+
+	return buf.data;
+}
+
+/*
  * EscapeSPARQLStringContent
  * -------------------------
  *

@@ -1017,6 +1017,23 @@ SELECT sparql.uri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
 SELECT sparql.iri('"http://e.org/{x}"'::rdfnode);
 SELECT sparql.strdt('"v"'::rdfnode, '"http://e.org/t>x"'::rdfnode);
 
+/* A lexical form keeps its escapes as written, while a term read from an
+ * endpoint carries the characters themselves. Both spell one value, and the
+ * functions defined over the value -- length, case, position, hash -- read the
+ * characters, as the endpoint does: "a\"b" has three of them. */
+SELECT sparql.strlen('"a\"b"'::rdfnode)       AS quote,
+       sparql.strlen('"a\\b"'::rdfnode)       AS backslash,
+       sparql.strlen('"a\nb"'::rdfnode)       AS escaped_newline,
+       sparql.strlen(E'"a\nb"'::rdfnode)      AS raw_newline,
+       sparql.strlen('"x\"\"y"@en'::rdfnode)  AS two_quotes;
+SELECT sparql.ucase('"a\tb"'::rdfnode) = sparql.ucase(E'"a\tb"'::rdfnode) AS ucase_keeps_the_tab,
+       sparql.substr('"a\"bc"'::rdfnode, 2, 2) AS substr_from_the_quote,
+       sparql.md5('"a\"b"'::rdfnode) = sparql.md5(E'"a\\"b"'::rdfnode) AS md5_of_the_value,
+       sparql.encode_for_uri('"a\"b"'::rdfnode) AS encoded,
+       sparql.strstarts('"\"quoted\""'::rdfnode, '"\""'::rdfnode) AS starts_with_quote,
+       sparql.strbefore('"a\\b"'::rdfnode, '"b"'::rdfnode) AS before_b,
+       sparql.strafter('"a\nb"'::rdfnode, E'"\n"'::rdfnode) AS after_newline;
+
 /* well-formed constructions are unaffected */
 SELECT sparql.iri('"http://e.org/ok"'::rdfnode);
 SELECT sparql.iri('<http://e.org/already>'::rdfnode);

@@ -1612,7 +1612,8 @@ Datum rdf_fdw_md5(PG_FUNCTION_ARGS)
 {
 	text *in_text = PG_GETARG_TEXT_PP(0);
 	char hexsum[MD5_HASH_LEN + 1];
-	char *cstr = lex(text_to_cstring(in_text));
+	/* hash the value, not its escapes (see DecodeLexicalForm()) */
+	char *cstr = DecodeLexicalForm(lex(text_to_cstring(in_text)));
 	size_t len = strlen(cstr);
 #if PG_VERSION_NUM >= 150000
 	const char *errstr = NULL;

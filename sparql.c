@@ -327,8 +327,9 @@ bool strstarts(char *str, char *substr)
     Assert(str != NULL);
     Assert(substr != NULL);
 
-    str_lexical = lex(str);
-    substr_lexical = lex(substr);
+    /* compare the values, not their escapes (see DecodeLexicalForm()) */
+    str_lexical = DecodeLexicalForm(lex(str));
+    substr_lexical = DecodeLexicalForm(lex(substr));
 
     /* lex() always returns a non-NULL string */
     Assert(str_lexical != NULL);
@@ -399,8 +400,9 @@ bool strends(char *str, char *substr)
     Assert(str != NULL);
     Assert(substr != NULL);
 
-    str_lexical = lex(str);
-    substr_lexical = lex(substr);
+    /* compare the values, not their escapes (see DecodeLexicalForm()) */
+    str_lexical = DecodeLexicalForm(lex(str));
+    substr_lexical = DecodeLexicalForm(lex(substr));
 
     /* lex() always returns a non-NULL string */
     Assert(str_lexical != NULL);
@@ -1233,7 +1235,8 @@ char *encode_for_uri(char *str_in)
     elog(DEBUG3, "%s called: str='%s'", __func__, str_in);
     initStringInfo(&buf);
 
-    str_in = lex(str_in);
+    /* the bytes of the value, not of its escapes (see DecodeLexicalForm()) */
+    str_in = DecodeLexicalForm(lex(str_in));
     in_len = strlen(str_in);
 
     elog(DEBUG2, "%s: encoding string: '%s', length: %zu", __func__, str_in, in_len);
@@ -1346,7 +1349,8 @@ char *substr_sparql(char *str, int start, int length)
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("SUBSTR not allowed on IRI or blank node: %s", str)));
 
-    lexical = lex(str);
+    /* positions count the characters of the value (see DecodeLexicalForm()) */
+    lexical = DecodeLexicalForm(lex(str));
     str_datatype = datatype(str);
     str_language = lang(str);
 
@@ -1387,7 +1391,7 @@ char *substr_sparql(char *str, int start, int length)
         Int32GetDatum(pg_start),
         Int32GetDatum(pg_length)));
 
-    lexical = text_to_cstring(substr_text);
+    lexical = EncodeLexicalForm(text_to_cstring(substr_text));
 
     if (strlen(str_language) > 0)
         result = strlang(lexical, str_language);
@@ -1447,7 +1451,8 @@ char *lcase(char *str)
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("LCASE does not allow blank nodes: %s", str)));
 
-    lexical = lex(str);
+    /* the case of the value, not of its escapes (see DecodeLexicalForm()) */
+    lexical = DecodeLexicalForm(lex(str));
 
     /* this shouldn't happen */
     Assert(lexical != NULL);
@@ -1475,13 +1480,14 @@ char *lcase(char *str)
             (Datum)0);
         text *lower_text = DatumGetTextP(lower_datum);
         char *lowercase = text_to_cstring(lower_text);
+        char *encoded = EncodeLexicalForm(lowercase);
 
         if (strlen(str_language) != 0)
-            result = strlang(lowercase, str_language);
+            result = strlang(encoded, str_language);
         else if (strlen(str_datatype) != 0)
-            result = strdt(lowercase, str_datatype);
+            result = strdt(encoded, str_datatype);
         else
-            result = cstring_to_rdfliteral(lowercase);
+            result = cstring_to_rdfliteral(encoded);
 
         pfree(lowercase);
         pfree(lower_text);
@@ -1536,7 +1542,8 @@ char *ucase(char *str)
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("UCASE does not allow blank nodes: %s", str)));
 
-    lexical = lex(str);
+    /* the case of the value, not of its escapes (see DecodeLexicalForm()) */
+    lexical = DecodeLexicalForm(lex(str));
 
     /* this shouldn't happen */
     Assert(lexical != NULL);
@@ -1564,13 +1571,14 @@ char *ucase(char *str)
             (Datum)0);
         text *upper_text = DatumGetTextP(upper_datum);
         char *uppercase = text_to_cstring(upper_text);
+        char *encoded = EncodeLexicalForm(uppercase);
 
         if (strlen(str_language) != 0)
-            result = strlang(uppercase, str_language);
+            result = strlang(encoded, str_language);
         else if (strlen(str_datatype) != 0)
-            result = strdt(uppercase, str_datatype);
+            result = strdt(encoded, str_datatype);
         else
-            result = cstring_to_rdfliteral(uppercase);
+            result = cstring_to_rdfliteral(encoded);
 
         pfree(uppercase);
         pfree(upper_text);
@@ -2002,9 +2010,9 @@ bool contains(char *str_in, char *substr_in)
         }
     }
 
-    /* extract lexical values (strips quotes, tags, etc.) */
-    str_lex = lex(str_in);
-    substr_lex = lex(substr_in);
+    /* extract the values (strips quotes, tags and escapes, see DecodeLexicalForm()) */
+    str_lex = DecodeLexicalForm(lex(str_in));
+    substr_lex = DecodeLexicalForm(lex(substr_in));
 
     /* check if substr is in str using strstr */
     result = (strstr(str_lex, substr_lex) != NULL);
@@ -2047,8 +2055,9 @@ char *strbefore(char *str, char *delimiter)
     Assert(str != NULL);
     Assert(delimiter != NULL);
 
-    str_lexical = lex(str);
-    delimiter_lexical = lex(delimiter);
+    /* search the values, not their escapes (see DecodeLexicalForm()) */
+    str_lexical = DecodeLexicalForm(lex(str));
+    delimiter_lexical = DecodeLexicalForm(lex(delimiter));
     lang1 = lang(str);
 
     Assert(str_lexical != NULL);
@@ -2074,7 +2083,7 @@ char *strbefore(char *str, char *delimiter)
         if (strlen(lang1) > 0)
         {
             appendBinaryStringInfo(&buf, str_lexical, before_len);
-            result = strlang(buf.data, lang1);
+            result = strlang(EncodeLexicalForm(buf.data), lang1);
 
             elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
             return result;
@@ -2083,10 +2092,10 @@ char *strbefore(char *str, char *delimiter)
                  (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
         {
             appendBinaryStringInfo(&buf, str_lexical, before_len);
-            result = cstring_to_rdfliteral(buf.data);
+            result = cstring_to_rdfliteral(EncodeLexicalForm(buf.data));
             if (strstr(result, "^^") == NULL)
             {
-                result = strdt(buf.data, dt1);
+                result = strdt(EncodeLexicalForm(buf.data), dt1);
             }
 
             elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
@@ -2096,7 +2105,7 @@ char *strbefore(char *str, char *delimiter)
         {
             /* simple literal or implicit xsd:string */
             appendBinaryStringInfo(&buf, str_lexical, before_len);
-            result = cstring_to_rdfliteral(buf.data);
+            result = cstring_to_rdfliteral(EncodeLexicalForm(buf.data));
 
             elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
             return result;
@@ -2160,8 +2169,9 @@ char *strafter(char *str, char *delimiter)
     Assert(str != NULL);
     Assert(delimiter != NULL);
 
-    lexstr = lex(str);
-    lexdelimiter = lex(delimiter);
+    /* search the values, not their escapes (see DecodeLexicalForm()) */
+    lexstr = DecodeLexicalForm(lex(str));
+    lexdelimiter = DecodeLexicalForm(lex(delimiter));
     lang1 = lang(str);
 
     Assert(lexstr != NULL);
@@ -2188,7 +2198,7 @@ char *strafter(char *str, char *delimiter)
         if (strlen(lang1) > 0)
         {
             appendBinaryStringInfo(&buf, after_start, after_len);
-            result = strlang(buf.data, lang1);
+            result = strlang(EncodeLexicalForm(buf.data), lang1);
             pfree(buf.data);
 
             elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
@@ -2198,10 +2208,10 @@ char *strafter(char *str, char *delimiter)
                  (strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE_PREFIXED) == 0 || strcmp(dt1, RDF_SIMPLE_LITERAL_DATATYPE) == 0))
         {
             appendBinaryStringInfo(&buf, after_start, after_len);
-            result = cstring_to_rdfliteral(buf.data);
+            result = cstring_to_rdfliteral(EncodeLexicalForm(buf.data));
             if (strstr(result, "^^") == NULL)
             {
-                result = strdt(buf.data, dt1);
+                result = strdt(EncodeLexicalForm(buf.data), dt1);
             }
             pfree(buf.data);
 
@@ -2212,7 +2222,7 @@ char *strafter(char *str, char *delimiter)
         {
             /* simple literal or implicit xsd:string */
             appendBinaryStringInfo(&buf, after_start, after_len);
-            result = cstring_to_rdfliteral(buf.data);
+            result = cstring_to_rdfliteral(EncodeLexicalForm(buf.data));
             pfree(buf.data);
 
             elog(DEBUG3, "%s exit: returning => '%s'", __func__, result);
@@ -2320,7 +2330,8 @@ int strlen_rdf(char *str)
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("STRLEN does not allow non-string literals: %s", dt)));
 
-    lexical = lex(str);
+    /* the characters of the value, not of its escapes (see DecodeLexicalForm()) */
+    lexical = DecodeLexicalForm(lex(str));
     result = count_utf8_chars(lexical);
 
     elog(DEBUG3, "%s exit: returning '%d'", __func__, result);

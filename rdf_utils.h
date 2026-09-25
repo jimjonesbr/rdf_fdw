@@ -31,6 +31,8 @@ extern char *rdfnode_to_cstring(rdfnode *node);
 extern char *QuoteRDFLiteral(const char *input);
 extern char *EscapeSPARQLStringContent(const char *str, bool escape_backslash);
 extern char *cstring_to_rdfliteral(char *input);
+extern char *DecodeLexicalForm(const char *lexical);
+extern char *EncodeLexicalForm(const char *value);
 extern const char *LiteralSuffix(const char *input);
 extern char *EscapeSPARQLLiteral(const char *input);
 extern char *XPathReplacementToPG(const char *replacement);
