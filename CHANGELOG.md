@@ -1,5 +1,5 @@
 # 3.0
-Release date: **unreleased**
+Release date: **2026-09-26**
 
 ## Summary
 
