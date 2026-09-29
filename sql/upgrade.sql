@@ -67,3 +67,6 @@ SELECT count(*) AS rows_matched FROM upgrade_filtered;
 DROP VIEW upgrade_filtered;
 DROP TABLE upgrade_terms;
 DROP SERVER fs CASCADE;
+
+ALTER EXTENSION rdf_fdw UPDATE TO '3.1';
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';

@@ -98,3 +98,10 @@ DROP VIEW upgrade_filtered;
 DROP TABLE upgrade_terms;
 DROP SERVER fs CASCADE;
 NOTICE:  drop cascades to foreign table ft
+ALTER EXTENSION rdf_fdw UPDATE TO '3.1';
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+ extversion 
+------------
+ 3.1
+(1 row)
+
