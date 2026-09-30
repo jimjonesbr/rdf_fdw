@@ -8,7 +8,7 @@
  * through the search_path, so rdfnode's would not be visible without it.
  */
 CREATE SCHEMA rdf_alt;
-CREATE EXTENSION rdf_fdw SCHEMA rdf_alt VERSION '3.0';
+CREATE EXTENSION rdf_fdw SCHEMA rdf_alt VERSION '3.1';
 
 SET search_path = rdf_alt, public;
 
