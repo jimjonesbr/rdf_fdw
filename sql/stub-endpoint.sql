@@ -353,3 +353,76 @@ ORDER BY predicate;
 DROP FOREIGN TABLE ft_backslash;
 DROP SERVER stub_backslash CASCADE;
 DROP SERVER stub_describe_backslash CASCADE;
+
+/*
+ * HTTP 429, 502 and 503 ask to come back later, so they are retried after the
+ * delay the Retry-After header asks for, or after 5, 10, 20... seconds
+ * without one. The endpoint keeps answering the same, so every retry is used
+ * up and the last answer is reported as before.
+ */
+CREATE SERVER stub_throttled
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'http://stub-endpoint/throttled',
+  update_url 'http://stub-endpoint/throttled',
+  connect_retry '2',
+  connect_timeout '5');
+
+CREATE SERVER stub_throttled_date
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/throttled-date',
+  connect_retry '1',
+  connect_timeout '5');
+
+CREATE SERVER stub_throttled_long
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/throttled-long',
+  connect_timeout '5');
+
+CREATE SERVER stub_unavailable
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/unavailable',
+  connect_retry '1',
+  connect_timeout '5');
+
+CREATE SERVER stub_gateway_timeout
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/gateway-timeout',
+  connect_timeout '5');
+
+CREATE FOREIGN TABLE ft_throttled (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_throttled OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s <http://example.org/p> "x" .');
+CREATE FOREIGN TABLE ft_throttled_date (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_throttled_date OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE FOREIGN TABLE ft_throttled_long (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_throttled_long OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE FOREIGN TABLE ft_unavailable (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_unavailable OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE FOREIGN TABLE ft_gateway_timeout (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_gateway_timeout OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+
+/* Retry-After in delta-seconds */
+SELECT * FROM ft_throttled;
+/* modifications are retried too */
+INSERT INTO ft_throttled VALUES ('<http://example.org/s>');
+/* Retry-After as an HTTP-date in the past: no wait */
+SELECT * FROM ft_throttled_date;
+/* no Retry-After */
+SELECT * FROM ft_unavailable;
+/* not retried */
+SELECT * FROM ft_gateway_timeout;
+/* a wait is capped at 300 seconds, and a cancel ends it */
+SET statement_timeout = '1s';
+SELECT * FROM ft_throttled_long;
+RESET statement_timeout;
+
+DROP SERVER stub_throttled CASCADE;
+DROP SERVER stub_throttled_date CASCADE;
+DROP SERVER stub_throttled_long CASCADE;
+DROP SERVER stub_unavailable CASCADE;
+DROP SERVER stub_gateway_timeout CASCADE;

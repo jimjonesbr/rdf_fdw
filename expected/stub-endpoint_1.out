@@ -396,3 +396,95 @@ ORDER BY predicate;
 DROP FOREIGN TABLE ft_backslash;
 DROP SERVER stub_backslash CASCADE;
 DROP SERVER stub_describe_backslash CASCADE;
+/*
+ * HTTP 429, 502 and 503 ask to come back later, so they are retried after the
+ * delay the Retry-After header asks for, or after 5, 10, 20... seconds
+ * without one. The endpoint keeps answering the same, so every retry is used
+ * up and the last answer is reported as before.
+ */
+CREATE SERVER stub_throttled
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'http://stub-endpoint/throttled',
+  update_url 'http://stub-endpoint/throttled',
+  connect_retry '2',
+  connect_timeout '5');
+CREATE SERVER stub_throttled_date
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/throttled-date',
+  connect_retry '1',
+  connect_timeout '5');
+CREATE SERVER stub_throttled_long
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/throttled-long',
+  connect_timeout '5');
+CREATE SERVER stub_unavailable
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/unavailable',
+  connect_retry '1',
+  connect_timeout '5');
+CREATE SERVER stub_gateway_timeout
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/gateway-timeout',
+  connect_timeout '5');
+CREATE FOREIGN TABLE ft_throttled (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_throttled OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}',
+  sparql_update_pattern '?s <http://example.org/p> "x" .');
+CREATE FOREIGN TABLE ft_throttled_date (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_throttled_date OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE FOREIGN TABLE ft_throttled_long (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_throttled_long OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE FOREIGN TABLE ft_unavailable (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_unavailable OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+CREATE FOREIGN TABLE ft_gateway_timeout (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_gateway_timeout OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+/* Retry-After in delta-seconds */
+SELECT * FROM ft_throttled;
+WARNING:  server "stub_throttled" answered HTTP 429, retrying in 1 second (1/2)
+WARNING:  server "stub_throttled" answered HTTP 429, retrying in 1 second (2/2)
+ERROR:  too many requests on server "stub_throttled" (HTTP 429)
+DETAIL:  slow down
+HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+/* modifications are retried too */
+INSERT INTO ft_throttled VALUES ('<http://example.org/s>');
+WARNING:  server "stub_throttled" answered HTTP 429, retrying in 1 second (1/2)
+WARNING:  server "stub_throttled" answered HTTP 429, retrying in 1 second (2/2)
+ERROR:  too many requests on server "stub_throttled" (HTTP 429)
+DETAIL:  slow down
+HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+/* Retry-After as an HTTP-date in the past: no wait */
+SELECT * FROM ft_throttled_date;
+WARNING:  server "stub_throttled_date" answered HTTP 503, retrying in 0 seconds (1/1)
+ERROR:  service unavailable on server "stub_throttled_date" (HTTP 503)
+DETAIL:  come back later
+HINT:  The endpoint is temporarily unavailable. Try again later.
+/* no Retry-After */
+SELECT * FROM ft_unavailable;
+WARNING:  server "stub_unavailable" answered HTTP 503, retrying in 5 seconds (1/1)
+ERROR:  service unavailable on server "stub_unavailable" (HTTP 503)
+DETAIL:  come back later
+HINT:  The endpoint is temporarily unavailable. Try again later.
+/* not retried */
+SELECT * FROM ft_gateway_timeout;
+ERROR:  HTTP 504 error on server "stub_gateway_timeout"
+DETAIL:  timed out
+/* a wait is capped at 300 seconds, and a cancel ends it */
+SET statement_timeout = '1s';
+SELECT * FROM ft_throttled_long;
+WARNING:  server "stub_throttled_long" answered HTTP 429, retrying in 300 seconds (1/3)
+ERROR:  canceling statement due to statement timeout
+RESET statement_timeout;
+DROP SERVER stub_throttled CASCADE;
+NOTICE:  drop cascades to foreign table ft_throttled
+DROP SERVER stub_throttled_date CASCADE;
+NOTICE:  drop cascades to foreign table ft_throttled_date
+DROP SERVER stub_throttled_long CASCADE;
+NOTICE:  drop cascades to foreign table ft_throttled_long
+DROP SERVER stub_unavailable CASCADE;
+NOTICE:  drop cascades to foreign table ft_unavailable
+DROP SERVER stub_gateway_timeout CASCADE;
+NOTICE:  drop cascades to foreign table ft_gateway_timeout

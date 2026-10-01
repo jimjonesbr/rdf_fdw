@@ -97,6 +97,8 @@
 #define RDF_DEFAULT_MAXRETRY 3
 /* wait before the first retry of a network error, doubled for each retry */
 #define RDF_RETRY_NETWORK_WAIT 1
+/* the same for HTTP 429, 502 and 503 answers without Retry-After */
+#define RDF_RETRY_THROTTLED_WAIT 5
 /* upper limit of a single wait between retries, in seconds */
 #define RDF_RETRY_MAX_WAIT 300
 #define RDF_DEFAULT_MAX_REDIRECT 0

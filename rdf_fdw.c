@@ -900,6 +900,8 @@ static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
 static void LoadRDFUserMapping(RDFfdwState *state, Oid userid);
 static int ExecuteSPARQL(RDFfdwState *state);
+static bool IsRetryableStatus(long response_code);
+static long ParseRetryAfter(const char *headers);
 static void WaitBeforeRetry(long seconds);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
@@ -5421,6 +5423,91 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
 }
 
 /*
+ * IsRetryableStatus
+ * -----------------
+ * Whether an HTTP answer asks to come back later: 429 Too Many Requests,
+ * 503 Service Unavailable, and 502 Bad Gateway, which a proxy answers while
+ * the endpoint behind it restarts. 504 is not retried, as a query that ran
+ * into a gateway's time limit would most likely run into it again.
+ */
+static bool IsRetryableStatus(long response_code)
+{
+	return response_code == 429 || response_code == 502 || response_code == 503;
+}
+
+/*
+ * ParseRetryAfter
+ * ---------------
+ * Returns the delay in seconds that the Retry-After header asks for, or -1
+ * if there is none. Both forms of RFC 9110 section 10.2.3 are accepted,
+ * delta-seconds and an HTTP-date. The header block holds the headers of every
+ * redirect hop, so the last occurrence wins.
+ */
+static long ParseRetryAfter(const char *headers)
+{
+	static const char field[] = "retry-after:";
+	const char *line;
+	long result = -1;
+
+	if (!headers)
+		return -1;
+
+	for (line = headers; *line != '\0';)
+	{
+		const char *eol = strpbrk(line, "\r\n");
+		size_t len = eol ? (size_t)(eol - line) : strlen(line);
+
+		if (len > sizeof(field) - 1 &&
+			pg_strncasecmp(line, field, sizeof(field) - 1) == 0)
+		{
+			const char *v = line + sizeof(field) - 1;
+			char value[128];
+			size_t vlen;
+
+			/* skip the optional whitespace before the value */
+			while (v < line + len && (*v == ' ' || *v == '\t'))
+				v++;
+
+			vlen = (size_t)(line + len - v);
+
+			if (vlen > 0 && vlen < sizeof(value))
+			{
+				char *tail;
+				long secs;
+
+				memcpy(value, v, vlen);
+				value[vlen] = '\0';
+
+				/* delta-seconds */
+				secs = strtol(value, &tail, 10);
+
+				if (tail != value && *tail == '\0' && secs >= 0)
+					result = secs;
+				else
+				{
+					/* HTTP-date */
+					time_t when = curl_getdate(value, NULL);
+
+					if (when != (time_t)-1)
+					{
+						double diff = difftime(when, time(NULL));
+
+						result = diff > 0 ? (long)diff : 0;
+					}
+				}
+			}
+		}
+
+		if (!eol)
+			break;
+
+		line = eol + strspn(eol, "\r\n");
+	}
+
+	return result;
+}
+
+/*
  * WaitBeforeRetry
  * ---------------
  * Waits the given number of seconds before a request is retried, in steps of
@@ -5952,40 +6039,57 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			 __func__, res, response_code, chunk.size);
 
 		/*
-		 * Only retry on network errors (no response received), not on HTTP
-		 * errors or HTTP successes - and never when the transfer was aborted
-		 * on purpose, as every attempt would hit the same limit. The wait
-		 * between attempts doubles, so that an endpoint that is down is not
-		 * hammered with requests.
+		 * Retry on network errors (no response received) and on answers that
+		 * ask to come back later, but not on other HTTP errors, which an
+		 * identical request would get again - and never when the transfer
+		 * was aborted on purpose, as every attempt would hit the same limit.
+		 * The wait between attempts doubles, so that an endpoint that is down
+		 * or throttling is not hammered with requests, unless the endpoint
+		 * says how long to wait in Retry-After.
+		 *
+		 * SPARQL UPDATE requests are retried as well: they only consist of
+		 * INSERT DATA and DELETE DATA without blank nodes, which leave the
+		 * same graph if the endpoint happens to apply them twice.
 		 */
-		if (res != CURLE_OK && response_code == 0 && !chunk.size_exceeded)
+		for (long i = 0; i < state->max_retries && !chunk.size_exceeded &&
+			 ((res != CURLE_OK && response_code == 0) || IsRetryableStatus(response_code));
+			 i++)
 		{
-			for (long i = 0; i < state->max_retries; i++)
+			long wait;
+
+			if (response_code != 0)
 			{
-				long wait = Min(RDF_RETRY_NETWORK_WAIT << Min(i, 16), RDF_RETRY_MAX_WAIT);
-
-				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i + 1);
-				WaitBeforeRetry(wait);
-
-				/*
-				 * Discard whatever the failed attempt left behind *before*
-				 * retrying: a connection that drops mid-transfer may well
-				 * have written part of a response body already, and that
-				 * would otherwise be concatenated with the body of the retry.
-				 */
-				chunk.size = 0;
-				chunk.memory[0] = '\0';
-				chunk_header.size = 0;
-				chunk_header.memory[0] = '\0';
-
-				res = curl_easy_perform(state->curl);
-				CHECK_FOR_INTERRUPTS();
-				curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
-
-				if (res == CURLE_OK || response_code != 0 || chunk.size_exceeded)
-					break;
+				wait = ParseRetryAfter(chunk_header.memory);
+				if (wait < 0)
+					wait = RDF_RETRY_THROTTLED_WAIT << Min(i, 16);
+				wait = Min(wait, RDF_RETRY_MAX_WAIT);
+				ereport(WARNING,
+						(errmsg_plural("server \"%s\" answered HTTP %ld, retrying in %ld second (%ld/%ld)",
+									   "server \"%s\" answered HTTP %ld, retrying in %ld seconds (%ld/%ld)",
+									   wait, state->server->servername, response_code, wait,
+									   i + 1, state->max_retries)));
 			}
-			/* Update response code after retries */
+			else
+			{
+				wait = Min(RDF_RETRY_NETWORK_WAIT << Min(i, 16), RDF_RETRY_MAX_WAIT);
+				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i + 1);
+			}
+
+			WaitBeforeRetry(wait);
+
+			/*
+			 * Discard whatever the failed attempt left behind *before*
+			 * retrying: a connection that drops mid-transfer may well
+			 * have written part of a response body already, and that
+			 * would otherwise be concatenated with the body of the retry.
+			 */
+			chunk.size = 0;
+			chunk.memory[0] = '\0';
+			chunk_header.size = 0;
+			chunk_header.memory[0] = '\0';
+
+			res = curl_easy_perform(state->curl);
+			CHECK_FOR_INTERRUPTS();
 			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 		}
 

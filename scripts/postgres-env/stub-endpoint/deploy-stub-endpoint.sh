@@ -43,6 +43,32 @@ server {
     location = /not-modified {
         return 304;
     }
+
+    # Answers asking to come back later, which rdf_fdw retries. They never
+    # stop, so every retry is used up and the last answer is reported.
+    location = /throttled {
+        add_header Retry-After 1 always;
+        return 429 "slow down";
+    }
+
+    location = /throttled-date {
+        add_header Retry-After "Wed, 21 Oct 2015 07:28:00 GMT" always;
+        return 503 "come back later";
+    }
+
+    location = /throttled-long {
+        add_header Retry-After 100000 always;
+        return 429 "slow down";
+    }
+
+    location = /unavailable {
+        return 503 "come back later";
+    }
+
+    # Not retried: a query that timed out would most likely time out again.
+    location = /gateway-timeout {
+        return 504 "timed out";
+    }
 }
 EOF
 
