@@ -5759,12 +5759,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTP_PROXY) == 0)
 			{
 				elog(DEBUG2, "  %s: proxy protocol > 'HTTP'", __func__);
-				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_HTTP);
 			}
 			else if (strcmp(state->proxy_type, RDF_SERVER_OPTION_HTTPS_PROXY) == 0)
 			{
 				elog(DEBUG2, "  %s: proxy protocol > 'HTTPS'", __func__);
-				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
+				curl_easy_setopt(state->curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_HTTPS);
 			}
 
 			if (state->proxy_user)
