@@ -67,6 +67,25 @@ ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_password 'proxy
 EXECUTE ft_count;
 DEALLOCATE ft_count;
 
+/*
+ * A foreign table queried through a view uses the user mapping of the
+ * view owner, as the permissions are checked as that role.
+ */
+CREATE VIEW ft_view AS SELECT * FROM ft;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ft_view TO proxy_role;
+SET ROLE proxy_role;
+INSERT INTO ft_view (subject, predicate, object)
+VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Universität Münster"@de');
+SELECT * FROM ft_view;
+UPDATE ft_view SET object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>';
+SELECT * FROM ft_view;
+DELETE FROM ft_view;
+SELECT * FROM ft_view;
+SELECT * FROM ft; -- must fail: proxy_role's mapping
+RESET ROLE;
+DROP VIEW ft_view;
+
 DROP USER MAPPING FOR proxy_role SERVER fuseki;
 REVOKE ALL ON ft FROM proxy_role;
 REVOKE ALL ON FOREIGN SERVER fuseki FROM proxy_role;

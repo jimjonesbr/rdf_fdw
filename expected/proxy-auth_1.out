@@ -168,6 +168,95 @@ INFO:  SPARQL returned 0 records.
 (1 row)
 
 DEALLOCATE ft_count;
+/*
+ * A foreign table queried through a view uses the user mapping of the
+ * view owner, as the permissions are checked as that role.
+ */
+CREATE VIEW ft_view AS SELECT * FROM ft;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ft_view TO proxy_role;
+SET ROLE proxy_role;
+INSERT INTO ft_view (subject, predicate, object)
+VALUES ('<https://www.uni-muenster.de>', '<http://dbpedia.org/property/name>', '"Universität Münster"@de');
+INFO:  SPARQL query sent to 'fuseki':
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Universität Münster"@de };
+
+
+SELECT * FROM ft_view;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |             predicate              |          object          
+-------------------------------+------------------------------------+--------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "Universität Münster"@de
+(1 row)
+
+UPDATE ft_view SET object = '"University of Münster"@en'
+WHERE subject = '<https://www.uni-muenster.de>';
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?s = <https://www.uni-muenster.de>)
+}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "Universität Münster"@de };
+INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+
+SELECT * FROM ft_view;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+            subject            |             predicate              |           object           
+-------------------------------+------------------------------------+----------------------------
+ <https://www.uni-muenster.de> | <http://dbpedia.org/property/name> | "University of Münster"@en
+(1 row)
+
+DELETE FROM ft_view;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  SPARQL query sent to 'fuseki':
+DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "University of Münster"@en };
+
+
+SELECT * FROM ft_view;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 0 records.
+
+ subject | predicate | object 
+---------+-----------+--------
+(0 rows)
+
+SELECT * FROM ft; -- must fail: proxy_role's mapping
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?p ?o 
+{?s ?p ?o}
+
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
+RESET ROLE;
+DROP VIEW ft_view;
 DROP USER MAPPING FOR proxy_role SERVER fuseki;
 REVOKE ALL ON ft FROM proxy_role;
 REVOKE ALL ON FOREIGN SERVER fuseki FROM proxy_role;

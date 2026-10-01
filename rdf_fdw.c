@@ -898,7 +898,7 @@ static long ParseIntegerOption(DefElem *def);
 static List *DescribeIRI(RDFfdwState *state);
 static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
-static void LoadRDFUserMapping(RDFfdwState *state);
+static void LoadRDFUserMapping(RDFfdwState *state, Oid userid);
 static int ExecuteSPARQL(RDFfdwState *state);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
@@ -2099,7 +2099,7 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 		/*
 		 * Loading USER MAPPING (if any)
 		 */
-		LoadRDFUserMapping(state);
+		LoadRDFUserMapping(state, GetUserId());
 
 		/* Use new implementation */
 		LoadRDFData(state);
@@ -2367,7 +2367,7 @@ Datum rdf_fdw_clone_table(PG_FUNCTION_ARGS)
 	/*
 	 * Load configured USER MAPPING parameters
 	 */
-	LoadRDFUserMapping(state);
+	LoadRDFUserMapping(state, GetUserId());
 
 	/*
 	 * Here we try to create the target table with the name give in 'target_table'.
@@ -3398,6 +3398,7 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 {
 	ForeignScan *fs = (ForeignScan *)node->ss.ps.plan;
 	struct RDFfdwState *state;
+	Oid userid;
 
 	elog(DEBUG1, "%s called", __func__);
 
@@ -3413,10 +3414,21 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 	/*
 	 * The user mapping is loaded here rather than at planning, so that the
 	 * plan carries no credentials and a cached plan uses the mapping current
-	 * at execution.
+	 * at execution. It is the mapping of the role the permissions are checked
+	 * as, e.g. the owner of a view, as in ExecCheckPermissions() and
+	 * postgres_fdw.
 	 */
+#if PG_VERSION_NUM >= 160000
+	userid = OidIsValid(fs->checkAsUser) ? fs->checkAsUser : GetUserId();
+#else
+	{
+		RangeTblEntry *rte = rt_fetch(fs->scan.scanrelid, node->ss.ps.state->es_range_table);
+
+		userid = OidIsValid(rte->checkAsUser) ? rte->checkAsUser : GetUserId();
+	}
+#endif
 	state->server = GetForeignServer(GetForeignTable(state->foreigntableid)->serverid);
-	LoadRDFUserMapping(state);
+	LoadRDFUserMapping(state, userid);
 
 	elog(DEBUG2, "%s: initializing XML parser", __func__);
 
@@ -3666,6 +3678,8 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	RDFfdwState *state;
 	Relation rel = rinfo->ri_RelationDesc;
 	CmdType operation = mtstate->operation;
+	EState *estate = mtstate->ps.state;
+	Oid userid;
 
 	elog(DEBUG1, "%s called", __func__);
 
@@ -3705,7 +3719,18 @@ static void rdfBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinf
 	/* Load server, table, user mapping info, and prefixes */
 	LoadRDFServerInfo(state);
 	LoadRDFTableInfo(state);
-	LoadRDFUserMapping(state);
+
+	/* The user mapping of the role the permissions are checked as */
+#if PG_VERSION_NUM >= 160000
+	userid = ExecGetResultRelCheckAsUser(rinfo, estate);
+#else
+	{
+		RangeTblEntry *rte = rt_fetch(rinfo->ri_RangeTableIndex, estate->es_range_table);
+
+		userid = OidIsValid(rte->checkAsUser) ? rte->checkAsUser : GetUserId();
+	}
+#endif
+	LoadRDFUserMapping(state, userid);
 
 	if (operation == CMD_UPDATE || operation == CMD_DELETE)
 	{
@@ -4733,7 +4758,7 @@ static void LoadRDFServerInfo(RDFfdwState *state)
 	elog(DEBUG1, "%s exit", __func__);
 }
 
-static void LoadRDFUserMapping(RDFfdwState *state)
+static void LoadRDFUserMapping(RDFfdwState *state, Oid userid)
 {
 
 	Datum datum;
@@ -4746,8 +4771,10 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 
 	elog(DEBUG1, "%s called", __func__);
 
+	state->userid = userid;
+
 	tp = SearchSysCache2(USERMAPPINGUSERSERVER,
-						 ObjectIdGetDatum(GetUserId()),
+						 ObjectIdGetDatum(userid),
 						 ObjectIdGetDatum(state->server->serverid));
 
 	if (!HeapTupleIsValid(tp))
@@ -4761,7 +4788,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 	if (!HeapTupleIsValid(tp))
 	{
 		elog(DEBUG2, "%s: user mapping not found for user \"%s\", server \"%s\"",
-			 __func__, MappingUserName(GetUserId()), state->server->servername);
+			 __func__, MappingUserName(userid), state->server->servername);
 
 		usermatch = false;
 	}
@@ -4775,7 +4802,7 @@ static void LoadRDFUserMapping(RDFfdwState *state)
 #elif PG_VERSION_NUM >= 90600
 		um->umid = HeapTupleGetOid(tp);
 #endif
-		um->userid = GetUserId();
+		um->userid = userid;
 		um->serverid = state->server->serverid;
 
 		elog(DEBUG2, "%s: extract the umoptions", __func__);
@@ -5989,7 +6016,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 							(errcode(ERRCODE_INVALID_AUTHORIZATION_SPECIFICATION),
 							 errmsg("authentication failed on server \"%s\" (HTTP 401)", state->server->servername),
 							 has_body ? errdetail("%s", display_body.data) : 0,
-							 errhint("Check the credentials in the USER MAPPING for PostgreSQL user \"%s\".", GetUserNameFromId(GetUserId(), false))));
+							 errhint("Check the credentials in the USER MAPPING for PostgreSQL user \"%s\".", GetUserNameFromId(state->userid, false))));
 				else if (response_code == 403)
 					ereport(ERROR,
 							(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
