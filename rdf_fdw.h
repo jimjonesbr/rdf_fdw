@@ -95,6 +95,10 @@
 #define RDF_DEFAULT_CONNECTTIMEOUT 300
 #define RDF_DEFAULT_REQUEST_TIMEOUT 0
 #define RDF_DEFAULT_MAXRETRY 3
+/* wait before the first retry of a network error, doubled for each retry */
+#define RDF_RETRY_NETWORK_WAIT 1
+/* upper limit of a single wait between retries, in seconds */
+#define RDF_RETRY_MAX_WAIT 300
 #define RDF_DEFAULT_MAX_REDIRECT 0
 /* redirect limit assumed for the deprecated 'request_redirect' option */
 #define RDF_DEPRECATED_REDIRECT_LIMIT 30

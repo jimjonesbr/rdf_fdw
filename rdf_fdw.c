@@ -900,6 +900,7 @@ static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
 static void LoadRDFUserMapping(RDFfdwState *state, Oid userid);
 static int ExecuteSPARQL(RDFfdwState *state);
+static void WaitBeforeRetry(long seconds);
 static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state);
 static void LoadRDFData(RDFfdwState *state);
 static xmlNodePtr FetchNextBinding(RDFfdwState *state);
@@ -5420,6 +5421,23 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
 }
 
 /*
+ * WaitBeforeRetry
+ * ---------------
+ * Waits the given number of seconds before a request is retried, in steps of
+ * one second, so that a cancel or a statement_timeout ends the wait: the
+ * signal cuts the current step short, and the next check raises the error.
+ */
+static void WaitBeforeRetry(long seconds)
+{
+	for (long i = 0; i < seconds; i++)
+	{
+		CHECK_FOR_INTERRUPTS();
+		pg_usleep(1000000L);
+	}
+	CHECK_FOR_INTERRUPTS();
+}
+
+/*
  * GetRDFColumn
  * -------------
  * Returns the RDFfdwColumn mapped to the table column in `columname`
@@ -5936,14 +5954,18 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		/*
 		 * Only retry on network errors (no response received), not on HTTP
 		 * errors or HTTP successes - and never when the transfer was aborted
-		 * on purpose, as every attempt would hit the same limit.
+		 * on purpose, as every attempt would hit the same limit. The wait
+		 * between attempts doubles, so that an endpoint that is down is not
+		 * hammered with requests.
 		 */
 		if (res != CURLE_OK && response_code == 0 && !chunk.size_exceeded)
 		{
 			for (long i = 0; i < state->max_retries; i++)
 			{
-				CHECK_FOR_INTERRUPTS();
+				long wait = Min(RDF_RETRY_NETWORK_WAIT << Min(i, 16), RDF_RETRY_MAX_WAIT);
+
 				elog(WARNING, "%s: request to '%s' failed (%ld)", __func__, state->server->servername, i + 1);
+				WaitBeforeRetry(wait);
 
 				/*
 				 * Discard whatever the failed attempt left behind *before*

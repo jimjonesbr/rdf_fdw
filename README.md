@@ -195,7 +195,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `https_proxy` | optional | Same as `http_proxy`, but the connection to the proxy itself is made over TLS. Set one or the other, not both. |
 | `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
 | `request_timeout` | optional | Maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer. |
-| `connect_retry` | optional | Number of retry attempts on failure (default `3`). |
+| `connect_retry` | optional | Number of times a request is retried when it gets no response at all, e.g. when the connection fails (default `3`). The wait between attempts starts at 1 second and doubles each time, up to 300 seconds. |
 | `request_max_redirect` | optional | Maximum number of HTTP redirects to follow (default `0`). `0` refuses any redirect; any higher value enables redirection and caps it at that many hops. Credentials are never forwarded to a redirected host. |
 | `request_redirect` | *deprecated* | Superseded by `request_max_redirect`, which now enables and bounds redirection on its own. Still accepted so that existing servers and dumps keep working: when set to `true` without an explicit `request_max_redirect`, up to `30` redirects are followed. It will be removed in a future major release. |
 | `custom` | optional | Triplestore-specific query parameters appended to the request URL (e.g. `signal_void=on`). |
