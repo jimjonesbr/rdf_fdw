@@ -1,3 +1,28 @@
+# 3.1
+Release date: **unreleased**
+
+## Enhancements
+
+* **Retry with backoff for throttled endpoints**: Endpoints that respond with `429 Too Many Requests`, `503 Service Unavailable`, or a proxy's `502 Bad Gateway` are now retried (up to `connect_retry` times), with an exponential backoff starting at 1 second and doubling between attempts (up to 5 minutes). The `Retry-After` header is respected when present. This allows large scans and `rdf_fdw_clone_table()` to continue when an endpoint throttles traffic or temporarily restarts.
+
+* **Documentation: joins on IRIs should use `~=`**: For performance-sensitive three-way joins of foreign tables with IRIs, using `~=` (term equality) instead of `=` (value equality) allows PostgreSQL to plan a merge join instead of a nested loop, often speeding up the query by orders of magnitude. The README now recommends this pattern.
+
+## Bug Fixes
+
+* **Fixed SIGALRM conflict with libcurl's resolver**: libcurl can use PostgreSQL's SIGALRM for name lookup timeouts when built without an asynchronous resolver, interrupting PostgreSQL's own `statement_timeout` and `connect_timeout`. `CURLOPT_NOSIGNAL` is now set to prevent this.
+
+* **Fixed resolver thread hanging after timeout**: libcurl's name resolver thread was waited for even after a connection timeout or cancel, preventing `connect_timeout` from terminating a lookup. On systems with a non-responsive name server this could extend a query by minutes. libcurl 7.87+ now exits immediately with `CURLOPT_QUICK_EXIT`.
+
+* **Fixed retry on proxy CONNECT failure**: When a proxy refused a CONNECT tunnel (e.g., HTTP 407 for auth), the request was retried as a network error. The proxy's response is now treated as an HTTP status and not retried, reporting the error immediately.
+
+* **Fixed crash on request cancellation**: Canceling a request from inside libcurl's callback (e.g., via `statement_timeout`) caused the handle to leak sockets because libcurl's cleanup refused to proceed. The interrupt is now serviced after `curl_easy_perform()` returns.
+
+* **Fixed build with libcurl older than 7.66**: The `nghttp2_version` field is only available in libcurl 7.66+. Older versions now build successfully without nghttp2 reporting.
+
+* **Fixed user mapping lookup for queries through views**: Queries on a foreign table through a view were using the current user's mapping instead of the view owner's, causing authentication failures. The user mapping is now looked up based on the permission check role (as `postgres_fdw` does).
+
+* **Fixed credentials in query plan**: User mapping credentials (password, token, proxy credentials) were stored in the query plan at planning time, causing cached plans to continue using old credentials. Credentials are now loaded at scan time and not serialized into the plan.
+
 # 3.0
 Release date: **2026-09-26**
 
