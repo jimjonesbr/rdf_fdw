@@ -18,9 +18,11 @@ SELECT
     rdf_fdw_settings() ~ 'libxml\s+[0-9]+\.[0-9]+' AS has_libxml,
     rdf_fdw_settings() ~ 'libcurl\s+[0-9]+\.[0-9]+' AS has_libcurl;
 
--- Test rdf_fdw_settings view returns expected components
+-- Test rdf_fdw_settings view returns expected components. ssl, zlib,
+-- libSSH and nghttp2 are only listed when libcurl was built with them.
 SELECT component, version IS NOT NULL AS has_version
 FROM rdf_fdw_settings
+WHERE component NOT IN ('ssl', 'zlib', 'libSSH', 'nghttp2')
 ORDER BY component COLLATE "C" DESC;
 
 -- Test that rdf_fdw_settings view returns core components
