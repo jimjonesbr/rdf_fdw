@@ -592,6 +592,12 @@ An index on an `rdfnode` is ordered the same way, so it can answer a comparison
 written with one of the term operators — `~=`, `~<~`, `~<=~`, `~>=~`, `~>~` —
 while a value comparison is applied as a filter to the rows the scan returns.
 
+The same holds for joins: `ON a.iri = b.iri` can only be evaluated in a nested
+loop, while `ON a.iri ~= b.iri` allows a merge join, which is much faster on
+large tables. For IRIs and blank nodes both return the same rows. For literals
+they do not, as `~=` compares how the terms are written: `"1"^^xsd:integer ~=
+"01"^^xsd:integer` is false.
+
 ## [ALTER FOREIGN TABLE and ALTER SERVER](#alter-foreign-table-and-alter-server)
 
 Use `ALTER FOREIGN TABLE` and `ALTER SERVER` to add, change, or remove options on a foreign table or server. Changes take effect for subsequent queries.
