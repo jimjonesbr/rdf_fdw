@@ -1015,8 +1015,10 @@ Datum rdf_fdw_settings(PG_FUNCTION_ARGS)
 		appendStringInfo(&buffer, "zlib %s,", ver->libz_version);
 	if (ver->libssh_version)
 		appendStringInfo(&buffer, "libSSH %s,", ver->libssh_version);
+#if LIBCURL_VERSION_NUM >= 0x074200
 	if (ver->nghttp2_version)
 		appendStringInfo(&buffer, "nghttp2 %s,", ver->nghttp2_version);
+#endif
 
 #ifdef RDF_FDW_CC
 	appendStringInfo(&buffer, "compiled by %s,", RDF_FDW_CC);
