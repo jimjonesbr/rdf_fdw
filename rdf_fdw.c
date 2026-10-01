@@ -5740,6 +5740,12 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		curl_easy_setopt(state->curl, CURLOPT_CONNECTTIMEOUT, state->connect_timeout);
 		curl_easy_setopt(state->curl, CURLOPT_TIMEOUT, state->request_timeout);
+
+		/*
+		 * Without an asynchronous resolver, libcurl times out name lookups
+		 * with SIGALRM, which PostgreSQL uses for its own timeouts.
+		 */
+		curl_easy_setopt(state->curl, CURLOPT_NOSIGNAL, 1L);
 		elog(DEBUG2, "  %s: connect_timeout > %ld", __func__, state->connect_timeout);
 		elog(DEBUG2, "  %s: request_timeout > %ld", __func__, state->request_timeout);
 		elog(DEBUG2, "  %s: max retry > %ld", __func__, state->max_retries);
