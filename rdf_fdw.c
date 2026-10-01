@@ -5402,7 +5402,11 @@ CURLDebugCallback(CURL *handle, curl_infotype type, char *data, size_t size, voi
  * CURLProgressCallback
  * --------------------
  * Progress callback function for cURL requests. This allows us to
- * check for interruptions to immediatelly cancel the request.
+ * cancel the request as soon as an interrupt is pending.
+ *
+ * The interrupt itself is serviced after curl_easy_perform() returns: an
+ * ereport() from here would longjmp out of libcurl, which then refuses to
+ * release the handle's connections.
  *
  * dltotal: Total bytes to download
  * dlnow: Bytes downloaded so far
@@ -5411,9 +5415,8 @@ CURLDebugCallback(CURL *handle, curl_infotype type, char *data, size_t size, voi
  */
 static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
-	CHECK_FOR_INTERRUPTS();
-
-	return 0;
+	/* a non-zero value aborts the transfer */
+	return QueryCancelPending || ProcDiePending;
 }
 
 /*
@@ -5922,6 +5925,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		elog(DEBUG2, "  %s: performing cURL request ... ", __func__);
 
 		res = curl_easy_perform(state->curl);
+		CHECK_FOR_INTERRUPTS();
 
 		/* Always get response code - even if cURL failed */
 		curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
@@ -5953,6 +5957,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				chunk_header.memory[0] = '\0';
 
 				res = curl_easy_perform(state->curl);
+				CHECK_FOR_INTERRUPTS();
 				curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
 
 				if (res == CURLE_OK || response_code != 0 || chunk.size_exceeded)
