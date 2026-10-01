@@ -71,8 +71,6 @@ DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
 DEBUG:  LoadRDFTableInfo called
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
@@ -96,6 +94,8 @@ DEBUG:  SerializePlanData exit
 DEBUG:  rdfBeginForeignScan called
 DEBUG:  DeserializePlanData called
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
@@ -121,8 +121,6 @@ DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
 DEBUG:  LoadRDFTableInfo called
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
@@ -147,6 +145,8 @@ DEBUG:  rdfPlanForeignModify: UPDATE operation - returning 3 target attributes
 DEBUG:  rdfBeginForeignScan called
 DEBUG:  DeserializePlanData called
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
@@ -188,8 +188,6 @@ DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
 DEBUG:  LoadRDFTableInfo called
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
 DEBUG:  DeparseSPARQLWhereGraphPattern called
 DEBUG:  DeparseSPARQLWhereGraphPattern exit: returning '?s ?p ?o'
@@ -213,6 +211,8 @@ DEBUG:  rdfPlanForeignModify: DELETE operation - returning 3 target attributes
 DEBUG:  rdfBeginForeignScan called
 DEBUG:  DeserializePlanData called
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
@@ -412,12 +412,6 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: user 'admin'
-DEBUG:  LoadRDFUserMapping: password '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
@@ -615,6 +609,12 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
@@ -695,12 +695,6 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: user 'admin'
-DEBUG:  LoadRDFUserMapping: password '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='7'
 DEBUG:  SetUsedColumns exit
@@ -865,6 +859,12 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
@@ -1002,12 +1002,6 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: user 'admin'
-DEBUG:  LoadRDFUserMapping: password '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
@@ -1130,6 +1124,12 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
@@ -1689,12 +1689,6 @@ DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: user 'admin'
-DEBUG:  LoadRDFUserMapping: password '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
@@ -1939,6 +1933,12 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
@@ -2239,12 +2239,6 @@ DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: user 'admin'
-DEBUG:  LoadRDFUserMapping: password '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='7'
 DEBUG:  SetUsedColumns exit
@@ -2435,6 +2429,12 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
@@ -2703,12 +2703,6 @@ DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: user 'admin'
-DEBUG:  LoadRDFUserMapping: password '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
@@ -2844,6 +2838,12 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: user 'admin'
+DEBUG:  LoadRDFUserMapping: password '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
@@ -3226,11 +3226,6 @@ DEBUG:  IsSPARQLParsable called
 DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  LoadRDFTableInfo exit
-DEBUG:  LoadRDFUserMapping called
-DEBUG:  LoadRDFUserMapping: setting UserMapping
-DEBUG:  LoadRDFUserMapping: extract the umoptions
-DEBUG:  LoadRDFUserMapping: token '*******'
-DEBUG:  LoadRDFUserMapping exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
 DEBUG:  SetUsedColumns called: expression='6'
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
@@ -3304,6 +3299,11 @@ DEBUG:    DeserializePlanData: column name 'subject'
 DEBUG:    DeserializePlanData: column name 'predicate'
 DEBUG:    DeserializePlanData: column name 'object'
 DEBUG:  DeserializePlanData exit
+DEBUG:  LoadRDFUserMapping called
+DEBUG:  LoadRDFUserMapping: setting UserMapping
+DEBUG:  LoadRDFUserMapping: extract the umoptions
+DEBUG:  LoadRDFUserMapping: token '*******'
+DEBUG:  LoadRDFUserMapping exit
 DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation

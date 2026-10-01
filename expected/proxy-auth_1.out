@@ -112,6 +112,67 @@ INFO:  SPARQL returned 0 records.
 ---------+-----------+--------
 (0 rows)
 
+/*
+ * A cached plan uses the user mapping current at execution, not the one
+ * of the role that planned it.
+ */
+\set VERBOSITY terse
+CREATE ROLE proxy_role;
+GRANT USAGE ON FOREIGN SERVER fuseki TO proxy_role;
+GRANT SELECT ON ft TO proxy_role;
+CREATE USER MAPPING FOR proxy_role
+SERVER fuseki OPTIONS (proxy_user 'proxyuser', proxy_password 'wrongpass');
+PREPARE ft_count AS SELECT count(*) FROM ft;
+EXECUTE ft_count;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT  * 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 0 records.
+
+ count 
+-------
+     0
+(1 row)
+
+SET ROLE proxy_role;
+EXECUTE ft_count; -- must fail: proxy_role's mapping
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT  * 
+{?s ?p ?o}
+
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
+RESET ROLE;
+ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_password 'wrongpass');
+EXECUTE ft_count; -- must fail: altered mapping
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT  * 
+{?s ?p ?o}
+
+ERROR:  proxy authentication required on server "fuseki" (HTTP 407)
+ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_password 'proxypass');
+EXECUTE ft_count;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT  * 
+{?s ?p ?o}
+
+INFO:  SPARQL returned 0 records.
+
+ count 
+-------
+     0
+(1 row)
+
+DEALLOCATE ft_count;
+DROP USER MAPPING FOR proxy_role SERVER fuseki;
+REVOKE ALL ON ft FROM proxy_role;
+REVOKE ALL ON FOREIGN SERVER fuseki FROM proxy_role;
+DROP ROLE proxy_role;
+\set VERBOSITY default
 /* Wrong user - must fail */
 ALTER USER MAPPING FOR postgres SERVER fuseki OPTIONS (SET proxy_user 'wronguser');
 SELECT * FROM ft;

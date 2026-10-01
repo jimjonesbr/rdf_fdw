@@ -14,7 +14,7 @@
 
 NETWORK_NAME=pgnet
 CONTAINER_NAME=stub-endpoint
-CONTAINER_IP=172.19.42.102
+CONTAINER_IP=172.19.42.88
 
 echo -e "\n== Deploying stub SPARQL endpoint ==\n"
 

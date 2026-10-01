@@ -3410,6 +3410,14 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 		return;
 	}
 
+	/*
+	 * The user mapping is loaded here rather than at planning, so that the
+	 * plan carries no credentials and a cached plan uses the mapping current
+	 * at execution.
+	 */
+	state->server = GetForeignServer(GetForeignTable(state->foreigntableid)->serverid);
+	LoadRDFUserMapping(state);
+
 	elog(DEBUG2, "%s: initializing XML parser", __func__);
 
 	LoadRDFData(state);
@@ -4854,12 +4862,7 @@ static List *SerializePlanData(RDFfdwState *state)
 	result = lappend(result, CStringToConst(state->format));
 	result = lappend(result, CStringToConst(state->proxy));
 	result = lappend(result, CStringToConst(state->proxy_type));
-	result = lappend(result, CStringToConst(state->proxy_user));
-	result = lappend(result, CStringToConst(state->proxy_user_password));
 	result = lappend(result, CStringToConst(state->custom_params));
-	result = lappend(result, CStringToConst(state->user));
-	result = lappend(result, CStringToConst(state->password));
-	result = lappend(result, CStringToConst(state->token));
 	result = lappend(result, IntToConst((int)state->enable_pushdown));
 	result = lappend(result, IntToConst((int)state->is_sparql_parsable));
 	result = lappend(result, IntToConst((int)state->log_sparql));
@@ -4999,22 +5002,7 @@ static struct RDFfdwState *DeserializePlanData(List *list)
 	state->proxy_type = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
-	state->proxy_user = ConstToCString(lfirst(cell));
-	cell = list_next(list, cell);
-
-	state->proxy_user_password = ConstToCString(lfirst(cell));
-	cell = list_next(list, cell);
-
 	state->custom_params = ConstToCString(lfirst(cell));
-	cell = list_next(list, cell);
-
-	state->user = ConstToCString(lfirst(cell));
-	cell = list_next(list, cell);
-
-	state->password = ConstToCString(lfirst(cell));
-	cell = list_next(list, cell);
-
-	state->token = ConstToCString(lfirst(cell));
 	cell = list_next(list, cell);
 
 	state->enable_pushdown = (bool)DatumGetInt32(((Const *)lfirst(cell))->constvalue);
@@ -5494,11 +5482,6 @@ static void InitSession(struct RDFfdwState *state, RelOptInfo *baserel, PlannerI
 	 * Loading FOREIGN TABLE structure and OPTIONS
 	 */
 	LoadRDFTableInfo(state);
-
-	/*
-	 * Loading USER MAPPING (if any)
-	 */
-	LoadRDFUserMapping(state);
 
 	/*
 	 * Marking columns used in the SQL query for SPARQL pushdown
