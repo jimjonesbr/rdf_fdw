@@ -121,6 +121,27 @@ CALL rdf_fdw_clone_table(
         target_table  => 'public.t1'
      );
 
+/*
+ * HTTPS endpoint: the proxy refuses the CONNECT tunnel itself, so the 407 is
+ * the proxy's answer, not the endpoint's. It must fail at once, as over HTTP,
+ * rather than be retried as if no answer had come.
+ */
+CREATE SERVER fuseki_https
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'https://fuseki:3030/dt/sparql',
+  http_proxy 'http://172.19.42.101:3128',
+  connect_timeout '1');
+
+CREATE USER MAPPING FOR postgres
+SERVER fuseki_https OPTIONS (proxy_user 'proxyuser', proxy_password 'wrongpass');
+
+CREATE FOREIGN TABLE ft_https (s rdfnode OPTIONS (variable '?s'))
+SERVER fuseki_https OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+
+SELECT * FROM ft_https;
+
 /* Cleanup */
 DROP TABLE public.t1;
 DROP SERVER fuseki CASCADE;
+DROP SERVER fuseki_https CASCADE;

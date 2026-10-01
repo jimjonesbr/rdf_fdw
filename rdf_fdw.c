@@ -900,6 +900,7 @@ static void LoadRDFTableInfo(RDFfdwState *state);
 static void LoadRDFServerInfo(RDFfdwState *state);
 static void LoadRDFUserMapping(RDFfdwState *state, Oid userid);
 static int ExecuteSPARQL(RDFfdwState *state);
+static long GetResponseCode(CURL *curl);
 static bool IsRetryableStatus(long response_code);
 static long ParseRetryAfter(const char *headers);
 static void WaitBeforeRetry(long seconds);
@@ -5425,6 +5426,32 @@ static int CURLProgressCallback(void *clientp, curl_off_t dltotal, curl_off_t dl
 }
 
 /*
+ * GetResponseCode
+ * ---------------
+ * Returns the HTTP status of the last request, even if libcurl failed. For
+ * an HTTPS endpoint behind a proxy, a proxy refusing the CONNECT tunnel with
+ * a client error (e.g. 407) leaves no response of the endpoint, so the
+ * proxy's answer is returned instead: retrying would not change it. Other
+ * answers of the proxy, e.g. 503 for a host it cannot reach, still count as
+ * a network error.
+ */
+static long GetResponseCode(CURL *curl)
+{
+	long response_code = 0;
+	long connect_code = 0;
+
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+	if (response_code == 0)
+	{
+		curl_easy_getinfo(curl, CURLINFO_HTTP_CONNECTCODE, &connect_code);
+		if (connect_code >= 400 && connect_code < 500)
+			response_code = connect_code;
+	}
+
+	return response_code;
+}
+
+/*
  * IsRetryableStatus
  * -----------------
  * Whether an HTTP answer asks to come back later: 429 Too Many Requests,
@@ -6035,7 +6062,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		CHECK_FOR_INTERRUPTS();
 
 		/* Always get response code - even if cURL failed */
-		curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
+		response_code = GetResponseCode(state->curl);
 
 		elog(DEBUG2, "  %s: cURL result=%d, HTTP status=%ld, response size=%zu",
 			 __func__, res, response_code, chunk.size);
@@ -6092,7 +6119,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 			res = curl_easy_perform(state->curl);
 			CHECK_FOR_INTERRUPTS();
-			curl_easy_getinfo(state->curl, CURLINFO_RESPONSE_CODE, &response_code);
+			response_code = GetResponseCode(state->curl);
 		}
 
 		/*

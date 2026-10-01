@@ -388,6 +388,24 @@ CALL rdf_fdw_clone_table(
 ERROR:  syntax error at or near "CALL"
 LINE 1: CALL rdf_fdw_clone_table(
         ^
+/*
+ * HTTPS endpoint: the proxy refuses the CONNECT tunnel itself, so the 407 is
+ * the proxy's answer, not the endpoint's. It must fail at once, as over HTTP,
+ * rather than be retried as if no answer had come.
+ */
+CREATE SERVER fuseki_https
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint   'https://fuseki:3030/dt/sparql',
+  http_proxy 'http://172.19.42.101:3128',
+  connect_timeout '1');
+CREATE USER MAPPING FOR postgres
+SERVER fuseki_https OPTIONS (proxy_user 'proxyuser', proxy_password 'wrongpass');
+CREATE FOREIGN TABLE ft_https (s rdfnode OPTIONS (variable '?s'))
+SERVER fuseki_https OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+SELECT * FROM ft_https;
+ERROR:  proxy authentication required on server "fuseki_https" (HTTP 407)
+HINT:  The endpoint requires proxy authentication. Check the proxy settings.
 /* Cleanup */
 DROP TABLE public.t1;
 ERROR:  table "t1" does not exist
@@ -395,3 +413,7 @@ DROP SERVER fuseki CASCADE;
 NOTICE:  drop cascades to 2 other objects
 DETAIL:  drop cascades to foreign table ft
 drop cascades to user mapping for postgres on server fuseki
+DROP SERVER fuseki_https CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to user mapping for postgres on server fuseki_https
+drop cascades to foreign table ft_https
