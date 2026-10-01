@@ -5746,6 +5746,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		 * with SIGALRM, which PostgreSQL uses for its own timeouts.
 		 */
 		curl_easy_setopt(state->curl, CURLOPT_NOSIGNAL, 1L);
+
+		/*
+		 * A name lookup cannot be interrupted, so after a timeout or an error
+		 * libcurl waits for the resolver thread to give up, which can take
+		 * much longer than connect_timeout. Leave the thread behind instead;
+		 * it releases its resources itself once the lookup returns.
+		 */
+#if LIBCURL_VERSION_NUM >= 0x075700
+		curl_easy_setopt(state->curl, CURLOPT_QUICK_EXIT, 1L);
+#endif
 		elog(DEBUG2, "  %s: connect_timeout > %ld", __func__, state->connect_timeout);
 		elog(DEBUG2, "  %s: request_timeout > %ld", __func__, state->request_timeout);
 		elog(DEBUG2, "  %s: max retry > %ld", __func__, state->max_retries);
