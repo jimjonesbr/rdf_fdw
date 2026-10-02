@@ -10,6 +10,7 @@
   <img alt="How rdf_fdw works: SQL is translated to SPARQL, sent to the endpoint, and results return as rows"
        src="misc/img/gif/rdf_fdw-how-it-works-light@2x.gif" width="1024">
 </picture>
+
 ![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
 
 ## Index
