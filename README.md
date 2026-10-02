@@ -2,7 +2,8 @@
 ---------------------------------------------
 # RDF Triplestore Foreign Data Wrapper for PostgreSQL (rdf_fdw)
 
-!
+![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
+
 `rdf_fdw` is a PostgreSQL Foreign Data Wrapper that enables seamless integration with RDF triplestores via SPARQL endpoints. It supports querying RDF data using SQL, with advanced features including pushdown of SQL clauses (WHERE, LIMIT, ORDER BY, DISTINCT), data modification operations (INSERT, UPDATE, DELETE), and built-in implementations of SPARQL 1.1 functions. The extension introduces a custom `rdfnode` data type for native RDF term handling and provides tools for prefix management, making it easier to work with RDF vocabularies directly from PostgreSQL.
 
 <picture>
@@ -11,7 +12,6 @@
        src="misc/img/gif/rdf_fdw-how-it-works-light@2x.gif" width="1024">
 </picture>
 
-![CI](https://github.com/jimjonesbr/rdf_fdw/actions/workflows/ci.yml/badge.svg)
 
 ## Index
 
