@@ -7690,14 +7690,29 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 		if (boolexpr->boolop == NOT_EXPR)
 		{
 			/* NOT always has exactly one argument */
-			char *inner = DeparseExpr(state, foreignrel,
-									(Expr *) linitial(boolexpr->args));
+			Expr *operand = (Expr *) linitial(boolexpr->args);
+			char *inner = DeparseExpr(state, foreignrel, operand);
 
 			/* if the inner expression is not pushable, neither is the NOT */
 			if (inner == NULL)
 				return NULL;
 
-			return psprintf("(!%s)", inner);
+			/*
+			 * sparql.isiri() and the other functions that are not strict
+			 * answer false for NULL, which the NOT turns into true, while
+			 * SPARQL raises a type error for an unbound variable, which its !
+			 * leaves an error and the FILTER drops. COALESCE turns that error
+			 * into the same false. BOUND() never raises one.
+			 */
+			if (IsA(operand, FuncExpr) && !func_strict(((FuncExpr *) operand)->funcid) &&
+				strcmp(get_func_name(((FuncExpr *) operand)->funcid), "bound") != 0)
+				return psprintf("(!(COALESCE(%s, false)))", inner);
+
+			/*
+			 * The operand is parenthesised because SPARQL's ! binds tighter
+			 * than any binary operator: "!?o > 3" reads as (!?o) > 3.
+			 */
+			return psprintf("(!(%s))", inner);
 		}
 
 		/* Todo: OR_EXPR and AND_EXPR will be added here in the future */
@@ -8045,8 +8060,9 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 					 * precedence to whatever text it is given, so (n + 1) * 2
 					 * emitted as "?n + 1 * 2" comes back as ?n + (1 * 2) and
 					 * selects different rows. The comparison operators yield a
-					 * boolean that only ever reaches && or ||, which parenthesise
-					 * their own operands, so they need nothing here.
+					 * boolean that only ever reaches &&, || or !, which
+					 * parenthesise their own operands, so they need nothing
+					 * here.
 					 */
 					bool nestable = strcmp(opername, "+") == 0 ||
 									strcmp(opername, "*") == 0;

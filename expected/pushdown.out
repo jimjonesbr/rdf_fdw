@@ -1939,14 +1939,14 @@ WHERE
   p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
   sparql.bound(o) AND
   NOT sparql.bound(x);
-                                               QUERY PLAN                                                
----------------------------------------------------------------------------------------------------------
+                                                QUERY PLAN                                                 
+-----------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_opt_ft
    Output: p, o, sparql.bound(p), sparql.bound(x)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o ?x 
-   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (BOUND(?o)) && ((!BOUND(?x))))
+   Remote Filter: ((?p = <http://www.w3.org/2000/01/rdf-schema#label>) && (BOUND(?o)) && ((!(BOUND(?x)))))
 (6 rows)
 
 /* ================================================================
@@ -1997,14 +1997,14 @@ WHERE
   p = '<http://example.org/property>' AND
   sparql.isIRI(p) AND
   NOT sparql.isIRI(o);
-                                        QUERY PLAN                                        
-------------------------------------------------------------------------------------------
+                                                 QUERY PLAN                                                  
+-------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.isiri(p), sparql.isiri(o)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/property>) && (isIRI(?p)) && ((!isIRI(?o))))
+   Remote Filter: ((?p = <http://example.org/property>) && (isIRI(?p)) && ((!(COALESCE(isIRI(?o), false)))))
 (6 rows)
 
 /* ================================================================
@@ -2034,14 +2034,14 @@ WHERE
   p = '<http://example.org/property>' AND
   sparql.isliteral(o) AND
   NOT sparql.isliteral(p);
-                                            QUERY PLAN                                            
---------------------------------------------------------------------------------------------------
+                                                     QUERY PLAN                                                      
+---------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.isliteral(o), sparql.isliteral(p)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/property>) && (isLITERAL(?o)) && ((!isLITERAL(?p))))
+   Remote Filter: ((?p = <http://example.org/property>) && (isLITERAL(?o)) && ((!(COALESCE(isLITERAL(?p), false)))))
 (6 rows)
 
 /* ================================================================
@@ -2054,14 +2054,14 @@ WHERE
   p = '<http://example.org/count>' AND
   sparql.isnumeric(o) AND
   NOT sparql.isnumeric(p);
-                                          QUERY PLAN                                           
------------------------------------------------------------------------------------------------
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
  Foreign Scan on public.rdfnode_ft
    Output: p, o, sparql.isnumeric(o), sparql.isnumeric(p)
    Foreign Server: test_server
    Pushdown: enabled
    Remote Select: ?p ?o 
-   Remote Filter: ((?p = <http://example.org/count>) && (ISNUMERIC(?o)) && ((!ISNUMERIC(?p))))
+   Remote Filter: ((?p = <http://example.org/count>) && (ISNUMERIC(?o)) && ((!(COALESCE(ISNUMERIC(?p), false)))))
 (6 rows)
 
 /* ================================================================
@@ -3518,6 +3518,94 @@ HINT:  Use the "rdfnode" type instead.
 (6 rows)
 
 DROP FOREIGN TABLE colname_ft;
+/* ================================================================
+ * NOT
+ * ================================================================ */
+/* SPARQL's ! binds tighter than any binary operator, so the condition under a
+ * NOT is parenthesised: "!?o > 3" would read as (!?o) > 3. */
+CREATE FOREIGN TABLE not_ft (
+  o rdfnode OPTIONS (variable '?o'),
+  x rdfnode OPTIONS (variable '?x')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT * WHERE {<http://example.org/s> ?p ?o OPTIONAL {?o <http://foo.bar> ?x}}');
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT (o > '3'::rdfnode);
+             QUERY PLAN             
+------------------------------------
+ Foreign Scan on public.not_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: (((!(?o > "3"))))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT (o <= 2.5);
+             QUERY PLAN              
+-------------------------------------
+ Foreign Scan on public.not_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o 
+   Remote Filter: (((!(?o <= 2.5))))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT (x >= o);
+             QUERY PLAN             
+------------------------------------
+ Foreign Scan on public.not_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o ?x 
+   Remote Filter: (((!(?x >= ?o))))
+(6 rows)
+
+/* sparql.isiri() and its siblings answer false for an unbound variable, for
+ * which SPARQL raises a type error that a ! leaves an error; COALESCE turns
+ * it into the same false. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT sparql.isiri(x);
+                      QUERY PLAN                      
+------------------------------------------------------
+ Foreign Scan on public.not_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o ?x 
+   Remote Filter: (((!(COALESCE(isIRI(?x), false)))))
+(6 rows)
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT sparql.isblank(x);
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Foreign Scan on public.not_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o ?x 
+   Remote Filter: (((!(COALESCE(isBLANK(?x), false)))))
+(6 rows)
+
+/* BOUND never raises one, so it needs no COALESCE */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT sparql.bound(x);
+             QUERY PLAN              
+-------------------------------------
+ Foreign Scan on public.not_ft
+   Output: o
+   Foreign Server: test_server
+   Pushdown: enabled
+   Remote Select: ?o ?x 
+   Remote Filter: (((!(BOUND(?x)))))
+(6 rows)
+
+DROP FOREIGN TABLE not_ft;
 DROP SERVER test_server CASCADE;
 NOTICE:  drop cascades to 20 other objects
 DETAIL:  drop cascades to foreign table rdfnode_ft

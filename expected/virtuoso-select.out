@@ -3217,10 +3217,10 @@ INFO:  SPARQL query sent to 'virtuoso':
 SELECT ?s ?p ?o 
 { GRAPH <http://rdf-fdw.test/default> {?s ?p ?o} 
  ## rdf_fdw pushdown conditions ##
- FILTER((!isIRI(?o)))
- FILTER((!isBLANK(?o)))
- FILTER((!ISNUMERIC(?o)))
- FILTER((!LANGMATCHES(LANG(?o), "en")))
+ FILTER((!(COALESCE(isIRI(?o), false))))
+ FILTER((!(COALESCE(isBLANK(?o), false))))
+ FILTER((!(COALESCE(ISNUMERIC(?o), false))))
+ FILTER((!(LANGMATCHES(LANG(?o), "en"))))
 }
 
 INFO:  SPARQL returned 14 records.

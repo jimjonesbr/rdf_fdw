@@ -2943,10 +2943,10 @@ INFO:  SPARQL query sent to 'qlever':
 SELECT ?s ?p ?o 
 {?s ?p ?o
  ## rdf_fdw pushdown conditions ##
- FILTER((!isIRI(?o)))
- FILTER((!isBLANK(?o)))
- FILTER((!ISNUMERIC(?o)))
- FILTER((!LANGMATCHES(LANG(?o), "en")))
+ FILTER((!(COALESCE(isIRI(?o), false))))
+ FILTER((!(COALESCE(isBLANK(?o), false))))
+ FILTER((!(COALESCE(ISNUMERIC(?o), false))))
+ FILTER((!(LANGMATCHES(LANG(?o), "en"))))
 }
 
 INFO:  SPARQL returned 16 records.

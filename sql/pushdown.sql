@@ -1696,4 +1696,41 @@ SELECT o FROM colname_ft WHERE length(label) = len;
 
 DROP FOREIGN TABLE colname_ft;
 
+/* ================================================================
+ * NOT
+ * ================================================================ */
+
+/* SPARQL's ! binds tighter than any binary operator, so the condition under a
+ * NOT is parenthesised: "!?o > 3" would read as (!?o) > 3. */
+CREATE FOREIGN TABLE not_ft (
+  o rdfnode OPTIONS (variable '?o'),
+  x rdfnode OPTIONS (variable '?x')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT * WHERE {<http://example.org/s> ?p ?o OPTIONAL {?o <http://foo.bar> ?x}}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT (o > '3'::rdfnode);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT (o <= 2.5);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT (x >= o);
+
+/* sparql.isiri() and its siblings answer false for an unbound variable, for
+ * which SPARQL raises a type error that a ! leaves an error; COALESCE turns
+ * it into the same false. */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT sparql.isiri(x);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT sparql.isblank(x);
+
+/* BOUND never raises one, so it needs no COALESCE */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM not_ft WHERE NOT sparql.bound(x);
+
+DROP FOREIGN TABLE not_ft;
+
 DROP SERVER test_server CASCADE;

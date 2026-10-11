@@ -870,6 +870,62 @@ ALTER FOREIGN TABLE ft OPTIONS (SET log_sparql 'true');
 /* a grouping counts rows the same way an aggregate does */
 SELECT DISTINCT count(*) AS group_sizes FROM ft GROUP BY predicate ORDER BY 1;
 
+/*
+ * A NOT must select the same rows pushed down as evaluated locally. Each
+ * condition below is run twice: pushed down, and evaluated locally on top of
+ * an OFFSET 0 subquery, which the planner cannot push it through.
+ *
+ *  - SPARQL's ! binds tighter than >, so the condition under it is
+ *    parenthesised: sent as "!?o > 3" it read as (!?o) > 3 and kept nothing.
+ *  - isIRI() of an unbound variable is a type error, which a NOT does not
+ *    turn into true, while sparql.isiri() answers false for the NULL; sent as
+ *    a bare !isIRI(?x) it dropped every row without an ?x.
+ */
+CREATE FOREIGN TABLE ft_not (
+  subject rdfnode OPTIONS (variable '?s'),
+  object  rdfnode OPTIONS (variable '?o'),
+  extra   rdfnode OPTIONS (variable '?x')
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}'
+);
+
+INSERT INTO ft (subject, predicate, object)
+VALUES ('<http://rdf-fdw.test/n1>', '<http://rdf-fdw.test/not>', 1::rdfnode),
+       ('<http://rdf-fdw.test/n2>', '<http://rdf-fdw.test/not>', 5::rdfnode),
+       ('<http://rdf-fdw.test/n3>', '<http://rdf-fdw.test/not>', 2.5::rdfnode),
+       ('<http://rdf-fdw.test/n4>', '<http://rdf-fdw.test/not>', '"abc"'),
+       ('<http://rdf-fdw.test/n5>', '<http://rdf-fdw.test/not>', '<http://rdf-fdw.test/iri>'),
+       ('<http://rdf-fdw.test/n1>', '<http://rdf-fdw.test/extra>', '<http://rdf-fdw.test/iri>'),
+       ('<http://rdf-fdw.test/n2>', '<http://rdf-fdw.test/extra>', '"lit"');
+
+SELECT subject, object FROM ft_not
+WHERE sparql.isnumeric(object) AND NOT (object > 3::rdfnode)
+ORDER BY subject;
+
+SELECT subject, object FROM (SELECT * FROM ft_not OFFSET 0) local
+WHERE sparql.isnumeric(object) AND NOT (object > 3::rdfnode)
+ORDER BY subject;
+
+SELECT subject, extra FROM ft_not
+WHERE NOT sparql.isiri(extra)
+ORDER BY subject;
+
+SELECT subject, extra FROM (SELECT * FROM ft_not OFFSET 0) local
+WHERE NOT sparql.isiri(extra)
+ORDER BY subject;
+
+SELECT subject, extra FROM ft_not
+WHERE NOT sparql.isliteral(extra)
+ORDER BY subject;
+
+SELECT subject, extra FROM (SELECT * FROM ft_not OFFSET 0) local
+WHERE NOT sparql.isliteral(extra)
+ORDER BY subject;
+
+DROP FOREIGN TABLE ft_not;
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER server_invalid_url CASCADE;

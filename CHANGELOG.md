@@ -15,6 +15,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **Fixed `NOT` conditions returning the wrong rows when pushed down**: the condition under a `NOT` was sent without parentheses, so `NOT (o > 3)` reached the endpoint as `!?o > 3`, which SPARQL reads as `(!?o) > 3`. Besides, `NOT sparql.isiri(x)` -- and likewise `isblank`, `isliteral` and `isnumeric` -- dropped the rows in which `x` was unbound: these functions answer `false` for `NULL`, while SPARQL raises an error for an unbound variable, which its `!` leaves an error. They are now sent as `!(COALESCE(isIRI(?x), false))`.
+
 * **Fixed session cookies in debug logs**: a `Set-Cookie` header the endpoint sent in response to a request with credentials was logged in full at `DEBUG2` (on HTTP errors), `DEBUG4` and `DEBUG5`. It is now redacted like `Authorization`, and response headers are only logged in the libcurl trace at `DEBUG5`.
 
 * **Refuse SPARQL results with a DTD**: the entities a document type declaration defines can make a few hundred bytes expand to gigabytes ("billion laughs"). libxml2 before 2.11 does not limit this expansion when `enable_xml_huge` is set, so a hostile endpoint could exhaust the server's memory. SPARQL query results never need a DTD, so one that declares it is now refused before any of its entities are read. `sparql.describe`, whose RDF/XML may legitimately use entities, keeps relying on libxml2's limit.
