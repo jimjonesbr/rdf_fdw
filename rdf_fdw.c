@@ -5361,6 +5361,8 @@ IsSensitiveHeader(const char *line)
 	} sensitive_headers[] = {
 		{ "Authorization:",       sizeof("Authorization:")       - 1 },
 		{ "Proxy-Authorization:", sizeof("Proxy-Authorization:") - 1 },
+		/* a session cookie grants what the credentials that obtained it do */
+		{ "Set-Cookie:",          sizeof("Set-Cookie:")          - 1 },
 		{ NULL, 0 }
 	};
 
@@ -6287,9 +6289,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			elog(DEBUG1, "%s: HTTP error %ld, response size=%zu, header size=%zu",
 				 __func__, response_code, chunk.size, chunk_header.size);
 
-			if (chunk_header.size > 0 && chunk_header.memory)
-				elog(DEBUG2, "%s: response headers:\n%s", __func__, chunk_header.memory);
-
 			{
 				StringInfoData display_body;
 				bool has_body = (chunk.size > 0 && chunk.memory);
@@ -6421,7 +6420,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 			/* Success - HTTP 2xx */
 			state->sparql_resultset = pstrdup(chunk.memory);
 
-			elog(DEBUG4, "%s: http response header = \n%s", __func__, chunk_header.memory);
 			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);
 			elog(DEBUG2, "%s: http response code = %ld", __func__, response_code);
 			elog(DEBUG2, "%s: http response size = %zu", __func__, chunk.size);

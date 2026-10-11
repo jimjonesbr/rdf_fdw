@@ -15,6 +15,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **Fixed session cookies in debug logs**: a `Set-Cookie` header the endpoint sent in response to a request with credentials was logged in full at `DEBUG2` (on HTTP errors), `DEBUG4` and `DEBUG5`. It is now redacted like `Authorization`, and response headers are only logged in the libcurl trace at `DEBUG5`.
+
 * **Refuse SPARQL results with a DTD**: the entities a document type declaration defines can make a few hundred bytes expand to gigabytes ("billion laughs"). libxml2 before 2.11 does not limit this expansion when `enable_xml_huge` is set, so a hostile endpoint could exhaust the server's memory. SPARQL query results never need a DTD, so one that declares it is now refused before any of its entities are read. `sparql.describe`, whose RDF/XML may legitimately use entities, keeps relying on libxml2's limit.
 
 * **Fixed redirects downgrading or leaking credentials**: with `request_max_redirect` set, a redirect could take a request to an `https://` endpoint to plain `http://`; it is now only followed to `https://`. libcurl before 7.83.0 also forwards Basic credentials and the Bearer token to a redirect that changes the port or scheme (CVE-2022-27774, CVE-2022-27776); with such a libcurl loaded, a request that has credentials and follows redirects is now refused before it is sent.
