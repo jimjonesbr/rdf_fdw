@@ -6008,8 +6008,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		/* Enable progress callback */
 		curl_easy_setopt(state->curl, CURLOPT_NOPROGRESS, 0L);
 
+		/*
+		 * The User-Agent names the wrapper and where to find it -- the form
+		 * Wikimedia's User-Agent policy asks of a client, for instance -- and
+		 * nothing else: no version of PostgreSQL, libxml2, libcurl or the TLS
+		 * library, which would tell every endpoint and proxy on the way which
+		 * known vulnerabilities to try. rdf_fdw_settings reports those
+		 * locally.
+		 */
 		initStringInfo(&user_agent);
-		appendStringInfo(&user_agent, "PostgreSQL/%s rdf_fdw/%s libxml2/%s %s", PG_VERSION, FDW_VERSION, LIBXML_DOTTED_VERSION, curl_version());
+		appendStringInfo(&user_agent, "rdf_fdw/%s (+%s)", FDW_VERSION, FDW_URL);
 		curl_easy_setopt(state->curl, CURLOPT_USERAGENT, user_agent.data);
 
 		/* Set headers based on query type */

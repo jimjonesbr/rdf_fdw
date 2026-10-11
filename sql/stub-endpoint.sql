@@ -426,3 +426,24 @@ DROP SERVER stub_throttled_date CASCADE;
 DROP SERVER stub_throttled_long CASCADE;
 DROP SERVER stub_unavailable CASCADE;
 DROP SERVER stub_gateway_timeout CASCADE;
+
+/*
+ * The User-Agent names rdf_fdw, its version and its home page, and nothing
+ * else: no version of PostgreSQL, libxml2, libcurl or the TLS library. The
+ * stub answers with the header it received. Compared with the version
+ * rdf_fdw_settings reports, so that a release does not change the output.
+ */
+CREATE SERVER stub_user_agent
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/user-agent',
+  connect_timeout '5');
+CREATE FOREIGN TABLE ft_user_agent (ua rdfnode OPTIONS (variable '?ua'))
+SERVER stub_user_agent OPTIONS (sparql 'SELECT ?ua WHERE {}');
+
+SELECT sparql.lex(ua) = format('rdf_fdw/%s (+https://github.com/jimjonesbr/rdf_fdw)',
+                               (SELECT version FROM rdf_fdw_settings WHERE component = 'rdf_fdw')) AS expected_user_agent,
+       sparql.lex(ua) ~* 'postgres|libxml|curl|ssl|tls|zlib' AS discloses_versions
+FROM ft_user_agent;
+
+DROP SERVER stub_user_agent CASCADE;

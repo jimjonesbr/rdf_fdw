@@ -7,6 +7,10 @@ Release date: **unreleased**
 
 * **Documentation: joins on IRIs should use `~=`**: For performance-sensitive three-way joins of foreign tables with IRIs, using `~=` (term equality) instead of `=` (value equality) allows PostgreSQL to plan a merge join instead of a nested loop, often speeding up the query by orders of magnitude. The README now recommends this pattern.
 
+## Breaking Changes
+
+* **New `User-Agent`**: requests now identify themselves as `rdf_fdw/<version> (+https://github.com/jimjonesbr/rdf_fdw)`. The previous `User-Agent` disclosed the exact versions of PostgreSQL, libxml2, libcurl, the TLS library, zlib, libssh2 and others to every SPARQL endpoint and proxy on the way, telling them which known vulnerabilities to try. `rdf_fdw_settings` still reports those versions locally. Endpoints or proxies that filter on the old `User-Agent` need to be adjusted.
+
 ## Bug Fixes
 
 * **Fixed SIGALRM conflict with libcurl's resolver**: libcurl can use PostgreSQL's SIGALRM for name lookup timeouts when built without an asynchronous resolver, interrupting PostgreSQL's own `statement_timeout` and `connect_timeout`. `CURLOPT_NOSIGNAL` is now set to prevent this.

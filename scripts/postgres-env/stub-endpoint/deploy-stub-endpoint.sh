@@ -69,6 +69,14 @@ server {
     location = /gateway-timeout {
         return 504 "timed out";
     }
+
+    # Answers with the User-Agent of the request as the only binding of ?ua,
+    # so that a test can check what rdf_fdw tells an endpoint about itself.
+    # The value is not XML-escaped: a User-Agent with '<' or '&' fails to
+    # parse, which is a failure of the test as well.
+    location = /user-agent {
+        return 200 '<?xml version="1.0"?><sparql xmlns="http://www.w3.org/2005/sparql-results#"><head><variable name="ua"/></head><results><result><binding name="ua"><literal>\$http_user_agent</literal></binding></result></results></sparql>';
+    }
 }
 EOF
 
