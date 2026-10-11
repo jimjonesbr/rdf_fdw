@@ -447,3 +447,20 @@ SELECT sparql.lex(ua) = format('rdf_fdw/%s (+https://github.com/jimjonesbr/rdf_f
 FROM ft_user_agent;
 
 DROP SERVER stub_user_agent CASCADE;
+
+/*
+ * A SPARQL result with a DTD is refused before any of its entities is read:
+ * a hostile endpoint can make them expand a few hundred bytes into gigabytes.
+ */
+CREATE SERVER stub_doctype
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/doctype.xml',
+  connect_timeout '5');
+CREATE FOREIGN TABLE ft_doctype (s rdfnode OPTIONS (variable '?s'))
+SERVER stub_doctype OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
+SELECT * FROM ft_doctype;
+/* also with enable_xml_huge, which lifts that limit before libxml2 2.11 */
+ALTER SERVER stub_doctype OPTIONS (ADD enable_xml_huge 'true');
+SELECT * FROM ft_doctype;
+DROP SERVER stub_doctype CASCADE;
