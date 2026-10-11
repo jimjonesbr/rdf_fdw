@@ -276,6 +276,9 @@ Options:
 
 Authentication: when `user` is supplied, `rdf_fdw` uses HTTP Basic Authentication. When `token` is supplied, it sends an `Authorization: Bearer` header per RFC 6750. Other schemes (OAuth flows, client certificates, etc.) are not supported.
 
+> [!WARNING]
+> Basic Authentication and Bearer tokens are only protected by the connection they travel on. Use an `https://` endpoint (and `update_url`) whenever credentials are set, and an `https://` proxy URL for proxy credentials: over plain `http://` they are sent in cleartext.
+
 > [!NOTE]
 > To list mappings in `psql` use `\deu[+]` or query `pg_user_mappings`.
 
