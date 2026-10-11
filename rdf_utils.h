@@ -47,6 +47,7 @@ extern bool IsSPARQLVariableValid(const char *str);
 extern bool IsSPARQLParsable(struct RDFfdwState *state);
 extern bool IsExpressionPushable(char *expression);
 extern bool ContainsWhitespaces(char *str);
+extern bool ContainsControlCharacters(const char *str);
 extern bool IsStringDataType(Oid type);
 extern bool is_valid_language_tag(const char *lan);
 extern int CheckURL(char *url);

@@ -47,6 +47,27 @@ static const TypeXSDMap type_map[] = {
 	{InvalidOid, NULL}};
 
 /*
+ * ContainsControlCharacters
+ * -------------------------
+ * Checks if a string contains an ASCII control character (0x00-0x1F, 0x7F),
+ * such as CR or LF.
+ *
+ * str: string to be evaluated
+ *
+ * returns true if the string contains a control character or false otherwise
+ */
+bool ContainsControlCharacters(const char *str)
+{
+	Assert(str != NULL);
+
+	for (const unsigned char *c = (const unsigned char *) str; *c; c++)
+		if (*c < 0x20 || *c == 0x7f)
+			return true;
+
+	return false;
+}
+
+/*
  * ContainsWhitespaces
  * ---------------
  * Checks if a string contains whitespaces

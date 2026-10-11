@@ -3042,6 +3042,41 @@ static long ParseIntegerOption(DefElem *def)
 	return value;
 }
 
+/*
+ * IsHTTPRequestOption
+ * -------------------
+ * Tells whether an option's value is sent as part of an HTTP request -- in
+ * the URL, a header, the credentials or the form body -- as opposed to options
+ * that only steer rdf_fdw itself.
+ *
+ * optname: name of the option
+ */
+static bool IsHTTPRequestOption(const char *optname)
+{
+	static const char *const names[] = {
+		RDF_SERVER_OPTION_SELECT_URL,
+		RDF_SERVER_OPTION_UPDATE_URL,
+		RDF_SERVER_OPTION_FORMAT,
+		RDF_SERVER_OPTION_CUSTOMPARAM,
+		RDF_SERVER_OPTION_QUERY_PARAM,
+		RDF_SERVER_OPTION_HTTP_PROXY,
+		RDF_SERVER_OPTION_HTTPS_PROXY,
+		RDF_SERVER_OPTION_BASE_URI,
+		RDF_USERMAPPING_OPTION_USER,
+		RDF_USERMAPPING_OPTION_PASSWORD,
+		RDF_USERMAPPING_OPTION_TOKEN,
+		RDF_USERMAPPING_OPTION_PROXYUSER,
+		RDF_USERMAPPING_OPTION_PROXYPASSWORD,
+		NULL
+	};
+
+	for (int i = 0; names[i] != NULL; i++)
+		if (strcmp(optname, names[i]) == 0)
+			return true;
+
+	return false;
+}
+
 Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 {
 	List *options_list = untransformRelOptions(PG_GETARG_DATUM(0));
@@ -3074,6 +3109,20 @@ Datum rdf_fdw_validator(PG_FUNCTION_ARGS)
 							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 							 errmsg("empty value in option '%s'", opt->optname)));
 				}
+
+				/*
+				 * These values end up in the HTTP request: in its URL, its
+				 * headers or its form body. A CR or LF in a header value would
+				 * be sent as is, adding header lines of the user's choosing --
+				 * or, through a proxy, a whole second request -- so no control
+				 * character is accepted in any of them. The SPARQL options are
+				 * not in this list: a query is free to span several lines.
+				 */
+				if (IsHTTPRequestOption(opt->optname) &&
+					ContainsControlCharacters(defGetString(def)))
+					ereport(ERROR,
+							(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+							 errmsg("invalid %s: control characters are not allowed", opt->optname)));
 
 				if (strcmp(opt->optname, RDF_SERVER_OPTION_SELECT_URL) == 0 ||
 					strcmp(opt->optname, RDF_SERVER_OPTION_HTTP_PROXY) == 0 ||
@@ -5221,7 +5270,22 @@ static void RegisterRDFResources(RDFfdwState *state)
  */
 static void AppendHTTPHeader(RDFfdwState *state, const char *header)
 {
-	struct curl_slist *headers = curl_slist_append(state->curl_headers, header);
+	struct curl_slist *headers;
+
+	/*
+	 * libcurl sends a header exactly as given, so a CR or LF in it would start
+	 * a header line -- or a request -- of its own. The validator refuses such
+	 * values in the options, but a value stored before it did is still in the
+	 * catalog: refuse it here as well, where every header goes through.
+	 */
+	if (ContainsControlCharacters(header))
+		ereport(ERROR,
+				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+				 errmsg("invalid HTTP header for server \"%s\": control characters are not allowed",
+						state->server->servername),
+				 errhint("Check the options of the SERVER and of the USER MAPPING.")));
+
+	headers = curl_slist_append(state->curl_headers, header);
 
 	if (headers == NULL)
 		ereport(ERROR, (errcode(ERRCODE_FDW_OUT_OF_MEMORY),

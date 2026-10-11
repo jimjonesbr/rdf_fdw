@@ -63,7 +63,8 @@ REGRESS +=  create-extension \
 			pg_datatypes \
 			sparql-functions \
 			privileges \
-			encoding
+			encoding \
+			http-security
 
 #
 # The tests above need nothing but a PostgreSQL server, and are the ones that

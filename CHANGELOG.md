@@ -13,6 +13,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **Fixed HTTP header injection through option values**: a CR or LF in the `format` server option or in the `token` of a user mapping was sent as is, adding header lines of the user's choosing to the request -- or, through a proxy, a whole second request. Control characters are now rejected in every option whose value is sent in a request (`endpoint`, `update_url`, `format`, `custom`, `query_param`, `http_proxy`, `https_proxy`, `base_uri` and all user mapping options), and a header holding one is refused before the request is sent, which also covers values stored by earlier versions.
+
 * **Fixed SIGALRM conflict with libcurl's resolver**: libcurl can use PostgreSQL's SIGALRM for name lookup timeouts when built without an asynchronous resolver, interrupting PostgreSQL's own `statement_timeout` and `connect_timeout`. `CURLOPT_NOSIGNAL` is now set to prevent this.
 
 * **Fixed resolver thread hanging after timeout**: libcurl's name resolver thread was waited for even after a connection timeout or cancel, preventing `connect_timeout` from terminating a lookup. On systems with a non-responsive name server this could extend a query by minutes. libcurl 7.87+ now exits immediately with `CURLOPT_QUICK_EXIT`.
