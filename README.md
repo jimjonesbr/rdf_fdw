@@ -20,8 +20,8 @@
 - [Update Extension](#update-extension)
 - [Deploy with Docker](#deploy-with-docker)
 - [Usage](#usage)
-  - [CREATE USER MAPPING](#create-user-mapping)
   - [CREATE SERVER](#create-server)
+  - [CREATE USER MAPPING](#create-user-mapping)
   - [CREATE FOREIGN TABLE](#create-foreign-table)
     - [RDF Node Handling](#rdf-node-handling)
       - [Arithmetic](#arithmetic)
@@ -148,7 +148,7 @@ FROM postgres:18
 RUN apt-get update && \
     apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
-RUN git clone --branch v3.0 https://github.com/jimjonesbr/rdf_fdw.git && \
+RUN git clone --branch v3.1 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
     make -j && \
     make install
@@ -157,8 +157,8 @@ RUN git clone --branch v3.0 https://github.com/jimjonesbr/rdf_fdw.git && \
 Build and run the image:
 
 ```bash
-docker build -t rdf_fdw:18-3.0 .
-docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-3.0
+docker build -t rdf_fdw:18-3.1 .
+docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-3.1
 ```
 
 Create the extension inside the running container:
@@ -175,7 +175,7 @@ docker exec -u postgres rdf_fdw_container psql -d mydatabase -c "CREATE EXTENSIO
 
 Set up a `SERVER` that points to a SPARQL endpoint, then declare `FOREIGN TABLE`s that contain the SPARQL query and map result variables to table columns. Keep foreign-table queries simple to maximise pushdown; see the [Pushdown](#pushdown) section for details and limitations.
 
-### [CREATE SERVER](#create_server)
+### [CREATE SERVER](#create-server)
 
 Use `CREATE SERVER` to register a remote SPARQL endpoint with PostgreSQL - the creator becomes the server owner. The `endpoint` option (the SPARQL endpoint URL) is required; you may also specify optional connection settings such as timeouts or proxy parameters, if applicable.
 
@@ -193,6 +193,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | Server Option | Type | Description |
 |---------------|------|-------------|
 | `endpoint` | **required** | SPARQL endpoint URL (required). |
+| `update_url` | optional | URL used for SPARQL UPDATE requests (`INSERT`, `UPDATE`, `DELETE`) when it differs from `endpoint`, e.g. Fuseki's `/update` service. |
 | `batch_size` | optional | Number of rows to accumulate per SPARQL UPDATE request for DML operations (default `50`). Larger batches reduce network overhead but may exceed endpoint limits. A row does not reach the endpoint until its batch is sent, so anything that reads the table back within the same statement — an `AFTER` row trigger, for instance — needs `batch_size '1'` to see it. |
 | `enable_pushdown` | optional | Enable translation of SQL clauses into SPARQL (default `true`). |
 | `format` | optional | Expected SPARQL result MIME type (default `application/sparql-results+xml`). Set if your endpoint requires a different value. |
@@ -297,7 +298,6 @@ Table options:
 | `sparql` | **required** | Raw SPARQL query executed for `SELECT` operations. |
 | `log_sparql` | optional | Log the exact SPARQL sent to the endpoint (default `false`). |
 | `enable_pushdown` | optional | Override server-level pushdown for this table (default: server value). |
-| `update_url` | optional | URL used for SPARQL UPDATE requests when different from the SELECT endpoint (e.g. Fuseki). |
 | `sparql_update_pattern` | optional | SPARQL triple pattern template used to build `INSERT DATA`, `DELETE DATA`, and `UPDATE` statements (required for DML). Each SPARQL variable in the pattern must be mapped to a table column. |
 | `readonly` | optional | Mark this foreign table as read-only (default `false`). When `true`, `INSERT`, `UPDATE`, and `DELETE` are rejected for this table regardless of the server-level `readonly` setting. When `false`, explicitly overrides a server-level `readonly 'true'`, allowing writes on this table even when the server is read-only. |
 | `fetch_size` | optional | Default page size for [rdf_fdw_clone_table](#rdf_fdw_clone_table) when cloning this table (default: the `SERVER` value, or `100`). It does not affect ordinary scans. The procedure's own `fetch_size` argument overrides it. |
@@ -652,7 +652,7 @@ To maximize pushdown and performance, keep queries against foreign tables simple
 
 ### [LIMIT](#limit)
 
-`LIMIT` clauses are pushed down only if the SQL query does not contain aggregates and when all conditions in the `WHERE` clause can be translated to SPARQL.
+`LIMIT` clauses are pushed down only when the remote `LIMIT` selects exactly the rows the SQL query asks for. That means all conditions in the `WHERE` clause must be translatable to SPARQL, and the query must not sort, join, group or aggregate. `ORDER BY ... LIMIT n` in particular is never pushed: see `Remote Limit` in [EXPLAIN and Diagnostics](#explain-and-diagnostics) for why.
  
 | SQL | SPARQL|
 | -- | --- |
@@ -661,7 +661,7 @@ To maximize pushdown and performance, keep queries against foreign tables simple
 | `FETCH FIRST ROW ONLY` | `LIMIT 1` |
 
 > [!NOTE]
-> `OFFSET` pushdown is **not** supported, meaning that `OFFSET` filters will be applied **locally** in PostgreSQL.
+> `OFFSET` pushdown is **not** supported, meaning that `OFFSET` is applied **locally** in PostgreSQL. When combined with a pushable `LIMIT`, the endpoint is asked for `LIMIT` + `OFFSET` rows, e.g. `OFFSET 5 LIMIT 10` sends `LIMIT 15`.
 
 Example:
 
@@ -732,9 +732,8 @@ SELECT ?p ?o
  FILTER(LANGMATCHES(LANG(?o), "es"))
 }
 ORDER BY  ASC (?p)  DESC (?o)
-LIMIT 5
 
-INFO:  SPARQL returned 5 records.
+INFO:  SPARQL returned 38 records.
 
         o        
 -----------------
@@ -746,7 +745,7 @@ INFO:  SPARQL returned 5 records.
 (5 rows)
 ```
 
-* All `WHERE`, `ORDER BY`, and `LIMIT` expressions were pushed down.
+* The `WHERE` and `ORDER BY` expressions were pushed down. `FETCH FIRST 5 ROWS ONLY` was applied locally, because a `LIMIT` is not pushed together with an `ORDER BY` (see [LIMIT](#limit)).
 
 
 ### [DISTINCT](#distinct)
@@ -820,7 +819,7 @@ A `WHERE` condition will not be pushed down if:
   * subqueries or federated queries
 * The condition includes an unsupported data type or operator.
 * The condition contains `OR` logical operators (not yet supported).
-* The condition compares an `rdfnode` with a `date`, `time`, `time with time zone`, `timestamp` or `timestamp with time zone`. SPARQL compares two temporal terms only when they carry the same datatype, and the timezone offset of an `xsd:dateTime` takes part in the comparison. The PostgreSQL operator has neither property: it reads the term's lexical form with the temporal type's input function, which accepts an `xsd:date` where an `xsd:dateTime` was asked for and discards the offset. Endpoints also differ over what to do with the terms that do not compare at all — some drop them, some order them against the constant anyway, and some reject the filter outright — so the same condition selects a different set of rows depending on which store answers it. Evaluating it in PostgreSQL is what makes the result the same everywhere. Comparisons between two `rdfnode`s, and between a column declared with a temporal type and a value of that type are pushed down.
+* The condition compares an `rdfnode` with a `date`, `time`, `time with time zone`, `timestamp` or `timestamp with time zone`. SPARQL compares two temporal terms only when they carry the same datatype, and the timezone offset of an `xsd:dateTime` takes part in the comparison. The PostgreSQL operator has neither property: it reads the term's lexical form with the temporal type's input function, which accepts an `xsd:date` where an `xsd:dateTime` was asked for and discards the offset. Endpoints also differ over what to do with the terms that do not compare at all — some drop them, some order them against the constant anyway, and some reject the filter outright — so the same condition selects a different set of rows depending on which store answers it. Evaluating it in PostgreSQL is what makes the result the same everywhere. Comparisons between two `rdfnode`s (e.g. `o > '"1996-01-01T00:00:00"^^xsd:dateTime'`), and between a column declared with a temporal type and a value of that type are pushed down.
 
 #### Pushdown Examples
 
@@ -845,7 +844,7 @@ SERVER wikidata OPTIONS (
 );
 ```
 
-1. Pusdown of `WHERE` conditions involving `rdfnode` values and `=` and `!=` operators. All conditions are pushed as `FILTER` expressions.
+1. Pushdown of `WHERE` conditions involving `rdfnode` values and `=` and `!=` operators. All conditions are pushed as `FILTER` expressions.
 
 ```sql
 SELECT s, o FROM rdbms
@@ -872,13 +871,14 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 ```
 
-2. Pusdown of `WHERE` conditions involving `rdfnode` values and `=`, `>`, and `<` operators. All conditions are pushed down as `FILTER` expressions. Note that the `timestamp` values are automatically cast to the correspondent XSD data type.
+2. Pushdown of `WHERE` conditions involving `rdfnode` values and `=`, `>`, and `<` operators. All conditions are pushed down as `FILTER` expressions. The bounds are written as `xsd:dateTime` literals: comparing an `rdfnode` with a PostgreSQL `date` or `timestamp` (e.g. `o > '1996-01-01'::timestamp`) also works, but it is evaluated locally (see [Conditions That Prevent Pushdown](#where)).
 
 ```sql
 SELECT s, o FROM rdbms
 WHERE 
   p = '<http://www.wikidata.org/prop/direct/P577>' AND
-  o > '1996-01-01'::timestamp AND o < '1996-12-31'::timestamp;
+  o > '"1996-01-01T00:00:00"^^xsd:dateTime' AND
+  o < '"1996-12-31T00:00:00"^^xsd:dateTime';
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?s ?p ?o 
@@ -900,7 +900,7 @@ INFO:  SPARQL returned 1 record.
 (1 row)
 ```
 
-3. Pusdown of `WHERE` conditions with `IN` and `ANY` constructs. All conditions are pushed down as `FILTER` expressions.
+3. Pushdown of `WHERE` conditions with `IN` and `ANY` constructs. All conditions are pushed down as `FILTER` expressions.
 
 ```sql
 SELECT p, o FROM rdbms
@@ -955,7 +955,7 @@ INFO:  SPARQL returned 2 records.
 (2 rows)
 ```
 
-4. Pusdown of `WHERE` conditions involving SPARQL functions. The function calls for `LANGMATCHES()`, `LANG()`, and `STRENDS()` are pushed down in `FILTER` expressions.
+4. Pushdown of `WHERE` conditions involving SPARQL functions. The function calls for `LANGMATCHES()`, `LANG()`, and `STRENDS()` are pushed down in `FILTER` expressions.
 
 ```sql
 SELECT s, o FROM rdbms
@@ -986,7 +986,7 @@ INFO:  SPARQL returned 3 records.
  <http://www.wikidata.org/entity/Q6862049> | "Mimer SQL"@de
 (3 rows)
 ```
-### [Prefix Management](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#prefix-mangement)
+### [Prefix Management](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#prefix-management)
 
 To simplify the reuse and sharing of common SPARQL prefixes, `rdf_fdw` provides a prefix management system based on two catalog tables and a suite of helper functions.
 
@@ -1074,7 +1074,7 @@ To use data modification operations, your `FOREIGN TABLE` must:
 3. **Use `rdfnode` columns** - Data modification operations only support `rdfnode` type columns; PostgreSQL native types are **not supported**.
 
 > [!IMPORTANT]  
-> **SPARQL endpoints do not support PostgreSQL transactions.** Each operation is sent immediately to the triplestore and committed there, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
+> **SPARQL endpoints do not support PostgreSQL transactions.** Modified rows are sent to the triplestore in batches of `batch_size` (see [CREATE SERVER](#create-server)) while the statement runs, and each request is committed by the triplestore as soon as it arrives, regardless of PostgreSQL's transaction state (BEGIN/COMMIT/ROLLBACK).
 
 ### NULL Value Handling
 
@@ -1268,7 +1268,7 @@ This procedure is designed to copy data from a `FOREIGN TABLE` to an ordinary `T
 
 `max_records`: maximum number of records that should be retrieved from the `FOREIGN TABLE`. Default `0`, which means no limit. 
 
-`orderby_column`: ordering column used for the pagination - just like in SQL `ORDER BY`. Default `''`, which means that the function will chose a column to use in the `ORDER BY` clause on its own. That is, the procedure will try to set the first column with the option `nodetype` set to `iri`. If the table has no `iri` typed `nodetype`, the first column will be chosen as ordering column. If you do not wish to have an `ORDER BY` clause at all, set this parameter to `NULL`.
+`orderby_column`: ordering column used for the pagination - just like in SQL `ORDER BY`. Default `''`, which means that the procedure chooses the ordering column on its own: the first column of the `FOREIGN TABLE` (for tables with deprecated native-type columns, the first column with `nodetype 'iri'` is preferred). If you do not wish to have an `ORDER BY` clause at all, set this parameter to `NULL`.
 
 `sort_order`: `ASC` or `DESC` to sort the data returned in ascending or descending order, respectively. Default `ASC`.
 
@@ -1288,9 +1288,9 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://dbpedia.org/sparql');
 
 CREATE FOREIGN TABLE public.dbpedia_cities (
-  uri text           OPTIONS (variable '?city', nodetype 'iri'),
-  city_name text     OPTIONS (variable '?name', nodetype 'literal', literal_type 'xsd:string'),
-  elevation numeric  OPTIONS (variable '?elevation', nodetype 'literal', literal_type 'xsd:integer')
+  uri       rdfnode OPTIONS (variable '?city'),
+  city_name rdfnode OPTIONS (variable '?name'),
+  elevation rdfnode OPTIONS (variable '?elevation')
 )
 SERVER dbpedia OPTIONS (
   sparql '
@@ -1314,23 +1314,16 @@ CALL rdf_fdw_clone_table(
       target_table  => 't1_local',
       create_table => true);
 
-SELECT * FROM t1_local;
-                            uri                            |      city_name      | elevation 
------------------------------------------------------------+---------------------+-----------
- http://dbpedia.org/resource/Aachen                        | Aachen              |     173.0
- http://dbpedia.org/resource/Bielefeld                     | Bielefeld           |     118.0
- http://dbpedia.org/resource/Dortmund                      | Dortmund            |      86.0
- http://dbpedia.org/resource/Düsseldorf                    | Düsseldorf          |      38.0
- http://dbpedia.org/resource/Gelsenkirchen                 | Gelsenkirchen       |      60.0
- http://dbpedia.org/resource/Hagen                         | Hagen               |     106.0
- http://dbpedia.org/resource/Hamm                          | Hamm                |      37.7
- http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia | Herne               |      65.0
- http://dbpedia.org/resource/Krefeld                       | Krefeld             |      39.0
- http://dbpedia.org/resource/Mönchengladbach               | Mönchengladbach     |      70.0
- http://dbpedia.org/resource/Mülheim                       | Mülheim an der Ruhr |      26.0
- http://dbpedia.org/resource/Münster                       | Münster             |      60.0
- http://dbpedia.org/resource/Remscheid                     | Remscheid           |     365.0
-(13 rows)
+SELECT DISTINCT uri, elevation FROM t1_local ORDER BY uri;
+                             uri                             |                     elevation                      
+-------------------------------------------------------------+----------------------------------------------------
+ <http://dbpedia.org/resource/Gelsenkirchen>                 | "60.0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/resource/Hagen>                         | "106.0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/resource/Herne,_North_Rhine-Westphalia> | "65.0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/resource/Krefeld>                       | "39.0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/resource/Mönchengladbach>               | "70.0"^^<http://www.w3.org/2001/XMLSchema#double>
+ <http://dbpedia.org/resource/Mülheim>                       | "26.0"^^<http://www.w3.org/2001/XMLSchema#double>
+(6 rows)
 ```
 ### [EXPLAIN and Diagnostics](#explain-and-diagnostics)
 
@@ -1345,31 +1338,47 @@ The plan output includes FDW-specific lines for each Foreign Scan node:
 * `Remote Limit:` shows the SPARQL LIMIT clause if limiting is pushed down. A `LIMIT` is only sent when it selects the same rows the SQL query asks for, which rules out a query that also sorts, joins, groups or aggregates. Sorting is the case worth explaining: a remote `LIMIT` under an `ORDER BY` would keep whichever rows come first in the *endpoint's* ordering, and SPARQL does not fully define that one. It fixes the order between kinds of term, and between literals whose values are comparable, but leaves the rest to the implementation — and implementations disagree. Asked to sort the same eight terms, Fuseki returns IRIs first, Virtuoso strings first, and QLever booleans first. There is therefore no ordering `rdf_fdw` could adopt locally that would match the store being queried, so `ORDER BY ... LIMIT n` fetches the result set and takes the first `n` here.
 * `Remote Select:` shows the SPARQL SELECT clause generated for the query.
 
-**Example:**
+**Examples:**
+
+Filter and sort are pushed down, while the `LIMIT` is applied locally because the query also sorts:
+
 ```sql
-EXPLAIN (ANALYSE, COSTS OFF)
+EXPLAIN (COSTS OFF)
 SELECT p, o FROM ft
 WHERE sparql.isnumeric(o) AND o > 42
 ORDER BY o DESC
 FETCH FIRST 3 ROWS ONLY;
-                                 QUERY PLAN                                  
------------------------------------------------------------------------------
- Limit (actual time=0.072..0.073 rows=3.00 loops=1)
-   ->  Sort (actual time=0.071..0.072 rows=3.00 loops=1)
+                         QUERY PLAN                          
+-------------------------------------------------------------
+ Limit
+   ->  Sort
          Sort Key: o DESC
-         Sort Method: quicksort  Memory: 25kB
-         ->  Foreign Scan on ft (actual time=0.039..0.063 rows=3.00 loops=1)
+         ->  Foreign Scan on ft
                Foreign Server: wikidata
                Pushdown: enabled
                Remote Select: ?p ?o 
                Remote Filter: ((ISNUMERIC(?o)) && (?o > 42))
                Remote Sort Key:   DESC (?o)
-               Remote Limit: LIMIT 3
- Planning:
-   Buffers: shared hit=4
- Planning Time: 0.115 ms
- Execution Time: 182.551 ms
-(15 rows)
+(9 rows)
+```
+
+Without the `ORDER BY` the `LIMIT` is pushed down as well:
+
+```sql
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM ft
+WHERE sparql.isnumeric(o) AND o > 42
+FETCH FIRST 3 ROWS ONLY;
+                      QUERY PLAN                       
+-------------------------------------------------------
+ Limit
+   ->  Foreign Scan on ft
+         Foreign Server: wikidata
+         Pushdown: enabled
+         Remote Select: ?p ?o 
+         Remote Filter: ((ISNUMERIC(?o)) && (?o > 42))
+         Remote Limit: LIMIT 3
+(7 rows)
 ```
 
 ## [SPARQL Functions](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-functions)
@@ -1397,9 +1406,10 @@ FETCH FIRST 3 ROWS ONLY;
 > [!NOTE]  
 > **Aggregate semantics and NULL/UNDEF handling**
 >
-> SPARQL 1.1 aggregates operate over multisets after excluding unbound (UNDEF) and error results. If, after exclusion, no values remain:
-> - GROUP_CONCAT → empty string
-> - SUM, AVG, MIN, MAX → unbound (NULL)
+> SPARQL 1.1 aggregates operate over multisets after excluding unbound (UNDEF) values. If, after exclusion, no values remain:
+> - SUM, AVG → `"0"^^xsd:integer`
+> - GROUP_CONCAT → empty string (`""`)
+> - MIN, MAX, SAMPLE → unbound (NULL)
 >
 > See: SPARQL 1.1 Query — Aggregates (§18), SUM/AVG/MIN/MAX (§18.5.1.3–§18.5.1.6), ORDER BY semantics (§15.1).
 > 
@@ -1431,8 +1441,7 @@ Computes the sum of numeric `rdfnode` values with XSD type promotion according t
 > The `SUM` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.3](https://www.w3.org/TR/sparql11-query/#aggregates)):
 >* NULL values (unbound variables) are skipped during aggregation
 >* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: "The sum of no bindings is 0")
->* If the input set contains any non-numeric values, the aggregate returns NULL.
->* Returns SQL NULL if all values are non-numeric (no numeric values to sum)
+>* If the input set contains any non-numeric value, the aggregate returns NULL
 >* Type promotion ensures precision is maintained (e.g., integer → decimal → float → double)
 >* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
 
@@ -1482,8 +1491,8 @@ Computes the average (arithmetic mean) of numeric `rdfnode` values with XSD type
 > The `AVG` aggregate follows SPARQL 1.1 semantics ([section 18.5.1.4](https://www.w3.org/TR/sparql11-query/#aggregates)):
 >* NULL values (unbound variables) are skipped during aggregation
 >* Returns `"0"^^xsd:integer` for empty sets or when all values are NULL (per spec: `Avg(M) = "0"^^xsd:integer`, where `Count(M) = 0`)
->* If the input set contains any non-numeric values, the aggregate returns NULL
->* The result type is always at least `xsd:decimal` (integer inputs produce a decimal average)
+>* If the input set contains any non-numeric value, the aggregate returns NULL
+>* For a non-empty set, the result type is always at least `xsd:decimal` (integer inputs produce a decimal average)
 >* All XSD integer subtypes (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, etc.) are treated as `xsd:integer`
 
 Examples:
@@ -1525,7 +1534,7 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 sparql.min(value rdfnode) → rdfnode
 ```
 
-Returns the minimum numeric `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.5](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the minimum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison.
+Returns the minimum `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.5](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the minimum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison. Non-numeric values (strings, dates, IRIs, ...) are accepted as well.
 
 > [!NOTE]
 > When the input set contains values of different type categories (e.g. numeric and string, or date and integer), the ordering across categories follows the term ordering defined in [SPARQL 1.1 §15.1](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#modOrderBy). This ordering is only partially specified by the spec, and results for mixed-type sets may differ from other triplestores.
@@ -1571,7 +1580,7 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 sparql.max(value rdfnode) → rdfnode
 ```
 
-Returns the maximum numeric `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.6](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the maximum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison.
+Returns the maximum `rdfnode` value according to SPARQL 1.1 specification ([section 18.5.1.6](https://www.w3.org/TR/sparql11-query/#aggregates)). The function preserves the XSD datatype of the maximum value found. When comparing values of different numeric types, they are promoted to a common type following XPath rules before comparison. Non-numeric values (strings, dates, IRIs, ...) are accepted as well.
 
 > [!NOTE]
 > When the input set contains values of different type categories (e.g. numeric and string, or date and integer), the ordering across categories follows the term ordering defined in [SPARQL 1.1 §15.1](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#modOrderBy). This ordering is only partially specified by the spec, and results for mixed-type sets may differ from other triplestores.
@@ -1616,7 +1625,7 @@ FROM (VALUES ('"10"^^xsd:integer'::rdfnode),
 sparql.group_concat(value rdfnode, separator text) → rdfnode
 ```
 
-Concatenates string representations of RDF terms into a single `xsd:string` literal according to SPARQL 1.1 specification ([section 18.5.1.7](https://www.w3.org/TR/sparql11-query/#aggregates)). The function extracts lexical values from all RDF term types (literals, IRIs, typed values) and joins them using the specified separator. Unlike PostgreSQL's `string_agg`, the separator parameter is required.
+Concatenates string representations of RDF terms into a single simple literal (`xsd:string`) according to SPARQL 1.1 specification ([section 18.5.1.7](https://www.w3.org/TR/sparql11-query/#aggregates)). The function extracts lexical values from all RDF term types (literals, IRIs, typed values) and joins them using the specified separator. Unlike PostgreSQL's `string_agg`, the separator parameter is required.
 
 RDF term serialization rules:
 * **Typed literals**: Extract lexical value only (strip `^^datatype`)
@@ -1627,7 +1636,7 @@ RDF term serialization rules:
 Examples:
 
 ```sql
--- Concatenate strings with default space separator
+-- Concatenate strings with a space separator
 SELECT sparql.group_concat(val, ' ')
 FROM (VALUES ('"apple"^^xsd:string'::rdfnode),
              ('"banana"^^xsd:string'::rdfnode),
@@ -1877,7 +1886,7 @@ SELECT sparql.isliteral('"foo"^^xsd:string');
  t
 (1 row)
 
-SELECT sparql.isliteral('"foo"^^@es');
+SELECT sparql.isliteral('"foo"@es');
  isliteral 
 -----------
  t
@@ -1908,7 +1917,7 @@ SELECT sparql.isliteral(NULL);
 sparql.isnumeric(term rdfnode) → boolean
 ```
 
-Returns `true` if the RDF node is a literal with a numeric datatype (such as `xsd:int`, `xsd:dateTime`, etc.), and `false` otherwise. See the SPARQL 1.1 section on [Operand Data Types](https://www.w3.org/TR/sparql11-query/#operandDataTypes) for more details.
+Returns `true` if the RDF node is a literal with a numeric datatype (such as `xsd:int`, `xsd:decimal`, `xsd:double`, etc.), and `false` otherwise. See the SPARQL 1.1 section on [Operand Data Types](https://www.w3.org/TR/sparql11-query/#operandDataTypes) for more details.
 
 Examples:
 
@@ -1943,7 +1952,7 @@ SELECT sparql.isnumeric(NULL);
 ```sql
 sparql.str(value rdfnode) → rdfnode
 ```
-Returns the **lexical form** (the string content) of the RDF node, as described at This implements the SPARQL 1.1 [str()](https://www.w3.org/TR/sparql11-query/#func-str) specification. For literals, this means stripping away the language tag or datatype. For IRIs, it returns the IRI string. For blank nodes, returns their label.
+Returns the **lexical form** (the string content) of the RDF node, as defined by the SPARQL 1.1 [str()](https://www.w3.org/TR/sparql11-query/#func-str) specification. For literals, this means stripping away the language tag or datatype. For IRIs, it returns the IRI string. For blank nodes, returns their label.
 
 Examples:
 
@@ -1970,10 +1979,10 @@ SELECT sparql.str('<http://foo.bar>');
 #### [LANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lang)
 
 ```sql
-sparql.str(value rdfnode) → rdfnode
+sparql.lang(value rdfnode) → rdfnode
 ```
 
-Returns the language tag of the literal, or an empty string if none exists. Implements the SPARQL 1.1 [LANG()](https://www.w3.org/TR/sparql11-query/#func-lang) function. All other RDF nodes — including IRIs, blank nodes, and typed literals — return an empty string.
+Returns the language tag of the literal, or an empty string if none exists. Implements the SPARQL 1.1 [LANG()](https://www.w3.org/TR/sparql11-query/#func-lang) function. Typed and simple literals return an empty string; IRIs and blank nodes raise an error, as `LANG` is only defined for literals.
 
 ```sql
 SELECT sparql.lang('"foo"@es');
@@ -2104,9 +2113,9 @@ SELECT sparql.bnode('"foo"^^xsd:string');
 (1 row)
 
 SELECT sparql.bnode();
-       bnode        
---------------------
- _:b800704569809508
+        bnode         
+----------------------
+ _:b844460685272636_0
 (1 row)
 ```
 
@@ -2140,7 +2149,7 @@ SELECT sparql.strdt('"2025-01-01"^^xsd:string', 'http://www.w3.org/2001/XMLSchem
 (1 row)
 ```
 
-#### [STLANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlang)
+#### [STRLANG](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#strlang)
 
 ```sql
 sparql.strlang(lexical rdfnode, lang_tag rdfnode) → rdfnode
@@ -2207,7 +2216,7 @@ SELECT sparql.struuid();
 sparql.strlen(value rdfnode) → int
 ```
 
-Returns the number of characters in the **lexical form** of the RDF node. Implements the SPARQL 1.1 [STRLEN()](https://www.w3.org/TR/sparql11-query/#func-strlen) function.
+Returns the number of characters in a string literal (simple, `xsd:string` or language-tagged). Implements the SPARQL 1.1 [STRLEN()](https://www.w3.org/TR/sparql11-query/#func-strlen) function. IRIs, blank nodes and non-string literals such as `"42"^^xsd:int` raise an error; use `sparql.strlen(sparql.str(...))` to measure their lexical form.
 
 Examples:
 
@@ -2228,12 +2237,6 @@ SELECT sparql.strlen('"foo"^^xsd:string');
  strlen 
 --------
       3
-(1 row)
-
-SELECT sparql.strlen('"42"^^xsd:int');
- strlen 
---------
-      2
 (1 row)
 
 SELECT sparql.strlen('"🐘"@en');
@@ -2387,7 +2390,7 @@ SELECT sparql.strends('"foobar"@en', '"bar"^^xsd:string');
 sparql.contains(value rdfnode, substring rdfnode) → boolean
 ```
 
-Returns `true` if the **lexical form** of the RDF node contains the given substring. Implements the SPARQL 1.1 [CONTAINS()](https://www.w3.org/TR/sparql11-query/#func-contains) function.
+Returns `true` if the **lexical form** of the RDF node contains the given substring. Implements the SPARQL 1.1 [CONTAINS()](https://www.w3.org/TR/sparql11-query/#func-contains) function. The two arguments must be [argument-compatible](https://www.w3.org/TR/sparql11-query/#func-arg-compatibility): a language-tagged substring only matches a value with the same language tag, otherwise the result is `NULL` (a SPARQL error).
 
 Examples:
 
@@ -2398,10 +2401,16 @@ SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"');
  t
 (1 row)
 
-SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"@en');
+SELECT sparql.contains('"_foobar_"@en', '"foo"');
  contains 
 ----------
  t
+(1 row)
+
+SELECT sparql.contains('"_foobar_"^^xsd:string', '"foo"@en');
+ contains 
+----------
+ NULL
 (1 row)
 ```
 
@@ -2562,7 +2571,7 @@ SELECT sparql.langmatches('en', '*');
 #### [REPLACE](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#replace)
 
 ```sql
-sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode, flags rdfnode DEFAULT '') → rdfnode
+sparql.replace(value rdfnode, pattern rdfnode, replacement rdfnode [, flags rdfnode]) → rdfnode
 ```
 
 Replaces parts of the **lexical form** using a regular expression. Implements the SPARQL 1.1 [REPLACE()](https://www.w3.org/TR/sparql11-query/#func-replace) function. All occurrences of the pattern are replaced.
@@ -2599,7 +2608,7 @@ SELECT sparql.replace('"2025-01-02"', '"([0-9]{4})-([0-9]{2})-([0-9]{2})"', '"$3
 #### [ABS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#abs)
 
 ```sql
-sparql.abs(value rdfnode) → numeric
+sparql.abs(value rdfnode) → rdfnode
 ```
 
 Returns the absolute value of a numeric literal. Implements the SPARQL 1.1 [ABS()](https://www.w3.org/TR/sparql11-query/#func-abs) function.
@@ -2623,7 +2632,7 @@ SELECT sparql.abs('"3.14"^^xsd:decimal');
 #### [ROUND](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#round)
 
 ```sql
-sparql.round(value rdfnode) → numeric
+sparql.round(value rdfnode) → rdfnode
 ```
 
 Rounds the numeric literal to the nearest integer. Implements the SPARQL 1.1 [ROUND()](https://www.w3.org/TR/sparql11-query/#func-round) function.
@@ -2647,7 +2656,7 @@ SELECT sparql.round('"-2.5"^^xsd:float');
 #### [CEIL](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#ceil)
 
 ```sql
-sparql.ceil(value rdfnode) → numeric
+sparql.ceil(value rdfnode) → rdfnode
 ```
 Returns the smallest integer greater than or equal to the numeric value. Implements the SPARQL 1.1 [CEIL()](https://www.w3.org/TR/sparql11-query/#func-ceil) function.
 
@@ -2670,7 +2679,7 @@ SELECT sparql.ceil('"-2.1"^^xsd:float');
 #### [FLOOR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#floor)
 
 ```sql
-sparql.floor(value rdfnode) → numeric
+sparql.floor(value rdfnode) → rdfnode
 ```
 
 Returns the greatest integer less than or equal to the numeric value. Implements the SPARQL 1.1 [FLOOR()](https://www.w3.org/TR/sparql11-query/#func-floor) function.
@@ -2710,6 +2719,24 @@ SELECT sparql.rand();
 ```
 
 ### [Functions on Dates and Times](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#functions-on-dates-and-times)
+
+#### [NOW](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#now)
+
+```sql
+sparql.now() → rdfnode
+```
+
+Returns the current date and time as an `xsd:dateTime` literal. Implements the SPARQL 1.1 [NOW()](https://www.w3.org/TR/sparql11-query/#func-now) function. Like PostgreSQL's `now()`, it returns the same value for the whole transaction. It is never pushed down (see [WHERE](#where)).
+
+Example:
+
+```sql
+SELECT sparql.now();
+                                    now                                     
+----------------------------------------------------------------------------
+ "2026-10-04T20:25:20.960274Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(1 row)
+```
 
 #### [YEAR](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#year)
 
@@ -2802,7 +2829,7 @@ SELECT sparql.minutes('"2025-05-17T14:42:37Z"^^xsd:dateTime');
 #### [SECONDS](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#seconds)
 
 ```sql
-sparql.seconds(value rdfnode) → int
+sparql.seconds(value rdfnode) → numeric
 ```
 
 Returns the seconds (including fractions) from a datetime literal. Implements the SPARQL 1.1 [SECONDS()](https://www.w3.org/TR/sparql11-query/#func-seconds) function.
@@ -2810,10 +2837,10 @@ Returns the seconds (including fractions) from a datetime literal. Implements th
 Example:
 
 ```sql
-SELECT sparql.seconds('"2025-05-17T14:42:37Z"^^xsd:dateTime');
- seconds 
----------
-      37
+SELECT sparql.seconds('"2025-05-17T14:42:37.5Z"^^xsd:dateTime');
+  seconds  
+-----------
+ 37.500000
 (1 row)
 ```
 
@@ -2823,7 +2850,7 @@ SELECT sparql.seconds('"2025-05-17T14:42:37Z"^^xsd:dateTime');
 sparql.timezone(datetime rdfnode) → rdfnode
 ```
 
-Returns the timezone offset as a duration literal (e.g., "PT2H"), or NULL if none. Implements the SPARQL 1.1 [TIMEZONE()](https://www.w3.org/TR/sparql11-query/#func-timezone) function.
+Returns the timezone offset as a duration literal (e.g., "PT2H"). A literal without a timezone raises an error. Implements the SPARQL 1.1 [TIMEZONE()](https://www.w3.org/TR/sparql11-query/#func-timezone) function.
 
 Example:
 
@@ -2896,10 +2923,10 @@ SELECT sparql.md5('42'::rdfnode);
 #### [LEX](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#lex)
 
 ```sql
-sparql.lex(value rdfnode) → rdfnode
+sparql.lex(value rdfnode) → text
 ```
 
-Extracts the lexical value of a given `rdfnode`. This is a convenience function that is not part of the SPARQL 1.1 standard.
+Extracts the lexical value of a given `rdfnode` as `text`. This is a convenience function that is not part of the SPARQL 1.1 standard.
 
 Examples:
 
@@ -2919,7 +2946,7 @@ SELECT sparql.lex('"foo"@es');
 
 ## [SPARQL describe](https://github.com/jimjonesbr/rdf_fdw/blob/master/README.md#sparql-describe)
 ```sql
-sparql.describe(server text, query text, raw_literal boolean, base_uri text) → triple
+sparql.describe(server text, query text, base_uri text DEFAULT '') → SETOF triple
 ```
 **Description**
 
@@ -2932,13 +2959,11 @@ The `sparql.describe` function executes a SPARQL `DESCRIBE` query against a spec
 
 `server` **(required)**: The name of the foreign server (defined via `CREATE SERVER`) that specifies the SPARQL endpoint to query. This must correspond to an existing `rdf_fdw` server configuration. Cannot be empty or `NULL`.
 
-`describe_query` **(required)**: A valid SPARQL `DESCRIBE` query string (e.g., `DESCRIBE <http://example.org/resource>`). Cannot be empty or `NULL`.
+`query` **(required)**: A valid SPARQL `DESCRIBE` query string (e.g., `DESCRIBE <http://example.org/resource>`). Cannot be empty or `NULL`.
 
-`raw_literal`: Controls how literal values in the object column are formatted (default `true`):
-* **true**: Preserves the full RDF literal syntax, including datatype (e.g., `"123"^^<http://www.w3.org/2001/XMLSchema#integer>`) or language tags (e.g., `"hello"@en`).
-* **false**: Strips datatype and language tags, returning only the literal value (e.g., `"123"` or `"hello"`).
+`base_uri`: The base URI used to resolve relative URIs in the `RDF/XML` response from the triplestore. If empty, the `SERVER` option `base_uri` is used, or `http://rdf_fdw.postgresql.org/` if that is not set either. Useful for ensuring correct URI resolution in the parsed triples.
 
-`base_uri`: The base URI used to resolve relative URIs in the `RDF/XML` response from the triplestore. If empty, defaults to "http://rdf_fdw.postgresql.org/". Useful for ensuring correct URI resolution in the parsed triples.
+Literals are always returned with their datatype or language tag. Use [`sparql.lex`](#lex) or [`sparql.str`](#str) to get only the lexical value.
 
 
 **Return Value**
@@ -2956,22 +2981,27 @@ FOREIGN DATA WRAPPER rdf_fdw
 OPTIONS (endpoint 'https://query.wikidata.org/sparql');
 
 SELECT subject, predicate, object
-FROM rdf_fdw_describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>', true);
+FROM sparql.describe('wikidata', 'DESCRIBE <http://www.wikidata.org/entity/Q61308849>')
+WHERE predicate::text LIKE '<http://www.wikidata.org/prop/direct/%'
+ORDER BY predicate::text COLLATE "C";
 
-INFO:  SPARQL query sent to 'https://query.wikidata.org/sparql':
-
-DESCRIBE <http://www.wikidata.org/entity/Q61308849>
-
-
-                 subject                  |                 predicate                  |                               object
-------------------------------------------+--------------------------------------------+------------------------------------------------------------------------------
- http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P3999  | "2015-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- http://www.wikidata.org/entity/Q61308849 | http://schema.org/dateModified             | "2024-05-01T21:36:41Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
- http://www.wikidata.org/entity/Q61308849 | http://schema.org/version                  | "2142303130"^^<http://www.w3.org/2001/XMLSchema#integer>
- http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P127   | http://www.wikidata.org/entity/Q349450
-...
- http://www.wikidata.org/entity/Q61308849 | http://www.wikidata.org/prop/direct/P625   | "Point(-133.03 69.43)"^^<http://www.opengis.net/ont/geosparql#wktLiteral>
-(37 rows)
+                  subject                   |                  predicate                  |                                     object                                      
+--------------------------------------------+---------------------------------------------+---------------------------------------------------------------------------------
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P127>  | <http://www.wikidata.org/entity/Q349450>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P131>  | <http://www.wikidata.org/entity/Q2007>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P17>   | <http://www.wikidata.org/entity/Q16>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P2044> | "4.27"^^<http://www.w3.org/2001/XMLSchema#decimal>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P31>   | <http://www.wikidata.org/entity/Q846837>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P3999> | "2015-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P4150> | <http://commons.wikimedia.org/data/main/Data:Weather.gc.ca/Almanac/2203912.tab>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P4150> | <http://commons.wikimedia.org/data/main/Data:Weather.gc.ca/Monthly/2203912.tab>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6242> | "2203912"^^<http://www.w3.org/2001/XMLSchema#string>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P625>  | "Point(-133.03 69.43)"^^<http://www.opengis.net/ont/geosparql#wktLiteral>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6339> | <http://www.wikidata.org/entity/Q59657037>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6339> | <http://www.wikidata.org/entity/Q59657036>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P6339> | <http://www.wikidata.org/entity/Q59657010>
+ <http://www.wikidata.org/entity/Q61308849> | <http://www.wikidata.org/prop/direct/P729>  | "1970-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>
+(14 rows)
 ```
 
 ## [Import data into QGIS](#import-data-into-qgis)
