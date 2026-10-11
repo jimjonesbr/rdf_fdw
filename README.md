@@ -46,7 +46,7 @@
 
 * [PostgreSQL](https://www.postgresql.org): version 9.5 or higher.
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
-* [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher.
+* [libcurl](https://curl.se/libcurl/): version 7.74.0 or higher; 7.83.0 or higher to follow redirects (`request_max_redirect`) on servers with credentials.
 * [pkg-config](https://linux.die.net/man/1/pkg-config): pkg-config 0.29.2 or higher.
 * [gcc](https://gcc.gnu.org/) and [make](https://www.gnu.org/software/make/) to compile the code.
 
@@ -196,7 +196,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `connect_timeout` | optional | Connection timeout in seconds (default `300`). |
 | `request_timeout` | optional | Maximum time in seconds allowed for a complete HTTP request (connect + transfer). `0` disables the limit (default). Unlike `connect_timeout`, this applies to the entire duration of the request, including data transfer. |
 | `connect_retry` | optional | Number of times a request is retried when it gets no response at all, e.g. when the connection fails, or when the endpoint answers HTTP `429`, `502` or `503` to ask to come back later (default `3`). Other HTTP errors are not retried, nor is a proxy refusing the connection with a client error such as `407`. The wait between attempts is what the endpoint asks for in its `Retry-After` header; otherwise it starts at 1 second after a network error and at 5 seconds after an HTTP answer, and doubles each time. A single wait is at most 300 seconds. Modifications are retried as well, which is safe because rdf_fdw only sends `INSERT DATA` and `DELETE DATA`. |
-| `request_max_redirect` | optional | Maximum number of HTTP redirects to follow (default `0`). `0` refuses any redirect; any higher value enables redirection and caps it at that many hops. Credentials are never forwarded to a redirected host. |
+| `request_max_redirect` | optional | Maximum number of HTTP redirects to follow (default `0`). `0` refuses any redirect; any higher value enables redirection and caps it at that many hops. Credentials are never forwarded to a redirected host, and a redirect from an `https://` endpoint is only followed to another `https://` URL. With credentials in the user mapping, following redirects requires libcurl 7.83.0 or later, as older versions may forward them to a different port or scheme of the same host. |
 | `request_redirect` | *deprecated* | Superseded by `request_max_redirect`, which now enables and bounds redirection on its own. Still accepted so that existing servers and dumps keep working: when set to `true` without an explicit `request_max_redirect`, up to `30` redirects are followed. It will be removed in a future major release. |
 | `custom` | optional | Triplestore-specific query parameters appended to the request URL (e.g. `signal_void=on`). |
 | `query_param` | optional | HTTP parameter name that carries the SPARQL query (default `query`). |

@@ -13,6 +13,8 @@ Release date: **unreleased**
 
 ## Bug Fixes
 
+* **Fixed redirects downgrading or leaking credentials**: with `request_max_redirect` set, a redirect could take a request to an `https://` endpoint to plain `http://`; it is now only followed to `https://`. libcurl before 7.83.0 also forwards Basic credentials and the Bearer token to a redirect that changes the port or scheme (CVE-2022-27774, CVE-2022-27776); with such a libcurl loaded, a request that has credentials and follows redirects is now refused before it is sent.
+
 * **Fixed HTTP header injection through option values**: a CR or LF in the `format` server option or in the `token` of a user mapping was sent as is, adding header lines of the user's choosing to the request -- or, through a proxy, a whole second request. Control characters are now rejected in every option whose value is sent in a request (`endpoint`, `update_url`, `format`, `custom`, `query_param`, `http_proxy`, `https_proxy`, `base_uri` and all user mapping options), and a header holding one is refused before the request is sent, which also covers values stored by earlier versions.
 
 * **Fixed SIGALRM conflict with libcurl's resolver**: libcurl can use PostgreSQL's SIGALRM for name lookup timeouts when built without an asynchronous resolver, interrupting PostgreSQL's own `statement_timeout` and `connect_timeout`. `CURLOPT_NOSIGNAL` is now set to prevent this.

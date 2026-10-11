@@ -5834,6 +5834,34 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 }
 
 /*
+ * URLSchemeIs
+ * -----------
+ * Tells whether a URL has the given scheme, compared case-insensitively. A URL
+ * that cannot be parsed has none.
+ *
+ * url: the URL to check
+ * scheme: the scheme, e.g. "https"
+ */
+static bool URLSchemeIs(const char *url, const char *scheme)
+{
+	CURLU *u = curl_url();
+	char *s = NULL;
+	bool result = false;
+
+	if (u == NULL)
+		return false;
+
+	if (curl_url_set(u, CURLUPART_URL, url, 0) == CURLUE_OK &&
+		curl_url_get(u, CURLUPART_SCHEME, &s, 0) == CURLUE_OK)
+		result = pg_strcasecmp(s, scheme) == 0;
+
+	curl_free(s);
+	curl_url_cleanup(u);
+
+	return result;
+}
+
+/*
  * ExecuteSPARQL
  * -------------
  * Executes the SPARQL query in the endpoint set in the CREATE FOREIGN TABLE
@@ -5993,8 +6021,42 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if (state->request_max_redirect > 0)
 		{
+			/*
+			 * libcurl before 7.83.0 forwards Basic credentials and a custom
+			 * Authorization header to a redirect that changes the port or the
+			 * scheme of the same host (CVE-2022-27774, CVE-2022-27776). Check
+			 * the library actually loaded, not the headers this was built
+			 * against: a shared libcurl can be swapped underneath.
+			 */
+			if ((state->user || state->token) &&
+				curl_version_info(CURLVERSION_NOW)->version_num < 0x075300)
+			{
+				CleanupRDFResources(state);
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_ERROR),
+						 errmsg("cannot follow redirects with credentials on server \"%s\"",
+								state->server->servername),
+						 errdetail("libcurl %s may send the credentials of a request to the target of a redirect.",
+								   curl_version_info(CURLVERSION_NOW)->version),
+						 errhint("Upgrade libcurl to 7.83.0 or later, or set request_max_redirect to 0.")));
+			}
+
 			elog(DEBUG2, "  %s: following redirects, maxredirs: %ld", __func__, state->request_max_redirect);
 			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+			/*
+			 * A redirect must not take a request to an https:// endpoint
+			 * back to plain HTTP, where the query and the answer -- and,
+			 * with older libcurl, the credentials -- could be read on the way.
+			 */
+			if (URLSchemeIs(state->endpoint, "https"))
+			{
+#if ((LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 85) || LIBCURL_VERSION_MAJOR < 7)
+				curl_easy_setopt(state->curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+#else
+				curl_easy_setopt(state->curl, CURLOPT_REDIR_PROTOCOLS_STR, "https");
+#endif
+			}
 
 			/* Never forward credentials to a redirected host */
 			curl_easy_setopt(state->curl, CURLOPT_UNRESTRICTED_AUTH, 0L);
@@ -6327,7 +6389,9 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
 						 errmsg("unable to connect to '%s'", state->server->servername),
-						 errdetail("%s (curl error code %u).", curl_err, res)));
+						 errdetail("%s (curl error code %u).", curl_err, res),
+						 res == CURLE_UNSUPPORTED_PROTOCOL && state->request_max_redirect > 0 ?
+						 errhint("Redirects are only followed to http:// and https:// URLs, and from an https:// endpoint only to https:// ones.") : 0));
 			}
 			else
 			{
