@@ -3,6 +3,8 @@ Release date: **unreleased**
 
 ## Enhancements
 
+* **Compressed responses**: requests now carry an `Accept-Encoding` header listing every encoding the linked libcurl can decode (`gzip`, `deflate`, and `br` or `zstd` where built in). SPARQL XML results compress very well, so large result sets transfer much faster from endpoints that support it. `max_response_size` applies to the decompressed size.
+
 * **Retry with backoff for throttled endpoints**: Endpoints that respond with `429 Too Many Requests`, `503 Service Unavailable`, or a proxy's `502 Bad Gateway` are now retried (up to `connect_retry` times), with an exponential backoff starting at 1 second and doubling between attempts (up to 5 minutes). The `Retry-After` header is respected when present. This allows large scans and `rdf_fdw_clone_table()` to continue when an endpoint throttles traffic or temporarily restarts.
 
 * **Documentation: joins on IRIs should use `~=`**: For performance-sensitive three-way joins of foreign tables with IRIs, using `~=` (term equality) instead of `=` (value equality) allows PostgreSQL to plan a merge join instead of a nested loop, often speeding up the query by orders of magnitude. The README now recommends this pattern.

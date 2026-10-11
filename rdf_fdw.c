@@ -6105,6 +6105,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		curl_easy_setopt(state->curl, CURLOPT_WRITEFUNCTION, CURLWriteMemoryCallback);
 		curl_easy_setopt(state->curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
+		/*
+		 * Offer every encoding this libcurl can decode: SPARQL XML compresses
+		 * very well. libcurl decodes before the write callback, so
+		 * max_response_size still limits the decoded size.
+		 */
+		curl_easy_setopt(state->curl, CURLOPT_ACCEPT_ENCODING, "");
+
 		/* Don't use CURLOPT_FAILONERROR so we can capture error response bodies */
 		curl_easy_setopt(state->curl, CURLOPT_FAILONERROR, 0L);
 
