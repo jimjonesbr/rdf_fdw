@@ -3,6 +3,8 @@ Release date: **unreleased**
 
 ## Enhancements
 
+* **Pushdown of `OR`**: `WHERE` conditions combining expressions with `OR` (and `AND` inside an `OR`) are now translated to SPARQL `||` and `&&` when every operand can be pushed down, instead of fetching the whole graph pattern and filtering locally. SQL's `NULL` and SPARQL's type error take the same part in `AND` and `OR`, so this selects the same rows at the endpoint as in PostgreSQL. An `OR` with any operand that cannot be pushed down is still evaluated locally as a whole, and a `LIMIT` can now be pushed down alongside a pushed `OR`.
+
 * **Compressed responses**: requests now carry an `Accept-Encoding` header listing every encoding the linked libcurl can decode (`gzip`, `deflate`, and `br` or `zstd` where built in). SPARQL XML results compress very well, so large result sets transfer much faster from endpoints that support it. `max_response_size` applies to the decompressed size.
 
 * **Retry with backoff for throttled endpoints**: Endpoints that respond with `429 Too Many Requests`, `503 Service Unavailable`, or a proxy's `502 Bad Gateway` are now retried (up to `connect_retry` times), with an exponential backoff starting at 1 second and doubling between attempts (up to 5 minutes). The `Retry-After` header is respected when present. This allows large scans and `rdf_fdw_clone_table()` to continue when an endpoint throttles traffic or temporarily restarts.

@@ -626,6 +626,8 @@ The following expressions in the `WHERE` clause are eligible for pushdown:
   
   SQL `IN`  and `ANY` constructs are translated into the SPARQL [`IN` operator](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-in), which will be placed in a [`FILTER` evaluation](https://www.w3.org/TR/2013/REC-sparql11-query-20130321/#evaluation), as long as the list has the supported data types.
 
+* `AND` and `OR`, when every operand can be pushed down, e.g. `WHERE sparql.contains(label, 'Berlin') OR sparql.contains(label, 'Bonn')` becomes `FILTER((CONTAINS(?label, "Berlin")) || (CONTAINS(?label, "Bonn")))`.
+
 * Nearly all supported [SPARQL functions](#sparql-functions) are pushdown-capable, including:
   * `LANG()`, `DATATYPE()`, `STR()`, `isBLANK()`, `isIRI()`, etc.
   * Numeric, string, and datetime functions such as `ROUND()`, `STRLEN()`, `YEAR()`, and others.
@@ -643,7 +645,7 @@ A `WHERE` condition will not be pushed down if:
   * solution modifiers like `OFFSET`, `ORDER BY`, `LIMIT`, `DISTINCT`, or `REDUCED`
   * subqueries or federated queries
 * The condition includes an unsupported data type or operator.
-* The condition contains `OR` logical operators (not yet supported).
+* The condition is an `OR` with an operand that cannot be pushed down. An `OR` is pushed down only as a whole.
 * The condition compares an `rdfnode` with a `date`, `time`, `time with time zone`, `timestamp` or `timestamp with time zone`. SPARQL only compares temporal terms of the same datatype and takes the timezone offset into account, while the PostgreSQL operator does neither, and endpoints disagree on what to do with terms that are not comparable. Evaluating these conditions locally keeps the result independent of the triplestore. Comparisons between two `rdfnode`s (e.g. `o > '"1996-01-01T00:00:00"^^xsd:dateTime'`), and between a column declared with a temporal type and a value of that type, are pushed down.
 
 ##### Pushdown Examples
@@ -828,6 +830,44 @@ INFO:  SPARQL returned 3 records.
  <http://www.wikidata.org/entity/Q5014224> | "CSQL"@de
  <http://www.wikidata.org/entity/Q6862049> | "Mimer SQL"@de
 (3 rows)
+```
+
+</details>
+
+<details>
+<summary>5. Pushdown of <code>WHERE</code> conditions with <code>OR</code></summary>
+
+An `OR` is pushed down as a single `FILTER` with `||` when all of its operands can be pushed down.
+
+```sql
+SELECT s, o FROM rdbms
+WHERE
+  p = '<http://www.w3.org/2000/01/rdf-schema#label>' AND
+  sparql.lang(o) = 'en' AND
+  (sparql.strstarts(sparql.str(o), 'Postgre') OR sparql.contains(sparql.str(o), 'Maria'));
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?s ?p ?o 
+{
+      ?s wdt:P31 wd:Q3932296 .
+	  ?s ?p ?o
+	 
+ ## rdf_fdw pushdown conditions ##
+ FILTER(?p = <http://www.w3.org/2000/01/rdf-schema#label>)
+ FILTER(LANG(?o) = "en")
+ FILTER((STRSTARTS(STR(?o), "Postgre")) || (CONTAINS(STR(?o), "Maria")))
+}
+
+INFO:  SPARQL returned 4 records.
+
+                     s                      |        o         
+--------------------------------------------+------------------
+ <http://www.wikidata.org/entity/Q192490>   | "PostgreSQL"@en
+ <http://www.wikidata.org/entity/Q787177>   | "MariaDB"@en
+ <http://www.wikidata.org/entity/Q30100408> | "Postgres-XL"@en
+ <http://www.wikidata.org/entity/Q30100559> | "Postgres-XC"@en
+(4 rows)
 ```
 
 </details>

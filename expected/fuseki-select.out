@@ -3503,6 +3503,170 @@ INFO:  SPARQL returned 5 records.
 (4 rows)
 
 DROP FOREIGN TABLE ft_not;
+/*
+ * An OR is sent to the endpoint when all of its operands can be. As above,
+ * each condition is run pushed down and evaluated locally, and the two must
+ * agree -- including for rows in which ?x is unbound.
+ */
+CREATE FOREIGN TABLE ft_or (
+  subject rdfnode OPTIONS (variable '?s'),
+  object  rdfnode OPTIONS (variable '?o'),
+  extra   rdfnode OPTIONS (variable '?x')
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}'
+);
+SELECT subject, object FROM ft_or
+WHERE object = 1::rdfnode OR sparql.isiri(object)
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}
+ ## rdf_fdw pushdown conditions ##
+ FILTER((?o = "1"^^<http://www.w3.org/2001/XMLSchema#int>) || (isIRI(?o)))
+}
+ORDER BY  ASC (?s)
+
+INFO:  SPARQL returned 2 records.
+
+         subject          |                   object                    
+--------------------------+---------------------------------------------
+ <http://rdf-fdw.test/n1> | "1"^^<http://www.w3.org/2001/XMLSchema#int>
+ <http://rdf-fdw.test/n5> | <http://rdf-fdw.test/iri>
+(2 rows)
+
+SELECT subject, object FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE object = 1::rdfnode OR sparql.isiri(object)
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}
+
+INFO:  SPARQL returned 5 records.
+
+         subject          |                   object                    
+--------------------------+---------------------------------------------
+ <http://rdf-fdw.test/n1> | "1"^^<http://www.w3.org/2001/XMLSchema#int>
+ <http://rdf-fdw.test/n5> | <http://rdf-fdw.test/iri>
+(2 rows)
+
+SELECT subject, object FROM ft_or
+WHERE sparql.isnumeric(object) AND (object < 2::rdfnode OR object > 3::rdfnode)
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}
+ ## rdf_fdw pushdown conditions ##
+ FILTER(ISNUMERIC(?o))
+ FILTER((?o < "2"^^<http://www.w3.org/2001/XMLSchema#int>) || (?o > "3"^^<http://www.w3.org/2001/XMLSchema#int>))
+}
+ORDER BY  ASC (?s)
+
+INFO:  SPARQL returned 2 records.
+
+         subject          |                   object                    
+--------------------------+---------------------------------------------
+ <http://rdf-fdw.test/n1> | "1"^^<http://www.w3.org/2001/XMLSchema#int>
+ <http://rdf-fdw.test/n2> | "5"^^<http://www.w3.org/2001/XMLSchema#int>
+(2 rows)
+
+SELECT subject, object FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE sparql.isnumeric(object) AND (object < 2::rdfnode OR object > 3::rdfnode)
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}
+
+INFO:  SPARQL returned 5 records.
+
+         subject          |                   object                    
+--------------------------+---------------------------------------------
+ <http://rdf-fdw.test/n1> | "1"^^<http://www.w3.org/2001/XMLSchema#int>
+ <http://rdf-fdw.test/n2> | "5"^^<http://www.w3.org/2001/XMLSchema#int>
+(2 rows)
+
+SELECT subject, object, extra FROM ft_or
+WHERE (sparql.isnumeric(object) AND object > 2::rdfnode) OR NOT sparql.isiri(extra)
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o ?x 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}
+ ## rdf_fdw pushdown conditions ##
+ FILTER(((ISNUMERIC(?o)) && (?o > "2"^^<http://www.w3.org/2001/XMLSchema#int>)) || ((!(COALESCE(isIRI(?x), false)))))
+}
+ORDER BY  ASC (?s)
+
+INFO:  SPARQL returned 4 records.
+
+         subject          |                      object                       | extra  
+--------------------------+---------------------------------------------------+--------
+ <http://rdf-fdw.test/n2> | "5"^^<http://www.w3.org/2001/XMLSchema#int>       | "lit"
+ <http://rdf-fdw.test/n3> | "2.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | (null)
+ <http://rdf-fdw.test/n4> | "abc"                                             | (null)
+ <http://rdf-fdw.test/n5> | <http://rdf-fdw.test/iri>                         | (null)
+(4 rows)
+
+SELECT subject, object, extra FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE (sparql.isnumeric(object) AND object > 2::rdfnode) OR NOT sparql.isiri(extra)
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o ?x 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}
+
+INFO:  SPARQL returned 5 records.
+
+         subject          |                      object                       | extra  
+--------------------------+---------------------------------------------------+--------
+ <http://rdf-fdw.test/n2> | "5"^^<http://www.w3.org/2001/XMLSchema#int>       | "lit"
+ <http://rdf-fdw.test/n3> | "2.5"^^<http://www.w3.org/2001/XMLSchema#decimal> | (null)
+ <http://rdf-fdw.test/n4> | "abc"                                             | (null)
+ <http://rdf-fdw.test/n5> | <http://rdf-fdw.test/iri>                         | (null)
+(4 rows)
+
+SELECT subject, object FROM ft_or
+WHERE sparql.contains(object, 'b') OR sparql.contains(sparql.str(object), 'iri')
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}
+ ## rdf_fdw pushdown conditions ##
+ FILTER((CONTAINS(?o, "b")) || (CONTAINS(STR(?o), "iri")))
+}
+ORDER BY  ASC (?s)
+
+INFO:  SPARQL returned 2 records.
+
+         subject          |          object           
+--------------------------+---------------------------
+ <http://rdf-fdw.test/n4> | "abc"
+ <http://rdf-fdw.test/n5> | <http://rdf-fdw.test/iri>
+(2 rows)
+
+SELECT subject, object FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE sparql.contains(object, 'b') OR sparql.contains(sparql.str(object), 'iri')
+ORDER BY subject;
+INFO:  SPARQL query sent to 'fuseki':
+
+SELECT ?s ?o 
+{?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}
+
+INFO:  SPARQL returned 5 records.
+
+         subject          |          object           
+--------------------------+---------------------------
+ <http://rdf-fdw.test/n4> | "abc"
+ <http://rdf-fdw.test/n5> | <http://rdf-fdw.test/iri>
+(2 rows)
+
+DROP FOREIGN TABLE ft_or;
 /* cleanup */
 DELETE FROM ft;
 INFO:  SPARQL query sent to 'fuseki':

@@ -926,6 +926,55 @@ ORDER BY subject;
 
 DROP FOREIGN TABLE ft_not;
 
+/*
+ * An OR is sent to the endpoint when all of its operands can be. As above,
+ * each condition is run pushed down and evaluated locally, and the two must
+ * agree -- including for rows in which ?x is unbound.
+ */
+CREATE FOREIGN TABLE ft_or (
+  subject rdfnode OPTIONS (variable '?s'),
+  object  rdfnode OPTIONS (variable '?o'),
+  extra   rdfnode OPTIONS (variable '?x')
+)
+SERVER fuseki OPTIONS (
+  log_sparql 'true',
+  sparql 'SELECT * WHERE {?s <http://rdf-fdw.test/not> ?o OPTIONAL {?s <http://rdf-fdw.test/extra> ?x}}'
+);
+
+SELECT subject, object FROM ft_or
+WHERE object = 1::rdfnode OR sparql.isiri(object)
+ORDER BY subject;
+
+SELECT subject, object FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE object = 1::rdfnode OR sparql.isiri(object)
+ORDER BY subject;
+
+SELECT subject, object FROM ft_or
+WHERE sparql.isnumeric(object) AND (object < 2::rdfnode OR object > 3::rdfnode)
+ORDER BY subject;
+
+SELECT subject, object FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE sparql.isnumeric(object) AND (object < 2::rdfnode OR object > 3::rdfnode)
+ORDER BY subject;
+
+SELECT subject, object, extra FROM ft_or
+WHERE (sparql.isnumeric(object) AND object > 2::rdfnode) OR NOT sparql.isiri(extra)
+ORDER BY subject;
+
+SELECT subject, object, extra FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE (sparql.isnumeric(object) AND object > 2::rdfnode) OR NOT sparql.isiri(extra)
+ORDER BY subject;
+
+SELECT subject, object FROM ft_or
+WHERE sparql.contains(object, 'b') OR sparql.contains(sparql.str(object), 'iri')
+ORDER BY subject;
+
+SELECT subject, object FROM (SELECT * FROM ft_or OFFSET 0) local
+WHERE sparql.contains(object, 'b') OR sparql.contains(sparql.str(object), 'iri')
+ORDER BY subject;
+
+DROP FOREIGN TABLE ft_or;
+
 /* cleanup */
 DELETE FROM ft;
 DROP SERVER server_invalid_url CASCADE;

@@ -7715,8 +7715,45 @@ static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr
 			return psprintf("(!(%s))", inner);
 		}
 
-		/* Todo: OR_EXPR and AND_EXPR will be added here in the future */
-		return NULL;
+		/*
+		 * AND and OR are pushed down when every one of their operands is.
+		 * SQL's NULL and SPARQL's type error take the same part in them --
+		 * TRUE || error is TRUE, FALSE || error an error, FALSE && error
+		 * FALSE -- so whether the whole is TRUE depends only on which
+		 * operands are TRUE, in both languages. An operand that selects the
+		 * same rows at the endpoint as here, which is what pushing it down
+		 * on its own already requires, therefore does so under an AND or an
+		 * OR as well. A NOT does not have this property; see above.
+		 *
+		 * Only an AND inside an OR, or one the planner did not flatten,
+		 * reaches this point: a top-level AND is split into separate
+		 * conditions, each pushed down or evaluated locally on its own.
+		 */
+		initStringInfo(&result);
+
+		foreach (cell, boolexpr->args)
+		{
+			char *operand = DeparseExpr(state, foreignrel, (Expr *) lfirst(cell));
+
+			/* if one operand is not pushable, neither is the whole */
+			if (operand == NULL)
+			{
+				elog(DEBUG2, "%s [T_BoolExpr]: returning NULL (operand cannot be pushed down)", __func__);
+				return NULL;
+			}
+
+			if (cell != list_head(boolexpr->args))
+				appendStringInfoString(&result,
+									   boolexpr->boolop == AND_EXPR ? " && " : " || ");
+
+			appendStringInfo(&result, "(%s)", operand);
+		}
+
+		/*
+		 * No parentheses around the whole: whatever receives it -- FILTER(),
+		 * a NOT, or an enclosing AND or OR -- parenthesises it already.
+		 */
+		return result.data;
 	case T_OpExpr:
 		elog(DEBUG2, "%s [T_OpExpr]: start (expr->type='%u')", __func__, expr->type);
 		oper = (OpExpr *)expr;

@@ -1733,4 +1733,66 @@ SELECT o FROM not_ft WHERE NOT sparql.bound(x);
 
 DROP FOREIGN TABLE not_ft;
 
+/* ================================================================
+ * AND / OR
+ * ================================================================ */
+
+/* An OR is pushed down when every one of its operands is, as is an AND
+ * inside it. SQL's NULL and SPARQL's type error take the same part in both,
+ * so an operand selects the same rows in either place under an AND or an OR
+ * whenever it does so on its own. */
+CREATE FOREIGN TABLE or_ft (
+  o rdfnode OPTIONS (variable '?o'),
+  x rdfnode OPTIONS (variable '?x')
+)
+SERVER test_server OPTIONS (
+  sparql 'SELECT * WHERE {<http://example.org/s> ?p ?o OPTIONAL {?o <http://foo.bar> ?x}}');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft WHERE o = 1::rdfnode OR o = 5::rdfnode;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft WHERE sparql.isiri(o) OR sparql.isblank(o) OR sparql.bound(x);
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft
+WHERE sparql.langmatches(sparql.lang(o), 'en') OR
+      sparql.langmatches(sparql.lang(o), 'de');
+
+/* an AND inside an OR, and an OR inside a top-level AND */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft
+WHERE (sparql.isnumeric(o) AND o > 2::rdfnode) OR
+      (sparql.isliteral(o) AND sparql.lang(o) = 'en');
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft
+WHERE sparql.isnumeric(o) AND (o < 2::rdfnode OR o > 3::rdfnode);
+
+/* a NOT inside an OR follows its own rules (see the NOT section) */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft WHERE NOT sparql.isiri(x) OR o = 1::rdfnode;
+
+/* the planner applies De Morgan's laws to a NOT over an OR, and the
+ * resulting conditions are pushed down one by one */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft WHERE NOT (sparql.isiri(o) OR sparql.isblank(o));
+
+/* evaluated locally: one operand cannot be pushed down, so neither can the
+ * OR, while the conditions beside it still are */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft WHERE o = 1::rdfnode OR x IS NULL;
+
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft
+WHERE sparql.isliteral(o) AND (o = 1::rdfnode OR o::text LIKE '%xyz%');
+
+/* with the OR pushed down, nothing is left to evaluate locally, so the LIMIT
+ * can be pushed down too */
+EXPLAIN (VERBOSE, COSTS OFF)
+SELECT o FROM or_ft WHERE o = 1::rdfnode OR o = 5::rdfnode
+LIMIT 3;
+
+DROP FOREIGN TABLE or_ft;
+
 DROP SERVER test_server CASCADE;
