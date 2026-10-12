@@ -1776,7 +1776,6 @@ SELECT ?p ?o
  FILTER(YEAR(?o) >= YEAR("1996-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(YEAR(?o) <= YEAR("1996-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(YEAR(?o) = 1996)
- FILTER(YEAR("1996-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 1996)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1816,7 +1815,6 @@ SELECT ?p ?o
  FILTER(MONTH(?o) >= MONTH("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MONTH(?o) <= MONTH("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MONTH(?o) = 7)
- FILTER(MONTH("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 7)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1856,7 +1854,6 @@ SELECT ?p ?o
  FILTER(DAY(?o) >= DAY("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(DAY(?o) <= DAY("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(DAY(?o) = 8)
- FILTER(DAY("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 8)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1895,7 +1892,6 @@ SELECT ?p ?o
  FILTER(HOURS(?o) >= HOURS("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(HOURS(?o) <= HOURS("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(HOURS(?o) = 0)
- FILTER(HOURS("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 0)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1934,7 +1930,6 @@ SELECT ?p ?o
  FILTER(MINUTES(?o) >= MINUTES("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MINUTES(?o) <= MINUTES("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MINUTES(?o) = 0)
- FILTER(MINUTES("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 0)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1973,7 +1968,6 @@ SELECT ?p ?o
  FILTER(SECONDS(?o) >= SECONDS("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(SECONDS(?o) <= SECONDS("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(SECONDS(?o) = 0)
- FILTER(SECONDS("1996-07-08T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 0)
 }
 
 INFO:  SPARQL returned 1 record.

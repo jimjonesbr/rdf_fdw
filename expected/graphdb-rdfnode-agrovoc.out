@@ -1766,7 +1766,6 @@ SELECT ?p ?o
  FILTER(YEAR(?o) >= YEAR("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(YEAR(?o) <= YEAR("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(YEAR(?o) = 2011)
- FILTER(YEAR("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 2011)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1806,7 +1805,6 @@ SELECT ?p ?o
  FILTER(MONTH(?o) >= MONTH("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MONTH(?o) <= MONTH("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MONTH(?o) = 11)
- FILTER(MONTH("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 11)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1846,7 +1844,6 @@ SELECT ?p ?o
  FILTER(DAY(?o) >= DAY("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(DAY(?o) <= DAY("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(DAY(?o) = 20)
- FILTER(DAY("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 20)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1886,7 +1883,6 @@ SELECT ?p ?o
  FILTER(HOURS(?o) >= HOURS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(HOURS(?o) <= HOURS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(HOURS(?o) = 20)
- FILTER(HOURS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 20)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1926,7 +1922,6 @@ SELECT ?p ?o
  FILTER(MINUTES(?o) >= MINUTES("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MINUTES(?o) <= MINUTES("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MINUTES(?o) = 44)
- FILTER(MINUTES("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 44)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1966,7 +1961,6 @@ SELECT ?p ?o
  FILTER(SECONDS(?o) >= SECONDS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(SECONDS(?o) <= SECONDS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(SECONDS(?o) = 42)
- FILTER(SECONDS("2011-11-20T20:44:42Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 42)
 }
 
 INFO:  SPARQL returned 1 record.

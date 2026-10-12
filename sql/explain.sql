@@ -199,4 +199,40 @@ DROP SERVER long_context_server CASCADE;
 DELETE FROM sparql.prefixes WHERE context = :'long_context';
 DELETE FROM sparql.prefix_contexts WHERE context = :'long_context';
 
+/*
+ * Pseudoconstant conditions read no column of the table, e.g. a comparison
+ * with now(). PostgreSQL checks them once, in a Result node above the scan
+ * ("One-Time Filter"). They are neither sent to the endpoint nor repeated in
+ * the scan's own Filter, and they do not keep a LIMIT from being pushed down.
+ */
+CREATE FOREIGN TABLE pc_ft (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 'SELECT * {wd:Q192490 ?p ?o}',
+  enable_pushdown 'true'
+);
+
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE now() > '2000-01-01';
+
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE now() > '2000-01-01'
+LIMIT 5;
+
+/* next to a condition that is pushed down */
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE sparql.isnumeric(o) AND now() > '2000-01-01'
+LIMIT 5;
+
+/* next to a condition that is not: the LIMIT stays local */
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE p::text ~ 'a' AND now() > '2000-01-01'
+LIMIT 5;
+
 DROP SERVER wikidata CASCADE;

@@ -1687,7 +1687,6 @@ SELECT ?p ?o
  FILTER(YEAR(?o) >= YEAR("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(YEAR(?o) <= YEAR("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(YEAR(?o) = 2015)
- FILTER(YEAR("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 2015)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1727,7 +1726,6 @@ SELECT ?p ?o
  FILTER(MONTH(?o) >= MONTH("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MONTH(?o) <= MONTH("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MONTH(?o) = 7)
- FILTER(MONTH("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 7)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1767,7 +1765,6 @@ SELECT ?p ?o
  FILTER(DAY(?o) >= DAY("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(DAY(?o) <= DAY("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(DAY(?o) = 12)
- FILTER(DAY("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 12)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1807,7 +1804,6 @@ SELECT ?p ?o
  FILTER(HOURS(?o) >= HOURS("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(HOURS(?o) <= HOURS("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(HOURS(?o) = 20)
- FILTER(HOURS("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 20)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1847,7 +1843,6 @@ SELECT ?p ?o
  FILTER(MINUTES(?o) >= MINUTES("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MINUTES(?o) <= MINUTES("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(MINUTES(?o) = 41)
- FILTER(MINUTES("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 41)
 }
 
 INFO:  SPARQL returned 1 record.
@@ -1887,7 +1882,6 @@ SELECT ?p ?o
  FILTER(SECONDS(?o) >= SECONDS("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(SECONDS(?o) <= SECONDS("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER(SECONDS(?o) = 25)
- FILTER(SECONDS("2015-07-12T20:41:25"^^<http://www.w3.org/2001/XMLSchema#dateTime>) = 25)
 }
 
 INFO:  SPARQL returned 1 record.

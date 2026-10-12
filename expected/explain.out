@@ -431,9 +431,89 @@ DROP SERVER long_context_server CASCADE;
 NOTICE:  drop cascades to foreign table long_context_ft
 DELETE FROM sparql.prefixes WHERE context = :'long_context';
 DELETE FROM sparql.prefix_contexts WHERE context = :'long_context';
+/*
+ * Pseudoconstant conditions read no column of the table, e.g. a comparison
+ * with now(). PostgreSQL checks them once, in a Result node above the scan
+ * ("One-Time Filter"). They are neither sent to the endpoint nor repeated in
+ * the scan's own Filter, and they do not keep a LIMIT from being pushed down.
+ */
+CREATE FOREIGN TABLE pc_ft (
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o')
+)
+SERVER wikidata OPTIONS (
+  sparql 'SELECT * {wd:Q192490 ?p ?o}',
+  enable_pushdown 'true'
+);
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE now() > '2000-01-01';
+                                      QUERY PLAN                                       
+---------------------------------------------------------------------------------------
+ Result
+   One-Time Filter: (now() > 'Sat Jan 01 00:00:00 2000 PST'::timestamp with time zone)
+   ->  Foreign Scan on pc_ft
+         Foreign Server: wikidata
+         Pushdown: enabled
+         Remote Select: ?p ?o 
+(6 rows)
+
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE now() > '2000-01-01'
+LIMIT 5;
+                                         QUERY PLAN                                          
+---------------------------------------------------------------------------------------------
+ Limit
+   ->  Result
+         One-Time Filter: (now() > 'Sat Jan 01 00:00:00 2000 PST'::timestamp with time zone)
+         ->  Foreign Scan on pc_ft
+               Foreign Server: wikidata
+               Pushdown: enabled
+               Remote Select: ?p ?o 
+               Remote Limit: LIMIT 5
+(8 rows)
+
+/* next to a condition that is pushed down */
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE sparql.isnumeric(o) AND now() > '2000-01-01'
+LIMIT 5;
+                                         QUERY PLAN                                          
+---------------------------------------------------------------------------------------------
+ Limit
+   ->  Result
+         One-Time Filter: (now() > 'Sat Jan 01 00:00:00 2000 PST'::timestamp with time zone)
+         ->  Foreign Scan on pc_ft
+               Foreign Server: wikidata
+               Pushdown: enabled
+               Remote Select: ?p ?o 
+               Remote Filter: ((ISNUMERIC(?o)))
+               Remote Limit: LIMIT 5
+(9 rows)
+
+/* next to a condition that is not: the LIMIT stays local */
+EXPLAIN (COSTS OFF)
+SELECT p, o FROM pc_ft
+WHERE p::text ~ 'a' AND now() > '2000-01-01'
+LIMIT 5;
+                                         QUERY PLAN                                          
+---------------------------------------------------------------------------------------------
+ Limit
+   ->  Result
+         One-Time Filter: (now() > 'Sat Jan 01 00:00:00 2000 PST'::timestamp with time zone)
+         ->  Foreign Scan on pc_ft
+               Filter: ((p)::text ~ 'a'::text)
+               Foreign Server: wikidata
+               Pushdown: enabled
+               Remote Select: ?p ?o 
+               Remote Filter: not pushable
+(9 rows)
+
 DROP SERVER wikidata CASCADE;
-NOTICE:  drop cascades to 4 other objects
+NOTICE:  drop cascades to 5 other objects
 DETAIL:  drop cascades to foreign table ft
 drop cascades to foreign table ft_quoted_limit
 drop cascades to foreign table ft_plain
 drop cascades to foreign table ft_values
+drop cascades to foreign table pc_ft

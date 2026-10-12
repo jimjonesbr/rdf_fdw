@@ -3418,6 +3418,16 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 		{
 			RestrictInfo *ri = lfirst_node(RestrictInfo, cell);
 
+			/*
+			 * Pseudoconstant conditions are left out, as the FDW API asks
+			 * (extract_actual_clauses() does the same for built-in scans):
+			 * the planner already checks them once in a Result node above
+			 * this scan, so adding them to the scan's own filter would only
+			 * check them again for every row.
+			 */
+			if (ri->pseudoconstant)
+				continue;
+
 			elog(DEBUG2, "%s: examining condition, remote_conds=%s", __func__,
 				 state->remote_conds ? "NOT_NULL" : "NULL");
 
@@ -8861,9 +8871,18 @@ static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *ba
 	foreach (cell, conditions)
 	{
 		RestrictInfo *ri = (RestrictInfo *)lfirst(cell);
+		char *where;
+
+		/*
+		 * Pseudoconstant: checked once by PostgreSQL above the scan; neither
+		 * sent nor counted as a local condition, which would keep a LIMIT
+		 * from being pushed down.
+		 */
+		if (ri->pseudoconstant)
+			continue;
 
 		/* deparse expression for pushdown */
-		char *where = DeparseExpr(state, baserel, ri->clause);
+		where = DeparseExpr(state, baserel, ri->clause);
 
 		if (where != NULL)
 		{

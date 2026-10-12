@@ -3,6 +3,8 @@ Release date: **unreleased**
 
 ## Enhancements
 
+* **`LIMIT` pushed down next to conditions that read no column**: `LIMIT` is now pushed down next to conditions that read no column of the table, such as `WHERE now() > '2000-01-01'`, which PostgreSQL checks once above the scan.
+
 * **Pushdown of `OR`**: `WHERE` conditions combining expressions with `OR` (and `AND` inside an `OR`) are now translated to SPARQL `||` and `&&` when every operand can be pushed down, instead of fetching the whole graph pattern and filtering locally. SQL's `NULL` and SPARQL's type error take the same part in `AND` and `OR`, so this selects the same rows at the endpoint as in PostgreSQL. An `OR` with any operand that cannot be pushed down is still evaluated locally as a whole, and a `LIMIT` can now be pushed down alongside a pushed `OR`.
 
 * **Compressed responses**: requests now carry an `Accept-Encoding` header listing every encoding the linked libcurl can decode (`gzip`, `deflate`, and `br` or `zstd` where built in). SPARQL XML results compress very well, so large result sets transfer much faster from endpoints that support it. `max_response_size` applies to the decompressed size.
