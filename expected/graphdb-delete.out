@@ -473,25 +473,11 @@ ERROR:  foreign table "ft" does not allow deletes
 /* invalid triple patterns */
 ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
 DELETE FROM ft;
-INFO:  SPARQL query sent to 'graphdb':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o}
-
-INFO:  SPARQL returned 71 records.
-
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
 ERROR:  empty value in option 'sparql_update_pattern'
 DELETE FROM ft;
-INFO:  SPARQL query sent to 'graphdb':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o}
-
-INFO:  SPARQL returned 71 records.
-
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 /* invalid data type */
@@ -500,16 +486,6 @@ ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 DELETE FROM ft WHERE predicate = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#value>'; -- should fail, predicate column is now text, not rdfnode
 WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
 HINT:  Use the "rdfnode" type instead.
-INFO:  SPARQL query sent to 'graphdb':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o
- ## rdf_fdw pushdown conditions ##
- FILTER(?p = <http://www.w3.org/1999/02/22-rdf-syntax-ns#value>)
-}
-
-INFO:  SPARQL returned 0 records.
-
 WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
 HINT:  Use the "rdfnode" type instead.
 ERROR:  invalid data type for DELETE on column "predicate"

@@ -558,25 +558,11 @@ ERROR:  foreign table "ft" does not allow updates
 /* invalid triple patterns */
 ALTER FOREIGN TABLE ft OPTIONS (ADD sparql_update_pattern '?s ?p .'); -- missing object variable
 UPDATE ft SET object = '"foo"@en';
-INFO:  SPARQL query sent to 'qlever':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o}
-
-INFO:  SPARQL returned 2 records.
-
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 ALTER FOREIGN TABLE ft OPTIONS (SET sparql_update_pattern ''); -- empty pattern
 ERROR:  empty value in option 'sparql_update_pattern'
 UPDATE ft SET object = '"foo"@en';
-INFO:  SPARQL query sent to 'qlever':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o}
-
-INFO:  SPARQL returned 2 records.
-
 ERROR:  'sparql_update_pattern' contains no valid triple patterns
 HINT:  A triple pattern requires at least three components (subject, predicate, object), e.g., '?s ?p ?o .'.
 /* invalid data type */
@@ -585,13 +571,6 @@ ALTER FOREIGN TABLE ft ALTER COLUMN predicate TYPE text;
 UPDATE ft SET object = '"foo"@en';
 WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
 HINT:  Use the "rdfnode" type instead.
-INFO:  SPARQL query sent to 'qlever':
-
-SELECT ?s ?p ?o 
-{?s ?p ?o}
-
-INFO:  SPARQL returned 2 records.
-
 WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: predicate
 HINT:  Use the "rdfnode" type instead.
 ERROR:  invalid data type for UPDATE on column "predicate"

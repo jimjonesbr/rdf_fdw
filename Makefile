@@ -64,7 +64,8 @@ REGRESS +=  create-extension \
 			sparql-functions \
 			privileges \
 			encoding \
-			http-security
+			http-security \
+			scan-execution
 
 #
 # The tests above need nothing but a PostgreSQL server, and are the ones that

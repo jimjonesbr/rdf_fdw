@@ -3485,9 +3485,15 @@ static void rdfBeginForeignScan(ForeignScanState *node, int eflags)
 	state->server = GetForeignServer(GetForeignTable(state->foreigntableid)->serverid);
 	LoadRDFUserMapping(state, userid);
 
-	elog(DEBUG2, "%s: initializing XML parser", __func__);
-
-	LoadRDFData(state);
+	/*
+	 * The query is not sent here but on the first call to
+	 * rdfIterateForeignScan(). The executor initialises every node of a plan
+	 * before it reads a single row, including scans it may never read from:
+	 * the scan beneath a one-time filter that turns out false, the inner side
+	 * of a join whose outer side is empty, a cursor that is declared but not
+	 * fetched from. Sending the query here would download a result, or fail
+	 * on an unreachable endpoint, for a scan that returns nothing to anyone.
+	 */
 	state->rowcount = 0;
 	node->fdw_state = (void *)state;
 }
@@ -3543,6 +3549,21 @@ static TupleTableSlot *rdfIterateForeignScan(ForeignScanState *node)
 
 	elog(DEBUG3, "%s called", __func__);
 
+	/*
+	 * The first row asked for is the moment to send the query (see
+	 * rdfBeginForeignScan); until then, no document has been parsed. The
+	 * executor calls this function in a context it resets for every row,
+	 * while the result has to last for the whole scan, so it is loaded in the
+	 * query's context, which also holds the state the result is attached to.
+	 */
+	if (state->xmldoc == NULL)
+	{
+		MemoryContext oldcontext = MemoryContextSwitchTo(node->ss.ps.state->es_query_cxt);
+
+		LoadRDFData(state);
+		MemoryContextSwitchTo(oldcontext);
+	}
+
 	elog(DEBUG3, "  %s: rowcount = %d | pagesize = %d", __func__, state->rowcount, state->pagesize);
 
 	if (state->rowcount >= state->pagesize)
@@ -3567,8 +3588,11 @@ static void rdfReScanForeignScan(ForeignScanState *node)
     /*
      * Reset the row cursor so IterateForeignScan replays from the start of
      * the already-fetched result page.  The fetched records list is NOT
-     * cleared because rdf_fdw batches the entire SPARQL result set into
-     * memory during BeginForeignScan; there is nothing to re-fetch.
+     * cleared because rdf_fdw keeps the entire SPARQL result set in memory
+     * once the first row is asked for; there is nothing to re-fetch.  Nothing
+     * the query depends on can change between scans, as no parameters are
+     * pushed down.  A scan rewound before its first row simply has nothing
+     * loaded yet, and loads it when that row is asked for.
      */
     if (state)
         state->rowcount = 0;
