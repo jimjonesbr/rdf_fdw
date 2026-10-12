@@ -6057,33 +6057,13 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 		if (state->request_max_redirect > 0)
 		{
-			/*
-			 * libcurl before 7.83.0 forwards Basic credentials and a custom
-			 * Authorization header to a redirect that changes the port or the
-			 * scheme of the same host (CVE-2022-27774, CVE-2022-27776). Check
-			 * the library actually loaded, not the headers this was built
-			 * against: a shared libcurl can be swapped underneath.
-			 */
-			if ((state->user || state->token) &&
-				curl_version_info(CURLVERSION_NOW)->version_num < 0x075300)
-			{
-				CleanupRDFResources(state);
-				ereport(ERROR,
-						(errcode(ERRCODE_FDW_ERROR),
-						 errmsg("cannot follow redirects with credentials on server \"%s\"",
-								state->server->servername),
-						 errdetail("libcurl %s may send the credentials of a request to the target of a redirect.",
-								   curl_version_info(CURLVERSION_NOW)->version),
-						 errhint("Upgrade libcurl to 7.83.0 or later, or set request_max_redirect to 0.")));
-			}
-
 			elog(DEBUG2, "  %s: following redirects, maxredirs: %ld", __func__, state->request_max_redirect);
 			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 			/*
 			 * A redirect must not take a request to an https:// endpoint
-			 * back to plain HTTP, where the query and the answer -- and,
-			 * with older libcurl, the credentials -- could be read on the way.
+			 * back to plain HTTP, where the query and the answer could be
+			 * read on the way.
 			 */
 			if (URLSchemeIs(state->endpoint, "https"))
 			{
