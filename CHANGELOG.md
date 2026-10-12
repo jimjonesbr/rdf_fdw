@@ -9,11 +9,13 @@ Release date: **unreleased**
 
 * **Compressed responses**: requests now carry an `Accept-Encoding` header listing every encoding the linked libcurl can decode (`gzip`, `deflate`, and `br` or `zstd` where built in). SPARQL XML results compress very well, so large result sets transfer much faster from endpoints that support it. `max_response_size` applies to the decompressed size.
 
-* **Retry with backoff for throttled endpoints**: Endpoints that respond with `429 Too Many Requests`, `503 Service Unavailable`, or a proxy's `502 Bad Gateway` are now retried (up to `connect_retry` times), with an exponential backoff starting at 1 second and doubling between attempts (up to 5 minutes). The `Retry-After` header is respected when present. This allows large scans and `rdf_fdw_clone_table()` to continue when an endpoint throttles traffic or temporarily restarts.
+* **Retry with backoff**: endpoints that respond with `429 Too Many Requests`, `503 Service Unavailable`, or a proxy's `502 Bad Gateway` are now retried (up to `connect_retry` times), waiting what the `Retry-After` header asks for, or otherwise 5 seconds, doubling between attempts (each wait at most 5 minutes). Requests that got no answer at all are retried after 1 second, doubling as well, instead of immediately, so an unreachable endpoint now takes a few seconds to report its error. `INSERT`, `UPDATE` and `DELETE` are retried too, which is safe as they are sent as `INSERT DATA` and `DELETE DATA` without blank nodes. This allows large scans and `rdf_fdw_clone_table()` to continue when an endpoint throttles traffic or temporarily restarts.
 
 * **Documentation: joins on IRIs should use `~=`**: For performance-sensitive three-way joins of foreign tables with IRIs, using `~=` (term equality) instead of `=` (value equality) allows PostgreSQL to plan a merge join instead of a nested loop, often speeding up the query by orders of magnitude. The README now recommends this pattern.
 
 ## Breaking Changes
+
+* **Queries through views use the view owner's user mapping**: for a foreign table queried through a view, rdf_fdw now sends the credentials of the role the permissions are checked as -- the view owner, unless the view is `security_invoker` -- as `postgres_fdw` does. It used to send those of the role querying the view, or none if that role had no user mapping. Roles that query a view owned by another role now use that role's credentials; a role that relied on its own user mapping for such a view needs a mapping for the view owner instead.
 
 * **New `User-Agent`**: requests now identify themselves as `rdf_fdw/<version> (+https://github.com/jimjonesbr/rdf_fdw)`. The previous `User-Agent` disclosed the exact versions of PostgreSQL, libxml2, libcurl, the TLS library, zlib, libssh2 and others to every SPARQL endpoint and proxy on the way, telling them which known vulnerabilities to try. `rdf_fdw_settings` still reports those versions locally. Endpoints or proxies that filter on the old `User-Agent` need to be adjusted.
 
@@ -37,11 +39,9 @@ Release date: **unreleased**
 
 * **Fixed retry on proxy CONNECT failure**: When a proxy refused a CONNECT tunnel (e.g., HTTP 407 for auth), the request was retried as a network error. The proxy's response is now treated as an HTTP status and not retried, reporting the error immediately.
 
-* **Fixed crash on request cancellation**: Canceling a request from inside libcurl's callback (e.g., via `statement_timeout`) caused the handle to leak sockets because libcurl's cleanup refused to proceed. The interrupt is now serviced after `curl_easy_perform()` returns.
+* **Fixed sockets leaked by canceled requests**: canceling a request (e.g. via `statement_timeout`) raised the error from inside libcurl's progress callback, after which libcurl refused to release the handle's connections, so every canceled request leaked its sockets. The interrupt is now serviced after `curl_easy_perform()` returns.
 
 * **Fixed build with libcurl older than 7.66**: The `nghttp2_version` field is only available in libcurl 7.66+. Older versions now build successfully without nghttp2 reporting.
-
-* **Fixed user mapping lookup for queries through views**: Queries on a foreign table through a view were using the current user's mapping instead of the view owner's, causing authentication failures. The user mapping is now looked up based on the permission check role (as `postgres_fdw` does).
 
 * **Fixed credentials in query plan**: User mapping credentials (password, token, proxy credentials) were stored in the query plan at planning time, causing cached plans to continue using old credentials. Credentials are now loaded at scan time and not serialized into the plan.
 
