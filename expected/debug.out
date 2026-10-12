@@ -147,10 +147,6 @@ DEBUG:  DeserializePlanData called
 DEBUG:  DeserializePlanData exit
 DEBUG:  LoadRDFUserMapping called
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  LoadRDFData called
-DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -160,6 +156,10 @@ DEBUG:  LoadRDFUserMapping called
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
 DEBUG:  rdfBeginForeignModify exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfExecForeignUpdate called
 DEBUG:  rdfExecForeignUpdate: added row to batch (1/50)
 DEBUG:  rdfExecForeignUpdate exit
@@ -213,10 +213,6 @@ DEBUG:  DeserializePlanData called
 DEBUG:  DeserializePlanData exit
 DEBUG:  LoadRDFUserMapping called
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  LoadRDFData called
-DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -226,6 +222,10 @@ DEBUG:  LoadRDFUserMapping called
 DEBUG:  LoadRDFUserMapping exit
 DEBUG:  ExtractSPARQLPrefixes called
 DEBUG:  rdfBeginForeignModify exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfEndForeignModify called
 DEBUG:  FlushSPARQLStatements: flushing batch of 2 statement(s)
 DEBUG:  ExecuteSPARQL called for DELETE operation
@@ -615,7 +615,6 @@ DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
@@ -865,22 +864,6 @@ DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
-DEBUG:  LoadRDFData called
-DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: connect_timeout > 300
-DEBUG:    ExecuteSPARQL: request_timeout > 0
-DEBUG:    ExecuteSPARQL: max retry > 3
-DEBUG:    ExecuteSPARQL: redirects disabled
-DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
-DEBUG:  ExecuteSPARQL: http response code = 200
-DEBUG:  ExecuteSPARQL: http response size = 545
-DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:    LoadRDFData: loading 'xmlroot'
-DEBUG:    LoadRDFData: appending record 1
-DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -924,6 +907,21 @@ DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 545
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  unescape_unicode: Input='Westfälische Wilhelms-Universität Münster'
 DEBUG:  unescape_unicode: Output='Westfälische Wilhelms-Universität Münster'
 DEBUG:  rdfExecForeignUpdate called
@@ -1130,23 +1128,6 @@ DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
-DEBUG:  LoadRDFData called
-DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: connect_timeout > 300
-DEBUG:    ExecuteSPARQL: request_timeout > 0
-DEBUG:    ExecuteSPARQL: max retry > 3
-DEBUG:    ExecuteSPARQL: redirects disabled
-DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
-DEBUG:  ExecuteSPARQL: http response code = 200
-DEBUG:  ExecuteSPARQL: http response size = 865
-DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:    LoadRDFData: loading 'xmlroot'
-DEBUG:    LoadRDFData: appending record 1
-DEBUG:    LoadRDFData: appending record 2
-DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -1190,6 +1171,22 @@ DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:    CheckURL handler return code: 0
 DEBUG:  rdfBeginForeignModify exit
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 865
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:    LoadRDFData: appending record 2
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  unescape_unicode: Input='University of Münster'
 DEBUG:  unescape_unicode: Output='University of Münster'
 DEBUG:  strdt: data type not an IRI
@@ -1568,15 +1565,6 @@ INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -1939,7 +1927,7 @@ DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  rdfIterateForeignScan called
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20DISTINCT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fo%20%3C%3D%20%221780-12-31%22%5E%5E%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23date%3E%29%0A%7D%0AORDER%20BY%20%20ASC%20%28%3Fo%29%20%20DESC%20%28%3Fp%29%20%20ASC%20%28%3Fs%29
@@ -1948,17 +1936,6 @@ DEBUG:    ExecuteSPARQL: request_timeout > 0
 DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=549
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 549
@@ -1966,7 +1943,6 @@ DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:    LoadRDFData: appending record 1
 DEBUG:  LoadRDFData exit: SELECT query processed
-DEBUG:  rdfIterateForeignScan called
 DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 1
 DEBUG:    FetchNextBinding: called > rowcount = 0/1
 DEBUG:    FetchNextBinding exit: returning 0
@@ -2435,33 +2411,6 @@ DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
-DEBUG:  LoadRDFData called
-DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: connect_timeout > 300
-DEBUG:    ExecuteSPARQL: request_timeout > 0
-DEBUG:    ExecuteSPARQL: max retry > 3
-DEBUG:    ExecuteSPARQL: redirects disabled
-DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
-DEBUG:  ExecuteSPARQL: http response code = 200
-DEBUG:  ExecuteSPARQL: http response size = 545
-DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:    LoadRDFData: loading 'xmlroot'
-DEBUG:    LoadRDFData: appending record 1
-DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -2510,6 +2459,21 @@ DEBUG:    CheckURL handler return code: 0
 DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
 DEBUG:  rdfBeginForeignModify exit
 DEBUG:  rdfIterateForeignScan called
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%20FILTER%28%3Fp%20%3D%20%3Chttp%3A%2F%2Fdbpedia.org%2Fproperty%2Fname%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=545
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 545
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 1
 DEBUG:    FetchNextBinding: called > rowcount = 0/1
 DEBUG:    FetchNextBinding exit: returning 0
@@ -2635,15 +2599,6 @@ INSERT DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/name> "
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -2844,34 +2799,6 @@ DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: user 'admin'
 DEBUG:  LoadRDFUserMapping: password '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
-DEBUG:  LoadRDFData called
-DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
-DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
-DEBUG:    ExecuteSPARQL: connect_timeout > 300
-DEBUG:    ExecuteSPARQL: request_timeout > 0
-DEBUG:    ExecuteSPARQL: max retry > 3
-DEBUG:    ExecuteSPARQL: redirects disabled
-DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
-DEBUG:  ExecuteSPARQL: http response code = 200
-DEBUG:  ExecuteSPARQL: http response size = 865
-DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
-DEBUG:    LoadRDFData: loading 'xmlroot'
-DEBUG:    LoadRDFData: appending record 1
-DEBUG:    LoadRDFData: appending record 2
-DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:  rdfBeginForeignModify called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -2920,6 +2847,22 @@ DEBUG:    CheckURL handler return code: 0
 DEBUG:  CheckURL exit: returning '0' (REQUEST_SUCCESS)
 DEBUG:  rdfBeginForeignModify exit
 DEBUG:  rdfIterateForeignScan called
+DEBUG:  LoadRDFData called
+DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
+DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=%0ASELECT%20%3Fs%20%3Fp%20%3Fo%20%0A%7B%3Fs%20%3Fp%20%3Fo%0A%20%23%23%20rdf_fdw%20pushdown%20conditions%20%23%23%0A%20FILTER%28%3Fs%20%3D%20%3Chttps%3A%2F%2Fwww.uni-muenster.de%3E%29%0A%7D
+DEBUG:    ExecuteSPARQL: connect_timeout > 300
+DEBUG:    ExecuteSPARQL: request_timeout > 0
+DEBUG:    ExecuteSPARQL: max retry > 3
+DEBUG:    ExecuteSPARQL: redirects disabled
+DEBUG:    ExecuteSPARQL: performing cURL request ... 
+DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=865
+DEBUG:  ExecuteSPARQL: http response code = 200
+DEBUG:  ExecuteSPARQL: http response size = 865
+DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
+DEBUG:    LoadRDFData: loading 'xmlroot'
+DEBUG:    LoadRDFData: appending record 1
+DEBUG:    LoadRDFData: appending record 2
+DEBUG:  LoadRDFData exit: SELECT query processed
 DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 2
 DEBUG:    FetchNextBinding: called > rowcount = 0/2
 DEBUG:    FetchNextBinding exit: returning 0
@@ -3141,15 +3084,6 @@ DELETE DATA { <https://www.uni-muenster.de> <http://dbpedia.org/property/founded
 
 DEBUG:  ExecuteSPARQL: setting Content-Type: application/sparql-update
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=204, response size=0
 DEBUG:  ExecuteSPARQL: http response code = 204
 DEBUG:  ExecuteSPARQL: http response size = 0
@@ -3304,7 +3238,7 @@ DEBUG:  LoadRDFUserMapping: setting UserMapping
 DEBUG:  LoadRDFUserMapping: extract the umoptions
 DEBUG:  LoadRDFUserMapping: token '*******'
 DEBUG:  LoadRDFUserMapping exit
-DEBUG:  rdfBeginForeignScan: initializing XML parser
+DEBUG:  rdfIterateForeignScan called
 DEBUG:  LoadRDFData called
 DEBUG:  ExecuteSPARQL called for SELECT/DESCRIBE operation
 DEBUG:    ExecuteSPARQL: url built > http://fuseki:3030/dt/sparql?query=SELECT%20%2A%20WHERE%20%7B%3Fs%20%3Fp%20%3Fo%7D%20LIMIT%201
@@ -3314,24 +3248,12 @@ DEBUG:    ExecuteSPARQL: max retry > 3
 DEBUG:    ExecuteSPARQL: redirects disabled
 DEBUG:  ExecuteSPARQL: setting Authorization: Bearer [REDACTED]
 DEBUG:    ExecuteSPARQL: performing cURL request ... 
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
-DEBUG:  CURLWriteMemoryCallback called
 DEBUG:    ExecuteSPARQL: cURL result=0, HTTP status=200, response size=207
 DEBUG:  ExecuteSPARQL: http response code = 200
 DEBUG:  ExecuteSPARQL: http response size = 207
 DEBUG:  ExecuteSPARQL exit: REQUEST_SUCCESS
 DEBUG:    LoadRDFData: loading 'xmlroot'
 DEBUG:  LoadRDFData exit: SELECT query processed
-DEBUG:  rdfIterateForeignScan called
 DEBUG:    rdfIterateForeignScan: rowcount = 0 | pagesize = 0
 DEBUG:  rdfEndForeignScan: called 
 DEBUG:  rdfEndForeignScan exit rdf_fdw: so long .. 

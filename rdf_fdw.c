@@ -5346,7 +5346,8 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 	char *ptr;
 
-	elog(DEBUG3, "%s called", __func__);
+	/* DEBUG5, as how many calls a response takes depends on its chunking */
+	elog(DEBUG5, "%s called", __func__);
 
 	/*
 	 * Report configured size limits after curl_easy_perform() returns.
