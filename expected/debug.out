@@ -1948,22 +1948,12 @@ DEBUG:    FetchNextBinding: called > rowcount = 0/1
 DEBUG:    FetchNextBinding exit: returning 0
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='https://www.uni-muenster.de'
-DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='https://www.uni-muenster.de'
-DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='http://dbpedia.org/property/founded'
-DEBUG:  isBlank called: term='http://dbpedia.org/property/founded'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='http://dbpedia.org/property/founded'
-DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
 DEBUG:  CreateDatum called
@@ -2479,22 +2469,12 @@ DEBUG:    FetchNextBinding: called > rowcount = 0/1
 DEBUG:    FetchNextBinding exit: returning 0
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='https://www.uni-muenster.de'
-DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='https://www.uni-muenster.de'
-DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='http://dbpedia.org/property/name'
-DEBUG:  isBlank called: term='http://dbpedia.org/property/name'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='http://dbpedia.org/property/name'
-DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
 DEBUG:  CreateDatum called
@@ -2868,22 +2848,12 @@ DEBUG:    FetchNextBinding: called > rowcount = 0/2
 DEBUG:    FetchNextBinding exit: returning 0
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='https://www.uni-muenster.de'
-DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='https://www.uni-muenster.de'
-DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/name', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='http://dbpedia.org/property/name'
-DEBUG:  isBlank called: term='http://dbpedia.org/property/name'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='http://dbpedia.org/property/name'
-DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/name>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/name'
 DEBUG:  CreateDatum called
@@ -2964,22 +2934,12 @@ DEBUG:    FetchNextBinding: called > rowcount = 1/2
 DEBUG:    FetchNextBinding exit: returning 1
 DEBUG:  CreateTuple called 
 DEBUG:  CreateTuple: value='https://www.uni-muenster.de', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='https://www.uni-muenster.de'
-DEBUG:  isBlank called: term='https://www.uni-muenster.de'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='https://www.uni-muenster.de'
-DEBUG:  iri exit: returning wrapped IRI '<https://www.uni-muenster.de>'
 DEBUG:  CreateTuple: setting pg column > 'subject' (type > '(RDFNODEOID)'), sparqlvar > '?s'
 DEBUG:  CreateTuple: value > 'https://www.uni-muenster.de'
 DEBUG:  CreateDatum called
 DEBUG:  isLiteral called: term='<https://www.uni-muenster.de>'
 DEBUG:  isLiteral exit: returning 'false' (either an IRI or a blank node)
 DEBUG:  CreateTuple: value='http://dbpedia.org/property/founded', lang='(null)', datatye='(null)', node_type='uri'
-DEBUG:  iri called: input='http://dbpedia.org/property/founded'
-DEBUG:  isBlank called: term='http://dbpedia.org/property/founded'
-DEBUG:  isBlank exit: returning 'false' (invalid input)
-DEBUG:  lex called: input='http://dbpedia.org/property/founded'
-DEBUG:  iri exit: returning wrapped IRI '<http://dbpedia.org/property/founded>'
 DEBUG:  CreateTuple: setting pg column > 'predicate' (type > '(RDFNODEOID)'), sparqlvar > '?p'
 DEBUG:  CreateTuple: value > 'http://dbpedia.org/property/founded'
 DEBUG:  CreateDatum called

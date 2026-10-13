@@ -1009,9 +1009,9 @@ SELECT sparql.round('"1.5"^^xsd:decimal'), sparql.abs('"-3"^^xsd:integer'),
 SELECT sparql.year('"2025-04-16"^^xsd:date'), sparql.md5('"x"');
 RESET search_path;
 
-/* IRI() builds a term that is asked for as an IRI, so a body that the SPARQL
- * grammar (rule [139]) forbids is a type error rather than a malformed term.
- * STRDT() routes a non-IRI datatype through the same constructor. */
+/* IRI() builds a term that is asked for as an IRI, so a body that could break
+ * out of its token is a type error rather than a malformed term; '{' cannot,
+ * and is kept. STRDT() routes a non-IRI datatype through the same constructor. */
 SELECT sparql.iri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
 SELECT sparql.uri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
 SELECT sparql.iri('"http://e.org/{x}"'::rdfnode);

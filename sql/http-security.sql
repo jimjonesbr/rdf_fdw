@@ -26,4 +26,17 @@ ALTER SERVER hs_ctl OPTIONS (DROP format);
 CREATE USER MAPPING FOR CURRENT_USER SERVER hs_ctl OPTIONS (token E'abc\r\nX-Injected: 1');
 SELECT * FROM hs_ft;
 
+/*
+ * An IRI an endpoint returns may hold characters the SPARQL grammar does not
+ * allow in one. It is read as an IRI, but refused before it is written back.
+ */
+CREATE FOREIGN TABLE hs_w (
+  s rdfnode OPTIONS (variable '?s'),
+  p rdfnode OPTIONS (variable '?p'),
+  o rdfnode OPTIONS (variable '?o'))
+SERVER hs_ctl OPTIONS (sparql 'SELECT * {?s ?p ?o}', sparql_update_pattern '?s ?p ?o .');
+SELECT sparql.isiri('<http://e.org/a|b>'::rdfnode);
+INSERT INTO hs_w VALUES ('<http://e.org/a|b>', '<http://e.org/p>', '"x"');
+INSERT INTO hs_w VALUES ('<http://e.org/s>', '<http://e.org/p>', '"x"^^<http://e.org/t|u>');
+
 DROP SERVER hs_ctl CASCADE;

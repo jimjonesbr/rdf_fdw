@@ -4444,15 +4444,19 @@ SELECT sparql.year('"2025-04-16"^^xsd:date'), sparql.md5('"x"');
 (1 row)
 
 RESET search_path;
-/* IRI() builds a term that is asked for as an IRI, so a body that the SPARQL
- * grammar (rule [139]) forbids is a type error rather than a malformed term.
- * STRDT() routes a non-IRI datatype through the same constructor. */
+/* IRI() builds a term that is asked for as an IRI, so a body that could break
+ * out of its token is a type error rather than a malformed term; '{' cannot,
+ * and is kept. STRDT() routes a non-IRI datatype through the same constructor. */
 SELECT sparql.iri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
 ERROR:  invalid IRI: <http://e.org/a>.<http://e.org/b>
 SELECT sparql.uri('"http://e.org/a>.<http://e.org/b"'::rdfnode);
 ERROR:  invalid IRI: <http://e.org/a>.<http://e.org/b>
 SELECT sparql.iri('"http://e.org/{x}"'::rdfnode);
-ERROR:  invalid IRI: <http://e.org/{x}>
+        iri         
+--------------------
+ <http://e.org/{x}>
+(1 row)
+
 SELECT sparql.strdt('"v"'::rdfnode, '"http://e.org/t>x"'::rdfnode);
 ERROR:  invalid IRI: <http://e.org/t>x>
 /* A lexical form keeps its escapes as written, while a term read from an

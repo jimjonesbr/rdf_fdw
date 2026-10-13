@@ -353,9 +353,11 @@ SELECT '"x"@en } ; INSERT DATA { <http://evil/p> <http://evil/p> <http://evil/p>
 /* already-escaped text must still not be double-escaped */
 SELECT 'x\"y'::rdfnode;
 /* ------------------------------------------------------------------ *
- * Malformed IRIs and blank node labels are not classified as such, so
- * a term whose body could break out of its SPARQL token is stored as a
- * quoted literal instead (grammar rules [139] and [142]).
+ * A term whose body could break out of its SPARQL token -- through
+ * '<', '>', '"', '\' or whitespace -- is not classified as an IRI or a
+ * blank node, and is stored as a quoted literal instead. Characters the
+ * SPARQL grammar excludes but that cannot do that ('{', '}', '|', and a
+ * '.' at either end of a label) are kept: an endpoint may return them.
  * ------------------------------------------------------------------ */
 SELECT t AS input,
        t::rdfnode::text     AS stored,

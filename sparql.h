@@ -59,6 +59,7 @@ typedef struct
 
 /* 17.4.2 Functions on RDF Terms */
 extern bool isIRI(char *input);
+extern bool IsSPARQLIRI(char *input);
 extern bool isBlank(char *term);
 extern bool isLiteral(char *term);
 extern bool isNumeric(char *term);

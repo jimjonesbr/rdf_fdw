@@ -918,6 +918,7 @@ static char *DeparseSQLLimit(struct RDFfdwState *state, PlannerInfo *root, RelOp
 static char *DeparseSQLWhereConditions(struct RDFfdwState *state, RelOptInfo *baserel);
 static char *DeparseSPARQLWhereGraphPattern(struct RDFfdwState *state);
 static char *DatumToString(Datum datum, Oid type);
+static void CheckWritableTerm(char *value_str);
 static bool IsShippableObject(Oid classid, Oid objectid, Oid namespace);
 static char *DeparseExpr(struct RDFfdwState *state, RelOptInfo *foreignrel, Expr *expr);
 static char *DeparseSQLOrderBy(struct RDFfdwState *state, PlannerInfo *root, RelOptInfo *baserel);
@@ -1799,7 +1800,8 @@ static char *DescribeNodeSubject(xmlNodePtr node, int *counter)
 
 	if (about)
 	{
-		result = iri((char *)about);
+		/* not iri(), which refuses an IRI the SPARQL grammar does not allow */
+		result = psprintf("<%s>", (char *)about);
 		xmlFree(about);
 		return result;
 	}
@@ -1881,7 +1883,7 @@ static List *DescribeNodeElement(xmlNodePtr node, List *triples, int *counter, c
 			predicate_str = pstrdup((char *)property_node->name);
 
 		triple->subject = subject;
-		triple->predicate = iri(predicate_str);
+		triple->predicate = psprintf("<%s>", predicate_str);
 
 		/* an object written out in place rather than referred to */
 		for (child = property_node->children; child; child = child->next)
@@ -1900,7 +1902,7 @@ static List *DescribeNodeElement(xmlNodePtr node, List *triples, int *counter, c
 
 		if (resource)
 		{
-			triple->object = iri((char *)resource);
+			triple->object = psprintf("<%s>", (char *)resource);
 			xmlFree(resource);
 			triples = lappend(triples, triple);
 		}
@@ -2787,7 +2789,7 @@ static int64 InsertRetrievedData(RDFfdwState *state, int64 offset, int64 end_off
 						if (pgtype == RDFNODEOID)
 						{
 							if (strcmp((char *)value->name, RDF_SPARQL_RESULT_URI) == 0)
-								appendStringInfo(&literal_value, "%s", iri((char *)content));
+								appendStringInfo(&literal_value, "<%s>", (char *)content);
 							else if (strcmp((char *)value->name, RDF_SPARQL_RESULT_BNODE) == 0)
 								appendStringInfo(&literal_value, "_:%s", (char *)content);
 							else
@@ -3905,6 +3907,43 @@ static void FlushSPARQLStatements(RDFfdwState *state)
 	elog(DEBUG1, "%s: batch flushed successfully", __func__);
 }
 
+/*
+ * CheckWritableTerm
+ * -----------------
+ * Refuses a value that cannot be written into a SPARQL Update as it is: an
+ * IRI, or the datatype of a literal, holding '{', '}', '|', '^' or '`'. The
+ * SPARQL grammar does not allow them in an IRI, but an endpoint may return
+ * such an IRI, and rdf_fdw keeps it so that reading never fails (see
+ * isIRI()); sending it back would only make the update fail at the endpoint.
+ *
+ * value_str: the value as it would be written into the update
+ */
+static void CheckWritableTerm(char *value_str)
+{
+	char *iri_str = NULL;
+	size_t len = strlen(value_str);
+
+	if (isIRI(value_str))
+		iri_str = value_str;
+	else if (len > 0 && value_str[0] == '"' && value_str[len - 1] == '>')
+	{
+		/* a typed literal ends in its datatype: "..."^^<...> */
+		char *p = value_str;
+
+		while ((p = strstr(p, "\"^^<")) != NULL)
+		{
+			iri_str = p + 3;
+			p++;
+		}
+	}
+
+	if (iri_str && !IsSPARQLIRI(iri_str))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("cannot write %s to the endpoint", value_str),
+				 errdetail("SPARQL does not allow {, }, |, ^ or ` in an IRI.")));
+}
+
 static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 											ResultRelInfo *rinfo,
 											TupleTableSlot *slot,
@@ -3977,6 +4016,8 @@ static TupleTableSlot *rdfExecForeignInsert(EState *estate,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 					 errmsg("blank nodes are not allowed in INSERT operations"),
 					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
+
+		CheckWritableTerm(value_str);
 
 		/* Check if escaping is needed for control characters */
 		for (const char *p = value_str; *p; p++)
@@ -4136,6 +4177,8 @@ static TupleTableSlot *rdfExecForeignDelete(EState *estate,
 					 errmsg("blank nodes cannot be used in DELETE operations"),
 					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
 
+		CheckWritableTerm(value_str);
+
 		/* Check if escaping is needed for control characters */
 		{
 			bool needs_escaping = false;
@@ -4290,6 +4333,8 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 					 errmsg("blank nodes are not allowed in UPDATE operations"),
 					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
 
+		CheckWritableTerm(value_str);
+
 		/* Check if escaping is needed for control characters */
 		for (const char *p = value_str; *p; p++)
 		{
@@ -4368,6 +4413,8 @@ static TupleTableSlot *rdfExecForeignUpdate(EState *estate,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 					 errmsg("blank nodes are not allowed in UPDATE operations"),
 					 errhint("Blank nodes are document-local and have no global meaning. Use IRIs instead.")));
+
+		CheckWritableTerm(value_str);
 
 		/* Check if escaping is needed for control characters */
 		for (const char *p = value_str; *p; p++)
@@ -7187,7 +7234,14 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 					{
 						if (xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_URI) == 0)
 						{
-							appendStringInfo(&literal_value, "%s", iri(node_value));
+							/*
+							 * Not iri(), which raises an error for an IRI the
+							 * SPARQL grammar does not allow: an endpoint may
+							 * return one, and the whole scan would fail. The
+							 * input function keeps it as an IRI (see isIRI()),
+							 * or as a string literal if it cannot be one.
+							 */
+							appendStringInfo(&literal_value, "<%s>", node_value);
 						}
 						else if (xmlStrcmp(node_type, (xmlChar *)RDF_SPARQL_RESULT_BNODE) == 0)
 						{

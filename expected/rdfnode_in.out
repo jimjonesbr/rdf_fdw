@@ -1582,9 +1582,11 @@ SELECT 'x\"y'::rdfnode;
 (1 row)
 
 /* ------------------------------------------------------------------ *
- * Malformed IRIs and blank node labels are not classified as such, so
- * a term whose body could break out of its SPARQL token is stored as a
- * quoted literal instead (grammar rules [139] and [142]).
+ * A term whose body could break out of its SPARQL token -- through
+ * '<', '>', '"', '\' or whitespace -- is not classified as an IRI or a
+ * blank node, and is stored as a quoted literal instead. Characters the
+ * SPARQL grammar excludes but that cannot do that ('{', '}', '|', and a
+ * '.' at either end of a label) are kept: an endpoint may return them.
  * ------------------------------------------------------------------ */
 SELECT t AS input,
        t::rdfnode::text     AS stored,
@@ -1599,11 +1601,11 @@ FROM (VALUES ('<http://e.org/a>.<http://e.org/b>'),
                input               |               stored                | is_iri | is_blank 
 -----------------------------------+-------------------------------------+--------+----------
  <http://e.org/a>.<http://e.org/b> | "<http://e.org/a>.<http://e.org/b>" | f      | f
- <http://e.org/{x}>                | "<http://e.org/{x}>"                | f      | f
- <http://e.org/|>                  | "<http://e.org/|>"                  | f      | f
+ <http://e.org/{x}>                | <http://e.org/{x}>                  | t      | f
+ <http://e.org/|>                  | <http://e.org/|>                    | t      | f
  _:b1 x                            | "_:b1 x"                            | f      | f
- _:.b1                             | "_:.b1"                             | f      | f
- _:b1.                             | "_:b1."                             | f      | f
+ _:.b1                             | _:.b1                               | f      | t
+ _:b1.                             | _:b1.                               | f      | t
 (6 rows)
 
 /* well-formed IRIs and blank nodes are unaffected */
