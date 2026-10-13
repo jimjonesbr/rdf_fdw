@@ -70,3 +70,6 @@ DROP SERVER fs CASCADE;
 
 ALTER EXTENSION rdf_fdw UPDATE TO '3.1';
 SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+
+/* the functions 3.1 redefines answer as they do in a new installation */
+SELECT sparql.replace('<http://example.org/a>'::rdfnode, 'a', 'b') IS NULL AS replace_iri_is_null;

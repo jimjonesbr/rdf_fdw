@@ -1040,20 +1040,13 @@ Datum rdf_fdw_lang(PG_FUNCTION_ARGS)
 
 	/*
 	 * LANG is defined over literals. An IRI or a blank node has no language
-	 * tag to report and no lexical form to report one from, so asking is a
-	 * type error rather than a term with an empty tag -- which is what a
-	 * plain literal has. The guard is here rather than in lang(), which the
-	 * scan and the comparison operators call on terms of every kind.
+	 * tag to report, so asking is a type error, which SPARQL leaves unbound,
+	 * rather than a term with an empty tag -- which is what a plain literal
+	 * has. The guard is here rather than in lang(), which the scan and the
+	 * comparison operators call on terms of every kind.
 	 */
-	if (isIRI(literal))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("LANG does not allow IRIs: %s", literal)));
-
-	if (isBlank(literal))
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("LANG does not allow blank nodes: %s", literal)));
+	if (isIRI(literal) || isBlank(literal))
+		PG_RETURN_NULL();
 
 	result = lang(literal);
 
@@ -1476,17 +1469,23 @@ Datum rdf_fdw_uuid(PG_FUNCTION_ARGS)
 Datum rdf_fdw_lcase(PG_FUNCTION_ARGS)
 {
 	text *input = PG_GETARG_TEXT_PP(0);
-	char *str = text_to_cstring(input);
+	char *result = lcase(text_to_cstring(input));
 
-	PG_RETURN_TEXT_P(cstring_to_text(lcase(str)));
+	if (result == NULL)
+		PG_RETURN_NULL();
+
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 Datum rdf_fdw_ucase(PG_FUNCTION_ARGS)
 {
 	text *input = PG_GETARG_TEXT_PP(0);
-	char *str = text_to_cstring(input);
+	char *result = ucase(text_to_cstring(input));
 
-	PG_RETURN_TEXT_P(cstring_to_text(ucase(str)));
+	if (result == NULL)
+		PG_RETURN_NULL();
+
+	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
 
 Datum rdf_fdw_strlen(PG_FUNCTION_ARGS)
@@ -1502,6 +1501,9 @@ Datum rdf_fdw_strlen(PG_FUNCTION_ARGS)
 	str = text_to_cstring(input);
 
 	result = strlen_rdf(str);
+
+	if (result < 0)
+		PG_RETURN_NULL();
 
 	PG_RETURN_INT32(result);
 }
@@ -1532,6 +1534,9 @@ Datum rdf_fdw_substr(PG_FUNCTION_ARGS)
 	}
 	else
 		result = substr_sparql(str, start, -1);
+
+	if (result == NULL)
+		PG_RETURN_NULL();
 
 	PG_RETURN_TEXT_P(cstring_to_text(result));
 }
@@ -1565,6 +1570,10 @@ Datum rdf_fdw_concat(PG_FUNCTION_ARGS)
 		else
 		{
 			char *tmp = concat(str, el);
+
+			if (tmp == NULL)
+				PG_RETURN_NULL();
+
 			if (str != el) /* avoid freeing reused pointers */
 				pfree(str);
 			str = tmp;

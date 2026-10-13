@@ -1039,3 +1039,8 @@ SELECT sparql.iri('"http://e.org/ok"'::rdfnode);
 SELECT sparql.iri('<http://e.org/already>'::rdfnode);
 SELECT sparql.strdt('"v"'::rdfnode, '"xsd:integer"'::rdfnode);
 SELECT sparql.strdt('"v"'::rdfnode, '<http://e.org/t>'::rdfnode);
+
+
+/* SUBSTR and CONCAT of an IRI or a blank node are unbound, as in SPARQL */
+SELECT sparql.substr('<http://example.org/abc>'::rdfnode, 1, 2);
+SELECT sparql.concat('_:b1'::rdfnode, '"x"'::rdfnode);

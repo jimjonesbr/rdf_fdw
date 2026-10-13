@@ -735,7 +735,7 @@ char *bnode(char *input)
  * bare string (e.g., "bar", "\"bar\"@en")
  *
  * returns: Null-terminated C string representing the concatenated RDF
- * literal (e.g., "\"foobar\"@en")
+ * literal (e.g., "\"foobar\"@en"), or NULL if either is an IRI or a blank node
  */
 char *concat(char *left, char *right)
 {
@@ -752,10 +752,9 @@ char *concat(char *left, char *right)
                 (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
                  errmsg("CONCAT arguments cannot be NULL")));
 
+    /* a type error in SPARQL, which leaves the result unbound */
     if (isIRI(left) || isIRI(right) || isBlank(left) || isBlank(right))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("CONCAT not allowed on IRI or blank node")));
+        return NULL;
 
     left_lexical = lex(left);
     right_lexical = lex(right);
@@ -1323,7 +1322,8 @@ char *generate_uuid_v4(void)
  * start   : 1-based index (inclusive), following XPath rounding semantics.
  * length  : Optional substring length.
  *
- * Returns a new RDF literal string with the appropriate tag preserved.
+ * Returns a new RDF literal string with the appropriate tag preserved, or NULL
+ * for an IRI or a blank node.
  */
 char *substr_sparql(char *str, int start, int length)
 {
@@ -1344,10 +1344,9 @@ char *substr_sparql(char *str, int start, int length)
                 (errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
                  errmsg("SUBSTR cannot be NULL")));
 
+    /* a type error in SPARQL, which leaves the result unbound */
     if (isIRI(str) || isBlank(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("SUBSTR not allowed on IRI or blank node: %s", str)));
+        return NULL;
 
     /* positions count the characters of the value (see DecodeLexicalForm()) */
     lexical = DecodeLexicalForm(lex(str));
@@ -1413,8 +1412,8 @@ char *substr_sparql(char *str, int start, int length)
  *
  * Implements SPARQL’s LCASE function. Converts the lexical form of a string literal
  * (simple, xsd:string, or language-tagged) to lowercase (ASCII A-Z to a-z, non-ASCII
- * preserved). Preserves the original datatype or language tag. Errors on IRIs, blank
- * nodes, non-string literals, or invalid inputs. Bare strings are treated as simple literals.
+ * preserved). Preserves the original datatype or language tag. Returns NULL for IRIs,
+ * blank nodes and non-string literals. Bare strings are treated as simple literals.
  *
  * str: Null-terminated C string (RDF literal or bare string, e.g., "BAR", "\"BAR\"@en")
  *
@@ -1440,16 +1439,9 @@ char *lcase(char *str)
         return cstring_to_rdfliteral("");
     }
 
-    /* Check for IRIs or blank nodes */
-    if (isIRI(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("LCASE does not allow IRIs: %s", str)));
-
-    if (isBlank(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("LCASE does not allow blank nodes: %s", str)));
+    /* a type error in SPARQL, which leaves the result unbound */
+    if (isIRI(str) || isBlank(str))
+        return NULL;
 
     /* the case of the value, not of its escapes (see DecodeLexicalForm()) */
     lexical = DecodeLexicalForm(lex(str));
@@ -1460,10 +1452,7 @@ char *lcase(char *str)
     str_datatype = datatype(str);
 
     if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("LCASE does not allow non-string literals: %s",
-                        str_datatype)));
+        return NULL;
 
     str_language = lang(str);
 
@@ -1504,8 +1493,8 @@ char *lcase(char *str)
  *
  * Implements SPARQL’s UCASE function. Converts the lexical form of a string literal
  * (simple, xsd:string, or language-tagged) to uppercase (ASCII a-z to A-Z, non-ASCII
- * preserved). Preserves the original datatype or language tag. Errors on IRIs, blank
- * nodes, non-string literals, or invalid inputs. Bare strings are treated as simple literals.
+ * preserved). Preserves the original datatype or language tag. Returns NULL for IRIs,
+ * blank nodes and non-string literals. Bare strings are treated as simple literals.
  *
  * str: Null-terminated C string (RDF literal or bare string, e.g., "bar", "\"bar\"@en")
  *
@@ -1531,16 +1520,9 @@ char *ucase(char *str)
         return cstring_to_rdfliteral("");
     }
 
-    /* Check for IRIs or blank nodes */
-    if (isIRI(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("UCASE does not allow IRIs: %s", str)));
-
-    if (isBlank(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("UCASE does not allow blank nodes: %s", str)));
+    /* a type error in SPARQL, which leaves the result unbound */
+    if (isIRI(str) || isBlank(str))
+        return NULL;
 
     /* the case of the value, not of its escapes (see DecodeLexicalForm()) */
     lexical = DecodeLexicalForm(lex(str));
@@ -1551,10 +1533,7 @@ char *ucase(char *str)
     str_datatype = datatype(str);
 
     if (strlen(str_datatype) != 0 && !IsRDFStringLiteral(str_datatype))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("UCASE does not allow non-string literals: %s",
-                        str_datatype)));
+        return NULL;
 
     str_language = lang(str);
 
@@ -2287,13 +2266,13 @@ static int count_utf8_chars(const char *str)
  * ----------
  *
  * Implements SPARQL's STRLEN function. Returns the number of Unicode
- * characters (code points) in the lexical form of a string literal. Errors
- * on IRIs, blank nodes, and non-string-typed literals.
+ * characters (code points) in the lexical form of a string literal, or -1
+ * for IRIs, blank nodes and non-string-typed literals.
  *
  * str: Null-terminated C string representing an RDF literal or bare string
  * (e.g., "\"hello\"", "\"café\"@fr", "hello")
  *
- * returns: Number of Unicode characters in the lexical form
+ * returns: Number of Unicode characters in the lexical form, or -1
  */
 int strlen_rdf(char *str)
 {
@@ -2311,24 +2290,14 @@ int strlen_rdf(char *str)
     if (strlen(str) == 0)
         return 0;
 
-    /* Check for IRIs or blank nodes */
-    if (isIRI(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("STRLEN does not allow IRIs: %s", str)));
-
-    if (isBlank(str))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("STRLEN does not allow blank nodes: %s", str)));
+    /* a type error in SPARQL, which leaves the result unbound */
+    if (isIRI(str) || isBlank(str))
+        return -1;
 
     dt = datatype(str);
 
-    /* Validate string literal */
     if (!IsRDFStringLiteral(dt))
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("STRLEN does not allow non-string literals: %s", dt)));
+        return -1;
 
     /* the characters of the value, not of its escapes (see DecodeLexicalForm()) */
     lexical = DecodeLexicalForm(lex(str));

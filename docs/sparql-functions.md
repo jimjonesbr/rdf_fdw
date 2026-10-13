@@ -108,7 +108,7 @@ Use `sameterm` for exact RDF identity. `=` compares values, with numeric promoti
 | [`sparql.isliteral(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-isLiteral) | `boolean` | `true` for literals |
 | [`sparql.isnumeric(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-isNumeric) | `boolean` | `true` for literals of a numeric datatype (`xsd:integer`, `xsd:int`, `xsd:decimal`, `xsd:double`, ...) |
 | [`sparql.str(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-str) | `rdfnode` | Lexical form as a simple literal: drops language tag and datatype; IRIs become their string |
-| [`sparql.lang(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-lang) | `rdfnode` | Language tag of a literal, or an empty string. IRIs and blank nodes raise an error. |
+| [`sparql.lang(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-lang) | `rdfnode` | Language tag of a literal, or an empty string. `NULL` for IRIs and blank nodes. |
 | [`sparql.datatype(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-datatype) | `rdfnode` | Datatype IRI: `xsd:string` for simple literals, `rdf:langString` for language-tagged ones, `NULL` for IRIs and blank nodes |
 | [`sparql.iri(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-iri), `sparql.uri(rdfnode)` | `rdfnode` | Wraps a string as an IRI. No validation is performed. |
 | [`sparql.bnode([rdfnode])`](https://www.w3.org/TR/sparql11-query/#func-bnode) | `rdfnode` | Blank node with the given label, or a fresh one without argument |
@@ -147,11 +147,11 @@ SELECT sparql.struuid();                                                  -- "25
 
 Unless stated otherwise, these functions work on the lexical form and the result keeps the language tag or datatype of the first argument. Where a function takes two string arguments, they must be [argument-compatible](https://www.w3.org/TR/sparql11-query/#func-arg-compatibility): a language-tagged second argument only matches a first argument with the same tag. Otherwise the result is `NULL`.
 
-Most of these functions are only defined for string literals (simple, `xsd:string` or language-tagged). For other terms, SPARQL raises an error, which rdf_fdw reports either as an `ERROR` (e.g. `strlen`, `ucase`, `concat` on an IRI) or as `NULL` (e.g. `strstarts`, `contains`, `strbefore`). Don't rely on either; use `sparql.str()` to turn other terms into strings first.
+Most of these functions are only defined for string literals (simple, `xsd:string` or language-tagged). For other terms SPARQL raises an error, which leaves the result unbound, and rdf_fdw returns `NULL`, so a query over a column that mixes literals with IRIs keeps its rows. Use `sparql.str()` to turn other terms into strings first.
 
 | Function | Returns | Description |
 |---|---|---|
-| [`sparql.strlen(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-strlen) | `int` | Number of characters of a string literal. IRIs, blank nodes and non-string literals raise an error. |
+| [`sparql.strlen(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-strlen) | `int` | Number of characters of a string literal. `NULL` for IRIs, blank nodes and non-string literals. |
 | [`sparql.substr(rdfnode, start int [, length int])`](https://www.w3.org/TR/sparql11-query/#func-substr) | `rdfnode` | Substring; `start` is 1-based. Without `length`, it runs to the end. |
 | [`sparql.ucase(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-ucase) / [`sparql.lcase(rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-lcase) | `rdfnode` | Upper / lower case |
 | [`sparql.strstarts(rdfnode, rdfnode)`](https://www.w3.org/TR/sparql11-query/#func-strstarts) | `boolean` | Starts with |

@@ -3512,7 +3512,7 @@ DECLARE
 BEGIN
   /* an angle-bracketed argument is an IRI whatever type it arrives as */
   IF sparql.isIRI($1::@extschema@.rdfnode) THEN
-    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+    RETURN NULL;
   END IF;
 
   /* a bare string carries no metadata to preserve */
@@ -3542,13 +3542,12 @@ DECLARE
   dt @extschema@.rdfnode;
 BEGIN
   /* REPLACE is defined over string literals: an IRI or a blank node has no
-     lexical form to rewrite, and rewriting its written shape would invent a
-     term nothing describes. */
+     lexical form to rewrite, which is a type error SPARQL leaves unbound. */
   IF sparql.isIRI($1) THEN
-    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+    RETURN NULL;
   END IF;
   IF sparql.isblank($1) THEN
-    RAISE EXCEPTION 'REPLACE does not allow blank nodes: %', $1 USING ERRCODE = '22023';
+    RETURN NULL;
   END IF;
 
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(
@@ -3581,13 +3580,12 @@ DECLARE
   dt @extschema@.rdfnode;
 BEGIN
   /* REPLACE is defined over string literals: an IRI or a blank node has no
-     lexical form to rewrite, and rewriting its written shape would invent a
-     term nothing describes. */
+     lexical form to rewrite, which is a type error SPARQL leaves unbound. */
   IF sparql.isIRI($1) THEN
-    RAISE EXCEPTION 'REPLACE does not allow IRIs: %', $1 USING ERRCODE = '22023';
+    RETURN NULL;
   END IF;
   IF sparql.isblank($1) THEN
-    RAISE EXCEPTION 'REPLACE does not allow blank nodes: %', $1 USING ERRCODE = '22023';
+    RETURN NULL;
   END IF;
 
   result_lit := sparql._quote_literal(pg_catalog.regexp_replace(

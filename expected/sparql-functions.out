@@ -563,17 +563,41 @@ SELECT sparql.lang(NULL);
  * for an IRI, and UCASE, LCASE, SUBSTR and CONCAT here already refuse one.
  */
 SELECT sparql.strlen('<http://example.org/abc>');
-ERROR:  STRLEN does not allow IRIs: <http://example.org/abc>
+ strlen 
+--------
+   NULL
+(1 row)
+
 SELECT sparql.strlen('_:b1');
-ERROR:  STRLEN does not allow blank nodes: _:b1
+ strlen 
+--------
+   NULL
+(1 row)
+
 SELECT sparql.replace('<http://example.org/abc>', 'a', 'Z');
-ERROR:  REPLACE does not allow IRIs: <http://example.org/abc>
+ replace 
+---------
+ NULL
+(1 row)
+
 SELECT sparql.replace('<http://example.org/abc>'::rdfnode, 'a'::rdfnode, 'Z'::rdfnode);
-ERROR:  REPLACE does not allow IRIs: <http://example.org/abc>
+ replace 
+---------
+ NULL
+(1 row)
+
 SELECT sparql.replace('_:b1'::rdfnode, 'b'::rdfnode, 'Z'::rdfnode);
-ERROR:  REPLACE does not allow blank nodes: _:b1
+ replace 
+---------
+ NULL
+(1 row)
+
 SELECT sparql.lang('_:b1');
-ERROR:  LANG does not allow blank nodes: _:b1
+ lang 
+------
+ NULL
+(1 row)
+
 /* STR is the exception and must keep taking an IRI: STR of an IRI is defined
  * and gives its string form. */
 SELECT sparql.str('<http://example.org/abc>');
@@ -593,9 +617,17 @@ SELECT sparql.strlen('"hello"') AS plain,
 (1 row)
 
 SELECT sparql.strlen('"42"^^xsd:integer');
-ERROR:  STRLEN does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
+ strlen 
+--------
+   NULL
+(1 row)
+
 SELECT sparql.lang('<http://example.org>'); 
-ERROR:  LANG does not allow IRIs: <http://example.org>
+ lang 
+------
+ NULL
+(1 row)
+
 /* a literal whose only inner quote is escaped has no closing quote, so it is
  * malformed and simply has no language tag. lang() used to locate the tag by
  * skipping the opening quote and then advancing by the length of lex(), which
@@ -2400,11 +2432,23 @@ SELECT sparql.lcase('"ŁÓÒÁÀÂÆÄÉÈÊÍÌÎÓÒØÔÖÚÙÛÜÞ"@de');
 (1 row)
 
 SELECT sparql.lcase('<http://example.org>');
-ERROR:  LCASE does not allow IRIs: <http://example.org>
+ lcase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.lcase('_:xyz');
-ERROR:  LCASE does not allow blank nodes: _:xyz
+ lcase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.lcase(sparql.bnode('foo'));
-ERROR:  LCASE does not allow blank nodes: _:foo
+ lcase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.lcase('123');
  lcase 
 -------
@@ -2418,9 +2462,17 @@ SELECT sparql.lcase('"123"');
 (1 row)
 
 SELECT sparql.lcase('"123"^^xsd:integer');
-ERROR:  LCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
+ lcase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.lcase('"1990-10-03"^^xsd:date');
-ERROR:  LCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#date>
+ lcase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.lcase('"!§$%&/()?ß}{}[]°^|<>*"');
           lcase          
 -------------------------
@@ -2501,11 +2553,23 @@ SELECT sparql.ucase('"łóòáàâæäéèêíìîóòøôöúùûüþ"^^<http:/
 (1 row)
 
 SELECT sparql.ucase('<http://example.org>');
-ERROR:  UCASE does not allow IRIs: <http://example.org>
+ ucase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.ucase('_:xyz');
-ERROR:  UCASE does not allow blank nodes: _:xyz
+ ucase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.ucase(sparql.bnode('foo'));
-ERROR:  UCASE does not allow blank nodes: _:foo
+ ucase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.ucase('123');
  ucase 
 -------
@@ -2519,9 +2583,17 @@ SELECT sparql.ucase('"123"');
 (1 row)
 
 SELECT sparql.ucase('"123"^^xsd:integer');
-ERROR:  UCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#integer>
+ ucase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.ucase('"1990-10-03"^^xsd:date');
-ERROR:  UCASE does not allow non-string literals: <http://www.w3.org/2001/XMLSchema#date>
+ ucase 
+-------
+ NULL
+(1 row)
+
 SELECT sparql.ucase('"!§$%&/()?ß}{}[]°^|<>*"');
           ucase          
 -------------------------
@@ -4432,5 +4504,18 @@ SELECT sparql.strdt('"v"'::rdfnode, '<http://e.org/t>'::rdfnode);
          strdt         
 -----------------------
  "v"^^<http://e.org/t>
+(1 row)
+
+/* SUBSTR and CONCAT of an IRI or a blank node are unbound, as in SPARQL */
+SELECT sparql.substr('<http://example.org/abc>'::rdfnode, 1, 2);
+ substr 
+--------
+ NULL
+(1 row)
+
+SELECT sparql.concat('_:b1'::rdfnode, '"x"'::rdfnode);
+ concat 
+--------
+ NULL
 (1 row)
 
