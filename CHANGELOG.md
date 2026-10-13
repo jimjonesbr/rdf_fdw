@@ -3,47 +3,49 @@ Release date: **unreleased**
 
 ## Enhancements
 
-* **`LIMIT` pushed down next to conditions that read no column**: `LIMIT` is now pushed down next to conditions that read no column of the table, such as `WHERE now() > '2000-01-01'`, which PostgreSQL checks once above the scan.
+* **Pushdown of `OR`**: conditions combining expressions with `OR` (and `AND` inside an `OR`) are now sent to the endpoint as `||` and `&&` when every operand can be pushed down. Otherwise the `OR` is still evaluated locally as a whole.
 
-* **Pushdown of `OR`**: `WHERE` conditions combining expressions with `OR` (and `AND` inside an `OR`) are now translated to SPARQL `||` and `&&` when every operand can be pushed down, instead of fetching the whole graph pattern and filtering locally. SQL's `NULL` and SPARQL's type error take the same part in `AND` and `OR`, so this selects the same rows at the endpoint as in PostgreSQL. An `OR` with any operand that cannot be pushed down is still evaluated locally as a whole, and a `LIMIT` can now be pushed down alongside a pushed `OR`.
+* **`LIMIT` pushed down next to conditions that read no column**: a condition such as `WHERE now() > '2000-01-01'` no longer keeps the `LIMIT` from being sent to the endpoint.
 
-* **Compressed responses**: requests now carry an `Accept-Encoding` header listing every encoding the linked libcurl can decode (`gzip`, `deflate`, and `br` or `zstd` where built in). SPARQL XML results compress very well, so large result sets transfer much faster from endpoints that support it. `max_response_size` applies to the decompressed size.
+* **Compressed responses**: requests now accept every encoding the linked libcurl can decode (`gzip`, `deflate`, and `br` or `zstd` where available). `max_response_size` applies to the decompressed size.
 
-* **Retry with backoff**: endpoints that respond with `429 Too Many Requests`, `503 Service Unavailable`, or a proxy's `502 Bad Gateway` are now retried (up to `connect_retry` times), waiting what the `Retry-After` header asks for, or otherwise 5 seconds, doubling between attempts (each wait at most 5 minutes). Requests that got no answer at all are retried after 1 second, doubling as well, instead of immediately, so an unreachable endpoint now takes a few seconds to report its error. `INSERT`, `UPDATE` and `DELETE` are retried too, which is safe as they are sent as `INSERT DATA` and `DELETE DATA` without blank nodes. This allows large scans and `rdf_fdw_clone_table()` to continue when an endpoint throttles traffic or temporarily restarts.
+* **Retry with backoff**: `429`, `502` and `503` answers are now retried up to `connect_retry` times, waiting what `Retry-After` asks for, or otherwise 5 seconds, doubling each time (at most 5 minutes per wait). Requests that got no answer at all are retried after 1 second, doubling, instead of immediately. `INSERT`, `UPDATE` and `DELETE` are retried as well.
 
-* **Documentation: joins on IRIs should use `~=`**: For performance-sensitive three-way joins of foreign tables with IRIs, using `~=` (term equality) instead of `=` (value equality) allows PostgreSQL to plan a merge join instead of a nested loop, often speeding up the query by orders of magnitude. The README now recommends this pattern.
+* **Documentation: joins on IRIs should use `~=`**: the README now recommends `~=` (term equality) rather than `=` for joins on IRIs, which lets PostgreSQL use a merge join instead of a nested loop.
 
 ## Breaking Changes
 
-* **Queries through views use the view owner's user mapping**: for a foreign table queried through a view, rdf_fdw now sends the credentials of the role the permissions are checked as -- the view owner, unless the view is `security_invoker` -- as `postgres_fdw` does. It used to send those of the role querying the view, or none if that role had no user mapping. Roles that query a view owned by another role now use that role's credentials; a role that relied on its own user mapping for such a view needs a mapping for the view owner instead.
+* **Queries through views use the view owner's user mapping**: a foreign table queried through a view now sends the credentials of the view owner (unless the view is `security_invoker`), as `postgres_fdw` does, instead of those of the querying role. A role that relied on its own user mapping for such a view needs one for the view owner instead.
 
-* **New `User-Agent`**: requests now identify themselves as `rdf_fdw/<version> (+https://github.com/jimjonesbr/rdf_fdw)`. The previous `User-Agent` disclosed the exact versions of PostgreSQL, libxml2, libcurl, the TLS library, zlib, libssh2 and others to every SPARQL endpoint and proxy on the way, telling them which known vulnerabilities to try. `rdf_fdw_settings` still reports those versions locally. Endpoints or proxies that filter on the old `User-Agent` need to be adjusted.
+## Minor Changes
+
+* **New `User-Agent`**: requests now identify themselves as `rdf_fdw/<version> (+https://github.com/jimjonesbr/rdf_fdw)` instead of listing the versions of PostgreSQL, libxml2, libcurl and its TLS and compression libraries. `rdf_fdw_settings` still reports those versions locally.
 
 ## Bug Fixes
 
-* **IRIs and blank nodes are read as the endpoint returns them**: 3.0 checked every IRI and blank node against the SPARQL grammar, which is stricter than what endpoints return. An IRI holding `{`, `}`, `|`, `^` or `` ` `` made the whole scan fail with "invalid IRI", and a blank node with a label outside the grammar -- every blank node of Virtuoso, which labels them `nodeID://b10001` -- was turned into a string literal. Both are now read as the IRI or blank node they are. Only the characters that could break a term out of its place in a query (`<`, `>`, `"`, `\` and whitespace) still make a term a string literal. An IRI the SPARQL grammar does not allow is refused when an `INSERT`, `UPDATE` or `DELETE` would send it back, before anything is sent.
+* **Fixed credentials in query plans**: user mapping credentials were stored in the plan, so a cached plan kept sending the credentials it was planned with, even after `ALTER USER MAPPING` or `SET ROLE`. The user mapping is now loaded when the scan starts.
 
-* **String functions return `NULL` for IRIs, blank nodes and non-string literals**: `sparql.lang()`, `strlen()`, `ucase()`, `lcase()`, `substr()`, `concat()` and `replace()` raised an error for a term they are not defined for, so `SELECT o, sparql.lang(o)` over a column mixing literals and IRIs failed as soon as one row held an IRI, and so did any such condition evaluated locally. SPARQL leaves these results unbound, and they now return `NULL`, as `contains()`, `strstarts()` and the other string functions already did.
+* **Fixed HTTP header injection through option values**: a CR or LF in the `format` server option or in a user mapping's `token` could add header lines to a request. Such a header is now refused before the request is sent.
 
-* **Foreign scans no longer contact the endpoint before they are read from**: the SPARQL query was sent when the executor initialised the scan, which it does for every scan of a plan before reading any row. A scan that was then never read from still sent its query -- downloading a result that was thrown away, or failing on an unreachable endpoint: beneath a condition that does not depend on the rows and turns out false (`WHERE now() < '2000-01-01'`), in a subquery evaluated only for rows of an outer query that has none, on the inner side of a join whose outer side is empty, or in a cursor declared and never fetched from. The query is now sent when the first row is asked for.
+* **Fixed session cookies in debug logs**: `Set-Cookie` headers are now redacted like `Authorization`, and response headers are only logged in the libcurl trace at `DEBUG5`.
 
-* **Fixed `NOT` conditions returning the wrong rows when pushed down**: the condition under a `NOT` was sent without parentheses, so `NOT (o > 3)` reached the endpoint as `!?o > 3`, which SPARQL reads as `(!?o) > 3`. Besides, `NOT sparql.isiri(x)` -- and likewise `isblank`, `isliteral` and `isnumeric` -- dropped the rows in which `x` was unbound: these functions answer `false` for `NULL`, while SPARQL raises an error for an unbound variable, which its `!` leaves an error. They are now sent as `!(COALESCE(isIRI(?x), false))`.
+* **Fixed `NOT` conditions returning wrong rows when pushed down**: the condition under a `NOT` was sent without parentheses (`NOT (o > 3)` became `!?o > 3`), and `NOT sparql.isiri(x)` and its siblings dropped the rows in which `x` was unbound.
 
-* **Fixed session cookies in debug logs**: a `Set-Cookie` header the endpoint sent in response to a request with credentials was logged in full at `DEBUG2` (on HTTP errors), `DEBUG4` and `DEBUG5`. It is now redacted like `Authorization`, and response headers are only logged in the libcurl trace at `DEBUG5`.
+* **IRIs and blank nodes are read as the endpoint returns them**: an IRI containing `{`, `}`, `|`, `^` or `` ` `` made the whole scan fail, and blank nodes with labels outside the SPARQL grammar, such as Virtuoso's `nodeID://...`, were read as string literals. Both are now read as they are; an IRI the SPARQL grammar does not allow is only refused when `INSERT`, `UPDATE` or `DELETE` would write it.
 
-* **Fixed HTTP header injection through option values**: a CR or LF in the `format` server option or in the `token` of a user mapping was sent as is, adding header lines of the user's choosing to the request -- or, through a proxy, a whole second request. A header holding a control character is now refused before the request is sent.
+* **String functions return `NULL` for terms they are not defined for**: `sparql.lang()`, `strlen()`, `ucase()`, `lcase()`, `substr()`, `concat()` and `replace()` raised an error for IRIs and blank nodes, and `strlen()`, `ucase()` and `lcase()` also for non-string literals, so a query over a column mixing them failed on the first such row. They now return `NULL`, as SPARQL leaves these results unbound.
 
-* **Fixed SIGALRM conflict with libcurl's resolver**: libcurl can use PostgreSQL's SIGALRM for name lookup timeouts when built without an asynchronous resolver, interrupting PostgreSQL's own `statement_timeout` and `connect_timeout`. `CURLOPT_NOSIGNAL` is now set to prevent this.
+* **Foreign scans no longer contact the endpoint before they are read from**: a scan that was initialised but never read from -- e.g. under a condition that turned out false, or in a cursor that was never fetched from -- still sent its query. The query is now sent when the first row is read.
 
-* **Fixed resolver thread hanging after timeout**: libcurl's name resolver thread was waited for even after a connection timeout or cancel, preventing `connect_timeout` from terminating a lookup. On systems with a non-responsive name server this could extend a query by minutes. libcurl 7.87+ now exits immediately with `CURLOPT_QUICK_EXIT`.
+* **Fixed conflict with PostgreSQL's timeouts**: with a libcurl built without an asynchronous resolver, name lookups used `SIGALRM`, which PostgreSQL uses for `statement_timeout`. `CURLOPT_NOSIGNAL` is now set.
 
-* **Fixed retry on proxy CONNECT failure**: When a proxy refused a CONNECT tunnel (e.g., HTTP 407 for auth), the request was retried as a network error. The proxy's response is now treated as an HTTP status and not retried, reporting the error immediately.
+* **Fixed requests outlasting their timeout after a name lookup**: with an unresponsive name server, a request could outlast `connect_timeout` or a cancel while libcurl waited for its resolver thread. With libcurl 7.87 and later it no longer waits.
 
-* **Fixed sockets leaked by canceled requests**: canceling a request (e.g. via `statement_timeout`) raised the error from inside libcurl's progress callback, after which libcurl refused to release the handle's connections, so every canceled request leaked its sockets. The interrupt is now serviced after `curl_easy_perform()` returns.
+* **Fixed sockets leaked by canceled requests**: every request canceled, e.g. by `statement_timeout`, leaked its connections.
 
-* **Fixed build with libcurl older than 7.66**: The `nghttp2_version` field is only available in libcurl 7.66+. Older versions now build successfully without nghttp2 reporting.
+* **Fixed retries of a proxy refusing a tunnel**: a proxy refusing `CONNECT` (e.g. with `407`) was retried as a network error; it is now reported at once.
 
-* **Fixed credentials in query plan**: User mapping credentials (password, token, proxy credentials) were stored in the query plan at planning time, causing cached plans to continue using old credentials. Credentials are now loaded at scan time and not serialized into the plan.
+* **Fixed the build with libcurl older than 7.66**.
 
 # 3.0
 Release date: **2026-09-26**
