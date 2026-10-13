@@ -113,14 +113,6 @@ SPLIT_TEXT=$SPLIT_TEXT'</result></results></sparql>'
 
 printf '%s%s' "$XML_HEAD" "$SPLIT_TEXT" > /tmp/stub-split-text.xml
 
-# A result declaring entities in a DTD, after a comment and a processing
-# instruction. The entities expand to a mere kilobyte here; the same shape
-# nested a few levels deeper makes gigabytes ("billion laughs"), which is why
-# rdf_fdw refuses any DTD in a SPARQL result.
-DOCTYPE='<!-- c --><?pi x?><!DOCTYPE sparql [<!ENTITY a0 "xxxxxxxxxx"><!ENTITY a1 "&a0;&a0;&a0;&a0;&a0;&a0;&a0;&a0;&a0;&a0;"><!ENTITY a2 "&a1;&a1;&a1;&a1;&a1;&a1;&a1;&a1;&a1;&a1;">]>'
-printf '<?xml version="1.0"?>%s<sparql xmlns="http://www.w3.org/2005/sparql-results#"><head><variable name="s"/></head><results><result><binding name="s"><literal>&a2;</literal></binding></result></results></sparql>' \
-    "$DOCTYPE" > /tmp/stub-doctype.xml
-
 # One row exercising each RDF node type, to check that a clone preserves them.
 printf '%s<head><variable name="iri"/><variable name="bnode"/><variable name="tagged"/></head><results><result><binding name="iri"><uri>http://example.org/thing</uri></binding><binding name="bnode"><bnode>b1</bnode></binding><binding name="tagged"><literal xml:lang="en">hello</literal></binding></result></results></sparql>' \
     "$XML_HEAD" > /tmp/stub-node-types.xml
@@ -187,7 +179,6 @@ podman run -d --name $CONTAINER_NAME \
   -v /tmp/stub-endpoint.conf:/etc/nginx/conf.d/default.conf:ro,z \
   -v /tmp/stub-repeated-binding.xml:/usr/share/nginx/html/repeated-binding.xml:ro,z \
   -v /tmp/stub-single-binding.xml:/usr/share/nginx/html/single-binding.xml:ro,z \
-  -v /tmp/stub-doctype.xml:/usr/share/nginx/html/doctype.xml:ro,z \
   -v /tmp/stub-node-types.xml:/usr/share/nginx/html/node-types.xml:ro,z \
   -v /tmp/stub-split-text.xml:/usr/share/nginx/html/split-text.xml:ro,z \
   -v /tmp/stub-describe-bnode.xml:/usr/share/nginx/html/describe-bnode.xml:ro,z \

@@ -6454,23 +6454,6 @@ static void ValidateSPARQLRecord(xmlNodePtr record)
 	list_free_deep(names);
 }
 
-/*
- * RefuseDocumentType
- * ------------------
- * SAX callback for a document type declaration. libxml2 calls it as soon as
- * it has read "<!DOCTYPE name", before it parses a single declaration of the
- * DTD, and stopping the parser here keeps every entity the DTD may define
- * from being declared at all. The caller sees XML_ERR_USER_STOP in the parser
- * context.
- *
- * ctx: the parser context
- */
-static void RefuseDocumentType(void *ctx, const xmlChar *name,
-							   const xmlChar *ExternalID, const xmlChar *SystemID)
-{
-	xmlStopParser((xmlParserCtxtPtr) ctx);
-}
-
 static void LoadRDFData(RDFfdwState *state)
 {
 	int options = XML_PARSE_NOBLANKS | XML_PARSE_NONET;
@@ -6529,8 +6512,6 @@ static void LoadRDFData(RDFfdwState *state)
 		xmlNodePtr results;
 		xmlNodePtr root;
 		bool found_results = false;
-		xmlParserCtxtPtr ctxt;
-		bool has_doctype;
 
 		state->rowcount = 0;
 		state->pagesize = 0;
@@ -6554,59 +6535,18 @@ static void LoadRDFData(RDFfdwState *state)
 			state->xmldoc = NULL;
 		}
 
-		/*
-		 * The SPARQL Query Results XML Format has no use for a document type
-		 * declaration, and the entities one may define can make a few hundred
-		 * bytes stand for gigabytes ("billion laughs"). libxml2 2.11 and
-		 * later bound that expansion in any case, but older releases do not
-		 * with XML_PARSE_HUGE (enable_xml_huge). So any DTD is refused:
-		 * RefuseDocumentType stops the parser at "<!DOCTYPE", before a single
-		 * entity is declared. It runs on the decoded document, so the
-		 * encoding of the response does not matter.
-		 */
-		ctxt = xmlNewParserCtxt();
-
-		if (ctxt == NULL)
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_OUT_OF_MEMORY),
-					 errmsg("could not initialize the XML parser for server \"%s\"",
-							state->server->servername)));
-
-		/* every parser context has its own copy of the SAX handlers */
-		ctxt->sax->internalSubset = RefuseDocumentType;
-
 		/* Parse the SPARQL result XML */
-		state->xmldoc = xmlCtxtReadMemory(
-			ctxt,
+		state->xmldoc = xmlReadMemory(
 			state->sparql_resultset,
 			strlen(state->sparql_resultset),
 			NULL, NULL,
 			options);
-
-		has_doctype = ctxt->errNo == XML_ERR_USER_STOP;
-		xmlFreeParserCtxt(ctxt);
 
 		/* We no longer need sparql_resultset, so let's free it */
 		if (state->sparql_resultset)
 		{
 			pfree(state->sparql_resultset);
 			state->sparql_resultset = NULL;
-		}
-
-		/* a stopped parse may still return the part of the document it read */
-		if (has_doctype)
-		{
-			if (state->xmldoc)
-			{
-				xmlFreeDoc(state->xmldoc);
-				state->xmldoc = NULL;
-			}
-
-			ereport(ERROR,
-					(errcode(ERRCODE_FDW_INVALID_DATA_TYPE),
-					 errmsg("SPARQL result from server \"%s\" contains a document type declaration",
-							state->server->servername),
-					 errdetail("SPARQL query results never need one, and the entities it may define could expand the response to an arbitrary size.")));
 		}
 
 		if (state->xmldoc == NULL)

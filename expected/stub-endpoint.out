@@ -506,24 +506,3 @@ FROM ft_user_agent;
 
 DROP SERVER stub_user_agent CASCADE;
 NOTICE:  drop cascades to foreign table ft_user_agent
-/*
- * A SPARQL result with a DTD is refused before any of its entities is read:
- * a hostile endpoint can make them expand a few hundred bytes into gigabytes.
- */
-CREATE SERVER stub_doctype
-FOREIGN DATA WRAPPER rdf_fdw
-OPTIONS (
-  endpoint 'http://stub-endpoint/doctype.xml',
-  connect_timeout '5');
-CREATE FOREIGN TABLE ft_doctype (s rdfnode OPTIONS (variable '?s'))
-SERVER stub_doctype OPTIONS (sparql 'SELECT ?s WHERE {?s ?p ?o}');
-SELECT * FROM ft_doctype;
-ERROR:  SPARQL result from server "stub_doctype" contains a document type declaration
-DETAIL:  SPARQL query results never need one, and the entities it may define could expand the response to an arbitrary size.
-/* also with enable_xml_huge, which lifts that limit before libxml2 2.11 */
-ALTER SERVER stub_doctype OPTIONS (ADD enable_xml_huge 'true');
-SELECT * FROM ft_doctype;
-ERROR:  SPARQL result from server "stub_doctype" contains a document type declaration
-DETAIL:  SPARQL query results never need one, and the entities it may define could expand the response to an arbitrary size.
-DROP SERVER stub_doctype CASCADE;
-NOTICE:  drop cascades to foreign table ft_doctype
