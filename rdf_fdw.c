@@ -5871,34 +5871,6 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 }
 
 /*
- * URLSchemeIs
- * -----------
- * Tells whether a URL has the given scheme, compared case-insensitively. A URL
- * that cannot be parsed has none.
- *
- * url: the URL to check
- * scheme: the scheme, e.g. "https"
- */
-static bool URLSchemeIs(const char *url, const char *scheme)
-{
-	CURLU *u = curl_url();
-	char *s = NULL;
-	bool result = false;
-
-	if (u == NULL)
-		return false;
-
-	if (curl_url_set(u, CURLUPART_URL, url, 0) == CURLUE_OK &&
-		curl_url_get(u, CURLUPART_SCHEME, &s, 0) == CURLUE_OK)
-		result = pg_strcasecmp(s, scheme) == 0;
-
-	curl_free(s);
-	curl_url_cleanup(u);
-
-	return result;
-}
-
-/*
  * ExecuteSPARQL
  * -------------
  * Executes the SPARQL query in the endpoint set in the CREATE FOREIGN TABLE
@@ -6060,20 +6032,6 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			elog(DEBUG2, "  %s: following redirects, maxredirs: %ld", __func__, state->request_max_redirect);
 			curl_easy_setopt(state->curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-			/*
-			 * A redirect must not take a request to an https:// endpoint
-			 * back to plain HTTP, where the query and the answer could be
-			 * read on the way.
-			 */
-			if (URLSchemeIs(state->endpoint, "https"))
-			{
-#if ((LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 85) || LIBCURL_VERSION_MAJOR < 7)
-				curl_easy_setopt(state->curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
-#else
-				curl_easy_setopt(state->curl, CURLOPT_REDIR_PROTOCOLS_STR, "https");
-#endif
-			}
 
 			/* Never forward credentials to a redirected host */
 			curl_easy_setopt(state->curl, CURLOPT_UNRESTRICTED_AUTH, 0L);
@@ -6410,9 +6368,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_UNABLE_TO_ESTABLISH_CONNECTION),
 						 errmsg("unable to connect to '%s'", state->server->servername),
-						 errdetail("%s (curl error code %u).", curl_err, res),
-						 res == CURLE_UNSUPPORTED_PROTOCOL && state->request_max_redirect > 0 ?
-						 errhint("Redirects are only followed to http:// and https:// URLs, and from an https:// endpoint only to https:// ones.") : 0));
+						 errdetail("%s (curl error code %u).", curl_err, res)));
 			}
 			else
 			{
