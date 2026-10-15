@@ -43,6 +43,8 @@ SERVER wikidata OPTIONS (
 SELECT atmid, bankname, atmwkt
 FROM atms_munich
 WHERE atmid = 'http://linkedgeodata.org/triplify/node1126961041';
+WARNING:  the rdf_fdw FOREIGN TABLE "atms_munich" has columns using native PostgreSQL types which are deprecated: atmid, atmwkt, bankid, bankname
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
   PREFIX lgdo: <http://linkedgeodata.org/ontology/>
@@ -70,13 +72,23 @@ INFO:  SPARQL query sent to 'wikidata':
 }
 
 
-INFO:  SPARQL returned 1 record.
-
-                      atmid                       |   bankname    |            atmwkt            
---------------------------------------------------+---------------+------------------------------
- http://linkedgeodata.org/triplify/node1126961041 | Münchner Bank | POINT(11.5810138 48.1163941)
-(1 row)
-
+ERROR:  internal error on server "wikidata" (HTTP 500)
+DETAIL:  SPARQL-QUERY: queryStr=
+  PREFIX lgdo: <http://linkedgeodata.org/ontology/>
+  PREFIX geom: <http://geovocab.org/geometry#>
+  PREFIX bif: <bif:>
+  
+  SELECT ?atm ?geometry ?bank ?bankLabel 
+  WHERE {
+    hint:Query hint:optimizer "None".
+    SERVICE <http://linkedgeodata.org/sparql> 
+    {
+      {?atm a lgdo:Bank; lgdo:atm true.}
+      UNION 
+      {?atm a lgdo:Atm.}    
+      ?atm geom:geometry [geo:asWKT ?geometry];
+         lgdo:operator ?operator.
+      FILTER(bif:st_intersects(?geometry, bif:st_point(11... (truncated)
 CREATE FOREIGN TABLE places_below_sea_level (
   wikidata_id text   OPTIONS (variable '?placeid', expression 'STR(?place)'),
   label text         OPTIONS (variable '?labelc', expression 'UCASE(?label)'),
@@ -106,6 +118,8 @@ SELECT wikidata_id, label, wkt
 FROM places_below_sea_level
 WHERE wikidata_id = 'http://www.wikidata.org/entity/Q61308849'
 FETCH FIRST 5 ROWS ONLY;
+WARNING:  the rdf_fdw FOREIGN TABLE "places_below_sea_level" has columns using native PostgreSQL types which are deprecated: wikidata_id, label, wkt, elevation
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location 
@@ -123,7 +137,7 @@ SELECT (STR(?place) AS ?placeid) (UCASE(?label) AS ?labelc) ?location
     SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }
 
  ## rdf_fdw pushdown conditions ##
- FILTER(STR(?place) = "http://www.wikidata.org/entity/Q61308849")
+ FILTER((STR(?place)) = "http://www.wikidata.org/entity/Q61308849")
 }
 LIMIT 5
 
@@ -188,6 +202,8 @@ WHERE
   base_url = 'http://www.wikidata.org/entity/' AND
   ctlang = 'http://www.wikidata.org/entity/Q32LUXEMBURG'
 ORDER by language;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?language) (STRBEFORE(STR(?country),"Q") AS ?b4se) (STRAFTER(STR(?country),"entity/") AS ?q1d) (CONCAT(STR(?country),UCASE(?nativename)) AS ?ct) ("2002-03-08"^^xsd:date AS ?det) ("2002-03-08T14:33:42"^^xsd:dateTime AS ?ts) (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -197,25 +213,25 @@ SELECT ?country ?label (STRLEN(?nativename) AS ?1len2) (LANG(?nativename) AS ?la
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   
  ## rdf_fdw pushdown conditions ##
- FILTER(LANG(?nativename) != "en"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER((LANG(?nativename)) != "en"^^<http://www.w3.org/2001/XMLSchema#string>)
  FILTER(LANG(?nativename) IN ("de"^^<http://www.w3.org/2001/XMLSchema#string>, "en"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(LANG(?nativename) NOT IN ("es"^^<http://www.w3.org/2001/XMLSchema#string>, "pt"^^<http://www.w3.org/2001/XMLSchema#string>))
- FILTER(STRLEN(?nativename) <= 10)
+ FILTER((STRLEN(?nativename)) <= 10)
  FILTER(STRLEN(?nativename) IN (8, 9))
  FILTER(STRLEN(?nativename) NOT IN (10, 11))
  FILTER("2002-03-08"^^xsd:date NOT IN ("2000-01-01"^^<http://www.w3.org/2001/XMLSchema#date>, "2000-01-02"^^<http://www.w3.org/2001/XMLSchema#date>))
  FILTER("2002-03-08"^^xsd:date IN ("2002-03-08"^^<http://www.w3.org/2001/XMLSchema#date>, "2000-01-02"^^<http://www.w3.org/2001/XMLSchema#date>))
- FILTER("2002-03-08"^^xsd:date != "2002-03-10"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(("2002-03-08"^^xsd:date) != "2002-03-10"^^<http://www.w3.org/2001/XMLSchema#date>)
  FILTER("2002-03-08T14:33:42"^^xsd:dateTime NOT IN ("2002-03-08T12:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>, "2002-03-08T13:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
  FILTER("2002-03-08T14:33:42"^^xsd:dateTime IN ("2002-03-08T14:33:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>, "2002-03-08T13:00:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>))
- FILTER("2002-03-08T14:33:42"^^xsd:dateTime != "2002-03-08T11:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER(("2002-03-08T14:33:42"^^xsd:dateTime) != "2002-03-08T11:30:00"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
  FILTER(STRAFTER(STR(?country),"entity/") IN ("Q32"^^<http://www.w3.org/2001/XMLSchema#string>, "Q35"^^<http://www.w3.org/2001/XMLSchema#string>))
  FILTER(STRAFTER(STR(?country),"entity/") NOT IN ("foo"^^<http://www.w3.org/2001/XMLSchema#string>, "bar"^^<http://www.w3.org/2001/XMLSchema#string>))
- FILTER(LANG(?nativename) = "de"^^<http://www.w3.org/2001/XMLSchema#string>)
- FILTER("2002-03-08"^^xsd:date = "2002-03-08"^^<http://www.w3.org/2001/XMLSchema#date>)
- FILTER("2002-03-08T14:33:42"^^xsd:dateTime = "2002-03-08T14:33:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
- FILTER(STRBEFORE(STR(?country),"Q") = "http://www.wikidata.org/entity/"^^<http://www.w3.org/2001/XMLSchema#string>)
- FILTER(CONCAT(STR(?country),UCASE(?nativename)) = "http://www.wikidata.org/entity/Q32LUXEMBURG")
+ FILTER((LANG(?nativename)) = "de"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER(("2002-03-08"^^xsd:date) = "2002-03-08"^^<http://www.w3.org/2001/XMLSchema#date>)
+ FILTER(("2002-03-08T14:33:42"^^xsd:dateTime) = "2002-03-08T14:33:42"^^<http://www.w3.org/2001/XMLSchema#dateTime>)
+ FILTER((STRBEFORE(STR(?country),"Q")) = "http://www.wikidata.org/entity/"^^<http://www.w3.org/2001/XMLSchema#string>)
+ FILTER((CONCAT(STR(?country),UCASE(?nativename))) = "http://www.wikidata.org/entity/Q32LUXEMBURG")
 }
 
 INFO:  SPARQL returned 1 record.
@@ -236,6 +252,8 @@ WHERE
   bf IS NOT true AND
   bt IS true AND
   bt IS NOT false;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -246,9 +264,7 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
   
  ## rdf_fdw pushdown conditions ##
  FILTER(STRENDS(STR(?country),"http") = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
- FILTER(STRENDS(STR(?country),"http") != "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
  FILTER(STRSTARTS(STR(?country),"http") = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
- FILTER(STRSTARTS(STR(?country),"http") != "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
  FILTER(STR(?nativename) = "Luxembourg")
 }
 
@@ -267,6 +283,8 @@ WHERE
   NOT bf IS true AND
   bt IS true AND
   NOT bt IS false;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -277,9 +295,7 @@ SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(S
   
  ## rdf_fdw pushdown conditions ##
  FILTER(STRENDS(STR(?country),"http") = "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
- FILTER(STRENDS(STR(?country),"http") != "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
  FILTER(STRSTARTS(STR(?country),"http") = "true"^^<http://www.w3.org/2001/XMLSchema#boolean>)
- FILTER(STRSTARTS(STR(?country),"http") != "false"^^<http://www.w3.org/2001/XMLSchema#boolean>)
  FILTER(STR(?nativename) = "Luxembourg")
 }
 
@@ -301,6 +317,8 @@ WHERE
   bf != true AND
   bt = true AND
   bt != false;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename (STRSTARTS(STR(?country),"http") AS ?but) (STRENDS(STR(?country),"http") AS ?buf) 
@@ -328,6 +346,8 @@ BEGIN
   ORDER BY nativename
   OFFSET 0 LIMIT 5;  
 END; $$;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename 
@@ -337,18 +357,17 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?nativename)
-LIMIT 5
 
-INFO:  SPARQL returned 5 records.
+INFO:  SPARQL returned 43 records.
 
 SELECT * FROM tmp_eu_countries;
-                 uri                 |   nativename    
--------------------------------------+-----------------
+                 uri                 |         nativename         
+-------------------------------------+----------------------------
+ http://www.wikidata.org/entity/Q183 | Bundesrepublik Deutschland
  http://www.wikidata.org/entity/Q35  | Danmark
- http://www.wikidata.org/entity/Q35  | Danmarks Rige
- http://www.wikidata.org/entity/Q213 | Česko
- http://www.wikidata.org/entity/Q213 | Česká republika
- http://www.wikidata.org/entity/Q219 | България
+ http://www.wikidata.org/entity/Q183 | Deutschland
+ http://www.wikidata.org/entity/Q191 | Eesti Vabariik
+ http://www.wikidata.org/entity/Q33  | Finland
 (5 rows)
 
 DROP TABLE tmp_eu_countries;
@@ -377,6 +396,8 @@ BEGIN
   END LOOP;
 
 END; $$;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename 
@@ -386,10 +407,11 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?country)
-LIMIT 2
 
-INFO:  SPARQL returned 2 records.
+INFO:  SPARQL returned 43 records.
 
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename 
@@ -399,9 +421,8 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?country)
-LIMIT 4
 
-INFO:  SPARQL returned 4 records.
+INFO:  SPARQL returned 43 records.
 
 /* Compare the stored records from the loop with a
  * single query with a LIMIT 'max' */
@@ -412,6 +433,8 @@ SELECT uri, nativename
   LIMIT 5
 )
 SELECT * FROM local EXCEPT SELECT * FROM j;
+WARNING:  the rdf_fdw FOREIGN TABLE "european_countries" has columns using native PostgreSQL types which are deprecated: uri, label, nativename, len_label, uname, lname, language, base_url, qid, ctlang, dt, ts, bt, bf
+HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?country ?nativename 
@@ -421,9 +444,8 @@ SELECT ?country ?nativename
     SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
   }
 ORDER BY  ASC (?country)
-LIMIT 5
 
-INFO:  SPARQL returned 5 records.
+INFO:  SPARQL returned 43 records.
 
  id | name 
 ----+------

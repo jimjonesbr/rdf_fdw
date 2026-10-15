@@ -30,8 +30,6 @@ CALL
         verbose => true,        
         commit_page => false
     );
-WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: p, o
-HINT:  Use the "rdfnode" type instead.
 INFO:  setting 'fetch_size' to 100 (default)
 INFO:  
 
@@ -54,9 +52,9 @@ SELECT ?p ?o
 ORDER BY ASC(?p) 
 OFFSET 0 LIMIT 100
 
-INFO:  SPARQL returned 13 records.
+INFO:  SPARQL returned 14 records.
 
-INFO:  [0 - 100]: 13 records inserted
+INFO:  [0 - 100]: 14 records inserted
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -64,23 +62,26 @@ SELECT ?p ?o
 ORDER BY ASC(?p) 
 OFFSET 100 LIMIT 100
 
-ERROR:  too many requests on server "wikidata" (HTTP 429)
-DETAIL:  <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Wikimedia Error</title>
-<style>
-* { margin: 0; padding: 0; }
-body { background: #fff; font: 15px/1.6 sans-serif; color: #333; }
-.content { margin: 7% auto 0; padding: 2em 1em 1em; max-width: 640px; display: flex; flex-direction: row; flex-wrap: wrap; }
-.footer { clear: both; margin-top: 14%; border-top: 1px solid #e5e5e5; background: #f9f9f9; padding: 2em 0; font-size: 0.8em; text-align: center; }
-img { margin: 0 2em 2em 0; }
-a img { border: 0; ... (truncated)
-HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+INFO:  SPARQL returned 0 records.
+
 SELECT * FROM public.t1 ORDER BY o::text COLLATE "C";
- p | o 
----+---
-(0 rows)
+                      p                       |             o             
+----------------------------------------------+---------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@mul
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@vi
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پستگرسکیوال"@fa
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پوسٹ گری ایس کیو ایل"@ur
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn
+ <http://www.w3.org/2000/01/rdf-schema#label> | "போஸ்கிரெஸ்குயெல்"@ta
+ <http://www.w3.org/2000/01/rdf-schema#label> | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"@ml
+ <http://www.w3.org/2000/01/rdf-schema#label> | "โพสต์เกรสคิวเอล"@th
+(14 rows)
 
 /*
  * only a single column of 't2' matches the foreign table 'dbpedia_cities'.
@@ -98,8 +99,6 @@ CALL
         verbose => true,
         commit_page => true
     );
-WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: p, o
-HINT:  Use the "rdfnode" type instead.
 INFO:  
 
 == Parameters ==
@@ -121,23 +120,62 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 0 LIMIT 2
 
-ERROR:  too many requests on server "wikidata" (HTTP 429)
-DETAIL:  <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Wikimedia Error</title>
-<style>
-* { margin: 0; padding: 0; }
-body { background: #fff; font: 15px/1.6 sans-serif; color: #333; }
-.content { margin: 7% auto 0; padding: 2em 1em 1em; max-width: 640px; display: flex; flex-direction: row; flex-wrap: wrap; }
-.footer { clear: both; margin-top: 14%; border-top: 1px solid #e5e5e5; background: #f9f9f9; padding: 2em 0; font-size: 0.8em; text-align: center; }
-img { margin: 0 2em 2em 0; }
-a img { border: 0; ... (truncated)
-HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+INFO:  SPARQL returned 2 records.
+
+INFO:  [0 - 2]: 2 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 2 LIMIT 2
+
+INFO:  SPARQL returned 2 records.
+
+INFO:  [2 - 4]: 2 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 4 LIMIT 2
+
+INFO:  SPARQL returned 2 records.
+
+INFO:  [4 - 6]: 2 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 6 LIMIT 2
+
+INFO:  SPARQL returned 2 records.
+
+INFO:  [6 - 8]: 2 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 8 LIMIT 1
+
+INFO:  SPARQL returned 1 record.
+
+INFO:  [8 - 9]: 1 records inserted
 SELECT * FROM public.t2 ORDER BY o::text COLLATE "C";
- p | o 
----+---
-(0 rows)
+                      p                       |           o            
+----------------------------------------------+------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پستگرسکیوال"@fa
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn
+ <http://www.w3.org/2000/01/rdf-schema#label> | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"@ml
+(9 rows)
 
 /* 
  * 't3' does not exist. it will be created by the function due to
@@ -152,8 +190,6 @@ CALL
         sort_order => 'DESC',
         verbose => true
     );
-WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: p, o
-HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t3" created based on FOREIGN TABLE "public.ft":
 
   CREATE TABLE public.t3 AS SELECT * FROM public.ft WITH NO DATA;
@@ -180,23 +216,37 @@ SELECT ?p ?o
 ORDER BY DESC(?o) 
 OFFSET 0 LIMIT 100
 
-ERROR:  too many requests on server "wikidata" (HTTP 429)
-DETAIL:  <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Wikimedia Error</title>
-<style>
-* { margin: 0; padding: 0; }
-body { background: #fff; font: 15px/1.6 sans-serif; color: #333; }
-.content { margin: 7% auto 0; padding: 2em 1em 1em; max-width: 640px; display: flex; flex-direction: row; flex-wrap: wrap; }
-.footer { clear: both; margin-top: 14%; border-top: 1px solid #e5e5e5; background: #f9f9f9; padding: 2em 0; font-size: 0.8em; text-align: center; }
-img { margin: 0 2em 2em 0; }
-a img { border: 0; ... (truncated)
-HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+INFO:  SPARQL returned 14 records.
+
+INFO:  [0 - 100]: 14 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY DESC(?o) 
+OFFSET 100 LIMIT 100
+
+INFO:  SPARQL returned 0 records.
+
 SELECT * FROM public.t3 ORDER BY o::text COLLATE "C";
-ERROR:  relation "public.t3" does not exist
-LINE 1: SELECT * FROM public.t3 ORDER BY o::text COLLATE "C";
-                      ^
+                      p                       |             o             
+----------------------------------------------+---------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@mul
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@vi
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پستگرسکیوال"@fa
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پوسٹ گری ایس کیو ایل"@ur
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn
+ <http://www.w3.org/2000/01/rdf-schema#label> | "போஸ்கிரெஸ்குயெல்"@ta
+ <http://www.w3.org/2000/01/rdf-schema#label> | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"@ml
+ <http://www.w3.org/2000/01/rdf-schema#label> | "โพสต์เกรสคิวเอล"@th
+(14 rows)
+
 /*
  * 'public.t4' only partially matches the columns of 'public.ft'.
  * the non-matching columns will be set to NULL.
@@ -210,8 +260,6 @@ CALL
         fetch_size => 4,
         max_records => 15
     );
-WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: p, o
-HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -219,23 +267,62 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 0 LIMIT 4
 
-ERROR:  too many requests on server "wikidata" (HTTP 429)
-DETAIL:  <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Wikimedia Error</title>
-<style>
-* { margin: 0; padding: 0; }
-body { background: #fff; font: 15px/1.6 sans-serif; color: #333; }
-.content { margin: 7% auto 0; padding: 2em 1em 1em; max-width: 640px; display: flex; flex-direction: row; flex-wrap: wrap; }
-.footer { clear: both; margin-top: 14%; border-top: 1px solid #e5e5e5; background: #f9f9f9; padding: 2em 0; font-size: 0.8em; text-align: center; }
-img { margin: 0 2em 2em 0; }
-a img { border: 0; ... (truncated)
-HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 4 LIMIT 4
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 8 LIMIT 4
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 12 LIMIT 3
+
+INFO:  SPARQL returned 2 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 15 LIMIT 1
+
+INFO:  SPARQL returned 0 records.
+
 SELECT * FROM public.t4 ORDER BY o::text COLLATE "C";
- p | o | foo 
----+---+-----
-(0 rows)
+                      p                       |             o             | foo 
+----------------------------------------------+---------------------------+-----
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en           | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es           | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr           | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it           | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko           | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@mul          | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@vi           | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar    | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پستگرسکیوال"@fa          | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پوسٹ گری ایس کیو ایل"@ur | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn       | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "போஸ்கிரெஸ்குயெல்"@ta        | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"@ml       | 
+ <http://www.w3.org/2000/01/rdf-schema#label> | "โพสต์เกรสคิวเอล"@th        | 
+(14 rows)
 
 /*
  * 'public.t5' does not exist.
@@ -250,8 +337,6 @@ CALL
         fetch_size => 4,
         max_records => 15
     );
-WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: p, o
-HINT:  Use the "rdfnode" type instead.
 INFO:  SPARQL query sent to 'wikidata':
 
 SELECT ?p ?o 
@@ -259,23 +344,63 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 0 LIMIT 4
 
-ERROR:  too many requests on server "wikidata" (HTTP 429)
-DETAIL:  <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Wikimedia Error</title>
-<style>
-* { margin: 0; padding: 0; }
-body { background: #fff; font: 15px/1.6 sans-serif; color: #333; }
-.content { margin: 7% auto 0; padding: 2em 1em 1em; max-width: 640px; display: flex; flex-direction: row; flex-wrap: wrap; }
-.footer { clear: both; margin-top: 14%; border-top: 1px solid #e5e5e5; background: #f9f9f9; padding: 2em 0; font-size: 0.8em; text-align: center; }
-img { margin: 0 2em 2em 0; }
-a img { border: 0; ... (truncated)
-HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 4 LIMIT 4
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 8 LIMIT 4
+
+INFO:  SPARQL returned 4 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 12 LIMIT 3
+
+INFO:  SPARQL returned 2 records.
+
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 15 LIMIT 1
+
+INFO:  SPARQL returned 0 records.
+
 SELECT * FROM public.t5 ORDER BY o::text COLLATE "C";
-ERROR:  relation "public.t5" does not exist
-LINE 1: SELECT * FROM public.t5 ORDER BY o::text COLLATE "C";
-                      ^
+                      p                       |             o             
+----------------------------------------------+---------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@en
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@es
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@fr
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@it
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@ko
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@mul
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@vi
+ <http://www.w3.org/2000/01/rdf-schema#label> | "بوستجري إس كيو إل"@ar
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پستگرسکیوال"@fa
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پوسٹ گری ایس کیو ایل"@ur
+ <http://www.w3.org/2000/01/rdf-schema#label> | "পোস্টগ্রেএসকিউএল"@bn
+ <http://www.w3.org/2000/01/rdf-schema#label> | "போஸ்கிரெஸ்குயெல்"@ta
+ <http://www.w3.org/2000/01/rdf-schema#label> | "പോസ്റ്റ്ഗ്രേഎസ്ക്യുഎൽ"@ml
+ <http://www.w3.org/2000/01/rdf-schema#label> | "โพสต์เกรสคิวเอล"@th
+(14 rows)
+
 /* 
  * the matching columns of 'public.t4' and 'public.t5' 
  * must be identical 
@@ -283,9 +408,10 @@ LINE 1: SELECT * FROM public.t5 ORDER BY o::text COLLATE "C";
 SELECT p,o FROM public.t4
 EXCEPT
 SELECT p,o FROM public.t5;
-ERROR:  relation "public.t5" does not exist
-LINE 7: SELECT p,o FROM public.t5;
-                        ^
+ p | o 
+---+---
+(0 rows)
+
 /* 
  * setting 'begin_offset' to 10
  */
@@ -300,8 +426,6 @@ CALL
         max_records => 7,
         verbose => true
     );
-WARNING:  the rdf_fdw FOREIGN TABLE "ft" has columns using native PostgreSQL types which are deprecated: p, o
-HINT:  Use the "rdfnode" type instead.
 INFO:  Target TABLE "public.t6" created based on FOREIGN TABLE "public.ft":
 
   CREATE TABLE public.t6 AS SELECT * FROM public.ft WITH NO DATA;
@@ -327,30 +451,41 @@ SELECT ?p ?o
 ORDER BY ASC(?o) 
 OFFSET 10 LIMIT 2
 
-ERROR:  too many requests on server "wikidata" (HTTP 429)
-DETAIL:  <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Wikimedia Error</title>
-<style>
-* { margin: 0; padding: 0; }
-body { background: #fff; font: 15px/1.6 sans-serif; color: #333; }
-.content { margin: 7% auto 0; padding: 2em 1em 1em; max-width: 640px; display: flex; flex-direction: row; flex-wrap: wrap; }
-.footer { clear: both; margin-top: 14%; border-top: 1px solid #e5e5e5; background: #f9f9f9; padding: 2em 0; font-size: 0.8em; text-align: center; }
-img { margin: 0 2em 2em 0; }
-a img { border: 0; ... (truncated)
-HINT:  The endpoint is rate-limiting requests. Consider reducing query frequency or adding a delay between requests.
+INFO:  SPARQL returned 2 records.
+
+INFO:  [10 - 12]: 2 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 12 LIMIT 2
+
+INFO:  SPARQL returned 2 records.
+
+INFO:  [12 - 14]: 2 records inserted
+INFO:  SPARQL query sent to 'wikidata':
+
+SELECT ?p ?o 
+{wd:Q192490 ?p ?o . FILTER (?p = <http://www.w3.org/2000/01/rdf-schema#label>)}
+ORDER BY ASC(?o) 
+OFFSET 14 LIMIT 2
+
+INFO:  SPARQL returned 0 records.
+
 SELECT * FROM public.t6 ORDER BY o::text COLLATE "C";
-ERROR:  relation "public.t6" does not exist
-LINE 1: SELECT * FROM public.t6 ORDER BY o::text COLLATE "C";
-                      ^
+                      p                       |             o             
+----------------------------------------------+---------------------------
+ <http://www.w3.org/2000/01/rdf-schema#label> | "PostgreSQL"@vi
+ <http://www.w3.org/2000/01/rdf-schema#label> | "پوسٹ گری ایس کیو ایل"@ur
+ <http://www.w3.org/2000/01/rdf-schema#label> | "போஸ்கிரெஸ்குயெல்"@ta
+ <http://www.w3.org/2000/01/rdf-schema#label> | "โพสต์เกรสคิวเอล"@th
+(4 rows)
+
 /*
  * clean up the mess
  */
 DROP TABLE IF EXISTS public.t1, public.t2, public.t3, public.t4, public.t5, public.t6;
-NOTICE:  table "t3" does not exist, skipping
-NOTICE:  table "t5" does not exist, skipping
-NOTICE:  table "t6" does not exist, skipping
 DROP SERVER wikidata CASCADE;
 NOTICE:  drop cascades to foreign table ft
 /* == Exceptions == */
@@ -374,9 +509,6 @@ CALL
         target_table  => 't1'
     );
 ERROR:  relation "t1" does not exist
-LINE 1: ...'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regc...
-                                                             ^
-QUERY:  SELECT CASE relkind WHEN 'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regclass::oid;
 /*
  empty target_table
 */
@@ -426,9 +558,6 @@ CALL
         orderby_column => 'foo'
     );
 ERROR:  relation "t1" does not exist
-LINE 1: ...'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regc...
-                                                             ^
-QUERY:  SELECT CASE relkind WHEN 'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regclass::oid;
 /*
  target table does not match any column of t1
  */
@@ -438,9 +567,6 @@ CALL
         target_table  => 't1_local'
     );
 ERROR:  relation "t1" does not exist
-LINE 1: ...'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regc...
-                                                             ^
-QUERY:  SELECT CASE relkind WHEN 'f' THEN oid ELSE 0 END FROM pg_class WHERE oid = 't1'::regclass::oid;
 /*
  invalid sort_order
 */
