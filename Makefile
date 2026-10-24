@@ -62,6 +62,7 @@ REGRESS +=  create-extension \
 			pushdown \
 			pg_datatypes \
 			sparql-functions \
+			case-mapping \
 			privileges \
 			encoding \
 			http-security \

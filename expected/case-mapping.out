@@ -1,0 +1,22 @@
+/*
+ * LCASE and UCASE map every Unicode letter, as SPARQL's fn:lower-case and
+ * fn:upper-case do, also in a database whose LC_CTYPE is C, where
+ * PostgreSQL's lower() and upper() map only A-Z with the default collation.
+ * The cases themselves are covered by sparql-functions; this test only needs
+ * a database with C character semantics, which contrib_regression may not be.
+ *
+ * case-mapping_1.out is the output of PostgreSQL before 17, which has no
+ * pg_c_utf8 collation to fall back to: there the letters outside A-Z stay as
+ * they are.
+ */
+CREATE DATABASE rdf_fdw_ctype_c TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C';
+\c rdf_fdw_ctype_c
+CREATE EXTENSION rdf_fdw;
+SELECT sparql.lcase('"ÉCOLE"'), sparql.ucase('"école"');
+  lcase  |  ucase  
+---------+---------
+ "école" | "ÉCOLE"
+(1 row)
+
+\c contrib_regression
+DROP DATABASE rdf_fdw_ctype_c;

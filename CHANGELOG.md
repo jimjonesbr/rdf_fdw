@@ -47,6 +47,8 @@ Release date: **unreleased**
 
 * **Fixed the build with libcurl older than 7.66**.
 
+* **Fixed `sparql.lcase()` and `sparql.ucase()` in databases with `LC_CTYPE` `C`**: only `A`-`Z` were converted, so `sparql.ucase('"école"')` returned `"éCOLE"`. On PostgreSQL 17 and later, a UTF8 database whose `LC_CTYPE` is `C` or `POSIX` now converts every Unicode letter, using the builtin `pg_c_utf8`   collation.
+
 # 3.0
 Release date: **2026-09-26**
 

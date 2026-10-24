@@ -19,9 +19,12 @@
 #include "sparql.h"
 
 #include "lib/stringinfo.h"
+#include "catalog/namespace.h"
 #include "catalog/pg_collation.h"
 #include "mb/pg_wchar.h"
+#include "nodes/value.h"
 #include "utils/builtins.h"
+#include "utils/pg_locale.h"
 #include "utils/timestamp.h"
 #include <string.h>
 #include <ctype.h>
@@ -1412,13 +1415,65 @@ char *substr_sparql(char *str, int start, int length)
 }
 
 /*
+ * CaseMappingCollation
+ * --------------------
+ *
+ * Returns the collation LCASE and UCASE convert case with. SPARQL defines them
+ * as fn:lower-case and fn:upper-case, which map every Unicode letter whatever
+ * the locale, but PostgreSQL's lower() and upper() map only A-Z with the
+ * default collation of a database whose LC_CTYPE is C or POSIX. In such a UTF8
+ * database the builtin pg_c_utf8 collation is used instead, which has Unicode
+ * character semantics and exists from PostgreSQL 17 on. Otherwise, and before
+ * PostgreSQL 17, the default collation is used.
+ *
+ * The result is kept for the lifetime of the backend, as the database and its
+ * default collation cannot change.
+ *
+ * returns: OID of the collation to pass to lower() and upper()
+ */
+static Oid CaseMappingCollation(void)
+{
+#if PG_VERSION_NUM >= 170000
+    static Oid collation = InvalidOid;
+    bool ctype_is_c;
+
+    if (OidIsValid(collation))
+        return collation;
+
+#if PG_VERSION_NUM >= 180000
+    ctype_is_c = pg_newlocale_from_collation(DEFAULT_COLLATION_OID)->ctype_is_c;
+#else
+    ctype_is_c = lc_ctype_is_c(DEFAULT_COLLATION_OID);
+#endif
+
+    collation = DEFAULT_COLLATION_OID;
+
+    if (ctype_is_c && GetDatabaseEncoding() == PG_UTF8)
+    {
+        Oid unicode = get_collation_oid(list_make2(makeString("pg_catalog"),
+                                                   makeString("pg_c_utf8")),
+                                        true);
+
+        if (OidIsValid(unicode))
+            collation = unicode;
+    }
+
+    elog(DEBUG2, "%s: using collation %u", __func__, collation);
+    return collation;
+#else
+    return DEFAULT_COLLATION_OID;
+#endif
+}
+
+/*
  * lcase
  * -----
  *
  * Implements SPARQL’s LCASE function. Converts the lexical form of a string literal
- * (simple, xsd:string, or language-tagged) to lowercase (ASCII A-Z to a-z, non-ASCII
- * preserved). Preserves the original datatype or language tag. Returns NULL for IRIs,
- * blank nodes and non-string literals. Bare strings are treated as simple literals.
+ * (simple, xsd:string, or language-tagged) to lowercase, with the collation
+ * CaseMappingCollation() picks. Preserves the original datatype or language tag.
+ * Returns NULL for IRIs, blank nodes and non-string literals. Bare strings are
+ * treated as simple literals.
  *
  * str: Null-terminated C string (RDF literal or bare string, e.g., "BAR", "\"BAR\"@en")
  *
@@ -1468,7 +1523,7 @@ char *lcase(char *str)
         text *input_text = cstring_to_text(lexical);
         Datum lower_datum = DirectFunctionCall3Coll(
             lower,
-            DEFAULT_COLLATION_OID,
+            CaseMappingCollation(),
             PointerGetDatum(input_text),
             BoolGetDatum(false),
             (Datum)0);
@@ -1497,9 +1552,10 @@ char *lcase(char *str)
  * -----
  *
  * Implements SPARQL’s UCASE function. Converts the lexical form of a string literal
- * (simple, xsd:string, or language-tagged) to uppercase (ASCII a-z to A-Z, non-ASCII
- * preserved). Preserves the original datatype or language tag. Returns NULL for IRIs,
- * blank nodes and non-string literals. Bare strings are treated as simple literals.
+ * (simple, xsd:string, or language-tagged) to uppercase, with the collation
+ * CaseMappingCollation() picks. Preserves the original datatype or language tag.
+ * Returns NULL for IRIs, blank nodes and non-string literals. Bare strings are
+ * treated as simple literals.
  *
  * str: Null-terminated C string (RDF literal or bare string, e.g., "bar", "\"bar\"@en")
  *
@@ -1549,7 +1605,7 @@ char *ucase(char *str)
         text *input_text = cstring_to_text(lexical);
         Datum upper_datum = DirectFunctionCall3Coll(
             upper,
-            DEFAULT_COLLATION_OID,
+            CaseMappingCollation(),
             PointerGetDatum(input_text),
             BoolGetDatum(false),
             (Datum)0);
