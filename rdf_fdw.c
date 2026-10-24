@@ -25,15 +25,10 @@
 #include "access/htup_details.h"
 #include "access/reloptions.h"
 #include "access/genam.h"
-#include "access/sysattr.h"
-#include "access/xact.h"
 #include "catalog/indexing.h"
 #include "catalog/dependency.h"
 #include "catalog/pg_attribute.h"
-#include "catalog/pg_cast.h"
 #include "catalog/pg_extension.h"
-#include "catalog/pg_collation.h"
-#include "catalog/pg_foreign_data_wrapper.h"
 #include "catalog/pg_foreign_server.h"
 #include "catalog/pg_foreign_table.h"
 #include "catalog/namespace.h"
@@ -49,10 +44,8 @@
 #include "commands/explain_state.h"
 #endif
 #include "commands/explain.h"
-#include "commands/vacuum.h"
 #include "foreign/fdwapi.h"
 #include "foreign/foreign.h"
-#include "libpq/pqsignal.h"
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
@@ -60,50 +53,34 @@
 #if PG_VERSION_NUM < 180000
 #include "nodes/bitmapset.h" /* Needed for bms_is_empty in versions where it's inline */
 #endif
-#include "optimizer/cost.h"
 #include "optimizer/pathnode.h"
 #include "optimizer/planmain.h"
 #if PG_VERSION_NUM >= 140000
 #include "optimizer/appendinfo.h"
 #endif
-#include "optimizer/restrictinfo.h"
-#include "optimizer/tlist.h"
-#include "parser/parse_relation.h"
 #include "parser/parsetree.h"
 #include "pgtime.h"
 #include "port.h"
-#include "storage/ipc.h"
 #include "storage/lock.h"
-#include "tcop/tcopprot.h"
 #include "utils/array.h"
 #include "utils/acl.h"
 #include "utils/builtins.h"
-#include "utils/catcache.h"
 #include "utils/date.h"
 #include "utils/numeric.h"
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 #include "utils/elog.h"
 #include "utils/fmgroids.h"
-#include "utils/formatting.h"
-#include "utils/guc.h"
 #include "utils/lsyscache.h"
 #include "storage/lmgr.h"
 #include "utils/memutils.h"
 #include "utils/rel.h"
-#include "utils/resowner.h"
-#include "utils/timestamp.h"
-#include "utils/snapmgr.h"
 #include "utils/syscache.h"
-#include "utils/timestamp.h"
 #include "executor/spi.h"
 #if PG_VERSION_NUM < 120000
 #include "nodes/relation.h"
-#include "optimizer/var.h"
-#include "utils/tqual.h"
 #else
 #include "nodes/pathnodes.h"
-#include "optimizer/optimizer.h"
 #include "access/heapam.h"
 #endif
 #include "funcapi.h"
@@ -113,8 +90,6 @@
 #else
 #include "libpq/md5.h"
 #endif
-#include "mb/pg_wchar.h"
-#include <regex.h>
 #include <errno.h>
 #include <limits.h>
 #if PG_VERSION_NUM >= 190000

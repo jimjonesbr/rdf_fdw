@@ -18,9 +18,6 @@
 
 #include "lib/stringinfo.h"
 #include "utils/builtins.h"
-#if PG_VERSION_NUM >= 100000
-#include "utils/varlena.h"
-#endif
 #include "access/htup_details.h"
 #include "catalog/pg_type.h"
 #include "mb/pg_wchar.h"

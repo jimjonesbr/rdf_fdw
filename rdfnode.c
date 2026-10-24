@@ -20,13 +20,7 @@
 #include "varatt.h"
 #endif
 #include "utils/date.h"
-#include "utils/numeric.h"
 #include "utils/timestamp.h"
-#include "utils/datetime.h"
-#if PG_VERSION_NUM >= 100000
-#include "utils/varlena.h"
-#endif
-#include "catalog/pg_collation.h"
 #include "nodes/makefuncs.h"
 #include <string.h>
 
