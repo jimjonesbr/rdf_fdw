@@ -19,12 +19,15 @@
 #include "sparql.h"
 
 #include "lib/stringinfo.h"
+#include "access/htup_details.h"
 #include "catalog/namespace.h"
 #include "catalog/pg_collation.h"
+#include "catalog/pg_database.h"
 #include "mb/pg_wchar.h"
+#include "miscadmin.h"
 #include "nodes/value.h"
 #include "utils/builtins.h"
-#include "utils/pg_locale.h"
+#include "utils/syscache.h"
 #include "utils/timestamp.h"
 #include <string.h>
 #include <ctype.h>
@@ -1426,6 +1429,14 @@ char *substr_sparql(char *str, int start, int length)
  * character semantics and exists from PostgreSQL 17 on. Otherwise, and before
  * PostgreSQL 17, the default collation is used.
  *
+ * Whether the default collation has C character semantics is read from the
+ * database's own locale in pg_database, with the rules PostgreSQL applies to
+ * it: a libc LC_CTYPE of C or POSIX, or the builtin provider with locale C.
+ * PostgreSQL's own answer (lc_ctype_is_c() on 17, the pg_locale_t on 18 and
+ * later) is declared in utils/pg_locale.h, which includes ICU's headers when
+ * the server was built with ICU, and postgresql-server-dev does not pull in
+ * libicu-dev: including it would add a build dependency on ICU for nothing.
+ *
  * The result is kept for the lifetime of the backend, as the database and its
  * default collation cannot change.
  *
@@ -1435,16 +1446,36 @@ static Oid CaseMappingCollation(void)
 {
 #if PG_VERSION_NUM >= 170000
     static Oid collation = InvalidOid;
-    bool ctype_is_c;
+    bool ctype_is_c = false;
+    HeapTuple tuple;
+    Form_pg_database db;
 
     if (OidIsValid(collation))
         return collation;
 
-#if PG_VERSION_NUM >= 180000
-    ctype_is_c = pg_newlocale_from_collation(DEFAULT_COLLATION_OID)->ctype_is_c;
-#else
-    ctype_is_c = lc_ctype_is_c(DEFAULT_COLLATION_OID);
-#endif
+    tuple = SearchSysCache1(DATABASEOID, ObjectIdGetDatum(MyDatabaseId));
+    if (!HeapTupleIsValid(tuple))
+        elog(ERROR, "cache lookup failed for database %u", MyDatabaseId);
+
+    db = (Form_pg_database) GETSTRUCT(tuple);
+
+    if (db->datlocprovider == COLLPROVIDER_LIBC)
+    {
+        char *ctype = TextDatumGetCString(SysCacheGetAttrNotNull(DATABASEOID, tuple,
+                                                                 Anum_pg_database_datctype));
+
+        ctype_is_c = strcmp(ctype, "C") == 0 || strcmp(ctype, "POSIX") == 0;
+    }
+    else if (db->datlocprovider == COLLPROVIDER_BUILTIN)
+    {
+        bool isnull;
+        Datum locale = SysCacheGetAttr(DATABASEOID, tuple,
+                                       Anum_pg_database_datlocale, &isnull);
+
+        ctype_is_c = !isnull && strcmp(TextDatumGetCString(locale), "C") == 0;
+    }
+
+    ReleaseSysCache(tuple);
 
     collation = DEFAULT_COLLATION_OID;
 
