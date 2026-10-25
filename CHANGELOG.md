@@ -1,5 +1,11 @@
 # 3.1
-Release date: **unreleased**
+Release date: **2026-10-25**
+
+## Summary
+
+This release pushes `OR` conditions and more `LIMIT`s down to the endpoint, accepts compressed responses, and retries busy or unreachable endpoints with a growing wait. It also fixes credentials that a cached plan kept sending after the user mapping changed, header injection through option values, and `NOT` conditions that returned wrong rows when pushed down.
+
+**Before you upgrade:** a foreign table queried through a view now uses the view owner's user mapping, unless the view is `security_invoker`. If the roles querying such a view have user mappings but the view owner has none, create one for the owner. Otherwise `ALTER EXTENSION rdf_fdw UPDATE` is all the upgrade needs.
 
 ## Enhancements
 
@@ -47,7 +53,7 @@ Release date: **unreleased**
 
 * **Fixed the build with libcurl older than 7.66**.
 
-* **Fixed `sparql.lcase()` and `sparql.ucase()` in databases with `LC_CTYPE` `C`**: only `A`-`Z` were converted, so `sparql.ucase('"école"')` returned `"éCOLE"`. On PostgreSQL 17 and later, a UTF8 database whose `LC_CTYPE` is `C` or `POSIX` now converts every Unicode letter, using the builtin `pg_c_utf8`   collation.
+* **Fixed `sparql.lcase()` and `sparql.ucase()` in databases with `LC_CTYPE` `C`**: only `A`-`Z` were converted, so `sparql.ucase('"école"')` returned `"éCOLE"`. On PostgreSQL 17 and later, a UTF8 database whose `LC_CTYPE` is `C` or `POSIX` now converts every Unicode letter, using the builtin `pg_c_utf8` collation.
 
 # 3.0
 Release date: **2026-09-26**
