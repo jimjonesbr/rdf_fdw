@@ -83,7 +83,7 @@ CREATE EXTENSION rdf_fdw;
 To install a specific version, use:
 
 ```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '3.1';
+CREATE EXTENSION rdf_fdw WITH VERSION '3.2';
 ```
 
 To run the predefined regression tests: 
@@ -122,7 +122,7 @@ ALTER EXTENSION rdf_fdw UPDATE;
 To update to an specific version use `UPDATE TO` and the full version number, e.g.
 
 ```sql
-ALTER EXTENSION rdf_fdw UPDATE TO '3.1';
+ALTER EXTENSION rdf_fdw UPDATE TO '3.2';
 ```
 
 ## Deploy with Docker
@@ -140,7 +140,7 @@ FROM postgres:18
 RUN apt-get update && \
     apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
 
-RUN git clone --branch v3.1 https://github.com/jimjonesbr/rdf_fdw.git && \
+RUN git clone --branch v3.2 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
     make -j && \
     make install
@@ -149,8 +149,8 @@ RUN git clone --branch v3.1 https://github.com/jimjonesbr/rdf_fdw.git && \
 Build and run the image:
 
 ```bash
-docker build -t rdf_fdw:18-3.1 .
-docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-3.1
+docker build -t rdf_fdw:18-3.2 .
+docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-3.2
 ```
 
 Create the extension inside the running container:
@@ -159,7 +159,7 @@ Create the extension inside the running container:
 docker exec -u postgres rdf_fdw_container psql -d postgres -c "CREATE EXTENSION rdf_fdw;"
 ```
 
-To build the latest development version instead of a release, remove `--branch v3.1` from the `git clone` command.
+To build the latest development version instead of a release, remove `--branch v3.2` from the `git clone` command.
 
 > [!NOTE]
 > Do not use `POSTGRES_HOST_AUTH_METHOD=trust` in production. Check for other `POSTGRES_HOST_AUTH_METHOD` in the PostgreSQL docker documentation.
@@ -1081,9 +1081,9 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 
 ```sql
 SELECT rdf_fdw_version();
-                                            rdf_fdw_version                                             
---------------------------------------------------------------------------------------------------------
- rdf_fdw 3.1 (PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
+                                              rdf_fdw_version                                               
+------------------------------------------------------------------------------------------------------------
+ rdf_fdw 3.2-dev (PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -1105,7 +1105,7 @@ A system view that provides detailed version information for `rdf_fdw` and all i
 SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
- rdf_fdw    | 3.1
+ rdf_fdw    | 3.2-dev
  PostgreSQL | 18.6 (Debian 18.6-1.pgdg13+2)
  libxml     | 2.9.14
  libcurl    | 8.14.1
@@ -1114,7 +1114,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2026-10-25 09:12:44 UTC
+ built      | 2026-10-26 08:48:57 UTC
 (10 rows)
 ```
 

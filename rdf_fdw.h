@@ -21,7 +21,7 @@
 #include <libxml/tree.h>     /* xmlDocPtr, xmlNodePtr */
 #include "lib/stringinfo.h"  /* StringInfoData */
 /* Version */
-#define FDW_VERSION "3.1"
+#define FDW_VERSION "3.2-dev"
 #define FDW_URL "https://github.com/jimjonesbr/rdf_fdw"
 
 /* Request status codes */

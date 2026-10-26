@@ -112,3 +112,10 @@ SELECT sparql.replace('<http://example.org/a>'::rdfnode, 'a', 'b') IS NULL AS re
  t
 (1 row)
 
+ALTER EXTENSION rdf_fdw UPDATE TO '3.2';
+SELECT extversion FROM pg_extension WHERE extname = 'rdf_fdw';
+ extversion 
+------------
+ 3.2
+(1 row)
+
