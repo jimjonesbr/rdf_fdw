@@ -7,7 +7,7 @@ Release date: **unreleased**
 
 * **Fixed connections leaked by responses too large to buffer**: a response that outgrew the 1 GB PostgreSQL can hold in a single buffer raised an error inside libcurl, which left the transfer unfinished and its connection open until the session ended. Such a response now ends the query with an error and nothing is left behind. `max_response_size` sets a lower limit.
 
-* **Fixed values read in databases not encoded in UTF-8**: values from the endpoint were stored as UTF-8 bytes whatever the database encoding, so in a `LATIN1` database `café` arrived as `cafÃ©`, and in multibyte encodings such as `EUC_JP` values could be invalid. They are now converted to the database encoding. A character the database encoding cannot represent now raises an error instead of being stored garbled. UTF-8 databases are not affected.
+* **Fixed values read in databases not encoded in UTF-8**: values from the endpoint were stored as UTF-8 bytes whatever the database encoding, so in a `LATIN1` database `café` arrived as `cafÃ©`, and in multibyte encodings such as `EUC_JP` values could be invalid. They are now converted to the database encoding. A character the database encoding cannot represent now raises an error instead of being stored garbled. UTF-8 databases are not affected. Queries and data sent to the endpoint are now converted to UTF-8 as well.
 
 # 3.1
 Release date: **2026-10-25**

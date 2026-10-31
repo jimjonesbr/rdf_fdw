@@ -5929,6 +5929,7 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 static int ExecuteSPARQL(RDFfdwState *state)
 {
 	CURLcode res;
+	char *sparql;
 	StringInfoData url_buffer;
 	StringInfoData user_agent;
 	StringInfoData accept_header;
@@ -5954,6 +5955,14 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		 (state->sparql_query_type == SPARQL_INSERT) ? "INSERT" : (state->sparql_query_type == SPARQL_DELETE) ? "DELETE"
 															  : (state->sparql_query_type == SPARQL_UPDATE)	  ? "UPDATE"
 																											  : "SELECT/DESCRIBE");
+
+	/*
+	 * The SPARQL protocol carries queries and updates in UTF-8, whatever the
+	 * encoding of the database they were built in. Converted before libcurl
+	 * is set up, as the conversion raises an error for a character it cannot
+	 * convert.
+	 */
+	sparql = pg_server_to_any(state->sparql, strlen(state->sparql), PG_UTF8);
 
 	RegisterRDFResources(state);
 	state->curl = curl_easy_init();
@@ -5983,7 +5992,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 	else
 	{
 		/* SPARQL SELECT/DESCRIBE: use URL-encoded form parameters */
-		char *escaped_url = curl_easy_escape(state->curl, state->sparql, 0);
+		char *escaped_url = curl_easy_escape(state->curl, sparql, 0);
 
 		if (!escaped_url)
 		{
@@ -6105,8 +6114,8 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		{
 			/* For SPARQL UPDATE: send raw SPARQL update in POST body */
 			elog(DEBUG1, "%s: setting SPARQL UPDATE body: %s", __func__, state->sparql);
-			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, state->sparql);
-			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(state->sparql));
+			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDS, sparql);
+			curl_easy_setopt(state->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(sparql));
 		}
 		else
 		{

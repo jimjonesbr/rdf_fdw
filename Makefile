@@ -109,6 +109,7 @@ ifdef INCLUDE_LOCAL_TESTS
 			 fuseki-select \
 			 fuseki-table-clone \
 			 fuseki-describe \
+			 fuseki-encoding \
 			 graphdb-delete \
 			 graphdb-insert \
 			 graphdb-update \
