@@ -5902,7 +5902,7 @@ static xmlNodePtr FetchNextBinding(RDFfdwState *state)
 
 	elog(DEBUG3, "  %s: called > rowcount = %d/%d", __func__, state->rowcount, state->pagesize);
 
-	if (state->rowcount > state->pagesize)
+	if (state->rowcount >= state->pagesize)
 	{
 		elog(DEBUG3, "%s exit: returning NULL (EOF!)", __func__);
 		return NULL;
@@ -6347,11 +6347,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 					 * Truncate the error body before logging or including in
 					 * error messages.  Endpoints may return large HTML pages on
 					 * errors (e.g. from misconfigured proxies), which would
-					 * flood server logs.
+					 * flood server logs.  The cut falls on a character
+					 * boundary of the UTF-8 the body is most likely in, so the
+					 * message does not end in half a character.
 					 */
 					if (chunk.size > RDF_FDW_MAX_ERROR_BODY)
 					{
-						appendBinaryStringInfo(&display_body, chunk.memory, RDF_FDW_MAX_ERROR_BODY);
+						appendBinaryStringInfo(&display_body, chunk.memory,
+											   pg_encoding_mbcliplen(PG_UTF8, chunk.memory,
+																	 (int) chunk.size,
+																	 RDF_FDW_MAX_ERROR_BODY));
 						appendStringInfoString(&display_body, "... (truncated)");
 					}
 					else
