@@ -46,6 +46,7 @@
 #include "commands/explain.h"
 #include "foreign/fdwapi.h"
 #include "foreign/foreign.h"
+#include "mb/pg_wchar.h"
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
@@ -1724,10 +1725,16 @@ Datum rdf_fdw_coalesce(PG_FUNCTION_ARGS)
  *
  * Creates a Datum from a given value based on the postgres types and modifiers.
  *
+ * The value comes from the endpoint's response: libxml2 hands every string of
+ * a document over in UTF-8, whatever the encoding of the database, so it is
+ * converted to the database encoding first. That also rejects byte sequences
+ * that are not valid in it, which every multibyte-aware function relies on --
+ * a string that ends in the middle of a character is read past its end.
+ *
  * tuple: a Heaptuple
  * pgtype: postgres type
  * pgtypemod: postgres type modifier
- * value: value to be converted
+ * value: value to be converted, in UTF-8
  *
  * returns Datum
  */
@@ -1737,6 +1744,8 @@ static Datum CreateDatum(Oid pgtype, int pgtypmod, char *value)
 	Oid typioparam;
 
 	elog(DEBUG3, "%s called", __func__);
+
+	value = pg_any_to_server(value, strlen(value), PG_UTF8);
 
 	getTypeInputInfo(pgtype, &typinput, &typioparam);
 	return OidInputFunctionCall(typinput, value, typioparam, pgtypmod);
