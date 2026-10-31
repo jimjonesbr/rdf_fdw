@@ -108,7 +108,7 @@ $ make PGUSER=postgres INCLUDE_LOCAL_TESTS=1 installcheck
 ```
 
 > [!WARNING]  
-> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory. When connecting to untrusted or public endpoints, consider setting `max_response_size` on the `SERVER` to cap the response body and prevent runaway allocations.
+> `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory, or set `max_response_size` on the `SERVER` to cap the size of a response.
 
 
 ## Update Extension
@@ -203,7 +203,7 @@ OPTIONS (endpoint 'https://dbpedia.org/sparql');
 | `prefix_context` | optional | Name of a prefix context whose `PREFIX` entries are prepended to generated SPARQL queries. |
 | `enable_xml_huge` | optional | Enable libxml2's `XML_PARSE_HUGE` to process very large or deeply nested responses (dangerous; default `false`). It lifts libxml2's limits on document size and nesting and, before libxml2 2.11, on entity expansion. Use only for trusted endpoints. |
 | `readonly` | optional | Mark the server as read-only (default `false`). When `true`, all `INSERT`, `UPDATE`, and `DELETE` operations on any foreign table backed by this server are rejected before reaching the endpoint. Table-level `readonly` takes precedence over this setting. |
-| `max_response_size` | optional | Maximum allowed HTTP response body size in bytes (default `0` = unlimited). If the response exceeds this limit, the query is aborted with an error. Use this to protect against runaway result sets from untrusted or misbehaving endpoints. Responses are requested compressed (`gzip`, `deflate`, and `br` or `zstd` where libcurl supports them); the limit applies to the decompressed size. |
+| `max_response_size` | optional | Maximum size in bytes of an HTTP response body, after decompression (default `0`: no limit other than the 1 GB PostgreSQL can hold in a single buffer). A larger response aborts the query with an error. Useful to keep an unexpectedly large result from taking up too much memory. |
 | `base_uri` | optional | Base URI used to resolve relative URIs in the `RDF/XML` a `DESCRIBE` returns (default `http://rdf_fdw.postgresql.org/`). The `base_uri` argument of [sparql.describe](#sparql-describe) overrides it. |
 | `fetch_size` | optional | Default page size for [rdf_fdw_clone_table](#rdf_fdw_clone_table) (default `100`). It does not affect ordinary scans, which read a foreign table's result in one request. A `fetch_size` on the `FOREIGN TABLE` overrides it, and the procedure's own `fetch_size` argument overrides both. |
 

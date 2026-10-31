@@ -151,8 +151,10 @@ struct MemoryStruct
 {
 	char *memory;
 	size_t size;
+	size_t capacity;	  /* bytes allocated for memory (before PostgreSQL 16) */
 	size_t max_size;	  /* 0 = unlimited */
 	bool size_exceeded;	  /* max_size was reached, transfer aborted */
+	bool buffer_failed;	  /* could not be buffered, transfer aborted */
 };
 
 static struct RDFfdwOption valid_options[] =
@@ -5331,9 +5333,12 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 	elog(DEBUG5, "%s called", __func__);
 
 	/*
-	 * Report configured size limits after curl_easy_perform() returns.
-	 * Unexpected allocation errors and interrupts are also covered by the
-	 * owning memory context's resource cleanup callback.
+	 * Nothing may be raised from here: an ereport() would longjmp out of
+	 * libcurl, which then never releases the transfer -- its connection,
+	 * socket and decoder stay behind for the life of the backend, still
+	 * pointing at buffers on the stack of ExecuteSPARQL(). Every failure
+	 * aborts the transfer instead, by returning a short count, and is
+	 * reported once curl_easy_perform() has returned.
 	 */
 	if (mem->max_size > 0 && mem->size + realsize > mem->max_size)
 	{
@@ -5343,9 +5348,60 @@ static size_t CURLWriteMemoryCallback(void *contents, size_t size, size_t nmemb,
 		return 0;
 	}
 
-	ptr = repalloc(mem->memory, mem->size + realsize + 1);
+	/*
+	 * A buffer cannot outgrow MaxAllocSize, which a response can reach even
+	 * without max_response_size set, or set beyond it: a few kilobytes of
+	 * gzip decode to a gigabyte before they get here.
+	 */
+	if (realsize >= MaxAllocSize - mem->size)
+	{
+		mem->buffer_failed = true;
+		return 0;
+	}
+
+#if PG_VERSION_NUM >= 160000
+	/*
+	 * repalloc_extended() reports a failure by returning NULL, and grows a
+	 * large buffer with realloc(), which usually extends it in place.
+	 */
+	ptr = repalloc_extended(mem->memory, mem->size + realsize + 1, MCXT_ALLOC_NO_OOM);
+	if (ptr == NULL)
+	{
+		mem->buffer_failed = true;
+		return 0;
+	}
 
 	mem->memory = ptr;
+#else
+	/*
+	 * Before PostgreSQL 16 repalloc() cannot fail without raising, so a new
+	 * buffer is allocated and the old one copied over. Copying the whole
+	 * buffer for every chunk would be quadratic, so it grows by doubling;
+	 * ExecuteSPARQL() trims what is left over once the transfer is done.
+	 */
+	if (mem->size + realsize + 1 > mem->capacity)
+	{
+		size_t newcapacity = Max(mem->capacity, 1024);
+
+		while (newcapacity < mem->size + realsize + 1)
+			newcapacity *= 2;
+		newcapacity = Min(newcapacity, MaxAllocSize);
+
+		ptr = MemoryContextAllocExtended(GetMemoryChunkContext(mem->memory),
+										 newcapacity, MCXT_ALLOC_NO_OOM);
+		if (ptr == NULL)
+		{
+			mem->buffer_failed = true;
+			return 0;
+		}
+
+		memcpy(ptr, mem->memory, mem->size + 1);
+		pfree(mem->memory);
+		mem->memory = ptr;
+		mem->capacity = newcapacity;
+	}
+#endif
+
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
@@ -5874,12 +5930,16 @@ static int ExecuteSPARQL(RDFfdwState *state)
 
 	chunk.memory = palloc0(1);
 	chunk.size = 0; /* no data at this point */
+	chunk.capacity = 1;
 	chunk.max_size = (size_t) state->max_response_size;
 	chunk.size_exceeded = false;
+	chunk.buffer_failed = false;
 	chunk_header.memory = palloc0(1);
 	chunk_header.size = 0; /* no data at this point */
+	chunk_header.capacity = 1;
 	chunk_header.max_size = 0; /* no limit on headers */
 	chunk_header.size_exceeded = false;
+	chunk_header.buffer_failed = false;
 
 	elog(DEBUG1, "%s called for %s operation", __func__,
 		 (state->sparql_query_type == SPARQL_INSERT) ? "INSERT" : (state->sparql_query_type == SPARQL_DELETE) ? "DELETE"
@@ -6178,6 +6238,7 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		 * same graph if the endpoint happens to apply them twice.
 		 */
 		for (long i = 0; i < state->max_retries && !chunk.size_exceeded &&
+			 !chunk.buffer_failed && !chunk_header.buffer_failed &&
 			 ((res != CURLE_OK && response_code == 0) || IsRetryableStatus(response_code));
 			 i++)
 		{
@@ -6234,6 +6295,19 @@ static int ExecuteSPARQL(RDFfdwState *state)
 					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
 					 errmsg("SPARQL response exceeds max_response_size limit of %zu bytes", chunk.max_size),
 					 errhint("Increase max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.")));
+		}
+
+		if (chunk.buffer_failed || chunk_header.buffer_failed)
+		{
+			CleanupRDFResources(state);
+
+			ereport(ERROR,
+					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
+					 errmsg("SPARQL response from server \"%s\" is too large to be buffered",
+							state->server->servername),
+					 errdetail("A decoded response may not exceed %zu bytes, and must fit in the memory available.",
+							   (size_t) MaxAllocSize - 1),
+					 errhint("Set max_response_size in CREATE SERVER or refine your SPARQL query to return fewer results.")));
 		}
 
 		/* Check for HTTP errors first (with FAILONERROR=false, we get the response body) */
@@ -6370,6 +6444,23 @@ static int ExecuteSPARQL(RDFfdwState *state)
 		else
 		{
 			/* Success - HTTP 2xx */
+
+#if PG_VERSION_NUM < 160000
+			/*
+			 * The write callback grows the buffer by doubling (see
+			 * CURLWriteMemoryCallback), which can leave nearly as much unused
+			 * as the response itself. Give it back before anything else is
+			 * allocated: a large buffer is shrunk by realloc(), normally in
+			 * place (a small one is left as it is), and raising here, outside
+			 * libcurl, is safe.
+			 */
+			if (chunk.capacity > chunk.size + 1)
+			{
+				chunk.memory = repalloc(chunk.memory, chunk.size + 1);
+				chunk.capacity = chunk.size + 1;
+			}
+#endif
+
 			state->sparql_resultset = pstrdup(chunk.memory);
 
 			elog(DEBUG4, "%s: xml document \n\n%s", __func__, chunk.memory);

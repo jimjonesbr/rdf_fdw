@@ -3,6 +3,10 @@ Release date: **unreleased**
 
 ## Summary
 
+## Bug Fixes
+
+* **Fixed connections leaked by responses too large to buffer**: a response that outgrew the 1 GB PostgreSQL can hold in a single buffer raised an error inside libcurl, which left the transfer unfinished and its connection open until the session ended. Such a response now ends the query with an error and nothing is left behind. `max_response_size` sets a lower limit.
+
 # 3.1
 Release date: **2026-10-25**
 
