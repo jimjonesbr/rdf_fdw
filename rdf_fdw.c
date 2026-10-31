@@ -2130,15 +2130,18 @@ Datum rdf_fdw_describe(PG_FUNCTION_ARGS)
 
 	if (call_cntr < max_calls)
 	{
-		Datum values[3];
-		bool nulls[3];
+		/*
+		 * Sized by the result type rather than by its three attributes as
+		 * created: ALTER TYPE can add attributes to it, which get NULL.
+		 */
+		int natts = attinmeta->tupdesc->natts;
+		Datum *values = palloc(natts * sizeof(Datum));
+		bool *nulls = palloc0(natts * sizeof(bool));
 		HeapTuple tuple;
 		Datum result;
 		RDFfdwTriple *triple = (RDFfdwTriple *)list_nth((List *)funcctx->user_fctx, call_cntr);
 
-		memset(nulls, 0, sizeof(nulls));
-
-		for (size_t i = 0; i < funcctx->attinmeta->tupdesc->natts; i++)
+		for (int i = 0; i < natts; i++)
 		{
 			Form_pg_attribute att = TupleDescAttr(funcctx->attinmeta->tupdesc, i);
 
