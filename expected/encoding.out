@@ -82,5 +82,17 @@ FROM encoded;
  t             | t
 (1 row)
 
+/*
+ * STRLEN counts characters in the database encoding. It used to count them
+ * as if the value were UTF-8, which skips every byte from 80 to bf: both bytes
+ * of a4 a2 fall in that range, so U+3042 counted as no character at all.
+ */
+SELECT sparql.strlen('"\u3042"'::rdfnode) AS one_char,
+       sparql.strlen('"a\u3042b\uFF71"'::rdfnode) AS four_chars;
+ one_char | four_chars 
+----------+------------
+        1 |          4
+(1 row)
+
 \c contrib_regression
 DROP DATABASE rdf_fdw_euc_jp;

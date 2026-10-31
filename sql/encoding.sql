@@ -65,5 +65,13 @@ SELECT encode(n::text::bytea, 'hex') = '22a4a222' AS stored_intact,
        encode(sparql.lex(n)::text::bytea, 'hex') = 'a4a2' AS lexical_form_ok
 FROM encoded;
 
+/*
+ * STRLEN counts characters in the database encoding. It used to count them
+ * as if the value were UTF-8, which skips every byte from 80 to bf: both bytes
+ * of a4 a2 fall in that range, so U+3042 counted as no character at all.
+ */
+SELECT sparql.strlen('"\u3042"'::rdfnode) AS one_char,
+       sparql.strlen('"a\u3042b\uFF71"'::rdfnode) AS four_chars;
+
 \c contrib_regression
 DROP DATABASE rdf_fdw_euc_jp;

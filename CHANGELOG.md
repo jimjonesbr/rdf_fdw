@@ -9,6 +9,8 @@ Release date: **unreleased**
 
 * **Fixed values read in databases not encoded in UTF-8**: values from the endpoint were stored as UTF-8 bytes whatever the database encoding, so in a `LATIN1` database `café` arrived as `cafÃ©`, and in multibyte encodings such as `EUC_JP` values could be invalid. They are now converted to the database encoding. A character the database encoding cannot represent now raises an error instead of being stored garbled. UTF-8 databases are not affected. Queries and data sent to the endpoint are now converted to UTF-8 as well.
 
+* **Fixed `sparql.strlen` in databases not encoded in UTF-8**: it counted characters as if the value were UTF-8, so in a `LATIN1` database `"90°"` had 2 characters, and in `EUC_JP` a Japanese character could count as none. It now counts characters in the database encoding.
+
 # 3.1
 Release date: **2026-10-25**
 

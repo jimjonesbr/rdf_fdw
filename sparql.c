@@ -2324,36 +2324,6 @@ char *strafter(char *str, char *delimiter)
 }
 
 /*
- * count_utf8_chars
- * ----------------
- *
- * Counts Unicode characters (code points) in a UTF-8 encoded string by
- * skipping continuation bytes (0x80–0xBF), returning the number of
- * characters rather than bytes.
- *
- * str: Null-terminated UTF-8 encoded C string
- *
- * returns: Number of Unicode code points in str
- */
-static int count_utf8_chars(const char *str)
-{
-    int char_count = 0;
-
-    elog(DEBUG3, "%s called: str='%s'", __func__, str);
-
-    while (*str)
-    {
-        /* Skip continuation bytes (0x80-0xBF) */
-        if ((*str & 0xC0) != 0x80)
-            char_count++;
-        str++;
-    }
-
-    elog(DEBUG3, "%s exit: returning '%d'", __func__, char_count);
-    return char_count;
-}
-
-/*
  * strlen_rdf
  * ----------
  *
@@ -2391,9 +2361,12 @@ int strlen_rdf(char *str)
     if (!IsRDFStringLiteral(dt))
         return -1;
 
-    /* the characters of the value, not of its escapes (see DecodeLexicalForm()) */
+    /*
+     * the characters of the value, not of its escapes (see
+     * DecodeLexicalForm()), counted in the database encoding
+     */
     lexical = DecodeLexicalForm(lex(str));
-    result = count_utf8_chars(lexical);
+    result = pg_mbstrlen(lexical);
 
     elog(DEBUG3, "%s exit: returning '%d'", __func__, result);
     return result;
