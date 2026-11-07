@@ -2,8 +2,8 @@
 
 CODEPATH="/home/jim/git/rdf_fdw"
 TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
-PGVERSIONS="9.5,9.6,10,11,12,13,14,15,16,17,18,19"
-#PGVERSIONS="9.5"
+PGVERSIONS="20,19,18,17,16,15,14,13,12,11,10,9.6,9.5"
+#PGVERSIONS="20"
 IMAGENAME="pgxn-image"
 NETWORK_NAME="pgnet"
 
