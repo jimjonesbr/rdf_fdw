@@ -27,6 +27,7 @@ do
     bash $TEST_ENV_PATH/graphdb/deploy-graphdb.sh
     bash $TEST_ENV_PATH/qlever/deploy-qlever.sh
     bash $TEST_ENV_PATH/squid/deploy-proxy-env.sh
+    bash $TEST_ENV_PATH/stub-endpoint/deploy-stub-endpoint.sh
 
     # Tests that need a triplestore are opt-in:
     # INCLUDE_LOCAL_TESTS=1    - tests against locally deployed triplestores
