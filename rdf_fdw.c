@@ -2789,10 +2789,11 @@ static int64 InsertRetrievedData(RDFfdwState *state, int64 offset, int64 end_off
 								 */
 								char *escaped = cstring_to_rdfliteral(EncodeLexicalForm((char *)content));
 
-								if (datatype)
-									appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
-								else if (lang)
+								/* the language tag goes first (see CreateTuple()) */
+								if (lang && *lang)
 									appendStringInfo(&literal_value, "%s", strlang(escaped, (char *)lang));
+								else if (datatype)
+									appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
 								else
 									appendStringInfo(&literal_value, "%s", escaped);
 							}
@@ -7345,10 +7346,19 @@ static void CreateTuple(TupleTableSlot *slot, RDFfdwState *state)
 							/* the value, escaped as an rdfnode keeps it (see above) */
 							char *escaped = cstring_to_rdfliteral(EncodeLexicalForm(node_value));
 
-							if (datatype)
-								appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
-							else if (lang)
+							/*
+							 * The language tag goes first. A literal with one is an
+							 * rdf:langString (RDF 1.1 Concepts 3.3), and some endpoints,
+							 * such as DBpedia, say so with a datatype attribute next to
+							 * xml:lang; building the term from that datatype dropped the
+							 * tag and left "..."^^rdf:langString, which is not a valid
+							 * term. An empty xml:lang means no language at all (XML 1.0
+							 * 2.12), so it does not count as a tag.
+							 */
+							if (lang && *lang)
 								appendStringInfo(&literal_value, "%s", strlang(escaped, (char *)lang));
+							else if (datatype)
+								appendStringInfo(&literal_value, "%s", strdt(escaped, (char *)datatype));
 							else
 								appendStringInfo(&literal_value, "%s", escaped);
 						}

@@ -11,6 +11,8 @@ Release date: **unreleased**
 
 * **Fixed `sparql.strlen` in databases not encoded in UTF-8**: it counted characters as if the value were UTF-8, so in a `LATIN1` database `"90°"` had 2 characters, and in `EUC_JP` a Japanese character could count as none. It now counts characters in the database encoding.
 
+* **Fixed language tags dropped from results**: a literal that came with both `xml:lang` and `datatype="rdf:langString"`, as DBpedia sometimes sends it, lost its tag and became `"1984"^^rdf:langString` instead of `"1984"@en`. The language tag now takes precedence. A literal with an empty `xml:lang`, which means no language, is now a plain literal instead of an error.
+
 # 3.1
 Release date: **2026-10-25**
 

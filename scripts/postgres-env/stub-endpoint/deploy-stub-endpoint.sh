@@ -129,6 +129,19 @@ BACKSLASH=$BACKSLASH'</result></results></sparql>'
 
 printf '%s%s' "$XML_HEAD" "$BACKSLASH" > /tmp/stub-backslash.xml
 
+# Language-tagged literals that also carry datatype="rdf:langString", as
+# DBpedia sometimes sends them, next to the controls: a tag alone, a datatype
+# alone, and an empty xml:lang, which in XML means no language at all.
+LANG_STRING='http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+LANG_DT='<head><variable name="both"/><variable name="lang_only"/><variable name="dt_only"/><variable name="empty_lang"/></head><results><result>'
+LANG_DT=$LANG_DT'<binding name="both"><literal xml:lang="en" datatype="'$LANG_STRING'">1984</literal></binding>'
+LANG_DT=$LANG_DT'<binding name="lang_only"><literal xml:lang="en">1984</literal></binding>'
+LANG_DT=$LANG_DT'<binding name="dt_only"><literal datatype="http://www.w3.org/2001/XMLSchema#string">1984</literal></binding>'
+LANG_DT=$LANG_DT'<binding name="empty_lang"><literal xml:lang="">1984</literal></binding>'
+LANG_DT=$LANG_DT'</result></results></sparql>'
+
+printf '%s%s' "$XML_HEAD" "$LANG_DT" > /tmp/stub-lang-datatype.xml
+
 # The same values in a DESCRIBE answer.
 cat > /tmp/stub-describe-backslash.xml <<'XMLEOF'
 <?xml version="1.0"?>
@@ -184,6 +197,7 @@ podman run -d --name $CONTAINER_NAME \
   -v /tmp/stub-describe-bnode.xml:/usr/share/nginx/html/describe-bnode.xml:ro,z \
   -v /tmp/stub-backslash.xml:/usr/share/nginx/html/backslash.xml:ro,z \
   -v /tmp/stub-describe-backslash.xml:/usr/share/nginx/html/describe-backslash.xml:ro,z \
+  -v /tmp/stub-lang-datatype.xml:/usr/share/nginx/html/lang-datatype.xml:ro,z \
   docker.io/library/nginx:alpine
 
 echo "Waiting for the stub endpoint to start..."

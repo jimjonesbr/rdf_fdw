@@ -355,6 +355,53 @@ DROP SERVER stub_backslash CASCADE;
 DROP SERVER stub_describe_backslash CASCADE;
 
 /*
+ * A language-tagged literal is an rdf:langString, and some endpoints, such as
+ * DBpedia, send that datatype next to xml:lang. The term used to be built from
+ * the datatype, which dropped the tag and left "1984"^^rdf:langString, a term
+ * RDF does not allow. The tag now goes first, in a scan and in a clone alike.
+ * An empty xml:lang means no language, so that literal is a plain one.
+ */
+CREATE SERVER stub_lang_datatype
+FOREIGN DATA WRAPPER rdf_fdw
+OPTIONS (
+  endpoint 'http://stub-endpoint/lang-datatype.xml',
+  connect_timeout '5');
+
+CREATE FOREIGN TABLE ft_lang_datatype (
+  both_attrs rdfnode OPTIONS (variable '?both'),
+  lang_only  rdfnode OPTIONS (variable '?lang_only'),
+  dt_only    rdfnode OPTIONS (variable '?dt_only')
+) SERVER stub_lang_datatype OPTIONS (sparql 'SELECT * WHERE {?s ?p ?o}');
+
+CREATE FOREIGN TABLE ft_empty_lang (
+  empty_lang rdfnode OPTIONS (variable '?empty_lang')
+) SERVER stub_lang_datatype OPTIONS (sparql 'SELECT * WHERE {?s ?p ?o}');
+
+SELECT both_attrs, lang_only, dt_only FROM ft_lang_datatype;
+SELECT sparql.lang(both_attrs) AS lang,
+       sparql.datatype(both_attrs) AS datatype,
+       both_attrs = lang_only AS same_as_lang_only
+FROM ft_lang_datatype;
+SELECT empty_lang FROM ft_empty_lang;
+
+CREATE TABLE cloned_lang_datatype (both_attrs rdfnode, lang_only rdfnode, dt_only rdfnode);
+
+CALL rdf_fdw_clone_table(
+  foreign_table => 'ft_lang_datatype',
+  target_table  => 'cloned_lang_datatype',
+  fetch_size    => 1,
+  max_records   => 1,
+  create_table  => false,
+  verbose       => false);
+
+SELECT both_attrs, lang_only, dt_only FROM cloned_lang_datatype;
+
+DROP TABLE cloned_lang_datatype;
+DROP FOREIGN TABLE ft_lang_datatype;
+DROP FOREIGN TABLE ft_empty_lang;
+DROP SERVER stub_lang_datatype CASCADE;
+
+/*
  * HTTP 429, 502 and 503 ask to come back later, so they are retried after the
  * delay the Retry-After header asks for, or after 5, 10, 20... seconds
  * without one. The endpoint keeps answering the same, so every retry is used
