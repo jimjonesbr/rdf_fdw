@@ -15,8 +15,9 @@
 
 ## Index
 
-- [Requirements](#requirements)
-- [Quick Start](#quick-start)
+- [Installing from packages](#installing-from-packages)
+- [Compiling from source](#compiling-from-source)
+- [Creating the extension](#creating-the-extension)
 - [Update Extension](#update-extension)
 - [Deploy with Docker](#deploy-with-docker)
 - [Usage](#usage)
@@ -42,7 +43,19 @@
 - [GIS integration](#gis-integration)
 - [For testers and developers](#for-testers-and-developers)
 
-## Requirements
+## Installing from packages
+
+On Red Hat Enterprise Linux 9 and 10 and their clones (Rocky Linux, AlmaLinux), Fedora, and Amazon Linux 2023, `rdf_fdw` is available from the [PostgreSQL Yum repository](https://yum.postgresql.org/) for the PostgreSQL versions it currently supports. Once the repository is set up, install the package matching your PostgreSQL major version, e.g. for PostgreSQL 18:
+
+```bash
+$ sudo dnf install rdf_fdw_18
+```
+
+Then [create the extension](#creating-the-extension). Packages follow `rdf_fdw` releases, so they may lag behind this repository. To use an unreleased version, compile it from source.
+
+## Compiling from source
+
+To build `rdf_fdw` you need:
 
 * [PostgreSQL](https://www.postgresql.org): version 9.5 or higher.
 * [libxml2](http://www.xmlsoft.org/): version 2.5.0 or higher.
@@ -59,8 +72,6 @@ apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls
 > [!NOTE]  
 > `postgresql-server-dev-18` only installs the libraries for PostgreSQL 18. Change it if you're using another PostgreSQL version.
 
-## Quick Start
-
 Ensure [pg_config](https://www.postgresql.org/docs/current/app-pgconfig.html) is properly set before running `make`. This executable is typically found in your PostgreSQL installation's `bin` directory.
 
 ```bash
@@ -72,18 +83,6 @@ After compilation, install the Foreign Data Wrapper:
 
 ```bash
 $ make install
-```
-
-Then, create the extension in PostgreSQL:
-
-```sql
-CREATE EXTENSION rdf_fdw;
-```
-
-To install a specific version, use:
-
-```sql
-CREATE EXTENSION rdf_fdw WITH VERSION '3.2';
 ```
 
 To run the predefined regression tests: 
@@ -107,13 +106,27 @@ groups query triplestores, so they have to be requested explicitly:
 $ make PGUSER=postgres INCLUDE_LOCAL_TESTS=1 installcheck
 ```
 
+## Creating the extension
+
+Once `rdf_fdw` is installed, create the extension in PostgreSQL:
+
+```sql
+CREATE EXTENSION rdf_fdw;
+```
+
+To install a specific version, use:
+
+```sql
+CREATE EXTENSION rdf_fdw WITH VERSION '3.2';
+```
+
 > [!WARNING]  
 > `rdf_fdw` loads all retrieved RDF data into memory before converting it for PostgreSQL. If you expect large data volumes, ensure that PostgreSQL has sufficient memory, or set `max_response_size` on the `SERVER` to cap the size of a response.
 
 
 ## Update Extension
 
-To update the extension's version you must first build and install the binaries and then run `ALTER EXTENSION`:
+To update the extension's version you must first install the new binaries, either from packages or by compiling them, and then run `ALTER EXTENSION`:
 
 ```sql
 ALTER EXTENSION rdf_fdw UPDATE;
@@ -1362,6 +1375,6 @@ Foreign tables can feed GIS tools like any other PostgreSQL table. Two walkthrou
 
 ## For testers and developers
 
-Think you're cool enough? Try compiling the latest commits from source: see [Deploy with Docker](#deploy-with-docker) for a Dockerfile, and [Quick Start](#quick-start) for running the regression tests.
+Think you're cool enough? Try compiling the latest commits from source: see [Deploy with Docker](#deploy-with-docker) for a Dockerfile, and [Compiling from source](#compiling-from-source) for running the regression tests.
 
 If you've found a bug or have general comments, do not hesitate to open an issue. Any feedback is much appreciated!
