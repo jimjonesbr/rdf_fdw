@@ -15,8 +15,9 @@
 
 ## Index
 
-- [Installing from packages](#installing-from-packages)
-- [Compiling from source](#compiling-from-source)
+- [Build and Install](#build-and-install)
+  - [From package manager](#from-package-manager)
+  - [From source](#from-source)
 - [Creating the extension](#creating-the-extension)
 - [Update Extension](#update-extension)
 - [Deploy with Docker](#deploy-with-docker)
@@ -43,17 +44,30 @@
 - [GIS integration](#gis-integration)
 - [For testers and developers](#for-testers-and-developers)
 
-## Installing from packages
+## Build and Install
 
-On Red Hat Enterprise Linux 9 and 10 and their clones (Rocky Linux, AlmaLinux), Fedora, and Amazon Linux 2023, `rdf_fdw` is available from the [PostgreSQL Yum repository](https://yum.postgresql.org/) for the PostgreSQL versions it currently supports. Once the repository is set up, install the package matching your PostgreSQL major version, e.g. for PostgreSQL 18:
+### From package manager
+
+#### RHEL / CentOS / Fedora
+
+On Red Hat Enterprise Linux 9 and 10 and their clones (Rocky Linux, AlmaLinux), and on Fedora, `rdf_fdw` is available from the [PostgreSQL Yum repository](https://yum.postgresql.org/) for the PostgreSQL versions it currently supports.
+
+Add the PostgreSQL PGDG repository (replace `EL-10` with `EL-9` for older RHEL versions, or use `F-43` on Fedora):
 
 ```bash
-$ sudo dnf install rdf_fdw_18
+sudo dnf install -y \
+  https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 ```
 
-Then [create the extension](#creating-the-extension). Packages follow `rdf_fdw` releases, so they may lag behind this repository. To use an unreleased version, compile it from source.
+Then install the package for your PostgreSQL version (replace `18` with your PostgreSQL major version):
 
-## Compiling from source
+```bash
+sudo dnf install rdf_fdw_18
+```
+
+After installation, [create the extension](#creating-the-extension) in your database. Packages follow `rdf_fdw` releases, so they may lag behind this repository. To use an unreleased version, compile it from source.
+
+### From source
 
 To build `rdf_fdw` you need:
 
@@ -1375,6 +1389,6 @@ Foreign tables can feed GIS tools like any other PostgreSQL table. Two walkthrou
 
 ## For testers and developers
 
-Think you're cool enough? Try compiling the latest commits from source: see [Deploy with Docker](#deploy-with-docker) for a Dockerfile, and [Compiling from source](#compiling-from-source) for running the regression tests.
+Think you're cool enough? Try compiling the latest commits from source: see [Deploy with Docker](#deploy-with-docker) for a Dockerfile, and [From source](#from-source) for running the regression tests.
 
 If you've found a bug or have general comments, do not hesitate to open an issue. Any feedback is much appreciated!
