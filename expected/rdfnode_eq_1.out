@@ -1,0 +1,771 @@
+\pset null NULL
+\set VERBOSITY terse
+SET timezone = 'UTC';
+-- Tests for equality (=) operator on rdfnode type
+-- Language-tagged literals (case-insensitive)
+SELECT '"foo"@EN'::rdfnode = '"foo"@en'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"@en-us'::rdfnode = '"foo"@EN-US'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"@en'::rdfnode = '"foo"@en-us'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"café"@fr'::rdfnode = '"café"@fr'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"café"@fr'::rdfnode = '"cafe"@fr'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^xsd:string'::rdfnode = '" foo "^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- Unicode escapes
+SELECT '"\u0020"^^xsd:string'::rdfnode = '" "^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\U0001F600"^^xsd:string'::rdfnode = '"😀"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\U0001F600"^^xsd:string'::rdfnode = '"😀"'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\uD834\uDD1E"^^xsd:string'::rdfnode = '𝄞'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\""'::rdfnode = '"'::rdfnode;  -- True
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\\\\u0020"'::rdfnode = '"\\u0020"'::rdfnode;  -- False, first is two literal backslashes
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"\u0020"'::rdfnode = '" "'::rdfnode;  -- True
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\u0009"'::rdfnode = E'\t'::rdfnode;  -- True
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"\uD834"^^xsd:string'::rdfnode;  -- Invalid alone
+                    rdfnode                     
+------------------------------------------------
+ "�"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\uDD1E"^^xsd:string'::rdfnode;  -- Invalid alone
+                    rdfnode                     
+------------------------------------------------
+ "�"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\u12"^^xsd:string'::rdfnode;  -- Too short
+                      rdfnode                      
+---------------------------------------------------
+ "\u12"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\u12GZ"^^xsd:string'::rdfnode;  -- Invalid hex digits
+                       rdfnode                       
+-----------------------------------------------------
+ "\u12GZ"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\u123456"^^xsd:string'::rdfnode;  -- four digits, then the text "56"
+                     rdfnode                      
+--------------------------------------------------
+ "ሴ56"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+/* An escape has a fixed width: four hex digits after \u, eight after \U. A hex
+ * digit beyond that width is ordinary text and must be left alone, and an
+ * escaped backslash does not begin an escape at all -- \\u0041 is a backslash
+ * followed by the characters u0041, which is a different value from A. */
+SELECT '"\u004142"^^xsd:string'::rdfnode;      -- four digits, then "42"
+                     rdfnode                      
+--------------------------------------------------
+ "A42"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\U0001F41842"^^xsd:string'::rdfnode;  -- eight digits, then "42"
+                     rdfnode                      
+--------------------------------------------------
+ "🐘42"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\uD83D\uDC1842"^^xsd:string'::rdfnode; -- surrogate pair, then "42"
+                     rdfnode                      
+--------------------------------------------------
+ "🐘42"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\\u0041"^^xsd:string'::rdfnode;       -- escaped backslash, not an escape
+                       rdfnode                        
+------------------------------------------------------
+ "\\u0041"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+SELECT '"\\\u0041"^^xsd:string'::rdfnode;      -- escaped backslash, then an escape
+                     rdfnode                      
+--------------------------------------------------
+ "\\A"^^<http://www.w3.org/2001/XMLSchema#string>
+(1 row)
+
+-- Typed literals, same datatype IRI
+SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^<http://example.org/custom>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"foo"^^<http://example.org/custom>'::rdfnode = '"foo"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"foo"^^<http://invalid>'::rdfnode = '"foo"^^<http://invalid>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Integer comparisons
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-42"^^xsd:int'::rdfnode = '"-42"^^xsd:int'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"-42"^^xsd:int'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.00"^^xsd:decimal'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:integer'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^<http://www.w3.org/2001/XMLSchema#integer>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.0000000000"^^xsd:double'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:short'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.73"^^xsd:decimal'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42.0000000001"^^xsd:double'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"foo"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-0"^^xsd:int'::rdfnode = '"0"^^xsd:int'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"999999999999999999"^^xsd:integer'::rdfnode = '"999999999999999999.0"^^xsd:decimal'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Date and time comparisons
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"^^xsd:string'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-08"'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '"2011-10-11"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2011-10-08"^^xsd:date'::rdfnode = '""^^xsd:date'::rdfnode;
+ERROR:  invalid input syntax for type date: ""
+SELECT '"0001-01-01"^^xsd:date'::rdfnode = '"0001-01-01"^^xsd:date'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Invalid datetime
+SELECT '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-13-01T12:00:00"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T25:00:00Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"1.0E308"^^xsd:double'::rdfnode = '"1.0E308"^^xsd:double'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Time
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"20:44:38"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"18:44:38"^^xsd:time'::rdfnode = '"18:44:38"'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- timezone-naive equality
+SELECT '"10:00:00"^^xsd:time'::rdfnode = '"10:00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"10:00:00"^^xsd:time'::rdfnode = '"11:00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- timezone-aware equality
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode = '"10:00:00+02:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode = '"11:00:00+02:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- UTC variants
+SELECT '"10:00:00Z"^^xsd:time'::rdfnode = '"10:00:00+00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- mixed tz/no-tz
+SELECT '"10:00:00"^^xsd:time'::rdfnode = '"10:00:00+02:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"10:00:00+02:00"^^xsd:time'::rdfnode = '"10:00:00"^^xsd:time'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+-- String comparison fallbacks
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25 18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25 18:44:38"^^<http://www.w3.org/2001/XMLSchema#time>'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T18:44:38.149101Z"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38.149101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T18:44:38"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2025-04-25T18:44:38+00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T18:44:38Z"^^xsd:dateTime'::rdfnode; -- Both are TZ-aware and equal in UTC; +00:00 and Z are the same offset
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T10:00:00Z"^^xsd:dateTime'::rdfnode; -- Different offsets, same UTC instant
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00+02:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- Same clock time, different UTC instant
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode; -- Both naive: equal
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T13:00:00"^^xsd:dateTime'::rdfnode; -- Both naive, different times
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"2025-04-25T12:00:00"^^xsd:dateTime'::rdfnode = '"2025-04-25T12:00:00Z"^^xsd:dateTime'::rdfnode; -- The canonical mixed-tz case
+ ?column? 
+----------
+ f
+(1 row)
+
+-- === RDF 1.1 §17.4.1.7: term equality of identical ill-typed literals ===
+-- These all must return TRUE, not raise type errors.
+SELECT '"forty-two"^^xsd:int'::rdfnode = '"forty-two"^^xsd:int'::rdfnode;        -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"2025-13-01"^^xsd:date'::rdfnode = '"2025-13-01"^^xsd:date'::rdfnode;    -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"25:00:00"^^xsd:time'::rdfnode = '"25:00:00"^^xsd:time'::rdfnode;        -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"nAn"^^xsd:double'::rdfnode = '"nAn"^^xsd:double'::rdfnode;              -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '""^^xsd:integer'::rdfnode = '""^^xsd:integer'::rdfnode;                  -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"NaN"^^xsd:double'::rdfnode = '"4.2"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"4.2"^^xsd:double'::rdfnode = '"NaN"^^xsd:double'::rdfnode;              -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+-- Datatype prefix expansion: these are byte-equal after normalization
+SELECT '"42"^^xsd:int'::rdfnode 
+     = '"42"^^<http://www.w3.org/2001/XMLSchema#int>'::rdfnode;                  -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Different ill-typed literals: behavior depends on policy
+-- (currently raises ERROR; that's allowed per SPARQL §17.3.1)
+-- SELECT '"foo"^^xsd:int'::rdfnode = '"bar"^^xsd:int'::rdfnode;
+-- Datatype mismatch with ill-typed values: should return f, not error
+SELECT '"42"^^xsd:int'::rdfnode = '"42"^^xsd:date'::rdfnode;                     -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"invalid"^^xsd:dateTime'::rdfnode = '"invalid"^^xsd:time'::rdfnode;      -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+-- Boolean comparisons
+SELECT '"true"^^xsd:boolean'::rdfnode = '"false"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"false"^^xsd:boolean'::rdfnode = '"true"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"true"^^xsd:boolean'::rdfnode = '"true"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"false"^^xsd:boolean'::rdfnode = '"false"^^xsd:boolean'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- Durations
+SELECT '"P1Y"^^xsd:duration'::rdfnode = '"-P1Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"P1Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"-P1Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"-P1Y"^^xsd:duration'::rdfnode = '"-P2Y"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"P7D"^^xsd:duration'::rdfnode = '"P1W"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"P1M"^^xsd:duration'::rdfnode = '"P1M"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"PT0S"^^xsd:duration'::rdfnode = '"P0D"^^xsd:duration'::rdfnode;
+ ?column? 
+----------
+ t
+(1 row)
+
+/*
+ * An IRI, a blank node and a literal are different kinds of term, and no two
+ * of them are equal however their text is written. The serialisation of an IRI
+ * is also the text a plain literal may hold, so these are the pairs where
+ * comparing the written form instead of the term says they match.
+ */
+SELECT '<http://example.org/v>'::rdfnode = '"<http://example.org/v>"'::rdfnode;   -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '<http://example.org/v>'::rdfnode = '"http://example.org/v"'::rdfnode;     -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '<http://example.org/v>'::rdfnode = '"<http://example.org/v>"^^xsd:string'::rdfnode; -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '_:b1'::rdfnode = '"_:b1"'::rdfnode;                                       -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '_:b1'::rdfnode = '<_:b1>'::rdfnode;                                       -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+/* and each kind still equals itself */
+SELECT '<http://example.org/v>'::rdfnode = '<http://example.org/v>'::rdfnode;     -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '_:b1'::rdfnode = '_:b1'::rdfnode;                                         -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '_:b1'::rdfnode = '_:b2'::rdfnode;                                         -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+/*
+ * Comparing two numeric literals of different datatypes promotes both to the
+ * wider of the two, so the answer cannot depend on which side each is written.
+ * 16777217 has no xsd:float representation and becomes 16777216, so against a
+ * float every operator must treat the two as the same number.
+ */
+SELECT '"16777217"^^xsd:float'::rdfnode =  '"16777216"^^xsd:float'::rdfnode;      -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"16777217"^^xsd:float'::rdfnode =  '"16777216"^^xsd:integer'::rdfnode;    -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"16777216"^^xsd:integer'::rdfnode = '"16777217"^^xsd:float'::rdfnode;     -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"16777217"^^xsd:float'::rdfnode >  '"16777216"^^xsd:integer'::rdfnode;    -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"16777216"^^xsd:integer'::rdfnode < '"16777217"^^xsd:float'::rdfnode;     -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"16777217"^^xsd:float'::rdfnode >= '"16777216"^^xsd:integer'::rdfnode;    -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"16777216"^^xsd:integer'::rdfnode <= '"16777217"^^xsd:float'::rdfnode;    -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+/* the same number reached from either side gives the same answer */
+SELECT ('"2.5"^^xsd:double'::rdfnode > '"2"^^xsd:integer'::rdfnode)
+     = ('"2"^^xsd:integer'::rdfnode < '"2.5"^^xsd:double'::rdfnode);              -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT ('"2"^^xsd:decimal'::rdfnode >= '"2"^^xsd:float'::rdfnode)
+     = ('"2"^^xsd:float'::rdfnode <= '"2"^^xsd:decimal'::rdfnode);                -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+/* xsd:integer and xsd:decimal promote to no floating type, so they stay exact */
+SELECT '"9007199254740993"^^xsd:integer'::rdfnode = '"9007199254740992"^^xsd:integer'::rdfnode; -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"9007199254740993"^^xsd:double'::rdfnode  = '"9007199254740992"^^xsd:integer'::rdfnode; -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+/*
+ * xsd:anyURI is a datatype of its own. RDF 1.1 Concepts 3.3 makes two literals
+ * the same term only when their lexical form, datatype IRI and language tag
+ * all agree, and SPARQL 1.1 17.3 does not list xsd:anyURI among the datatypes
+ * '=' is defined over, so a pair carrying it falls to RDFterm-equal in
+ * 17.4.1.7. Fuseki and GraphDB report the mixed pairs as type errors and the
+ * identical pair as true.
+ */
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://a"'::rdfnode;               -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://a"^^xsd:string'::rdfnode;   -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://a"^^xsd:anyURI'::rdfnode;   -- t
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT '"http://a"^^xsd:anyURI'::rdfnode = '"http://b"^^xsd:anyURI'::rdfnode;   -- f
+ ?column? 
+----------
+ f
+(1 row)
+
+SELECT sparql.sameterm('"http://a"^^xsd:anyURI'::rdfnode, '"http://a"'::rdfnode);  -- f
+ sameterm 
+----------
+ f
+(1 row)
+
