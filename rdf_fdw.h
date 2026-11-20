@@ -310,4 +310,11 @@ typedef struct RDFfdwTriple
 	char *object;	 /* RDF triple object */
 } RDFfdwTriple;
 
+/*
+ * Release of the libcurl and libxml resources of a scan (rdf_fdw.c), which
+ * the HTTP transport in http.c registers and calls on its error paths.
+ */
+extern void RegisterRDFResources(RDFfdwState *state);
+extern void CleanupRDFResources(void *arg);
+
 #endif /* RDF_FDW_H */
