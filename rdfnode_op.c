@@ -26,6 +26,7 @@
 #endif
 #include "utils/date.h"
 #include "utils/datetime.h"
+#include "utils/fmgroids.h"
 #include "utils/numeric.h"
 #include "utils/timestamp.h"
 #include <math.h>
