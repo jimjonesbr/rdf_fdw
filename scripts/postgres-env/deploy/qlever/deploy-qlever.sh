@@ -1,6 +1,6 @@
 #!/bin/bash
 
-QLEVER_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env/qlever
+QLEVER_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env/deploy/qlever
 
 set -euo pipefail
 

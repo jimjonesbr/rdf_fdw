@@ -1,9 +1,11 @@
 #!/bin/bash
 
+set -e
+
 CODE_PATH=~/git/rdf_fdw
 PSQL_PATH=/usr/local/postgres-dev/bin/psql
 PG_CONFIG_PATH=/usr/local/postgres-dev/bin/pg_config
-TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
+TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env/deploy
 #####################################################
 
 bash $TEST_ENV_PATH/virtuoso/deploy-virtuoso.sh
@@ -24,7 +26,7 @@ make clean && \
 
 $PSQL_PATH postgres -c "DROP EXTENSION IF EXISTS rdf_fdw CASCADE; CREATE EXTENSION rdf_fdw"
 $PSQL_PATH postgres -c "SELECT * FROM rdf_fdw_settings;"
-$PSQL_PATH postgres -c "CREATE USER postgres SUPERUSER;"
+$PSQL_PATH postgres -c "CREATE USER postgres SUPERUSER;" || true  # already exists after the first run
 # Tests that need a triplestore are opt-in:
 # INCLUDE_LOCAL_TESTS=1    - tests against locally deployed triplestores
 # INCLUDE_EXTERNAL_TESTS=1 - tests that need external network access

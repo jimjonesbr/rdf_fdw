@@ -1,7 +1,9 @@
 #!/bin/bash
 
-TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
-CONTAINER_NAME=rdf_pg18
+set -e
+
+TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env/deploy
+CONTAINER_NAME=rdf_pg19
 
 bash $TEST_ENV_PATH/virtuoso/deploy-virtuoso.sh
 bash $TEST_ENV_PATH/fuseki/deploy-fuseki.sh
@@ -11,7 +13,7 @@ bash $TEST_ENV_PATH/squid/deploy-proxy-env.sh
 bash $TEST_ENV_PATH/stub-endpoint/deploy-stub-endpoint.sh
 
 # Build and install rdf_fdw
-echo -e "\n== Building and Installing rdf_fdw on PostgreSQL 18 ==\n"
+echo -e "\n== Building and Installing rdf_fdw on PostgreSQL 19 ==\n"
 
 podman exec -itw /rdf_fdw/ $CONTAINER_NAME make uninstall 2>/dev/null || true
 podman exec -itw /rdf_fdw/ $CONTAINER_NAME make clean

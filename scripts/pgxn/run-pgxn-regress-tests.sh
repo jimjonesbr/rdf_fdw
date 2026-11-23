@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CODEPATH="/home/jim/git/rdf_fdw"
-TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env
+TEST_ENV_PATH=~/git/rdf_fdw/scripts/postgres-env/deploy
 PGVERSIONS="20,19,18,17,16,15,14,13,12,11,10,9.6,9.5"
 #PGVERSIONS="20"
 IMAGENAME="pgxn-image"
