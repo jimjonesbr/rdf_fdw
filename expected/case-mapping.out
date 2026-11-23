@@ -9,6 +9,11 @@
  * pg_c_utf8 collation to fall back to: there the letters outside A-Z stay as
  * they are.
  */
+/* a run cancelled during the DROP DATABASE below leaves the database behind,
+ * marked invalid, which would make every later run fail at CREATE DATABASE */
+SET client_min_messages = warning;
+DROP DATABASE IF EXISTS rdf_fdw_ctype_c;
+RESET client_min_messages;
 CREATE DATABASE rdf_fdw_ctype_c TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C';
 \c rdf_fdw_ctype_c
 CREATE EXTENSION rdf_fdw;
