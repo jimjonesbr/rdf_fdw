@@ -2781,11 +2781,8 @@ static ForeignScan *rdfGetForeignPlan(PlannerInfo *root, RelOptInfo *baserel, Oi
 	ListCell *cell;
 
 	elog(DEBUG1, "%s called", __func__);
-	foreach (cell, scan_clauses)
-	{
-		Node *node = (Node *)lfirst(cell);
-		elog(DEBUG2, "%s: original scan_clauses nodeTag=%u", __func__, nodeTag(node));
-	}
+	/* not the clauses' node tags: their numbers change between major versions */
+	elog(DEBUG2, "%s: %d scan clauses", __func__, list_length(scan_clauses));
 
 	InitSession(state, baserel, root);
 
@@ -5190,7 +5187,8 @@ static void SetUsedColumns(Expr *expr, struct RDFfdwState *state, int foreignrel
 	if (expr == NULL)
 		return;
 
-	elog(DEBUG2, "%s called: expression='%d'", __func__, expr->type);
+	/* not expr->type: node tag numbers change between major versions */
+	elog(DEBUG2, "%s called", __func__);
 
 	switch (expr->type)
 	{

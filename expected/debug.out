@@ -377,9 +377,7 @@ DEBUG:  unescape_unicode: Input='1780-12-31'
 DEBUG:  unescape_unicode: Output='1780-12-31'
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: 3 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -413,40 +411,40 @@ DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
@@ -660,8 +658,7 @@ DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (at
 DEBUG:  rdfAddForeignUpdateTargets exit
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: 2 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -695,36 +692,36 @@ DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: whole-row reference, marking all 3 columns as required
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
@@ -967,7 +964,7 @@ DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (at
 DEBUG:  rdfAddForeignUpdateTargets exit
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: 1 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -1001,22 +998,22 @@ DEBUG:  LocateKeyword called: searching 'HAVING' from position 0
 DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
@@ -1640,9 +1637,7 @@ DEBUG:  str exit: returning literal '"1780-12-31"'
 DEBUG:  strdt exit: returning => '"1780-12-31"^^<http://www.w3.org/2001/XMLSchema#date>'
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: 3 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -1678,40 +1673,40 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
@@ -2169,8 +2164,7 @@ DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (at
 DEBUG:  rdfAddForeignUpdateTargets exit
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: 2 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -2206,36 +2200,36 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: whole-row reference, marking all 3 columns as required
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
@@ -2603,7 +2597,7 @@ DEBUG:  rdfAddForeignUpdateTargets: added junk attribute for column 'object' (at
 DEBUG:  rdfAddForeignUpdateTargets exit
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
-DEBUG:  rdfGetForeignPlan: original scan_clauses nodeTag=318
+DEBUG:  rdfGetForeignPlan: 1 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -2639,22 +2633,22 @@ DEBUG:  LocateKeyword exit: returning '-1' (keyword_position)
 DEBUG:  IsSPARQLParsable exit: returning 'true'
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
-DEBUG:  SetUsedColumns called: expression='318'
-DEBUG:  SetUsedColumns called: expression='17'
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='7'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
 DEBUG:  SetUsedColumns exit
@@ -3106,6 +3100,7 @@ DEBUG:  rdf_fdw_validator exit
 SELECT * FROM ft;
 DEBUG:  rdfGetForeignRelSize called
 DEBUG:  rdfGetForeignPlan called
+DEBUG:  rdfGetForeignPlan: 0 scan clauses
 DEBUG:  InitSession called
 DEBUG:  LoadRDFServerInfo called
 DEBUG:  LoadRDFServerInfo exit
@@ -3121,13 +3116,13 @@ DEBUG:  LocateKeyword called: searching 'SELECT' from position 0
 DEBUG:  LocateKeyword exit: 'SELECT' found at position 0
 DEBUG:  LoadRDFTableInfo exit
 DEBUG:  InitSession: looking for columns in the SELECT entry list
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'subject' (0) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'predicate' (1) required in the SQL query
 DEBUG:  SetUsedColumns exit
-DEBUG:  SetUsedColumns called: expression='6'
+DEBUG:  SetUsedColumns called
 DEBUG:  SetUsedColumns: column 'object' (2) required in the SQL query
 DEBUG:  SetUsedColumns exit
 DEBUG:  InitSession: looking for columns used in WHERE conditions
