@@ -59,10 +59,10 @@ sudo dnf install -y \
   https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 ```
 
-Then install the package for your PostgreSQL version (replace `18` with your PostgreSQL major version):
+Then install the package for your PostgreSQL version (replace `19` with your PostgreSQL major version):
 
 ```bash
-sudo dnf install rdf_fdw_18
+sudo dnf install rdf_fdw_19
 ```
 
 After installation, [create the extension](#creating-the-extension) in your database. Packages follow `rdf_fdw` releases, so they may lag behind this repository. To use an unreleased version, compile it from source.
@@ -80,11 +80,11 @@ To build `rdf_fdw` you need:
 In an Ubuntu environment you can install all dependencies with the following command:
 
 ```shell
-apt-get install -y make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
+apt-get install -y make gcc postgresql-server-dev-19 libxml2-dev libcurl4-gnutls-dev pkg-config
 ```
 
 > [!NOTE]  
-> `postgresql-server-dev-18` only installs the libraries for PostgreSQL 18. Change it if you're using another PostgreSQL version.
+> `postgresql-server-dev-19` only installs the libraries for PostgreSQL 19. Change it if you're using another PostgreSQL version.
 
 Ensure [pg_config](https://www.postgresql.org/docs/current/app-pgconfig.html) is properly set before running `make`. This executable is typically found in your PostgreSQL installation's `bin` directory.
 
@@ -159,13 +159,13 @@ A convenient way to build and test `rdf_fdw` is to create a Docker image that bu
 - Build an image that compiles and installs the extension (reproducible, good for CI).
 - Mount the source into a container and run `make install` for iterative development (faster local iterations).
 
-Minimal example Dockerfile for PostgreSQL 18:
+Minimal example Dockerfile for PostgreSQL 19:
 
 ```dockerfile
-FROM postgres:18
+FROM postgres:19
 
 RUN apt-get update && \
-    apt-get install -y git make gcc postgresql-server-dev-18 libxml2-dev libcurl4-gnutls-dev pkg-config
+    apt-get install -y git make gcc postgresql-server-dev-19 libxml2-dev libcurl4-gnutls-dev pkg-config
 
 RUN git clone --branch v3.2 https://github.com/jimjonesbr/rdf_fdw.git && \
     cd rdf_fdw && \
@@ -176,8 +176,8 @@ RUN git clone --branch v3.2 https://github.com/jimjonesbr/rdf_fdw.git && \
 Build and run the image:
 
 ```bash
-docker build -t rdf_fdw:18-3.2 .
-docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:18-3.2
+docker build -t rdf_fdw:19-3.2 .
+docker run -d --name rdf_fdw_container -e POSTGRES_HOST_AUTH_METHOD=trust rdf_fdw:19-3.2
 ```
 
 Create the extension inside the running container:
@@ -1110,7 +1110,7 @@ Returns version information for `rdf_fdw`, PostgreSQL, compiler, and all depende
 SELECT rdf_fdw_version();
                                               rdf_fdw_version                                               
 ------------------------------------------------------------------------------------------------------------
- rdf_fdw 3.2-dev (PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
+ rdf_fdw 3.2-dev (PostgreSQL 19.0 (Debian 19.0-2.pgdg13+1), compiled by gcc, libxml 2.9.14, libcurl 8.14.1)
 (1 row)
 ```
 
@@ -1133,7 +1133,7 @@ SELECT * FROM rdf_fdw_settings;
  component  |            version            
 ------------+-------------------------------
  rdf_fdw    | 3.2-dev
- PostgreSQL | 18.6 (Debian 18.6-1.pgdg13+2)
+ PostgreSQL | 19.0 (Debian 19.0-2.pgdg13+1)
  libxml     | 2.9.14
  libcurl    | 8.14.1
  ssl        | GnuTLS/3.8.9
@@ -1141,7 +1141,7 @@ SELECT * FROM rdf_fdw_settings;
  libSSH     | libssh2/1.11.1
  nghttp2    | 1.64.0
  compiler   | gcc
- built      | 2026-10-26 08:48:57 UTC
+ built      | 2026-11-23 12:04:17 UTC
 (10 rows)
 ```
 
